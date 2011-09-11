@@ -1,0 +1,231 @@
+#options, set 1 to enable
+CELL_DEBUG           = 0
+CELL_DEBUG_CONSOLE   = 0
+CELL_DEBUG_FPS       = 0
+NO_FRAMESKIP         = 0
+MULTIMAN_SUPPORT     = 0
+TOC_LOG              = 0
+SDK_340              = 1
+
+#which compiler to build  with - GCC or SNC
+#set to GCC for debug builds for use with debugger
+CELL_BUILD_TOOLS     = SNC
+
+ifeq ($(CELL_DEBUG),1)
+PPU_OPTIMIZE_LV      := -O0
+else
+PPU_OPTIMIZE_LV      := -O2
+endif
+
+# specify build tools
+#explicitly set some cell sdk defaults
+CELL_SDK             ?= /usr/local/cell
+# CELL_GPU_TYPE (currently RSX is only one option)
+CELL_GPU_TYPE	   	= RSX
+
+#CELL_PSGL_VERSION is debug, dpm or opt
+CELL_PSGL_VERSION	= opt
+
+#Python binary - only useful for PSL1ght scripts
+PYTHONBIN	         = python2.7
+
+CELL_MK_DIR          ?= $(CELL_SDK)/samples/mk
+include $(CELL_MK_DIR)/sdk.makedef.mk
+
+# Geohot CFW defines
+MKSELF_GEOHOT        = make_self_npdrm
+MKPKG_PSLIGHT        = buildtools/PS3Py/pkg.py
+PKG_FINALIZE         = package_finalize
+
+STRIP                = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-strip
+C                    = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-gcc
+CC                   = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-g++
+
+UTILS_DIR            = ./utils
+SRC_DIR              = ./src
+SNES9X_API_DIR       = ./src/snes9x
+CELL_FRAMEWORK_DIR	= ./src/cellframework
+CELL_FRAMEWORK2_DIR	= ./src/cellframework2
+EBOOT_LAUNCHER_DIR   = eboot-launcher
+
+EMULATOR_VERSION     = 1.0
+
+PPU_SRCS		+= $(SNES9X_API_DIR)/tile.cpp \
+         $(SNES9X_API_DIR)/cpu.cpp \
+			$(SNES9X_API_DIR)/dma.cpp \
+			$(SNES9X_API_DIR)/ppu.cpp \
+			$(SNES9X_API_DIR)/sa1.cpp \
+			$(SNES9X_API_DIR)/sa1cpu.cpp \
+			$(SNES9X_API_DIR)/fxdbg.cpp \
+			$(SNES9X_API_DIR)/fxemu.cpp \
+			$(SNES9X_API_DIR)/fxinst.cpp \
+			$(SNES9X_API_DIR)/cpuexec.cpp \
+			$(SNES9X_API_DIR)/cpuops.cpp \
+			$(SNES9X_API_DIR)/srtc.cpp \
+			$(SNES9X_API_DIR)/memmap.cpp \
+			$(SNES9X_API_DIR)/apu/apu.cpp \
+			$(SNES9X_API_DIR)/apu/SNES_SPC.cpp \
+			$(foreach dir,$(SNES9X_API_DIR)/jma/,$(wildcard $(dir)/*.cpp)) \
+			$(SNES9X_API_DIR)/bsx.cpp \
+			$(SNES9X_API_DIR)/c4.cpp \
+			$(SNES9X_API_DIR)/c4emu.cpp \
+			$(SNES9X_API_DIR)/cheats.cpp \
+			$(SNES9X_API_DIR)/cheats2.cpp \
+			$(SNES9X_API_DIR)/controls.cpp \
+			$(SNES9X_API_DIR)/crosshairs.cpp \
+			$(SNES9X_API_DIR)/dsp.cpp \
+			$(SNES9X_API_DIR)/dsp1.cpp \
+			$(SNES9X_API_DIR)/dsp2.cpp \
+			$(SNES9X_API_DIR)/dsp3.cpp \
+			$(SNES9X_API_DIR)/dsp4.cpp \
+			$(SNES9X_API_DIR)/globals.cpp \
+			$(SNES9X_API_DIR)/loadzip.cpp \
+			$(SNES9X_API_DIR)/netplay.cpp \
+			$(SNES9X_API_DIR)/obc1.cpp \
+			$(SNES9X_API_DIR)/reader.cpp \
+			$(SNES9X_API_DIR)/sdd1.cpp \
+			$(SNES9X_API_DIR)/sdd1emu.cpp \
+			$(SNES9X_API_DIR)/server.cpp \
+			$(SNES9X_API_DIR)/seta.cpp \
+			$(SNES9X_API_DIR)/seta010.cpp \
+			$(SNES9X_API_DIR)/seta011.cpp \
+			$(SNES9X_API_DIR)/seta018.cpp \
+			$(SNES9X_API_DIR)/snapshot.cpp \
+			$(SNES9X_API_DIR)/snes9x.cpp \
+			$(SNES9X_API_DIR)/spc7110.cpp
+
+
+PPU_SRCS		+= $(UTILS_DIR)/zlib/adler32.c \
+			$(UTILS_DIR)/zlib/compress.c \
+			$(UTILS_DIR)/zlib/crc32.c \
+			$(UTILS_DIR)/zlib/deflate.c \
+			$(UTILS_DIR)/zlib/gzclose.c \
+			$(UTILS_DIR)/zlib/gzlib.c \
+			$(UTILS_DIR)/zlib/gzread.c \
+			$(UTILS_DIR)/zlib/gzwrite.c \
+			$(UTILS_DIR)/zlib/infback.c \
+			$(UTILS_DIR)/zlib/inffast.c \
+			$(UTILS_DIR)/zlib/inflate.c \
+			$(UTILS_DIR)/zlib/inftrees.c \
+			$(UTILS_DIR)/zlib/trees.c \
+			$(UTILS_DIR)/zlib/uncompr.c \
+			$(UTILS_DIR)/zlib/zutil.c \
+			$(UTILS_DIR)/zlib/contrib/minizip/ioapi.c \
+			$(UTILS_DIR)/zlib/contrib/minizip/mztools.c \
+			$(UTILS_DIR)/zlib/contrib/minizip/zip.c \
+			$(UTILS_DIR)/zlib/contrib/minizip/unzip.c
+PPU_SRCS    +=  $(CELL_FRAMEWORK2_DIR)/audio/rsound.c \
+         $(CELL_FRAMEWORK2_DIR)/audio/librsound.c \
+         $(CELL_FRAMEWORK2_DIR)/audio/buffer.c \
+         $(CELL_FRAMEWORK2_DIR)/input/pad_input.c \
+         $(CELL_FRAMEWORK2_DIR)/input/mouse_input.c \
+
+PPU_SRCS += $(SRC_DIR)/ps3video.cpp \
+			$(SRC_DIR)/snes_state/snes_state.c \
+			$(SRC_DIR)/snes_state/config_file.c \
+			$(SRC_DIR)/menu.cpp \
+         $(CELL_FRAMEWORK2_DIR)/audio/resampler.c \
+			$(CELL_FRAMEWORK2_DIR)/audio/audioport.c \
+			$(SRC_DIR)/ps3input.c \
+			$(SRC_DIR)/emu-ps3.cpp \
+         $(CELL_FRAMEWORK2_DIR)/utility/oskutil.c \
+			$(CELL_FRAMEWORK_DIR)/fileio/FileBrowser.cpp
+
+PPU_TARGET		= snes9x-ps3.ppu.elf
+
+ifeq ($(CELL_DEBUG),1)
+DEBUGFLAGS = -D_DEBUG -g
+else
+DEBUGFLAGS =
+endif
+
+PPU_CFLAGS		   += -I. -DUSE_FILE32API -Dunix -DPSGL -DCORRECT_VRAM_READS -DRIGHTSHIFT_IS_SAR -DSN_TARGET_PS3 -DNDEBUG=1 -DWORDS_BIGENDIAN -DBLARGG_BIG_ENDIAN=1 -DNO_LOGGER -D__POWERPC__ -D__ppc__ $(DEBUGFLAGS)
+PPU_CXXFLAGS		+= -I./src/ -I./src/snes9x/ -DZLIB -DUNZIP_SUPPORT -DJMA_SUPPORT -DPSGL -DCORRECT_VRAM_READS -DRIGHTSHIFT_IS_SAR -DNO_LOGGER -DSN_TARGET_PS3 -DNDEBUG=1 -DWORDS_BIGENDIAN -DBLARGG_BIG_ENDIAN=1 -D__POWERPC__ -D__ppc__ $(DEBUGFLAGS)
+
+ifeq ($(CELL_BUILD_TOOLS),SNC)
+PARAMS = -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1 -Xnotocrestore=2 -Xc-=rtti
+	PPU_CFLAGS		   += $(PARAMS)
+	PPU_CXXFLAGS		+= $(PARAMS)
+   NOTOCRESTORE      = --notocrestore
+else
+PPU_CFLAGS		      += -funroll-loops -fno-rtti
+PPU_CXXFLAGS		   += -funroll-loops -fno-rtti
+NOTOCRESTORE = 
+endif
+
+ifeq ($(CELL_DEBUG_CONSOLE),1)
+PPU_CFLAGS           += -DCELL_DEBUG_CONSOLE
+PPU_CXXFLAGS         += -DCELL_DEBUG_CONSOLE
+L_CONTROL_CONSOLE_LDLIBS = -lcontrol_console_ppu
+L_NET_CTL_LDLIBS = -lnetctl_stub
+endif
+
+ifeq ($(CELL_DEBUG_FPS),1)
+PPU_CFLAGS           += -DCELL_DEBUG_FPS
+PPU_CXXFLAGS         += -DCELL_DEBUG_FPS
+endif
+
+ifeq ($(NO_FRAMESKIP),1)
+PPU_CFLAGS           += -DNO_FRAMESKIP=1
+PPU_CXXFLAGS         += -DNO_FRAMESKIP=1
+endif
+
+ifeq ($(MULTIMAN_SUPPORT),1)
+PPU_CFLAGS           += -DMULTIMAN_SUPPORT=1
+PPU_CXXFLAGS         += -DMULTIMAN_SUPPORT=1
+   ifeq ($(shell uname), Linux)
+      MKFSELF_WC		= $(HOME)/bin/make_self_wc
+   else
+      MKFSELF_WC		= $(CELL_SDK)/../bin/make_self_wc
+   endif
+endif
+
+ifeq ($(TOC_LOG),1)
+TOC_INFO             = --print-toc-info
+else
+TOC_INFO             =
+endif        
+
+ifeq ($(SDK_340),1)
+L_SYSUTIL_SCREENSHOT = -lsysutil_screenshot_stub
+else
+L_SYSUTIL_SCREENSHOT =
+endif
+
+
+PPU_LDLIBS		+= -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/opt -ldbgfont -lPSGL -lPSGLcgc -lcgc \
+			-lgcm_cmd -lgcm_sys_stub -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub $(L_SYSUTIL_SCREENSHOT) $(L_CONTROL_CONSOLE_LDLIBS) -lpngdec_stub -ljpgdec_stub \
+			-lsysmodule_stub -laudio_stub -lpthread -lnet_stub $(L_NET_CTL_LDLIBS) $(TOC_INFO) $(NOTOCRESTORE)
+
+include $(CELL_MK_DIR)/sdk.target.mk
+
+.PHONY: pkg
+#standard pkg packaging
+pkg: $(PPU_TARGET) 
+ifeq ($(MULTIMAN_SUPPORT),1)
+	$(MKFSELF_WC) $(PPU_TARGET) pkg/USRDIR/RELOAD.SELF
+else
+	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) pkg/USRDIR/EBOOT.BIN
+endif
+	$(MAKE_PACKAGE_NPDRM) pkg/package.conf pkg
+
+#massively reduced filesize using MKSELF_GEOHOT - use this for normal jailbreak builds
+.PHONY: pkg-signed
+pkg-signed: $(PPU_TARGET)
+ifeq ($(MULTIMAN_SUPPORT),1)
+	$(MKFSELF_WC) $(PPU_TARGET) pkg/USRDIR/RELOAD.SELF
+else
+	$(MKSELF_GEOHOT) $(PPU_TARGET) pkg/USRDIR/EBOOT.BIN SNES900000
+endif
+	$(PYTHONBIN) $(MKPKG_PSLIGHT) --contentid IV0002-SNES90000_00-SAMPLE0000000001 pkg/ snes9xnext-ps3-v$(EMULATOR_VERSION)-fw3.41.pkg
+
+#use this to create a PKG for use with Geohot CFW 3.55
+.PHONY: pkg-signed-cfw
+pkg-signed-cfw:
+ifeq ($(MULTIMAN_SUPPORT),1)
+	$(MKFSELF_WC) $(PPU_TARGET) pkg/USRDIR/RELOAD.SELF
+else
+	$(MKSELF_GEOHOT) $(PPU_TARGET) pkg/USRDIR/EBOOT.BIN SNES900000
+endif
+	$(PYTHONBIN) $(MKPKG_PSLIGHT) --contentid IV0002-SNES90000_00-SAMPLE0000000001 pkg/ snes9xnext-ps3-v$(EMULATOR_VERSION)-cfw3.55.pkg
+	$(PKG_FINALIZE) snes9xnext-ps3-v$(EMULATOR_VERSION)-cfw3.55.pkg

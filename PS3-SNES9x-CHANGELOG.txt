@@ -1,0 +1,623 @@
+*******************************************************************************
+			SNES9x PS3
+			CHANGELOG
+*******************************************************************************
+
+===============================================================================
+Build 4.4.9 (12-04-2011)
+===============================================================================
+* Custom Soundtrack support - select a song/album/playlist from the XMB
+Music category - music can be played both in-game and from within the menu.
+
+* Added USB/Bluetooth headset support - sound gets output through the
+headset.
+
+* Fixed Super Mario RPG level-up freeze.
+
+* Fixed Super Mario World 2: Yoshi's Island save file selection screen graphical
+glitch.
+
+* Some filebrowser fixes
+
+* Added 5x scale option.
+
+* Updated Maister Pong - now with sound effects, scoring, two-player support,
+nice gameplay mechanics, etc.
+
+===============================================================================
+Build 4.4.8 (03-04-2011)
+===============================================================================
+* Very big performance and lag reduction optimizations. The previous builds
+were indeed very laggy - this should be a very big improvement on that front.
+
+* You can now use two shaders at once - we call this 'Custom Scaling/ Dual
+Shader' mode. A scaling factor (from 1 to 4x) can be specified.
+
+Some great graphical effects can be achieved by combining shaders.
+
+* Shader presets have been added. Shader presets are configuration files that
+automatically configure the settings for 'Shader 1', 'Shader 2', 'Hardware
+Filtering Shader 1', 'Hardware Filtering Shader 2', 'Scaling Factor' and 
+'Overscan'. You can create your own shader presets - they are just 
+plain-text files stored in USRDIR/presets.
+
+* Controllers can now be individually configured - you can specifically
+configure the controls for a controller connected to a specific port/
+number.
+
+* Cheat input has been made less buggy. With the 'New' control scheme -
+L2 + Analog Stick Right Down will still input cheats with the OSK, but
+it will add a generic label (simply the cheatcode itself as a label)
+until you rename this generic label by triggering the action 'Input
+Cheatlabel'. The 'New' control scheme has this hooked up to 'L2 + R2 +
+Analog Stick Right - Down'. This can of course be reconfigured to any
+button / button-combo you see fit.
+
+* Fixed interlaced games like Rise Of The Robots - were displaying 
+glitched graphics before in version 4.4.7.
+
+* Added a homebrew SNES game by Themaister. Game logic is semi-hooked
+up - paddle works, ball bounces off the paddle, just scoring has to
+be added. Anyway, this has mostly been a 3-day exercise in SNES ASM -
+there will be a more useful/fun homebrew game in the future. This is
+just for illustrative purposes.
+
+* Added some shader variations and some new shaders - HQ4x, BR4x - 
+courtesy of Jacaraca.
+
+===============================================================================
+Build 4.4.7 (13-03-2011)
+===============================================================================
+- Added new shaders (waterpaint-normalcontrast, waterpaint-normalcontrast-scanline,
+waterpaint-highcontrast, waterpaint-highcontrast-scanline, crt-highgamma)
+- Optimized crt, crt-highgamma shaders - both run now at 60fps at 1920x1080.
+- Reduced lag.
+- Fixed Turbo Mode toggling - works the same now as in 4.4.4.
+- Fixed RSound bug with Windows OSes.
+- Fixed L2 button mapping issue.
+
+===============================================================================
+Build 4.4.6 (16-02-2011)
+===============================================================================
+- HD version and Normal version merged into one - there are now HD shaders that
+do the same as the previous HD version. 
+   * HD shaders (which upscale the resolution to 512x448) instead of hacked
+HD version. '4xSoft-HD' is currently the best out of the HD shaders - more to 
+come.
+   * The HD version in version 4.4.5 ran in interlaced mode - with the HD 
+shaders, you can run in either progressive or interlaced mode.
+- Fixed PAL50/PAL60 automatic activation in 576i/p mode.
+- Fixed Rise Of The Robots interlacing issues - other games which use
+interlaced mode also corrected.
+- Fixed Multiplayer controls - only player 1 worked.
+
+===============================================================================
+Build 4.4.5 (14-02-2010)
+===============================================================================
+- New HD Version - every game runs at the SNES' high-resolution mode (512x448
+interlaced mode). Try this with the right shader on (4xSoft) and this can make
+the games look beautiful. Both progressive (1080p/720p/480p/576p) and interlaced
+modes (480i/576i/1080i) work with this - try interlaced for best results.
+
+4xSoft combined with this HD version also beautifies the pseudo hi-res 
+transparent background layers in Kirby's Dreamland 3.
+- Triple Buffering option added - enabled by default. Faster graphics/shader
+performance with triple  buffering turned on - some potential input lag with
+triple buffering on - turn it off in case you experience problems of this
+nature.
+- USB/Bluetooth mouse can be used now for Mouse/Super Scope games. 
+- Primal Rage works again.
+
+===============================================================================
+Build 4.4.4 (19-01-2010)
+===============================================================================
+- FIXED: (CHRONO TRIGGER SCREEN HEIGHT JUMPING BUG)
+===============================================================================
+Chrono Trigger would jump from 256x224 to 256x239 for one odd frame when
+transitioning from normal mode to battle mode - this caused an undesirable
+screen hiccup to occur everytime. This issue has been fixed.
+
+===============================================================================
+- FIXED: Player 2 - Buttons X/Y didn't work
+===============================================================================
+This bug was introduced in v4.4.3 due to an improper macro. It has now been
+fixed as of v4.4.4.
+
+===============================================================================
+- FIXED: Loading a ROM with a cheatfile loaded and then loading another ROM
+with no cheatfile will not clear out the previous game's cheats
+===============================================================================
+This bug was introduced in v4.4.0, and has now been fixed as of v4.4.4. Also
+note that games which do not have a cheatfile will create a new cheatfile
+automatically.
+
+===============================================================================
+- FIXED: Super Scope controls auto-centered when let go of thumbstick
+- ADDED: Better Super Scope controls
+===============================================================================
+Previously in v4.4.3, the Super Scope crosshair would center back to the middle
+of the screen as soon as you let go of the thumbstick on the left analog stick.
+Now it controls much more closely to the mouse. Note that there might be an
+option to toggle the Super Scope controls in the future (to either auto-center
+when let go of the thumbstick or let the cursor stay at the current position).
+
+===============================================================================
+- FIXED: Some games were hooked up with patchy controls (Doom)
+- ADDED: Accessory Autodetection
+===============================================================================
+The accessory autodetection in v4.4.2/4.4.3 left some things to be desired.
+A new setting has been added to the SNES9x Settings screen - 'Accessory Auto-
+detection'.
+
+SNES9x PS3 auto-detects most games that feature support for these peripherals.
+This setting will control how SNES9x PS3 will deal with these games when it
+detects them.
+
+CONFIRM	  -  When detecting a Mouse/Scope/Multitap-compatible game, a dialog
+	     screen is presented to the user asking him/her if the accessory 
+	     should be enabled. If you select 'No', normal 2 joypad controls
+             will be used instead.
+ON        -  Games which support Mouse/Scope/Multitap will be automatically
+             detected and the accessory will be automatically enabled without
+             any input from the user.
+OFF       -  Accessories will not be detected or enabled - standard 2 joypad
+             controls for all games.
+
+===============================================================================
+- ADDED: Control Schemes
+===============================================================================
+There are now three [Control Schemes] - 'Default', 'New', and 'Custom'.
+
+DEFAULT - Controls are the same as they were before.
+
+NEW 	- A new control scheme. See below:
+
+R3 + L3				- [Exit to Menu] - go back to the ROM Browser
+				  menu.
+
+Right analog stick - Up		- SNES9x pause (supersedes regular SNES pause).
+Right analog stick - Left	- Decrement fastforward speed by one (-1).
+Right analog stick - Right	- Increment fastforward speed by one (+1).
+Right analog stick - Down	- Toggle [Fastforwarding] on/off.
+
+Right analog stick - Left + L2	- Decrement cheat position by one (-1).
+Right analog stick - Right + L2	- Increment cheat position by one (+1).
+Right analog stick - Up	+ L2	- Toggle the currently selected cheat on/off.
+Right analog stick - Down + L2	- Input a cheat with an on-screen keyboard.
+
+Right analog stick - Left + R2	- Decrement save state slot by one (-1).
+Right analog stick - Right + R2	- Increment save state slot by one (+1).
+Right analog stick - Up	+ R2	- Load from currently selected save state slot. 
+Right analog stick - Down + R2	- Save to currently selected save state slot.
+R2 + R3				- Toggle [SRAM Write Protection] on/off.
+
+L2 + R3				- Toggle [Record Movie] on/off.
+L2 + L3				- Load Movie
+
+CUSTOM	- Custom control scheme. All buttons/button combos can be 
+customized.
+
+===============================================================================
+- ADDED: Savestate SRAM Overwrite Protect
+===============================================================================
+Implemented by request - see Issue 8: Loading a save state also load the 
+associated save ram file and write it to disk right away.
+(URL: https://code.google.com/p/snes9x-ps3/issues/detail?id=8&can=1)
+
+Normally, when SNES9x loads a savestate, the SRAM contents are automatically
+overwritten. The ugly side-effect of this is that this can unknowingly
+delete your normal saved game progress.
+
+ON  - SNES9x will write-protect SRAM - this means that if you load a save-
+      state, it will not overwrite the SRAM save(s). However, SRAM is not
+      saved at all in this mode.
+OFF - SRAM is writable - this means that if you load a savestate, it will
+      overwrite the SRAM save(s).
+
+NOTE: This option can be toggled in-game with the 'New' control scheme by
+pressing button combo [R2 + R3].
+
+===============================================================================
+- ADDED: Cheat Code Input In-game with Onscreen Keyboard
+===============================================================================
+Cheatcodes can now be inserted with an onscreen keyboard in-game. A new
+action has been added called 'Cheat Input'.
+
+Cheatcodes that you add will be saved to your cheatfile. Currently, the cheat
+code will be added in order. 
+
+NOTE: This option can be toggled in-game with the 'New' control scheme by
+pressing button combo [L2 + Analog Stick Right - Down].
+
+NOTE: There is still a bug that happens after inserting 15/16 cheat codes 
+in a row.
+
+When this bug happens, you will no longer be presented with the option to 
+input a label after correctly inputting a cheat. Instead, the label will be
+the cheat code itself. This is a memory shortage bug that we hope to fix soon.
+
+===============================================================================
+- ADDED: Resolution saving
+===============================================================================
+Implemented by request - see Issue 18: Screen resolution does not save upon 
+exit
+(URL: https://code.google.com/p/snes9x-ps3/issues/detail?id=18&can=1)
+
+The resolution you had previously played in will now be automatically selected 
+when you start SNES9x the next time.
+
+There are also sane fallbacks. If SNES9x saved the resolution at 1080p and the
+next time you want to play SNES9x you happen to have your PS3 connected to a 
+screen that doesn't support 1080p - it will fall back to a lower resolution 
+that your TV does support.
+
+===============================================================================
+- ADDED: Throttle Mode
+===============================================================================
+This is a performance benchmarking feature that might or might not be useful
+to users. Turn this 'Off', and VSync and audio will be disabled - the game 
+will then run at the maximum amount of frames per second (FPS) that the PS3
+can manage.
+
+NOTE: There seems to be a hardware/software cap of 124/125fps that appears to 
+be prevalent even in menus.
+
+===============================================================================
+Build 4.4.3 (11-01-2010)
+===============================================================================
+- Autodetection of Super Scope/Mouse/Multitap had a bug in it - after you 
+loaded a Super Scope/mouse game and then tried to load a multitap-compatible 
+game, the game would attempt to hook up the Mouse/Scope instead due to an error
+in a switch/case statement. Fixed this.
+
+Autodetection now works as expected. Please upgrade to 4.4.3 as soon as possible
+to avoid inconvenient problems.
+
+-==============================================================================
+Build 4.4.2 (09-01-2011) - rev. number ?
+===============================================================================
+* Super Scope and SNES Mouse support. The Super Scope and the Mouse are currently
+mapped to the left analog stick - the controls are -
+- Circle Button - Scope Toggle Turbo
+- Cross Button - Scope Cursor Button
+- Triangle Button - Mouse R Button - Scope Aim Off Screen
+- Square Button - Mouse L Button -Scope Fire
+- Start Button - Scope Pause Button
+* Automatic Super Scope/Mouse support detection (works for most games)
+* Automatic multitap detection (for most games)
+* Automatic PAL50/PAL60 switching (for 576p PAL resolution only)
+* Only shows toggleable resolutions now in the Settings menu that your TV supports.
+* Fixed Syvalion/R.P.M. Racing/Power Drive (games use 512x448 - flickered 
+like mad before)
+* Added .GD3 ROM extension.
+* Added configurable controls - nearly any button/button combo can be 
+configured. All of the configurable settings are saved of course.
+* Some of the new things you can 'bind' buttons to:
+- Record movie
+- Stop movie
+- Playback movie
+- Fast forward
+- Increase fast-forward speed
+- Decrease fast-forward speed
+- Reset
+- Soft Reset
+- Some more shaders (Lanzcos12/Lanzcos16/SuperScale2x - you've probably seen 
+them already in Genesis Plus/FBA et  al - that's because they all use the 
+same shaders from Cellframework.)
+- Sane parental control defaults (you can use this when parental control is 
+enabled at highest level).
+- You can set the SRAM path directory now. 
+
+===============================================================================
+Build 4.4.1 (15-11-2010) - rev. number da152b168e
+===============================================================================
+* Added pixel shaders - select them in General Settings.
+  The following pixel shaders have been added:
+  - Stock (Default shader)
+  - 2xSaI
+  - Blur
+  - Curved CRT
+  - HQ2x
+  - Quad interpolation
+  - Scanlines
+  - Sharpen
+  - Super2xSaI
+  - SuperEagle
+all but SuperEagle, Super2xSaI and Curved CRT run at fullspeed at 1080p 16:9 -
+ the highest resolution. If a shader doesn't run at fullspeed on that 
+resolution, 720p resolution will run it just fine at fullspeed.
+* PAL60 option works with 1.92 version
+* Added a 'Force NTSC ROM to PAL' option in SNES9x Settings
+
+===============================================================================
+Build 4.4.0 (12-11-2010) - rev. number 0cb00f8c86
+===============================================================================
+* PAL issues are fixed at all resolutions - ghosting is gone
+* It's now possible to run NTSC ROMs and PAL ROMs alike correctly at 576p PAL 
+mode. When the setting 'PAL60' is set to ON, a trick will be applied to get 
+NTSC ROMs to run correctly at 50Hz mode. If set to OFF, it will run PAL ROMs 
+correctly. Even though PAL ROMs will play normally now at 480p/720p/1080p, 
+576p still seems to run PAL ROMs slightly better - but it's probably 
+unnoticeable to the user.
+* Cheatcode files can now be loaded and selected/enabled ingame. Note that 
+all zSNES and SNES9x cheatcode files are supported - everything with the .CHT 
+extension. You can also set a Cheatfile directory. If you don't set a 
+Cheatfile directory, the default will be USRDIR.
+
+Cheatfiles must have the same filename as the ROM. Here is how selecting 
+and enabling cheats works in-game:
+
+Right analog stick - Left + L2	- Move cheat position back by one (-1)
+Right analog stick - Right + L2	- Move cheat position forwards by one (+1)
+Right analog stick - Up		- Enable the currently selected cheat
+Right analog stick - Down	- Disable the currently selected cheat
+
+Here are two links with some quite useful cheatfiles:
+
+https://code.google.com/p/snes9x-gx/downloads/detail?name=Snes9x%20GX%20Cheat%20Files.zip&can=2&q=
+
+http://zsnes.zophar.net/cht/
+
+===============================================================================
+Build 4.3.9 (03-11-2010) - rev. number 49d11492e2
+===============================================================================
+* Updated to new SNES9x version - now runs the following games that didn't 
+work before:
+         - The Mask
+* Fixed 16:9 aspect ratio issue - this seems to be a common issue with PS3s 
+on modern HDTVs. There is now an 'Overscan' option inside the Settings menu 
+that you can use to get the stretched screen fit just right on your TV screen.
+* Settings are saved when exiting the emulator.
+* The garbage on the right side of the screen has been fixed
+* Two sound modes are now available: Normal (same as it was before) and RSound. 
+RSound is a networked audio client/server program - with this, you can route 
+the music from the PS3 (SNES audio in this case) to any laptop/PC/settopbox that 
+has a media player with either the RSound plugin, or a dedicated RSound server 
+application (Rsd/Rsdplay). There is a documentation file and a Youtube video 
+provided to help people to set it up. Latency is as low as it possibly can be - 
+definitely try it out.
+* Major restructuring to the Settings screen.
+* The default ROM directory, default savestate directory can now be set inside 
+the Settings screen. 
+* 5-player Multitap support (was previously just 4-player)
+
+===============================================================================
+Build 4.3.8 (23-10-2010) - rev. number 768cf9df52
+===============================================================================
+* Updated to new SNES9x version - now runs the following games that didn't 
+work previously (or had noise instead of sound):
+	- Earthworm Jim 2
+	- NBA Hangtime
+	- MS Pac Man
+* PSGL driver built and in use - speed is now better at 1080p than it was 
+previously at 480p. There's still a resolution switch, but there's no need 
+anymore to switch to 480p - speed is the same at 1080p as it is on 480p, and 
+it's damn good for the record. Enjoy.
+* All resolutions supported now
+* Added simple hardware filtering settings - Linear Interpolation and Point 
+Filtering. Shaders will come later.
+* Added Aspect Ratio settings - 4:3 and 16:10 (HDTVs with 16:9 aspect ratio 
+might experience that on 16:10, the screen might be slightly cut-off. We're 
+working on a proper aspect ratio setting for 16:9)
+* Can now load configurable settings from snes9x.conf file stored in the 
+USRDIR folder. Saving of this file will come in the next release.
+* Will now select the highest resolution your TV/monitor can support - so is 
+no longer set to default at 480p.
+* No more performance difference between 1.92 pkg and 3.41 pkg. 
+
+===============================================================================
+Build 4.3.7 (19-10-2010) - rev. number f2e3e0bef2
+===============================================================================
+* There's now a build for PS3s with firmwares below 3.41 (basically bigger than 
+or equal to FW 1.92)  and a build for PS3s with firmwares 3.41 or higher.
+* You can now switch resolutions inside the Settings screen - go from 480p to 
+720p or vice versa, hence the need for two builds (480p and 720p) eliminated. 
+* Zipped ROM support (ZIP/JMA)
+  * Savestates are now compressed as well (NOTE: I don't know what this will 
+do to your pre-existing savestates. Try to back them up first - they're 
+inside the USRDIR folder of /dev_hdd0/game/SNES90000/)
+* Menu looks a whole lot better now at both 480p and 720p; crappy font has 
+been put out of commission. It's now actually readable
+* Games that switch between SNES resolutions (Seiken Densetsu 3/Secret of 
+Mana) are now both vertically scaled correctly - you don't even notice the 
+resolution switch anymore. This is only at 480p mode - in 720p mode you will 
+notice the same effect as you did previously. This will be worked on. (Halsafar)
+* A lot of settings got added to the Settings screen. For instance, it's now 
+possible (on most PAL games) to run them at 60fps by setting 'Force PAL ROM 
+to NTSC' to ON. This won't work for every game, however (most games after 
+1993 came with region protection), and it might even result in a crash 
+because you're doing something that is not deemed appropriate by either the 
+SNES hardware or the emulator. A solution for PAL ROMs is worked on.
+* You can return to a previous folder inside the ROM menu by pressing the 
+CIRCLE button.
+
+===============================================================================
+Build 4.3.6 (11-10-2010) - rev. number 61ecb6e1c9:
+===============================================================================
+* Savestates implemented (cmonkey69)
+* Settings screen implemented (cmonkey69)
+* Some performance improvements noticeable due to switch to more recent 
+SDK - Jikkyou Oshaberi Parodius now has only a minor frame drop to 57fps on 
+the character select screen but runs fine everywhere else (at 480p)
+
+===============================================================================
+Build 4.3.5 (8-10-2010):
+===============================================================================
+* Fixed the 'green ROM' loading/crashing bug - it was due to a mistake made 
+when 'sorting' the file names inside a directory - the variable array that 
+checked if a file was a directory was not updated. Credit goes to cmonkey69 
+for fixing his own code :)
+* Moved all display code into its own file - celldisplay.cpp / 
+celldisplayutil.h
+* Upgraded to latest SNES9x - git repository: 
+http://board.byuu.org/viewtopic.php?f=3&t=881
+- Contains the following patches/improvements:
+  - Cx4 improvement (Mega Man X2) - 
+  http://board.byuu.org/viewtopic.php?f=3&t=881
+  - Fix Dual Orb 2 sound glitch (byuu)
+  - Updated to latest WIP
+     - Improvements noticed by myself (mostly APU related):
+        - Jikkyou Oshaberi Parodius - far better performance - far less sound 
+	pops (this was one of the few games except for SuperFX ones that did
+	not run perfectly)
+        - Star Fox/Star Fox 2 have far less sound pops (though still there)
+        - Super Mario World 2: Yoshi's Island - the spots where framerate dips 
+	and sound pops could usually be noticed have also been improved
+	* NOTE: These games (SuperFX games - Jikkyou Oshaberi Parodius - SA-1 - 
+	are best played at 480p - the fps stays at 60, but the sound pops are 
+	very irritating at 720p with these few games)
+  
+===============================================================================
+Build 4.3.4 (3-10-2010):
+===============================================================================
+* Removed the hack that caused the emulator to exit to the XMB after loading 
+the fourth ROM - this was to disguise a really bad crashing bug. This hack 
+no longer seems to be needed.
+* If you exit a ROM with L3+R3, you can return back to the game while inside 
+the ROM Browser menu by pressing L2+R2 simultaneously.
+
+===============================================================================
+Build 4.3.3 (2-10-2010):
+===============================================================================
+* Multitap support. Start a ROM with the Triangle button inside the ROM browser 
+menu.
+  - This works on all controllers - PS3/USB joypads - you name it. You can 
+hotswap them on the fly - you don't have to have them all inserted at the 
+start of the game - you can insert them later and it will instantly recognize 
+the second/third/fourth pad as that controller
+* Changed SoundInputRate from 31942 to 31960 - I heard a lot of static/
+distortion with games like Demon's Crest and Super Metroid at 31942, and 
+31960 seems to be a huge improvement to that end. 31942 was a SoundInputRate 
+that I had decided upon back when the emulator was still running at a 60Hz 
+refresh rate instead of 59.94Hz - now that we're at 59.94Hz, we can increase 
+the SoundInputRate and get better sound/video synchronization overall. Might 
+increase this even more in the future - have to do some more tests.
+  - In any case, as a result of changing this, most games should have improved 
+sound now. 
+
+===============================================================================
+Build 4.3.2 (1-10-2010):
+===============================================================================
+* Totally rewritten controller/input code (check cellpad.cpp/cellpadutil.h). 
+Theoretically, input lag should be less now since the read_pad loop was 
+previously hardcoded to do a pass at least two times - now it will check how 
+many controllers are actually connected. So for instance,  if only one 
+controller is connected, it will only go through this loop where it checks 
+for button input one time instead of twice - thus reducing clock cycles.
+
+Also there are now function calls available such as cellPadUtilButtonPressed 
+and cellPadUtilButtonReleased, which could be used in various ways.
+* The left analog stick is now mapped to the directional pad.
+* The left analog stick now works at the ROM browser menu and is a lot 
+faster than the D-pad - so use this for browsing in case you have a big ROM 
+list and the D-pad takes a while to browse through it.
+* Files in ROM directories are now alphabetically sorted (cmonkey69)
+* ROM browser will return to the last entered directory after quitting ROM
+* 'Quit ROM' shortcut changed to R3+L3
+* The 480p build in the last version (4.3.1) did not output at 480p but at 
+576p, because the 576p mode was ticked in the PARAM.SFO. The 480p build
+will now display at 480p like it's supposed to.
+* Removed the 'Load PAL ROM' option by pressing Triangle at the ROM browser 
+menu since it serves no purpose at the moment and doesn't do what it's
+supposed to.
+
+===============================================================================
+Build 4.3.1 (27-9-2010):
+===============================================================================
+* There's now a 720p build and a 480p one. This is only temporary until I 
+find a way to manually set resolutions without the PS3 making its own
+inferences as to what resolution I would like based on the display settings 
+toggled in PARAM.SFO.
+* Got rid of a duplicate cellGcmFlush(); at the very start of the flip 
+function - it should not be at the start of the function according to
+examples shown. cellGcmFlush basically forces the RSX to process all the 
+GCM commands buffered in the command buffer - however, in the
+same method, this function is already called after resetting the flip 
+status.
+* Made preliminary steps to sort out the PAL problems by allowing the user 
+to load a ROM with the Triangle button that sets ForcePAL and the refresh
+rate to 50Hz. However, there should be a way to get at the region of the 
+ROM using some sort of Snes9x function call without having to start the
+actual ROM that has been loaded. This way, I could set this automatically.
+
+===============================================================================
+Build 4.3 (26-9-2010)
+===============================================================================
+* Aspect ratio set to 4:3 - doesn't yet output at 4:3 though - still big 
+borders at left and right of the screen
+* Better colors
+* Runs now at native 480p resolution @ 59.94Hz refresh rate - together with 
+SoundInputrate (31942), takes care of all audio/video glitches. Basically
+runs and performs like a native SNES now - or at least close.
+
+===============================================================================
+Build 4.2.2
+===============================================================================
+* Exits the emulator and returns back to the XMB after having loaded the 
+fourth ROM to prevent known crashing bug/black screen upon trying to load the 
+fifth ROM from the ROM browser menu.
+
+===============================================================================
+Build 4.2.1
+===============================================================================
+* Added a 'Quit ROM' shortcut - press R2 + L2 simultaneously in-game to go 
+back to the ROM browser menu.
+
+===============================================================================
+Build 4.2
+===============================================================================
+* Set SoundInputRate at 31942 (previous setting was 31968), seems to remove 
+the sound pops. Sound seems to be pretty much perfect now - perhaps later
+on return to this and find the ideal value somewhere inbetween 31942 - 31950.
+
+===============================================================================
+Build 4
+===============================================================================
+* Started from scratch - redownloaded 1.52, took everything from eisz to make 
+it compile for PS3
+* Set SoundSync to TRUE
+* Set AutoSaveDelay to 0
+* Applied the following patches from snes9x-gtk:
+- Revision r258 - Add a fixed-point linear resampler option. 
+- Revision r259 - Use the APU_DEFAULT_RESAMPLER macro. 
+- Revision r260 - Optimize the linear interpolation macro. 
+- Revision r272 - Merge zones' timing stuff. 
+- Revision r282 - Use APU clock that yields 32040hz output instead of 32000. 
+- Revision r283 - Integrate timing hack variables into the clock ratios to 
+allow integers in all cases. 
+- Revision r287 - Don't push samples if there aren't any.
+
+* Finally, the sound scratching is gone as a result of applying all the patches 
+one after another. People will still want to fiddle around with the 
+SoundInputRate to get it totally perfect - the crackling is gone, that is no 
+longer a problem, but if you focus really hard, you will hear a slight pop - 
+SoundInputRate is now set at 31968 - try lowering it, subtract by 10.
+
+In case this writeup makes it sound like the sound is bad, you will probably 
+not even notice what I'm talking about here - the sound is pretty much perfect 
+now.
+
+===============================================================================
+Build 3
+===============================================================================
+* Patch r287 from snes9x-gtk - 'Don't push samples if there aren't any'
+* Patch r260 from snes9x-gtk - 'Optimize the linear interpolation macro'
+* Patch r272 from snes9x-gtk - 'Merge zones' timing stuff' (bSNES' 
+SA-1 core integrated in SNES9x + Seiken Densetsu 2/Secret of Mana gamehack)
+* Patch r283 from snes9x-gtk - 'Integrate timing hack variables into the clock 
+ratios to allow integers in all cases.'
+* Patch r282 from snes9x-gtk - 'Use APU clock that yields 32040hz output 
+instead of 32000.' - Together, these two patches seem to fix the sound lag
+and pops (but crackling remains).
+* Settings.AutoSaveDelay changed from 5 to 0 - SRAM lag fix.
+* Settings.SyncSound set to TRUE.
+* SFC file support in rudimentary file browser. 
+
+===============================================================================
+Build 2
+===============================================================================
+* Patch r283 from snes9x-gtk - 'Integrate timing hack variables into the 
+clock ratios to allow integers in all cases.'
+* Patch r282 from snes9x-gtk - 'Use APU clock that yields 32040hz output 
+instead of 32000.' - Together, these two patches seem to fix the sound lag
+and pops (but crackling remains).
