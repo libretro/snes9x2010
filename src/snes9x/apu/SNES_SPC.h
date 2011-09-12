@@ -5,7 +5,6 @@
 #define SNES_SPC_H
 
 #include "blargg_endian.h"
-#include "shiftmul.h"
 #include "blargg_common.h"
 
 extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t ); }

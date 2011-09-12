@@ -198,7 +198,7 @@
 //BEGINNING OF SNES9x PS3
 #include <stdio.h>
 #include <stdlib.h>
-#include "ps3video.hpp"
+#include "../ps3video.hpp"
 extern PS3Graphics* Graphics;
 #include "isel.h"
 //END OF SNES9X PS3

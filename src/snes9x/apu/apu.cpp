@@ -176,11 +176,10 @@
 
 
 #include <fastmath.h>
-#include "snes9x.h"
+#include "../snes9x.h"
 #include "apu.h"
-#include "snapshot.h"
-#include "display.h"
-#include "shiftmul.h"
+#include "../snapshot.h"
+#include "../display.h"
 #include <pthread.h>
 
 #define APU_DEFAULT_INPUT_RATE	32000

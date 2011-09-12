@@ -72,7 +72,7 @@ void cell_pad_input_deinit(void)
 
 uint32_t cell_pad_input_pads_connected(void)
 {
-#if(CELL_SDK_VERSION == 0x340001)
+#if(CELL_SDK_VERSION > 0x340000)
    CellPadInfo2 pad_info;
    cellPadGetInfo2(&pad_info);
 #else

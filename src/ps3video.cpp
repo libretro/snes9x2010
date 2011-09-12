@@ -5,8 +5,8 @@
 ********************************************************************************/
 
 #include "ps3video.hpp"
-#include "snes9x.h"
-#include "memmap.h"
+#include "snes9x/snes9x.h"
+#include "snes9x/memmap.h"
 
 #include "cellframework2/input/pad_input.h"
 
