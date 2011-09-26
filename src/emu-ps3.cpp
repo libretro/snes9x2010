@@ -11,7 +11,7 @@
 #include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_msgdialog.h>
 
-#if(CELL_SDK_VERSION == 0x340001)
+#if(CELL_SDK_VERSION > 0x340000)
 #include <sysutil/sysutil_bgmplayback.h>
 #endif
 
@@ -1094,34 +1094,6 @@ void emulator_switch_pal_60hz(bool pal60Hz)
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_UP), string_concat(padno, Up)); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_DOWN), string_concat(padno, Down));
 
-#ifdef USE_MOVIES
-#define map_snes9x_special_controls(padno) \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_QUICKSAVE), "SaveFreezeFile"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_QUICKLOAD), "LoadFreezeFile"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_INCREMENTSAVE), "IncSave"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_DECREMENTSAVE), "DecSave"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_INCREMENTCHEAT), "IncCheat"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_DECREMENTCHEAT), "DecCheat"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_CHEATENABLE), "CheatEnable"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_CHEATTOGGLE), "CheatToggle"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_CHEATDISABLE), "CheatDisable"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_CHEATINPUT), "CheatInput"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_CHEATINPUTLABEL), "CheatInputLabel"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_EXITTOMENU), "ExitToMenu"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_PAUSE), "Pause"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_BEGIN_RECORDING_MOVIE), "BeginRecordingMovie"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_END_RECORDING_MOVIE), "EndRecordingMovie"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_TOGGLE_RECORDING_MOVIE), "ToggleRecordingMovie"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_LOAD_MOVIE), "LoadMovie"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_FASTFORWARD), "ToggleEmuTurbo"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_RESET), "Reset"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_SOFTRESET), "SoftReset"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_INCREMENTTURBO), "IncEmuTurbo"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_DECREMENTTURBO), "DecEmuTurbo"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_SWAPJOYPADS), "SwapJoypads"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_SRAM_WRITEPROTECT), "SramWriteProtect"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_INGAME_MENU), "IngameMenu");
-#else
 #define map_snes9x_special_controls(padno) \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_QUICKSAVE), "SaveFreezeFile"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_QUICKLOAD), "LoadFreezeFile"); \
@@ -1144,7 +1116,6 @@ void emulator_switch_pal_60hz(bool pal60Hz)
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_SWAPJOYPADS), "SwapJoypads"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_SRAM_WRITEPROTECT), "SramWriteProtect"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_INGAME_MENU), "IngameMenu");
-#endif
 
 
 static bool emulator_init_system(void)
@@ -2851,7 +2822,7 @@ int main(int argc, char **argv)
 	}
 
 
-#if(CELL_SDK_VERSION == 0x340001)
+#if(CELL_SDK_VERSION > 0x340000)
 	if (Settings.ScreenshotsEnabled)
 	{
 		cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
@@ -2894,7 +2865,7 @@ int main(int argc, char **argv)
 	emulator_implementation_set_texture(Settings.PS3CurrentBorder);
 	emulator_toggle_sound(Settings.SoundMode);
 
-#if(CELL_SDK_VERSION == 0x340001)
+#if(CELL_SDK_VERSION > 0x340000)
 	cellSysutilEnableBgmPlayback();
 #endif
 

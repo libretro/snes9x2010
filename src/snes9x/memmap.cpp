@@ -216,9 +216,6 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-#ifdef USE_MOVIES
-static bool8	stopMovie = TRUE;
-#endif
 static char		LastRomFilename[PATH_MAX + 1] = "";
 
 // from NSRT
@@ -2668,10 +2665,6 @@ void CMemory::InitROM (void)
 
 	//Settings.TakeScreenshot = FALSE;
 
-   #ifdef USE_MOVIES
-	if (stopMovie)
-		S9xMovieStop(TRUE);
-   #endif
 
 	if (PostRomInitFunc)
 		PostRomInitFunc();

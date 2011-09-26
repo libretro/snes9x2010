@@ -182,7 +182,7 @@ void PS3Graphics::PSGLInitDevice(uint32_t resolutionId, uint16_t pal60Hz, uint16
 	PSGLdeviceParameters params;
 	PSGLinitOptions options;
 	options.enable = PSGL_INIT_MAX_SPUS | PSGL_INIT_INITIALIZE_SPUS;
-#if CELL_SDK_VERSION == 0x340001
+#if(CELL_SDK_VERSION > 0x340000)
 	options.enable |= PSGL_INIT_TRANSIENT_MEMORY_SIZE;
 #else
 	options.enable |=	PSGL_INIT_HOST_MEMORY_SIZE;
@@ -343,7 +343,7 @@ void PS3Graphics::PSGLDeInitDevice()
 
 	psglDestroyContext(psgl_context);
 	psglDestroyDevice(psgl_device);
-#if CELL_SDK_VERSION == 0x340001
+#if(CELL_SDK_VERSION > 0x340000)
 	//FIXME: It will crash here for 1.92 - termination of the PSGL library - works fine for 3.41
 	psglExit();
 #else

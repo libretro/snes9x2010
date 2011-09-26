@@ -114,7 +114,7 @@ typedef struct{
 extern PS3InputList PS3Input;
 
 const char * Input_PrintMappedButton(uint32_t mappedbutton);
-int Input_GetAdjacentButtonmap(uint32_t buttonmap, uint32_t next);
+uint32_t Input_GetAdjacentButtonmap(uint32_t buttonmap, uint32_t next);
 
 #ifdef __cplusplus
 }

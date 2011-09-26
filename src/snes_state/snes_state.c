@@ -169,7 +169,7 @@ static void update_element(
 
 static void update_input(snes_tracker_t *tracker)
 {
-   cell_input_state_t input[2];
+   uint64_t input[2];
    input[0] = cell_pad_input_poll_device(0);
    input[1] = cell_pad_input_poll_device(1);
 

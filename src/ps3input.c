@@ -65,16 +65,6 @@ const char * Input_PrintMappedButton(uint32_t mappedbutton)
 			return "Reset";
 		case BTN_PAUSE:
 			return "Pause";
-#ifdef USE_MOVIES
-		case BTN_BEGIN_RECORDING_MOVIE:
-			return "Begin recording movie";
-		case BTN_END_RECORDING_MOVIE:
-			return "End recording movie";
-		case BTN_TOGGLE_RECORDING_MOVIE:
-			return "Toggle recording movie";
-		case BTN_LOAD_MOVIE:
-			return "Load movie";
-#endif
 		case BTN_FASTFORWARD:
 			return "Fast forward";
 		case BTN_INCREMENTTURBO:
@@ -93,7 +83,7 @@ const char * Input_PrintMappedButton(uint32_t mappedbutton)
 }
 
 //bool next: true is next, false is previous
-int Input_GetAdjacentButtonmap(uint32_t buttonmap, uint32_t next)
+uint32_t Input_GetAdjacentButtonmap(uint32_t buttonmap, uint32_t next)
 {
 	switch(buttonmap)
 	{
@@ -156,27 +146,9 @@ int Input_GetAdjacentButtonmap(uint32_t buttonmap, uint32_t next)
 		case BTN_SOFTRESET:
 			return next ? BTN_PAUSE : BTN_RESET;
 		case BTN_PAUSE:
-#ifdef USE_MOVIES
-			return next ? BTN_BEGIN_RECORDING_MOVIE : BTN_SOFTRESET;
-#else
 			return next ? BTN_SWAPJOYPADS : BTN_SOFTRESET;
-#endif
-#ifdef USE_MOVIES
-		case BTN_BEGIN_RECORDING_MOVIE:
-			return next ? BTN_END_RECORDING_MOVIE : BTN_PAUSE;
-		case BTN_END_RECORDING_MOVIE:
-			return next ? BTN_TOGGLE_RECORDING_MOVIE : BTN_BEGIN_RECORDING_MOVIE;
-		case BTN_TOGGLE_RECORDING_MOVIE:
-			return next ? BTN_LOAD_MOVIE : BTN_END_RECORDING_MOVIE;
-		case BTN_LOAD_MOVIE:
-			return next ? BTN_SWAPJOYPADS : BTN_TOGGLE_RECORDING_MOVIE;
-#endif
 		case BTN_SWAPJOYPADS:
-#ifdef USE_MOVIES
-			return next ? BTN_SRAM_WRITEPROTECT : BTN_LOAD_MOVIE;
-#else
 			return next ? BTN_SRAM_WRITEPROTECT : BTN_PAUSE;
-#endif
 		case BTN_SRAM_WRITEPROTECT:
 			return next ? BTN_INGAME_MENU : BTN_SWAPJOYPADS;
 		case BTN_INGAME_MENU:

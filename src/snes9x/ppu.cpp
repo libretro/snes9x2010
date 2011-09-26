@@ -7855,10 +7855,6 @@ void S9xEndScreenRefresh_SuperFX (void)
 			if (Settings.AutoDisplayMessages)
 			{
 
-#ifdef USE_MOVIES
-				if (Settings.DisplayPressedKeys)
-					DisplayPressedKeys();
-#endif
 
 
 				if (GFX.InfoString && *GFX.InfoString)
@@ -7928,10 +7924,6 @@ void S9xEndScreenRefresh (void)
 				if (Settings.AutoDisplayMessages)
 				{
 
-#ifdef USE_MOVIES
-					if (Settings.DisplayPressedKeys)
-						DisplayPressedKeys();
-#endif
 
 					/*
 					   if (Settings.DisplayMovieFrame && S9xMovieActive())
