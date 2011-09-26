@@ -529,48 +529,29 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 
 		case 0x220c:
 			//printf("SNES NMI vector: %04x\n", byte | (Memory.FillRAM[0x220d] << 8));
-			break;
-
 		case 0x220d:
 			//printf("SNES NMI vector: %04x\n", (byte << 8) | Memory.FillRAM[0x220c]);
-			break;
-
 		case 0x220e:
 			//printf("SNES IRQ vector: %04x\n", byte | (Memory.FillRAM[0x220f] << 8));
-			break;
-
 		case 0x220f:
 			//printf("SNES IRQ vector: %04x\n", (byte << 8) | Memory.FillRAM[0x220e]);
-			break;
-
 		case 0x2210:
 		#if 0
 			printf("Timer %s\n", (byte & 0x80) ? "linear" : "HV");
 			printf("Timer H-IRQ %s\n", (byte & 1) ? "enabled" : "disabled");
 			printf("Timer V-IRQ %s\n", (byte & 2) ? "enabled" : "disabled");
 		#endif
-			break;
-
 		case 0x2211:
 			//printf("Timer reset\n");
-			break;
-
 		case 0x2212:
 			//printf("H-Timer %04x\n", byte | (Memory.FillRAM[0x2213] << 8));
-			break;
-
 		case 0x2213:
 			//printf("H-Timer %04x\n", (byte << 8) | Memory.FillRAM[0x2212]);
-			break;
-
 		case 0x2214:
 			//printf("V-Timer %04x\n", byte | (Memory.FillRAM[0x2215] << 8));
-			break;
-
 		case 0x2215:
 			//printf("V-Timer %04x\n", (byte << 8) | Memory.FillRAM[0x2214]);
 			break;
-
 		case 0x2220:
 		case 0x2221:
 		case 0x2222:
@@ -592,24 +573,14 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 
 		case 0x2226:
 			//printf("BW-RAM SNES write %s\n", (byte & 0x80) ? "enabled" : "disabled");
-			break;
-
 		case 0x2227:
 			//printf("BW-RAM SA1 write %s\n", (byte & 0x80) ? "enabled" : "disabled");
-			break;
-
 		case 0x2228:
 			//printf("BW-RAM write protect area %02x\n", byte);
-			break;
-
 		case 0x2229:
 			//printf("I-RAM SNES write protect area %02x\n", byte);
-			break;
-
 		case 0x222a:
 			//printf("I-RAM SA1 write protect area %02x\n", byte);
-			break;
-
 		case 0x2230:
 		#if 0
 			printf("SA1 DMA %s\n", (byte & 0x80) ? "enabled" : "disabled");
@@ -620,7 +591,6 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 			printf("DMA source %s\n", DMAsource[byte & 3]);
 		#endif
 			break;
-
 		case 0x2231:
 			if (byte & 0x80)
 				SA1.in_char_dma = FALSE;
