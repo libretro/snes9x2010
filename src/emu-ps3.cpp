@@ -10,6 +10,7 @@
 #include <sysutil/sysutil_sysparam.h>
 #include <sysutil/sysutil_screenshot.h>
 #include <sysutil/sysutil_msgdialog.h>
+#include <cell/cell_fs.h>
 
 #if(CELL_SDK_VERSION > 0x340000)
 #include <sysutil/sysutil_bgmplayback.h>
@@ -188,7 +189,7 @@ uint32_t emulator_audio_callback(int16_t *out)
 
 #define audio_default_params() \
    cell_audio_params params; \
-   __builtin_memset(&params, 0, sizeof(params)); \
+   memset(&params, 0, sizeof(params)); \
    params.channels=2; \
    params.samplerate=48000; \
    params.buffer_size=8192; \
@@ -1339,20 +1340,35 @@ static bool emulator_init_system(void)
 	if(!(config_get_char_array(currentconfig, charstring, setting, sizeof(setting)))) \
 		strncpy(setting,defaultvalue, sizeof(setting));
 
+static bool file_exists(const char * filename)
+{
+	CellFsStat sb;
+	if(cellFsStat(filename,&sb) == CELL_FS_SUCCEEDED)
+		return true;
+	else
+		return false;
+}
 
 void emulator_init_settings(void)
 {
-	__builtin_memset(&Settings, 0, sizeof(Settings));
+	memset(&Settings, 0, sizeof(Settings));
+
+	if(!file_exists(SYS_CONFIG_FILE))
+	{
+		FILE * f;
+		f = fopen(SYS_CONFIG_FILE, "w");
+		fclose(f);
+	}
 
 	config_file_t * currentconfig = config_file_new(SYS_CONFIG_FILE);
 
 	/* emulator-specific settings */
 
-	#if 0
+#if 0
 	Settings.DumpStreamsMaxFrames = -1;
 	Settings.CartAName[0] = 0;
 	Settings.CartBName[0] = 0;
-	#endif
+#endif
 
 	// ROM
 
@@ -1420,7 +1436,7 @@ void emulator_init_settings(void)
 	init_setting_uint("Settings::FrameTime", Settings.FrameTimePAL, 1667);
 	init_setting_uint("Settings::FrameTime", Settings.FrameTimeNTSC, 1667);
 
-	#if 0
+#if 0
 	if (!strcasecmp(conf.GetString("Settings::FrameSkip", "Auto"), "Auto"))
 	{
 		Settings.SkipFrames = AUTO_FRAMERATE;
@@ -1429,7 +1445,7 @@ void emulator_init_settings(void)
 	{
 		Settings.SkipFrames = conf.GetUInt("Settings::FrameSkip", 0) + 1;
 	}
-	#endif
+#endif
 
 	// Controls
 
@@ -1439,7 +1455,7 @@ void emulator_init_settings(void)
 	init_setting_bool("Controls::MP5Master", Settings.MultiPlayer5Master, true);
 	//Settings.UpAndDown                  =  conf.GetBool("Controls::AllowLeftRight",            false);
 
-	#if 0
+#if 0
 	if (conf.Exists("Controls::Port1"))
 	{
 		parse_controller_spec(0, conf.GetString("Controls::Port1"));
@@ -1467,13 +1483,13 @@ void emulator_init_settings(void)
 	{
 		parse_crosshair_spec(X_JUSTIFIER2, conf.GetString("Controls::Justifier2Crosshair"));
 	}
-	#endif
+#endif
 
 	// Hack
 
 	init_setting_bool("Hack::DisableGameSpecificHacks", Settings.DisableGameSpecificHacks, false);
 	init_setting_bool("Hack::BlockInvalidVRAMAccess", Settings.BlockInvalidVRAMAccessMaster, true)
-	init_setting_bool("Hack::SpeedHacks", Settings.ShutdownMaster, false);
+		init_setting_bool("Hack::SpeedHacks", Settings.ShutdownMaster, false);
 	init_setting_bool("Hack::DisableIRQ", Settings.DisableIRQ, false);
 	init_setting_bool("Hack::DisableHDMA", Settings.DisableHDMA, false);
 	init_setting_int("Hack::HDMATiming", Settings.HDMATimingHack, 100);
@@ -1496,7 +1512,7 @@ void emulator_init_settings(void)
 	}
 #endif
 	S9xVerifyControllers();
-	
+
 	int tmp_int;
 	double tmp_double;
 	bool tmp_bool;
