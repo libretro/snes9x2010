@@ -3590,6 +3590,19 @@ void CMemory::ApplyROMFixes (void)
 
 	}
 
+	//PS3 hack - will work for other platforms as well
+	//Seiken Densetsu 3/Romancing Saga 3 have certain edge cases where they
+	//render the menu painfully slow (because it goes into hi-res mosaic
+	//mode. These games still render fine in non-mosaic hi-res - so we
+	//apply this hack here
+	if (
+	match_nn("SeikenDensetsu3") ||				// Seiken Densetsu 3
+	match_na("SeikenDensetsu3Sample1") ||			// Seiken Densetsu 3
+	match_na("ROMANCING SAGA3"))				// Romancing Saga 3
+		PPU.DisableMosaicHackNonActive = false;	
+	else
+		PPU.DisableMosaicHackNonActive = true;
+
 	S9xAPUTimingSetSpeedup(Timings.APUSpeedup);
 	S9xAPUAllowTimeOverflow(Timings.APUAllowTimeOverflow);
 
