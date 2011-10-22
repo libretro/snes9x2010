@@ -393,9 +393,9 @@ void S9xComputeClipWindows (void)
 		for (int sub = 0; sub < 2; sub++)
 		{
 			if (Memory.FillRAM[sub + 0x212e] & (1 << j))
-				StoreWindowRegions(W, &IPPU.Clip[sub][j], n_regions, windows, drawing_modes, sub);
+				StoreWindowRegions(W, &IPPU.Clip[sub][j], n_regions, windows, drawing_modes, sub, false);
 			else
-				StoreWindowRegions(0, &IPPU.Clip[sub][j], n_regions, windows, drawing_modes, sub);
+				StoreWindowRegions(0, &IPPU.Clip[sub][j], n_regions, windows, drawing_modes, sub, false);
 		}
 	}
 }

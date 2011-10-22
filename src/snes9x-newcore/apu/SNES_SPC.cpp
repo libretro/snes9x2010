@@ -47,6 +47,11 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 	#define TIMER_MUL( t, n ) ((n) * t->prescaler)
 #endif
 
+uint8_t* SNES_SPC::apuram()
+{
+	return m.ram.ram;
+}
+
 SNES_SPC::Timer* SNES_SPC::run_timer_( Timer* t, rel_time_t time )
 {
 	int elapsed = TIMER_DIV( t, time - t->next_time ) + 1;

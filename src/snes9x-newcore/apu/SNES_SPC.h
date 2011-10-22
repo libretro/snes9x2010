@@ -138,6 +138,8 @@ public:
 	enum { extra_size = SPC_DSP::extra_size };
 	
 	enum { signature_size = 35 };
+
+	uint8_t *apuram();
 	
 private:
 	SPC_DSP dsp;
