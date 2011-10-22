@@ -180,8 +180,11 @@
 #include "apu.h"
 #include "snapshot.h"
 #include "display.h"
+#ifdef USE_LINEAR_RESAMPLER
 #include "linear_resampler.h"
+#else
 #include "hermite_resampler.h"
+#endif
 
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512
@@ -221,7 +224,11 @@ namespace spc
 	static uint8		*landing_buffer = NULL;
 	static uint8		*shrink_buffer  = NULL;
 
-	static Resampler	*resampler      = NULL;
+#ifdef USE_LINEAR_RESAMPLER
+	static LinearResampler	*resampler      = NULL;
+#else
+	static HermiteResampler	*resampler      = NULL;
+#endif
 
 	static int32		reference_time;
 	static uint32		remainder;
@@ -248,7 +255,6 @@ static void ReverseStereo (uint8 *src_buffer, int sample_count)
 
 bool8 S9xMixSamples (uint8 *buffer, int sample_count)
 {
-	static int	shrink_buffer_size = -1;
 	uint8		*dest;
 
 	dest = buffer;

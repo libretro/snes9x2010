@@ -3,14 +3,14 @@
 #ifndef __HERMITE_RESAMPLER_H
 #define __HERMITE_RESAMPLER_H
 
-#include "resampler.h"
+#include "ring_buffer.h"
 
 #undef CLAMP
 #undef SHORT_CLAMP
 #define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 #define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
 
-class HermiteResampler : public Resampler
+class HermiteResampler : public ring_buffer
 {
     protected:
 
@@ -43,7 +43,7 @@ class HermiteResampler : public Resampler
         }
 
     public:
-        HermiteResampler (int num_samples) : Resampler (num_samples)
+        HermiteResampler (int num_samples) : ring_buffer(num_samples << 1)
         {
             clear ();
         }
@@ -138,6 +138,41 @@ class HermiteResampler : public Resampler
         avail (void)
         {
             return (int) floor (((size >> 2) - r_frac) / r_step) * 2;
+        }
+
+        inline bool
+        push (short *src, int num_samples)
+        {
+            if (max_write () < num_samples)
+                return false;
+
+            !num_samples || ring_buffer::push ((unsigned char *) src, num_samples << 1);
+
+            return true;
+        }
+
+        inline int
+        space_empty (void)
+        {
+            return buffer_size - size;
+        }
+
+        inline int
+        space_filled (void)
+        {
+            return size;
+        }
+        
+        inline int
+        max_write (void)
+        {
+            return space_empty () >> 1;
+        }
+
+        inline void
+        resize (int num_samples)
+        {
+            ring_buffer::resize (num_samples << 1);
         }
 };
 

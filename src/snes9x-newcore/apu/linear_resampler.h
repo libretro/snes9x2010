@@ -3,7 +3,7 @@
 #ifndef __LINEAR_RESAMPLER_H
 #define __LINEAR_RESAMPLER_H
 
-#include "resampler.h"
+#include "ring_buffer.h"
 #include "snes9x.h"
 
 static const int    f_prec = 15;
@@ -11,7 +11,7 @@ static const uint32 f__one = (1 << f_prec);
 
 #define lerp(t, a, b) (((((b) - (a)) * (t)) >> f_prec) + (a))
 
-class LinearResampler : public Resampler
+class LinearResampler : public ring_buffer
 {
     protected:
         uint32 f__r_step;
@@ -20,7 +20,7 @@ class LinearResampler : public Resampler
         int    r_left, r_right;
 
     public:
-        LinearResampler (int num_samples) : Resampler (num_samples)
+        LinearResampler (int num_samples) : ring_buffer(num_samples << 1)
         {
             f__r_frac = 0;
         }
@@ -109,6 +109,41 @@ class LinearResampler : public Resampler
         avail (void)
         {
             return (((size >> 2) * f__inv_r_step) - ((f__r_frac * f__inv_r_step) >> f_prec)) >> (f_prec - 1);
+        }
+
+        inline bool
+        push (short *src, int num_samples)
+        {
+            if (max_write () < num_samples)
+                return false;
+
+            !num_samples || ring_buffer::push ((unsigned char *) src, num_samples << 1);
+
+            return true;
+        }
+
+        inline int
+        space_empty (void)
+        {
+            return buffer_size - size;
+        }
+    
+        inline int
+        space_filled (void)
+        {
+            return size;
+        }
+        
+        inline int
+        max_write (void)
+        {
+            return space_empty () >> 1;
+        }
+
+        inline void
+        resize (int num_samples)
+        {
+            ring_buffer::resize (num_samples << 1);
         }
 };
 
