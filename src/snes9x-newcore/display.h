@@ -178,6 +178,10 @@
 #ifndef _DISPLAY_H_
 #define _DISPLAY_H_
 
+#ifdef __LIBSNES__
+#include "libsnes/memstream.h"
+#endif
+
 enum s9x_getdirtype
 {
 	DEFAULT_DIR = 0,

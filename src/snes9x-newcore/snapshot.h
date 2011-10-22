@@ -178,6 +178,10 @@
 #ifndef _SNAPSHOT_H_
 #define _SNAPSHOT_H_
 
+#ifdef __LIBSNES__
+#include "libsnes/memstream.h"
+#endif
+
 #define SNAPSHOT_MAGIC			"#!s9xsnp"
 #define SNAPSHOT_VERSION		6
 
@@ -192,7 +196,7 @@
 void S9xResetSaveTimer (bool8);
 bool8 S9xFreezeGame (const char *);
 bool8 S9xUnfreezeGame (const char *);
-void S9xFreezeToStream (STREAM);
+void S9xFreezeToStream (STREAM stream);
 int	 S9xUnfreezeFromStream (STREAM);
 
 #endif

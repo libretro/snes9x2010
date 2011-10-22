@@ -183,6 +183,10 @@
 #define MEMMAP_SHIFT		(12)
 #define MEMMAP_MASK			(MEMMAP_BLOCK_SIZE - 1)
 
+#ifdef __LIBSNES__
+#include "libsnes/memstream.h"
+#endif
+
 struct CMemory
 {
 	enum

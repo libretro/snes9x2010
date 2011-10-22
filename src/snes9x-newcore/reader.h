@@ -178,6 +178,10 @@
 #ifndef _READER_H_
 #define _READER_H_
 
+#ifdef __LIBSNES__
+#include "libsnes/memstream.h"
+#endif
+
 class Reader
 {
 	public:

@@ -1232,6 +1232,154 @@ bool8 S9xUnfreezeGame (const char *filename)
 	return (FALSE);
 }
 
+#ifdef __LIBSNES__
+void S9xFreezeToStream (STREAM stream)
+{
+	char buffer[1024];
+	uint8 *soundsnapshot = new uint8[SPC_SAVE_STATE_BLOCK_SIZE];
+
+	S9xSetSoundMute(TRUE);
+
+	sprintf(buffer, "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
+	WRITE_STREAM(buffer, strlen(buffer), stream);
+
+	sprintf(buffer, "NAM:%06d:%s%c", (int) strlen(Memory.ROMFilename) + 1, Memory.ROMFilename, 0);
+	WRITE_STREAM(buffer, strlen(buffer) + 1, stream);
+
+	FreezeStruct(stream, "CPU", &CPU, SnapCPU, COUNT(SnapCPU));
+
+	FreezeStruct(stream, "REG", &Registers, SnapRegisters, COUNT(SnapRegisters));
+
+	FreezeStruct(stream, "PPU", &PPU, SnapPPU, COUNT(SnapPPU));
+
+	struct SDMASnapshot dma_snap;
+	for (int d = 0; d < 8; d++)
+		dma_snap.dma[d] = DMA[d];
+	FreezeStruct(stream, "DMA", &dma_snap, SnapDMA, COUNT(SnapDMA));
+
+	FreezeBlock (stream, "VRA", Memory.VRAM, 0x10000);
+
+	FreezeBlock (stream, "RAM", Memory.RAM, 0x20000);
+
+	FreezeBlock (stream, "SRA", Memory.SRAM, 0x20000);
+
+	FreezeBlock (stream, "FIL", Memory.FillRAM, 0x8000);
+
+	S9xAPUSaveState(soundsnapshot);
+	FreezeBlock (stream, "SND", soundsnapshot, SPC_SAVE_STATE_BLOCK_SIZE);
+
+	struct SControlSnapshot ctl_snap;
+	S9xControlPreSaveState(&ctl_snap);
+	FreezeStruct(stream, "CTL", &ctl_snap, SnapControls, COUNT(SnapControls));
+
+	FreezeStruct(stream, "TIM", &Timings, SnapTimings, COUNT(SnapTimings));
+
+	if (Settings.SuperFX)
+	{
+		GSU.avRegAddr = (uint8 *) &GSU.avReg;
+		FreezeStruct(stream, "SFX", &GSU, SnapFX, COUNT(SnapFX));
+	}
+
+	if (Settings.SA1)
+	{
+		S9xSA1PackStatus();
+		FreezeStruct(stream, "SA1", &SA1, SnapSA1, COUNT(SnapSA1));
+		FreezeStruct(stream, "SAR", &SA1Registers, SnapSA1Registers, COUNT(SnapSA1Registers));
+	}
+
+	if (Settings.DSP == 1)
+		FreezeStruct(stream, "DP1", &DSP1, SnapDSP1, COUNT(SnapDSP1));
+
+	if (Settings.DSP == 2)
+		FreezeStruct(stream, "DP2", &DSP2, SnapDSP2, COUNT(SnapDSP2));
+
+	if (Settings.DSP == 4)
+		FreezeStruct(stream, "DP4", &DSP4, SnapDSP4, COUNT(SnapDSP4));
+
+	if (Settings.C4)
+		FreezeBlock (stream, "CX4", Memory.C4RAM, 8192);
+
+	if (Settings.SETA == ST_010)
+		FreezeStruct(stream, "ST0", &ST010, SnapST010, COUNT(SnapST010));
+
+	if (Settings.OBC1)
+	{
+		FreezeStruct(stream, "OBC", &OBC1, SnapOBC1, COUNT(SnapOBC1));
+		FreezeBlock (stream, "OBM", Memory.OBC1RAM, 8192);
+	}
+
+	if (Settings.SPC7110)
+	{
+		S9xSPC7110PreSaveState();
+		FreezeStruct(stream, "S71", &s7snap, SnapSPC7110Snap, COUNT(SnapSPC7110Snap));
+	}
+
+	if (Settings.SRTC)
+	{
+		S9xSRTCPreSaveState();
+		FreezeStruct(stream, "SRT", &srtcsnap, SnapSRTCSnap, COUNT(SnapSRTCSnap));
+	}
+
+	if (Settings.SRTC || Settings.SPC7110RTC)
+		FreezeBlock (stream, "CLK", RTCData.reg, 20);
+
+	if (Settings.BS)
+		FreezeStruct(stream, "BSX", &BSX, SnapBSX, COUNT(SnapBSX));
+
+	if (Settings.SnapshotScreenshots)
+	{
+		SnapshotScreenshotInfo *ssi = new SnapshotScreenshotInfo;
+
+		ssi->Width = min(IPPU.RenderedScreenWidth, MAX_SNES_WIDTH);
+		ssi->Height = min(IPPU.RenderedScreenHeight, MAX_SNES_HEIGHT);
+		ssi->Interlaced = GFX.DoInterlace;
+
+		uint8 *rowpix = ssi->Data;
+		uint16 *screen = GFX.Screen;
+
+		for (int y = 0; y < ssi->Height; y++, screen += GFX.RealPPL)
+		{
+			for (int x = 0; x < ssi->Width; x++)
+			{
+				uint32 r, g, b;
+
+				DECOMPOSE_PIXEL(screen[x], r, g, b);
+				*(rowpix++) = r;
+				*(rowpix++) = g;
+				*(rowpix++) = b;
+			}
+		}
+
+		memset(rowpix, 0, sizeof(ssi->Data) + ssi->Data - rowpix);
+
+		FreezeStruct(stream, "SHO", ssi, SnapScreenshot, COUNT(SnapScreenshot));
+
+		delete ssi;
+	}
+
+	if (S9xMovieActive())
+	{
+		uint8 *movie_freeze_buf;
+		uint32 movie_freeze_size;
+
+		S9xMovieFreeze(&movie_freeze_buf, &movie_freeze_size);
+		if (movie_freeze_buf)
+		{
+			struct SnapshotMovieInfo mi;
+
+			mi.MovieInputDataSize = movie_freeze_size;
+			FreezeStruct(stream, "MOV", &mi, SnapMovie, COUNT(SnapMovie));
+			FreezeBlock (stream, "MID", movie_freeze_buf, movie_freeze_size);
+
+			delete [] movie_freeze_buf;
+		}
+	}
+
+	S9xSetSoundMute(FALSE);
+
+	delete [] soundsnapshot;
+}
+#else
 void S9xFreezeToStream (STREAM stream)
 {
 	char	buffer[1024];
@@ -1363,6 +1511,7 @@ void S9xFreezeToStream (STREAM stream)
 
 	delete [] soundsnapshot;
 }
+#endif
 
 int S9xUnfreezeFromStream (STREAM stream)
 {

@@ -60,7 +60,7 @@ static void S9xAudioCallback(void*)
 
 const char *snes_library_id()
 {
-   return "SNES9x v1.53";
+   return "SNES9x Next";
 }
 
 unsigned snes_library_revision_major()

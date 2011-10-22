@@ -189,6 +189,18 @@
 #define S9X_ACCURACY_LEVEL		3
 
 #ifdef ZLIB
+#ifdef __LIBSNES__
+#define STREAM	memstream_t *
+#define READ_STREAM(p, l, s)	memstream_read(s p, l)
+#define WRITE_STREAM(p, l, s)	memstream_write(s, p, l)
+#define GETS_STREAM(p, l, s)	memstream_gets(s, p, l)
+#define GETC_STREAM(s)		memstream_getc(s)
+#define OPEN_STREAM(f, m)	memstream_open()
+#define REOPEN_STREAM(f, m)	fdopen(f, m)
+#define FIND_STREAM(f)		memstream_pos(f)
+#define REVERT_STREAM(f, o, s)	memstream_seek(f, o, s)
+#define CLOSE_STREAM(s)		memstream_close(s)
+#else
 #include <zlib.h>
 #define STREAM					gzFile
 #define READ_STREAM(p, l, s)	gzread(s, p, l)
@@ -200,6 +212,19 @@
 #define FIND_STREAM(f)			gztell(f)
 #define REVERT_STREAM(f, o, s)	gzseek(f, o, s)
 #define CLOSE_STREAM(s)			gzclose(s)
+#endif
+#else
+#ifdef __LIBSNES__
+#define STREAM	memstream_t *
+#define READ_STREAM(p, l, s)	memstream_read(s p, l)
+#define WRITE_STREAM(p, l, s)	memstream_write(s, p, l)
+#define GETS_STREAM(p, l, s)	memstream_gets(s, p, l)
+#define GETC_STREAM(s)		memstream_getc(s)
+#define OPEN_STREAM(f, m)	memstream_open()
+#define REOPEN_STREAM(f, m)	fdopen(f, m)
+#define FIND_STREAM(f)		memstream_pos(f)
+#define REVERT_STREAM(f, o, s)	memstream_seek(f, o, s)
+#define CLOSE_STREAM(s)		memstream_close(s)
 #else
 #define STREAM					FILE *
 #define READ_STREAM(p, l, s)	fread(p, 1, l, s)
@@ -211,6 +236,7 @@
 #define FIND_STREAM(f)			ftell(f)
 #define REVERT_STREAM(f, o, s)	fseek(f, o, s)
 #define CLOSE_STREAM(s)			fclose(s)
+#endif
 #endif
 
 #define SNES_WIDTH					256
