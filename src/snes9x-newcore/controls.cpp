@@ -260,9 +260,6 @@ static struct
 static struct
 {
 	uint16			buttons;
-	uint16			turbos;
-	uint16			toggleturbo;
-	uint16			togglestick;
 	uint8			turbo_ct;
 }	joypad[8];
 
@@ -563,7 +560,6 @@ void S9xUnmapAllControls (void)
 		pseudopointer[i].mapped = false;
 
 		joypad[i].buttons  = 0;
-		joypad[i].turbos   = 0;
 		joypad[i].turbo_ct = 0;
 	}
 
@@ -2021,46 +2017,9 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 			return;
 
 		case S9xButtonJoypad:
-			if (cmd.button.joypad.toggle)
-			{
-				if (!data1)
-					return;
-
-				uint16	r = cmd.button.joypad.buttons;
-
-				if (cmd.button.joypad.turbo)	joypad[cmd.button.joypad.idx].toggleturbo ^= r;
-				if (cmd.button.joypad.sticky)	joypad[cmd.button.joypad.idx].togglestick ^= r;
-			}
-			else
-			{
-				uint16	r, s, t, st;
-
-				s = t = st = 0;
-				r = cmd.button.joypad.buttons;
-				st = r & joypad[cmd.button.joypad.idx].togglestick & joypad[cmd.button.joypad.idx].toggleturbo;
-				r ^= st;
-				t  = r & joypad[cmd.button.joypad.idx].toggleturbo;
-				r ^= t;
-				s  = r & joypad[cmd.button.joypad.idx].togglestick;
-				r ^= s;
-
-				if (cmd.button.joypad.turbo && cmd.button.joypad.sticky)
-				{
-					uint16	x = r; r = st; st = x;
-					x = s; s = t; t = x;
-				}
-				else
-				if (cmd.button.joypad.turbo)
-				{
-					uint16	x = r; r = t; t = x;
-					x = s; s = st; st = x;
-				}
-				else
-				if (cmd.button.joypad.sticky)
-				{
-					uint16	x = r; r = s; s = x;
-					x = t; t = st; st = x;
-				}
+		{
+				uint16 t = 0;
+				uint16 r = cmd.button.joypad.buttons;
 
 				if (data1)
 				{
@@ -2073,33 +2032,24 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 							// Note though that the user can still do it on purpose, if Settings.UpAndDown = true.
 							// This is a feature, look up glitches in tLoZ:aLttP to find out why.
 							joypad[cmd.button.joypad.idx].buttons &= ~(SNES_LEFT_MASK | SNES_RIGHT_MASK);
-							joypad[cmd.button.joypad.idx].turbos  &= ~(SNES_LEFT_MASK | SNES_RIGHT_MASK);
 						}
 
 						if (cmd.button.joypad.buttons & (SNES_UP_MASK | SNES_DOWN_MASK))
 						{
 							// and ditto for up/down
 							joypad[cmd.button.joypad.idx].buttons &= ~(SNES_UP_MASK | SNES_DOWN_MASK);
-							joypad[cmd.button.joypad.idx].turbos  &= ~(SNES_UP_MASK | SNES_DOWN_MASK);
 						}
 					}
 
 					joypad[cmd.button.joypad.idx].buttons |= r;
-					joypad[cmd.button.joypad.idx].turbos  |= t;
-					joypad[cmd.button.joypad.idx].buttons ^= s;
-					joypad[cmd.button.joypad.idx].buttons &= ~(joypad[cmd.button.joypad.idx].turbos & st);
-					joypad[cmd.button.joypad.idx].turbos  ^= st;
 				}
 				else
 				{
 					joypad[cmd.button.joypad.idx].buttons &= ~r;
-					joypad[cmd.button.joypad.idx].buttons &= ~(joypad[cmd.button.joypad.idx].turbos & t);
-					joypad[cmd.button.joypad.idx].turbos  &= ~t;
 				}
-			}
 
 			return;
-
+		}
 		case S9xButtonMouse:
 			i = 0;
 			if (cmd.button.mouse.left )	i |= 0x40;
@@ -2556,7 +2506,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 			joypad[cmd.axis.joypad.idx].buttons |= p;
 			joypad[cmd.axis.joypad.idx].buttons &= ~r;
-			joypad[cmd.axis.joypad.idx].turbos  &= ~(p | r);
 
 			return;
 		}
@@ -3076,7 +3025,6 @@ void S9xControlEOF (void)
 					if (++joypad[i - JOYPAD0].turbo_ct >= turbo_time)
 					{
 						joypad[i - JOYPAD0].turbo_ct = 0;
-						joypad[i - JOYPAD0].buttons ^= joypad[i - JOYPAD0].turbos;
 					}
 				}
 
@@ -3093,7 +3041,6 @@ void S9xControlEOF (void)
 				if (++joypad[i - JOYPAD0].turbo_ct >= turbo_time)
 				{
 					joypad[i - JOYPAD0].turbo_ct = 0;
-					joypad[i - JOYPAD0].buttons ^= joypad[i - JOYPAD0].turbos;
 				}
 
 				break;
