@@ -400,7 +400,6 @@ void S9xLoadConfigFiles (char **argv, int argc)
 
 	// Display
 
-	Settings.DisableGraphicWindows      = !conf.GetBool("Display::GraphicWindows",             true);
 	Settings.DisplayWatchedAddresses    =  conf.GetBool("Display::DisplayWatchedAddresses",    false);
 	Settings.DisplayPressedKeys         =  conf.GetBool("Display::DisplayInput",               false);
 	Settings.DisplayMovieFrame          =  conf.GetBool("Display::DisplayFrameCount",          false);
@@ -611,9 +610,6 @@ char * S9xParseArgs (char **argv, int argc)
 
 			if (!strcasecmp(argv[i], "-displaykeypress"))
 				Settings.DisplayPressedKeys = TRUE;
-			else
-			if (!strcasecmp(argv[i], "-nowindows"))
-				Settings.DisableGraphicWindows = TRUE;
 			else
 
 			// CONTROLLER OPTIONS

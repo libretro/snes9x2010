@@ -359,7 +359,6 @@ static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
 
 // Note: these should be in asciibetical order!
 #define THE_COMMANDS \
-	S(ClipWindows), \
 	S(DecEmuTurbo), \
 	S(DecFrameRate), \
 	S(DecFrameTime), \
@@ -2198,10 +2197,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 						DisplayStateChange("Turbo mode", Settings.TurboMode);
 						break;
 
-					case ClipWindows:
-						Settings.DisableGraphicWindows = !Settings.DisableGraphicWindows;
-						DisplayStateChange("Graphic clip windows", !Settings.DisableGraphicWindows);
-						break;
 					case IncFrameRate:
 						if (Settings.SkipFrames == AUTO_FRAMERATE)
 							Settings.SkipFrames = 1;

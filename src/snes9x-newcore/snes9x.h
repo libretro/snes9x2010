@@ -403,7 +403,6 @@ struct SSettings
 	bool8	Mute;
 
 	uint8	BG_Forced;
-	bool8	DisableGraphicWindows;
 
 	bool8	DisplayWatchedAddresses;
 	bool8	DisplayPressedKeys;

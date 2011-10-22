@@ -190,10 +190,6 @@ extern SPC7110	s7emu;
 
 static uint8	sdd1_decode_buffer[0x10000];
 
-static inline bool8 addCyclesInDMA (uint8);
-static inline bool8 HDMAReadLineCount (int);
-
-
 static inline bool8 addCyclesInDMA (uint8 dma_channel)
 {
 	// Add 8 cycles per byte, sync APU, and do HC related events.
