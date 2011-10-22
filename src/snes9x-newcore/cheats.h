@@ -233,7 +233,6 @@ typedef enum
 }	S9xCheatDataSize;
 
 extern SCheatData	Cheat;
-extern Watch		watches[16];
 
 void S9xApplyCheat (uint32);
 void S9xApplyCheats (void);
@@ -245,7 +244,6 @@ void S9xEnableCheat (uint32);
 void S9xDisableCheat (uint32);
 void S9xAddCheat (bool8, bool8, uint32, uint8);
 void S9xInitCheatData (void);
-void S9xInitWatchedAddress (void);
 bool8 S9xLoadCheatFile (const char *);
 bool8 S9xSaveCheatFile (const char *);
 

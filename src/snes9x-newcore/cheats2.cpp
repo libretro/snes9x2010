@@ -208,13 +208,6 @@ static void S9xSetByteFree (uint8 byte, uint32 address)
 	CPU.Cycles = Cycles;
 }
 
-void S9xInitWatchedAddress (void)
-{
-	for (unsigned int i = 0; i < sizeof(watches) / sizeof(watches[0]); i++)
-		watches[i].on = false;
-
-}
-
 void S9xInitCheatData (void)
 {
 	Cheat.RAM = Memory.RAM;

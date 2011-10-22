@@ -4,9 +4,6 @@
 #ifndef BLARGG_CONFIG_H
 #define BLARGG_CONFIG_H
 
-// Uncomment to disable debugging checks
-//#define NDEBUG 1
-
 // Uncomment to enable platform-specific (and possibly non-portable) optimizations
 //#define BLARGG_NONPORTABLE 1
 

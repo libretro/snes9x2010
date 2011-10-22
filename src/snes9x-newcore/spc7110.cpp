@@ -207,7 +207,7 @@
 #define cpu_regs_mdr				OpenBus
 
 #include "spc7110emu.h"
-#include "spc7110emu.cpp"
+#include "spc7110emu_.h"
 
 SPC7110	s7emu;
 

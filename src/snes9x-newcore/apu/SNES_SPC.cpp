@@ -190,30 +190,6 @@ inline void SNES_SPC::dsp_write( int data, rel_time_t time )
 			RUN_DSP( time, max_reg_time );\
 		}\
 	}
-#elif !defined (NDEBUG)
-	// Debug-only check for read/write within echo buffer, since this might result in
-	// inaccurate emulation due to the DSP not being caught up to the present.
-	
-	bool SNES_SPC::check_echo_access( int addr )
-	{
-		if ( !(dsp.read( SPC_DSP::r_flg ) & 0x20) )
-		{
-			int start = 0x100 * dsp.read( SPC_DSP::r_esa );
-			int size  = 0x800 * (dsp.read( SPC_DSP::r_edl ) & 0x0F);
-			int end   = start + (size ? size : 4);
-			if ( start <= addr && addr < end )
-			{
-				if ( !m.echo_accessed )
-				{
-					m.echo_accessed = 1;
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-	
-	#define MEM_ACCESS( time, addr ) check( !check_echo_access( (uint16_t) addr ) );
 #else
 	#define MEM_ACCESS( time, addr )
 #endif

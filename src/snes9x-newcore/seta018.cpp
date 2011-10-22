@@ -208,10 +208,6 @@ uint8 S9xGetST018 (uint32 Address)
 	if (address == 0x3800)
 		t = ST018.status;
 
-#ifdef DEBUGGER
-	printf("ST018 R: %06X %02X\n", Address, t);
-#endif
-
 	return (t);
 }
 
@@ -220,9 +216,6 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 	static bool	reset   = false;
 	uint16		address = (uint16) Address & 0xFFFF;
 
-#ifdef DEBUGGER
-	printf("ST018 W: %06X %02X\n", Address, Byte);
-#endif
 
 	line++;
 

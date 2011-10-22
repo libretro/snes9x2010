@@ -182,10 +182,6 @@
 #include "apu/apu.h"
 #include "fxemu.h"
 #include "snapshot.h"
-#ifdef DEBUGGER
-#include "debug.h"
-#include "missing.h"
-#endif
 
 
 void S9xMainLoop (void)
@@ -210,23 +206,6 @@ void S9xMainLoop (void)
 				}
 			}
 
-		#ifdef DEBUGGER
-			if ((CPU.Flags & BREAK_FLAG) && !(CPU.Flags & SINGLE_STEP_FLAG))
-			{
-				for (int Break = 0; Break != 6; Break++)
-				{
-					if (S9xBreakpoint[Break].Enabled &&
-						S9xBreakpoint[Break].Bank == Registers.PB &&
-						S9xBreakpoint[Break].Address == Registers.PCw)
-					{
-						if (S9xBreakpoint[Break].Enabled == 2)
-							S9xBreakpoint[Break].Enabled = TRUE;
-						else
-							CPU.Flags |= DEBUG_MODE_FLAG;
-					}
-				}
-			}
-		#endif
 
 			if (CPU.Flags & IRQ_FLAG)
 			{
@@ -255,19 +234,6 @@ void S9xMainLoop (void)
 			if (CPU.Flags & SCAN_KEYS_FLAG)
 				break;
 
-		#ifdef DEBUGGER
-			if (CPU.Flags & DEBUG_MODE_FLAG)
-				break;
-
-			if (CPU.Flags & TRACE_FLAG)
-				S9xTrace();
-
-			if (CPU.Flags & SINGLE_STEP_FLAG)
-			{
-				CPU.Flags &= ~SINGLE_STEP_FLAG;
-				CPU.Flags |= DEBUG_MODE_FLAG;
-			}
-		#endif
 		}
 
 	#ifdef CPU_SHUTDOWN
@@ -317,9 +283,6 @@ void S9xMainLoop (void)
 
 	if (CPU.Flags & SCAN_KEYS_FLAG)
 	{
-	#ifdef DEBUGGER
-		if (!(CPU.Flags & FRAME_ADVANCE_FLAG))
-	#endif
 		S9xSyncSpeed();
 		CPU.Flags &= ~SCAN_KEYS_FLAG;
 	}
@@ -339,9 +302,6 @@ void S9xSetIRQ (uint32 source)
 		Registers.PCw++;
 	}
 	
-#ifdef DEBUGGER
-	S9xTraceMessage("--- /IRQ low");
-#endif
 }
 
 void S9xClearIRQ (uint32 source)
@@ -350,37 +310,11 @@ void S9xClearIRQ (uint32 source)
 	if (!CPU.IRQActive)
 		CPU.Flags &= ~IRQ_FLAG;
 
-#ifdef DEBUGGER
-	S9xTraceMessage("--- /IRQ high");
-#endif
 }
 
 void S9xDoHEventProcessing (void)
 {
-#ifdef DEBUGGER
-	static char	eventname[13][32] =
-	{
-		"",
-		"HC_HBLANK_START_EVENT",
-		"HC_IRQ_1_3_EVENT     ",
-		"HC_HDMA_START_EVENT  ",
-		"HC_IRQ_3_5_EVENT     ",
-		"HC_HCOUNTER_MAX_EVENT",
-		"HC_IRQ_5_7_EVENT     ",
-		"HC_HDMA_INIT_EVENT   ",
-		"HC_IRQ_7_9_EVENT     ",
-		"HC_RENDER_EVENT      ",
-		"HC_IRQ_9_A_EVENT     ",
-		"HC_WRAM_REFRESH_EVENT",
-		"HC_IRQ_A_1_EVENT     "
-	};
-#endif
 
-#ifdef DEBUGGER
-	if (Settings.TraceHCEvent)
-		S9xTraceFormattedMessage("--- HC event processing  (%s)  expected HC:%04d  executed HC:%04d",
-			eventname[CPU.WhichEvent], CPU.NextEvent, CPU.Cycles);
-#endif
 
 #ifdef CPU_SHUTDOWN
 	CPU.WaitCounter++;
@@ -399,9 +333,6 @@ void S9xDoHEventProcessing (void)
 
 			if (PPU.HDMA && CPU.V_Counter <= PPU.ScreenHeight)
 			{
-			#ifdef DEBUGGER
-				S9xTraceFormattedMessage("*** HDMA Transfer HC:%04d, Channel:%02x", CPU.Cycles, PPU.HDMA);
-			#endif
 				PPU.HDMA = S9xDoHDMA(PPU.HDMA);
 			}
 
@@ -488,9 +419,6 @@ void S9xDoHEventProcessing (void)
 				S9xEndScreenRefresh();
 				PPU.HDMA = 0;
 				// Bits 7 and 6 of $4212 are computed when read in S9xGetPPU.
-			#ifdef DEBUGGER
-				missing.dma_this_frame = 0;
-			#endif
 				IPPU.MaxBrightness = PPU.Brightness;
 				PPU.ForcedBlanking = (Memory.FillRAM[0x2100] >> 7) & 1;
 
@@ -543,9 +471,6 @@ void S9xDoHEventProcessing (void)
 
 			if (CPU.V_Counter == 0)
 			{
-			#ifdef DEBUGGER
-				S9xTraceFormattedMessage("*** HDMA Init     HC:%04d, Channel:%02x", CPU.Cycles, PPU.HDMA);
-			#endif
 				S9xStartHDMA();
 			}
 
@@ -561,9 +486,6 @@ void S9xDoHEventProcessing (void)
 			break;
 
 		case HC_WRAM_REFRESH_EVENT:
-		#ifdef DEBUGGER
-			S9xTraceFormattedMessage("*** WRAM Refresh  HC:%04d", CPU.Cycles);
-		#endif
 
 			S9xCheckMissingHTimerHalt(Timings.WRAMRefreshPos, SNES_WRAM_REFRESH_CYCLES);
 			CPU.Cycles += SNES_WRAM_REFRESH_CYCLES;
@@ -589,9 +511,4 @@ void S9xDoHEventProcessing (void)
 			break;
 	}
 
-#ifdef DEBUGGER
-	if (Settings.TraceHCEvent)
-		S9xTraceFormattedMessage("--- HC event rescheduled (%s)  expected HC:%04d  current  HC:%04d",
-			eventname[CPU.WhichEvent], CPU.NextEvent, CPU.Cycles);
-#endif
 }

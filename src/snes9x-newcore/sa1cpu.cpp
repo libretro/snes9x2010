@@ -265,10 +265,6 @@ void S9xSA1MainLoop (void)
 
 	for (int i = 0; i < 3 && SA1.Executing; i++)
 	{
-	#ifdef DEBUGGER
-		if (SA1.Flags & TRACE_FLAG)
-			S9xSA1Trace();
-	#endif
 
 	#ifdef CPU_SHUTDOWN
 		SA1.PBPCAtOpcodeStart = SA1Registers.PBPC;

@@ -48,10 +48,6 @@
 			Snes9x also implements freeze-game files which can record the state of the SNES hardware and RAM at a particular point in time and can restore it to that exact state at a later date - the result is that users can save a game at any point, not just at save-game or password points provided by the original game coders. Each freeze file is over 400k in size. To help save disk space, Snes9x can be compiled with zlib (<a href="http://www.zlib.net/">http://www.zlib.net/</a>), which is used to GZIP compress the freeze files, reducing the size to typically below 100k. zlib is also used to load GZIP or ZIP compressed ROM images. Additionally, Snes9x supports JMA archives compressed with NSRT (<a href="http://nsrt.edgeemu.com/">http://nsrt.edgeemu.com/</a>).
 		</p>
 		<h2>Compile-Time Options</h2>
-		<h3><code>DEBUGGER</code></h3>
-		<p>
-			Enables extra code to assist you in debugging SNES ROMs. The debugger has only ever been a quick-hack and user-interface to debugger facilities is virtually non-existent. Most of the debugger information is output via stdout and enabling the debugger slows the whole emulator down slightly. However, the debugger options available are very powerful; you could use it to help get your port working. You probably still want to ship the finished version with the debugger disabled, it will only confuse non-technical users.
-		</p>
 		<h3><code>RIGHTSHIFT_IS_SAR</code></h3>
 		<p>
 			Define this if your compiler uses shift right arithmetic for signed values. For example, GCC and Visual C++ use shift right arithmetic.

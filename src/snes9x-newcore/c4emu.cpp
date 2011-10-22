@@ -358,14 +358,6 @@ static void C4ConvOAM (void)
 	globalY = READ_WORD(Memory.C4RAM + 0x0623);
 	OAMptr2 = Memory.C4RAM + 0x200 + (Memory.C4RAM[0x626] >> 2);
 
-#ifdef DEBUGGER
-	if (Memory.C4RAM[0x625] != 0)
-		printf("$6625=%02x, expected 00\n", Memory.C4RAM[0x625]);
-	if ((Memory.C4RAM[0x626] >> 2) != Memory.C4RAM[0x629])
-		printf("$6629=%02x, expected %02x\n", Memory.C4RAM[0x629], (Memory.C4RAM[0x626] >> 2));
-	if (((uint16) Memory.C4RAM[0x626] << 2) != READ_WORD(Memory.C4RAM + 0x627))
-		printf("$6627=%04x, expected %04x\n", READ_WORD(Memory.C4RAM + 0x627), ((uint16) Memory.C4RAM[0x626] << 2));
-#endif
 
 	if (Memory.C4RAM[0x0620] != 0)
 	{
@@ -520,12 +512,6 @@ static void C4DoScaleRotate (int row_padding)
 	int32	Cx = (int16) READ_WORD(Memory.C4RAM + 0x1f83);
 	int32	Cy = (int16) READ_WORD(Memory.C4RAM + 0x1f86);
 
-#ifdef DEBUGGER
-	if (Memory.C4RAM[0x1f97] != 0)
-		printf("$7f97=%02x, expected 00\n", Memory.C4RAM[0x1f97]);
-	if ((Cx & ~1) != w / 2 || (Cy & ~1) != h / 2)
-		printf("Center is not middle of image! (%d, %d) != (%d, %d)\n", Cx, Cy, w / 2, h / 2);
-#endif
 
 	// Calculate start position (i.e. (Ox, Oy) = (0, 0))
 	// The low 12 bits are fractional, so (Cx<<12) gives us the Cx we want in the function.
@@ -647,12 +633,6 @@ static void C4DrawWireFrame (void)
 	int16	X2, Y2, Z2;
 	uint8	Color;
 
-#ifdef DEBUGGER
-	if (READ_3WORD(Memory.C4RAM + 0x1f8f) & 0xff00ff)
-		printf("wireframe: Unexpected value in $7f8f: %06x\n", READ_3WORD(Memory.C4RAM + 0x1f8f));
-	if (READ_3WORD(Memory.C4RAM + 0x1fa4) != 0x001000)
-		printf("wireframe: Unexpected value in $7fa4: %06x\n", READ_3WORD(Memory.C4RAM + 0x1fa4));
-#endif
 
 	for (int i = Memory.C4RAM[0x0295]; i > 0; i--, line += 5)
 	{
@@ -688,10 +668,6 @@ static void C4TransformLines (void)
 	C4WFDist  = Memory.C4RAM[0x1f89];
 	C4WFScale = Memory.C4RAM[0x1f8c];
 
-#ifdef DEBUGGER
-	if (Memory.C4RAM[0x1f8a] != 0x90)
-		printf("lines: $7f8a = %02x, expected 90\n", READ_WORD(Memory.C4RAM + 0x1f8a));
-#endif
 
 	// Transform vertices
 	uint8	*ptr = Memory.C4RAM;
@@ -748,10 +724,6 @@ static void C4BitPlaneWave (void)
 	uint16	mask1 = 0xc0c0;
 	uint16	mask2 = 0x3f3f;
 
-#ifdef DEBUGGER
-	if (READ_3WORD(Memory.C4RAM + 0x1f80) != Memory.C4RAM[waveptr + 0xb00])
-		printf("$7f80=%06x, expected %02x\n", READ_3WORD(Memory.C4RAM + 0x1f80), Memory.C4RAM[waveptr + 0xb00]);
-#endif
 
 	for (int j = 0; j < 0x10; j++)
 	{
@@ -826,10 +798,6 @@ static void C4SprDisintegrate (void)
 	Cx = (int16) READ_WORD(Memory.C4RAM + 0x1f80);
 	Cy = (int16) READ_WORD(Memory.C4RAM + 0x1f83);
 
-#ifdef DEBUGGER
-	if ((Cx & ~1) != width / 2 || (Cy & ~1) != height / 2)
-		printf("Center is not middle of image for disintegrate! (%d, %d) != (%d, %d)\n", Cx, Cy, width / 2, height / 2);
-#endif
 
 	scaleX = (int16) READ_WORD(Memory.C4RAM + 0x1f86);
 	scaleY = (int16) READ_WORD(Memory.C4RAM + 0x1f8f);
@@ -871,58 +839,34 @@ static void C4ProcessSprites (void)
 	switch (Memory.C4RAM[0x1f4d])
 	{
 		case 0x00: // Build OAM
-		#ifdef DEBUGGER
-			//printf("00 00 Build OAM!\n");
-		#endif
 			C4ConvOAM();
 			break;
 
 		case 0x03: // Scale/Rotate
-		#ifdef DEBUGGER
-			//printf("00 03 Scale/Rotate!\n");
-		#endif
 			C4DoScaleRotate(0);
 			break;
 
 		case 0x05: // Transform Lines
-		#ifdef DEBUGGER
-			//printf("00 05 Transform Lines!\n");
-		#endif
 			C4TransformLines();
 			break;
 
 		case 0x07: // Scale/Rotate
-		#ifdef DEBUGGER
-			//printf("00 07 Scale/Rotate!\n");
-		#endif
 			C4DoScaleRotate(64);
 			break;
 
 		case 0x08: // Draw wireframe
-		#ifdef DEBUGGER
-			//printf("00 08 Draw wireframe!\n");
-		#endif
 			C4DrawWireFrame();
 			break;
 
 		case 0x0b: // Disintegrate
-		#ifdef DEBUGGER
-			//printf("00 0b Disintegrate!\n");
-		#endif
 			C4SprDisintegrate();
 			break;
 
 		case 0x0c: // Wave
-		#ifdef DEBUGGER
-			//printf("00 0b Wave!\n");
-		#endif
 			C4BitPlaneWave();
 			break;
 
 		default:
-		#ifdef DEBUGGER
-			printf("Unknown C4 sprite command (%02x)\n", Memory.C4RAM[0x1f4d]);
-		#endif
 			break;
 	}
 }
@@ -950,9 +894,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 	{
 		if (Memory.C4RAM[0x1f4d] == 0x0e && byte < 0x40 && (byte & 3) == 0)
 		{
-		#ifdef DEBUGGER
-			printf("Test command %02x 0e used!\n", byte);
-		#endif
 			Memory.C4RAM[0x1f80] = byte >> 2;
 		}
 		else
@@ -960,29 +901,16 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 			switch (byte)
 			{
 				case 0x00: // Sprite
-				#ifdef DEBUGGER
-					//printf("00 Sprite!\n");
-				#endif
 					C4ProcessSprites();
 					break;
 
 				case 0x01: // Draw wireframe
-				#ifdef DEBUGGER
-					//printf("01 Draw wireframe!\n");
-					if (Memory.C4RAM[0x1f4d] != 8)
-						printf("$7f4d=%02x, expected 08 for command 01 %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					memset(Memory.C4RAM + 0x300, 0, 16 * 12 * 3 * 4);
 					C4DrawWireFrame();
 					break;
 
 				case 0x05: // Propulsion (?)
 				{
-				#ifdef DEBUGGER
-					//printf("05 Propulsion (?)!\n");
-					if (Memory.C4RAM[0x1f4d] != 2)
-						printf("$7f4d=%02x, expected 02 for command 05 %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					int32	tmp = 0x10000;
 					if (READ_WORD(Memory.C4RAM + 0x1f83))
 						tmp = SAR((tmp / READ_WORD(Memory.C4RAM + 0x1f83)) * READ_WORD(Memory.C4RAM + 0x1f81), 8);
@@ -992,11 +920,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 				}
 
 				case 0x0d: // Set vector length
-				#ifdef DEBUGGER
-					//printf("0d Set vector length!\n");
-					if (Memory.C4RAM[0x1f4d] != 2)
-						printf("$7f4d=%02x, expected 02 for command 0d %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					C41FXVal    = READ_WORD(Memory.C4RAM + 0x1f80);
 					C41FYVal    = READ_WORD(Memory.C4RAM + 0x1f83);
 					C41FDistVal = READ_WORD(Memory.C4RAM + 0x1f86);
@@ -1007,11 +930,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 
 				case 0x10: // Polar to rectangluar
 				{
-				#ifdef DEBUGGER
-					//printf("10 Polar->Rect!\n");
-					if (Memory.C4RAM[0x1f4d] != 2)
-						printf("$7f4d=%02x, expected 02 for command 10 %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					int32	tmp;
 					int32   r1;
 					r1 = READ_WORD(Memory.C4RAM + 0x1f83);
@@ -1029,11 +947,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 
 				case 0x13: // Polar to rectangluar
 				{
-				#ifdef DEBUGGER
-					//printf("13 Polar->Rect!\n");
-					if (Memory.C4RAM[0x1f4d] != 2)
-						printf("$7f4d=%02x, expected 02 for command 13 %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					int32	tmp;
 					tmp = SAR((int32) READ_WORD(Memory.C4RAM + 0x1f83) * C4CosTable[READ_WORD(Memory.C4RAM + 0x1f80) & 0x1ff] * 2, 8);
 					WRITE_3WORD(Memory.C4RAM + 0x1f86, tmp);
@@ -1043,11 +956,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 				}
 
 				case 0x15: // Pythagorean
-				#ifdef DEBUGGER
-					//printf("15 Pythagorean!\n");
-					if (Memory.C4RAM[0x1f4d] != 2)
-						printf("$7f4d=%02x, expected 02 for command 15 %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					C41FXVal = READ_WORD(Memory.C4RAM + 0x1f80);
 					C41FYVal = READ_WORD(Memory.C4RAM + 0x1f83);
 					//C4Op15(); // optimized to:
@@ -1056,11 +964,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 					break;
 
 				case 0x1f: // atan
-				#ifdef DEBUGGER
-					//printf("1f atan!\n");
-					if (Memory.C4RAM[0x1f4d] != 2)
-						printf("$7f4d=%02x, expected 02 for command 1f %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					C41FXVal = READ_WORD(Memory.C4RAM + 0x1f80);
 					C41FYVal = READ_WORD(Memory.C4RAM + 0x1f83);
 					C4Op1F();
@@ -1069,20 +972,9 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 
 				case 0x22: // Trapezoid
 				{
-				#ifdef DEBUGGER
-					//printf("22 Trapezoid!\n");
-					if (Memory.C4RAM[0x1f4d] != 2)
-						printf("$7f4d=%02x, expected 02 for command 22 %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					int16	angle1 = READ_WORD(Memory.C4RAM + 0x1f8c) & 0x1ff;
 					int16	angle2 = READ_WORD(Memory.C4RAM + 0x1f8f) & 0x1ff;
 
-				#ifdef DEBUGGER
-					if (C4CosTable[angle1] == 0)
-						fprintf(stderr, "22 Trapezoid: Invalid tangent! angle1=%d\n", angle1);
-					if (C4CosTable[angle2] == 0)
-						fprintf(stderr, "22 Trapezoid: Invalid tangent! angle2=%d\n", angle2);
-				#endif
 
 					int32	tan1 = (C4CosTable[angle1] != 0) ? ((((int32) C4SinTable[angle1]) << 16) / C4CosTable[angle1]) : 0x80000000;
 					int32	tan2 = (C4CosTable[angle2] != 0) ? ((((int32) C4SinTable[angle2]) << 16) / C4CosTable[angle2]) : 0x80000000;
@@ -1138,11 +1030,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 
 				case 0x25: // Multiply
 				{
-				#ifdef DEBUGGER
-					//printf("25 Multiply!\n");
-					if (Memory.C4RAM[0x1f4d] != 2)
-						printf("$7f4d=%02x, expected 02 for command 25 %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					int32	foo = READ_3WORD(Memory.C4RAM + 0x1f80);
 					int32	bar = READ_3WORD(Memory.C4RAM + 0x1f83);
 					foo *= bar;
@@ -1151,15 +1038,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 				}
 
 				case 0x2d: // Transform Coords
-				#ifdef DEBUGGER
-					//printf("2d Transform Coords!\n");
-					if (Memory.C4RAM[0x1f4d] != 2)
-						printf("$7f4d=%02x, expected 02 for command 2d %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-					if (READ_3WORD(Memory.C4RAM + 0x1f8f) & 0xff00ff)
-						printf("2d transform coords: Unexpected value in $7f8f: %06x\n", READ_3WORD(Memory.C4RAM + 0x1f8f));
-					if (READ_3WORD(Memory.C4RAM + 0x1f8c) != 0x001000)
-						printf("0d transform coords: Unexpected value in $7f8c: %06x\n", READ_3WORD(Memory.C4RAM + 0x1f8c));
-				#endif
 					C4WFXVal  = READ_WORD(Memory.C4RAM + 0x1f81);
 					C4WFYVal  = READ_WORD(Memory.C4RAM + 0x1f84);
 					C4WFZVal  = READ_WORD(Memory.C4RAM + 0x1f87);
@@ -1174,11 +1052,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 
 				case 0x40: // Sum
 				{
-				#ifdef DEBUGGER
-					//printf("40 Sum!\n");
-					if (Memory.C4RAM[0x1f4d] != 0x0e)
-						printf("$7f4d=%02x, expected 0e for command 40 %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					uint16	sum = 0;
 					for (int i = 0; i < 0x800; sum += Memory.C4RAM[i++]) ;
 					WRITE_WORD(Memory.C4RAM + 0x1f80, sum);
@@ -1187,11 +1060,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 
 				case 0x54: // Square
 				{
-				#ifdef DEBUGGER
-					//printf("54 Square!\n");
-					if (Memory.C4RAM[0x1f4d] != 0x0e)
-						printf("$7f4d=%02x, expected 0e for command 54 %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					int64	a = SAR((int64) READ_3WORD(Memory.C4RAM + 0x1f80) << 40, 40);
 					//printf("%08X%08X\n", (uint32) (a>>32), (uint32) (a&0xFFFFFFFF));
 					a *= a;
@@ -1202,30 +1070,17 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 				}
 
 				case 0x5c: // Immediate Reg
-				#ifdef DEBUGGER
-					//printf("5c Immediate Reg!\n");
-					if (Memory.C4RAM[0x1f4d] != 0x0e)
-						printf("$7f4d=%02x, expected 0e for command 5c %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					for (int i = 0; i < 12 * 4; i++)
 						Memory.C4RAM[i] = C4TestPattern[i];
 					break;
 
 				case 0x89: // Immediate ROM
-				#ifdef DEBUGGER
-					//printf("89 Immediate ROM!\n");
-					if (Memory.C4RAM[0x1f4d] != 0x0e)
-						printf("$7f4d=%02x, expected 0e for command 89 %02x\n", Memory.C4RAM[0x1f4d], Memory.C4RAM[0x1f4d]);
-				#endif
 					Memory.C4RAM[0x1f80] = 0x36;
 					Memory.C4RAM[0x1f81] = 0x43;
 					Memory.C4RAM[0x1f82] = 0x05;
 					break;
 
 				default:
-				#ifdef DEBUGGER
-					printf("Unknown C4 command (%02x)\n", byte);
-				#endif
 					break;
 			}
 		}
@@ -1233,13 +1088,6 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 	else
 	if (Address == 0x7f47)
 	{
-	#ifdef DEBUGGER
-		//printf("C4 load memory %06x => %04x, %04x bytes\n", READ_3WORD(Memory.C4RAM + 0x1f40), READ_WORD(Memory.C4RAM + 0x1f45), READ_WORD(Memory.C4RAM + 0x1f43));
-		if (byte != 0)
-			printf("C4 load: non-0 written to $7f47! Wrote %02x\n", byte);
-		if (READ_WORD(Memory.C4RAM + 0x1f45) < 0x6000 || (READ_WORD(Memory.C4RAM + 0x1f45) + READ_WORD(Memory.C4RAM + 0x1f43)) > 0x6c00)
-			printf("C4 load: Dest unusual! It's %04x\n", READ_WORD(Memory.C4RAM + 0x1f45));
-	#endif
 		memmove(Memory.C4RAM + (READ_WORD(Memory.C4RAM + 0x1f45) & 0x1fff), C4GetMemPointer(READ_3WORD(Memory.C4RAM + 0x1f40)), READ_WORD(Memory.C4RAM + 0x1f43));
 	}
 }

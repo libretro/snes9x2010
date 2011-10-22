@@ -186,9 +186,6 @@
 #include "snapshot.h"
 #include "movie.h"
 #include "language.h"
-#ifdef NETPLAY_SUPPORT
-#include "netplay.h"
-#endif
 
 #ifdef __WIN32__
 #include <io.h>
@@ -1192,10 +1189,4 @@ void S9xUpdateFrameCounter (int offset)
 	if (Movie.State == MOVIE_STATE_PLAY)
 		sprintf(GFX.FrameDisplayString, "Playing frame: %d / %d",
 			max(0, (int) (Movie.CurrentFrame + offset)), Movie.MaxFrame);
-#ifdef NETPLAY_SUPPORT
-	else
-	if (Settings.NetPlay)
-		sprintf(GFX.FrameDisplayString, "%s frame: %d", Settings.NetPlayServer ? "Server" : "Client",
-			max(0, (int) (NetPlay.FrameCount + offset)));
-#endif
 }

@@ -183,13 +183,6 @@
 #include "fxemu.h"
 #include "srtc.h"
 #include "cheats.h"
-#ifdef NETPLAY_SUPPORT
-#include "netplay.h"
-#endif
-#ifdef DEBUGGER
-#include "debug.h"
-#include "missing.h"
-#endif
 
 struct SCPUState		CPU;
 struct SICPU			ICPU;
@@ -220,14 +213,7 @@ struct SBSX				BSX;
 struct SMulti			Multi;
 struct SSettings		Settings;
 struct SSNESGameFixes	SNESGameFixes;
-#ifdef NETPLAY_SUPPORT
-struct SNetPlay			NetPlay;
-#endif
-#ifdef DEBUGGER
-struct Missing			missing;
-#endif
 struct SCheatData		Cheat;
-struct Watch			watches[16];
 #ifndef ZSNES_FX
 struct FxRegs_s			GSU;
 struct FxInfo_s			SuperFX;

@@ -182,7 +182,6 @@
 #include "crosshairs.h"
 #include "cheats.h"
 #include "movie.h"
-#include "screenshot.h"
 #include "font.h"
 #include "display.h"
 
@@ -198,7 +197,6 @@ static void SetupOBJ (void);
 static void DrawOBJS (int);
 static void DisplayFrameRate (void);
 static void DisplayPressedKeys (void);
-static void DisplayWatchedAddresses (void);
 static void DisplayStringFromBottom (const char *, int, int, bool);
 static void DrawBackground (int, uint8, uint8);
 static void DrawBackgroundMosaic (int, uint8, uint8);
@@ -432,9 +430,6 @@ void S9xEndScreenRefresh (void)
 
 			S9xControlEOF();
 
-			if (Settings.TakeScreenshot)
-				S9xDoScreenshot(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
-
 			if (Settings.AutoDisplayMessages)
 				S9xDisplayMessages(GFX.Screen, GFX.RealPPL, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
 
@@ -445,23 +440,6 @@ void S9xEndScreenRefresh (void)
 		S9xControlEOF();
 
 	S9xApplyCheats();
-
-#ifdef DEBUGGER
-	if (CPU.Flags & FRAME_ADVANCE_FLAG)
-	{
-		if (ICPU.FrameAdvanceCount)
-		{
-			ICPU.FrameAdvanceCount--;
-			IPPU.RenderThisFrame = TRUE;
-			IPPU.FrameSkip = 0;
-		}
-		else
-		{
-			CPU.Flags &= ~FRAME_ADVANCE_FLAG;
-			CPU.Flags |= DEBUG_MODE_FLAG;
-		}
-	}
-#endif
 
 	if (CPU.SRAMModified)
 	{
@@ -2027,13 +2005,8 @@ static void DisplayFrameRate (void)
 	sprintf(string, "%u fps", calcFps);
 	S9xDisplayString(string, 2, IPPU.RenderedScreenWidth - (font_width - 1) * strlen(string) - 1, false);
 
-#ifdef DEBUGGER
-	const int	len = 8;
-	sprintf(string, "%02d/%02d %02d", (int) IPPU.DisplayedRenderedFrameCount, (int) Memory.ROMFramesPerSecond, (int) IPPU.FrameCount);
-#else
 	const int	len = 5;
 	sprintf(string, "%02d/%02d",      (int) IPPU.DisplayedRenderedFrameCount, (int) Memory.ROMFramesPerSecond);
-#endif
 
 	S9xDisplayString(string, 1, IPPU.RenderedScreenWidth - (font_width - 1) * len - 1, false);
 }
@@ -2146,50 +2119,10 @@ static void DisplayPressedKeys (void)
 	}
 }
 
-static void DisplayWatchedAddresses (void)
-{
-	for (unsigned int i = 0; i < sizeof(watches) / sizeof(watches[0]); i++)
-	{
-		if (!watches[i].on)
-			break;
-
-		int32	displayNumber = 0;
-		char	buf[32];
-
-		for (int r = 0; r < watches[i].size; r++)
-			displayNumber += (Cheat.CWatchRAM[(watches[i].address - 0x7E0000) + r]) << (8 * r);
-
-		if (watches[i].format == 1)
-			sprintf(buf, "%s,%du = %u", watches[i].desc, watches[i].size, (unsigned int) displayNumber);
-		else
-		if (watches[i].format == 3)
-			sprintf(buf, "%s,%dx = %X", watches[i].desc, watches[i].size, (unsigned int) displayNumber);
-		else // signed
-		{
-			if (watches[i].size == 1)
-				displayNumber = (int32) ((int8)  displayNumber);
-			else
-			if (watches[i].size == 2)
-				displayNumber = (int32) ((int16) displayNumber);
-			else
-			if (watches[i].size == 3)
-				if (displayNumber >= 8388608)
-					displayNumber -= 16777216;
-
-			sprintf(buf, "%s,%ds = %d", watches[i].desc, watches[i].size, (int) displayNumber);
-		}
-
-		S9xDisplayString(buf, 6 + i, 1, false);
-	}
-}
-
 void S9xDisplayMessages (uint16 *screen, int ppl, int width, int height, int scale)
 {
 	if (Settings.DisplayFrameRate)
 		DisplayFrameRate();
-
-	if (Settings.DisplayWatchedAddresses)
-		DisplayWatchedAddresses();
 
 	if (Settings.DisplayPressedKeys)
 		DisplayPressedKeys();

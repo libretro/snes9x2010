@@ -246,20 +246,15 @@ private:
 	void soft_reset_common();
 };
 
-#include <assert.h>
-
 inline int SPC_DSP::sample_count() const { return m.out - m.out_begin; }
 
 inline int SPC_DSP::read( int addr ) const
 {
-	assert( (unsigned) addr < register_count );
 	return m.regs [addr];
 }
 
 inline void SPC_DSP::write( int addr, int data )
 {
-	assert( (unsigned) addr < register_count );
-	
 	m.regs [addr] = (uint8_t) data;
 	switch ( addr & 0x0F )
 	{
@@ -309,7 +304,6 @@ public:
 #define SPC_COPY( type, state )\
 {\
 	state = (BOOST::type) copier.copy_int( state, sizeof (BOOST::type) );\
-	assert( (BOOST::type) state == state );\
 }
 
 #endif

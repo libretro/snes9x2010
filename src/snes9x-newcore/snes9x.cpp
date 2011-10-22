@@ -188,14 +188,7 @@
 #include "cheats.h"
 #include "display.h"
 #include "conffile.h"
-#ifdef NETPLAY_SUPPORT
-#include "netplay.h"
-#endif
 
-#ifdef DEBUGGER
-#include "debug.h"
-extern FILE	*trace;
-#endif
 
 #define S9X_CONF_FILE_NAME	"snes9x.conf"
 
@@ -426,8 +419,6 @@ void S9xLoadConfigFiles (char **argv, int argc)
 	Settings.MovieTruncate              =  conf.GetBool("Settings::MovieTruncateAtEnd",        false);
 	Settings.MovieNotifyIgnored         =  conf.GetBool("Settings::MovieNotifyIgnored",        false);
 	Settings.WrongMovieStateProtection  =  conf.GetBool("Settings::WrongMovieStateProtection", true);
-	Settings.StretchScreenshots         =  conf.GetInt ("Settings::StretchScreenshots",        1);
-	Settings.SnapshotScreenshots        =  conf.GetBool("Settings::SnapshotScreenshots",       true);
 	Settings.DontSaveOopsSnapshot       =  conf.GetBool("Settings::DontSaveOopsSnapshot",      false);
 	Settings.AutoSaveDelay              =  conf.GetUInt("Settings::AutoSaveDelay",             0);
 
@@ -471,33 +462,6 @@ void S9xLoadConfigFiles (char **argv, int argc)
 	Settings.DisableIRQ                     =  conf.GetBool("Hack::DisableIRQ",                    false);
 	Settings.DisableHDMA                    =  conf.GetBool("Hack::DisableHDMA",                   false);
 	Settings.HDMATimingHack                 =  conf.GetInt ("Hack::HDMATiming",                    100);
-
-	// Netplay
-
-#ifdef NETPLAY_SUPPORT
-	Settings.NetPlay = conf.GetBool("Netplay::Enable");
-
-	Settings.Port = NP_DEFAULT_PORT;
-	if (conf.Exists("Netplay::Port"))
-		Settings.Port = -(int) conf.GetUInt("Netplay::Port");
-
-	Settings.ServerName[0] = '\0';
-	if (conf.Exists("Netplay::Server"))
-		conf.GetString("Netplay::Server", Settings.ServerName, 128);
-#endif
-
-	// Debug
-
-#ifdef DEBUGGER
-	if (conf.GetBool("DEBUG::Debugger", false))
-		CPU.Flags |= DEBUG_MODE_FLAG;
-
-	if (conf.GetBool("DEBUG::Trace", false))
-	{
-		ENSURE_TRACE_OPEN(trace,"trace.log","wb")
-		CPU.Flags |= TRACE_FLAG;
-	}
-#endif
 
 	S9xParsePortConfig(conf, 1);
 	S9xVerifyControllers();
@@ -572,20 +536,7 @@ void S9xUsage (void)
 	S9xMessage(S9X_INFO, S9X_USAGE, "-goldfinger <code>              Supply a Gold Finger code");
 	S9xMessage(S9X_INFO, S9X_USAGE, "");
 
-#ifdef NETPLAY_SUPPORT
-	// NETPLAY OPTIONS
-	S9xMessage(S9X_INFO, S9X_USAGE, "-net                            Enable netplay");
-	S9xMessage(S9X_INFO, S9X_USAGE, "-port <num>                     Use port <num> for netplay (use with -net)");
-	S9xMessage(S9X_INFO, S9X_USAGE, "-server <string>                Use the specified server for netplay");
-	S9xMessage(S9X_INFO, S9X_USAGE, "                                (use with -net)");
-	S9xMessage(S9X_INFO, S9X_USAGE, "");
-#endif
-
 	// HACKING OR DEBUGGING OPTIONS
-#ifdef DEBUGGER
-	S9xMessage(S9X_INFO, S9X_USAGE, "-debug                          Set the Debugger flag");
-	S9xMessage(S9X_INFO, S9X_USAGE, "-trace                          Begin CPU instruction tracing");
-#endif
 	S9xMessage(S9X_INFO, S9X_USAGE, "-noirq                          (Not recommended) Disable IRQ emulation");
 	S9xMessage(S9X_INFO, S9X_USAGE, "-nohdma                         (Not recommended) Disable HDMA emulation");
 	S9xMessage(S9X_INFO, S9X_USAGE, "-hdmatiming <1-199>             (Not recommended) Changes HDMA transfer timings");
@@ -810,47 +761,8 @@ char * S9xParseArgs (char **argv, int argc)
 			}
 			else
 
-			// NETPLAY OPTIONS
-
-		#ifdef NETPLAY_SUPPORT
-			if (!strcasecmp(argv[i], "-net"))
-				Settings.NetPlay = TRUE;
-			else
-			if (!strcasecmp(argv[i], "-port"))
-			{
-				if (i + 1 < argc)
-					Settings.Port = -atoi(argv[++i]);
-				else
-					S9xUsage();
-			}
-			else
-			if (!strcasecmp(argv[i], "-server"))
-			{
-				if (i + 1 < argc)
-				{
-					strncpy(Settings.ServerName, argv[++i], 127);
-					Settings.ServerName[127] = 0;
-				}
-				else
-					S9xUsage();
-			}
-			else
-		#endif
-
 			// HACKING OR DEBUGGING OPTIONS
 		
-		#ifdef DEBUGGER
-			if (!strcasecmp(argv[i], "-debug"))
-				CPU.Flags |= DEBUG_MODE_FLAG;
-			else
-			if (!strcasecmp(argv[i], "-trace"))
-			{
-				ENSURE_TRACE_OPEN(trace,"trace.log","wb")
-				CPU.Flags |= TRACE_FLAG;
-			}
-			else
-		#endif
-
 			if (!strcasecmp(argv[i], "-noirq"))
 				Settings.DisableIRQ = TRUE;
 			else

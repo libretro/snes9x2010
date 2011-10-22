@@ -241,33 +241,32 @@
 #define SNES_WRAM_REFRESH_CYCLES	40
 
 #define SNES_HBLANK_START_HC		1096					// H=274
-#define	SNES_HDMA_START_HC			1106					// FIXME: not true
-#define	SNES_HBLANK_END_HC			4						// H=1
-#define	SNES_HDMA_INIT_HC			20						// FIXME: not true
-#define	SNES_RENDER_START_HC		(48 * ONE_DOT_CYCLE)	// FIXME: Snes9x renders a line at a time.
+#define	SNES_HDMA_START_HC		1106					// FIXME: not true
+#define	SNES_HBLANK_END_HC		4					// H=1
+#define	SNES_HDMA_INIT_HC		20					// FIXME: not true
+#define	SNES_RENDER_START_HC		(48 * ONE_DOT_CYCLE)			// FIXME: Snes9x renders a line at a time.
 
-#define SNES_TR_MASK		(1 <<  4)
-#define SNES_TL_MASK		(1 <<  5)
+#define SNES_TR_MASK			(1 <<  4)
+#define SNES_TL_MASK			(1 <<  5)
 #define SNES_X_MASK			(1 <<  6)
 #define SNES_A_MASK			(1 <<  7)
-#define SNES_RIGHT_MASK		(1 <<  8)
-#define SNES_LEFT_MASK		(1 <<  9)
-#define SNES_DOWN_MASK		(1 << 10)
-#define SNES_UP_MASK		(1 << 11)
-#define SNES_START_MASK		(1 << 12)
-#define SNES_SELECT_MASK	(1 << 13)
+#define SNES_RIGHT_MASK			(1 <<  8)
+#define SNES_LEFT_MASK			(1 <<  9)
+#define SNES_DOWN_MASK			(1 << 10)
+#define SNES_UP_MASK			(1 << 11)
+#define SNES_START_MASK			(1 << 12)
+#define SNES_SELECT_MASK		(1 << 13)
 #define SNES_Y_MASK			(1 << 14)
 #define SNES_B_MASK			(1 << 15)
 
-#define DEBUG_MODE_FLAG		(1 <<  0)	// debugger
+#define DEBUG_MODE_FLAG			(1 <<  0)	// debugger
 #define TRACE_FLAG			(1 <<  1)	// debugger
-#define SINGLE_STEP_FLAG	(1 <<  2)	// debugger
+#define SINGLE_STEP_FLAG		(1 <<  2)	// debugger
 #define BREAK_FLAG			(1 <<  3)	// debugger
 #define NMI_FLAG			(1 <<  7)	// CPU
 #define IRQ_FLAG			(1 << 11)	// CPU
-#define SCAN_KEYS_FLAG		(1 <<  4)	// CPU
-#define HALTED_FLAG			(1 << 12)	// APU
-#define FRAME_ADVANCE_FLAG	(1 <<  9)
+#define SCAN_KEYS_FLAG			(1 <<  4)	// CPU
+#define HALTED_FLAG			(1 << 9)	// APU
 
 #define ROM_NAME_LEN	23
 #define AUTO_FRAMERATE	200
@@ -422,22 +421,12 @@ struct SSettings
 	uint32	AutoMaxSkipFrames;
 	bool8	TurboMode;
 	uint32	HighSpeedSeek;
-	bool8	FrameAdvance;
-
-	bool8	NetPlay;
-	bool8	NetPlayServer;
-	char	ServerName[128];
-	int		Port;
 
 	bool8	MovieTruncate;
 	bool8	MovieNotifyIgnored;
 	bool8	WrongMovieStateProtection;
 	bool8	DumpStreams;
 	int		DumpStreamsMaxFrames;
-
-	bool8	TakeScreenshot;
-	int8	StretchScreenshots;
-	bool8	SnapshotScreenshots;
 
 	bool8	ApplyCheats;
 	bool8	NoPatch;

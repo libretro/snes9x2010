@@ -175,7 +175,6 @@
  ***********************************************************************************/
 
 
-#include <assert.h>
 #include "snes9x.h"
 #include "memmap.h"
 #include "dma.h"
@@ -1356,37 +1355,6 @@ void S9xFreezeToStream (STREAM stream)
 	if (Settings.BS)
 		FreezeStruct(stream, "BSX", &BSX, SnapBSX, COUNT(SnapBSX));
 
-	if (Settings.SnapshotScreenshots)
-	{
-		SnapshotScreenshotInfo	*ssi = new SnapshotScreenshotInfo;
-
-		ssi->Width  = min(IPPU.RenderedScreenWidth,  MAX_SNES_WIDTH);
-		ssi->Height = min(IPPU.RenderedScreenHeight, MAX_SNES_HEIGHT);
-		ssi->Interlaced = GFX.DoInterlace;
-
-		uint8	*rowpix = ssi->Data;
-		uint16	*screen = GFX.Screen;
-
-		for (int y = 0; y < ssi->Height; y++, screen += GFX.RealPPL)
-		{
-			for (int x = 0; x < ssi->Width; x++)
-			{
-				uint32	r, g, b;
-
-				DECOMPOSE_PIXEL(screen[x], r, g, b);
-				*(rowpix++) = r;
-				*(rowpix++) = g;
-				*(rowpix++) = b;
-			}
-		}
-
-		memset(rowpix, 0, sizeof(ssi->Data) + ssi->Data - rowpix);
-
-		FreezeStruct(stream, "SHO", ssi, SnapScreenshot, COUNT(SnapScreenshot));
-
-		delete ssi;
-	}
-
 	if (S9xMovieActive())
 	{
 		uint8	*movie_freeze_buf;
@@ -1461,7 +1429,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 	uint8	*local_srtc          = NULL;
 	uint8	*local_rtc_data      = NULL;
 	uint8	*local_bsx_data      = NULL;
-	uint8	*local_screenshot    = NULL;
 	uint8	*local_movie_data    = NULL;
 
 	do
@@ -1567,8 +1534,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 		result = UnfreezeStructCopy(stream, "BSX", &local_bsx_data, SnapBSX, COUNT(SnapBSX), version);
 		if (result != SUCCESS && Settings.BS)
 			break;
-
-		result = UnfreezeStructCopy(stream, "SHO", &local_screenshot, SnapScreenshot, COUNT(SnapScreenshot), version);
 
 		SnapshotMovieInfo	mi;
 
@@ -1688,7 +1653,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 		if (local_bsx_data)
 			UnfreezeStructFromCopy(&BSX, SnapBSX, COUNT(SnapBSX), local_bsx_data, version);
 
-		CPU.Flags |= old_flags & (DEBUG_MODE_FLAG | TRACE_FLAG | SINGLE_STEP_FLAG | FRAME_ADVANCE_FLAG);
+		CPU.Flags |= old_flags & (DEBUG_MODE_FLAG | TRACE_FLAG | SINGLE_STEP_FLAG);
 		ICPU.ShiftedPB = Registers.PB << 16;
 		ICPU.ShiftedDB = Registers.DB << 16;
 		S9xSetPCBase(Registers.PBPC);
@@ -1751,65 +1716,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 			pad_read = pad_read_temp;
 		}
 
-		if (local_screenshot)
-		{
-			SnapshotScreenshotInfo	*ssi = new SnapshotScreenshotInfo;
-
-			UnfreezeStructFromCopy(ssi, SnapScreenshot, COUNT(SnapScreenshot), local_screenshot, version);
-
-			IPPU.RenderedScreenWidth  = min(ssi->Width,  IMAGE_WIDTH);
-			IPPU.RenderedScreenHeight = min(ssi->Height, IMAGE_HEIGHT);
-			const bool8 scaleDownX = IPPU.RenderedScreenWidth  < ssi->Width;
-			const bool8 scaleDownY = IPPU.RenderedScreenHeight < ssi->Height && ssi->Height > SNES_HEIGHT_EXTENDED;
-			GFX.DoInterlace = Settings.SupportHiRes ? ssi->Interlaced : 0;
-
-			uint8	*rowpix = ssi->Data;
-			uint16	*screen = GFX.Screen;
-
-			for (int y = 0; y < IPPU.RenderedScreenHeight; y++, screen += GFX.RealPPL)
-			{
-				for (int x = 0; x < IPPU.RenderedScreenWidth; x++)
-				{
-					uint32	r, g, b;
-
-					r = *(rowpix++);
-					g = *(rowpix++);
-					b = *(rowpix++);
-
-					if (scaleDownX)
-					{
-						r = (r + *(rowpix++)) >> 1;
-						g = (g + *(rowpix++)) >> 1;
-						b = (b + *(rowpix++)) >> 1;
-
-						if (x + x + 1 >= ssi->Width)
-							break;
-					}
-
-					screen[x] = BUILD_PIXEL(r, g, b);
-				}
-
-				if (scaleDownY)
-				{
-					rowpix += 3 * ssi->Width;
-					if (y + y + 1 >= ssi->Height)
-						break;
-				}
-			}
-
-			// black out what we might have missed
-			for (uint32 y = IPPU.RenderedScreenHeight; y < (uint32) (IMAGE_HEIGHT); y++)
-				memset(GFX.Screen + y * GFX.RealPPL, 0, GFX.RealPPL * 2);
-
-			delete ssi;
-		}
-		else
-		{
-			// couldn't load graphics, so black out the screen instead
-			for (uint32 y = 0; y < (uint32) (IMAGE_HEIGHT); y++)
-				memset(GFX.Screen + y * GFX.RealPPL, 0, GFX.RealPPL * 2);
-		}
-
 		S9xSetSoundMute(FALSE);
 	}
 
@@ -1838,7 +1744,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 	if (local_srtc)				delete [] local_srtc;
 	if (local_rtc_data)			delete [] local_rtc_data;
 	if (local_bsx_data)			delete [] local_bsx_data;
-	if (local_screenshot)		delete [] local_screenshot;
 	if (local_movie_data)		delete [] local_movie_data;
 
 	return (result);
@@ -2197,7 +2102,6 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 						break;
 
 					default:
-						assert(0);
 						break;
 				}
 

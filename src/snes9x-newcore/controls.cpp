@@ -180,7 +180,6 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <assert.h>
 
 #include "snes9x.h"
 #include "memmap.h"
@@ -190,9 +189,6 @@
 #include "crosshairs.h"
 #include "movie.h"
 #include "display.h"
-#ifdef NETPLAY_SUPPORT
-#include "netplay.h"
-#endif
 
 using namespace	std;
 
@@ -366,7 +362,6 @@ static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
 #define THE_COMMANDS \
 	S(BeginRecordingMovie), \
 	S(ClipWindows), \
-	S(Debugger), \
 	S(DecEmuTurbo), \
 	S(DecFrameRate), \
 	S(DecFrameTime), \
@@ -407,7 +402,6 @@ static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
 	S(Reset), \
 	S(SaveFreezeFile), \
 	S(SaveSPC), \
-	S(Screenshot), \
 	S(SeekToFrame), \
 	S(SoftReset), \
 	S(SoundChannel0), \
@@ -2224,13 +2218,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 						Settings.DisableGraphicWindows = !Settings.DisableGraphicWindows;
 						DisplayStateChange("Graphic clip windows", !Settings.DisableGraphicWindows);
 						break;
-
-					case Debugger:
-					#ifdef DEBUGGER
-						CPU.Flags |= DEBUG_MODE_FLAG;
-					#endif
-						break;
-
 					case IncFrameRate:
 						if (Settings.SkipFrames == AUTO_FRAMERATE)
 							Settings.SkipFrames = 1;
@@ -2344,9 +2331,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 					case Pause:
 						Settings.Paused = !Settings.Paused;
 						DisplayStateChange("Pause", Settings.Paused);
-					#if defined(NETPLAY_SUPPORT) && !defined(__WIN32__)
-						S9xNPSendPause(Settings.Paused);
-					#endif
 						break;
 
 					case QuickLoad000:
@@ -2406,11 +2390,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 					case SaveSPC:
 						S9xDumpSPCSnapshot();
 						break;
-
-					case Screenshot:
-						Settings.TakeScreenshot = TRUE;
-						break;
-
 					case SoundChannel0:
 					case SoundChannel1:
 					case SoundChannel2:
@@ -2945,7 +2924,6 @@ uint8 S9xReadJOYSERn (int n)
 
 	if (n > 1)
 		n -= 0x4016;
-	assert(n == 0 || n == 1);
 
 	uint8	bits = (OpenBus & ~3) | ((n == 1) ? 0x1c : 0);
 
@@ -3504,8 +3482,6 @@ void S9xControlPreSaveState (struct SControlSnapshot *s)
 		for (int k = 0; k < 2; k++)
 			COPY(mp5[j].pads[k]);
 
-	assert(i == sizeof(s->internal));
-
 #undef COPY
 
 	s->pad_read      = pad_read;
@@ -3574,8 +3550,6 @@ void S9xControlPostLoadState (struct SControlSnapshot *s)
 		for (int j = 0; j < 2; j++)
 			for (int k = 0; k < 2; k++)
 				COPY(mp5[j].pads[k]);
-
-		assert(i == sizeof(s->internal));
 
 	#undef COPY
 	}

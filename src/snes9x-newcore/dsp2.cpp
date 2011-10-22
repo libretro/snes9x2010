@@ -178,14 +178,6 @@
 #include "snes9x.h"
 #include "memmap.h"
 
-static void DSP2_Op01 (void);
-static void DSP2_Op03 (void);
-static void DSP2_Op05 (void);
-static void DSP2_Op06 (void);
-static void DSP2_Op09 (void);
-static void DSP2_Op0D (void);
-
-
 // convert bitmap to bitplane tile
 static void DSP2_Op01 (void)
 {
@@ -410,9 +402,6 @@ void DSP2SetByte (uint8 byte, uint16 address)
 				case 0x09: DSP2.in_count =  4; break;
 				case 0x0D: DSP2.in_count =  2; break;
 				default:
-				#ifdef DEBUGGER
-					//printf("Op%02X\n", byte);
-				#endif
 				case 0x0f: DSP2.in_count =  0; break;
 			}
 		}

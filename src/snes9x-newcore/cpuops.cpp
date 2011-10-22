@@ -179,14 +179,6 @@
 #include "memmap.h"
 #include "apu/apu.h"
 
-// for "Magic WDM" features
-#ifdef DEBUGGER	
-#include "snapshot.h"
-#include "display.h"
-#include "debug.h"
-#include "missing.h"
-#endif
-
 #ifdef SA1_OPCODES
 #define AddCycles(n)	{ }
 #else
@@ -1682,9 +1674,6 @@ static void OpF8 (void)
 {
 	SetDecimal();
 	AddCycles(ONE_CYCLE);
-#ifdef DEBUGGER
-	missing.decimal_mode = 1;
-#endif
 }
 
 // CLI
@@ -2796,9 +2785,6 @@ static void OpFB (void)
 	{
 		SetFlags(MemoryFlag | IndexFlag);
 		Registers.SH = 1;
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
 	}
 
 	if (CheckIndex())
@@ -2814,10 +2800,6 @@ static void OpFB (void)
 
 static void Op00 (void)
 {
-#ifdef DEBUGGER
-	if (CPU.Flags & TRACE_FLAG)
-		S9xTraceMessage("*** BRK");
-#endif
 
 	AddCycles(CPU.MemSpeed);
 
@@ -2855,14 +2837,6 @@ static void Op00 (void)
 
 void S9xOpcode_IRQ (void)
 {
-#ifdef DEBUGGER
-	if (CPU.Flags & TRACE_FLAG)
-	#ifdef SA1_OPCODES
-		S9xTraceMessage("*** SA1 IRQ");
-	#else
-		S9xTraceMessage("*** IRQ");
-	#endif
-#endif
 
 	// IRQ and NMI do an opcode fetch as their first "IO" cycle.
 	AddCycles(CPU.MemSpeed + ONE_CYCLE);
@@ -2930,14 +2904,6 @@ void S9xOpcode_IRQ (void)
 
 void S9xOpcode_NMI (void)
 {
-#ifdef DEBUGGER
-	if (CPU.Flags & TRACE_FLAG)
-	#ifdef SA1_OPCODES
-		S9xTraceMessage("*** SA1 NMI");
-	#else
-		S9xTraceMessage("*** NMI");
-	#endif
-#endif
 
 	// IRQ and NMI do an opcode fetch as their first "IO" cycle.
 	AddCycles(CPU.MemSpeed + ONE_CYCLE);
@@ -3005,10 +2971,6 @@ void S9xOpcode_NMI (void)
 
 static void Op02 (void)
 {
-#ifdef DEBUGGER
-	if (CPU.Flags & TRACE_FLAG)
-		S9xTraceMessage("*** COP");
-#endif
 
 	AddCycles(CPU.MemSpeed);
 
@@ -3413,9 +3375,6 @@ static void OpC2 (void)
 	if (CheckEmulation())
 	{
 		SetFlags(MemoryFlag | IndexFlag);
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
 	}
 
 	if (CheckIndex())
@@ -3442,9 +3401,6 @@ static void OpC2Slow (void)
 	if (CheckEmulation())
 	{
 		SetFlags(MemoryFlag | IndexFlag);
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
 	}
 
 	if (CheckIndex())
@@ -3472,9 +3428,6 @@ static void OpE2 (void)
 	if (CheckEmulation())
 	{
 		SetFlags(MemoryFlag | IndexFlag);
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
 	}
 
 	if (CheckIndex())
@@ -3501,9 +3454,6 @@ static void OpE2Slow (void)
 	if (CheckEmulation())
 	{
 		SetFlags(MemoryFlag | IndexFlag);
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
 	}
 
 	if (CheckIndex())
@@ -3548,9 +3498,6 @@ static void Op40Slow (void)
 		PullWE(Registers.PCw);
 		OpenBus = Registers.PCh;
 		SetFlags(MemoryFlag | IndexFlag);
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
 	}
 
 	S9xSetPCBase(Registers.PBPC);
@@ -3619,72 +3566,11 @@ static void OpDB (void)
 
 /* WDM (Reserved S9xOpcode) ************************************************ */
 
-#ifdef DEBUGGER
-extern FILE	*trace, *trace2;
-#endif
 
 static void Op42 (void)
 {
-#ifdef DEBUGGER
-	uint8	byte = (uint8) S9xGetWord(Registers.PBPC);
-#else
 	S9xGetWord(Registers.PBPC);
-#endif
 	Registers.PCw++;
-
-#ifdef DEBUGGER
-	// Hey, let's use this to trigger debug modes.
-	switch (byte)
-	{
-		case 0xdb: // "STP" = Enter debug mode
-			CPU.Flags |= DEBUG_MODE_FLAG;
-			break;
-
-	#ifndef SA1_OPCODES
-		case 0xe2: // "SEP" = Trace on
-			if (!(CPU.Flags & TRACE_FLAG))
-			{
-				char	buf[25];
-				CPU.Flags |= TRACE_FLAG;
-				snprintf(buf, 25, "WDM trace on at $%02X:%04X", Registers.PB, Registers.PCw);
-				S9xMessage(S9X_DEBUG, S9X_DEBUG_OUTPUT, buf);
-				if (trace != NULL)
-					fclose(trace);
-				ENSURE_TRACE_OPEN(trace,"WDMtrace.log","ab")
-			}
-
-			break;
-
-		case 0xc2: // "REP" = Trace off
-			if (CPU.Flags & TRACE_FLAG)
-			{
-				char	buf[26];
-				CPU.Flags &= ~TRACE_FLAG;
-				snprintf(buf, 26, "WDM trace off at $%02X:%04X", Registers.PB, Registers.PCw);
-				S9xMessage(S9X_DEBUG, S9X_DEBUG_OUTPUT, buf);
-				if (trace != NULL)
-					fclose(trace);
-				trace = NULL;
-			}
-
-			break;
-	#endif
-
-		case 0x42: // "WDM" = Snapshot
-			char	filename[PATH_MAX + 1], drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], def[PATH_MAX + 1], ext[_MAX_EXT + 1];
-
-			_splitpath(Memory.ROMFilename, drive, dir, def, ext);
-			snprintf(filename, PATH_MAX, "%s%s%s-%06X.wdm", S9xGetDirectory(SNAPSHOT_DIR), SLASH_STR, def, Registers.PBPC & 0xffffff);
-			sprintf(def, "WDM Snapshot at $%02X:%04X: %s", Registers.PB, Registers.PCw, filename);
-			S9xMessage(S9X_DEBUG, S9X_DEBUG_OUTPUT, def);
-			S9xFreezeGame(filename);
-
-			break;
-
-		default:
-			break;
-	}
-#endif
 }
 
 /* CPU-S9xOpcodes Definitions ************************************************/
