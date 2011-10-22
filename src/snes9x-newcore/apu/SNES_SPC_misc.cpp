@@ -224,9 +224,6 @@ blargg_err_t SNES_SPC::load_spc( void const* data, long size )
 {
 	spc_file_t const* const spc = (spc_file_t const*) data;
 	
-	// be sure compiler didn't insert any padding into fle_t
-	assert( sizeof (spc_file_t) == spc_min_file_size + 0x80 );
-	
 	// Check signature and file size
 	if ( size < signature_size || memcmp( spc, signature, 27 ) )
 		return "Not an SPC file";
@@ -308,7 +305,6 @@ void SNES_SPC::set_output( sample_t* out, int size )
 			// Copy any remaining extra samples as if DSP wrote them
 			while ( in < m.extra_pos )
 				*out++ = *in++;
-			assert( out <= out_end );
 		}
 		
 		dsp.set_output( out, out_end - out );
@@ -339,7 +335,6 @@ void SNES_SPC::save_extra()
 		*out++ = *in;
 	
 	m.extra_pos = out;
-	assert( out <= &m.extra_buf [extra_size] );
 }
 
 blargg_err_t SNES_SPC::play( int count, sample_t* out )

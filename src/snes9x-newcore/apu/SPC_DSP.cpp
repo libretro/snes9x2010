@@ -518,7 +518,6 @@ VOICE_CLOCK( V4 )
 		if ( (v->brr_offset += 2) >= brr_block_size )
 		{
 			// Start decoding next BRR block
-			assert( v->brr_offset == brr_block_size );
 			v->brr_addr = (v->brr_addr + brr_block_size) & 0xFFFF;
 			if ( m.t_brr_header & 1 )
 			{

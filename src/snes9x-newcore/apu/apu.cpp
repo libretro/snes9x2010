@@ -186,10 +186,10 @@
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512
 #define APU_MINIMUM_SAMPLE_BLOCK	128
-#define APU_NUMERATOR_NTSC			15664
+#define APU_NUMERATOR_NTSC		15664
 #define APU_DENOMINATOR_NTSC		328125
-#define APU_NUMERATOR_PAL			34176
-#define APU_DENOMINATOR_PAL			709379
+#define APU_NUMERATOR_PAL		34176
+#define APU_DENOMINATOR_PAL		709379
 #define APU_DEFAULT_RESAMPLER		HermiteResampler
 
 SNES_SPC	*spc_core = NULL;
@@ -233,13 +233,6 @@ namespace spc
 	static uint32		ratio_numerator = APU_NUMERATOR_NTSC;
 	static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 }
-
-static void ReverseStereo (uint8 *, int);
-static void UpdatePlaybackRate (void);
-static void from_apu_to_state (uint8 **, void *, size_t);
-static void to_apu_from_state (uint8 **, void *, size_t);
-static inline int S9xAPUGetClock (int32);
-static inline int S9xAPUGetClockRemainder (int32);
 
 static void ReverseStereo (uint8 *src_buffer, int sample_count)
 {

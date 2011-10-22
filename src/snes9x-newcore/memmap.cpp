@@ -209,7 +209,6 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-static bool8	stopMovie = TRUE;
 static char		LastRomFilename[PATH_MAX + 1] = "";
 
 // from NSRT
