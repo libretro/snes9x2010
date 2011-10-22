@@ -191,7 +191,7 @@
 #ifdef ZLIB
 #ifdef __LIBSNES__
 #define STREAM	memstream_t *
-#define READ_STREAM(p, l, s)	memstream_read(s p, l)
+#define READ_STREAM(p, l, s)	memstream_read(s, p, l)
 #define WRITE_STREAM(p, l, s)	memstream_write(s, p, l)
 #define GETS_STREAM(p, l, s)	memstream_gets(s, p, l)
 #define GETC_STREAM(s)		memstream_getc(s)
@@ -216,7 +216,7 @@
 #else
 #ifdef __LIBSNES__
 #define STREAM	memstream_t *
-#define READ_STREAM(p, l, s)	memstream_read(s p, l)
+#define READ_STREAM(p, l, s)	memstream_read(s, p, l)
 #define WRITE_STREAM(p, l, s)	memstream_write(s, p, l)
 #define GETS_STREAM(p, l, s)	memstream_gets(s, p, l)
 #define GETC_STREAM(s)		memstream_getc(s)

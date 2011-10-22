@@ -791,7 +791,7 @@ int S9xMovieOpen (const char *filename, bool8 read_only)
 	restore_movie_settings();
 
 	lseek(fn, Movie.SaveStateOffset, SEEK_SET);
-	stream = REOPEN_STREAM(fn, "rb");
+	stream = (STREAM)REOPEN_STREAM(fn, "rb");
 	if (!stream)
 		return (FILE_NOT_FOUND);
 
