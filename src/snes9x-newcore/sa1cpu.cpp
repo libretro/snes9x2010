@@ -178,6 +178,9 @@
 #include "snes9x.h"
 #include "memmap.h"
 
+#undef S9xUnpackStatus
+#undef S9xPackStatus
+
 #define CPU								SA1
 #define ICPU							SA1
 #define Registers						SA1Registers
@@ -225,6 +228,9 @@
 #define SA1_OPCODES
 
 #include "cpuops.cpp"
+
+#undef S9xUnpackStatus
+#undef S9xPackStatus
 
 
 void S9xSA1MainLoop (void)

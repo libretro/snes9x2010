@@ -202,16 +202,16 @@
 #define CLOSE_STREAM(s)		memstream_close(s)
 #else
 #include <zlib.h>
-#define STREAM					gzFile
+#define STREAM			gzFile
 #define READ_STREAM(p, l, s)	gzread(s, p, l)
 #define WRITE_STREAM(p, l, s)	gzwrite(s, p, l)
 #define GETS_STREAM(p, l, s)	gzgets(s, p, l)
-#define GETC_STREAM(s)			gzgetc(s)
-#define OPEN_STREAM(f, m)		gzopen(f, m)
-#define REOPEN_STREAM(f, m)		gzdopen(f, m)
-#define FIND_STREAM(f)			gztell(f)
+#define GETC_STREAM(s)		gzgetc(s)
+#define OPEN_STREAM(f, m)	gzopen(f, m)
+#define REOPEN_STREAM(f, m)	gzdopen(f, m)
+#define FIND_STREAM(f)		gztell(f)
 #define REVERT_STREAM(f, o, s)	gzseek(f, o, s)
-#define CLOSE_STREAM(s)			gzclose(s)
+#define CLOSE_STREAM(s)		gzclose(s)
 #endif
 #else
 #ifdef __LIBSNES__
@@ -226,24 +226,24 @@
 #define REVERT_STREAM(f, o, s)	memstream_seek(f, o, s)
 #define CLOSE_STREAM(s)		memstream_close(s)
 #else
-#define STREAM				FILE *
-#define READ_STREAM(p, l, s)		fread(p, 1, l, s)
-#define WRITE_STREAM(p, l, s)		fwrite(p, 1, l, s)
-#define GETS_STREAM(p, l, s)		fgets(p, l, s)
-#define GETC_STREAM(s)			fgetc(s)
-#define OPEN_STREAM(f, m)		fopen(f, m)
-#define REOPEN_STREAM(f, m)		fdopen(f, m)
-#define FIND_STREAM(f)			ftell(f)
-#define REVERT_STREAM(f, o, s)		fseek(f, o, s)
-#define CLOSE_STREAM(s)			fclose(s)
+#define STREAM			FILE *
+#define READ_STREAM(p, l, s)	fread(p, 1, l, s)
+#define WRITE_STREAM(p, l, s)	fwrite(p, 1, l, s)
+#define GETS_STREAM(p, l, s)	fgets(p, l, s)
+#define GETC_STREAM(s)		fgetc(s)
+#define OPEN_STREAM(f, m)	fopen(f, m)
+#define REOPEN_STREAM(f, m)	fdopen(f, m)
+#define FIND_STREAM(f)		ftell(f)
+#define REVERT_STREAM(f, o, s)	fseek(f, o, s)
+#define CLOSE_STREAM(s)		fclose(s)
 #endif
 #endif
 
 #define SNES_WIDTH			256
 #define SNES_HEIGHT			224
 #define SNES_HEIGHT_EXTENDED		239
-#define MAX_SNES_WIDTH			(SNES_WIDTH * 2)
-#define MAX_SNES_HEIGHT			(SNES_HEIGHT_EXTENDED * 2)
+#define MAX_SNES_WIDTH			512
+#define MAX_SNES_HEIGHT			478
 #define IMAGE_WIDTH			MAX_SNES_WIDTH
 #define IMAGE_HEIGHT			MAX_SNES_HEIGHT
 
@@ -259,7 +259,7 @@
 #define TWO_CYCLES			12
 #define	ONE_DOT_CYCLE			4
 
-#define SNES_CYCLES_PER_SCANLINE	(SNES_HCOUNTER_MAX * ONE_DOT_CYCLE)
+#define SNES_CYCLES_PER_SCANLINE	1364
 #define SNES_SCANLINE_TIME		(SNES_CYCLES_PER_SCANLINE / NTSC_MASTER_CLOCK)
 
 #define SNES_WRAM_REFRESH_HC_v1		530
@@ -270,32 +270,32 @@
 #define	SNES_HDMA_START_HC		1106			// FIXME: not true
 #define	SNES_HBLANK_END_HC		4			// H=1
 #define	SNES_HDMA_INIT_HC		20			// FIXME: not true
-#define	SNES_RENDER_START_HC		(48 * ONE_DOT_CYCLE)	// FIXME: Snes9x renders a line at a time.
+#define	SNES_RENDER_START_HC		192			// FIXME: Snes9x renders a line at a time.
 
-#define SNES_TR_MASK			(1 <<  4)
-#define SNES_TL_MASK			(1 <<  5)
-#define SNES_X_MASK			(1 <<  6)
-#define SNES_A_MASK			(1 <<  7)
-#define SNES_RIGHT_MASK			(1 <<  8)
-#define SNES_LEFT_MASK			(1 <<  9)
-#define SNES_DOWN_MASK			(1 << 10)
-#define SNES_UP_MASK			(1 << 11)
-#define SNES_START_MASK			(1 << 12)
-#define SNES_SELECT_MASK		(1 << 13)
-#define SNES_Y_MASK			(1 << 14)
-#define SNES_B_MASK			(1 << 15)
+#define SNES_TR_MASK			16
+#define SNES_TL_MASK			32
+#define SNES_X_MASK			64
+#define SNES_A_MASK			128
+#define SNES_RIGHT_MASK			256
+#define SNES_LEFT_MASK			512
+#define SNES_DOWN_MASK			1024
+#define SNES_UP_MASK			2048
+#define SNES_START_MASK			4096
+#define SNES_SELECT_MASK		8192
+#define SNES_Y_MASK			16384
+#define SNES_B_MASK			32768
 
-#define DEBUG_MODE_FLAG			(1 <<  0)	// debugger
-#define TRACE_FLAG			(1 <<  1)	// debugger
-#define SINGLE_STEP_FLAG		(1 <<  2)	// debugger
-#define BREAK_FLAG			(1 <<  3)	// debugger
-#define NMI_FLAG			(1 <<  7)	// CPU
-#define IRQ_FLAG			(1 << 11)	// CPU
-#define SCAN_KEYS_FLAG			(1 <<  4)	// CPU
-#define HALTED_FLAG			(1 << 9)	// APU
+#define DEBUG_MODE_FLAG			1			// debugger
+#define TRACE_FLAG			2			// debugger
+#define SINGLE_STEP_FLAG		4			// debugger
+#define BREAK_FLAG			8			// debugger
+#define SCAN_KEYS_FLAG			16			// CPU
+#define NMI_FLAG			128			// CPU
+#define HALTED_FLAG			512			// APU
+#define IRQ_FLAG			2048			// CPU
 
-#define ROM_NAME_LEN	23
-#define AUTO_FRAMERATE	200
+#define ROM_NAME_LEN			23
+#define AUTO_FRAMERATE			200
 
 struct SCPUState
 {
@@ -325,21 +325,19 @@ struct SCPUState
 	bool8	SRAMModified;
 };
 
-enum
-{
-	HC_HBLANK_START_EVENT = 1,
-	HC_IRQ_1_3_EVENT      = 2,
-	HC_HDMA_START_EVENT   = 3,
-	HC_IRQ_3_5_EVENT      = 4,
-	HC_HCOUNTER_MAX_EVENT = 5,
-	HC_IRQ_5_7_EVENT      = 6,
-	HC_HDMA_INIT_EVENT    = 7,
-	HC_IRQ_7_9_EVENT      = 8,
-	HC_RENDER_EVENT       = 9,
-	HC_IRQ_9_A_EVENT      = 10,
-	HC_WRAM_REFRESH_EVENT = 11,
-	HC_IRQ_A_1_EVENT      = 12
-};
+
+#define HC_HBLANK_START_EVENT	1
+#define HC_IRQ_1_3_EVENT	2
+#define HC_HDMA_START_EVENT	3
+#define HC_IRQ_3_5_EVENT	4
+#define HC_HCOUNTER_MAX_EVENT	5
+#define HC_IRQ_5_7_EVENT	6
+#define HC_HDMA_INIT_EVENT	7
+#define HC_IRQ_7_9_EVENT	8
+#define HC_RENDER_EVENT		9
+#define HC_IRQ_9_A_EVENT	10
+#define HC_WRAM_REFRESH_EVENT	11
+#define HC_IRQ_A_1_EVENT	12
 
 struct STimings
 {
@@ -364,13 +362,6 @@ struct STimings
 
 struct SSettings
 {
-	bool8	TraceDMA;
-	bool8	TraceHDMA;
-	bool8	TraceVRAM;
-	bool8	TraceUnknownRegisters;
-	bool8	TraceDSP;
-	bool8	TraceHCEvent;
-
 	bool8	SuperFX;
 	uint8	DSP;
 	bool8	SA1;

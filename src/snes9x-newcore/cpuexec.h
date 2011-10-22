@@ -207,10 +207,10 @@ extern struct SOpcodes	S9xOpcodesM1X0[256];
 extern struct SOpcodes	S9xOpcodesM0X1[256];
 extern struct SOpcodes	S9xOpcodesM0X0[256];
 extern struct SOpcodes	S9xOpcodesSlow[256];
-extern uint8			S9xOpLengthsM1X1[256];
-extern uint8			S9xOpLengthsM1X0[256];
-extern uint8			S9xOpLengthsM0X1[256];
-extern uint8			S9xOpLengthsM0X0[256];
+extern uint8		S9xOpLengthsM1X1[256];
+extern uint8		S9xOpLengthsM1X0[256];
+extern uint8		S9xOpLengthsM0X1[256];
+extern uint8		S9xOpLengthsM0X0[256];
 
 void S9xMainLoop (void);
 void S9xReset (void);
@@ -219,19 +219,15 @@ void S9xDoHEventProcessing (void);
 void S9xClearIRQ (uint32);
 void S9xSetIRQ (uint32);
 
-static inline void S9xUnpackStatus (void)
-{
-	ICPU._Zero = (Registers.PL & Zero) == 0;
-	ICPU._Negative = (Registers.PL & Negative);
-	ICPU._Carry = (Registers.PL & Carry);
+#define S9xUnpackStatus() \
+	ICPU._Zero = (Registers.PL & Zero) == 0; \
+	ICPU._Negative = (Registers.PL & Negative); \
+	ICPU._Carry = (Registers.PL & Carry); \
 	ICPU._Overflow = (Registers.PL & Overflow) >> 6;
-}
 
-static inline void S9xPackStatus (void)
-{
-	Registers.PL &= ~(Zero | Negative | Carry | Overflow);
+#define S9xPackStatus() \
+	Registers.PL &= ~(Zero | Negative | Carry | Overflow); \
 	Registers.PL |= ICPU._Carry | ((ICPU._Zero == 0) << 1) | (ICPU._Negative & 0x80) | (ICPU._Overflow << 6);
-}
 
 static inline void S9xFixCycles (void)
 {
