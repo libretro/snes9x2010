@@ -266,23 +266,19 @@ void S9xSA1MainLoop (void);
 void S9xSA1ExecuteDuringSleep (void);
 void S9xSA1PostLoadState (void);
 
-#define SNES_IRQ_SOURCE		(1 << 7)
-#define TIMER_IRQ_SOURCE	(1 << 6)
-#define DMA_IRQ_SOURCE		(1 << 5)
+#define DMA_IRQ_SOURCE		32
+#define TIMER_IRQ_SOURCE	64
+#define SNES_IRQ_SOURCE		128
 
-static inline void S9xSA1UnpackStatus (void)
-{
-	SA1._Zero = (SA1Registers.PL & Zero) == 0;
-	SA1._Negative = (SA1Registers.PL & Negative);
-	SA1._Carry = (SA1Registers.PL & Carry);
+#define S9xSA1UnpackStatus() \
+	SA1._Zero = (SA1Registers.PL & Zero) == 0; \
+	SA1._Negative = (SA1Registers.PL & Negative); \
+	SA1._Carry = (SA1Registers.PL & Carry); \
 	SA1._Overflow = (SA1Registers.PL & Overflow) >> 6;
-}
 
-static inline void S9xSA1PackStatus (void)
-{
-	SA1Registers.PL &= ~(Zero | Negative | Carry | Overflow);
+#define S9xSA1PackStatus() \
+	SA1Registers.PL &= ~(Zero | Negative | Carry | Overflow); \
 	SA1Registers.PL |= SA1._Carry | ((SA1._Zero == 0) << 1) | (SA1._Negative & 0x80) | (SA1._Overflow << 6);
-}
 
 static inline void S9xSA1FixCycles (void)
 {
