@@ -260,7 +260,6 @@ static struct
 static struct
 {
 	uint16			buttons;
-	uint8			turbo_ct;
 }	joypad[8];
 
 static struct
@@ -560,7 +559,6 @@ void S9xUnmapAllControls (void)
 		pseudopointer[i].mapped = false;
 
 		joypad[i].buttons  = 0;
-		joypad[i].turbo_ct = 0;
 	}
 
 	for (int i = 0; i < 2; i++)
@@ -2018,7 +2016,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 		case S9xButtonJoypad:
 		{
-				uint16 t = 0;
 				uint16 r = cmd.button.joypad.buttons;
 
 				if (data1)
@@ -3007,7 +3004,7 @@ void S9xDoAutoJoypad (void)
 void S9xControlEOF (void)
 {
 	struct crosshair	*c;
-	int					i, j;
+	int					i;
 
 	PPU.GunVLatch = 1000; // i.e., never latch
 	PPU.GunHLatch = 0;
@@ -3017,19 +3014,6 @@ void S9xControlEOF (void)
 		switch (i = curcontrollers[n])
 		{
 			case MP5:
-				for (j = 0, i = mp5[n].pads[j]; j < 4; i = mp5[n].pads[++j])
-				{
-					if (i == NONE)
-						continue;
-
-					if (++joypad[i - JOYPAD0].turbo_ct >= turbo_time)
-					{
-						joypad[i - JOYPAD0].turbo_ct = 0;
-					}
-				}
-
-				break;
-
 			case JOYPAD0:
 			case JOYPAD1:
 			case JOYPAD2:
@@ -3038,11 +3022,6 @@ void S9xControlEOF (void)
 			case JOYPAD5:
 			case JOYPAD6:
 			case JOYPAD7:
-				if (++joypad[i - JOYPAD0].turbo_ct >= turbo_time)
-				{
-					joypad[i - JOYPAD0].turbo_ct = 0;
-				}
-
 				break;
 
 			case MOUSE0:
