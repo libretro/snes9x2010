@@ -411,7 +411,6 @@ struct SSettings
 	bool8	ReverseStereo;
 	bool8	Mute;
 
-	bool8	Transparency;
 	uint8	BG_Forced;
 	bool8	DisableGraphicWindows;
 

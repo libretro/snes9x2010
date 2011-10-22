@@ -400,7 +400,6 @@ void S9xLoadConfigFiles (char **argv, int argc)
 
 	// Display
 
-	Settings.Transparency               =  conf.GetBool("Display::Transparency",               true);
 	Settings.DisableGraphicWindows      = !conf.GetBool("Display::GraphicWindows",             true);
 	Settings.DisplayWatchedAddresses    =  conf.GetBool("Display::DisplayWatchedAddresses",    false);
 	Settings.DisplayPressedKeys         =  conf.GetBool("Display::DisplayInput",               false);
@@ -612,9 +611,6 @@ char * S9xParseArgs (char **argv, int argc)
 
 			if (!strcasecmp(argv[i], "-displaykeypress"))
 				Settings.DisplayPressedKeys = TRUE;
-			else
-			if (!strcasecmp(argv[i], "-notransparency"))
-				Settings.Transparency = FALSE;
 			else
 			if (!strcasecmp(argv[i], "-nowindows"))
 				Settings.DisableGraphicWindows = TRUE;

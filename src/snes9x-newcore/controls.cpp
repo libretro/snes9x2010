@@ -419,8 +419,7 @@ static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
 	S(ToggleBG3), \
 	S(ToggleEmuTurbo), \
 	S(ToggleHDMA), \
-	S(ToggleSprites), \
-	S(ToggleTransparency) \
+	S(ToggleSprites) \
 
 #define S(x)	x
 
@@ -2432,12 +2431,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 						Settings.DisableHDMA = !Settings.DisableHDMA;
 						DisplayStateChange("HDMA emulation", !Settings.DisableHDMA);
 						break;
-
-					case ToggleTransparency:
-						Settings.Transparency = !Settings.Transparency;
-						DisplayStateChange("Transparency effects", Settings.Transparency);
-						break;
-
 					case BeginRecordingMovie:
 						if (S9xMovieActive())
 							S9xMovieStop(FALSE);
