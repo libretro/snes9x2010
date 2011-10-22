@@ -616,7 +616,6 @@ void S9xMessage(int, int, const char*) {}
 bool S9xPollAxis(unsigned int, short*) { return FALSE; }
 void S9xSetPalette() {}
 void S9xParseArg(char**, int&, int) {}
-void S9xExit() {}
 bool S9xPollPointer(unsigned int, short*, short*) { return false; }
 const char *S9xChooseMovieFilename(unsigned char) { return NULL; }
 

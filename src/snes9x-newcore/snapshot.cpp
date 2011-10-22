@@ -195,10 +195,10 @@
 
 typedef struct
 {
-	int			offset;
-	int			offset2;
-	int			size;
-	int			type;
+	int		offset;
+	int		offset2;
+	int		size;
+	int		type;
 	uint16		debuted_in;
 	uint16		deleted_in;
 	const char	*name;

@@ -180,9 +180,9 @@
 
 #define FIRST_VISIBLE_LINE	1
 
-#define TILE_2BIT			0
-#define TILE_4BIT			1
-#define TILE_8BIT			2
+#define TILE_2BIT		0
+#define TILE_4BIT		1
+#define TILE_8BIT		2
 #define TILE_2BIT_EVEN		3
 #define TILE_2BIT_ODD		4
 #define TILE_4BIT_EVEN		5
@@ -192,10 +192,10 @@
 #define MAX_4BIT_TILES		2048
 #define MAX_8BIT_TILES		1024
 
-#define CLIP_OR				0
-#define CLIP_AND			1
-#define CLIP_XOR			2
-#define CLIP_XNOR			3
+#define CLIP_OR			0
+#define CLIP_AND		1
+#define CLIP_XOR		2
+#define CLIP_XNOR		3
 
 #define PPU_IRQ_SOURCE		(1 << 1)
 #define GSU_IRQ_SOURCE		(1 << 2)
@@ -228,8 +228,8 @@ struct InternalPPU
 	bool8	PseudoHires;
 	bool8	DoubleWidthPixels;
 	bool8	DoubleHeightPixels;
-	int		CurrentLine;
-	int		PreviousLine;
+	int	CurrentLine;
+	int	PreviousLine;
 	uint8	*XB;
 	uint32	Red[256];
 	uint32	Green[256];
@@ -237,8 +237,8 @@ struct InternalPPU
 	uint16	ScreenColors[256];
 	uint8	MaxBrightness;
 	bool8	RenderThisFrame;
-	int		RenderedScreenWidth;
-	int		RenderedScreenHeight;
+	int	RenderedScreenWidth;
+	int	RenderedScreenHeight;
 	uint32	FrameCount;
 	uint32	RenderedFramesCount;
 	uint32	DisplayedRenderedFrameCount;
@@ -374,8 +374,8 @@ struct SPPU
 	uint8	OpenBus2;
 };
 
-extern uint16				SignExtend[2];
-extern struct SPPU			PPU;
+extern uint16			SignExtend[2];
+extern struct SPPU		PPU;
 extern struct InternalPPU	IPPU;
 
 void S9xResetPPU (void);
@@ -409,11 +409,9 @@ extern SnesModel	M2SNES;
 #define MAX_5C78_VERSION	0x03
 #define MAX_5A22_VERSION	0x02
 
-static inline void FLUSH_REDRAW (void)
-{
-	if (IPPU.PreviousLine != IPPU.CurrentLine)
+#define FLUSH_REDRAW() \
+	if (IPPU.PreviousLine != IPPU.CurrentLine) \
 		S9xUpdateScreen();
-}
 
 static inline void REGISTER_2104 (uint8 Byte)
 {
