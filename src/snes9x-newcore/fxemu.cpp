@@ -329,33 +329,25 @@ void S9xResetSuperFX (void)
 }
 
 // Write access to the cache
-static void FxCacheWriteAccess (uint16 vAddress)
-{
-	if ((vAddress & 0x00f) == 0x00f)
+#define FxCacheWriteAccess(vAddress) \
+	if ((vAddress & 0x00f) == 0x00f) \
 		GSU.vCacheFlags |= 1 << ((vAddress & 0x1f0) >> 4);
-}
 
-static void FxFlushCache (void)
-{
-	GSU.vCacheFlags = 0;
-	GSU.vCacheBaseReg = 0;
-	GSU.bCacheActive = FALSE;
-	//GSU.vPipe = 0x1;
-}
+#define FxFlushCache() \
+	GSU.vCacheFlags = 0; \
+	GSU.vCacheBaseReg = 0; \
+	GSU.bCacheActive = FALSE; \
+	/* GSU.vPipe = 0x1; */
 
 // SCBR write seen. We need to update our cached screen pointers
-static void fx_dirtySCBR (void)
-{
-	GSU.vSCBRDirty = TRUE;
-}
+#define fx_dirtySCBR() GSU.vSCBRDirty = TRUE;
 
 // Update RamBankReg and RAM Bank pointer
-static void fx_updateRamBank (uint8 byte)
-{
-	// Update BankReg and Bank pointer
-	GSU.vRamBankReg = (uint32) byte & (FX_RAM_BANKS - 1);
+#define fx_updateRamBank(byte) \
+	/* Update BankReg and Bank pointer */ \
+	GSU.vRamBankReg = (uint32) byte & (FX_RAM_BANKS - 1); \
 	GSU.pvRamBank = GSU.apvRamBank[byte & 0x3];
-}
+
 void S9xSetSuperFX (uint8 byte, uint16 address)
 {
 	switch (address)
@@ -373,7 +365,9 @@ void S9xSetSuperFX (uint8 byte, uint16 address)
 					}
 				}
 				else
+				{
 					FxFlushCache();
+				}
 			}
 			else
 				Memory.FillRAM[0x3030] = byte;
@@ -424,7 +418,9 @@ void S9xSetSuperFX (uint8 byte, uint16 address)
 		default:
 			Memory.FillRAM[address] = byte;
 			if (address >= 0x3100)
+			{
 				FxCacheWriteAccess(address);
+			}
 
 			break;
 	}
@@ -534,10 +530,6 @@ static uint32 FxEmulate (uint32 nInstructions)
 	{
 		CF(G);
 		fx_writeRegisterSpace();
-		/*
-		GSU.vIllegalAddress = (GSU.vPrgBankReg << 24) | R15;
-		return (FX_ERROR_ILLEGAL_ADDRESS);
-		*/
 
 		return (0);
 	}
@@ -545,11 +537,6 @@ static uint32 FxEmulate (uint32 nInstructions)
 	// Execute GSU session
 	CF(IRQ);
 
-	/*
-	if (GSU.bBreakPoint)
-		vCount = fx_run_to_breakpoint(nInstructions);
-	else
-	*/
 	vCount = fx_run(nInstructions);
 
 	// Store GSU registers
