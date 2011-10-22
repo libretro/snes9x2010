@@ -187,10 +187,6 @@ static uint8	region_map[6][6] =
 	{ 0,    0,    0,    0,    0, 0x10 }
 };
 
-static inline uint8 CalcWindowMask (int, uint8, uint8);
-static inline void StoreWindowRegions (uint8, struct ClipData *, int, int16 *, uint8 *, bool8, bool8 s = FALSE);
-
-
 static inline uint8 CalcWindowMask (int i, uint8 W1, uint8 W2)
 {
 	if (!PPU.ClipWindow1Enable[i])

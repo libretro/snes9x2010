@@ -217,10 +217,10 @@ static inline bool8 addCyclesInDMA (uint8 dma_channel)
 bool8 S9xDoDMA (uint8 Channel)
 {
 	CPU.InDMA = TRUE;
-    CPU.InDMAorHDMA = TRUE;
+	CPU.InDMAorHDMA = TRUE;
 	CPU.CurrentDMAorHDMAChannel = Channel;
 
-    SDMA	*d = &DMA[Channel];
+	SDMA	*d = &DMA[Channel];
 
 	// Check invalid DMA first
 	if ((d->ABank == 0x7E || d->ABank == 0x7F) && d->BAddress == 0x80 && !d->ReverseTransfer)
@@ -364,12 +364,6 @@ bool8 S9xDoDMA (uint8 Channel)
 
 			in_sa1_dma = TRUE;
 
-		#if 0
-			printf("SA-1 DMA: %08x,", base);
-			printf("depth = %d, count = %d, bytes_per_char = %d, bytes_per_line = %d, num_chars = %d, char_line_bytes = %d\n",
-				depth, count, bytes_per_char, bytes_per_line, num_chars, char_line_bytes);
-		#endif
-
 			switch (depth)
 			{
 				case 2:
@@ -474,7 +468,7 @@ bool8 S9xDoDMA (uint8 Channel)
 	ADD_CYCLES(SLOW_ONE_CYCLE);
 
 	if (!d->ReverseTransfer)
-    {
+	{
 		// CPU -> PPU
 		int32	b = 0;
 		uint16	p = d->AAddress;
@@ -493,36 +487,36 @@ bool8 S9xDoDMA (uint8 Channel)
 			count = rem;
 		}
 		else
-		if (in_sdd1_dma)
-		{
-			base = in_sdd1_dma;
-			p = 0;
-			count = rem;
-		}
-		else
-		if (spc7110_dma)
-		{
-			base = spc7110_dma;
-			p = 0;
-			count = rem;
-		}
+			if (in_sdd1_dma)
+			{
+				base = in_sdd1_dma;
+				p = 0;
+				count = rem;
+			}
+			else
+				if (spc7110_dma)
+				{
+					base = spc7110_dma;
+					p = 0;
+					count = rem;
+				}
 
 		inWRAM_DMA = ((!in_sa1_dma && !in_sdd1_dma && !spc7110_dma) &&
-			(d->ABank == 0x7e || d->ABank == 0x7f || (!(d->ABank & 0x40) && d->AAddress < 0x2000)));
+				(d->ABank == 0x7e || d->ABank == 0x7f || (!(d->ABank & 0x40) && d->AAddress < 0x2000)));
 
 		// 8 cycles per byte
-		#define	UPDATE_COUNTERS \
-			d->TransferBytes--; \
-			d->AAddress += inc; \
-			p += inc; \
-			if (!addCyclesInDMA(Channel)) \
-			{ \
-				CPU.InDMA = FALSE; \
-				CPU.InDMAorHDMA = FALSE; \
-				CPU.InWRAMDMAorHDMA = FALSE; \
-				CPU.CurrentDMAorHDMAChannel = -1; \
-				return (FALSE); \
-			}
+#define	UPDATE_COUNTERS \
+		d->TransferBytes--; \
+		d->AAddress += inc; \
+		p += inc; \
+		if (!addCyclesInDMA(Channel)) \
+		{ \
+			CPU.InDMA = FALSE; \
+			CPU.InDMAorHDMA = FALSE; \
+			CPU.InWRAMDMAorHDMA = FALSE; \
+			CPU.CurrentDMAorHDMAChannel = -1; \
+			return (FALSE); \
+		}
 
 		while (1)
 		{
@@ -545,135 +539,135 @@ bool8 S9xDoDMA (uint8 Channel)
 					} while (--count > 0);
 				}
 				else
-				if (d->TransferMode == 1 || d->TransferMode == 5)
-				{
-					// This is a variation on Duff's Device. It is legal C/C++.
-					switch (b)
+					if (d->TransferMode == 1 || d->TransferMode == 5)
 					{
-						default:
-						while (count > 1)
+						// This is a variation on Duff's Device. It is legal C/C++.
+						switch (b)
+						{
+							default:
+								while (count > 1)
+								{
+									Work = S9xGetByte((d->ABank << 16) + p);
+									S9xSetPPU(Work, 0x2100 + d->BAddress);
+									UPDATE_COUNTERS;
+									count--;
+
+									case 1:
+									Work = S9xGetByte((d->ABank << 16) + p);
+									S9xSetPPU(Work, 0x2101 + d->BAddress);
+									UPDATE_COUNTERS;
+									count--;
+								}
+						}
+
+						if (count == 1)
 						{
 							Work = S9xGetByte((d->ABank << 16) + p);
 							S9xSetPPU(Work, 0x2100 + d->BAddress);
 							UPDATE_COUNTERS;
-							count--;
-
-						case 1:
-							Work = S9xGetByte((d->ABank << 16) + p);
-							S9xSetPPU(Work, 0x2101 + d->BAddress);
-							UPDATE_COUNTERS;
-							count--;
+							b = 1;
 						}
-					}
-
-					if (count == 1)
-					{
-						Work = S9xGetByte((d->ABank << 16) + p);
-						S9xSetPPU(Work, 0x2100 + d->BAddress);
-						UPDATE_COUNTERS;
-						b = 1;
+						else
+							b = 0;
 					}
 					else
-						b = 0;
-				}
-				else
-				if (d->TransferMode == 3 || d->TransferMode == 7)
-				{
-					switch (b)
-					{
-						default:
-						do
+						if (d->TransferMode == 3 || d->TransferMode == 7)
 						{
-							Work = S9xGetByte((d->ABank << 16) + p);
-							S9xSetPPU(Work, 0x2100 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
+							switch (b)
 							{
-								b = 1;
-								break;
-							}
+								default:
+									do
+									{
+										Work = S9xGetByte((d->ABank << 16) + p);
+										S9xSetPPU(Work, 0x2100 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 1;
+											break;
+										}
 
-						case 1:
-							Work = S9xGetByte((d->ABank << 16) + p);
-							S9xSetPPU(Work, 0x2100 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 2;
-								break;
-							}
+										case 1:
+										Work = S9xGetByte((d->ABank << 16) + p);
+										S9xSetPPU(Work, 0x2100 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 2;
+											break;
+										}
 
-						case 2:
-							Work = S9xGetByte((d->ABank << 16) + p);
-							S9xSetPPU(Work, 0x2101 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 3;
-								break;
-							}
+										case 2:
+										Work = S9xGetByte((d->ABank << 16) + p);
+										S9xSetPPU(Work, 0x2101 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 3;
+											break;
+										}
 
-						case 3:
-							Work = S9xGetByte((d->ABank << 16) + p);
-							S9xSetPPU(Work, 0x2101 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 0;
-								break;
+										case 3:
+										Work = S9xGetByte((d->ABank << 16) + p);
+										S9xSetPPU(Work, 0x2101 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 0;
+											break;
+										}
+									} while (1);
 							}
-						} while (1);
-					}
-				}
-				else
-				if (d->TransferMode == 4)
-				{
-					switch (b)
-					{
-						default:
-						do
-						{
-							Work = S9xGetByte((d->ABank << 16) + p);
-							S9xSetPPU(Work, 0x2100 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
+						}
+						else
+							if (d->TransferMode == 4)
 							{
-								b = 1;
-								break;
-							}
+								switch (b)
+								{
+									default:
+										do
+										{
+											Work = S9xGetByte((d->ABank << 16) + p);
+											S9xSetPPU(Work, 0x2100 + d->BAddress);
+											UPDATE_COUNTERS;
+											if (--count <= 0)
+											{
+												b = 1;
+												break;
+											}
 
-						case 1:
-							Work = S9xGetByte((d->ABank << 16) + p);
-							S9xSetPPU(Work, 0x2101 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 2;
-								break;
-							}
+											case 1:
+											Work = S9xGetByte((d->ABank << 16) + p);
+											S9xSetPPU(Work, 0x2101 + d->BAddress);
+											UPDATE_COUNTERS;
+											if (--count <= 0)
+											{
+												b = 2;
+												break;
+											}
 
-						case 2:
-							Work = S9xGetByte((d->ABank << 16) + p);
-							S9xSetPPU(Work, 0x2102 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 3;
-								break;
-							}
+											case 2:
+											Work = S9xGetByte((d->ABank << 16) + p);
+											S9xSetPPU(Work, 0x2102 + d->BAddress);
+											UPDATE_COUNTERS;
+											if (--count <= 0)
+											{
+												b = 3;
+												break;
+											}
 
-						case 3:
-							Work = S9xGetByte((d->ABank << 16) + p);
-							S9xSetPPU(Work, 0x2103 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 0;
-								break;
+											case 3:
+											Work = S9xGetByte((d->ABank << 16) + p);
+											S9xSetPPU(Work, 0x2103 + d->BAddress);
+											UPDATE_COUNTERS;
+											if (--count <= 0)
+											{
+												b = 0;
+												break;
+											}
+										} while (1);
+								}
 							}
-						} while (1);
-					}
-				}
 			}
 			else
 			{
@@ -693,9 +687,9 @@ bool8 S9xDoDMA (uint8 Channel)
 							break;
 
 						case 0x18: // VMDATAL
-						#ifndef CORRECT_VRAM_READS
+#ifndef CORRECT_VRAM_READS
 							IPPU.FirstVRAMRead = TRUE;
-						#endif
+#endif
 							if (!PPU.VMA.FullGraphicCount)
 							{
 								do
@@ -718,9 +712,9 @@ bool8 S9xDoDMA (uint8 Channel)
 							break;
 
 						case 0x19: // VMDATAH
-						#ifndef CORRECT_VRAM_READS
+#ifndef CORRECT_VRAM_READS
 							IPPU.FirstVRAMRead = TRUE;
-						#endif
+#endif
 							if (!PPU.VMA.FullGraphicCount)
 							{
 								do
@@ -784,68 +778,100 @@ bool8 S9xDoDMA (uint8 Channel)
 					}
 				}
 				else
-				if (d->TransferMode == 1 || d->TransferMode == 5)
-				{
-					if (d->BAddress == 0x18)
+					if (d->TransferMode == 1 || d->TransferMode == 5)
 					{
-						// VMDATAL
-					#ifndef CORRECT_VRAM_READS
-						IPPU.FirstVRAMRead = TRUE;
-					#endif
-						if (!PPU.VMA.FullGraphicCount)
+						if (d->BAddress == 0x18)
 						{
-							switch (b)
+							// VMDATAL
+#ifndef CORRECT_VRAM_READS
+							IPPU.FirstVRAMRead = TRUE;
+#endif
+							if (!PPU.VMA.FullGraphicCount)
 							{
-								default:
-								while (count > 1)
+								switch (b)
+								{
+									default:
+										while (count > 1)
+										{
+											Work = *(base + p);
+											REGISTER_2118_linear(Work);
+											UPDATE_COUNTERS;
+											count--;
+
+											case 1:
+											Work = *(base + p);
+											REGISTER_2119_linear(Work);
+											UPDATE_COUNTERS;
+											count--;
+										}
+								}
+
+								if (count == 1)
 								{
 									Work = *(base + p);
 									REGISTER_2118_linear(Work);
 									UPDATE_COUNTERS;
-									count--;
-
-								case 1:
-									Work = *(base + p);
-									REGISTER_2119_linear(Work);
-									UPDATE_COUNTERS;
-									count--;
+									b = 1;
 								}
-							}
-
-							if (count == 1)
-							{
-								Work = *(base + p);
-								REGISTER_2118_linear(Work);
-								UPDATE_COUNTERS;
-								b = 1;
+								else
+									b = 0;
 							}
 							else
-								b = 0;
-						}
-						else
-						{
-							switch (b)
 							{
-								default:
-								while (count > 1)
+								switch (b)
+								{
+									default:
+										while (count > 1)
+										{
+											Work = *(base + p);
+											REGISTER_2118_tile(Work);
+											UPDATE_COUNTERS;
+											count--;
+
+											case 1:
+											Work = *(base + p);
+											REGISTER_2119_tile(Work);
+											UPDATE_COUNTERS;
+											count--;
+										}
+								}
+
+								if (count == 1)
 								{
 									Work = *(base + p);
 									REGISTER_2118_tile(Work);
 									UPDATE_COUNTERS;
-									count--;
-
-								case 1:
-									Work = *(base + p);
-									REGISTER_2119_tile(Work);
-									UPDATE_COUNTERS;
-									count--;
+									b = 1;
 								}
+								else
+									b = 0;
+							}
+						}
+						else
+						{
+							// DMA mode 1 general case
+							switch (b)
+							{
+								default:
+									while (count > 1)
+									{
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2100 + d->BAddress);
+										UPDATE_COUNTERS;
+										count--;
+
+										case 1:
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2101 + d->BAddress);
+										UPDATE_COUNTERS;
+										count--;
+									}
 							}
 
 							if (count == 1)
 							{
 								Work = *(base + p);
-								REGISTER_2118_tile(Work);
+								S9xSetPPU(Work, 0x2100 + d->BAddress);
 								UPDATE_COUNTERS;
 								b = 1;
 							}
@@ -854,135 +880,103 @@ bool8 S9xDoDMA (uint8 Channel)
 						}
 					}
 					else
-					{
-						// DMA mode 1 general case
-						switch (b)
+						if (d->TransferMode == 3 || d->TransferMode == 7)
 						{
-							default:
-							while (count > 1)
+							switch (b)
 							{
-								Work = *(base + p);
-								S9xSetPPU(Work, 0x2100 + d->BAddress);
-								UPDATE_COUNTERS;
-								count--;
+								default:
+									do
+									{
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2100 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 1;
+											break;
+										}
 
-							case 1:
-								Work = *(base + p);
-								S9xSetPPU(Work, 0x2101 + d->BAddress);
-								UPDATE_COUNTERS;
-								count--;
+										case 1:
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2100 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 2;
+											break;
+										}
+
+										case 2:
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2101 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 3;
+											break;
+										}
+
+										case 3:
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2101 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 0;
+											break;
+										}
+									} while (1);
 							}
-						}
-
-						if (count == 1)
-						{
-							Work = *(base + p);
-							S9xSetPPU(Work, 0x2100 + d->BAddress);
-							UPDATE_COUNTERS;
-							b = 1;
 						}
 						else
-							b = 0;
-					}
-				}
-				else
-				if (d->TransferMode == 3 || d->TransferMode == 7)
-				{
-					switch (b)
-					{
-						default:
-						do
-						{
-							Work = *(base + p);
-							S9xSetPPU(Work, 0x2100 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
+							if (d->TransferMode == 4)
 							{
-								b = 1;
-								break;
-							}
+								switch (b)
+								{
+									default:
+										do
+										{
+											Work = *(base + p);
+											S9xSetPPU(Work, 0x2100 + d->BAddress);
+											UPDATE_COUNTERS;
+											if (--count <= 0)
+											{
+												b = 1;
+												break;
+											}
 
-						case 1:
-							Work = *(base + p);
-							S9xSetPPU(Work, 0x2100 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 2;
-								break;
-							}
+											case 1:
+											Work = *(base + p);
+											S9xSetPPU(Work, 0x2101 + d->BAddress);
+											UPDATE_COUNTERS;
+											if (--count <= 0)
+											{
+												b = 2;
+												break;
+											}
 
-						case 2:
-							Work = *(base + p);
-							S9xSetPPU(Work, 0x2101 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 3;
-								break;
-							}
+											case 2:
+											Work = *(base + p);
+											S9xSetPPU(Work, 0x2102 + d->BAddress);
+											UPDATE_COUNTERS;
+											if (--count <= 0)
+											{
+												b = 3;
+												break;
+											}
 
-						case 3:
-							Work = *(base + p);
-							S9xSetPPU(Work, 0x2101 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 0;
-								break;
+											case 3:
+											Work = *(base + p);
+											S9xSetPPU(Work, 0x2103 + d->BAddress);
+											UPDATE_COUNTERS;
+											if (--count <= 0)
+											{
+												b = 0;
+												break;
+											}
+										} while (1);
+								}
 							}
-						} while (1);
-					}
-				}
-				else
-				if (d->TransferMode == 4)
-				{
-					switch (b)
-					{
-						default:
-						do
-						{
-							Work = *(base + p);
-							S9xSetPPU(Work, 0x2100 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 1;
-								break;
-							}
-
-						case 1:
-							Work = *(base + p);
-							S9xSetPPU(Work, 0x2101 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 2;
-								break;
-							}
-
-						case 2:
-							Work = *(base + p);
-							S9xSetPPU(Work, 0x2102 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 3;
-								break;
-							}
-
-						case 3:
-							Work = *(base + p);
-							S9xSetPPU(Work, 0x2103 + d->BAddress);
-							UPDATE_COUNTERS;
-							if (--count <= 0)
-							{
-								b = 0;
-								break;
-							}
-						} while (1);
-					}
-				}
 			}
 
 			if (rem <= 0)
@@ -991,27 +985,27 @@ bool8 S9xDoDMA (uint8 Channel)
 			base = S9xGetBasePointer((d->ABank << 16) + d->AAddress);
 			count = MEMMAP_BLOCK_SIZE;
 			inWRAM_DMA = ((!in_sa1_dma && !in_sdd1_dma && !spc7110_dma) &&
-				(d->ABank == 0x7e || d->ABank == 0x7f || (!(d->ABank & 0x40) && d->AAddress < 0x2000)));
+					(d->ABank == 0x7e || d->ABank == 0x7f || (!(d->ABank & 0x40) && d->AAddress < 0x2000)));
 		}
 
-		#undef UPDATE_COUNTERS
+#undef UPDATE_COUNTERS
 	}
-    else
-    {
+	else
+	{
 		// PPU -> CPU
 
 		// 8 cycles per byte
-		#define	UPDATE_COUNTERS \
-			d->TransferBytes--; \
-			d->AAddress += inc; \
-			if (!addCyclesInDMA(Channel)) \
-			{ \
-				CPU.InDMA = FALSE; \
-				CPU.InDMAorHDMA = FALSE; \
-				CPU.InWRAMDMAorHDMA = FALSE; \
-				CPU.CurrentDMAorHDMAChannel = -1; \
-				return (FALSE); \
-			}
+#define	UPDATE_COUNTERS \
+		d->TransferBytes--; \
+		d->AAddress += inc; \
+		if (!addCyclesInDMA(Channel)) \
+		{ \
+			CPU.InDMA = FALSE; \
+			CPU.InDMAorHDMA = FALSE; \
+			CPU.InWRAMDMAorHDMA = FALSE; \
+			CPU.CurrentDMAorHDMAChannel = -1; \
+			return (FALSE); \
+		}
 
 		if (d->BAddress > 0x80 - 4 && d->BAddress <= 0x83 && !(d->ABank & 0x40))
 		{
@@ -1227,17 +1221,11 @@ bool8 S9xDoDMA (uint8 Channel)
 	}
 
 	// Release the memory used in SPC7110 DMA
-    if (Settings.SPC7110)
-    {
-        if (spc7110_dma)
-            delete [] spc7110_dma;
-    }
-
-#if 0
-	// sanity check
-    if (d->TransferBytes != 0)
-		fprintf(stderr,"DMA[%d] TransferBytes not 0! $21%02x Reverse:%d %04x\n", Channel, d->BAddress, d->ReverseTransfer, d->TransferBytes);
-#endif
+	if (Settings.SPC7110)
+	{
+		if (spc7110_dma)
+			delete [] spc7110_dma;
+	}
 
 	CPU.InDMA = FALSE;
 	CPU.InDMAorHDMA = FALSE;

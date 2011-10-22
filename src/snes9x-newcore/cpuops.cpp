@@ -3521,22 +3521,7 @@ static void OpCB (void)
 #ifdef SA1_OPCODES
 	SA1.WaitingForInterrupt = TRUE;
 	Registers.PCw--;
-#if 0
-	// XXX: FIXME
-	if (Settings.Shutdown)
-	{
-		SA1.Cycles = SA1.NextEvent;
-		SA1.Executing = FALSE;
-		//S9xAPUExecute(); // FIXME
-		SA1.Executing = TRUE;
-	}
-#endif
 #else	// SA1_OPCODES
-#if 0
-	if (CPU.IRQActive)
-		AddCycles(TWO_CYCLES);
-	else
-#endif
 	{
 		CPU.WaitingForInterrupt = TRUE;
 		Registers.PCw--;

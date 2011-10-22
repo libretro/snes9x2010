@@ -228,22 +228,6 @@ static void fx_cache (void)
 		GSU.vCacheBaseReg = c;
 		GSU.bCacheActive = TRUE;
 
-	#if 0
-		if (c < (0x10000 - 512))
-		{
-			const uint8	*t = &ROM(c);
-			memcpy(GSU.pvCache, t, 512);
-		}
-		else
-		{
-			const uint8	*t1, t2;
-			uint32	i = 0x10000 - c;
-			t1 = &ROM(c);
-			t2 = &ROM(0);
-			memcpy(GSU.pvCache, t1, i);
-			memcpy(&GSU.pvCache[i], t2, 512 - i);
-		}
-	#endif
 	}
 
 	CLRFLAGS;
@@ -4134,71 +4118,9 @@ uint32 fx_run (uint32 nInstructions)
 	READR14;
 	while (TF(G) && (GSU.vCounter-- > 0))
 		FX_STEP;
-#if 0
-#ifndef FX_ADDRESS_CHECK
-	GSU.vPipeAdr = USEX16(R15 - 1) | (USEX8(GSU.vPrgBankReg) << 16);
-#endif
-#endif
 
 	return (nInstructions - GSU.vInstCount);
 }
-
-/*
-uint32 fx_run_to_breakpoint (uint32 nInstructions)
-{
-	uint32	vCounter = 0;
-
-	while (TF(G) && vCounter < nInstructions)
-	{
-		vCounter++;
-		FX_STEP;
-
-		if (USEX16(R15) == GSU.vBreakPoint)
-		{
-			GSU.vErrorCode = FX_BREAKPOINT;
-			break;
-		}
-	}
-
-#if 0
-#ifndef FX_ADDRESS_CHECK
-	GSU.vPipeAdr = USEX16(R15 - 1) | (USEX8(GSU.vPrgBankReg) << 16);
-#endif
-#endif
-
-	return (vCounter);
-}
-*/
-
-/*
-uint32 fx_step_over (uint32 nInstructions)
-{
-	uint32	vCounter = 0;
-
-	while (TF(G) && vCounter < nInstructions)
-	{
-		vCounter++;
-		FX_STEP;
-
-		if (USEX16(R15) == GSU.vBreakPoint)
-		{
-			GSU.vErrorCode = FX_BREAKPOINT;
-			break;
-		}
-
-		if (USEX16(R15) == GSU.vStepPoint)
-			break;
-	}
-
-#if 0
-#ifndef FX_ADDRESS_CHECK
-	GSU.vPipeAdr = USEX16(R15 - 1) | (USEX8(GSU.vPrgBankReg) << 16);
-#endif
-#endif
-
-	return (vCounter);
-}
-*/
 
 // Special table for the different plot configurations
 

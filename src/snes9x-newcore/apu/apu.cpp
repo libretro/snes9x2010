@@ -209,14 +209,14 @@ static uint8 APUROM[64] =
 namespace spc
 {
 	static apu_callback	sa_callback     = NULL;
-	static void			*extra_data     = NULL;
+	static void		*extra_data     = NULL;
 
 	static bool8		sound_in_sync   = TRUE;
 	static bool8		sound_enabled   = FALSE;
 
-	static int			buffer_size;
-	static int			lag_master      = 0;
-	static int			lag             = 0;
+	static int		buffer_size;
+	static int		lag_master      = 0;
+	static int		lag             = 0;
 
 	static uint8		*landing_buffer = NULL;
 	static uint8		*shrink_buffer  = NULL;
@@ -227,45 +227,19 @@ namespace spc
 	static uint32		remainder;
 
 	static const int	timing_hack_numerator   = SNES_SPC::tempo_unit;
-	static int			timing_hack_denominator = SNES_SPC::tempo_unit;
+	static int		timing_hack_denominator = SNES_SPC::tempo_unit;
 	/* Set these to NTSC for now. Will change to PAL in S9xAPUTimingSetSpeedup
 	   if necessary on game load. */
 	static uint32		ratio_numerator = APU_NUMERATOR_NTSC;
 	static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 }
 
-static void EightBitize (uint8 *, int);
-static void DeStereo (uint8 *, int);
 static void ReverseStereo (uint8 *, int);
 static void UpdatePlaybackRate (void);
 static void from_apu_to_state (uint8 **, void *, size_t);
 static void to_apu_from_state (uint8 **, void *, size_t);
-static void SPCSnapshotCallback (void);
 static inline int S9xAPUGetClock (int32);
 static inline int S9xAPUGetClockRemainder (int32);
-
-
-static void EightBitize (uint8 *buffer, int sample_count)
-{
-	uint8	*buf8  = (uint8 *) buffer;
-	int16	*buf16 = (int16 *) buffer;
-
-	for (int i = 0; i < sample_count; i++)
-		buf8[i] = (uint8) ((buf16[i] / 256) + 128);
-}
-
-static void DeStereo (uint8 *buffer, int sample_count)
-{
-	int16	*buf = (int16 *) buffer;
-	int32	s1, s2;
-
-	for (int i = 0; i < sample_count >> 1; i++)
-	{
-		s1 = (int32) buf[2 * i];
-		s2 = (int32) buf[2 * i + 1];
-		buf[i] = (int16) ((s1 + s2) >> 1);
-	}
-}
 
 static void ReverseStereo (uint8 *src_buffer, int sample_count)
 {
@@ -284,24 +258,7 @@ bool8 S9xMixSamples (uint8 *buffer, int sample_count)
 	static int	shrink_buffer_size = -1;
 	uint8		*dest;
 
-	if (!Settings.SixteenBitSound || !Settings.Stereo)
-	{
-		/* We still need both stereo samples for generating the mono sample */
-		if (!Settings.Stereo)
-			sample_count <<= 1;
-
-		/* We still have to generate 16-bit samples for bit-dropping, too */
-		if (shrink_buffer_size < (sample_count << 1))
-		{
-			delete[] spc::shrink_buffer;
-			spc::shrink_buffer = new uint8[sample_count << 1];
-			shrink_buffer_size = sample_count << 1;
-		}
-
-		dest = spc::shrink_buffer;
-	}
-	else
-		dest = buffer;
+	dest = buffer;
 
 	if (Settings.Mute)
 	{
@@ -320,7 +277,7 @@ bool8 S9xMixSamples (uint8 *buffer, int sample_count)
 		}
 		else
 		{
-			memset(buffer, (Settings.SixteenBitSound ? 0 : 128), (sample_count << (Settings.SixteenBitSound ? 1 : 0)) >> (Settings.Stereo ? 0 : 1));
+			memset(buffer, 0, (sample_count << 1) >> 0);
 			if (spc::lag == 0)
 				spc::lag = spc::lag_master;
 
@@ -331,26 +288,12 @@ bool8 S9xMixSamples (uint8 *buffer, int sample_count)
 	if (Settings.ReverseStereo && Settings.Stereo)
 		ReverseStereo(dest, sample_count);
 
-	if (!Settings.Stereo || !Settings.SixteenBitSound)
-	{
-		if (!Settings.Stereo)
-		{
-			DeStereo(dest, sample_count);
-			sample_count >>= 1;
-		}
-
-		if (!Settings.SixteenBitSound)
-			EightBitize(dest, sample_count);
-
-		memcpy(buffer, dest, (sample_count << (Settings.SixteenBitSound ? 1 : 0)));
-	}
-
 	return (TRUE);
 }
 
 int S9xGetSampleCount (void)
 {
-	return (spc::resampler->avail() >> (Settings.Stereo ? 0 : 1));
+	return (spc::resampler->avail() >> 0);
 }
 
 void S9xFinalizeSamples (void)
@@ -426,18 +369,17 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	int	lag_sample_count = lag_ms    * 32000 / 1000;
 
 	spc::lag_master = lag_sample_count;
-	if (Settings.Stereo)
-		spc::lag_master <<= 1;
+	spc::lag_master <<= 1;
 	spc::lag = spc::lag_master;
 
 	if (sample_count < APU_MINIMUM_SAMPLE_COUNT)
 		sample_count = APU_MINIMUM_SAMPLE_COUNT;
 
 	spc::buffer_size = sample_count;
-	if (Settings.Stereo)
-		spc::buffer_size <<= 1;
-	if (Settings.SixteenBitSound)
-		spc::buffer_size <<= 1;
+
+	spc::buffer_size <<= 1;
+
+	spc::buffer_size <<= 1;
 
 	printf("Sound buffer size: %d (%d samples)\n", spc::buffer_size, sample_count);
 
@@ -482,16 +424,7 @@ void S9xSetSoundMute (bool8 mute)
 		Settings.Mute = TRUE;
 }
 
-void S9xDumpSPCSnapshot (void)
-{
-	spc_core->dsp_dump_spc_snapshot();
-}
 
-static void SPCSnapshotCallback (void)
-{
-	S9xSPCDump(S9xGetFilenameInc((".spc"), SPC_DIR));
-	printf("Dumped key-on triggered spc snapshot.\n");
-}
 
 bool8 S9xInitAPU (void)
 {
@@ -501,8 +434,6 @@ bool8 S9xInitAPU (void)
 
 	spc_core->init();
 	spc_core->init_rom(APUROM);
-
-	spc_core->dsp_set_spc_snapshot_callback(SPCSnapshotCallback);
 
 	spc::landing_buffer = NULL;
 	spc::shrink_buffer  = NULL;

@@ -202,10 +202,8 @@ void S9xSetInfoString (const char *);
 
 // Routines the port has to implement even if it doesn't use them
 
-void S9xPutImage (int, int);
 void S9xInitDisplay (int, char **);
 void S9xDeinitDisplay (void);
-void S9xTextMode (void);
 void S9xGraphicsMode (void);
 void S9xSetPalette (void);
 void S9xToggleSoundChannel (int);

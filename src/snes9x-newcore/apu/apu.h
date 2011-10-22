@@ -198,7 +198,6 @@ void S9xAPUTimingSetSpeedup (int);
 void S9xAPUAllowTimeOverflow (bool);
 void S9xAPULoadState (uint8 *);
 void S9xAPUSaveState (uint8 *);
-void S9xDumpSPCSnapshot (void);
 
 bool8 S9xInitSound (int, int);
 bool8 S9xOpenSoundDevice (void);

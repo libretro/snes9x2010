@@ -331,14 +331,6 @@ struct SnapshotMovieInfo
 	uint32	MovieInputDataSize;
 };
 
-struct SnapshotScreenshotInfo
-{
-	uint16	Width;
-	uint16	Height;
-	uint8	Interlaced;
-	uint8	Data[MAX_SNES_WIDTH * MAX_SNES_HEIGHT * 3];
-};
-
 static struct Obsolete
 {
 	uint8	reserved;
@@ -1106,17 +1098,6 @@ static FreezeData	SnapBSX[] =
 	ARRAY_ENTRY(6, MMC, 16, uint8_ARRAY_V),
 	ARRAY_ENTRY(6, prevMMC, 16, uint8_ARRAY_V),
 	ARRAY_ENTRY(6, test2192, 32, uint8_ARRAY_V)
-};
-
-#undef STRUCT
-#define STRUCT	struct SnapshotScreenshotInfo
-
-static FreezeData	SnapScreenshot[] =
-{
-	INT_ENTRY(6, Width),
-	INT_ENTRY(6, Height),
-	INT_ENTRY(6, Interlaced),
-	ARRAY_ENTRY(6, Data, MAX_SNES_WIDTH * MAX_SNES_HEIGHT * 3, uint8_ARRAY_V)
 };
 
 #undef STRUCT
@@ -2159,28 +2140,4 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 			*((pint *) (addr)) = (pint) (relativeTo + relativeAddr);
 		}
 	}
-}
-
-bool8 S9xSPCDump (const char *filename)
-{
-	FILE	*fs;
-	uint8	buf[SNES_SPC::spc_file_size];
-	size_t	ignore;
-
-	fs = fopen(filename, "wb");
-	if (!fs)
-		return (FALSE);
-
-	S9xSetSoundMute(TRUE);
-
-	spc_core->init_header(buf);
-	spc_core->save_spc(buf);
-
-	ignore = fwrite(buf, SNES_SPC::spc_file_size, 1, fs);
-
-	fclose(fs);
-
-	S9xSetSoundMute(FALSE);
-
-	return (TRUE);
 }

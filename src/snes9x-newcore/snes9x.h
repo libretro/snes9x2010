@@ -379,7 +379,6 @@ struct SSettings
 	uint32	FrameTime;
 
 	bool8	SoundSync;
-	bool8	SixteenBitSound;
 	uint32	SoundPlaybackRate;
 	uint32	SoundInputRate;
 	bool8	Stereo;

@@ -194,9 +194,6 @@ static inline void S9xLatchCounters (bool force)
 	if (force || (Memory.FillRAM[0x4213] & 0x80))
 	{
 		// Latch h and v counters, like the gun
-	#if 0 // #ifdef CPU_SHUTDOWN
-		CPU.WaitAddress = CPU.PCAtOpcodeStart;
-	#endif
 
 		PPU.HVBeamCounterLatched = 1;
 		PPU.VBeamPosLatched = (uint16) CPU.V_Counter;
@@ -232,9 +229,6 @@ static inline void S9xTryGunLatch (bool force)
 	{
 		if (force || (Memory.FillRAM[0x4213] & 0x80))
 		{
-		#if 0 // #ifdef CPU_SHUTDOWN
-			CPU.WaitAddress = CPU.PCAtOpcodeStart;
-		#endif
 
 			PPU.HVBeamCounterLatched = 1;
 			PPU.VBeamPosLatched = (uint16) PPU.GunVLatch;
@@ -1669,17 +1663,7 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 				break;
 
 			case 0x4210: // RDNMI
-			#if 0
-				Memory.FillRAM[0x4210] = Model->_5A22;
-			#endif
-				return;
-
 			case 0x4211: // TIMEUP
-			#if 0
-				S9xClearIRQ(PPU_IRQ_SOURCE);
-			#endif
-				return;
-
 			case 0x4212: // HVBJOY
 			case 0x4213: // RDIO
 			case 0x4214: // RDDIVL

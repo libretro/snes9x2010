@@ -392,7 +392,6 @@ void S9xLoadConfigFiles (char **argv, int argc)
 	// Sound
 
 	Settings.SoundSync                  =  conf.GetBool("Sound::Sync",                         true);
-	Settings.SixteenBitSound            =  conf.GetBool("Sound::16BitSound",                   true);
 	Settings.Stereo                     =  conf.GetBool("Sound::Stereo",                       true);
 	Settings.ReverseStereo              =  conf.GetBool("Sound::ReverseStereo",                false);
 	Settings.SoundPlaybackRate          =  conf.GetUInt("Sound::Rate",                         32000);
@@ -606,9 +605,6 @@ char * S9xParseArgs (char **argv, int argc)
 			else
 			if (!strcasecmp(argv[i], "-nostereo"))
 				Settings.Stereo = FALSE;
-			else
-			if (!strcasecmp(argv[i], "-eightbit"))
-				Settings.SixteenBitSound = FALSE;
 			else
 			if (!strcasecmp(argv[i], "-mute"))
 				Settings.Mute = TRUE;
