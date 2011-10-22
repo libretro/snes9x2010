@@ -177,7 +177,9 @@
 
 #include "snes9x.h"
 #include "memmap.h"
+#include "port.h"
 #include "sdd1.h"
+#include "sdd1emu.h"
 #include "display.h"
 
 
@@ -209,3 +211,5 @@ void S9xSDD1PostLoadState (void)
 	for (int i = 0; i < 4; i++)
 		S9xSetSDD1MemoryMap(i, Memory.FillRAM[0x4804 + i]);
 }
+
+#include "sdd1emu_.h"
