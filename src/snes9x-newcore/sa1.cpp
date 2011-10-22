@@ -180,14 +180,6 @@
 
 uint8	SA1OpenBus;
 
-static void S9xSA1Reset (void);
-static void S9xSA1SetBWRAMMemMap (uint8);
-static void S9xSetSA1MemMap (uint32, uint8);
-static void S9xSA1CharConv2 (void);
-static void S9xSA1DMA (void);
-static void S9xSA1ReadVariableLengthData (bool8, bool8);
-
-
 void S9xSA1Init (void)
 {
 	SA1.IRQActive = FALSE;
@@ -312,6 +304,40 @@ static void S9xSetSA1MemMap (uint32 which1, uint8 map)
 	}
 }
 
+static void S9xSA1ReadVariableLengthData (bool8 inc, bool8 no_shift)
+{
+	uint32	addr  = Memory.FillRAM[0x2259] | (Memory.FillRAM[0x225a] << 8) | (Memory.FillRAM[0x225b] << 16);
+	uint8	shift = Memory.FillRAM[0x2258] & 15;
+
+	if (no_shift)
+		shift = 0;
+	else
+	if (shift == 0)
+		shift = 16;
+
+	uint8	s = shift + SA1.variable_bit_pos;
+
+	if (s >= 16)
+	{
+		addr += (s >> 4) << 1;
+		s &= 15;
+	}
+
+	uint32	data = S9xSA1GetWord(addr) | (S9xSA1GetWord(addr + 2) << 16);
+
+	data >>= s;
+	Memory.FillRAM[0x230c] = (uint8) data;
+	Memory.FillRAM[0x230d] = (uint8) (data >> 8);
+
+	if (inc)
+	{
+		SA1.variable_bit_pos = (SA1.variable_bit_pos + shift) & 15;
+		Memory.FillRAM[0x2259] = (uint8) addr;
+		Memory.FillRAM[0x225a] = (uint8) (addr >> 8);
+		Memory.FillRAM[0x225b] = (uint8) (addr >> 16);
+	}
+}
+
 uint8 S9xGetSA1 (uint32 address)
 {
 	switch (address)
@@ -356,6 +382,127 @@ uint8 S9xGetSA1 (uint32 address)
 	}
 
 	return (Memory.FillRAM[address]);
+}
+
+static void S9xSA1DMA (void)
+{
+	uint32	src = Memory.FillRAM[0x2232] | (Memory.FillRAM[0x2233] << 8) | (Memory.FillRAM[0x2234] << 16);
+	uint32	dst = Memory.FillRAM[0x2235] | (Memory.FillRAM[0x2236] << 8) | (Memory.FillRAM[0x2237] << 16);
+	uint32	len = Memory.FillRAM[0x2238] | (Memory.FillRAM[0x2239] << 8);
+	uint8	*s, *d;
+
+	switch (Memory.FillRAM[0x2230] & 3)
+	{
+		case 0: // ROM
+			s = SA1.Map[((src & 0xffffff) >> MEMMAP_SHIFT)];
+			if (s >= (uint8 *) CMemory::MAP_LAST)
+				s += (src & 0xffff);
+			else
+				s = Memory.ROM + (src & 0xffff);
+			break;
+
+		case 1: // BW-RAM
+			src &= Memory.SRAMMask;
+			len &= Memory.SRAMMask;
+			s = Memory.SRAM + src;
+			break;
+
+		default:
+		case 2:
+			src &= 0x3ff;
+			len &= 0x3ff;
+			s = &Memory.FillRAM[0x3000] + src;
+			break;
+	}
+
+	if (Memory.FillRAM[0x2230] & 4)
+	{
+		dst &= Memory.SRAMMask;
+		len &= Memory.SRAMMask;
+		d = Memory.SRAM + dst;
+	}
+	else
+	{
+		dst &= 0x3ff;
+		len &= 0x3ff;
+		d = &Memory.FillRAM[0x3000] + dst;
+	}
+
+	memmove(d, s, len);
+	Memory.FillRAM[0x2301] |= 0x20;
+
+	if (Memory.FillRAM[0x220a] & 0x20)
+	{
+		SA1.Flags |= IRQ_FLAG;
+		SA1.IRQActive |= DMA_IRQ_SOURCE;
+		//SA1.Executing = !SA1.Waiting;
+	}
+}
+
+static void S9xSA1CharConv2 (void)
+{
+	uint32	dest           = Memory.FillRAM[0x2235] | (Memory.FillRAM[0x2236] << 8);
+	uint32	offset         = (SA1.in_char_dma & 7) ? 0 : 1;
+	int		depth          = (Memory.FillRAM[0x2231] & 3) == 0 ? 8 : (Memory.FillRAM[0x2231] & 3) == 1 ? 4 : 2;
+	int		bytes_per_char = 8 * depth;
+	uint8	*p             = &Memory.FillRAM[0x3000] + (dest & 0x7ff) + offset * bytes_per_char;
+	uint8	*q             = &Memory.ROM[CMemory::MAX_ROM_SIZE - 0x10000] + offset * 64;
+
+	switch (depth)
+	{
+		case 2:
+			for (int l = 0; l < 8; l++, q += 8)
+			{
+				for (int b = 0; b < 8; b++)
+				{
+					uint8	r = *(q + b);
+					*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
+					*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
+				}
+
+				p += 2;
+			}
+
+			break;
+
+		case 4:
+			for (int l = 0; l < 8; l++, q += 8)
+			{
+				for (int b = 0; b < 8; b++)
+				{
+					uint8	r = *(q + b);
+					*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
+					*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
+					*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
+					*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
+				}
+
+				p += 2;
+			}
+
+			break;
+
+		case 8:
+			for (int l = 0; l < 8; l++, q += 8)
+			{
+				for (int b = 0; b < 8; b++)
+				{
+					uint8	r = *(q + b);
+					*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
+					*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
+					*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
+					*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
+					*(p + 32) = (*(p + 32) << 1) | ((r >> 4) & 1);
+					*(p + 33) = (*(p + 33) << 1) | ((r >> 5) & 1);
+					*(p + 48) = (*(p + 48) << 1) | ((r >> 6) & 1);
+					*(p + 49) = (*(p + 49) << 1) | ((r >> 7) & 1);
+				}
+
+				p += 2;
+			}
+
+			break;
+	}
 }
 
 void S9xSetSA1 (uint8 byte, uint32 address)
@@ -695,160 +842,8 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 		Memory.FillRAM[address] = byte;
 }
 
-static void S9xSA1CharConv2 (void)
-{
-	uint32	dest           = Memory.FillRAM[0x2235] | (Memory.FillRAM[0x2236] << 8);
-	uint32	offset         = (SA1.in_char_dma & 7) ? 0 : 1;
-	int		depth          = (Memory.FillRAM[0x2231] & 3) == 0 ? 8 : (Memory.FillRAM[0x2231] & 3) == 1 ? 4 : 2;
-	int		bytes_per_char = 8 * depth;
-	uint8	*p             = &Memory.FillRAM[0x3000] + (dest & 0x7ff) + offset * bytes_per_char;
-	uint8	*q             = &Memory.ROM[CMemory::MAX_ROM_SIZE - 0x10000] + offset * 64;
 
-	switch (depth)
-	{
-		case 2:
-			for (int l = 0; l < 8; l++, q += 8)
-			{
-				for (int b = 0; b < 8; b++)
-				{
-					uint8	r = *(q + b);
-					*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
-					*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
-				}
 
-				p += 2;
-			}
-
-			break;
-
-		case 4:
-			for (int l = 0; l < 8; l++, q += 8)
-			{
-				for (int b = 0; b < 8; b++)
-				{
-					uint8	r = *(q + b);
-					*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
-					*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
-					*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
-					*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
-				}
-
-				p += 2;
-			}
-
-			break;
-
-		case 8:
-			for (int l = 0; l < 8; l++, q += 8)
-			{
-				for (int b = 0; b < 8; b++)
-				{
-					uint8	r = *(q + b);
-					*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
-					*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
-					*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
-					*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
-					*(p + 32) = (*(p + 32) << 1) | ((r >> 4) & 1);
-					*(p + 33) = (*(p + 33) << 1) | ((r >> 5) & 1);
-					*(p + 48) = (*(p + 48) << 1) | ((r >> 6) & 1);
-					*(p + 49) = (*(p + 49) << 1) | ((r >> 7) & 1);
-				}
-
-				p += 2;
-			}
-
-			break;
-	}
-}
-
-static void S9xSA1DMA (void)
-{
-	uint32	src = Memory.FillRAM[0x2232] | (Memory.FillRAM[0x2233] << 8) | (Memory.FillRAM[0x2234] << 16);
-	uint32	dst = Memory.FillRAM[0x2235] | (Memory.FillRAM[0x2236] << 8) | (Memory.FillRAM[0x2237] << 16);
-	uint32	len = Memory.FillRAM[0x2238] | (Memory.FillRAM[0x2239] << 8);
-	uint8	*s, *d;
-
-	switch (Memory.FillRAM[0x2230] & 3)
-	{
-		case 0: // ROM
-			s = SA1.Map[((src & 0xffffff) >> MEMMAP_SHIFT)];
-			if (s >= (uint8 *) CMemory::MAP_LAST)
-				s += (src & 0xffff);
-			else
-				s = Memory.ROM + (src & 0xffff);
-			break;
-
-		case 1: // BW-RAM
-			src &= Memory.SRAMMask;
-			len &= Memory.SRAMMask;
-			s = Memory.SRAM + src;
-			break;
-
-		default:
-		case 2:
-			src &= 0x3ff;
-			len &= 0x3ff;
-			s = &Memory.FillRAM[0x3000] + src;
-			break;
-	}
-
-	if (Memory.FillRAM[0x2230] & 4)
-	{
-		dst &= Memory.SRAMMask;
-		len &= Memory.SRAMMask;
-		d = Memory.SRAM + dst;
-	}
-	else
-	{
-		dst &= 0x3ff;
-		len &= 0x3ff;
-		d = &Memory.FillRAM[0x3000] + dst;
-	}
-
-	memmove(d, s, len);
-	Memory.FillRAM[0x2301] |= 0x20;
-
-	if (Memory.FillRAM[0x220a] & 0x20)
-	{
-		SA1.Flags |= IRQ_FLAG;
-		SA1.IRQActive |= DMA_IRQ_SOURCE;
-		//SA1.Executing = !SA1.Waiting;
-	}
-}
-
-static void S9xSA1ReadVariableLengthData (bool8 inc, bool8 no_shift)
-{
-	uint32	addr  = Memory.FillRAM[0x2259] | (Memory.FillRAM[0x225a] << 8) | (Memory.FillRAM[0x225b] << 16);
-	uint8	shift = Memory.FillRAM[0x2258] & 15;
-
-	if (no_shift)
-		shift = 0;
-	else
-	if (shift == 0)
-		shift = 16;
-
-	uint8	s = shift + SA1.variable_bit_pos;
-
-	if (s >= 16)
-	{
-		addr += (s >> 4) << 1;
-		s &= 15;
-	}
-
-	uint32	data = S9xSA1GetWord(addr) | (S9xSA1GetWord(addr + 2) << 16);
-
-	data >>= s;
-	Memory.FillRAM[0x230c] = (uint8) data;
-	Memory.FillRAM[0x230d] = (uint8) (data >> 8);
-
-	if (inc)
-	{
-		SA1.variable_bit_pos = (SA1.variable_bit_pos + shift) & 15;
-		Memory.FillRAM[0x2259] = (uint8) addr;
-		Memory.FillRAM[0x225a] = (uint8) (addr >> 8);
-		Memory.FillRAM[0x225b] = (uint8) (addr >> 16);
-	}
-}
 
 uint8 S9xSA1GetByte (uint32 address)
 {

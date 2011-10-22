@@ -1516,16 +1516,12 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 		{
 			case 0x4200: // NMITIMEN
 				if (Byte & 0x20)
-				{
 					PPU.VTimerEnabled = TRUE;
-				}
 				else
 					PPU.VTimerEnabled = FALSE;
 
 				if (Byte & 0x10)
-				{
 					PPU.HTimerEnabled = TRUE;
-				}
 				else
 					PPU.HTimerEnabled = FALSE;
 
