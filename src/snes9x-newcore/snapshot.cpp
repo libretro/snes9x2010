@@ -1171,19 +1171,6 @@ bool8 S9xUnfreezeGame (const char *filename)
 				case WRONG_VERSION:
 					S9xMessage(S9X_ERROR, S9X_WRONG_VERSION, SAVE_ERR_WRONG_VERSION);
 					break;
-
-				case WRONG_MOVIE_SNAPSHOT:
-					S9xMessage(S9X_ERROR, S9X_WRONG_MOVIE_SNAPSHOT, MOVIE_ERR_SNAPSHOT_WRONG_MOVIE);
-					break;
-
-				case NOT_A_MOVIE_SNAPSHOT:
-					S9xMessage(S9X_ERROR, S9X_NOT_A_MOVIE_SNAPSHOT, MOVIE_ERR_SNAPSHOT_NOT_MOVIE);
-					break;
-
-				case SNAPSHOT_INCONSISTENT:
-					S9xMessage(S9X_ERROR, S9X_SNAPSHOT_INCONSISTENT, MOVIE_ERR_SNAPSHOT_INCONSISTENT);
-					break;
-
 				case FILE_NOT_FOUND:
 				default:
 					sprintf(String, SAVE_ERR_ROM_NOT_FOUND, base);

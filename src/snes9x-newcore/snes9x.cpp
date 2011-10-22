@@ -402,7 +402,6 @@ void S9xLoadConfigFiles (char **argv, int argc)
 
 	Settings.DisplayWatchedAddresses    =  conf.GetBool("Display::DisplayWatchedAddresses",    false);
 	Settings.DisplayPressedKeys         =  conf.GetBool("Display::DisplayInput",               false);
-	Settings.DisplayMovieFrame          =  conf.GetBool("Display::DisplayFrameCount",          false);
 	Settings.AutoDisplayMessages        =  conf.GetBool("Display::MessagesInImage",            true);
 	Settings.InitialInfoStringTimeout   =  conf.GetInt ("Display::MessageDisplayTime",         120);
 
@@ -411,9 +410,6 @@ void S9xLoadConfigFiles (char **argv, int argc)
 	Settings.BSXBootup                  =  conf.GetBool("Settings::BSXBootup",                 false);
 	Settings.TurboMode                  =  conf.GetBool("Settings::TurboMode",                 false);
 	Settings.TurboSkipFrames            =  conf.GetUInt("Settings::TurboFrameSkip",            15);
-	Settings.MovieTruncate              =  conf.GetBool("Settings::MovieTruncateAtEnd",        false);
-	Settings.MovieNotifyIgnored         =  conf.GetBool("Settings::MovieNotifyIgnored",        false);
-	Settings.WrongMovieStateProtection  =  conf.GetBool("Settings::WrongMovieStateProtection", true);
 	Settings.DontSaveOopsSnapshot       =  conf.GetBool("Settings::DontSaveOopsSnapshot",      false);
 	Settings.AutoSaveDelay              =  conf.GetUInt("Settings::AutoSaveDelay",             0);
 

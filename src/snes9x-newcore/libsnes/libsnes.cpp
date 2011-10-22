@@ -176,8 +176,6 @@ void snes_init()
    Settings.HDMATimingHack = 100;
    Settings.BlockInvalidVRAMAccessMaster = TRUE;
    Settings.StopEmulation = TRUE;
-   Settings.WrongMovieStateProtection = TRUE;
-   Settings.DumpStreamsMaxFrames = -1;
    Settings.SkipFrames = AUTO_FRAMERATE;
    Settings.TurboSkipFrames = 15;
    Settings.CartAName[0] = 0;
@@ -611,7 +609,6 @@ bool S9xPollAxis(unsigned int, short*) { return FALSE; }
 void S9xSetPalette() {}
 void S9xParseArg(char**, int&, int) {}
 bool S9xPollPointer(unsigned int, short*, short*) { return false; }
-const char *S9xChooseMovieFilename(unsigned char) { return NULL; }
 
 bool8 S9xOpenSnapshotFile(const char* filepath, bool8 read_only, STREAM *file) 
 { 
