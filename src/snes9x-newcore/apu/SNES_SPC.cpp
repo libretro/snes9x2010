@@ -179,8 +179,10 @@ inline void SNES_SPC::dsp_write( int data, rel_time_t time )
 	
 	if ( REGS [r_dspaddr] <= 0x7F )
 		dsp.write( REGS [r_dspaddr], data );
+	#if 0
 	else if ( !SPC_MORE_ACCURACY )
 		dprintf( "SPC wrote to DSP register > $7F\n" );
+	#endif
 }
 
 
@@ -310,8 +312,10 @@ void SNES_SPC::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 	case r_t0out:
 	case r_t1out:
 	case r_t2out:
+		#if 0
 		if ( !SPC_MORE_ACCURACY )
 			dprintf( "SPC wrote to counter %d\n", (int) addr - r_t0out );
+		#endif
 		
 		if ( data < no_read_before_write  / 2 )
 			run_timer( &m.timers [addr - r_t0out], time - 1 )->counter = 0;
@@ -324,8 +328,10 @@ void SNES_SPC::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 		break;
 	
 	case r_test:
+		#if 0
 		if ( (uint8_t) data != 0x0A )
 			dprintf( "SPC wrote to test register\n" );
+		#endif
 		break;
 	
 	case r_control:

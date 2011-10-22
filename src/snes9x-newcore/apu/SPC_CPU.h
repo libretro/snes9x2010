@@ -16,7 +16,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #if SPC_MORE_ACCURACY
 	#define SUSPICIOUS_OPCODE( name ) ((void) 0)
 #else
-	#define SUSPICIOUS_OPCODE( name ) dprintf( "SPC: suspicious opcode: " name "\n" )
+	//#define SUSPICIOUS_OPCODE( name ) dprintf( "SPC: suspicious opcode: " name "\n" )
+	#define SUSPICIOUS_OPCODE(name)
 #endif
 
 #define CPU_READ( time, offset, addr )\
@@ -1186,7 +1187,7 @@ loop:
 		{
 			addr &= 0xFFFF;
 			SET_PC( addr );
-			dprintf( "SPC: PC wrapped around\n" );
+			//dprintf( "SPC: PC wrapped around\n" );
 			goto loop;
 		}
 	}
@@ -1206,8 +1207,10 @@ out_of_time:
 stop:
 	
 	// Uncache registers
+	#if 0
 	if ( GET_PC() >= 0x10000 )
 		dprintf( "SPC: PC wrapped around\n" );
+	#endif
 	m.cpu_regs.pc = (uint16_t) GET_PC();
 	m.cpu_regs.sp = ( uint8_t) GET_SP();
 	m.cpu_regs.a  = ( uint8_t) a;

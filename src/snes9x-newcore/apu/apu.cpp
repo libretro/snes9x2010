@@ -241,18 +241,6 @@ namespace spc
 	static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 }
 
-static void ReverseStereo (uint8 *src_buffer, int sample_count)
-{
-	int16	*buffer = (int16 *) src_buffer;
-
-	for (int i = 0; i < sample_count; i += 2)
-	{
-		buffer[i + 1] ^= buffer[i];
-		buffer[i] ^= buffer[i + 1];
-		buffer[i + 1] ^= buffer[i];
-	}
-}
-
 bool8 S9xMixSamples (uint8 *buffer, int sample_count)
 {
 	uint8		*dest;
@@ -283,9 +271,6 @@ bool8 S9xMixSamples (uint8 *buffer, int sample_count)
 			return (FALSE);
 		}
 	}
-
-	if (Settings.ReverseStereo && Settings.Stereo)
-		ReverseStereo(dest, sample_count);
 
 	return (TRUE);
 }

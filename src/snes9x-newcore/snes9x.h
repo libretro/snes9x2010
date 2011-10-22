@@ -399,7 +399,6 @@ struct SSettings
 	uint32	SoundPlaybackRate;
 	uint32	SoundInputRate;
 	bool8	Stereo;
-	bool8	ReverseStereo;
 	bool8	Mute;
 
 	uint8	BG_Forced;
