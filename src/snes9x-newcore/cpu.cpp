@@ -185,22 +185,6 @@
 #include "snapshot.h"
 #include "cheats.h"
 
-static void S9xResetCPU (void);
-static void S9xSoftResetCPU (void);
-
-
-static void S9xResetCPU (void)
-{
-	S9xSoftResetCPU();
-	Registers.SL = 0xff;
-	Registers.P.W = 0;
-	Registers.A.W = 0;
-	Registers.X.W = 0;
-	Registers.Y.W = 0;
-	SetFlags(MemoryFlag | IndexFlag | IRQ | Emulation);
-	ClearFlags(Decimal);
-}
-
 static void S9xSoftResetCPU (void)
 {
 	CPU.Cycles = 182; // Or 188. This is the cycle count just after the jump to the Reset Vector.
@@ -261,6 +245,19 @@ static void S9xSoftResetCPU (void)
 
 	S9xUnpackStatus();
 }
+
+static void S9xResetCPU (void)
+{
+	S9xSoftResetCPU();
+	Registers.SL = 0xff;
+	Registers.P.W = 0;
+	Registers.A.W = 0;
+	Registers.X.W = 0;
+	Registers.Y.W = 0;
+	SetFlags(MemoryFlag | IndexFlag | IRQ | Emulation);
+	ClearFlags(Decimal);
+}
+
 
 void S9xReset (void)
 {

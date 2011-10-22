@@ -430,18 +430,6 @@ static const char	*command_names[LAST_COMMAND + 1] =
 #undef S
 #undef THE_COMMANDS
 
-static void DisplayStateChange (const char *, bool8);
-static void DoGunLatch (int, int);
-static int maptype (int);
-static bool strless (const char *, const char *);
-static int findstr (const char *, const char **, int);
-static int get_threshold (const char **);
-static const char * maptypename (int);
-static int32 ApplyMulti (s9xcommand_t *, int32, int16);
-static void do_polling (int);
-static void UpdatePolledMouse (int);
-
-
 static string& operator += (string &s, int i)
 {
 	snprintf(buf, sizeof(buf), "%d", i);

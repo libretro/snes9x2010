@@ -179,10 +179,6 @@
 #include "memmap.h"
 #include "cheats.h"
 
-static uint8 S9xGetByteFree (uint32);
-static void S9xSetByteFree (uint8, uint32);
-
-
 static uint8 S9xGetByteFree (uint32 address)
 {
 	uint32	Cycles = CPU.Cycles;
