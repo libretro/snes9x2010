@@ -9,7 +9,6 @@
 #include "snapshot.h"
 #include "controls.h"
 #include "cheats.h"
-#include "movie.h"
 #include "display.h"
 #include "conffile.h"
 #include <stdio.h>
@@ -80,11 +79,6 @@ void snes_power()
 
 void snes_reset()
 {
-   S9xMovieUpdateOnReset();
-   if (S9xMoviePlaying())
-   {
-      S9xMovieStop(true);
-   }
    S9xSoftReset();
 }
 

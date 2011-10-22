@@ -183,7 +183,6 @@
 #include "sdd1.h"
 #include "srtc.h"
 #include "controls.h"
-#include "movie.h"
 #include "display.h"
 
 extern uint8	*HDMAMemPointers[8];

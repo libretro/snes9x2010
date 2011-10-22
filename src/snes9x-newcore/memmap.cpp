@@ -194,7 +194,6 @@
 #include "srtc.h"
 #include "controls.h"
 #include "cheats.h"
-#include "movie.h"
 #include "reader.h"
 #include "display.h"
 
@@ -2639,9 +2638,6 @@ void CMemory::InitROM (void)
 	Settings.ForceNotInterleaved = FALSE;
 	Settings.ForcePAL = FALSE;
 	Settings.ForceNTSC = FALSE;
-
-	if (stopMovie)
-		S9xMovieStop(TRUE);
 
 	if (PostRomInitFunc)
 		PostRomInitFunc();
