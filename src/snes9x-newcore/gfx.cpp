@@ -192,18 +192,6 @@ void S9xComputeClipWindows (void);
 
 static int	font_width = 8, font_height = 9;
 
-static void SetupOBJ (void);
-static void DrawOBJS (int);
-static void DisplayStringFromBottom (const char *, int, int, bool);
-static void DrawBackground (int, uint8, uint8);
-static void DrawBackgroundMosaic (int, uint8, uint8);
-static void DrawBackgroundOffset (int, uint8, uint8, int);
-static void DrawBackgroundOffsetMosaic (int, uint8, uint8, int);
-static inline void DrawBackgroundMode7 (int, void (*DrawMath) (uint32, uint32, int), void (*DrawNomath) (uint32, uint32, int), int);
-static inline void DrawBackdrop (void);
-static inline void RenderScreen (bool8);
-static uint16 get_crosshair_color (uint8);
-
 #define TILE_PLUS(t, x)	(((t) & 0xfc00) | ((t + x) & 0x3ff))
 
 
@@ -451,254 +439,6 @@ void S9xEndScreenRefresh (void)
 	}
 }
 
-void RenderLine (uint8 C)
-{
-	if (IPPU.RenderThisFrame)
-	{
-		LineData[C].BG[0].VOffset = PPU.BG[0].VOffset + 1;
-		LineData[C].BG[0].HOffset = PPU.BG[0].HOffset;
-		LineData[C].BG[1].VOffset = PPU.BG[1].VOffset + 1;
-		LineData[C].BG[1].HOffset = PPU.BG[1].HOffset;
-
-		if (PPU.BGMode == 7)
-		{
-			struct SLineMatrixData *p = &LineMatrixData[C];
-			p->MatrixA = PPU.MatrixA;
-			p->MatrixB = PPU.MatrixB;
-			p->MatrixC = PPU.MatrixC;
-			p->MatrixD = PPU.MatrixD;
-			p->CentreX = PPU.CentreX;
-			p->CentreY = PPU.CentreY;
-			p->M7HOFS  = PPU.M7HOFS;
-			p->M7VOFS  = PPU.M7VOFS;
-		}
-		else
-		{
-			LineData[C].BG[2].VOffset = PPU.BG[2].VOffset + 1;
-			LineData[C].BG[2].HOffset = PPU.BG[2].HOffset;
-			LineData[C].BG[3].VOffset = PPU.BG[3].VOffset + 1;
-			LineData[C].BG[3].HOffset = PPU.BG[3].HOffset;
-		}
-
-		IPPU.CurrentLine = C + 1;
-	}
-	else
-	{
-		// if we're not rendering this frame, we still need to update this
-		// XXX: Check ForceBlank? Or anything else?
-		if (IPPU.OBJChanged)
-			SetupOBJ();
-		PPU.RangeTimeOver |= GFX.OBJLines[C].RTOFlags;
-	}
-}
-
-static inline void RenderScreen (bool8 sub)
-{
-	uint8	BGActive;
-	int		D;
-
-	if (!sub)
-	{
-		GFX.S = GFX.Screen;
-		if (GFX.DoInterlace && GFX.InterlaceFrame)
-			GFX.S += GFX.RealPPL;
-		GFX.DB = GFX.ZBuffer;
-		GFX.Clip = IPPU.Clip[0];
-		BGActive = Memory.FillRAM[0x212c] & ~Settings.BG_Forced;
-		D = 32;
-	}
-	else
-	{
-		GFX.S = GFX.SubScreen;
-		GFX.DB = GFX.SubZBuffer;
-		GFX.Clip = IPPU.Clip[1];
-		BGActive = Memory.FillRAM[0x212d] & ~Settings.BG_Forced;
-		D = (Memory.FillRAM[0x2130] & 2) << 4; // 'do math' depth flag
-	}
-
-	if (BGActive & 0x10)
-	{
-		BG.TileAddress = PPU.OBJNameBase;
-		BG.NameSelect = PPU.OBJNameSelect;
-		BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x10);
-		BG.StartPalette = 128;
-		S9xSelectTileConverter(4, FALSE, sub, FALSE);
-		S9xSelectTileRenderers(PPU.BGMode, sub, TRUE);
-		DrawOBJS(D + 4);
-	}
-
-	BG.NameSelect = 0;
-	S9xSelectTileRenderers(PPU.BGMode, sub, FALSE);
-
-	#define DO_BG(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
-		if (BGActive & (1 << n)) \
-		{ \
-			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (!hires && PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter(depth, hires, sub, PPU.BGMosaic[n]); \
-			\
-			if (offset) \
-			{ \
-				BG.OffsetSizeH = (!hires && PPU.BG[2].BGSize) ? 16 : 8; \
-				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
-				\
-				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
-					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
-				else \
-					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
-			} \
-			else \
-			{ \
-				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
-					DrawBackgroundMosaic(n, D + Zh, D + Zl); \
-				else \
-					DrawBackground(n, D + Zh, D + Zl); \
-			} \
-		}
-
-	switch (PPU.BGMode)
-	{
-		case 0:
-			DO_BG(0,  0, 2, FALSE, FALSE, 15, 11, 0);
-			DO_BG(1, 32, 2, FALSE, FALSE, 14, 10, 0);
-			DO_BG(2, 64, 2, FALSE, FALSE,  7,  3, 0);
-			DO_BG(3, 96, 2, FALSE, FALSE,  6,  2, 0);
-			break;
-
-		case 1:
-			DO_BG(0,  0, 4, FALSE, FALSE, 15, 11, 0);
-			DO_BG(1,  0, 4, FALSE, FALSE, 14, 10, 0);
-			DO_BG(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
-			break;
-
-		case 2:
-			DO_BG(0,  0, 4, FALSE, TRUE,  15,  7, 8);
-			DO_BG(1,  0, 4, FALSE, TRUE,  11,  3, 8);
-			break;
-
-		case 3:
-			DO_BG(0,  0, 8, FALSE, FALSE, 15,  7, 0);
-			DO_BG(1,  0, 4, FALSE, FALSE, 11,  3, 0);
-			break;
-
-		case 4:
-			DO_BG(0,  0, 8, FALSE, TRUE,  15,  7, 0);
-			DO_BG(1,  0, 2, FALSE, TRUE,  11,  3, 0);
-			break;
-
-		case 5:
-			DO_BG(0,  0, 4, TRUE,  FALSE, 15,  7, 0);
-			DO_BG(1,  0, 2, TRUE,  FALSE, 11,  3, 0);
-			break;
-
-		case 6:
-			DO_BG(0,  0, 4, TRUE,  TRUE,  15,  7, 8);
-			break;
-
-		case 7:
-			if (BGActive & 0x01)
-			{
-				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 1);
-				DrawBackgroundMode7(0, GFX.DrawMode7BG1Math, GFX.DrawMode7BG1Nomath, D);
-			}
-
-			if ((Memory.FillRAM[0x2133] & 0x40) && (BGActive & 0x02))
-			{
-				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 2);
-				DrawBackgroundMode7(1, GFX.DrawMode7BG2Math, GFX.DrawMode7BG2Nomath, D);
-			}
-
-			break;
-	}
-
-	#undef DO_BG
-
-	BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x20);
-
-	DrawBackdrop();
-}
-
-void S9xUpdateScreen (void)
-{
-	if (IPPU.OBJChanged)
-		SetupOBJ();
-
-	// XXX: Check ForceBlank? Or anything else?
-	PPU.RangeTimeOver |= GFX.OBJLines[GFX.EndY].RTOFlags;
-
-	GFX.StartY = IPPU.PreviousLine;
-	if ((GFX.EndY = IPPU.CurrentLine - 1) >= PPU.ScreenHeight)
-		GFX.EndY = PPU.ScreenHeight - 1;
-
-	if (!PPU.ForcedBlanking)
-	{
-		// If force blank, may as well completely skip all this. We only did
-		// the OBJ because (AFAWK) the RTO flags are updated even during force-blank.
-
-		if (PPU.RecomputeClipWindows)
-		{
-			S9xComputeClipWindows();
-			PPU.RecomputeClipWindows = FALSE;
-		}
-
-		if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
-		{
-			{
-				// Have to back out of the regular speed hack
-				for (register uint32 y = 0; y < GFX.StartY; y++)
-				{
-					register uint16	*p = GFX.Screen + y * GFX.PPL + 255;
-					register uint16	*q = GFX.Screen + y * GFX.PPL + 510;
-
-					for (register int x = 255; x >= 0; x--, p--, q -= 2)
-						*q = *(q + 1) = *p;
-				}
-			}
-
-			IPPU.DoubleWidthPixels = TRUE;
-			IPPU.RenderedScreenWidth = 512;
-		}
-
-		if (!IPPU.DoubleHeightPixels && (IPPU.Interlace || IPPU.InterlaceOBJ))
-		{
-			IPPU.DoubleHeightPixels = TRUE;
-			IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
-			GFX.PPL = GFX.RealPPL << 1;
-			GFX.DoInterlace = 2;
-
-			for (register int32 y = (int32) GFX.StartY - 1; y >= 0; y--)
-				memmove(GFX.Screen + y * GFX.PPL, GFX.Screen + y * GFX.RealPPL, IPPU.RenderedScreenWidth * sizeof(uint16));
-		}
-
-		if ((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2131] & 0x3f))
-			GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed], IPPU.XB[PPU.FixedColourGreen], IPPU.XB[PPU.FixedColourBlue]);
-
-		if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
-				((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
-			// If hires (Mode 5/6 or pseudo-hires) or math is to be done
-			// involving the subscreen, then we need to render the subscreen...
-			RenderScreen(TRUE);
-
-		RenderScreen(FALSE);
-	}
-	else
-	{
-		const uint16	black = BUILD_PIXEL(0, 0, 0);
-
-		GFX.S = GFX.Screen + GFX.StartY * GFX.PPL;
-		if (GFX.DoInterlace && GFX.InterlaceFrame)
-			GFX.S += GFX.RealPPL;
-
-		for (uint32 l = GFX.StartY; l <= GFX.EndY; l++, GFX.S += GFX.PPL)
-			for (int x = 0; x < IPPU.RenderedScreenWidth; x++)
-				GFX.S[x] = black;
-	}
-
-	IPPU.PreviousLine = IPPU.CurrentLine;
-}
-
 static void SetupOBJ (void)
 {
 	int	SmallWidth, SmallHeight, LargeWidth, LargeHeight;
@@ -919,6 +659,47 @@ static void SetupOBJ (void)
 	IPPU.OBJChanged = FALSE;
 }
 
+void RenderLine (uint8 C)
+{
+	if (IPPU.RenderThisFrame)
+	{
+		LineData[C].BG[0].VOffset = PPU.BG[0].VOffset + 1;
+		LineData[C].BG[0].HOffset = PPU.BG[0].HOffset;
+		LineData[C].BG[1].VOffset = PPU.BG[1].VOffset + 1;
+		LineData[C].BG[1].HOffset = PPU.BG[1].HOffset;
+
+		if (PPU.BGMode == 7)
+		{
+			struct SLineMatrixData *p = &LineMatrixData[C];
+			p->MatrixA = PPU.MatrixA;
+			p->MatrixB = PPU.MatrixB;
+			p->MatrixC = PPU.MatrixC;
+			p->MatrixD = PPU.MatrixD;
+			p->CentreX = PPU.CentreX;
+			p->CentreY = PPU.CentreY;
+			p->M7HOFS  = PPU.M7HOFS;
+			p->M7VOFS  = PPU.M7VOFS;
+		}
+		else
+		{
+			LineData[C].BG[2].VOffset = PPU.BG[2].VOffset + 1;
+			LineData[C].BG[2].HOffset = PPU.BG[2].HOffset;
+			LineData[C].BG[3].VOffset = PPU.BG[3].VOffset + 1;
+			LineData[C].BG[3].HOffset = PPU.BG[3].HOffset;
+		}
+
+		IPPU.CurrentLine = C + 1;
+	}
+	else
+	{
+		// if we're not rendering this frame, we still need to update this
+		// XXX: Check ForceBlank? Or anything else?
+		if (IPPU.OBJChanged)
+			SetupOBJ();
+		PPU.RangeTimeOver |= GFX.OBJLines[C].RTOFlags;
+	}
+}
+
 static void DrawOBJS (int D)
 {
 	void (*DrawTile) (uint32, uint32, uint32, uint32) = NULL;
@@ -1014,219 +795,18 @@ static void DrawOBJS (int D)
 	}
 }
 
-static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
+static inline void DrawBackdrop (void)
 {
-	BG.TileAddress = PPU.BG[bg].NameBase << 1;
+	uint32	Offset = GFX.StartY * GFX.PPL;
 
-	uint32	Tile;
-	uint16	*SC0, *SC1, *SC2, *SC3;
-
-	SC0 = (uint16 *) &Memory.VRAM[PPU.BG[bg].SCBase << 1];
-	SC1 = (PPU.BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
-	if (SC1 >= (uint16 *) (Memory.VRAM + 0x10000))
-		SC1 -= 0x8000;
-	SC2 = (PPU.BG[bg].SCSize & 2) ? SC1 + 1024 : SC0;
-	if (SC2 >= (uint16 *) (Memory.VRAM + 0x10000))
-		SC2 -= 0x8000;
-	SC3 = (PPU.BG[bg].SCSize & 1) ? SC2 + 1024 : SC2;
-	if (SC3 >= (uint16 *) (Memory.VRAM + 0x10000))
-		SC3 -= 0x8000;
-
-	uint32	Lines;
-	int		OffsetMask  = (BG.TileSizeH == 16) ? 0x3ff : 0x1ff;
-	int		OffsetShift = (BG.TileSizeV == 16) ? 4 : 3;
-	int		PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
-
-	void (*DrawTile) (uint32, uint32, uint32, uint32);
-	void (*DrawClippedTile) (uint32, uint32, uint32, uint32, uint32, uint32);
-
-	for (int clip = 0; clip < GFX.Clip[bg].Count; clip++)
+	for (int clip = 0; clip < GFX.Clip[5].Count; clip++)
 	{
-		GFX.ClipColors = !(GFX.Clip[bg].DrawMode[clip] & 1);
+		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1);
 
-		if (BG.EnableMath && (GFX.Clip[bg].DrawMode[clip] & 2))
-		{
-			DrawTile = GFX.DrawTileMath;
-			DrawClippedTile = GFX.DrawClippedTileMath;
-		}
+		if (BG.EnableMath && (GFX.Clip[5].DrawMode[clip] & 2))
+			GFX.DrawBackdropMath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
 		else
-		{
-			DrawTile = GFX.DrawTileNomath;
-			DrawClippedTile = GFX.DrawClippedTileNomath;
-		}
-
-		for (uint32 Y = GFX.StartY; Y <= GFX.EndY; Y += Lines)
-		{
-			uint32	Y2 = IPPU.Interlace ? Y * 2 + GFX.InterlaceFrame : Y;
-			uint32	VOffset = LineData[Y].BG[bg].VOffset + (IPPU.Interlace ? 1 : 0);
-			uint32	HOffset = LineData[Y].BG[bg].HOffset;
-			int		VirtAlign = ((Y2 + VOffset) & 7) >> (IPPU.Interlace ? 1 : 0);
-
-			for (Lines = 1; Lines < GFX.LinesPerTile - VirtAlign; Lines++)
-			{
-				if ((VOffset != LineData[Y + Lines].BG[bg].VOffset) || (HOffset != LineData[Y + Lines].BG[bg].HOffset))
-					break;
-			}
-
-			if (Y + Lines > GFX.EndY)
-				Lines = GFX.EndY - Y + 1;
-
-			VirtAlign <<= 3;
-
-			uint32	t1, t2;
-			uint32	TilemapRow = (VOffset + Y2) >> OffsetShift;
-			BG.InterlaceLine = ((VOffset + Y2) & 1) << 3;
-
-			if ((VOffset + Y2) & 8)
-			{
-				t1 = 16;
-				t2 = 0;
-			}
-			else
-			{
-				t1 = 0;
-				t2 = 16;
-			}
-
-			uint16	*b1, *b2;
-
-			if (TilemapRow & 0x20)
-			{
-				b1 = SC2;
-				b2 = SC3;
-			}
-			else
-			{
-				b1 = SC0;
-				b2 = SC1;
-			}
-
-			b1 += (TilemapRow & 0x1f) << 5;
-			b2 += (TilemapRow & 0x1f) << 5;
-
-			uint32	Left   = GFX.Clip[bg].Left[clip];
-			uint32	Right  = GFX.Clip[bg].Right[clip];
-			uint32	Offset = Left * PixWidth + Y * GFX.PPL;
-			uint32	HPos   = (HOffset + Left) & OffsetMask;
-			uint32	HTile  = HPos >> 3;
-			uint16	*t;
-
-			if (BG.TileSizeH == 8)
-			{
-				if (HTile > 31)
-					t = b2 + (HTile & 0x1f);
-				else
-					t = b1 + HTile;
-			}
-			else
-			{
-				if (HTile > 63)
-					t = b2 + ((HTile >> 1) & 0x1f);
-				else
-					t = b1 + (HTile >> 1);
-			}
-
-			uint32	Width = Right - Left;
-
-			if (HPos & 7)
-			{
-				uint32	l = HPos & 7;
-				uint32	w = 8 - l;
-				if (w > Width)
-					w = Width;
-
-				Offset -= l * PixWidth;
-				Tile = READ_WORD(t);
-				GFX.Z1 = GFX.Z2 = (Tile & 0x2000) ? Zh : Zl;
-
-				if (BG.TileSizeV == 16)
-					Tile = TILE_PLUS(Tile, ((Tile & V_FLIP) ? t2 : t1));
-
-				if (BG.TileSizeH == 8)
-				{
-					DrawClippedTile(Tile, Offset, l, w, VirtAlign, Lines);
-					t++;
-					if (HTile == 31)
-						t = b2;
-					else
-					if (HTile == 63)
-						t = b1;
-				}
-				else
-				{
-					if (!(Tile & H_FLIP))
-						DrawClippedTile(TILE_PLUS(Tile, (HTile & 1)), Offset, l, w, VirtAlign, Lines);
-					else
-						DrawClippedTile(TILE_PLUS(Tile, 1 - (HTile & 1)), Offset, l, w, VirtAlign, Lines);
-					t += HTile & 1;
-					if (HTile == 63)
-						t = b2;
-					else
-					if (HTile == 127)
-						t = b1;
-				}
-
-				HTile++;
-				Offset += 8 * PixWidth;
-				Width -= w;
-			}
-
-			while (Width >= 8)
-			{
-				Tile = READ_WORD(t);
-				GFX.Z1 = GFX.Z2 = (Tile & 0x2000) ? Zh : Zl;
-
-				if (BG.TileSizeV == 16)
-					Tile = TILE_PLUS(Tile, ((Tile & V_FLIP) ? t2 : t1));
-
-				if (BG.TileSizeH == 8)
-				{
-					DrawTile(Tile, Offset, VirtAlign, Lines);
-					t++;
-					if (HTile == 31)
-						t = b2;
-					else
-					if (HTile == 63)
-						t = b1;
-				}
-				else
-				{
-					if (!(Tile & H_FLIP))
-						DrawTile(TILE_PLUS(Tile, (HTile & 1)), Offset, VirtAlign, Lines);
-					else
-						DrawTile(TILE_PLUS(Tile, 1 - (HTile & 1)), Offset, VirtAlign, Lines);
-					t += HTile & 1;
-					if (HTile == 63)
-						t = b2;
-					else
-					if (HTile == 127)
-						t = b1;
-				}
-
-				HTile++;
-				Offset += 8 * PixWidth;
-				Width -= 8;
-			}
-
-			if (Width)
-			{
-				Tile = READ_WORD(t);
-				GFX.Z1 = GFX.Z2 = (Tile & 0x2000) ? Zh : Zl;
-
-				if (BG.TileSizeV == 16)
-					Tile = TILE_PLUS(Tile, ((Tile & V_FLIP) ? t2 : t1));
-
-				if (BG.TileSizeH == 8)
-					DrawClippedTile(Tile, Offset, 0, Width, VirtAlign, Lines);
-				else
-				{
-					if (!(Tile & H_FLIP))
-						DrawClippedTile(TILE_PLUS(Tile, (HTile & 1)), Offset, 0, Width, VirtAlign, Lines);
-					else
-						DrawClippedTile(TILE_PLUS(Tile, 1 - (HTile & 1)), Offset, 0, Width, VirtAlign, Lines);
-				}
-			}
-		}
+			GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
 	}
 }
 
@@ -1868,20 +1448,437 @@ static inline void DrawBackgroundMode7 (int bg, void (*DrawMath) (uint32, uint32
 	}
 }
 
-static inline void DrawBackdrop (void)
+static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 {
-	uint32	Offset = GFX.StartY * GFX.PPL;
+	BG.TileAddress = PPU.BG[bg].NameBase << 1;
 
-	for (int clip = 0; clip < GFX.Clip[5].Count; clip++)
+	uint32	Tile;
+	uint16	*SC0, *SC1, *SC2, *SC3;
+
+	SC0 = (uint16 *) &Memory.VRAM[PPU.BG[bg].SCBase << 1];
+	SC1 = (PPU.BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
+	if (SC1 >= (uint16 *) (Memory.VRAM + 0x10000))
+		SC1 -= 0x8000;
+	SC2 = (PPU.BG[bg].SCSize & 2) ? SC1 + 1024 : SC0;
+	if (SC2 >= (uint16 *) (Memory.VRAM + 0x10000))
+		SC2 -= 0x8000;
+	SC3 = (PPU.BG[bg].SCSize & 1) ? SC2 + 1024 : SC2;
+	if (SC3 >= (uint16 *) (Memory.VRAM + 0x10000))
+		SC3 -= 0x8000;
+
+	uint32	Lines;
+	int		OffsetMask  = (BG.TileSizeH == 16) ? 0x3ff : 0x1ff;
+	int		OffsetShift = (BG.TileSizeV == 16) ? 4 : 3;
+	int		PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+
+	void (*DrawTile) (uint32, uint32, uint32, uint32);
+	void (*DrawClippedTile) (uint32, uint32, uint32, uint32, uint32, uint32);
+
+	for (int clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
-		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1);
+		GFX.ClipColors = !(GFX.Clip[bg].DrawMode[clip] & 1);
 
-		if (BG.EnableMath && (GFX.Clip[5].DrawMode[clip] & 2))
-			GFX.DrawBackdropMath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
+		if (BG.EnableMath && (GFX.Clip[bg].DrawMode[clip] & 2))
+		{
+			DrawTile = GFX.DrawTileMath;
+			DrawClippedTile = GFX.DrawClippedTileMath;
+		}
 		else
-			GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
+		{
+			DrawTile = GFX.DrawTileNomath;
+			DrawClippedTile = GFX.DrawClippedTileNomath;
+		}
+
+		for (uint32 Y = GFX.StartY; Y <= GFX.EndY; Y += Lines)
+		{
+			uint32	Y2 = IPPU.Interlace ? Y * 2 + GFX.InterlaceFrame : Y;
+			uint32	VOffset = LineData[Y].BG[bg].VOffset + (IPPU.Interlace ? 1 : 0);
+			uint32	HOffset = LineData[Y].BG[bg].HOffset;
+			int		VirtAlign = ((Y2 + VOffset) & 7) >> (IPPU.Interlace ? 1 : 0);
+
+			for (Lines = 1; Lines < GFX.LinesPerTile - VirtAlign; Lines++)
+			{
+				if ((VOffset != LineData[Y + Lines].BG[bg].VOffset) || (HOffset != LineData[Y + Lines].BG[bg].HOffset))
+					break;
+			}
+
+			if (Y + Lines > GFX.EndY)
+				Lines = GFX.EndY - Y + 1;
+
+			VirtAlign <<= 3;
+
+			uint32	t1, t2;
+			uint32	TilemapRow = (VOffset + Y2) >> OffsetShift;
+			BG.InterlaceLine = ((VOffset + Y2) & 1) << 3;
+
+			if ((VOffset + Y2) & 8)
+			{
+				t1 = 16;
+				t2 = 0;
+			}
+			else
+			{
+				t1 = 0;
+				t2 = 16;
+			}
+
+			uint16	*b1, *b2;
+
+			if (TilemapRow & 0x20)
+			{
+				b1 = SC2;
+				b2 = SC3;
+			}
+			else
+			{
+				b1 = SC0;
+				b2 = SC1;
+			}
+
+			b1 += (TilemapRow & 0x1f) << 5;
+			b2 += (TilemapRow & 0x1f) << 5;
+
+			uint32	Left   = GFX.Clip[bg].Left[clip];
+			uint32	Right  = GFX.Clip[bg].Right[clip];
+			uint32	Offset = Left * PixWidth + Y * GFX.PPL;
+			uint32	HPos   = (HOffset + Left) & OffsetMask;
+			uint32	HTile  = HPos >> 3;
+			uint16	*t;
+
+			if (BG.TileSizeH == 8)
+			{
+				if (HTile > 31)
+					t = b2 + (HTile & 0x1f);
+				else
+					t = b1 + HTile;
+			}
+			else
+			{
+				if (HTile > 63)
+					t = b2 + ((HTile >> 1) & 0x1f);
+				else
+					t = b1 + (HTile >> 1);
+			}
+
+			uint32	Width = Right - Left;
+
+			if (HPos & 7)
+			{
+				uint32	l = HPos & 7;
+				uint32	w = 8 - l;
+				if (w > Width)
+					w = Width;
+
+				Offset -= l * PixWidth;
+				Tile = READ_WORD(t);
+				GFX.Z1 = GFX.Z2 = (Tile & 0x2000) ? Zh : Zl;
+
+				if (BG.TileSizeV == 16)
+					Tile = TILE_PLUS(Tile, ((Tile & V_FLIP) ? t2 : t1));
+
+				if (BG.TileSizeH == 8)
+				{
+					DrawClippedTile(Tile, Offset, l, w, VirtAlign, Lines);
+					t++;
+					if (HTile == 31)
+						t = b2;
+					else
+					if (HTile == 63)
+						t = b1;
+				}
+				else
+				{
+					if (!(Tile & H_FLIP))
+						DrawClippedTile(TILE_PLUS(Tile, (HTile & 1)), Offset, l, w, VirtAlign, Lines);
+					else
+						DrawClippedTile(TILE_PLUS(Tile, 1 - (HTile & 1)), Offset, l, w, VirtAlign, Lines);
+					t += HTile & 1;
+					if (HTile == 63)
+						t = b2;
+					else
+					if (HTile == 127)
+						t = b1;
+				}
+
+				HTile++;
+				Offset += 8 * PixWidth;
+				Width -= w;
+			}
+
+			while (Width >= 8)
+			{
+				Tile = READ_WORD(t);
+				GFX.Z1 = GFX.Z2 = (Tile & 0x2000) ? Zh : Zl;
+
+				if (BG.TileSizeV == 16)
+					Tile = TILE_PLUS(Tile, ((Tile & V_FLIP) ? t2 : t1));
+
+				if (BG.TileSizeH == 8)
+				{
+					DrawTile(Tile, Offset, VirtAlign, Lines);
+					t++;
+					if (HTile == 31)
+						t = b2;
+					else
+					if (HTile == 63)
+						t = b1;
+				}
+				else
+				{
+					if (!(Tile & H_FLIP))
+						DrawTile(TILE_PLUS(Tile, (HTile & 1)), Offset, VirtAlign, Lines);
+					else
+						DrawTile(TILE_PLUS(Tile, 1 - (HTile & 1)), Offset, VirtAlign, Lines);
+					t += HTile & 1;
+					if (HTile == 63)
+						t = b2;
+					else
+					if (HTile == 127)
+						t = b1;
+				}
+
+				HTile++;
+				Offset += 8 * PixWidth;
+				Width -= 8;
+			}
+
+			if (Width)
+			{
+				Tile = READ_WORD(t);
+				GFX.Z1 = GFX.Z2 = (Tile & 0x2000) ? Zh : Zl;
+
+				if (BG.TileSizeV == 16)
+					Tile = TILE_PLUS(Tile, ((Tile & V_FLIP) ? t2 : t1));
+
+				if (BG.TileSizeH == 8)
+					DrawClippedTile(Tile, Offset, 0, Width, VirtAlign, Lines);
+				else
+				{
+					if (!(Tile & H_FLIP))
+						DrawClippedTile(TILE_PLUS(Tile, (HTile & 1)), Offset, 0, Width, VirtAlign, Lines);
+					else
+						DrawClippedTile(TILE_PLUS(Tile, 1 - (HTile & 1)), Offset, 0, Width, VirtAlign, Lines);
+				}
+			}
+		}
 	}
 }
+
+static inline void RenderScreen (bool8 sub)
+{
+	uint8	BGActive;
+	int		D;
+
+	if (!sub)
+	{
+		GFX.S = GFX.Screen;
+		if (GFX.DoInterlace && GFX.InterlaceFrame)
+			GFX.S += GFX.RealPPL;
+		GFX.DB = GFX.ZBuffer;
+		GFX.Clip = IPPU.Clip[0];
+		BGActive = Memory.FillRAM[0x212c] & ~Settings.BG_Forced;
+		D = 32;
+	}
+	else
+	{
+		GFX.S = GFX.SubScreen;
+		GFX.DB = GFX.SubZBuffer;
+		GFX.Clip = IPPU.Clip[1];
+		BGActive = Memory.FillRAM[0x212d] & ~Settings.BG_Forced;
+		D = (Memory.FillRAM[0x2130] & 2) << 4; // 'do math' depth flag
+	}
+
+	if (BGActive & 0x10)
+	{
+		BG.TileAddress = PPU.OBJNameBase;
+		BG.NameSelect = PPU.OBJNameSelect;
+		BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x10);
+		BG.StartPalette = 128;
+		S9xSelectTileConverter(4, FALSE, sub, FALSE);
+		S9xSelectTileRenderers(PPU.BGMode, sub, TRUE);
+		DrawOBJS(D + 4);
+	}
+
+	BG.NameSelect = 0;
+	S9xSelectTileRenderers(PPU.BGMode, sub, FALSE);
+
+	#define DO_BG(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = (!hires && PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter(depth, hires, sub, PPU.BGMosaic[n]); \
+			\
+			if (offset) \
+			{ \
+				BG.OffsetSizeH = (!hires && PPU.BG[2].BGSize) ? 16 : 8; \
+				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+				\
+				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
+					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
+				else \
+					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
+			} \
+			else \
+			{ \
+				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
+					DrawBackgroundMosaic(n, D + Zh, D + Zl); \
+				else \
+					DrawBackground(n, D + Zh, D + Zl); \
+			} \
+		}
+
+	switch (PPU.BGMode)
+	{
+		case 0:
+			DO_BG(0,  0, 2, FALSE, FALSE, 15, 11, 0);
+			DO_BG(1, 32, 2, FALSE, FALSE, 14, 10, 0);
+			DO_BG(2, 64, 2, FALSE, FALSE,  7,  3, 0);
+			DO_BG(3, 96, 2, FALSE, FALSE,  6,  2, 0);
+			break;
+
+		case 1:
+			DO_BG(0,  0, 4, FALSE, FALSE, 15, 11, 0);
+			DO_BG(1,  0, 4, FALSE, FALSE, 14, 10, 0);
+			DO_BG(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			break;
+
+		case 2:
+			DO_BG(0,  0, 4, FALSE, TRUE,  15,  7, 8);
+			DO_BG(1,  0, 4, FALSE, TRUE,  11,  3, 8);
+			break;
+
+		case 3:
+			DO_BG(0,  0, 8, FALSE, FALSE, 15,  7, 0);
+			DO_BG(1,  0, 4, FALSE, FALSE, 11,  3, 0);
+			break;
+
+		case 4:
+			DO_BG(0,  0, 8, FALSE, TRUE,  15,  7, 0);
+			DO_BG(1,  0, 2, FALSE, TRUE,  11,  3, 0);
+			break;
+
+		case 5:
+			DO_BG(0,  0, 4, TRUE,  FALSE, 15,  7, 0);
+			DO_BG(1,  0, 2, TRUE,  FALSE, 11,  3, 0);
+			break;
+
+		case 6:
+			DO_BG(0,  0, 4, TRUE,  TRUE,  15,  7, 8);
+			break;
+
+		case 7:
+			if (BGActive & 0x01)
+			{
+				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 1);
+				DrawBackgroundMode7(0, GFX.DrawMode7BG1Math, GFX.DrawMode7BG1Nomath, D);
+			}
+
+			if ((Memory.FillRAM[0x2133] & 0x40) && (BGActive & 0x02))
+			{
+				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 2);
+				DrawBackgroundMode7(1, GFX.DrawMode7BG2Math, GFX.DrawMode7BG2Nomath, D);
+			}
+
+			break;
+	}
+
+	#undef DO_BG
+
+	BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x20);
+
+	DrawBackdrop();
+}
+
+
+void S9xUpdateScreen (void)
+{
+	if (IPPU.OBJChanged)
+		SetupOBJ();
+
+	// XXX: Check ForceBlank? Or anything else?
+	PPU.RangeTimeOver |= GFX.OBJLines[GFX.EndY].RTOFlags;
+
+	GFX.StartY = IPPU.PreviousLine;
+	if ((GFX.EndY = IPPU.CurrentLine - 1) >= PPU.ScreenHeight)
+		GFX.EndY = PPU.ScreenHeight - 1;
+
+	if (!PPU.ForcedBlanking)
+	{
+		// If force blank, may as well completely skip all this. We only did
+		// the OBJ because (AFAWK) the RTO flags are updated even during force-blank.
+
+		if (PPU.RecomputeClipWindows)
+		{
+			S9xComputeClipWindows();
+			PPU.RecomputeClipWindows = FALSE;
+		}
+
+		if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
+		{
+			{
+				// Have to back out of the regular speed hack
+				for (register uint32 y = 0; y < GFX.StartY; y++)
+				{
+					register uint16	*p = GFX.Screen + y * GFX.PPL + 255;
+					register uint16	*q = GFX.Screen + y * GFX.PPL + 510;
+
+					for (register int x = 255; x >= 0; x--, p--, q -= 2)
+						*q = *(q + 1) = *p;
+				}
+			}
+
+			IPPU.DoubleWidthPixels = TRUE;
+			IPPU.RenderedScreenWidth = 512;
+		}
+
+		if (!IPPU.DoubleHeightPixels && (IPPU.Interlace || IPPU.InterlaceOBJ))
+		{
+			IPPU.DoubleHeightPixels = TRUE;
+			IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
+			GFX.PPL = GFX.RealPPL << 1;
+			GFX.DoInterlace = 2;
+
+			for (register int32 y = (int32) GFX.StartY - 1; y >= 0; y--)
+				memmove(GFX.Screen + y * GFX.PPL, GFX.Screen + y * GFX.RealPPL, IPPU.RenderedScreenWidth * sizeof(uint16));
+		}
+
+		if ((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2131] & 0x3f))
+			GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed], IPPU.XB[PPU.FixedColourGreen], IPPU.XB[PPU.FixedColourBlue]);
+
+		if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
+				((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
+			// If hires (Mode 5/6 or pseudo-hires) or math is to be done
+			// involving the subscreen, then we need to render the subscreen...
+			RenderScreen(TRUE);
+
+		RenderScreen(FALSE);
+	}
+	else
+	{
+		const uint16	black = BUILD_PIXEL(0, 0, 0);
+
+		GFX.S = GFX.Screen + GFX.StartY * GFX.PPL;
+		if (GFX.DoInterlace && GFX.InterlaceFrame)
+			GFX.S += GFX.RealPPL;
+
+		for (uint32 l = GFX.StartY; l <= GFX.EndY; l++, GFX.S += GFX.PPL)
+			for (int x = 0; x < IPPU.RenderedScreenWidth; x++)
+				GFX.S[x] = black;
+	}
+
+	IPPU.PreviousLine = IPPU.CurrentLine;
+}
+
+
+
+
+
+
+
+
 
 void S9xReRefresh (void)
 {

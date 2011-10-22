@@ -229,9 +229,5 @@ void S9xParseArg (char **, int &, int);
 
 void S9xExtraDisplayUsage (void);
 void S9xParseDisplayArg (char **, int &, int);
-void S9xSetTitle (const char *);
-void S9xInitInputDevices (void);
-void S9xProcessEvents (bool8);
-const char * S9xSelectFilename (const char *, const char *, const char *, const char *);
 
 #endif
