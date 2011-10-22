@@ -1132,7 +1132,7 @@ bool8 CMemory::Init (void)
 	BIOSROM = ROM + 0x300000; // BS
 	BSRAM   = ROM + 0x400000; // BS
 
-#if defined(ZSNES_FX) || defined(ZSNES_C4)
+#if defined(ZSNES_FX)
     ::ROM    = ROM;
     ::SRAM   = SRAM;
     ::RegRAM = FillRAM;

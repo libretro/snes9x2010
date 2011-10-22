@@ -178,9 +178,6 @@
 #ifndef _C4_H_
 #define _C4_H_
 
-#ifdef ZSNES_C4
-START_EXTERN_C
-#endif
 
 extern int16	C4WFXVal;
 extern int16	C4WFYVal;
@@ -195,23 +192,9 @@ extern int16	C41FAngleRes;
 extern int16	C41FDist;
 extern int16	C41FDistVal;
 
-#ifdef ZSNES_C4
-extern uint8	*C4Ram;
-#endif
-
-void C4TransfWireFrame (void);
-void C4TransfWireFrame2 (void);
-void C4CalcWireFrame (void);
-void C4Op0D (void);
-void C4Op15 (void);
-void C4Op1F (void);
 void S9xInitC4 (void);
 void S9xSetC4 (uint8, uint16);
 uint8 S9xGetC4 (uint16);
-
-#ifdef ZSNES_C4
-END_EXTERN_C
-#endif
 
 uint8 * S9xGetBasePointerC4 (uint16);
 uint8 * S9xGetMemPointerC4 (uint16);

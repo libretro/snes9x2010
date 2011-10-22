@@ -6,7 +6,7 @@ OBJECTS    = ../apu/apu.o ../apu/SNES_SPC.o ../apu/SNES_SPC_misc.o ../apu/SNES_S
 DEFS       = -DMITSHM -DCPU_SHUTDOWN -DSPC700_SHUTDOWN -DCORRECT_VRAM_READS -DHAVE_STDINT_H
 
 OBJECTS   += ../fxinst.o ../fxemu.o
-OBJECTS   += ../c4.o ../c4emu.o
+OBJECTS   += ../c4.o
 
 CC = gcc
 CCC = g++

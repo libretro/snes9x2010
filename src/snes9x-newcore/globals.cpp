@@ -230,7 +230,7 @@ SnesModel	M1SNES = { 1, 3, 2 };
 SnesModel	M2SNES = { 2, 4, 3 };
 SnesModel	*Model = &M1SNES;
 
-#if defined(ZSNES_FX) || defined(ZSNES_C4)
+#if defined(ZSNES_FX)
 uint8	*ROM    = NULL;
 uint8	*SRAM   = NULL;
 uint8	*RegRAM = NULL;

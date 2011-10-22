@@ -1265,11 +1265,7 @@ void S9xFreezeToStream (STREAM stream)
 		FreezeStruct(stream, "DP4", &DSP4, SnapDSP4, COUNT(SnapDSP4));
 
 	if (Settings.C4)
-#ifndef ZSNES_C4
 		FreezeBlock (stream, "CX4", Memory.C4RAM, 8192);
-#else
-		FreezeBlock (stream, "CX4", C4Ram, 8192);
-#endif
 
 	if (Settings.SETA == ST_010)
 		FreezeStruct(stream, "ST0", &ST010, SnapST010, COUNT(SnapST010));
@@ -1519,11 +1515,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 			UnfreezeStructFromCopy(&DSP4, SnapDSP4, COUNT(SnapDSP4), local_dsp4, version);
 
 		if (local_cx4_data)
-	#ifndef ZSNES_C4
 			memcpy(Memory.C4RAM, local_cx4_data, 8192);
-	#else
-			memcpy(C4Ram, local_cx4_data, 8192);
-	#endif
 
 		if (local_st010)
 			UnfreezeStructFromCopy(&ST010, SnapST010, COUNT(SnapST010), local_st010, version);

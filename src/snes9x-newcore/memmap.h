@@ -361,7 +361,7 @@ struct SMulti
 extern CMemory	Memory;
 extern SMulti	Multi;
 
-#if defined(ZSNES_FX) || defined(ZSNES_C4)
+#if defined(ZSNES_FX)
 START_EXTERN_C
 extern uint8	*ROM;
 extern uint8	*SRAM;

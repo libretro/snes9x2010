@@ -178,6 +178,7 @@
 #include <math.h>
 #include "snes9x.h"
 #include "memmap.h"
+#include "sar.h"
 
 #define	C4_PI	3.14159265
 
@@ -199,7 +200,7 @@ static double	c4x, c4y, c4z;
 static double	c4x2, c4y2, c4z2;
 
 
-void C4TransfWireFrame (void)
+static void C4TransfWireFrame (void)
 {
 	c4x = (double) C4WFXVal;
 	c4y = (double) C4WFYVal;
@@ -225,7 +226,7 @@ void C4TransfWireFrame (void)
 	C4WFYVal = (int16) (c4y * (double) C4WFScale / (0x90 * (c4z + 0x95)) * 0x95);
 }
 
-void C4TransfWireFrame2 (void)
+static void C4TransfWireFrame2 (void)
 {
 	c4x = (double) C4WFXVal;
 	c4y = (double) C4WFYVal;
@@ -251,7 +252,7 @@ void C4TransfWireFrame2 (void)
 	C4WFYVal = (int16) (c4y * (double) C4WFScale / 0x100);
 }
 
-void C4CalcWireFrame (void)
+static void C4CalcWireFrame (void)
 {
 	C4WFXVal = C4WFX2Val - C4WFXVal;
 	C4WFYVal = C4WFY2Val - C4WFYVal;
@@ -281,7 +282,7 @@ void C4CalcWireFrame (void)
 	}
 }
 
-void C4Op1F (void)
+static void C4Op1F (void)
 {
 	if (C41FXVal == 0)
 	{
@@ -301,13 +302,15 @@ void C4Op1F (void)
 	}
 }
 
-void C4Op15 (void)
+#if 0
+static void C4Op15 (void)
 {
 	tanval = sqrt((double) C41FYVal * C41FYVal + (double) C41FXVal * C41FXVal);
 	C41FDist = (int16) tanval;
 }
+#endif
 
-void C4Op0D (void)
+static void C4Op0D (void)
 {
 	tanval = sqrt((double) C41FYVal * C41FYVal + (double) C41FXVal * C41FXVal);
 	tanval = C41FDistVal / tanval;
@@ -329,13 +332,4 @@ uint8 * S9xGetMemPointerC4 (uint16 Address)
 	return (Memory.C4RAM - 0x6000 + (Address & 0xffff));
 }
 
-#ifdef ZSNES_C4
-START_EXTERN_C
-
-void C4LoaDMem (char *C4RAM)
-{
-	memmove(C4RAM + (READ_WORD(C4RAM + 0x1f45) & 0x1fff), C4GetMemPointer(READ_3WORD(C4RAM + 0x1f40)), READ_WORD(C4RAM + 0x1f43));
-}
-
-END_EXTERN_C
-#endif
+#include "c4emu_.h"
