@@ -400,10 +400,8 @@ void S9xLoadConfigFiles (char **argv, int argc)
 
 	// Display
 
-	Settings.SupportHiRes               =  conf.GetBool("Display::HiRes",                      true);
 	Settings.Transparency               =  conf.GetBool("Display::Transparency",               true);
 	Settings.DisableGraphicWindows      = !conf.GetBool("Display::GraphicWindows",             true);
-	Settings.DisplayFrameRate           =  conf.GetBool("Display::DisplayFrameRate",           false);
 	Settings.DisplayWatchedAddresses    =  conf.GetBool("Display::DisplayWatchedAddresses",    false);
 	Settings.DisplayPressedKeys         =  conf.GetBool("Display::DisplayInput",               false);
 	Settings.DisplayMovieFrame          =  conf.GetBool("Display::DisplayFrameCount",          false);
@@ -612,14 +610,8 @@ char * S9xParseArgs (char **argv, int argc)
 
 			// DISPLAY OPTIONS
 
-			if (!strcasecmp(argv[i], "-displayframerate"))
-				Settings.DisplayFrameRate = TRUE;
-			else
 			if (!strcasecmp(argv[i], "-displaykeypress"))
 				Settings.DisplayPressedKeys = TRUE;
-			else
-			if (!strcasecmp(argv[i], "-nohires"))
-				Settings.SupportHiRes = FALSE;
 			else
 			if (!strcasecmp(argv[i], "-notransparency"))
 				Settings.Transparency = FALSE;

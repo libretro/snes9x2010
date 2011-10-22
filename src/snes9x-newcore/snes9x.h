@@ -226,51 +226,51 @@
 #define REVERT_STREAM(f, o, s)	memstream_seek(f, o, s)
 #define CLOSE_STREAM(s)		memstream_close(s)
 #else
-#define STREAM					FILE *
-#define READ_STREAM(p, l, s)	fread(p, 1, l, s)
-#define WRITE_STREAM(p, l, s)	fwrite(p, 1, l, s)
-#define GETS_STREAM(p, l, s)	fgets(p, l, s)
+#define STREAM				FILE *
+#define READ_STREAM(p, l, s)		fread(p, 1, l, s)
+#define WRITE_STREAM(p, l, s)		fwrite(p, 1, l, s)
+#define GETS_STREAM(p, l, s)		fgets(p, l, s)
 #define GETC_STREAM(s)			fgetc(s)
 #define OPEN_STREAM(f, m)		fopen(f, m)
 #define REOPEN_STREAM(f, m)		fdopen(f, m)
 #define FIND_STREAM(f)			ftell(f)
-#define REVERT_STREAM(f, o, s)	fseek(f, o, s)
+#define REVERT_STREAM(f, o, s)		fseek(f, o, s)
 #define CLOSE_STREAM(s)			fclose(s)
 #endif
 #endif
 
-#define SNES_WIDTH					256
-#define SNES_HEIGHT					224
+#define SNES_WIDTH			256
+#define SNES_HEIGHT			224
 #define SNES_HEIGHT_EXTENDED		239
-#define MAX_SNES_WIDTH				(SNES_WIDTH * 2)
-#define MAX_SNES_HEIGHT				(SNES_HEIGHT_EXTENDED * 2)
-#define IMAGE_WIDTH					(Settings.SupportHiRes ? MAX_SNES_WIDTH : SNES_WIDTH)
-#define IMAGE_HEIGHT				(Settings.SupportHiRes ? MAX_SNES_HEIGHT : SNES_HEIGHT_EXTENDED)
+#define MAX_SNES_WIDTH			(SNES_WIDTH * 2)
+#define MAX_SNES_HEIGHT			(SNES_HEIGHT_EXTENDED * 2)
+#define IMAGE_WIDTH			MAX_SNES_WIDTH
+#define IMAGE_HEIGHT			MAX_SNES_HEIGHT
 
-#define	NTSC_MASTER_CLOCK			21477272.0
-#define	PAL_MASTER_CLOCK			21281370.0
+#define	NTSC_MASTER_CLOCK		21477272.0
+#define	PAL_MASTER_CLOCK		21281370.0
 
 #define SNES_MAX_NTSC_VCOUNTER		262
 #define SNES_MAX_PAL_VCOUNTER		312
-#define SNES_HCOUNTER_MAX			341
+#define SNES_HCOUNTER_MAX		341
 
-#define ONE_CYCLE					6
-#define SLOW_ONE_CYCLE				8
-#define TWO_CYCLES					12
-#define	ONE_DOT_CYCLE				4
+#define ONE_CYCLE			6
+#define SLOW_ONE_CYCLE			8
+#define TWO_CYCLES			12
+#define	ONE_DOT_CYCLE			4
 
 #define SNES_CYCLES_PER_SCANLINE	(SNES_HCOUNTER_MAX * ONE_DOT_CYCLE)
-#define SNES_SCANLINE_TIME			(SNES_CYCLES_PER_SCANLINE / NTSC_MASTER_CLOCK)
+#define SNES_SCANLINE_TIME		(SNES_CYCLES_PER_SCANLINE / NTSC_MASTER_CLOCK)
 
 #define SNES_WRAM_REFRESH_HC_v1		530
 #define SNES_WRAM_REFRESH_HC_v2		538
 #define SNES_WRAM_REFRESH_CYCLES	40
 
-#define SNES_HBLANK_START_HC		1096					// H=274
-#define	SNES_HDMA_START_HC		1106					// FIXME: not true
-#define	SNES_HBLANK_END_HC		4					// H=1
-#define	SNES_HDMA_INIT_HC		20					// FIXME: not true
-#define	SNES_RENDER_START_HC		(48 * ONE_DOT_CYCLE)			// FIXME: Snes9x renders a line at a time.
+#define SNES_HBLANK_START_HC		1096			// H=274
+#define	SNES_HDMA_START_HC		1106			// FIXME: not true
+#define	SNES_HBLANK_END_HC		4			// H=1
+#define	SNES_HDMA_INIT_HC		20			// FIXME: not true
+#define	SNES_RENDER_START_HC		(48 * ONE_DOT_CYCLE)	// FIXME: Snes9x renders a line at a time.
 
 #define SNES_TR_MASK			(1 <<  4)
 #define SNES_TL_MASK			(1 <<  5)
@@ -411,12 +411,10 @@ struct SSettings
 	bool8	ReverseStereo;
 	bool8	Mute;
 
-	bool8	SupportHiRes;
 	bool8	Transparency;
 	uint8	BG_Forced;
 	bool8	DisableGraphicWindows;
 
-	bool8	DisplayFrameRate;
 	bool8	DisplayWatchedAddresses;
 	bool8	DisplayPressedKeys;
 	bool8	DisplayMovieFrame;
@@ -451,15 +449,13 @@ struct SSettings
 	bool8	MovieNotifyIgnored;
 	bool8	WrongMovieStateProtection;
 	bool8	DumpStreams;
-	int		DumpStreamsMaxFrames;
+	int	DumpStreamsMaxFrames;
 
 	bool8	ApplyCheats;
 	bool8	NoPatch;
 	int32	AutoSaveDelay;
 	bool8	DontSaveOopsSnapshot;
 	bool8	UpAndDown;
-
-	bool8	OpenGLEnable;
 };
 
 struct SSNESGameFixes
@@ -472,12 +468,12 @@ enum
 {
 	PAUSE_NETPLAY_CONNECT		= (1 << 0),
 	PAUSE_TOGGLE_FULL_SCREEN	= (1 << 1),
-	PAUSE_EXIT					= (1 << 2),
-	PAUSE_MENU					= (1 << 3),
+	PAUSE_EXIT			= (1 << 2),
+	PAUSE_MENU			= (1 << 3),
 	PAUSE_INACTIVE_WINDOW		= (1 << 4),
 	PAUSE_WINDOW_ICONISED		= (1 << 5),
-	PAUSE_RESTORE_GUI			= (1 << 6),
-	PAUSE_FREEZE_FILE			= (1 << 7)
+	PAUSE_RESTORE_GUI		= (1 << 6),
+	PAUSE_FREEZE_FILE		= (1 << 7)
 };
 
 void S9xSetPause(uint32);
@@ -485,10 +481,10 @@ void S9xClearPause(uint32);
 void S9xExit(void);
 void S9xMessage(int, int, const char *);
 
-extern struct SSettings			Settings;
-extern struct SCPUState			CPU;
-extern struct STimings			Timings;
+extern struct SSettings		Settings;
+extern struct SCPUState		CPU;
+extern struct STimings		Timings;
 extern struct SSNESGameFixes	SNESGameFixes;
-extern char						String[513];
+extern char			String[513];
 
 #endif

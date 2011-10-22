@@ -336,12 +336,11 @@
 		<h2>Global Variables</h2>
 		<h3><code>uint16 *GFX.Screen</code></h3>
 		<p>
-			A <code>uint16</code> array pointer to (at least) 2*512*478 bytes buffer where Snes9x puts the rendered SNES screen. However, if your port will not support hires mode (<code>Settings.SupportHiRes = false</code>), then a 2*256*239 bytes buffer is allowed. You should allocate the space by yourself. As well you can change the <code>GFX.Screen</code> value after <code>S9xDeinitUpdate</code> function is called so that double-buffering will be easy.
+			A <code>uint16</code> array pointer to (at least) 2*512*478 bytes buffer where Snes9x puts the rendered SNES screen. You should allocate the space by yourself. As well you can change the <code>GFX.Screen</code> value after <code>S9xDeinitUpdate</code> function is called so that double-buffering will be easy.
 		</p>
 		<h3><code>uint32 GFX.Pitch</code></h3>
 		<p>
-			Bytes per line (not pixels per line) of the <code>GFX.Screen</code> buffer. Typically set it to 1024. When the SNES screen is 256 pixels width and <code>Settings.OpenGLEnable</code> is <code>false</code>, last half 512 bytes per line are unused. When <code>Settings.OpenGLEnable</code> is <code>true</code>, <code>GFX.Pitch</code> is ignored.
-		</p>
+			Bytes per line (not pixels per line) of the <code>GFX.Screen</code> buffer. Typically set it to 1024. When the SNES screen is 256 pixels width, last half 512 bytes per line are unused.</p>
 		<h3>Settings structure</h3>
 		<p>
 			There are various switches in the <code>Settings</code> structure. See <code>snes9x.h</code> for details. At least the settings below are required for good emulation.
@@ -358,7 +357,6 @@
 			Settings.Stereo = true;<br>
 			Settings.SoundPlaybackRate = 32000;<br>
 			Settings.SoundInputRate = 32000;<br>
-			Settings.SupportHiRes = true;<br>
 			Settings.Transparency = true;<br>
 			Settings.AutoDisplayMessages = true;<br>
 			Settings.InitialInfoStringTimeout = 120;<br>

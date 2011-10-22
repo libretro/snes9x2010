@@ -195,7 +195,6 @@ static int	font_width = 8, font_height = 9;
 
 static void SetupOBJ (void);
 static void DrawOBJS (int);
-static void DisplayFrameRate (void);
 static void DisplayPressedKeys (void);
 static void DisplayStringFromBottom (const char *, int, int, bool);
 static void DrawBackground (int, uint8, uint8);
@@ -231,7 +230,7 @@ bool8 S9xGraphicsInit (void)
 	GFX.X2   = (uint16 *) malloc(sizeof(uint16) * 0x10000);
 	GFX.ZERO = (uint16 *) malloc(sizeof(uint16) * 0x10000);
 
-	GFX.ScreenSize = GFX.Pitch / 2 * SNES_HEIGHT_EXTENDED * (Settings.SupportHiRes ? 2 : 1);
+	GFX.ScreenSize = GFX.Pitch / 2 * SNES_HEIGHT_EXTENDED * 2;
 	GFX.SubScreen  = (uint16 *) malloc(GFX.ScreenSize * sizeof(uint16));
 	GFX.ZBuffer    = (uint8 *)  malloc(GFX.ScreenSize);
 	GFX.SubZBuffer = (uint8 *)  malloc(GFX.ScreenSize);
@@ -350,7 +349,7 @@ void S9xStartScreenRefresh (void)
 				IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
 			}
 
-			if (Settings.SupportHiRes && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
+			if ((PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
 			{
 				GFX.RealPPL = GFX.Pitch >> 1;
 				IPPU.DoubleWidthPixels = TRUE;
@@ -646,43 +645,40 @@ void S9xUpdateScreen (void)
 			PPU.RecomputeClipWindows = FALSE;
 		}
 
-		if (Settings.SupportHiRes)
+		if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
 		{
-			if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
 			{
+				// Have to back out of the regular speed hack
+				for (register uint32 y = 0; y < GFX.StartY; y++)
 				{
-					// Have to back out of the regular speed hack
-					for (register uint32 y = 0; y < GFX.StartY; y++)
-					{
-						register uint16	*p = GFX.Screen + y * GFX.PPL + 255;
-						register uint16	*q = GFX.Screen + y * GFX.PPL + 510;
+					register uint16	*p = GFX.Screen + y * GFX.PPL + 255;
+					register uint16	*q = GFX.Screen + y * GFX.PPL + 510;
 
-						for (register int x = 255; x >= 0; x--, p--, q -= 2)
-							*q = *(q + 1) = *p;
-					}
+					for (register int x = 255; x >= 0; x--, p--, q -= 2)
+						*q = *(q + 1) = *p;
 				}
-
-				IPPU.DoubleWidthPixels = TRUE;
-				IPPU.RenderedScreenWidth = 512;
 			}
 
-			if (!IPPU.DoubleHeightPixels && (IPPU.Interlace || IPPU.InterlaceOBJ))
-			{
-				IPPU.DoubleHeightPixels = TRUE;
-				IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
-				GFX.PPL = GFX.RealPPL << 1;
-				GFX.DoInterlace = 2;
+			IPPU.DoubleWidthPixels = TRUE;
+			IPPU.RenderedScreenWidth = 512;
+		}
 
-				for (register int32 y = (int32) GFX.StartY - 1; y >= 0; y--)
-					memmove(GFX.Screen + y * GFX.PPL, GFX.Screen + y * GFX.RealPPL, IPPU.RenderedScreenWidth * sizeof(uint16));
-			}
+		if (!IPPU.DoubleHeightPixels && (IPPU.Interlace || IPPU.InterlaceOBJ))
+		{
+			IPPU.DoubleHeightPixels = TRUE;
+			IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
+			GFX.PPL = GFX.RealPPL << 1;
+			GFX.DoInterlace = 2;
+
+			for (register int32 y = (int32) GFX.StartY - 1; y >= 0; y--)
+				memmove(GFX.Screen + y * GFX.PPL, GFX.Screen + y * GFX.RealPPL, IPPU.RenderedScreenWidth * sizeof(uint16));
 		}
 
 		if ((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2131] & 0x3f))
 			GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed], IPPU.XB[PPU.FixedColourGreen], IPPU.XB[PPU.FixedColourBlue]);
 
 		if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
-			((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
+				((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
 			// If hires (Mode 5/6 or pseudo-hires) or math is to be done
 			// involving the subscreen, then we need to render the subscreen...
 			RenderScreen(TRUE);
@@ -1962,29 +1958,6 @@ static void DisplayStringFromBottom (const char *string, int linesFromBottom, in
 	}
 }
 
-static void DisplayFrameRate (void)
-{
-	char	string[10];
-	static uint32 lastFrameCount = 0, calcFps = 0;
-	static time_t lastTime = time(NULL);
-
-	time_t currTime = time(NULL);
-	if (lastTime != currTime) {
-		if (lastFrameCount < IPPU.TotalEmulatedFrames) {
-			calcFps = (IPPU.TotalEmulatedFrames - lastFrameCount) / (uint32)(currTime - lastTime);
-		}
-		lastTime = currTime;
-		lastFrameCount = IPPU.TotalEmulatedFrames;
-	}
-	sprintf(string, "%u fps", calcFps);
-	S9xDisplayString(string, 2, IPPU.RenderedScreenWidth - (font_width - 1) * strlen(string) - 1, false);
-
-	const int	len = 5;
-	sprintf(string, "%02d/%02d",      (int) IPPU.DisplayedRenderedFrameCount, (int) Memory.ROMFramesPerSecond);
-
-	S9xDisplayString(string, 1, IPPU.RenderedScreenWidth - (font_width - 1) * len - 1, false);
-}
-
 static void DisplayPressedKeys (void)
 {
 	static char	KeyMap[]   = { '0', '1', '2', 'R', 'L', 'X', 'A', '>', '<', 'v', '^', 'S', 's', 'Y', 'B' };
@@ -2095,9 +2068,6 @@ static void DisplayPressedKeys (void)
 
 void S9xDisplayMessages (uint16 *screen, int ppl, int width, int height, int scale)
 {
-	if (Settings.DisplayFrameRate)
-		DisplayFrameRate();
-
 	if (Settings.DisplayPressedKeys)
 		DisplayPressedKeys();
 
