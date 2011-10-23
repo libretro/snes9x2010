@@ -192,22 +192,7 @@ void S9xComputeClipWindows (void);
 
 static int	font_width = 8, font_height = 9;
 
-static void SetupOBJ (void);
-static void DrawOBJS (int);
-static void DisplayFrameRate (void);
-static void DisplayWatchedAddresses (void);
-static void DisplayStringFromBottom (const char *, int, int, bool);
-static void DrawBackground (int, uint8, uint8);
-static void DrawBackgroundMosaic (int, uint8, uint8);
-static void DrawBackgroundOffset (int, uint8, uint8, int);
-static void DrawBackgroundOffsetMosaic (int, uint8, uint8, int);
-static inline void DrawBackgroundMode7 (int, void (*DrawMath) (uint32, uint32, int), void (*DrawNomath) (uint32, uint32, int), int);
-static inline void DrawBackdrop (void);
-static inline void RenderScreen (bool8);
-static uint16 get_crosshair_color (uint8);
-
 #define TILE_PLUS(t, x)	(((t) & 0xfc00) | ((t + x) & 0x3ff))
-
 
 bool8 S9xGraphicsInit (void)
 {
@@ -453,255 +438,6 @@ void S9xEndScreenRefresh (void)
 	}
 }
 
-void RenderLine (uint8 C)
-{
-	if (IPPU.RenderThisFrame)
-	{
-		LineData[C].BG[0].VOffset = PPU.BG[0].VOffset + 1;
-		LineData[C].BG[0].HOffset = PPU.BG[0].HOffset;
-		LineData[C].BG[1].VOffset = PPU.BG[1].VOffset + 1;
-		LineData[C].BG[1].HOffset = PPU.BG[1].HOffset;
-
-		if (PPU.BGMode == 7)
-		{
-			struct SLineMatrixData *p = &LineMatrixData[C];
-			p->MatrixA = PPU.MatrixA;
-			p->MatrixB = PPU.MatrixB;
-			p->MatrixC = PPU.MatrixC;
-			p->MatrixD = PPU.MatrixD;
-			p->CentreX = PPU.CentreX;
-			p->CentreY = PPU.CentreY;
-			p->M7HOFS  = PPU.M7HOFS;
-			p->M7VOFS  = PPU.M7VOFS;
-		}
-		else
-		{
-			LineData[C].BG[2].VOffset = PPU.BG[2].VOffset + 1;
-			LineData[C].BG[2].HOffset = PPU.BG[2].HOffset;
-			LineData[C].BG[3].VOffset = PPU.BG[3].VOffset + 1;
-			LineData[C].BG[3].HOffset = PPU.BG[3].HOffset;
-		}
-
-		IPPU.CurrentLine = C + 1;
-	}
-	else
-	{
-		// if we're not rendering this frame, we still need to update this
-		// XXX: Check ForceBlank? Or anything else?
-		if (IPPU.OBJChanged)
-			SetupOBJ();
-		PPU.RangeTimeOver |= GFX.OBJLines[C].RTOFlags;
-	}
-}
-
-static inline void RenderScreen (bool8 sub)
-{
-	uint8	BGActive;
-	int		D;
-
-	if (!sub)
-	{
-		GFX.S = GFX.Screen;
-		if (GFX.DoInterlace && GFX.InterlaceFrame)
-			GFX.S += GFX.RealPPL;
-		GFX.DB = GFX.ZBuffer;
-		GFX.Clip = IPPU.Clip[0];
-		BGActive = Memory.FillRAM[0x212c] & ~Settings.BG_Forced;
-		D = 32;
-	}
-	else
-	{
-		GFX.S = GFX.SubScreen;
-		GFX.DB = GFX.SubZBuffer;
-		GFX.Clip = IPPU.Clip[1];
-		BGActive = Memory.FillRAM[0x212d] & ~Settings.BG_Forced;
-		D = (Memory.FillRAM[0x2130] & 2) << 4; // 'do math' depth flag
-	}
-
-	if (BGActive & 0x10)
-	{
-		BG.TileAddress = PPU.OBJNameBase;
-		BG.NameSelect = PPU.OBJNameSelect;
-		BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x10);
-		BG.StartPalette = 128;
-		S9xSelectTileConverter(4, FALSE, sub, FALSE);
-		S9xSelectTileRenderers(PPU.BGMode, sub, TRUE);
-		DrawOBJS(D + 4);
-	}
-
-	BG.NameSelect = 0;
-	S9xSelectTileRenderers(PPU.BGMode, sub, FALSE);
-
-	#define DO_BG(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
-		if (BGActive & (1 << n)) \
-		{ \
-			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (!hires && PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter(depth, hires, sub, PPU.BGMosaic[n]); \
-			\
-			if (offset) \
-			{ \
-				BG.OffsetSizeH = (!hires && PPU.BG[2].BGSize) ? 16 : 8; \
-				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
-				\
-				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
-					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
-				else \
-					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
-			} \
-			else \
-			{ \
-				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
-					DrawBackgroundMosaic(n, D + Zh, D + Zl); \
-				else \
-					DrawBackground(n, D + Zh, D + Zl); \
-			} \
-		}
-
-	switch (PPU.BGMode)
-	{
-		case 0:
-			DO_BG(0,  0, 2, FALSE, FALSE, 15, 11, 0);
-			DO_BG(1, 32, 2, FALSE, FALSE, 14, 10, 0);
-			DO_BG(2, 64, 2, FALSE, FALSE,  7,  3, 0);
-			DO_BG(3, 96, 2, FALSE, FALSE,  6,  2, 0);
-			break;
-
-		case 1:
-			DO_BG(0,  0, 4, FALSE, FALSE, 15, 11, 0);
-			DO_BG(1,  0, 4, FALSE, FALSE, 14, 10, 0);
-			DO_BG(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
-			break;
-
-		case 2:
-			DO_BG(0,  0, 4, FALSE, TRUE,  15,  7, 8);
-			DO_BG(1,  0, 4, FALSE, TRUE,  11,  3, 8);
-			break;
-
-		case 3:
-			DO_BG(0,  0, 8, FALSE, FALSE, 15,  7, 0);
-			DO_BG(1,  0, 4, FALSE, FALSE, 11,  3, 0);
-			break;
-
-		case 4:
-			DO_BG(0,  0, 8, FALSE, TRUE,  15,  7, 0);
-			DO_BG(1,  0, 2, FALSE, TRUE,  11,  3, 0);
-			break;
-
-		case 5:
-			DO_BG(0,  0, 4, TRUE,  FALSE, 15,  7, 0);
-			DO_BG(1,  0, 2, TRUE,  FALSE, 11,  3, 0);
-			break;
-
-		case 6:
-			DO_BG(0,  0, 4, TRUE,  TRUE,  15,  7, 8);
-			break;
-
-		case 7:
-			if (BGActive & 0x01)
-			{
-				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 1);
-				DrawBackgroundMode7(0, GFX.DrawMode7BG1Math, GFX.DrawMode7BG1Nomath, D);
-			}
-
-			if ((Memory.FillRAM[0x2133] & 0x40) && (BGActive & 0x02))
-			{
-				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 2);
-				DrawBackgroundMode7(1, GFX.DrawMode7BG2Math, GFX.DrawMode7BG2Nomath, D);
-			}
-
-			break;
-	}
-
-	#undef DO_BG
-
-	BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x20);
-
-	DrawBackdrop();
-}
-
-void S9xUpdateScreen (void)
-{
-	if (IPPU.OBJChanged)
-		SetupOBJ();
-
-	// XXX: Check ForceBlank? Or anything else?
-	PPU.RangeTimeOver |= GFX.OBJLines[GFX.EndY].RTOFlags;
-
-	GFX.StartY = IPPU.PreviousLine;
-	if ((GFX.EndY = IPPU.CurrentLine - 1) >= PPU.ScreenHeight)
-		GFX.EndY = PPU.ScreenHeight - 1;
-
-	if (!PPU.ForcedBlanking)
-	{
-		// If force blank, may as well completely skip all this. We only did
-		// the OBJ because (AFAWK) the RTO flags are updated even during force-blank.
-
-		if (PPU.RecomputeClipWindows)
-		{
-			S9xComputeClipWindows();
-			PPU.RecomputeClipWindows = FALSE;
-		}
-
-		if (Settings.SupportHiRes)
-		{
-			if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
-			{
-				// Have to back out of the regular speed hack
-				for (register uint32 y = 0; y < GFX.StartY; y++)
-				{
-					register uint16	*p = GFX.Screen + y * GFX.PPL + 255;
-					register uint16	*q = GFX.Screen + y * GFX.PPL + 510;
-
-					for (register int x = 255; x >= 0; x--, p--, q -= 2)
-						*q = *(q + 1) = *p;
-				}
-
-				IPPU.DoubleWidthPixels = TRUE;
-				IPPU.RenderedScreenWidth = 512;
-			}
-
-			if (!IPPU.DoubleHeightPixels && (IPPU.Interlace || IPPU.InterlaceOBJ))
-			{
-				IPPU.DoubleHeightPixels = TRUE;
-				IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
-				GFX.PPL = GFX.RealPPL << 1;
-				GFX.DoInterlace = 2;
-
-				for (register int32 y = (int32) GFX.StartY - 1; y >= 0; y--)
-					memmove(GFX.Screen + y * GFX.PPL, GFX.Screen + y * GFX.RealPPL, IPPU.RenderedScreenWidth * sizeof(uint16));
-			}
-		}
-
-		if ((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2131] & 0x3f))
-			GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed], IPPU.XB[PPU.FixedColourGreen], IPPU.XB[PPU.FixedColourBlue]);
-
-		if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
-			((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
-			// If hires (Mode 5/6 or pseudo-hires) or math is to be done
-			// involving the subscreen, then we need to render the subscreen...
-			RenderScreen(TRUE);
-
-		RenderScreen(FALSE);
-	}
-	else
-	{
-		const uint16	black = BUILD_PIXEL(0, 0, 0);
-
-		GFX.S = GFX.Screen + GFX.StartY * GFX.PPL;
-		if (GFX.DoInterlace && GFX.InterlaceFrame)
-			GFX.S += GFX.RealPPL;
-
-		for (uint32 l = GFX.StartY; l <= GFX.EndY; l++, GFX.S += GFX.PPL)
-			for (int x = 0; x < IPPU.RenderedScreenWidth; x++)
-				GFX.S[x] = black;
-	}
-
-	IPPU.PreviousLine = IPPU.CurrentLine;
-}
-
 static void SetupOBJ (void)
 {
 	int	SmallWidth, SmallHeight, LargeWidth, LargeHeight;
@@ -920,6 +656,47 @@ static void SetupOBJ (void)
 	}
 
 	IPPU.OBJChanged = FALSE;
+}
+
+void RenderLine (uint8 C)
+{
+	if (IPPU.RenderThisFrame)
+	{
+		LineData[C].BG[0].VOffset = PPU.BG[0].VOffset + 1;
+		LineData[C].BG[0].HOffset = PPU.BG[0].HOffset;
+		LineData[C].BG[1].VOffset = PPU.BG[1].VOffset + 1;
+		LineData[C].BG[1].HOffset = PPU.BG[1].HOffset;
+
+		if (PPU.BGMode == 7)
+		{
+			struct SLineMatrixData *p = &LineMatrixData[C];
+			p->MatrixA = PPU.MatrixA;
+			p->MatrixB = PPU.MatrixB;
+			p->MatrixC = PPU.MatrixC;
+			p->MatrixD = PPU.MatrixD;
+			p->CentreX = PPU.CentreX;
+			p->CentreY = PPU.CentreY;
+			p->M7HOFS  = PPU.M7HOFS;
+			p->M7VOFS  = PPU.M7VOFS;
+		}
+		else
+		{
+			LineData[C].BG[2].VOffset = PPU.BG[2].VOffset + 1;
+			LineData[C].BG[2].HOffset = PPU.BG[2].HOffset;
+			LineData[C].BG[3].VOffset = PPU.BG[3].VOffset + 1;
+			LineData[C].BG[3].HOffset = PPU.BG[3].HOffset;
+		}
+
+		IPPU.CurrentLine = C + 1;
+	}
+	else
+	{
+		// if we're not rendering this frame, we still need to update this
+		// XXX: Check ForceBlank? Or anything else?
+		if (IPPU.OBJChanged)
+			SetupOBJ();
+		PPU.RangeTimeOver |= GFX.OBJLines[C].RTOFlags;
+	}
 }
 
 static void DrawOBJS (int D)
@@ -1230,6 +1007,21 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 				}
 			}
 		}
+	}
+}
+
+static inline void DrawBackdrop (void)
+{
+	uint32	Offset = GFX.StartY * GFX.PPL;
+
+	for (int clip = 0; clip < GFX.Clip[5].Count; clip++)
+	{
+		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1);
+
+		if (BG.EnableMath && (GFX.Clip[5].DrawMode[clip] & 2))
+			GFX.DrawBackdropMath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
+		else
+			GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
 	}
 }
 
@@ -1871,20 +1663,221 @@ static inline void DrawBackgroundMode7 (int bg, void (*DrawMath) (uint32, uint32
 	}
 }
 
-static inline void DrawBackdrop (void)
+static inline void RenderScreen (bool8 sub)
 {
-	uint32	Offset = GFX.StartY * GFX.PPL;
+	uint8	BGActive;
+	int		D;
 
-	for (int clip = 0; clip < GFX.Clip[5].Count; clip++)
+	if (!sub)
 	{
-		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1);
-
-		if (BG.EnableMath && (GFX.Clip[5].DrawMode[clip] & 2))
-			GFX.DrawBackdropMath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
-		else
-			GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
+		GFX.S = GFX.Screen;
+		if (GFX.DoInterlace && GFX.InterlaceFrame)
+			GFX.S += GFX.RealPPL;
+		GFX.DB = GFX.ZBuffer;
+		GFX.Clip = IPPU.Clip[0];
+		BGActive = Memory.FillRAM[0x212c] & ~Settings.BG_Forced;
+		D = 32;
 	}
+	else
+	{
+		GFX.S = GFX.SubScreen;
+		GFX.DB = GFX.SubZBuffer;
+		GFX.Clip = IPPU.Clip[1];
+		BGActive = Memory.FillRAM[0x212d] & ~Settings.BG_Forced;
+		D = (Memory.FillRAM[0x2130] & 2) << 4; // 'do math' depth flag
+	}
+
+	if (BGActive & 0x10)
+	{
+		BG.TileAddress = PPU.OBJNameBase;
+		BG.NameSelect = PPU.OBJNameSelect;
+		BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x10);
+		BG.StartPalette = 128;
+		S9xSelectTileConverter(4, FALSE, sub, FALSE);
+		S9xSelectTileRenderers(PPU.BGMode, sub, TRUE);
+		DrawOBJS(D + 4);
+	}
+
+	BG.NameSelect = 0;
+	S9xSelectTileRenderers(PPU.BGMode, sub, FALSE);
+
+	#define DO_BG(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = (!hires && PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter(depth, hires, sub, PPU.BGMosaic[n]); \
+			\
+			if (offset) \
+			{ \
+				BG.OffsetSizeH = (!hires && PPU.BG[2].BGSize) ? 16 : 8; \
+				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+				\
+				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
+					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
+				else \
+					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
+			} \
+			else \
+			{ \
+				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
+					DrawBackgroundMosaic(n, D + Zh, D + Zl); \
+				else \
+					DrawBackground(n, D + Zh, D + Zl); \
+			} \
+		}
+
+	switch (PPU.BGMode)
+	{
+		case 0:
+			DO_BG(0,  0, 2, FALSE, FALSE, 15, 11, 0);
+			DO_BG(1, 32, 2, FALSE, FALSE, 14, 10, 0);
+			DO_BG(2, 64, 2, FALSE, FALSE,  7,  3, 0);
+			DO_BG(3, 96, 2, FALSE, FALSE,  6,  2, 0);
+			break;
+
+		case 1:
+			DO_BG(0,  0, 4, FALSE, FALSE, 15, 11, 0);
+			DO_BG(1,  0, 4, FALSE, FALSE, 14, 10, 0);
+			DO_BG(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			break;
+
+		case 2:
+			DO_BG(0,  0, 4, FALSE, TRUE,  15,  7, 8);
+			DO_BG(1,  0, 4, FALSE, TRUE,  11,  3, 8);
+			break;
+
+		case 3:
+			DO_BG(0,  0, 8, FALSE, FALSE, 15,  7, 0);
+			DO_BG(1,  0, 4, FALSE, FALSE, 11,  3, 0);
+			break;
+
+		case 4:
+			DO_BG(0,  0, 8, FALSE, TRUE,  15,  7, 0);
+			DO_BG(1,  0, 2, FALSE, TRUE,  11,  3, 0);
+			break;
+
+		case 5:
+			DO_BG(0,  0, 4, TRUE,  FALSE, 15,  7, 0);
+			DO_BG(1,  0, 2, TRUE,  FALSE, 11,  3, 0);
+			break;
+
+		case 6:
+			DO_BG(0,  0, 4, TRUE,  TRUE,  15,  7, 8);
+			break;
+
+		case 7:
+			if (BGActive & 0x01)
+			{
+				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 1);
+				DrawBackgroundMode7(0, GFX.DrawMode7BG1Math, GFX.DrawMode7BG1Nomath, D);
+			}
+
+			if ((Memory.FillRAM[0x2133] & 0x40) && (BGActive & 0x02))
+			{
+				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 2);
+				DrawBackgroundMode7(1, GFX.DrawMode7BG2Math, GFX.DrawMode7BG2Nomath, D);
+			}
+
+			break;
+	}
+
+	#undef DO_BG
+
+	BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x20);
+
+	DrawBackdrop();
 }
+
+void S9xUpdateScreen (void)
+{
+	if (IPPU.OBJChanged)
+		SetupOBJ();
+
+	// XXX: Check ForceBlank? Or anything else?
+	PPU.RangeTimeOver |= GFX.OBJLines[GFX.EndY].RTOFlags;
+
+	GFX.StartY = IPPU.PreviousLine;
+	if ((GFX.EndY = IPPU.CurrentLine - 1) >= PPU.ScreenHeight)
+		GFX.EndY = PPU.ScreenHeight - 1;
+
+	if (!PPU.ForcedBlanking)
+	{
+		// If force blank, may as well completely skip all this. We only did
+		// the OBJ because (AFAWK) the RTO flags are updated even during force-blank.
+
+		if (PPU.RecomputeClipWindows)
+		{
+			S9xComputeClipWindows();
+			PPU.RecomputeClipWindows = FALSE;
+		}
+
+		if (Settings.SupportHiRes)
+		{
+			if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
+			{
+				// Have to back out of the regular speed hack
+				for (register uint32 y = 0; y < GFX.StartY; y++)
+				{
+					register uint16	*p = GFX.Screen + y * GFX.PPL + 255;
+					register uint16	*q = GFX.Screen + y * GFX.PPL + 510;
+
+					for (register int x = 255; x >= 0; x--, p--, q -= 2)
+						*q = *(q + 1) = *p;
+				}
+
+				IPPU.DoubleWidthPixels = TRUE;
+				IPPU.RenderedScreenWidth = 512;
+			}
+
+			if (!IPPU.DoubleHeightPixels && (IPPU.Interlace || IPPU.InterlaceOBJ))
+			{
+				IPPU.DoubleHeightPixels = TRUE;
+				IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
+				GFX.PPL = GFX.RealPPL << 1;
+				GFX.DoInterlace = 2;
+
+				for (register int32 y = (int32) GFX.StartY - 1; y >= 0; y--)
+					memmove(GFX.Screen + y * GFX.PPL, GFX.Screen + y * GFX.RealPPL, IPPU.RenderedScreenWidth * sizeof(uint16));
+			}
+		}
+
+		if ((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2131] & 0x3f))
+			GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed], IPPU.XB[PPU.FixedColourGreen], IPPU.XB[PPU.FixedColourBlue]);
+
+		if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
+			((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
+			// If hires (Mode 5/6 or pseudo-hires) or math is to be done
+			// involving the subscreen, then we need to render the subscreen...
+			RenderScreen(TRUE);
+
+		RenderScreen(FALSE);
+	}
+	else
+	{
+		const uint16	black = BUILD_PIXEL(0, 0, 0);
+
+		GFX.S = GFX.Screen + GFX.StartY * GFX.PPL;
+		if (GFX.DoInterlace && GFX.InterlaceFrame)
+			GFX.S += GFX.RealPPL;
+
+		for (uint32 l = GFX.StartY; l <= GFX.EndY; l++, GFX.S += GFX.PPL)
+			for (int x = 0; x < IPPU.RenderedScreenWidth; x++)
+				GFX.S[x] = black;
+	}
+
+	IPPU.PreviousLine = IPPU.CurrentLine;
+}
+
+
+
+
+
+
+
+
 
 void S9xReRefresh (void)
 {
@@ -1959,74 +1952,8 @@ static void DisplayStringFromBottom (const char *string, int linesFromBottom, in
 	}
 }
 
-static void DisplayFrameRate (void)
-{
-	char	string[10];
-	static uint32 lastFrameCount = 0, calcFps = 0;
-	static time_t lastTime = time(NULL);
-
-	time_t currTime = time(NULL);
-	if (lastTime != currTime) {
-		if (lastFrameCount < IPPU.TotalEmulatedFrames) {
-			calcFps = (IPPU.TotalEmulatedFrames - lastFrameCount) / (uint32)(currTime - lastTime);
-		}
-		lastTime = currTime;
-		lastFrameCount = IPPU.TotalEmulatedFrames;
-	}
-	sprintf(string, "%u fps", calcFps);
-	S9xDisplayString(string, 2, IPPU.RenderedScreenWidth - (font_width - 1) * strlen(string) - 1, false);
-
-	const int	len = 5;
-	sprintf(string, "%02d/%02d",      (int) IPPU.DisplayedRenderedFrameCount, (int) Memory.ROMFramesPerSecond);
-
-	S9xDisplayString(string, 1, IPPU.RenderedScreenWidth - (font_width - 1) * len - 1, false);
-}
-
-static void DisplayWatchedAddresses (void)
-{
-	for (unsigned int i = 0; i < sizeof(watches) / sizeof(watches[0]); i++)
-	{
-		if (!watches[i].on)
-			break;
-
-		int32	displayNumber = 0;
-		char	buf[32];
-
-		for (int r = 0; r < watches[i].size; r++)
-			displayNumber += (Cheat.CWatchRAM[(watches[i].address - 0x7E0000) + r]) << (8 * r);
-
-		if (watches[i].format == 1)
-			sprintf(buf, "%s,%du = %u", watches[i].desc, watches[i].size, (unsigned int) displayNumber);
-		else
-		if (watches[i].format == 3)
-			sprintf(buf, "%s,%dx = %X", watches[i].desc, watches[i].size, (unsigned int) displayNumber);
-		else // signed
-		{
-			if (watches[i].size == 1)
-				displayNumber = (int32) ((int8)  displayNumber);
-			else
-			if (watches[i].size == 2)
-				displayNumber = (int32) ((int16) displayNumber);
-			else
-			if (watches[i].size == 3)
-				if (displayNumber >= 8388608)
-					displayNumber -= 16777216;
-
-			sprintf(buf, "%s,%ds = %d", watches[i].desc, watches[i].size, (int) displayNumber);
-		}
-
-		S9xDisplayString(buf, 6 + i, 1, false);
-	}
-}
-
 void S9xDisplayMessages (uint16 *screen, int ppl, int width, int height, int scale)
 {
-	if (Settings.DisplayFrameRate)
-		DisplayFrameRate();
-
-	if (Settings.DisplayWatchedAddresses)
-		DisplayWatchedAddresses();
-
 	if (GFX.InfoString && *GFX.InfoString)
 		S9xDisplayString(GFX.InfoString, 5, 1, true);
 }

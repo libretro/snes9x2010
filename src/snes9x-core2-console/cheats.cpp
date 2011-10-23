@@ -208,9 +208,6 @@
 	 (s) == S9X_24_BITS ? (((int32) ((*((m) + (o)) + (*((m) + (o) + 1) << 8) + (*((m) + (o) + 2) << 16)) << 8)) >> 8): \
                            ((int32)  (*((m) + (o)) + (*((m) + (o) + 1) << 8) + (*((m) + (o) + 2) << 16) + (*((m) + (o) + 3) << 24))))
 
-static bool8 S9xAllHex (const char *, int);
-
-
 static bool8 S9xAllHex (const char *code, int len)
 {
 	for (int i = 0; i < len; i++)

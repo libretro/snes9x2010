@@ -228,8 +228,8 @@ struct InternalPPU
 	bool8	PseudoHires;
 	bool8	DoubleWidthPixels;
 	bool8	DoubleHeightPixels;
-	int		CurrentLine;
-	int		PreviousLine;
+	int	CurrentLine;
+	int	PreviousLine;
 	uint8	*XB;
 	uint32	Red[256];
 	uint32	Green[256];
@@ -237,8 +237,8 @@ struct InternalPPU
 	uint16	ScreenColors[256];
 	uint8	MaxBrightness;
 	bool8	RenderThisFrame;
-	int		RenderedScreenWidth;
-	int		RenderedScreenHeight;
+	int	RenderedScreenWidth;
+	int	RenderedScreenHeight;
 	uint32	FrameCount;
 	uint32	RenderedFramesCount;
 	uint32	DisplayedRenderedFrameCount;
@@ -374,8 +374,8 @@ struct SPPU
 	uint8	OpenBus2;
 };
 
-extern uint16				SignExtend[2];
-extern struct SPPU			PPU;
+extern uint16			SignExtend[2];
+extern struct SPPU		PPU;
 extern struct InternalPPU	IPPU;
 
 void S9xResetPPU (void);

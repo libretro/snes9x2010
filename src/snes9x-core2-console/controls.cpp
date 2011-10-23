@@ -192,43 +192,43 @@
 
 using namespace	std;
 
-#define NONE					(-2)
-#define MP5						(-1)
-#define JOYPAD0					0
-#define JOYPAD1					1
-#define JOYPAD2					2
-#define JOYPAD3					3
-#define JOYPAD4					4
-#define JOYPAD5					5
-#define JOYPAD6					6
-#define JOYPAD7					7
-#define MOUSE0					8
-#define MOUSE1					9
-#define SUPERSCOPE				10
+#define NONE				(-2)
+#define MP5				(-1)
+#define JOYPAD0				0
+#define JOYPAD1				1
+#define JOYPAD2				2
+#define JOYPAD3				3
+#define JOYPAD4				4
+#define JOYPAD5				5
+#define JOYPAD6				6
+#define JOYPAD7				7
+#define MOUSE0				8
+#define MOUSE1				9
+#define SUPERSCOPE			10
 #define ONE_JUSTIFIER			11
 #define TWO_JUSTIFIERS			12
-#define NUMCTLS					13 // This must be LAST
+#define NUMCTLS				13 // This must be LAST
 
-#define POLL_ALL				NUMCTLS
+#define POLL_ALL			NUMCTLS
 
 #define SUPERSCOPE_FIRE			0x80
 #define SUPERSCOPE_CURSOR		0x40
 #define SUPERSCOPE_TURBO		0x20
 #define SUPERSCOPE_PAUSE		0x10
-#define SUPERSCOPE_OFFSCREEN	0x02
+#define SUPERSCOPE_OFFSCREEN		0x02
 
 #define JUSTIFIER_TRIGGER		0x80
 #define JUSTIFIER_START			0x20
 #define JUSTIFIER_SELECT		0x08
 
-#define MAP_UNKNOWN				(-1)
-#define MAP_NONE				0
-#define MAP_BUTTON				1
-#define MAP_AXIS				2
-#define MAP_POINTER				3
+#define MAP_UNKNOWN			(-1)
+#define MAP_NONE			0
+#define MAP_BUTTON			1
+#define MAP_AXIS			2
+#define MAP_POINTER			3
 
-#define FLAG_IOBIT0				(Memory.FillRAM[0x4213] & 0x40)
-#define FLAG_IOBIT1				(Memory.FillRAM[0x4213] & 0x80)
+#define FLAG_IOBIT0			(Memory.FillRAM[0x4213] & 0x40)
+#define FLAG_IOBIT1			(Memory.FillRAM[0x4213] & 0x80)
 #define FLAG_IOBIT(n)			((n) ? (FLAG_IOBIT1) : (FLAG_IOBIT0))
 
 bool8	pad_read = 0, pad_read_last = 0;
@@ -302,15 +302,15 @@ static struct
 }	mp5[2];
 
 static set<struct exemulti *>		exemultis;
-static set<uint32>					pollmap[NUMCTLS + 1];
+static set<uint32>			pollmap[NUMCTLS + 1];
 static map<uint32, s9xcommand_t>	keymap;
 static vector<s9xcommand_t *>		multis;
-static uint8						turbo_time;
-static uint8						pseudobuttons[256];
-static bool8						FLAG_LATCH = FALSE;
-static int32						curcontrollers[2] = { NONE,    NONE };
-static int32						newcontrollers[2] = { JOYPAD0, NONE };
-static char							buf[256];
+static uint8				turbo_time;
+static uint8				pseudobuttons[256];
+static bool8				FLAG_LATCH = FALSE;
+static int32				curcontrollers[2] = { NONE,    NONE };
+static int32				newcontrollers[2] = { JOYPAD0, NONE };
+static char				buf[256];
 
 static const char	*color_names[32] =
 {
@@ -437,18 +437,6 @@ static const char	*command_names[LAST_COMMAND + 1] =
 
 #undef S
 #undef THE_COMMANDS
-
-static void DisplayStateChange (const char *, bool8);
-static void DoGunLatch (int, int);
-static int maptype (int);
-static bool strless (const char *, const char *);
-static int findstr (const char *, const char **, int);
-static int get_threshold (const char **);
-static const char * maptypename (int);
-static int32 ApplyMulti (s9xcommand_t *, int32, int16);
-static void do_polling (int);
-static void UpdatePolledMouse (int);
-
 
 static string& operator += (string &s, int i)
 {

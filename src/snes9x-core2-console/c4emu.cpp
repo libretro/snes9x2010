@@ -332,16 +332,6 @@ static uint8	C4TestPattern[12 * 4] =
 	0x00, 0xff, 0xfe, 0x00
 };
 
-static void C4ConvOAM (void);
-static void C4DoScaleRotate (int);
-static void C4DrawLine (int32, int32, int16, int32, int32, int16, uint8);
-static void C4DrawWireFrame (void);
-static void C4TransformLines (void);
-static void C4BitPlaneWave (void);
-static void C4SprDisintegrate (void);
-static void C4ProcessSprites (void);
-
-
 static void C4ConvOAM (void)
 {
 	uint8	*OAMptr = Memory.C4RAM + (Memory.C4RAM[0x626] << 2);
