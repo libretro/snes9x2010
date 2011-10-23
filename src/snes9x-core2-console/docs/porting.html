@@ -45,8 +45,7 @@
 			Some SNES game cartridges contains a small amount of extra RAM and a battery, so ROMs could save a player's progress through a game for games that takes many hours to play from start to finish. Snes9x simulates this S-RAM by saving the contents of the area of memory occupied by the S-RAM into a file then automatically restoring it again the next time the user plays the same game. If the hardware you're porting to doesn't have a storage media available then you could be in trouble.
 		</p>
 		<p>
-			Snes9x also implements freeze-game files which can record the state of the SNES hardware and RAM at a particular point in time and can restore it to that exact state at a later date - the result is that users can save a game at any point, not just at save-game or password points provided by the original game coders. Each freeze file is over 400k in size. To help save disk space, Snes9x can be compiled with zlib (<a href="http://www.zlib.net/">http://www.zlib.net/</a>), which is used to GZIP compress the freeze files, reducing the size to typically below 100k. zlib is also used to load GZIP or ZIP compressed ROM images. Additionally, Snes9x supports JMA archives compressed with NSRT (<a href="http://nsrt.edgeemu.com/">http://nsrt.edgeemu.com/</a>).
-		</p>
+			Snes9x also implements freeze-game files which can record the state of the SNES hardware and RAM at a particular point in time and can restore it to that exact state at a later date - the result is that users can save a game at any point, not just at save-game or password points provided by the original game coders. Each freeze file is over 400k in size. To help save disk space, Snes9x can be compiled with zlib (<a href="http://www.zlib.net/">http://www.zlib.net/</a>), which is used to GZIP compress the freeze files, reducing the size to typically below 100k. zlib is also used to load GZIP or ZIP compressed ROM images.</p>
 		<h2>Compile-Time Options</h2>
 		<h3><code>RIGHTSHIFT_IS_SAR</code></h3>
 		<p>
@@ -60,23 +59,18 @@
 		<p>
 			You must define this. It allows correct VRAM reads.
 		</p>
-		<h3><code>ZLIB / UNZIP_SUPPORT / JMA_SUPPORT</code></h3>
+		<h3><code>ZLIB / UNZIP_SUPPORT</code></h3>
 		<p>
-			Define these if you want to support GZIP/ZIP/JMA compressed ROM images and GZIP compressed freeze-game files.
+			Define these if you want to support GZIP/ZIP compressed ROM images and GZIP compressed freeze-game files.
 		</p>
 		<h3><code>ZSNES_FX / ZSNES_C4</code></h3>
 		<p>
 			Define these if your CPU is x86 compatible and you're going to use the ZSNES Super FX and C4 assembler codes.
 		</p>
-		<h3><code>USE_OPENGL</code></h3>
-		<p>
-			Define this and set <code>Settings.OpenGLEnable</code> to <code>true</code>, then you'll get the rendered SNES image as one OpenGL texture.
-		</p>
 		<h3>Typical Options Common for Most Platforms</h3>
 		<p><code>
 			ZLIB<br>
 			UNZIP_SUPPORT<br>
-			JMA_SUPPORT<br>
 			CPU_SHUTDOWN<br>
 			RIGHTSHIFT_IS_SAR<br>
 			CORRECT_VRAM_READS
@@ -344,8 +338,7 @@
 		</p>
 		<h3><code>uint32 GFX.Pitch</code></h3>
 		<p>
-			Bytes per line (not pixels per line) of the <code>GFX.Screen</code> buffer. Typically set it to 1024. When the SNES screen is 256 pixels width and <code>Settings.OpenGLEnable</code> is <code>false</code>, last half 512 bytes per line are unused. When <code>Settings.OpenGLEnable</code> is <code>true</code>, <code>GFX.Pitch</code> is ignored.
-		</p>
+			Bytes per line (not pixels per line) of the <code>GFX.Screen</code> buffer. Typically set it to 1024. When the SNES screen is 256 pixels width, last half 512 bytes per line are unused.</p>
 		<h3>Settings structure</h3>
 		<p>
 			There are various switches in the <code>Settings</code> structure. See <code>snes9x.h</code> for details. At least the settings below are required for good emulation.

@@ -355,13 +355,6 @@ struct STimings
 
 struct SSettings
 {
-	bool8	TraceDMA;
-	bool8	TraceHDMA;
-	bool8	TraceVRAM;
-	bool8	TraceUnknownRegisters;
-	bool8	TraceDSP;
-	bool8	TraceHCEvent;
-
 	bool8	SuperFX;
 	uint8	DSP;
 	bool8	SA1;
@@ -438,18 +431,11 @@ struct SSettings
 	uint32	HighSpeedSeek;
 	bool8	FrameAdvance;
 
-	bool8	NetPlay;
-	bool8	NetPlayServer;
-	char	ServerName[128];
-	int		Port;
-
 	bool8	ApplyCheats;
 	bool8	NoPatch;
 	int32	AutoSaveDelay;
 	bool8	DontSaveOopsSnapshot;
 	bool8	UpAndDown;
-
-	bool8	OpenGLEnable;
 };
 
 struct SSNESGameFixes
