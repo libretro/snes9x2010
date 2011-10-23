@@ -52,17 +52,6 @@
 	#undef BLARGG_BIG_ENDIAN
 #endif
 
-#ifndef NDEBUG
-inline void blargg_verify_byte_order()
-{
-		#if BLARGG_BIG_ENDIAN
-			volatile int i = 1;
-		#elif BLARGG_LITTLE_ENDIAN
-			volatile int i = 1;
-		#endif
-}
-#endif
-
 inline unsigned get_le16( void const* p )
 {
 	return  (unsigned) ((unsigned char const*) p) [1] << 8 |

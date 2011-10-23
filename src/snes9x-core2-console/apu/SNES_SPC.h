@@ -92,13 +92,6 @@ public:
 	typedef SPC_DSP::copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
 	
-	// Writes minimal header to spc_out
-	static void init_header( void* spc_out );
-
-	// Saves emulator state as SPC file data. Writes spc_file_size bytes to spc_out.
-	// Does not set up SPC header; use init_header() for that.
-	void save_spc( void* spc_out );
-
 	// Returns true if new key-on events occurred since last check. Useful for
 	// trimming silence while saving an SPC.
 	bool check_kon();
@@ -260,8 +253,6 @@ private:
 
 	static char const signature [signature_size + 1];
 	
-	void save_regs( uint8_t out [reg_count] );
-
 // Snes9x timing hack
 	bool allow_time_overflow;
 };

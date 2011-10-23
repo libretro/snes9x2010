@@ -814,16 +814,6 @@ void SPC_DSP::init( void* ram_64k )
 	reset();
 
 	stereo_switch = 0xffff;
-
-	#ifndef NDEBUG
-		
-		// check clamp macro
-		int i;
-		i = +0x8000; CLAMP16( i );
-		i = -0x8001; CLAMP16( i );
-		
-		blargg_verify_byte_order();
-	#endif
 }
 
 void SPC_DSP::soft_reset_common()
