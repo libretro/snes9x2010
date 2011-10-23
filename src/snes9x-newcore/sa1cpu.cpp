@@ -227,7 +227,7 @@
 //#undef CPU_SHUTDOWN
 #define SA1_OPCODES
 
-#include "cpuops.cpp"
+#include "cpuops_.h"
 
 #undef S9xUnpackStatus
 #undef S9xPackStatus

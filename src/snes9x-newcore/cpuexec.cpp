@@ -512,3 +512,5 @@ void S9xDoHEventProcessing (void)
 	}
 
 }
+
+#include "cpuops_.h"
