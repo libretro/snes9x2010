@@ -177,7 +177,6 @@
 
 #include <string>
 #include <numeric>
-#include <assert.h>
 
 #ifdef UNZIP_SUPPORT
 #include "unzip/unzip.h"
@@ -4395,8 +4394,6 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 						printf("WARNING: Ignoring extra .%s files!\n", ips);
 				} while (++i < 10);
 			}
-
-			assert(unzClose(file) == UNZ_OK);
 
 			if (flag)
 				return;

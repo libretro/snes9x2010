@@ -74,7 +74,6 @@ static BOOST::uint8_t const initial_regs [SPC_DSP::register_count] =
 
 void SPC_DSP::set_output( sample_t* out, int size )
 {
-	require( (size & 1) == 0 ); // must be even
 	if ( !out )
 	{
 		out  = m.extra;
@@ -511,7 +510,6 @@ VOICE_CLOCK( V4 )
 		if ( (v->brr_offset += 2) >= brr_block_size )
 		{
 			// Start decoding next BRR block
-			assert( v->brr_offset == brr_block_size );
 			v->brr_addr = (v->brr_addr + brr_block_size) & 0xFFFF;
 			if ( m.t_brr_header & 1 )
 			{
@@ -787,8 +785,6 @@ PHASE(31)  V(V4,0)       V(V1,2)\
 
 void SPC_DSP::run( int clocks_remain )
 {
-	require( clocks_remain > 0 );
-	
 	int const phase = m.phase;
 	m.phase = (phase + clocks_remain) & 31;
 	switch ( phase )
@@ -820,16 +816,11 @@ void SPC_DSP::init( void* ram_64k )
 	stereo_switch = 0xffff;
 
 	#ifndef NDEBUG
-		// be sure this sign-extends
-		assert( (int16_t) 0x8000 == -0x8000 );
-		
-		// be sure right shift preserves sign
-		assert( (-1 >> 1) == -1 );
 		
 		// check clamp macro
 		int i;
-		i = +0x8000; CLAMP16( i ); assert( i == +0x7FFF );
-		i = -0x8001; CLAMP16( i ); assert( i == -0x8000 );
+		i = +0x8000; CLAMP16( i );
+		i = -0x8001; CLAMP16( i );
 		
 		blargg_verify_byte_order();
 	#endif
@@ -837,8 +828,6 @@ void SPC_DSP::init( void* ram_64k )
 
 void SPC_DSP::soft_reset_common()
 {
-	require( m.ram ); // init() must have been called already
-	
 	m.noise              = 0x4000;
 	m.echo_hist_pos      = m.echo_hist;
 	m.every_other_sample = 1;

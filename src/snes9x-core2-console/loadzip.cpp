@@ -177,7 +177,6 @@
 
 #ifdef UNZIP_SUPPORT
 
-#include <assert.h>
 #include <ctype.h>
 #include "unzip/unzip.h"
 #include "snes9x.h"
@@ -230,7 +229,6 @@ bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers, uint8 
 
 	if (!(port == UNZ_END_OF_LIST_OF_FILE || port == UNZ_OK) || filesize == 0)
 	{
-		assert(unzClose(file) == UNZ_OK);
 		return (FALSE);
 	}
 
@@ -256,8 +254,6 @@ bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers, uint8 
 
 	do
 	{
-		assert(info.uncompressed_size <= CMemory::MAX_ROM_SIZE + 512);
-
 		int	FileSize = info.uncompressed_size;
 		int	l = unzReadCurrentFile(file, ptr, FileSize);
 

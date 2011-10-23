@@ -175,7 +175,6 @@
  ***********************************************************************************/
 
 
-#include <assert.h>
 #include "snes9x.h"
 #include "memmap.h"
 #include "dma.h"
@@ -2003,7 +2002,6 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 						break;
 
 					default:
-						assert(0);
 						break;
 				}
 

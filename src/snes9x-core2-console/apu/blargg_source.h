@@ -7,18 +7,6 @@ all other #include lines. */
 #ifndef BLARGG_SOURCE_H
 #define BLARGG_SOURCE_H
 
-// If debugging is enabled, abort program if expr is false. Meant for checking
-// internal state and consistency. A failed assertion indicates a bug in the module.
-// void assert( bool expr );
-#include <assert.h>
-
-// If debugging is enabled and expr is false, abort program. Meant for checking
-// caller-supplied parameters and operations that are outside the control of the
-// module. A failed requirement indicates a bug outside the module.
-// void require( bool expr );
-#undef require
-#define require( expr ) assert( expr )
-
 // Like printf() except output goes to debug log file. Might be defined to do
 // nothing (not even evaluate its arguments).
 // void dprintf( const char* format, ... );
@@ -59,29 +47,6 @@ DEF_MIN_MAX( float )
 DEF_MIN_MAX( double )
 
 #undef DEF_MIN_MAX
-
-/*
-// using const references generates crappy code, and I am currenly only using these
-// for built-in types, so they take arguments by value
-
-// TODO: remove
-inline int min( int x, int y ) 
-template<class T>
-inline T min( T x, T y )
-{
-	if ( x < y )
-		return x;
-	return y;
-}
-
-template<class T>
-inline T max( T x, T y )
-{
-	if ( x < y )
-		return y;
-	return x;
-}
-*/
 
 // TODO: good idea? bad idea?
 #undef byte

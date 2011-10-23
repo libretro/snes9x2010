@@ -180,7 +180,6 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <assert.h>
 
 #include "snes9x.h"
 #include "memmap.h"
@@ -2855,7 +2854,6 @@ uint8 S9xReadJOYSERn (int n)
 
 	if (n > 1)
 		n -= 0x4016;
-	assert(n == 0 || n == 1);
 
 	uint8	bits = (OpenBus & ~3) | ((n == 1) ? 0x1c : 0);
 
@@ -3410,8 +3408,6 @@ void S9xControlPreSaveState (struct SControlSnapshot *s)
 		for (int k = 0; k < 2; k++)
 			COPY(mp5[j].pads[k]);
 
-	assert(i == sizeof(s->internal));
-
 #undef COPY
 
 	s->pad_read      = pad_read;
@@ -3480,8 +3476,6 @@ void S9xControlPostLoadState (struct SControlSnapshot *s)
 		for (int j = 0; j < 2; j++)
 			for (int k = 0; k < 2; k++)
 				COPY(mp5[j].pads[k]);
-
-		assert(i == sizeof(s->internal));
 
 	#undef COPY
 	}

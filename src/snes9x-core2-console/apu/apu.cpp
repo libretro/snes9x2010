@@ -186,10 +186,10 @@
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512
 #define APU_MINIMUM_SAMPLE_BLOCK	128
-#define APU_NUMERATOR_NTSC			15664
+#define APU_NUMERATOR_NTSC		15664
 #define APU_DENOMINATOR_NTSC		328125
-#define APU_NUMERATOR_PAL			34176
-#define APU_DENOMINATOR_PAL			709379
+#define APU_NUMERATOR_PAL		34176
+#define APU_DENOMINATOR_PAL		709379
 #define APU_DEFAULT_RESAMPLER		HermiteResampler
 
 SNES_SPC	*spc_core = NULL;
@@ -277,7 +277,7 @@ bool8 S9xMixSamples (uint8 *buffer, int sample_count)
 
 int S9xGetSampleCount (void)
 {
-	return (spc::resampler->avail() >> 0);
+	return spc::resampler->avail();
 }
 
 void S9xFinalizeSamples (void)
