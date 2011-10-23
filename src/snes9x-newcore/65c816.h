@@ -180,7 +180,7 @@
 
 #define Carry		1
 #define Zero		2
-#define IRQ			4
+#define IRQ		4
 #define Decimal		8
 #define IndexFlag	16
 #define MemoryFlag	32
@@ -188,17 +188,17 @@
 #define Negative	128
 #define Emulation	256
 
-#define SetCarry()			(ICPU._Carry = 1)
+#define SetCarry()		(ICPU._Carry = 1)
 #define ClearCarry()		(ICPU._Carry = 0)
-#define SetZero()			(ICPU._Zero = 0)
-#define ClearZero()			(ICPU._Zero = 1)
-#define SetIRQ()			(Registers.PL |= IRQ)
-#define ClearIRQ()			(Registers.PL &= ~IRQ)
+#define SetZero()		(ICPU._Zero = 0)
+#define ClearZero()		(ICPU._Zero = 1)
+#define SetIRQ()		(Registers.PL |= IRQ)
+#define ClearIRQ()		(Registers.PL &= ~IRQ)
 #define SetDecimal()		(Registers.PL |= Decimal)
 #define ClearDecimal()		(Registers.PL &= ~Decimal)
-#define SetIndex()			(Registers.PL |= IndexFlag)
+#define SetIndex()		(Registers.PL |= IndexFlag)
 #define ClearIndex()		(Registers.PL &= ~IndexFlag)
-#define SetMemory()			(Registers.PL |= MemoryFlag)
+#define SetMemory()		(Registers.PL |= MemoryFlag)
 #define ClearMemory()		(Registers.PL &= ~MemoryFlag)
 #define SetOverflow()		(ICPU._Overflow = 1)
 #define ClearOverflow()		(ICPU._Overflow = 0)
@@ -206,8 +206,8 @@
 #define ClearNegative()		(ICPU._Negative = 0)
 
 #define CheckCarry()		(ICPU._Carry)
-#define CheckZero()			(ICPU._Zero == 0)
-#define CheckIRQ()			(Registers.PL & IRQ)
+#define CheckZero()		(ICPU._Zero == 0)
+#define CheckIRQ()		(Registers.PL & IRQ)
 #define CheckDecimal()		(Registers.PL & Decimal)
 #define CheckIndex()		(Registers.PL & IndexFlag)
 #define CheckMemory()		(Registers.PL & MemoryFlag)
@@ -215,7 +215,7 @@
 #define CheckNegative()		(ICPU._Negative & 0x80)
 #define CheckEmulation()	(Registers.P.W & Emulation)
 
-#define SetFlags(f)			(Registers.P.W |= (f))
+#define SetFlags(f)		(Registers.P.W |= (f))
 #define ClearFlags(f)		(Registers.P.W &= ~(f))
 #define CheckFlag(f)		(Registers.PL & (f))
 
@@ -265,7 +265,7 @@ struct SRegisters
 #define DH		D.B.h
 #define PL		P.B.l
 #define PH		P.B.h
-#define PBPC	PC.xPBPC
+#define PBPC		PC.xPBPC
 #define PCw		PC.W.xPC
 #define PCh		PC.B.xPCh
 #define PCl		PC.B.xPCl

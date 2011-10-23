@@ -179,7 +179,7 @@
 #include "memmap.h"
 #include "seta.h"
 
-static int	line;	// line counter
+static int	line_seta018;	// line counter
 
 
 uint8 S9xGetST018 (uint32 Address)
@@ -187,7 +187,7 @@ uint8 S9xGetST018 (uint32 Address)
 	uint8	t       = 0;
 	uint16	address = (uint16) Address & 0xFFFF;
 
-	line++;
+	line_seta018++;
 
 	// these roles may be flipped
 	// op output
@@ -217,7 +217,7 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 	uint16		address = (uint16) Address & 0xFFFF;
 
 
-	line++;
+	line_seta018++;
 
 	if (!reset)
 	{

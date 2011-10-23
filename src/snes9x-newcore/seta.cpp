@@ -191,3 +191,9 @@ void S9xSetSetaDSP (uint8 Byte, uint32 Address)
 {
 	SetSETA (Address, Byte);
 }
+
+#include "seta010_.h"
+
+#include "seta011_.h"
+
+#include "seta018_.h"

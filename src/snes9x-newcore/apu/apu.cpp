@@ -396,11 +396,6 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	return (spc::sound_enabled);
 }
 
-void S9xSetSoundControl (uint8 voice_switch)
-{
-	spc_core->dsp_set_stereo_switch(voice_switch << 8 | voice_switch);
-}
-
 void S9xSetSoundMute (bool8 mute)
 {
 	Settings.Mute = mute;

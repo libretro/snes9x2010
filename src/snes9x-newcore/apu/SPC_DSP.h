@@ -72,7 +72,6 @@ public:
 	void (*spc_snapshot_callback) (void);
 
 	void    set_spc_snapshot_callback( void (*callback) (void) );
-	void    dump_spc_snapshot( void );
 	void    set_stereo_switch( int );
 	uint8_t reg_value( int, int );
 	int     envx_value( int );
