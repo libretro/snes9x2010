@@ -181,7 +181,6 @@
 #include "controls.h"
 #include "crosshairs.h"
 #include "cheats.h"
-#include "movie.h"
 #include "screenshot.h"
 #include "font.h"
 #include "display.h"
@@ -197,7 +196,6 @@ static int	font_width = 8, font_height = 9;
 static void SetupOBJ (void);
 static void DrawOBJS (int);
 static void DisplayFrameRate (void);
-static void DisplayPressedKeys (void);
 static void DisplayWatchedAddresses (void);
 static void DisplayStringFromBottom (const char *, int, int, bool);
 static void DrawBackground (int, uint8, uint8);
@@ -2016,114 +2014,6 @@ static void DisplayFrameRate (void)
 	S9xDisplayString(string, 1, IPPU.RenderedScreenWidth - (font_width - 1) * len - 1, false);
 }
 
-static void DisplayPressedKeys (void)
-{
-	static char	KeyMap[]   = { '0', '1', '2', 'R', 'L', 'X', 'A', '>', '<', 'v', '^', 'S', 's', 'Y', 'B' };
-	static int	KeyOrder[] = { 8, 10, 7, 9, 0, 6, 14, 13, 5, 1, 4, 3, 2, 11, 12 }; // < ^ > v   A B Y X  L R  S s
-
-	enum controllers	controller;
-	int					line = 1;
-	int8				ids[4];
-	char				string[255];
-
-	for (int port = 0; port < 2; port++)
-	{
-		S9xGetController(port, &controller, &ids[0], &ids[1], &ids[2], &ids[3]);
-
-		switch (controller)
-		{
-			case CTL_MOUSE:
-			{
-				uint8 buf[5], *p = buf;
-				MovieGetMouse(port, buf);
-				int16 x = READ_WORD(p);
-				int16 y = READ_WORD(p + 2);
-				uint8 buttons = buf[4];
-				sprintf(string, "#%d %d: (%03d,%03d) %c%c", port, ids[0], x, y,
-						(buttons & 0x40) ? 'L' : ' ', (buttons & 0x80) ? 'R' : ' ');
-				S9xDisplayString(string, line++, 1, false);
-				break;
-			}
-
-			case CTL_SUPERSCOPE:
-			{
-				uint8 buf[6], *p = buf;
-				MovieGetScope(port, buf);
-				int16 x = READ_WORD(p);
-				int16 y = READ_WORD(p + 2);
-				uint8 buttons = buf[4];
-				sprintf(string, "#%d %d: (%03d,%03d) %c%c%c%c", port, ids[0], x, y,
-						(buttons & 0x80) ? 'F' : ' ', (buttons & 0x40) ? 'C' : ' ',
-						(buttons & 0x20) ? 'T' : ' ', (buttons & 0x10) ? 'P' : ' ');
-				S9xDisplayString(string, line++, 1, false);
-				break;
-			}
-
-			case CTL_JUSTIFIER:
-			{
-				uint8 buf[11], *p = buf;
-				MovieGetJustifier(port, buf);
-				int16 x1 = READ_WORD(p);
-				int16 x2 = READ_WORD(p + 2);
-				int16 y1 = READ_WORD(p + 4);
-				int16 y2 = READ_WORD(p + 6);
-				uint8 buttons = buf[8];
-				bool8 offscreen1 = buf[9];
-				bool8 offscreen2 = buf[10];
-				sprintf(string, "#%d %d: (%03d,%03d) %c%c%c / (%03d,%03d) %c%c%c", port, ids[0],
-						x1, y1, (buttons & 0x80) ? 'T' : ' ', (buttons & 0x20) ? 'S' : ' ', offscreen1 ? 'O' : ' ',
-						x2, y2, (buttons & 0x40) ? 'T' : ' ', (buttons & 0x10) ? 'S' : ' ', offscreen2 ? 'O' : ' ');
-				S9xDisplayString(string, line++, 1, false);
-				break;
-			}
-
-			case CTL_JOYPAD:
-			{
-				sprintf(string, "#%d %d:                  ", port, ids[0]);
-				uint16 pad = MovieGetJoypad(ids[0]);
-				for (int i = 0; i < 15; i++)
-				{
-					int j = KeyOrder[i];
-					int mask = (1 << (j + 1));
-					string[6 + i]= (pad & mask) ? KeyMap[j] : ' ';
-				}
-
-				S9xDisplayString(string, line++, 1, false);
-				break;
-			}
-
-			case CTL_MP5:
-			{
-				for (int n = 0; n < 4; n++)
-				{
-					if (ids[n] != -1)
-					{
-						sprintf(string, "#%d %d:                  ", port, ids[n]);
-						uint16 pad = MovieGetJoypad(ids[n]);
-						for (int i = 0; i < 15; i++)
-						{
-							int j = KeyOrder[i];
-							int mask = (1 << (j + 1));
-							string[6 + i]= (pad & mask) ? KeyMap[j] : ' ';
-						}
-
-						S9xDisplayString(string, line++, 1, false);
-					}
-				}
-
-				break;
-			}
-
-			case CTL_NONE:
-			{
-				sprintf(string, "#%d -", port);
-				S9xDisplayString(string, line++, 1, false);
-				break;
-			}
-		}
-	}
-}
-
 static void DisplayWatchedAddresses (void)
 {
 	for (unsigned int i = 0; i < sizeof(watches) / sizeof(watches[0]); i++)
@@ -2168,12 +2058,6 @@ void S9xDisplayMessages (uint16 *screen, int ppl, int width, int height, int sca
 
 	if (Settings.DisplayWatchedAddresses)
 		DisplayWatchedAddresses();
-
-	if (Settings.DisplayPressedKeys)
-		DisplayPressedKeys();
-
-	if (Settings.DisplayMovieFrame && S9xMovieActive())
-		S9xDisplayString(GFX.FrameDisplayString, 1, 1, false);
 
 	if (GFX.InfoString && *GFX.InfoString)
 		S9xDisplayString(GFX.InfoString, 5, 1, true);

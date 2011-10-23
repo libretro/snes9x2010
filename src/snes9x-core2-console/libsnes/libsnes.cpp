@@ -8,8 +8,6 @@
 #include "snapshot.h"
 #include "controls.h"
 #include "cheats.h"
-#include "movie.h"
-#include "logger.h"
 #include "display.h"
 #include "conffile.h"
 #include <stdio.h>
@@ -80,11 +78,6 @@ void snes_power()
 
 void snes_reset()
 {
-   S9xMovieUpdateOnReset();
-   if (S9xMoviePlaying())
-   {
-      S9xMovieStop(true);
-   }
    S9xSoftReset();
 }
 
@@ -185,7 +178,6 @@ void snes_init()
    Settings.HDMATimingHack = 100;
    Settings.BlockInvalidVRAMAccessMaster = TRUE;
    Settings.StopEmulation = TRUE;
-   Settings.WrongMovieStateProtection = TRUE;
    Settings.DumpStreamsMaxFrames = -1;
    Settings.StretchScreenshots = 0;
    Settings.SnapshotScreenshots = FALSE;
@@ -623,7 +615,6 @@ void S9xSetPalette() {}
 void S9xParseArg(char**, int&, int) {}
 void S9xExit() {}
 bool S9xPollPointer(unsigned int, short*, short*) { return false; }
-const char *S9xChooseMovieFilename(unsigned char) { return NULL; }
 
 bool8 S9xOpenSnapshotFile(const char* filepath, bool8 read_only, STREAM *file) 
 { 

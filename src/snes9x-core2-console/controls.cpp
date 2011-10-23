@@ -188,7 +188,6 @@
 #include "snapshot.h"
 #include "controls.h"
 #include "crosshairs.h"
-#include "movie.h"
 #include "display.h"
 #ifdef NETPLAY_SUPPORT
 #include "netplay.h"
@@ -364,21 +363,18 @@ static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
 
 // Note: these should be in asciibetical order!
 #define THE_COMMANDS \
-	S(BeginRecordingMovie), \
 	S(ClipWindows), \
 	S(DecEmuTurbo), \
 	S(DecFrameRate), \
 	S(DecFrameTime), \
 	S(DecTurboSpeed), \
 	S(EmuTurbo), \
-	S(EndRecordingMovie), \
 	S(ExitEmu), \
 	S(IncEmuTurbo), \
 	S(IncFrameRate), \
 	S(IncFrameTime), \
 	S(IncTurboSpeed), \
 	S(LoadFreezeFile), \
-	S(LoadMovie), \
 	S(LoadOopsFile), \
 	S(Pause), \
 	S(QuickLoad000), \
@@ -407,7 +403,6 @@ static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
 	S(SaveFreezeFile), \
 	S(SaveSPC), \
 	S(Screenshot), \
-	S(SeekToFrame), \
 	S(SoftReset), \
 	S(SoundChannel0), \
 	S(SoundChannel1), \
@@ -1797,10 +1792,6 @@ void S9xReportButton (uint32 id, bool pressed)
 		return;
 	}
 
-	if (keymap[id].type == S9xButtonCommand)	// skips the "already-pressed check" unless it's a command, as a hack to work around the following problem:
-		if (keymap[id].button_norpt == pressed)	// FIXME: this makes the controls "stick" after loading a savestate while recording a movie and holding any button
-			return;
-
 	keymap[id].button_norpt = pressed;
 
 	S9xApplyCommand(keymap[id], pressed, 0);
@@ -2078,7 +2069,7 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 				if (data1)
 				{
-					if (!Settings.UpAndDown && !S9xMoviePlaying()) // if up+down isn't allowed AND we are NOT playing a movie,
+					if (!Settings.UpAndDown) // if up+down isn't allowed
 					{
 						if (cmd.button.joypad.buttons & (SNES_LEFT_MASK | SNES_RIGHT_MASK))
 						{
@@ -2149,7 +2140,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 				superscope.next_buttons |= i & (SUPERSCOPE_FIRE | SUPERSCOPE_CURSOR | SUPERSCOPE_PAUSE);
 
-				if (!S9xMovieActive()) // PPU modification during non-recordable command screws up movie synchronization
 					if ((superscope.next_buttons & (SUPERSCOPE_FIRE | SUPERSCOPE_CURSOR)) && curcontrollers[1] == SUPERSCOPE && !(superscope.phys_buttons & SUPERSCOPE_OFFSCREEN))
 						DoGunLatch(superscope.x, superscope.y);
 			}
@@ -2204,9 +2194,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 						break;
 
 					case SoftReset:
-						S9xMovieUpdateOnReset();
-						if (S9xMoviePlaying())
-							S9xMovieStop(TRUE);
 						S9xSoftReset();
 						break;
 
@@ -2455,24 +2442,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 						Settings.Transparency = !Settings.Transparency;
 						DisplayStateChange("Transparency effects", Settings.Transparency);
 						break;
-
-					case BeginRecordingMovie:
-						if (S9xMovieActive())
-							S9xMovieStop(FALSE);
-						S9xMovieCreate(S9xChooseMovieFilename(FALSE), 0xFF, MOVIE_OPT_FROM_RESET, NULL, 0);
-						break;
-
-					case LoadMovie:
-						if (S9xMovieActive())
-							S9xMovieStop(FALSE);
-						S9xMovieOpen(S9xChooseMovieFilename(TRUE), FALSE);
-						break;
-
-					case EndRecordingMovie:
-						if (S9xMovieActive())
-							S9xMovieStop(FALSE);
-						break;
-
 					case SwapJoypads:
 						if ((curcontrollers[0] != NONE && !(curcontrollers[0] >= JOYPAD0 && curcontrollers[0] <= JOYPAD7)))
 						{
@@ -2511,25 +2480,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 						S9xSetInfoString(buf);
 						break;
-
-					case SeekToFrame:
-						if (S9xMovieActive())
-						{
-							sprintf(buf, "Select frame number (current: %d)", S9xMovieGetFrameCounter());
-							const char	*frameno = S9xStringInput(buf);
-							if (!frameno)
-								return;
-
-							int	frameDest = atoi(frameno);
-							if (frameDest > 0 && frameDest > (int) S9xMovieGetFrameCounter())
-							{
-								int	distance = frameDest - S9xMovieGetFrameCounter();
-								Settings.HighSpeedSeek = distance;
-							}
-						}
-
-						break;
-
 					case LAST_COMMAND:
 						break;
 				}
@@ -2748,9 +2698,6 @@ static void do_polling (int mp)
 {
 	set<uint32>::iterator	itr;
 
-	if (S9xMoviePlaying())
-		return;
-
 	if (pollmap[mp].empty())
 		return;
 
@@ -2887,8 +2834,7 @@ void S9xSetJoypadLatch (bool latch)
 				case MOUSE0:
 				case MOUSE1:
 					do_polling(i);
-					if (!S9xMoviePlaying())
-						UpdatePolledMouse(i);
+					UpdatePolledMouse(i);
 					break;
 
 				case SUPERSCOPE:
@@ -3080,8 +3026,6 @@ void S9xDoAutoJoypad (void)
 
 	S9xSetJoypadLatch(1);
 	S9xSetJoypadLatch(0);
-
-	S9xMovieUpdate(false);
 
 	for (int n = 0; n < 2; n++)
 	{
@@ -3314,8 +3258,6 @@ void S9xControlEOF (void)
 	}
 
 	do_polling(POLL_ALL);
-
-	S9xMovieUpdate();
 
 	pad_read_last = pad_read;
 	pad_read      = false;
@@ -3577,113 +3519,4 @@ void S9xControlPostLoadState (struct SControlSnapshot *s)
 		pad_read      = s->pad_read;
 		pad_read_last = s->pad_read_last;
 	}
-}
-
-uint16 MovieGetJoypad (int i)
-{
-	if (i < 0 || i > 7)
-		return (0);
-
-	return (joypad[i].buttons);
-}
-
-void MovieSetJoypad (int i, uint16 buttons)
-{
-	if (i < 0 || i > 7)
-		return;
-
-	joypad[i].buttons = buttons;
-}
-
-bool MovieGetMouse (int i, uint8 out[5])
-{
-	if (i < 0 || i > 1 || (curcontrollers[i] != MOUSE0 && curcontrollers[i] != MOUSE1))
-		return (false);
-
-	int		n = curcontrollers[i] - MOUSE0;
-	uint8	*ptr = out;
-
-	WRITE_WORD(ptr, mouse[n].cur_x); ptr += 2;
-	WRITE_WORD(ptr, mouse[n].cur_y); ptr += 2;
-	*ptr = mouse[n].buttons;
-
-	return (true);
-}
-
-void MovieSetMouse (int i, uint8 in[5], bool inPolling)
-{
-	if (i < 0 || i > 1 || (curcontrollers[i] != MOUSE0 && curcontrollers[i] != MOUSE1))
-		return;
-
-	int		n = curcontrollers[i] - MOUSE0;
-	uint8	*ptr = in;
-
-	mouse[n].cur_x = READ_WORD(ptr); ptr += 2;
-	mouse[n].cur_y = READ_WORD(ptr); ptr += 2;
-	mouse[n].buttons = *ptr;
-
-	if (inPolling)
-		UpdatePolledMouse(curcontrollers[i]);
-}
-
-bool MovieGetScope (int i, uint8 out[6])
-{
-	if (i < 0 || i > 1 || curcontrollers[i] != SUPERSCOPE)
-		return (false);
-
-	uint8	*ptr = out;
-
-	WRITE_WORD(ptr, superscope.x); ptr += 2;
-	WRITE_WORD(ptr, superscope.y); ptr += 2;
-	*ptr++ = superscope.phys_buttons;
-	*ptr   = superscope.next_buttons;
-
-	return (true);
-}
-
-void MovieSetScope (int i, uint8 in[6])
-{
-	if (i < 0 || i > 1 || curcontrollers[i] != SUPERSCOPE)
-		return;
-
-	uint8	*ptr = in;
-
-	superscope.x = READ_WORD(ptr); ptr += 2;
-	superscope.y = READ_WORD(ptr); ptr += 2;
-	superscope.phys_buttons = *ptr++;
-	superscope.next_buttons = *ptr;
-}
-
-bool MovieGetJustifier (int i, uint8 out[11])
-{
-	if (i < 0 || i > 1 || (curcontrollers[i] != ONE_JUSTIFIER && curcontrollers[i] != TWO_JUSTIFIERS))
-		return (false);
-
-	uint8	*ptr = out;
-
-	WRITE_WORD(ptr, justifier.x[0]); ptr += 2;
-	WRITE_WORD(ptr, justifier.x[1]); ptr += 2;
-	WRITE_WORD(ptr, justifier.y[0]); ptr += 2;
-	WRITE_WORD(ptr, justifier.y[1]); ptr += 2;
-	*ptr++ = justifier.buttons;
-	*ptr++ = justifier.offscreen[0];
-	*ptr   = justifier.offscreen[1];
-
-	return (true);
-}
-
-void MovieSetJustifier (int i, uint8 in[11])
-{
-	if (i < 0 || i > 1 || (curcontrollers[i] != ONE_JUSTIFIER && curcontrollers[i] != TWO_JUSTIFIERS))
-		return;
-
-	uint8	*ptr = in;
-
-	justifier.x[0] = READ_WORD(ptr); ptr += 2;
-	justifier.x[1] = READ_WORD(ptr); ptr += 2;
-	justifier.y[0] = READ_WORD(ptr); ptr += 2;
-	justifier.y[1] = READ_WORD(ptr); ptr += 2;
-	justifier.buttons      = *ptr++;
-	justifier.offscreen[0] = *ptr++;
-	justifier.offscreen[1] = *ptr;
 }
