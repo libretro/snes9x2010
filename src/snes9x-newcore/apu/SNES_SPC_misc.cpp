@@ -220,37 +220,6 @@ void SNES_SPC::reset()
 char const SNES_SPC::signature [signature_size + 1] =
 		"SNES-SPC700 Sound File Data v0.30\x1A\x1A";
 
-blargg_err_t SNES_SPC::load_spc( void const* data, long size )
-{
-	spc_file_t const* const spc = (spc_file_t const*) data;
-	
-	// Check signature and file size
-	if ( size < signature_size || memcmp( spc, signature, 27 ) )
-		return "Not an SPC file";
-	
-	if ( size < spc_min_file_size )
-		return "Corrupt SPC file";
-	
-	// CPU registers
-	m.cpu_regs.pc  = spc->pch * 0x100 + spc->pcl;
-	m.cpu_regs.a   = spc->a;
-	m.cpu_regs.x   = spc->x;
-	m.cpu_regs.y   = spc->y;
-	m.cpu_regs.psw = spc->psw;
-	m.cpu_regs.sp  = spc->sp;
-	
-	// RAM and registers
-	memcpy( RAM, spc->ram, 0x10000 );
-	ram_loaded();
-	
-	// DSP registers
-	dsp.load( spc->dsp );
-	
-	reset_time_regs();
-	
-	return 0;
-}
-
 void SNES_SPC::clear_echo()
 {
 	if ( !(dsp.read( SPC_DSP::r_flg ) & 0x20) )
@@ -384,11 +353,6 @@ blargg_err_t SNES_SPC::skip( int count )
 void SNES_SPC::dsp_set_spc_snapshot_callback( void (*callback) (void) )
 {
 	dsp.set_spc_snapshot_callback( callback );
-}
-
-void SNES_SPC::dsp_set_stereo_switch( int value )
-{
-	dsp.set_stereo_switch( value );
 }
 
 SNES_SPC::uint8_t SNES_SPC::dsp_reg_value( int ch, int addr )

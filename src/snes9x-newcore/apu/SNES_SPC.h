@@ -61,7 +61,6 @@ public:
 	
 	// If true, prevents channels and global volumes from being phase-negated.
 	// Only supported by fast DSP.
-	void disable_surround( bool disable = true );
 	
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	enum { tempo_unit = 0x100 };
@@ -72,7 +71,6 @@ public:
 	// Loads SPC data into emulator
 	enum { spc_min_file_size = 0x10180 };
 	enum { spc_file_size     = 0x10200 };
-	blargg_err_t load_spc( void const* in, long size );
 	
 	// Clears echo region. Useful after loading an SPC as many have garbage in echo.
 	void clear_echo();
@@ -92,13 +90,6 @@ public:
 	typedef SPC_DSP::copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
 	
-	// Writes minimal header to spc_out
-	static void init_header( void* spc_out );
-
-	// Saves emulator state as SPC file data. Writes spc_file_size bytes to spc_out.
-	// Does not set up SPC header; use init_header() for that.
-	void save_spc( void* spc_out );
-
 	// Returns true if new key-on events occurred since last check. Useful for
 	// trimming silence while saving an SPC.
 	bool check_kon();
@@ -109,7 +100,6 @@ public:
 	void	spc_allow_time_overflow( bool );
 
 	void    dsp_set_spc_snapshot_callback( void (*callback) (void) );
-	void    dsp_set_stereo_switch( int );
 	uint8_t dsp_reg_value( int, int );
 	int     dsp_envx_value( int );
 
@@ -260,8 +250,6 @@ private:
 
 	static char const signature [signature_size + 1];
 	
-	void save_regs( uint8_t out [reg_count] );
-
 // Snes9x timing hack
 	bool allow_time_overflow;
 };
@@ -281,8 +269,6 @@ inline void SNES_SPC::write_port( time_t t, int port, int data )
 
 inline void SNES_SPC::mute_voices( int mask ) { dsp.mute_voices( mask ); }
 	
-inline void SNES_SPC::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
-
 #if !SPC_NO_COPY_STATE_FUNCS
 inline bool SNES_SPC::check_kon() { return dsp.check_kon(); }
 #endif

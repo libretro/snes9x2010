@@ -817,7 +817,6 @@ void SPC_DSP::init( void* ram_64k )
 {
 	m.ram = (uint8_t*) ram_64k;
 	mute_voices( 0 );
-	disable_surround( false );
 	set_output( 0, 0 );
 	reset();
 
@@ -1019,11 +1018,6 @@ void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
 void SPC_DSP::set_spc_snapshot_callback( void (*callback) (void) )
 {
 	spc_snapshot_callback = callback;
-}
-
-void SPC_DSP::set_stereo_switch( int value )
-{
-	stereo_switch = value;
 }
 
 SPC_DSP::uint8_t SPC_DSP::reg_value( int ch, int addr )

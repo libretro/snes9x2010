@@ -241,7 +241,7 @@ void SNES_SPC::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 		
 		// timers
 		{
-			for ( int i = 0; i < timer_count; i++ )
+			for ( int i = 0; i < 3; i++ )
 			{
 				Timer* t = &m.timers [i];
 				int enabled = data >> i & 1;
@@ -356,7 +356,7 @@ int SNES_SPC::cpu_read( int addr, rel_time_t time )
 			reg += 0x10 - r_t0out;
 			
 			// Timers
-			if ( (unsigned) reg < timer_count ) // 90%
+			if ( (unsigned) reg < 3 ) // 90%
 			{
 				Timer* t = &m.timers [reg];
 				if ( time >= t->next_time )
@@ -420,8 +420,9 @@ void SNES_SPC::end_frame( time_t end_time )
 	//assert( -cpu_lag_max <= m.spc_time && m.spc_time <= cpu_lag_max );
 	
 	// Catch timers up to CPU
-	for ( int i = 0; i < timer_count; i++ )
-		run_timer( &m.timers [i], 0 );
+	run_timer( &m.timers [0], 0 );
+	run_timer( &m.timers [1], 0 );
+	run_timer( &m.timers [2], 0 );
 	
 	// Catch DSP up to CPU
 	if ( m.dsp_time < 0 )
