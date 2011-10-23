@@ -191,27 +191,27 @@
 #ifdef CLUNKY_FILE_ABSTRACTION
 #ifdef ZLIB
 #include <zlib.h>
-#define STREAM					gzFile
+#define STREAM			gzFile
 #define READ_STREAM(p, l, s)	gzread(s, p, l)
 #define WRITE_STREAM(p, l, s)	gzwrite(s, p, l)
 #define GETS_STREAM(p, l, s)	gzgets(s, p, l)
-#define GETC_STREAM(s)			gzgetc(s)
-#define OPEN_STREAM(f, m)		gzopen(f, m)
-#define REOPEN_STREAM(f, m)		gzdopen(f, m)
-#define FIND_STREAM(f)			gztell(f)
+#define GETC_STREAM(s)		gzgetc(s)
+#define OPEN_STREAM(f, m)	gzopen(f, m)
+#define REOPEN_STREAM(f, m)	gzdopen(f, m)
+#define FIND_STREAM(f)		gztell(f)
 #define REVERT_STREAM(f, o, s)	gzseek(f, o, s)
-#define CLOSE_STREAM(s)			gzclose(s)
+#define CLOSE_STREAM(s)		gzclose(s)
 #else
-#define STREAM					FILE *
+#define STREAM			FILE *
 #define READ_STREAM(p, l, s)	fread(p, 1, l, s)
 #define WRITE_STREAM(p, l, s)	fwrite(p, 1, l, s)
 #define GETS_STREAM(p, l, s)	fgets(p, l, s)
-#define GETC_STREAM(s)			fgetc(s)
-#define OPEN_STREAM(f, m)		fopen(f, m)
-#define REOPEN_STREAM(f, m)		fdopen(f, m)
-#define FIND_STREAM(f)			ftell(f)
+#define GETC_STREAM(s)		fgetc(s)
+#define OPEN_STREAM(f, m)	fopen(f, m)
+#define REOPEN_STREAM(f, m)	fdopen(f, m)
+#define FIND_STREAM(f)		ftell(f)
 #define REVERT_STREAM(f, o, s)	fseek(f, o, s)
-#define CLOSE_STREAM(s)			fclose(s)
+#define CLOSE_STREAM(s)		fclose(s)
 #endif
 #else 
 #include "libsnes/memstream.h"
@@ -229,61 +229,61 @@
 #define CLOSE_STREAM(s)          memstream_close(s)
 #endif
 
-#define SNES_WIDTH					256
-#define SNES_HEIGHT					224
-#define SNES_HEIGHT_EXTENDED		239
-#define MAX_SNES_WIDTH				(SNES_WIDTH * 2)
-#define MAX_SNES_HEIGHT				(SNES_HEIGHT_EXTENDED * 2)
-#define IMAGE_WIDTH					(Settings.SupportHiRes ? MAX_SNES_WIDTH : SNES_WIDTH)
-#define IMAGE_HEIGHT				(Settings.SupportHiRes ? MAX_SNES_HEIGHT : SNES_HEIGHT_EXTENDED)
+#define SNES_WIDTH		256
+#define SNES_HEIGHT		224
+#define SNES_HEIGHT_EXTENDED	239
+#define MAX_SNES_WIDTH		(SNES_WIDTH * 2)
+#define MAX_SNES_HEIGHT		(SNES_HEIGHT_EXTENDED * 2)
+#define IMAGE_WIDTH		(Settings.SupportHiRes ? MAX_SNES_WIDTH : SNES_WIDTH)
+#define IMAGE_HEIGHT		(Settings.SupportHiRes ? MAX_SNES_HEIGHT : SNES_HEIGHT_EXTENDED)
 
-#define	NTSC_MASTER_CLOCK			21477272.0
-#define	PAL_MASTER_CLOCK			21281370.0
+#define	NTSC_MASTER_CLOCK	21477272.0
+#define	PAL_MASTER_CLOCK	21281370.0
 
-#define SNES_MAX_NTSC_VCOUNTER		262
-#define SNES_MAX_PAL_VCOUNTER		312
-#define SNES_HCOUNTER_MAX			341
+#define SNES_MAX_NTSC_VCOUNTER	262
+#define SNES_MAX_PAL_VCOUNTER	312
+#define SNES_HCOUNTER_MAX	341
 
-#define ONE_CYCLE					6
-#define SLOW_ONE_CYCLE				8
-#define TWO_CYCLES					12
-#define	ONE_DOT_CYCLE				4
+#define ONE_CYCLE		6
+#define SLOW_ONE_CYCLE		8
+#define TWO_CYCLES		12
+#define	ONE_DOT_CYCLE		4
 
 #define SNES_CYCLES_PER_SCANLINE	(SNES_HCOUNTER_MAX * ONE_DOT_CYCLE)
-#define SNES_SCANLINE_TIME			(SNES_CYCLES_PER_SCANLINE / NTSC_MASTER_CLOCK)
+#define SNES_SCANLINE_TIME		(SNES_CYCLES_PER_SCANLINE / NTSC_MASTER_CLOCK)
 
 #define SNES_WRAM_REFRESH_HC_v1		530
 #define SNES_WRAM_REFRESH_HC_v2		538
 #define SNES_WRAM_REFRESH_CYCLES	40
 
 #define SNES_HBLANK_START_HC		1096					// H=274
-#define	SNES_HDMA_START_HC			1106					// FIXME: not true
-#define	SNES_HBLANK_END_HC			4						// H=1
-#define	SNES_HDMA_INIT_HC			20						// FIXME: not true
-#define	SNES_RENDER_START_HC		(48 * ONE_DOT_CYCLE)	// FIXME: Snes9x renders a line at a time.
+#define	SNES_HDMA_START_HC		1106					// FIXME: not true
+#define	SNES_HBLANK_END_HC		4					// H=1
+#define	SNES_HDMA_INIT_HC		20					// FIXME: not true
+#define	SNES_RENDER_START_HC		(48 * ONE_DOT_CYCLE)			// FIXME: Snes9x renders a line at a time.
 
-#define SNES_TR_MASK		(1 <<  4)
-#define SNES_TL_MASK		(1 <<  5)
+#define SNES_TR_MASK			(1 <<  4)
+#define SNES_TL_MASK			(1 <<  5)
 #define SNES_X_MASK			(1 <<  6)
 #define SNES_A_MASK			(1 <<  7)
-#define SNES_RIGHT_MASK		(1 <<  8)
-#define SNES_LEFT_MASK		(1 <<  9)
-#define SNES_DOWN_MASK		(1 << 10)
-#define SNES_UP_MASK		(1 << 11)
-#define SNES_START_MASK		(1 << 12)
-#define SNES_SELECT_MASK	(1 << 13)
+#define SNES_RIGHT_MASK			(1 <<  8)
+#define SNES_LEFT_MASK			(1 <<  9)
+#define SNES_DOWN_MASK			(1 << 10)
+#define SNES_UP_MASK			(1 << 11)
+#define SNES_START_MASK			(1 << 12)
+#define SNES_SELECT_MASK		(1 << 13)
 #define SNES_Y_MASK			(1 << 14)
 #define SNES_B_MASK			(1 << 15)
 
-#define DEBUG_MODE_FLAG		(1 <<  0)	// debugger
+#define DEBUG_MODE_FLAG			(1 <<  0)	// debugger
 #define TRACE_FLAG			(1 <<  1)	// debugger
-#define SINGLE_STEP_FLAG	(1 <<  2)	// debugger
+#define SINGLE_STEP_FLAG		(1 <<  2)	// debugger
 #define BREAK_FLAG			(1 <<  3)	// debugger
 #define NMI_FLAG			(1 <<  7)	// CPU
 #define IRQ_FLAG			(1 << 11)	// CPU
-#define SCAN_KEYS_FLAG		(1 <<  4)	// CPU
+#define SCAN_KEYS_FLAG			(1 <<  4)	// CPU
 #define HALTED_FLAG			(1 << 12)	// APU
-#define FRAME_ADVANCE_FLAG	(1 <<  9)
+#define FRAME_ADVANCE_FLAG		(1 <<  9)
 
 #define ROM_NAME_LEN	23
 #define AUTO_FRAMERATE	200
@@ -462,12 +462,12 @@ enum
 {
 	PAUSE_NETPLAY_CONNECT		= (1 << 0),
 	PAUSE_TOGGLE_FULL_SCREEN	= (1 << 1),
-	PAUSE_EXIT					= (1 << 2),
-	PAUSE_MENU					= (1 << 3),
+	PAUSE_EXIT			= (1 << 2),
+	PAUSE_MENU			= (1 << 3),
 	PAUSE_INACTIVE_WINDOW		= (1 << 4),
 	PAUSE_WINDOW_ICONISED		= (1 << 5),
-	PAUSE_RESTORE_GUI			= (1 << 6),
-	PAUSE_FREEZE_FILE			= (1 << 7)
+	PAUSE_RESTORE_GUI		= (1 << 6),
+	PAUSE_FREEZE_FILE		= (1 << 7)
 };
 
 void S9xSetPause(uint32);
@@ -479,6 +479,6 @@ extern struct SSettings			Settings;
 extern struct SCPUState			CPU;
 extern struct STimings			Timings;
 extern struct SSNESGameFixes	SNESGameFixes;
-extern char						String[513];
+extern char String[513];
 
 #endif

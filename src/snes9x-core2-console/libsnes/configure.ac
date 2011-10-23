@@ -280,9 +280,7 @@ S9XLIBS="`echo \"$S9XLIBS\" | sed -e 's/^  *//'`"
 AC_SUBST(S9XFLGS)
 AC_SUBST(S9XDEFS)
 AC_SUBST(S9XLIBS)
-AC_SUBST(S9XNETPLAY)
 AC_SUBST(S9XZIP)
-AC_SUBST(S9XJMA)
 
 rm config.info 2>/dev/null
 
@@ -296,14 +294,8 @@ defines.............. $S9XDEFS
 libs................. $S9XLIBS
 
 features:
-sound support........ $enable_sound
-screenshot support... $enable_screenshot
-netplay support...... $enable_netplay
-gamepad support...... $enable_gamepad
 GZIP support......... $enable_gzip
 ZIP support.......... $enable_zip
-JMA support.......... $enable_jma
-debugger............. $enable_debugger
 
 EOF
 

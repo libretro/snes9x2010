@@ -188,10 +188,6 @@
 #include "cheats.h"
 #include "display.h"
 #include "conffile.h"
-#ifdef NETPLAY_SUPPORT
-#include "netplay.h"
-#endif
-
 
 #define S9X_CONF_FILE_NAME	"snes9x.conf"
 
@@ -461,20 +457,6 @@ void S9xLoadConfigFiles (char **argv, int argc)
 	Settings.DisableHDMA                    =  conf.GetBool("Hack::DisableHDMA",                   false);
 	Settings.HDMATimingHack                 =  conf.GetInt ("Hack::HDMATiming",                    100);
 
-	// Netplay
-
-#ifdef NETPLAY_SUPPORT
-	Settings.NetPlay = conf.GetBool("Netplay::Enable");
-
-	Settings.Port = NP_DEFAULT_PORT;
-	if (conf.Exists("Netplay::Port"))
-		Settings.Port = -(int) conf.GetUInt("Netplay::Port");
-
-	Settings.ServerName[0] = '\0';
-	if (conf.Exists("Netplay::Server"))
-		conf.GetString("Netplay::Server", Settings.ServerName, 128);
-#endif
-
 	S9xParsePortConfig(conf, 1);
 	S9xVerifyControllers();
 }
@@ -547,15 +529,6 @@ void S9xUsage (void)
 	S9xMessage(S9X_INFO, S9X_USAGE, "-actionreplay <code>            Supply a Pro-Action Reply code");
 	S9xMessage(S9X_INFO, S9X_USAGE, "-goldfinger <code>              Supply a Gold Finger code");
 	S9xMessage(S9X_INFO, S9X_USAGE, "");
-
-#ifdef NETPLAY_SUPPORT
-	// NETPLAY OPTIONS
-	S9xMessage(S9X_INFO, S9X_USAGE, "-net                            Enable netplay");
-	S9xMessage(S9X_INFO, S9X_USAGE, "-port <num>                     Use port <num> for netplay (use with -net)");
-	S9xMessage(S9X_INFO, S9X_USAGE, "-server <string>                Use the specified server for netplay");
-	S9xMessage(S9X_INFO, S9X_USAGE, "                                (use with -net)");
-	S9xMessage(S9X_INFO, S9X_USAGE, "");
-#endif
 
 	// HACKING OR DEBUGGING OPTIONS
 	S9xMessage(S9X_INFO, S9X_USAGE, "-noirq                          (Not recommended) Disable IRQ emulation");
@@ -778,33 +751,6 @@ char * S9xParseArgs (char **argv, int argc)
 					S9xUsage();
 			}
 			else
-
-			// NETPLAY OPTIONS
-
-		#ifdef NETPLAY_SUPPORT
-			if (!strcasecmp(argv[i], "-net"))
-				Settings.NetPlay = TRUE;
-			else
-			if (!strcasecmp(argv[i], "-port"))
-			{
-				if (i + 1 < argc)
-					Settings.Port = -atoi(argv[++i]);
-				else
-					S9xUsage();
-			}
-			else
-			if (!strcasecmp(argv[i], "-server"))
-			{
-				if (i + 1 < argc)
-				{
-					strncpy(Settings.ServerName, argv[++i], 127);
-					Settings.ServerName[127] = 0;
-				}
-				else
-					S9xUsage();
-			}
-			else
-		#endif
 
 			// HACKING OR DEBUGGING OPTIONS
 		

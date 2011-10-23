@@ -214,55 +214,55 @@
 typedef unsigned char		bool8;
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
-typedef intptr_t			pint;
-typedef int8_t				int8;
-typedef uint8_t				uint8;
-typedef int16_t				int16;
-typedef uint16_t			uint16;
-typedef int32_t				int32;
-typedef uint32_t			uint32;
-typedef int64_t				int64;
-typedef uint64_t			uint64;
+typedef intptr_t		pint;
+typedef int8_t			int8;
+typedef uint8_t			uint8;
+typedef int16_t			int16;
+typedef uint16_t		uint16;
+typedef int32_t			int32;
+typedef uint32_t		uint32;
+typedef int64_t			int64;
+typedef uint64_t		uint64;
 #else	// HAVE_STDINT_H
 #ifdef __WIN32__
-typedef intptr_t			pint;
+typedef intptr_t		pint;
 #else	// __WIN32__
 #ifdef PTR_NOT_INT
-typedef long				pint;
+typedef long			pint;
 #else
-typedef int					pint;
+typedef int			pint;
 #endif
 #endif	// __WIN32__
 #ifdef __WIN32__
 #ifdef __BORLANDC__
 #include <systypes.h>
 #else
-typedef signed char			int8;
+typedef signed char		int8;
 typedef unsigned char		uint8;
 typedef signed short		int16;
 typedef unsigned short		uint16;
 #ifndef WSAAP
 // winsock2.h typedefs int32 as well
-typedef signed int			int32;
+typedef signed int		int32;
 #endif
 typedef unsigned int		uint32;
 #endif
 typedef unsigned char		uint8_t;
 typedef signed __int64		int64;
 typedef unsigned __int64	uint64;
-typedef int					socklen_t;
+typedef int			socklen_t;
 #else	// __WIN32__
-typedef signed char			int8;
+typedef signed char		int8;
 typedef unsigned char		uint8;
 typedef signed short		int16;
 typedef unsigned short		uint16;
-typedef signed int			int32;
+typedef signed int		int32;
 typedef unsigned int		uint32;
 #ifdef __GNUC__
 // long long is not part of ISO C++ 
 __extension__
 #endif
-typedef long long			int64;
+typedef long long		int64;
 typedef unsigned long long	uint64;
 #endif	//  __WIN32__
 #endif	// HAVE_STDINT_H

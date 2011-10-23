@@ -602,9 +602,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-S9XJMA
 S9XZIP
-S9XNETPLAY
 S9XLIBS
 S9XDEFS
 S9XFLGS
@@ -5032,7 +5030,6 @@ libs................. $S9XLIBS
 features:
 GZIP support......... $enable_gzip
 ZIP support.......... $enable_zip
-JMA support.......... $enable_jma
 
 EOF
 

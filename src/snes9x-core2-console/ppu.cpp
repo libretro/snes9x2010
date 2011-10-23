@@ -184,9 +184,6 @@
 #include "srtc.h"
 #include "controls.h"
 #include "display.h"
-#ifdef NETPLAY_SUPPORT
-#include "netplay.h"
-#endif
 
 extern uint8	*HDMAMemPointers[8];
 
