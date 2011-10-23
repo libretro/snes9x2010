@@ -287,16 +287,6 @@ void S9xSA1PostLoadState (void)
 
 void S9xSA1ExecuteDuringSleep (void)
 {
-#if 0
-	if (SA1.Executing)
-	{
-		while (CPU.Cycles < CPU.NextEvent)
-		{
-			S9xSA1MainLoop();
-			CPU.Cycles += TWO_CYCLES * 2;
-		}
-	}
-#endif
 }
 
 static void S9xSetSA1MemMap (uint32 which1, uint8 map)
@@ -535,11 +525,6 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 			break;
 
 		case 0x2210:
-		#if 0
-			printf("Timer %s\n", (byte & 0x80) ? "linear" : "HV");
-			printf("Timer H-IRQ %s\n", (byte & 1) ? "enabled" : "disabled");
-			printf("Timer V-IRQ %s\n", (byte & 2) ? "enabled" : "disabled");
-		#endif
 			break;
 
 		case 0x2211:
@@ -602,33 +587,17 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 			break;
 
 		case 0x2230:
-		#if 0
-			printf("SA1 DMA %s\n", (byte & 0x80) ? "enabled" : "disabled");
-			printf("DMA priority %s\n", (byte & 0x40) ? "DMA" : "SA1");
-			printf("DMA %s\n", (byte & 0x20) ? "char conv" : "normal");
-			printf("DMA type %s\n", (byte & 0x10) ? "BW-RAM -> I-RAM" : "SA1 -> I-RAM");
-			printf("DMA distination %s\n", (byte & 4) ? "BW-RAM" : "I-RAM");
-			printf("DMA source %s\n", DMAsource[byte & 3]);
-		#endif
 			break;
 
 		case 0x2231:
 			if (byte & 0x80)
 				SA1.in_char_dma = FALSE;
-		#if 0
-			printf("CHDEND %s\n", (byte & 0x80) ? "complete" : "incomplete");
-			printf("DMA colour mode %d\n", byte & 3);
-			printf("virtual VRAM width %d\n", (byte >> 2) & 7);
-		#endif
 			break;
 
 		case 0x2232:
 		case 0x2233:
 		case 0x2234:
 			Memory.FillRAM[address] = byte;
-		#if 0
-			printf("DMA source start %06x\n", Memory.FillRAM[0x2232] | (Memory.FillRAM[0x2233] << 8) | (Memory.FillRAM[0x2234] << 16));
-		#endif
 			break;
 
 		case 0x2235:
@@ -656,17 +625,11 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 
 			if ((Memory.FillRAM[0x2230] & 0xa4) == 0x84) // Normal DMA to BW-RAM
 				S9xSA1DMA();
-		#if 0
-			printf("DMA dest address %06x\n", Memory.FillRAM[0x2235] | (Memory.FillRAM[0x2236] << 8) | (Memory.FillRAM[0x2237] << 16));
-		#endif
 			break;
 
 		case 0x2238:
 		case 0x2239:
 			Memory.FillRAM[address] = byte;
-		#if 0
-			printf("DMA length %04x\n", Memory.FillRAM[0x2238] | (Memory.FillRAM[0x2239] << 8));
-		#endif
 			break;
 
 		case 0x223f:
@@ -689,13 +652,6 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 		case 0x224c:
 		case 0x224d:
 		case 0x224e:
-		#if 0
-			if (!(SA1.Flags & TRACE_FLAG))
-			{
-				TraceSA1();
-				Trace();
-			}
-		#endif
 			Memory.FillRAM[address] = byte;
 			break;
 

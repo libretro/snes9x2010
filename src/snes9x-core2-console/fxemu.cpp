@@ -522,12 +522,6 @@ static bool8 fx_checkStartAddress (void)
 	if (GSU.bCacheActive && R15 >= GSU.vCacheBaseReg && R15 < (GSU.vCacheBaseReg + 512))
 		return (TRUE);
 
-	/*
-	// Check if we're in an unused area
-	if (GSU.vPrgBankReg < 0x40 && R15 < 0x8000)
-		return (FALSE);
-	*/
-
 	if (GSU.vPrgBankReg >= 0x60 && GSU.vPrgBankReg <= 0x6f)
 		return (FALSE);
 
@@ -558,10 +552,6 @@ static uint32 FxEmulate (uint32 nInstructions)
 	{
 		CF(G);
 		fx_writeRegisterSpace();
-		/*
-		GSU.vIllegalAddress = (GSU.vPrgBankReg << 24) | R15;
-		return (FX_ERROR_ILLEGAL_ADDRESS);
-		*/
 
 		return (0);
 	}
@@ -569,11 +559,6 @@ static uint32 FxEmulate (uint32 nInstructions)
 	// Execute GSU session
 	CF(IRQ);
 
-	/*
-	if (GSU.bBreakPoint)
-		vCount = fx_run_to_breakpoint(nInstructions);
-	else
-	*/
 	vCount = fx_run(nInstructions);
 
 	// Store GSU registers
@@ -740,15 +725,6 @@ void fx_computeScreenPointers (void)
 // Write access to the cache
 static void FxCacheWriteAccess (uint16 vAddress)
 {
-	/*
-	if (!GSU.bCacheActive)
-	{
-		uint8	v = GSU.pvCache[GSU.pvCache[vAddress & 0x1ff];
-		fx_setCache();
-		GSU.pvCache[GSU.pvCache[vAddress & 0x1ff] = v;
-	}
-	*/
-
 	if ((vAddress & 0x00f) == 0x00f)
 		GSU.vCacheFlags |= 1 << ((vAddress & 0x1f0) >> 4);
 }
@@ -767,221 +743,3 @@ void fx_flushCache (void)
 	GSU.vCacheFlags = 0;
 	GSU.bCacheActive = FALSE;
 }
-
-/*
-static void fx_setCache (void)
-{
-	uint32	c;
-
-	GSU.bCacheActive = TRUE;
-	GSU.pvRegisters[0x3e] &= 0xf0;
-
-	c  =  (uint32) GSU.pvRegisters[0x3e];
-	c |= ((uint32) GSU.pvRegisters[0x3f]) << 8;
-	if (c == GSU.vCacheBaseReg)
-		return;
-
-	GSU.vCacheBaseReg = c;
-	GSU.vCacheFlags = 0;
-
-	if (c < (0x10000 - 512))
-	{
-		const uint8	*t = &ROM(c);
-		memcpy(GSU.pvCache, t, 512);
-	}
-	else
-	{
-		const uint8	*t1, *t2;
-		uint32		i = 0x10000 - c;
-
-		t1 = &ROM(c);
-		t2 = &ROM(0);
-		memcpy(GSU.pvCache, t1, i);
-		memcpy(&GSU.pvCache[i], t2, 512 - i);
-	}
-}
-*/
-
-/*
-static void fx_backupCache (void)
-{
-	uint32	v = GSU.vCacheFlags;
-	uint32	c = USEX16(GSU.vCacheBaseReg);
-
-	if (v)
-	{
-		for (int i = 0; i < 32; i++)
-		{
-			if (v & 1)
-			{
-				if (c < (0x10000 - 16))
-				{
-					uint8	*t = &GSU.pvPrgBank[c];
-					memcpy(&GSU.avCacheBackup[i << 4], t, 16);
-					memcpy(t, &GSU.pvCache[i << 4], 16);
-				}
-				else
-				{
-					uint8	*t1, *t2;
-					uint32	a = 0x10000 - c;
-
-					t1 = &GSU.pvPrgBank[c];
-					t2 = &GSU.pvPrgBank[0];
-					memcpy(&GSU.avCacheBackup[i << 4], t1, a);
-					memcpy(t1, &GSU.pvCache[i << 4], a);
-					memcpy(&GSU.avCacheBackup[(i << 4) + a], t2, 16 - a);
-					memcpy(t2, &GSU.pvCache[(i << 4) + a], 16 - a);
-				}
-			}
-
-			c = USEX16(c + 16);
-			v >>= 1;
-		}
-	}
-}
-*/
-
-/*
-static void fx_restoreCache()
-{
-	uint32	v = GSU.vCacheFlags;
-	uint32	c = USEX16(GSU.vCacheBaseReg);
-
-	if (v)
-	{
-		for (int i = 0; i < 32; i++)
-		{
-			if (v & 1)
-			{
-				if (c < (0x10000 - 16))
-				{
-					uint8	*t = &GSU.pvPrgBank[c];
-					memcpy(t, &GSU.avCacheBackup[i << 4], 16);
-					memcpy(&GSU.pvCache[i << 4], t, 16);
-				}
-				else
-				{
-					uint8	*t1, *t2;
-					uint32	a = 0x10000 - c;
-
-					t1 = &GSU.pvPrgBank[c];
-					t2 = &GSU.pvPrgBank[0];
-					memcpy(t1, &GSU.avCacheBackup[i << 4], a);
-					memcpy(&GSU.pvCache[i << 4], t1, a);
-					memcpy(t2, &GSU.avCacheBackup[(i << 4) + a], 16 - a);
-					memcpy(&GSU.pvCache[(i << 4) + a], t2, 16 - a);
-				}
-			}
-
-			c = USEX16(c + 16);
-			v >>= 1;
-		}
-	}
-}
-*/
-
-// Breakpoints
-/*
-static void FxBreakPointSet (uint32 vAddress)
-{
-	GSU.bBreakPoint = TRUE;
-	GSU.vBreakPoint = USEX16(vAddress);
-}
-*/
-
-/*
-static void FxBreakPointClear (void)
-{
-	GSU.bBreakPoint = FALSE;
-}
-*/
-
-// Step by step execution
-/*
-static uint32 FxStepOver (uint32 nInstructions)
-{
-	uint32	vCount;
-
-	fx_readRegisterSpace();
-
-	if (!fx_checkStartAddress())
-	{
-		CF(G);
-	#if 0
-		GSU.vIllegalAddress = (GSU.vPrgBankReg << 24) | R15;
-		return (FX_ERROR_ILLEGAL_ADDRESS);
-	#else
-		return (0);
-	#endif
-	}
-
-	if (PIPE >= 0xf0)
-		GSU.vStepPoint = USEX16(R15 + 3);
-	else
-	if ((PIPE >= 0x05 && PIPE <= 0x0f) || (PIPE >= 0xa0 && PIPE <= 0xaf))
-		GSU.vStepPoint = USEX16(R15 + 2);
-	else
-		GSU.vStepPoint = USEX16(R15 + 1);
-
-	vCount = fx_step_over(nInstructions);
-
-	fx_writeRegisterSpace();
-
-	if (GSU.vErrorCode)
-		return (GSU.vErrorCode);
-	else
-		return (vCount);
-}
-*/
-
-// Errors
-/*
-static int FxGetErrorCode (void)
-{
-	return (GSU.vErrorCode);
-}
-*/
-
-/*
-static int FxGetIllegalAddress (void)
-{
-	return (GSU.vIllegalAddress);
-}
-*/
-
-// Access to internal registers
-/*
-static uint32 FxGetColorRegister (void)
-{
-	return (GSU.vColorReg & 0xff);
-}
-*/
-
-/*
-static uint32 FxGetPlotOptionRegister (void)
-{
-	return (GSU.vPlotOptionReg & 0x1f);
-}
-*/
-
-/*
-static uint32 FxGetSourceRegisterIndex (void)
-{
-	return (GSU.pvSreg - GSU.avReg);
-}
-*/
-
-/*
-static uint32 FxGetDestinationRegisterIndex (void)
-{
-	return (GSU.pvDreg - GSU.avReg);
-}
-*/
-
-// Get the byte currently in the pipe
-/*
-static uint8 FxPipe (void)
-{
-	return (GSU.vPipe);
-}
-*/

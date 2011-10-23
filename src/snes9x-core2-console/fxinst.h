@@ -463,11 +463,7 @@ extern struct FxRegs_s	GSU;
 #define PRGBANK(idx)	GSU.pvPrgBank[USEX16(idx)]
 
 // Update pipe from ROM
-#if 0
-#define FETCHPIPE		{ PIPE = PRGBANK(R15); GSU.vPipeAdr = (GSU.vPrgBankReg << 16) + R15; }
-#else
 #define FETCHPIPE		{ PIPE = PRGBANK(R15); }
-#endif
 
 // ABS
 #define ABS(x)			((x) < 0 ? -(x) : (x))

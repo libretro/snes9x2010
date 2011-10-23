@@ -228,9 +228,6 @@ static inline void S9xTryGunLatch (bool force)
 	{
 		if (force || (Memory.FillRAM[0x4213] & 0x80))
 		{
-		#if 0 // #ifdef CPU_SHUTDOWN
-			CPU.WaitAddress = CPU.PCAtOpcodeStart;
-		#endif
 
 			PPU.HVBeamCounterLatched = 1;
 			PPU.VBeamPosLatched = (uint16) PPU.GunVLatch;
@@ -1518,16 +1515,12 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 		{
 			case 0x4200: // NMITIMEN
 				if (Byte & 0x20)
-				{
 					PPU.VTimerEnabled = TRUE;
-				}
 				else
 					PPU.VTimerEnabled = FALSE;
 
 				if (Byte & 0x10)
-				{
 					PPU.HTimerEnabled = TRUE;
-				}
 				else
 					PPU.HTimerEnabled = FALSE;
 
@@ -1665,15 +1658,9 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 				break;
 
 			case 0x4210: // RDNMI
-			#if 0
-				Memory.FillRAM[0x4210] = Model->_5A22;
-			#endif
 				return;
 
 			case 0x4211: // TIMEUP
-			#if 0
-				S9xClearIRQ(PPU_IRQ_SOURCE);
-			#endif
 				return;
 
 			case 0x4212: // HVBJOY
