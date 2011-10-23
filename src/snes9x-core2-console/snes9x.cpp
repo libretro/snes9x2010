@@ -548,7 +548,7 @@ void S9xUsage (void)
 	S9xExtraUsage();
 
 	S9xMessage(S9X_INFO, S9X_USAGE, "");
-	S9xMessage(S9X_INFO, S9X_USAGE, "ROM image can be compressed with zip, gzip, JMA, or compress.");
+	S9xMessage(S9X_INFO, S9X_USAGE, "ROM image can be compressed with zip, gzip, or compress.");
 
 	exit(1);
 }

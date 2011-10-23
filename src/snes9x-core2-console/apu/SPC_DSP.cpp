@@ -429,13 +429,6 @@ VOICE_CLOCK( V3c )
 			v->buf_pos     = 0;
 			m.t_brr_header = 0; // header is ignored on this sample
 			m.kon_check    = true;
-
-			if (take_spc_snapshot)
-			{
-				take_spc_snapshot = 0;
-				if (spc_snapshot_callback)
-					spc_snapshot_callback();
-			}
 		}
 		
 		// Envelope is never run during KON
@@ -825,8 +818,6 @@ void SPC_DSP::init( void* ram_64k )
 	reset();
 
 	stereo_switch = 0xffff;
-	take_spc_snapshot = 0;
-	spc_snapshot_callback = 0;
 
 	#ifndef NDEBUG
 		// be sure this sign-extends
@@ -1035,16 +1026,6 @@ void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
 
 
 //// Snes9x Accessor
-
-void SPC_DSP::set_spc_snapshot_callback( void (*callback) (void) )
-{
-	spc_snapshot_callback = callback;
-}
-
-void SPC_DSP::dump_spc_snapshot( void )
-{
-	take_spc_snapshot = 1;
-}
 
 void SPC_DSP::set_stereo_switch( int value )
 {

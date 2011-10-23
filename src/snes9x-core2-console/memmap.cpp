@@ -183,10 +183,6 @@
 #include "unzip/unzip.h"
 #endif
 
-#ifdef JMA_SUPPORT
-#include "jma/s9x-jma.h"
-#endif
-
 #include "snes9x.h"
 #include "memmap.h"
 #include "apu/apu.h"
@@ -930,23 +926,6 @@ static const uint32	crc32Table[256] =
 	0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-static void S9xDeinterleaveType1 (int, uint8 *);
-static void S9xDeinterleaveType2 (int, uint8 *);
-static void S9xDeinterleaveGD24 (int, uint8 *);
-static bool8 allASCII (uint8 *, int);
-static bool8 is_SufamiTurbo_BIOS (uint8 *, uint32);
-static bool8 is_SufamiTurbo_Cart (uint8 *, uint32);
-static bool8 is_SameGame_BIOS (uint8 *, uint32);
-static bool8 is_SameGame_Add_On (uint8 *, uint32);
-static uint32 caCRC32 (uint8 *, uint32, uint32 crc32 = 0xffffffff);
-static uint32 ReadUPSPointer (const uint8 *, unsigned &, unsigned);
-static bool8 ReadUPSPatch (Reader *, long, int32 &);
-static long ReadInt (Reader *, unsigned);
-static bool8 ReadIPSPatch (Reader *, long, int32 &);
-#ifdef UNZIP_SUPPORT
-static int unzFindExtension (unzFile &, const char *, bool restart = TRUE, bool print = TRUE);
-#endif
-
 // deinterleave
 
 static void S9xDeinterleaveType1 (int size, uint8 *base)
@@ -1395,9 +1374,6 @@ uint32 CMemory::FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	int	nFormat = FILE_DEFAULT;
 	if (strcasecmp(ext, "zip") == 0)
 		nFormat = FILE_ZIP;
-	else
-	if (strcasecmp(ext, "jma") == 0)
-		nFormat = FILE_JMA;
 
 	switch (nFormat)
 	{
@@ -1417,27 +1393,6 @@ uint32 CMemory::FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 		#endif
 			break;
 		}
-
-		case FILE_JMA:
-		{
-		#ifdef JMA_SUPPORT
-			size_t	size = load_jma_file(fname, buffer);
-			if (!size)
-			{
-			 	S9xMessage(S9X_ERROR, S9X_ROM_INFO, "Invalid JMA archive.");
-				return (0);
-			}
-
-			totalSize = HeaderRemove(size, HeaderCount, buffer);
-
-			strcpy(ROMFilename, fname);
-		#else
-			S9xMessage(S9X_ERROR, S9X_ROM_INFO, "This binary was not created with JMA support.");
-			return (0);
-		#endif
-			break;
-		}
-
 		case FILE_DEFAULT:
 		default:
 		{
@@ -2517,7 +2472,7 @@ void CMemory::InitROM (void)
 
 	// CRC32
 	if (!Settings.BS || Settings.BSXItself) // Not BS Dump
-		ROMCRC32 = caCRC32(ROM, CalculatedSize);
+		ROMCRC32 = caCRC32(ROM, CalculatedSize, 0xffffffff);
 	else // Convert to correct format before scan
 	{
 		int offset = HiROM ? 0xffc0 : 0x7fc0;
@@ -2528,7 +2483,7 @@ void CMemory::InitROM (void)
 		ROM[offset + 22] = 0x42;
 		ROM[offset + 23] = 0x00;
 		// Calc
-		ROMCRC32 = caCRC32(ROM, CalculatedSize);
+		ROMCRC32 = caCRC32(ROM, CalculatedSize, 0xffffffff);
 		// Convert back
 		ROM[offset + 22] = BSMagic0;
 		ROM[offset + 23] = BSMagic1;
@@ -3936,8 +3891,8 @@ static bool8 ReadUPSPatch (Reader *r, long, int32 &rom_size)
 	if(data[addr++] != 'S') { delete[] data; return false; }  //...
 	if(data[addr++] != '1') { delete[] data; return false; }  //...
 
-	uint32 patch_crc32 = caCRC32(data, size - 4);  //don't include patch CRC32 itself in CRC32 calculation
-	uint32 rom_crc32 = caCRC32(Memory.ROM, rom_size);
+	uint32 patch_crc32 = caCRC32(data, size - 4, 0xffffffff);  //don't include patch CRC32 itself in CRC32 calculation
+	uint32 rom_crc32 = caCRC32(Memory.ROM, rom_size, 0xffffffff);
 	uint32 px_crc32 = (data[size - 12] << 0) + (data[size - 11] << 8) + (data[size - 10] << 16) + (data[size -  9] << 24);
 	uint32 py_crc32 = (data[size -  8] << 0) + (data[size -  7] << 8) + (data[size -  6] << 16) + (data[size -  5] << 24);
 	uint32 pp_crc32 = (data[size -  4] << 0) + (data[size -  3] << 8) + (data[size -  2] << 16) + (data[size -  1] << 24);
@@ -3968,7 +3923,7 @@ static bool8 ReadUPSPatch (Reader *r, long, int32 &rom_size)
 	rom_size = out_size;
 	delete[] data;
 
-	uint32 out_crc32 = caCRC32(Memory.ROM, rom_size);
+	uint32 out_crc32 = caCRC32(Memory.ROM, rom_size, 0xffffffff);
 	if(((rom_crc32 == px_crc32) && (out_crc32 == py_crc32))
 	|| ((rom_crc32 == py_crc32) && (out_crc32 == px_crc32))
 	) {

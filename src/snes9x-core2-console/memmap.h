@@ -189,7 +189,7 @@ struct CMemory
 	{ MAX_ROM_SIZE = 0x800000 };
 
 	enum file_formats
-	{ FILE_ZIP, FILE_JMA, FILE_DEFAULT };
+	{ FILE_ZIP, FILE_DEFAULT };
 
 	enum
 	{ NOPE, YEAH, BIGFIRST, SMALLFIRST };

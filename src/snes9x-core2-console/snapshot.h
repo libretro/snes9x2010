@@ -194,6 +194,5 @@ bool8 S9xFreezeGame (const char *);
 bool8 S9xUnfreezeGame (const char *);
 void S9xFreezeToStream (STREAM);
 int	 S9xUnfreezeFromStream (STREAM);
-bool8 S9xSPCDump (const char *);
 
 #endif

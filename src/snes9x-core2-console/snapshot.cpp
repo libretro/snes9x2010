@@ -195,10 +195,10 @@
 
 typedef struct
 {
-	int			offset;
-	int			offset2;
-	int			size;
-	int			type;
+	int		offset;
+	int		offset2;
+	int		size;
+	int		type;
 	uint16		debuted_in;
 	uint16		deleted_in;
 	const char	*name;
@@ -216,11 +216,11 @@ enum
 	POINTER_V
 };
 
-#define COUNT(ARRAY)				(sizeof(ARRAY) / sizeof(ARRAY[0]))
+#define COUNT(ARRAY)			(sizeof(ARRAY) / sizeof(ARRAY[0]))
 #define Offset(field, structure)	((int) (((char *) (&(((structure) NULL)->field))) - ((char *) NULL)))
-#define OFFSET(f)					Offset(f, STRUCT *)
-#define DUMMY(f)					Offset(f, struct Obsolete *)
-#define DELETED(f)					(-1)
+#define OFFSET(f)			Offset(f, STRUCT *)
+#define DUMMY(f)			Offset(f, struct Obsolete *)
+#define DELETED(f)			(-1)
 
 #define INT_ENTRY(save_version_introduced, field) \
 { \
@@ -1690,7 +1690,7 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 	uint16	word;
 	uint32	dword;
 	int64	qword;
-	int		relativeAddr;
+	int	relativeAddr;
 
 	for (i = 0; i < num_fields; i++)
 	{
@@ -1928,8 +1928,8 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 	int64	qword;
 	uint8	*addr;
 	void	*base;
-	int		relativeAddr;
-	int		i, j;
+	int	relativeAddr;
+	int	i, j;
 
 	for (i = 0; i < num_fields; i++)
 	{
@@ -2061,28 +2061,4 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 			*((pint *) (addr)) = (pint) (relativeTo + relativeAddr);
 		}
 	}
-}
-
-bool8 S9xSPCDump (const char *filename)
-{
-	FILE	*fs;
-	uint8	buf[SNES_SPC::spc_file_size];
-	size_t	ignore;
-
-	fs = fopen(filename, "wb");
-	if (!fs)
-		return (FALSE);
-
-	S9xSetSoundMute(TRUE);
-
-	spc_core->init_header(buf);
-	spc_core->save_spc(buf);
-
-	ignore = fwrite(buf, SNES_SPC::spc_file_size, 1, fs);
-
-	fclose(fs);
-
-	S9xSetSoundMute(FALSE);
-
-	return (TRUE);
 }

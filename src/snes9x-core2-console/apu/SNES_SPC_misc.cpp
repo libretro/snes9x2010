@@ -389,16 +389,6 @@ blargg_err_t SNES_SPC::skip( int count )
 
 //// Snes9x Accessor
 
-void SNES_SPC::dsp_set_spc_snapshot_callback( void (*callback) (void) )
-{
-	dsp.set_spc_snapshot_callback( callback );
-}
-
-void SNES_SPC::dsp_dump_spc_snapshot( void )
-{
-	dsp.dump_spc_snapshot();
-}
-
 void SNES_SPC::dsp_set_stereo_switch( int value )
 {
 	dsp.set_stereo_switch( value );

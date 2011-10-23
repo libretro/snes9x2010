@@ -108,8 +108,6 @@ public:
 
 	void	spc_allow_time_overflow( bool );
 
-	void    dsp_set_spc_snapshot_callback( void (*callback) (void) );
-	void    dsp_dump_spc_snapshot( void );
 	void    dsp_set_stereo_switch( int );
 	uint8_t dsp_reg_value( int, int );
 	int     dsp_envx_value( int );

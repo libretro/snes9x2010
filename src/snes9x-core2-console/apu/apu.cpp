@@ -237,7 +237,6 @@ namespace spc
 static void UpdatePlaybackRate (void);
 static void from_apu_to_state (uint8 **, void *, size_t);
 static void to_apu_from_state (uint8 **, void *, size_t);
-static void SPCSnapshotCallback (void);
 static inline int S9xAPUGetClock (int32);
 static inline int S9xAPUGetClockRemainder (int32);
 
@@ -409,17 +408,6 @@ void S9xSetSoundMute (bool8 mute)
 		Settings.Mute = TRUE;
 }
 
-void S9xDumpSPCSnapshot (void)
-{
-	spc_core->dsp_dump_spc_snapshot();
-}
-
-static void SPCSnapshotCallback (void)
-{
-	S9xSPCDump(S9xGetFilenameInc((".spc"), SPC_DIR));
-	printf("Dumped key-on triggered spc snapshot.\n");
-}
-
 bool8 S9xInitAPU (void)
 {
 	spc_core = new SNES_SPC;
@@ -428,8 +416,6 @@ bool8 S9xInitAPU (void)
 
 	spc_core->init();
 	spc_core->init_rom(APUROM);
-
-	spc_core->dsp_set_spc_snapshot_callback(SPCSnapshotCallback);
 
 	spc::landing_buffer = NULL;
 	spc::shrink_buffer  = NULL;
