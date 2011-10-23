@@ -410,9 +410,6 @@ void DSP2SetByte (uint8 byte, uint16 address)
 				case 0x09: DSP2.in_count =  4; break;
 				case 0x0D: DSP2.in_count =  2; break;
 				default:
-				#ifdef DEBUGGER
-					//printf("Op%02X\n", byte);
-				#endif
 				case 0x0f: DSP2.in_count =  0; break;
 			}
 		}

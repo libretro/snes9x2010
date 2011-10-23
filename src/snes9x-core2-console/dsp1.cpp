@@ -198,9 +198,6 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "snes9x.h"
 #include "memmap.h"
 
-#ifdef DEBUGGER
-//#define DebugDSP1
-#endif
 
 #ifdef DebugDSP1
 #include <stdarg.h>
@@ -1282,9 +1279,6 @@ void DSP1SetByte (uint8 byte, uint16 address)
 			DSP1.in_index        = 0;
 			DSP1.waiting4command = FALSE;
 			DSP1.first_parameter = TRUE;
-			#ifdef DEBUGGER
-				//printf("OP%02X\n",byte);
-			#endif
 
 			switch (byte)
 			{
@@ -1357,9 +1351,6 @@ void DSP1SetByte (uint8 byte, uint16 address)
 					DSP1.command = 0x1f;
 				case 0x1f: DSP1.in_count = 1; break;
 				default:
-				#ifdef DEBUGGER
-					//printf("OP%02X\n", byte);
-				#endif
 				case 0x80:
 					DSP1.in_count        = 0;
 					DSP1.waiting4command = TRUE;

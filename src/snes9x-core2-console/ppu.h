@@ -509,19 +509,9 @@ static inline void REGISTER_2104 (uint8 Byte)
 }
 
 // This code is correct, however due to Snes9x's inaccurate timings, some games might be broken by this chage. :(
-#ifdef DEBUGGER
-#define CHECK_INBLANK() \
-	if (!PPU.ForcedBlanking && CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE) \
-	{ \
-		printf("Invalid VRAM acess at (%04d, %04d) blank:%d\n", CPU.Cycles, CPU.V_Counter, PPU.ForcedBlanking); \
-		if (Settings.BlockInvalidVRAMAccess) \
-			return; \
-	}
-#else
 #define CHECK_INBLANK() \
 	if (Settings.BlockInvalidVRAMAccess && !PPU.ForcedBlanking && CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE) \
 		return;
-#endif
 
 static inline void REGISTER_2118 (uint8 Byte)
 {
@@ -552,10 +542,6 @@ static inline void REGISTER_2118 (uint8 Byte)
 
 	if (!PPU.VMA.High)
 	{
-	#ifdef DEBUGGER
-		if (Settings.TraceVRAM && !CPU.InDMAorHDMA)
-			printf("VRAM write byte: $%04X (%d, %d)\n", PPU.VMA.Address, Memory.FillRAM[0x2115] & 3, (Memory.FillRAM[0x2115] & 0x0c) >> 2);
-	#endif
 		PPU.VMA.Address += PPU.VMA.Increment;
 	}
 }
@@ -589,10 +575,6 @@ static inline void REGISTER_2119 (uint8 Byte)
 
 	if (PPU.VMA.High)
 	{
-	#ifdef DEBUGGER
-		if (Settings.TraceVRAM && !CPU.InDMAorHDMA)
-			printf("VRAM write word: $%04X (%d, %d)\n", PPU.VMA.Address, Memory.FillRAM[0x2115] & 3, (Memory.FillRAM[0x2115] & 0x0c) >> 2);
-	#endif
 		PPU.VMA.Address += PPU.VMA.Increment;
 	}
 }

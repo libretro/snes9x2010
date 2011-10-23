@@ -181,9 +181,6 @@
 #include "apu/apu.h"
 #include "sdd1emu.h"
 #include "spc7110emu.h"
-#ifdef DEBUGGER
-#include "missing.h"
-#endif
 
 #define ADD_CYCLES(n)	CPU.Cycles += (n)
 
@@ -208,9 +205,6 @@ static inline bool8 addCyclesInDMA (uint8 dma_channel)
 	if (CPU.HDMARanInDMA & (1 << dma_channel))
 	{
 		CPU.HDMARanInDMA = 0;
-	#ifdef DEBUGGER
-		printf("HDMA and DMA use the same channel %d!\n", dma_channel);
-	#endif
 		// If HDMA triggers in the middle of DMA transfer and it uses the same channel,
 		// it kills the DMA transfer immediately. $43x2 and $43x5 stop updating.
 		return (FALSE);
@@ -263,13 +257,6 @@ bool8 S9xDoDMA (uint8 Channel)
 			}
 		}
 
-	#ifdef DEBUGGER
-		if (Settings.TraceDMA)
-		{
-			sprintf(String, "DMA[%d]: WRAM Bank:%02X->$2180", Channel, d->ABank);
-			S9xMessage(S9X_TRACE, S9X_DMA_TRACE, String);
-		}
-	#endif
 
 		CPU.InDMA = FALSE;
 		CPU.InDMAorHDMA = FALSE;
@@ -314,13 +301,6 @@ bool8 S9xDoDMA (uint8 Channel)
 				in_ptr += d->AAddress;
 				SDD1_decompress(sdd1_decode_buffer, in_ptr, d->TransferBytes);
 			}
-		#ifdef DEBUGGER
-			else
-			{
-				sprintf(String, "S-DD1: DMA from non-block address $%02X:%04X", d->ABank, d->AAddress);
-				S9xMessage(S9X_WARNING, S9X_DMA_TRACE, String);
-			}
-		#endif
 
 			in_sdd1_dma = sdd1_decode_buffer;
 		}
@@ -486,26 +466,6 @@ bool8 S9xDoDMA (uint8 Channel)
 		}
 	}
 
-#ifdef DEBUGGER
-	if (Settings.TraceDMA)
-	{
-		sprintf(String, "DMA[%d]: %s Mode:%d 0x%02X%04X->0x21%02X Bytes:%d (%s) V:%03d",
-			Channel, d->ReverseTransfer ? "PPU->CPU" : "CPU->PPU", d->TransferMode, d->ABank, d->AAddress, d->BAddress,
-			d->TransferBytes, d->AAddressFixed ? "fixed" : (d->AAddressDecrement ? "dec" : "inc"), CPU.V_Counter);
-
-		if (d->BAddress == 0x18 || d->BAddress == 0x19 || d->BAddress == 0x39 || d->BAddress == 0x3a)
-			sprintf(String, "%s VRAM: %04X (%d,%d) %s", String,
-				PPU.VMA.Address, PPU.VMA.Increment, PPU.VMA.FullGraphicCount, PPU.VMA.High ? "word" : "byte");
-		else
-		if (d->BAddress == 0x22 || d->BAddress == 0x3b)
-			sprintf(String, "%s CGRAM: %02X (%x)", String, PPU.CGADD, PPU.CGFLIP);
-		else
-		if (d->BAddress == 0x04 || d->BAddress == 0x38)
-			sprintf(String, "%s OBJADDR: %04X", String, PPU.OAMAddr);
-
-		S9xMessage(S9X_TRACE, S9X_DMA_TRACE, String);
-	}
-#endif
 
 	// Do Transfer
 
@@ -715,13 +675,6 @@ bool8 S9xDoDMA (uint8 Channel)
 						} while (1);
 					}
 				}
-			#ifdef DEBUGGER
-				else
-				{
-					sprintf(String, "Unknown DMA transfer mode: %d on channel %d\n", d->TransferMode, Channel);
-					S9xMessage(S9X_TRACE, S9X_DMA_TRACE, String);
-				}
-			#endif
 			}
 			else
 			{
@@ -1031,13 +984,6 @@ bool8 S9xDoDMA (uint8 Channel)
 						} while (1);
 					}
 				}
-			#ifdef DEBUGGER
-				else
-				{
-					sprintf(String, "Unknown DMA transfer mode: %d on channel %d\n", d->TransferMode, Channel);
-					S9xMessage(S9X_TRACE, S9X_DMA_TRACE, String);
-				}
-			#endif
 			}
 
 			if (rem <= 0)
@@ -1165,10 +1111,6 @@ bool8 S9xDoDMA (uint8 Channel)
 						break;
 
 					default:
-					#ifdef DEBUGGER
-						sprintf(String, "Unknown DMA transfer mode: %d on channel %d\n", d->TransferMode, Channel);
-						S9xMessage(S9X_TRACE, S9X_DMA_TRACE, String);
-					#endif
 						while (count)
 						{
 							UPDATE_COUNTERS;
@@ -1266,10 +1208,6 @@ bool8 S9xDoDMA (uint8 Channel)
 						break;
 
 					default:
-					#ifdef DEBUGGER
-						sprintf(String, "Unknown DMA transfer mode: %d on channel %d\n", d->TransferMode, Channel);
-						S9xMessage(S9X_TRACE, S9X_DMA_TRACE, String);
-					#endif
 						while (count)
 						{
 							UPDATE_COUNTERS;
@@ -1378,9 +1316,6 @@ void S9xStartHDMA (void)
 	else
 		PPU.HDMA = Memory.FillRAM[0x420c];
 
-#ifdef DEBUGGER
-	missing.hdma_this_frame = PPU.HDMA;
-#endif
 
 	PPU.HDMAEnded = 0;
 
@@ -1471,19 +1406,6 @@ uint8 S9xDoHDMA (uint8 byte)
 					}
 				}
 
-			#ifdef DEBUGGER
-				if (Settings.TraceHDMA && p->DoTransfer)
-				{
-					sprintf(String, "H-DMA[%d] %s (%d) 0x%06X->0x21%02X %s, Count: %3d, Rep: %s, V-LINE: %3ld %02X%04X",
-							p-DMA, p->ReverseTransfer? "read" : "write",
-							p->TransferMode, ShiftedIBank+IAddr, p->BAddress,
-							p->HDMAIndirectAddressing ? "ind" : "abs",
-							p->LineCount,
-							p->Repeat ? "yes" : "no ", (long) CPU.V_Counter,
-							p->ABank, p->Address);
-					S9xMessage(S9X_TRACE, S9X_HDMA_TRACE, String);
-				}
-			#endif
 
 				if (!p->ReverseTransfer)
 				{

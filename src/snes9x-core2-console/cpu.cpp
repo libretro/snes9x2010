@@ -185,9 +185,6 @@
 #include "snapshot.h"
 #include "cheats.h"
 #include "logger.h"
-#ifdef DEBUGGER
-#include "debug.h"
-#endif
 
 static void S9xResetCPU (void);
 static void S9xSoftResetCPU (void);

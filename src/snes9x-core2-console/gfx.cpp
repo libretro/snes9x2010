@@ -446,23 +446,6 @@ void S9xEndScreenRefresh (void)
 
 	S9xApplyCheats();
 
-#ifdef DEBUGGER
-	if (CPU.Flags & FRAME_ADVANCE_FLAG)
-	{
-		if (ICPU.FrameAdvanceCount)
-		{
-			ICPU.FrameAdvanceCount--;
-			IPPU.RenderThisFrame = TRUE;
-			IPPU.FrameSkip = 0;
-		}
-		else
-		{
-			CPU.Flags &= ~FRAME_ADVANCE_FLAG;
-			CPU.Flags |= DEBUG_MODE_FLAG;
-		}
-	}
-#endif
-
 	if (CPU.SRAMModified)
 	{
 		if (!CPU.AutoSaveTimer)
@@ -2027,13 +2010,8 @@ static void DisplayFrameRate (void)
 	sprintf(string, "%u fps", calcFps);
 	S9xDisplayString(string, 2, IPPU.RenderedScreenWidth - (font_width - 1) * strlen(string) - 1, false);
 
-#ifdef DEBUGGER
-	const int	len = 8;
-	sprintf(string, "%02d/%02d %02d", (int) IPPU.DisplayedRenderedFrameCount, (int) Memory.ROMFramesPerSecond, (int) IPPU.FrameCount);
-#else
 	const int	len = 5;
 	sprintf(string, "%02d/%02d",      (int) IPPU.DisplayedRenderedFrameCount, (int) Memory.ROMFramesPerSecond);
-#endif
 
 	S9xDisplayString(string, 1, IPPU.RenderedScreenWidth - (font_width - 1) * len - 1, false);
 }

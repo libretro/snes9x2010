@@ -366,7 +366,6 @@ static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
 #define THE_COMMANDS \
 	S(BeginRecordingMovie), \
 	S(ClipWindows), \
-	S(Debugger), \
 	S(DecEmuTurbo), \
 	S(DecFrameRate), \
 	S(DecFrameTime), \
@@ -2224,13 +2223,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 						Settings.DisableGraphicWindows = !Settings.DisableGraphicWindows;
 						DisplayStateChange("Graphic clip windows", !Settings.DisableGraphicWindows);
 						break;
-
-					case Debugger:
-					#ifdef DEBUGGER
-						CPU.Flags |= DEBUG_MODE_FLAG;
-					#endif
-						break;
-
 					case IncFrameRate:
 						if (Settings.SkipFrames == AUTO_FRAMERATE)
 							Settings.SkipFrames = 1;

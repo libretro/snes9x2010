@@ -192,9 +192,6 @@
 #include "netplay.h"
 #endif
 
-#ifdef DEBUGGER
-extern FILE	*trace;
-#endif
 
 #define S9X_CONF_FILE_NAME	"snes9x.conf"
 
@@ -485,20 +482,6 @@ void S9xLoadConfigFiles (char **argv, int argc)
 		conf.GetString("Netplay::Server", Settings.ServerName, 128);
 #endif
 
-	// Debug
-
-#ifdef DEBUGGER
-	if (conf.GetBool("DEBUG::Debugger", false))
-		CPU.Flags |= DEBUG_MODE_FLAG;
-
-	if (conf.GetBool("DEBUG::Trace", false))
-	{
-		if (!trace)
-			trace = fopen("trace.log", "wb");
-		CPU.Flags |= TRACE_FLAG;
-	}
-#endif
-
 	S9xParsePortConfig(conf, 1);
 	S9xVerifyControllers();
 }
@@ -582,10 +565,6 @@ void S9xUsage (void)
 #endif
 
 	// HACKING OR DEBUGGING OPTIONS
-#ifdef DEBUGGER
-	S9xMessage(S9X_INFO, S9X_USAGE, "-debug                          Set the Debugger flag");
-	S9xMessage(S9X_INFO, S9X_USAGE, "-trace                          Begin CPU instruction tracing");
-#endif
 	S9xMessage(S9X_INFO, S9X_USAGE, "-noirq                          (Not recommended) Disable IRQ emulation");
 	S9xMessage(S9X_INFO, S9X_USAGE, "-nohdma                         (Not recommended) Disable HDMA emulation");
 	S9xMessage(S9X_INFO, S9X_USAGE, "-hdmatiming <1-199>             (Not recommended) Changes HDMA transfer timings");
@@ -839,18 +818,6 @@ char * S9xParseArgs (char **argv, int argc)
 
 			// HACKING OR DEBUGGING OPTIONS
 		
-		#ifdef DEBUGGER
-			if (!strcasecmp(argv[i], "-debug"))
-				CPU.Flags |= DEBUG_MODE_FLAG;
-			else
-			if (!strcasecmp(argv[i], "-trace"))
-			{
-				if (!trace)
-					trace = fopen("trace.log", "wb");
-				CPU.Flags |= TRACE_FLAG;
-			}
-			else
-		#endif
 
 			if (!strcasecmp(argv[i], "-noirq"))
 				Settings.DisableIRQ = TRUE;

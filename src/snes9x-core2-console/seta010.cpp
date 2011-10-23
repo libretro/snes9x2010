@@ -455,9 +455,6 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 		return;
 	}
 
-#ifdef DEBUGGER
-	printf("Write %06X:%02X\n", Address, Byte);
-#endif
 
 	if ((Address & 0xFFF) == 0x20 && ST010.control_enable)
 		ST010.op_reg = Byte;
@@ -850,9 +847,6 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 			}
 
 			default:
-			#ifdef DEBUGGER
-				printf("Unknown Op\n");
-			#endif
 				break;
 		}
 

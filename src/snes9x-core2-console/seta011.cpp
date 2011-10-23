@@ -196,11 +196,6 @@ uint8 S9xGetST011 (uint32 Address)
 	else
 		t = Memory.SRAM[address]; // read directly from s-ram
 
-#ifdef DEBUGGER
-	if (address < 0x150)
-		printf("ST011 R: %06X %02X\n", Address, t);
-#endif
-
 	return (t);
 }
 
@@ -217,11 +212,6 @@ void S9xSetST011 (uint32 Address, uint8 Byte)
 		ST011.waiting4command = true;
 		reset = true;
 	}
-
-#ifdef DEBUGGER
-	if (address < 0x150)
-		printf("ST011 W: %06X %02X\n", Address, Byte);
-#endif
 
 	Memory.SRAM[address] = Byte;
 
