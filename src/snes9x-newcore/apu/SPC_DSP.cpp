@@ -43,8 +43,6 @@ static BOOST::uint8_t const initial_regs [SPC_DSP::register_count] =
 	0xF7,0x74,0x1C,0xE5,0x39,0x3D,0x73,0xC1,0x00,0x00,0x7A,0xB3,0xFF,0x4E,0x7B,0xFF
 };
 
-// if ( io < -32768 ) io = -32768;
-// if ( io >  32767 ) io =  32767;
 #define CLAMP16( io )\
 {\
 	if ( (int16_t) io != io )\
@@ -428,13 +426,6 @@ VOICE_CLOCK( V3c )
 			v->buf_pos     = 0;
 			m.t_brr_header = 0; // header is ignored on this sample
 			m.kon_check    = true;
-
-			if (take_spc_snapshot)
-			{
-				take_spc_snapshot = 0;
-				if (spc_snapshot_callback)
-					spc_snapshot_callback();
-			}
 		}
 		
 		// Envelope is never run during KON
@@ -821,8 +812,6 @@ void SPC_DSP::init( void* ram_64k )
 	reset();
 
 	stereo_switch = 0xffff;
-	take_spc_snapshot = 0;
-	spc_snapshot_callback = 0;
 }
 
 void SPC_DSP::soft_reset_common()
@@ -1011,21 +1000,3 @@ void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
 	copier.extra();
 }
 #endif
-
-
-//// Snes9x Accessor
-
-void SPC_DSP::set_spc_snapshot_callback( void (*callback) (void) )
-{
-	spc_snapshot_callback = callback;
-}
-
-SPC_DSP::uint8_t SPC_DSP::reg_value( int ch, int addr )
-{
-	return m.voices[ch].regs[addr];
-}
-
-int SPC_DSP::envx_value( int ch )
-{
-	return m.voices[ch].env;
-}
