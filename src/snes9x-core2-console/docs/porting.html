@@ -185,7 +185,7 @@
 		</p>
 		<h3><code>bool8 S9xInitSound (int buffer_ms, int lag_ms)</code></h3>
 		<p>
-			Allocates memory for mixing and queueing SNES sound data, does more sound code initialization and opens the host system's sound device by calling <code>S9xOpenSoundDevice</code>, a function you must provide. Before calling this function you must set up <code>Settings.SoundSync</code>, <code>Settings.SixteenBitSound</code>, <code>Settings.SoundPlaybackRate</code>, <code>Settings.SoundInputRate</code> (see section below) and <code>Settings.Stereo</code>.<br>
+			Allocates memory for mixing and queueing SNES sound data, does more sound code initialization and opens the host system's sound device by calling <code>S9xOpenSoundDevice</code>, a function you must provide. Before calling this function you must set up <code>Settings.SoundSync</code>, <code>Settings.SoundPlaybackRate</code>, <code>Settings.SoundInputRate</code> (see section below) and <code>Settings.Stereo</code>.<br>
 			<code>buffer_ms</code>, given in milliseconds, is the memory buffer size for queueing sound data. <code>lag_ms</code> is allowable latency between when a sample is queued and when it is pulled in <code>S9xMixSamples</code>. Set <code>lag_ms</code> to zero if you have your own latency handling code in your port.
 		</p>
 		<h3><code>void S9xReset (void)</code></h3>
@@ -351,7 +351,6 @@
 			Settings.MultiPlayer5Master = true;<br>
 			Settings.FrameTimePAL = 20000;<br>
 			Settings.FrameTimeNTSC = 16667;<br>
-			Settings.SixteenBitSound = true;<br>
 			Settings.Stereo = true;<br>
 			Settings.SoundPlaybackRate = 32000;<br>
 			Settings.SoundInputRate = 32000;<br>
