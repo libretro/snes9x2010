@@ -193,7 +193,11 @@
 #define APU_DENOMINATOR_NTSC		328125
 #define APU_NUMERATOR_PAL		34176
 #define APU_DENOMINATOR_PAL		709379
+#ifdef USE_LINEAR_RESAMPLER
+#define APU_DEFAULT_RESAMPLER		LinearResampler
+#else
 #define APU_DEFAULT_RESAMPLER		HermiteResampler
+#endif
 
 SNES_SPC	*spc_core = NULL;
 
