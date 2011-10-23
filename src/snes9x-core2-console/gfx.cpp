@@ -181,7 +181,6 @@
 #include "controls.h"
 #include "crosshairs.h"
 #include "cheats.h"
-#include "screenshot.h"
 #include "font.h"
 #include "display.h"
 
@@ -429,9 +428,6 @@ void S9xEndScreenRefresh (void)
 			}
 
 			S9xControlEOF();
-
-			if (Settings.TakeScreenshot)
-				S9xDoScreenshot(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
 
 			if (Settings.AutoDisplayMessages)
 				S9xDisplayMessages(GFX.Screen, GFX.RealPPL, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);

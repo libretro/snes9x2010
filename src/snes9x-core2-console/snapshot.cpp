@@ -1103,17 +1103,6 @@ static FreezeData	SnapBSX[] =
 	ARRAY_ENTRY(6, test2192, 32, uint8_ARRAY_V)
 };
 
-#undef STRUCT
-#define STRUCT	struct SnapshotScreenshotInfo
-
-static FreezeData	SnapScreenshot[] =
-{
-	INT_ENTRY(6, Width),
-	INT_ENTRY(6, Height),
-	INT_ENTRY(6, Interlaced),
-	ARRAY_ENTRY(6, Data, MAX_SNES_WIDTH * MAX_SNES_HEIGHT * 3, uint8_ARRAY_V)
-};
-
 static int UnfreezeBlock (STREAM, const char *, uint8 *, int);
 static int UnfreezeBlockCopy (STREAM, const char *, uint8 **, int);
 static int UnfreezeStruct (STREAM, const char *, void *, FreezeData *, int, int);
@@ -1331,37 +1320,6 @@ void S9xFreezeToStream (STREAM stream)
 	if (Settings.BS)
 		FreezeStruct(stream, "BSX", &BSX, SnapBSX, COUNT(SnapBSX));
 
-	if (Settings.SnapshotScreenshots)
-	{
-		SnapshotScreenshotInfo	*ssi = new SnapshotScreenshotInfo;
-
-		ssi->Width  = min(IPPU.RenderedScreenWidth,  MAX_SNES_WIDTH);
-		ssi->Height = min(IPPU.RenderedScreenHeight, MAX_SNES_HEIGHT);
-		ssi->Interlaced = GFX.DoInterlace;
-
-		uint8	*rowpix = ssi->Data;
-		uint16	*screen = GFX.Screen;
-
-		for (int y = 0; y < ssi->Height; y++, screen += GFX.RealPPL)
-		{
-			for (int x = 0; x < ssi->Width; x++)
-			{
-				uint32	r, g, b;
-
-				DECOMPOSE_PIXEL(screen[x], r, g, b);
-				*(rowpix++) = r;
-				*(rowpix++) = g;
-				*(rowpix++) = b;
-			}
-		}
-
-		memset(rowpix, 0, sizeof(ssi->Data) + ssi->Data - rowpix);
-
-		FreezeStruct(stream, "SHO", ssi, SnapScreenshot, COUNT(SnapScreenshot));
-
-		delete ssi;
-	}
-
 #ifdef ZSNES_FX
 	if (Settings.SuperFX)
 		S9xSuperFXPostSaveState();
@@ -1416,7 +1374,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 	uint8	*local_srtc          = NULL;
 	uint8	*local_rtc_data      = NULL;
 	uint8	*local_bsx_data      = NULL;
-	uint8	*local_screenshot    = NULL;
 
 	do
 	{
@@ -1521,8 +1478,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 		result = UnfreezeStructCopy(stream, "BSX", &local_bsx_data, SnapBSX, COUNT(SnapBSX), version);
 		if (result != SUCCESS && Settings.BS)
 			break;
-
-		result = UnfreezeStructCopy(stream, "SHO", &local_screenshot, SnapScreenshot, COUNT(SnapScreenshot), version);
 
 		result = SUCCESS;
 	} while (false);
@@ -1663,65 +1618,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 		if (local_bsx_data)
 			S9xBSXPostLoadState();
 
-		if (local_screenshot)
-		{
-			SnapshotScreenshotInfo	*ssi = new SnapshotScreenshotInfo;
-
-			UnfreezeStructFromCopy(ssi, SnapScreenshot, COUNT(SnapScreenshot), local_screenshot, version);
-
-			IPPU.RenderedScreenWidth  = min(ssi->Width,  IMAGE_WIDTH);
-			IPPU.RenderedScreenHeight = min(ssi->Height, IMAGE_HEIGHT);
-			const bool8 scaleDownX = IPPU.RenderedScreenWidth  < ssi->Width;
-			const bool8 scaleDownY = IPPU.RenderedScreenHeight < ssi->Height && ssi->Height > SNES_HEIGHT_EXTENDED;
-			GFX.DoInterlace = Settings.SupportHiRes ? ssi->Interlaced : 0;
-
-			uint8	*rowpix = ssi->Data;
-			uint16	*screen = GFX.Screen;
-
-			for (int y = 0; y < IPPU.RenderedScreenHeight; y++, screen += GFX.RealPPL)
-			{
-				for (int x = 0; x < IPPU.RenderedScreenWidth; x++)
-				{
-					uint32	r, g, b;
-
-					r = *(rowpix++);
-					g = *(rowpix++);
-					b = *(rowpix++);
-
-					if (scaleDownX)
-					{
-						r = (r + *(rowpix++)) >> 1;
-						g = (g + *(rowpix++)) >> 1;
-						b = (b + *(rowpix++)) >> 1;
-
-						if (x + x + 1 >= ssi->Width)
-							break;
-					}
-
-					screen[x] = BUILD_PIXEL(r, g, b);
-				}
-
-				if (scaleDownY)
-				{
-					rowpix += 3 * ssi->Width;
-					if (y + y + 1 >= ssi->Height)
-						break;
-				}
-			}
-
-			// black out what we might have missed
-			for (uint32 y = IPPU.RenderedScreenHeight; y < (uint32) (IMAGE_HEIGHT); y++)
-				memset(GFX.Screen + y * GFX.RealPPL, 0, GFX.RealPPL * 2);
-
-			delete ssi;
-		}
-		else
-		{
-			// couldn't load graphics, so black out the screen instead
-			for (uint32 y = 0; y < (uint32) (IMAGE_HEIGHT); y++)
-				memset(GFX.Screen + y * GFX.RealPPL, 0, GFX.RealPPL * 2);
-		}
-
 		S9xSetSoundMute(FALSE);
 	}
 
@@ -1750,7 +1646,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 	if (local_srtc)				delete [] local_srtc;
 	if (local_rtc_data)			delete [] local_rtc_data;
 	if (local_bsx_data)			delete [] local_bsx_data;
-	if (local_screenshot)		delete [] local_screenshot;
 
 	return (result);
 }

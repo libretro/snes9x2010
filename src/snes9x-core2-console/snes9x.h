@@ -410,8 +410,6 @@ struct SSettings
 
 	bool8	DisplayFrameRate;
 	bool8	DisplayWatchedAddresses;
-	bool8	DisplayPressedKeys;
-	bool8	DisplayMovieFrame;
 	bool8	AutoDisplayMessages;
 	uint32	InitialInfoStringTimeout;
 	uint16	DisplayColor;
@@ -444,16 +442,6 @@ struct SSettings
 	bool8	NetPlayServer;
 	char	ServerName[128];
 	int		Port;
-
-	bool8	MovieTruncate;
-	bool8	MovieNotifyIgnored;
-	bool8	WrongMovieStateProtection;
-	bool8	DumpStreams;
-	int		DumpStreamsMaxFrames;
-
-	bool8	TakeScreenshot;
-	int8	StretchScreenshots;
-	bool8	SnapshotScreenshots;
 
 	bool8	ApplyCheats;
 	bool8	NoPatch;

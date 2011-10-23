@@ -2639,8 +2639,6 @@ void CMemory::InitROM (void)
 	Settings.ForcePAL = FALSE;
 	Settings.ForceNTSC = FALSE;
 
-	Settings.TakeScreenshot = FALSE;
-
 	if (PostRomInitFunc)
 		PostRomInitFunc();
 

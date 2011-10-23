@@ -178,9 +178,6 @@ void snes_init()
    Settings.HDMATimingHack = 100;
    Settings.BlockInvalidVRAMAccessMaster = TRUE;
    Settings.StopEmulation = TRUE;
-   Settings.DumpStreamsMaxFrames = -1;
-   Settings.StretchScreenshots = 0;
-   Settings.SnapshotScreenshots = FALSE;
    Settings.SkipFrames = AUTO_FRAMERATE;
    Settings.TurboSkipFrames = 15;
    Settings.CartAName[0] = 0;
