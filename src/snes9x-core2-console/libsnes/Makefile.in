@@ -1,0 +1,57 @@
+# Fairly good and special-char-safe descriptor of the os being built on.
+OS         = `uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
+BUILDDIR   = .
+
+OBJECTS    = ../apu/apu.o ../apu/SNES_SPC.o ../apu/SNES_SPC_misc.o ../apu/SNES_SPC_state.o ../apu/SPC_DSP.o ../apu/SPC_Filter.o ../bsx.o ../c4.o ../c4emu.o ../cheats.o ../cheats2.o ../clip.o ../conffile.o ../controls.o ../cpu.o ../cpuexec.o ../cpuops.o ../crosshairs.o ../dma.o ../dsp.o ../dsp1.o ../dsp2.o ../dsp3.o ../dsp4.o ../fxinst.o ../fxemu.o ../gfx.o ../globals.o ../logger.o ../memmap.o ../movie.o ../obc1.o ../ppu.o ../reader.o ../sa1.o ../sa1cpu.o ../screenshot.o ../sdd1.o ../sdd1emu.o ../seta.o ../seta010.o ../seta011.o ../seta018.o ../snapshot.o ../snes9x.o ../spc7110.o ../srtc.o ../tile.o libsnes.o memstream.o
+DEFS       = -DMITSHM
+
+CCC        = @CXX@
+CC         = @CC@
+GASM       = @CXX@
+INCLUDES   = -I. -I.. -I../apu/
+
+CCFLAGS    = @S9XFLGS@ @S9XDEFS@ $(DEFS) -fPIC
+CFLAGS     = $(CCFLAGS)
+
+.SUFFIXES: .o .cpp .c .cc .h .m .i .s .obj
+
+all: Makefile configure libsnes.so
+
+Makefile: configure Makefile.in
+	@echo "Makefile is older than configure or in-file. Run configure or touch Makefile."
+	exit 1
+
+configure: configure.ac
+	@echo "configure is older than in-file. Run autoconf or touch configure."
+	exit 1
+
+libsnes.so: $(OBJECTS)
+	$(CCC) -fPIC -shared $(INCLUDES) -o $@ $(OBJECTS) -lm @S9XLIBS@
+
+.cpp.o:
+	$(CCC) $(INCLUDES) -c $(CCFLAGS) $*.cpp -o $@
+
+.c.o:
+	$(CC) $(INCLUDES) -c $(CCFLAGS) $*.c -o $@
+
+.cpp.S:
+	$(GASM) $(INCLUDES) -S $(CCFLAGS) $*.cpp -o $@
+
+.cpp.i:
+	$(GASM) $(INCLUDES) -E $(CCFLAGS) $*.cpp -o $@
+
+.S.o:
+	$(GASM) $(INCLUDES) -c $(CCFLAGS) $*.S -o $@
+
+.S.i:
+	$(GASM) $(INCLUDES) -c -E $(CCFLAGS) $*.S -o $@
+
+.s.o:
+	@echo Compiling $*.s
+	sh-elf-as -little $*.s -o $@
+
+.obj.o:
+	cp $*.obj $*.o
+
+clean:
+	rm -f $(OBJECTS) libsnes.so
