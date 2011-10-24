@@ -250,10 +250,7 @@ static struct
 	bool8				mapped;
 }	pseudopointer[8];
 
-static struct
-{
-	uint16				buttons;
-}	joypad[8];
+uint16_t joypad[8];
 
 static struct
 {
@@ -517,7 +514,7 @@ void S9xUnmapAllControls (void)
 		pseudopointer[i].V_var = 0;
 		pseudopointer[i].mapped = false;
 
-		joypad[i].buttons  = 0;
+		joypad[i]  = 0;
 	}
 
 	for (int i = 0; i < 2; i++)
@@ -1744,17 +1741,17 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 							// so we don't end up hittnig left AND right accidentally.
 							// Note though that the user can still do it on purpose, if Settings.UpAndDown = true.
 							// This is a feature, look up glitches in tLoZ:aLttP to find out why.
-							joypad[cmd.button.joypad.idx].buttons &= ~(SNES_LEFT_MASK | SNES_RIGHT_MASK);
+							joypad[cmd.button.joypad.idx] &= ~(SNES_LEFT_MASK | SNES_RIGHT_MASK);
 						}
 
 						if (cmd.button.joypad.buttons & (SNES_UP_MASK | SNES_DOWN_MASK))
-							joypad[cmd.button.joypad.idx].buttons &= ~(SNES_UP_MASK | SNES_DOWN_MASK); // and ditto for up/down
+							joypad[cmd.button.joypad.idx] &= ~(SNES_UP_MASK | SNES_DOWN_MASK); // and ditto for up/down
 					}
 
-					joypad[cmd.button.joypad.idx].buttons |= r;
+					joypad[cmd.button.joypad.idx] |= r;
 				}
 				else
-					joypad[cmd.button.joypad.idx].buttons &= ~r;
+					joypad[cmd.button.joypad.idx] &= ~r;
 			}
 			return;
 
@@ -2226,8 +2223,8 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 			else
 				r |= neg;
 
-			joypad[cmd.axis.joypad.idx].buttons |= p;
-			joypad[cmd.axis.joypad.idx].buttons &= ~r;
+			joypad[cmd.axis.joypad.idx] |= p;
+			joypad[cmd.axis.joypad.idx] &= ~r;
 
 			return;
 		}
@@ -2522,7 +2519,7 @@ uint8 S9xReadJOYSERn (int n)
 			case JOYPAD5:
 			case JOYPAD6:
 			case JOYPAD7:
-				return (bits | ((joypad[i - JOYPAD0].buttons & 0x8000) ? 1 : 0));
+				return (bits | ((joypad[i - JOYPAD0] & 0x8000) ? 1 : 0));
 
 			case MOUSE0:
 			case MOUSE1:
@@ -2557,7 +2554,7 @@ uint8 S9xReadJOYSERn (int n)
 					if (r >= 16)
 						bits |= 1 << i;
 					else
-						bits |= ((joypad[mp5[n].pads[j] - JOYPAD0].buttons & (0x8000 >> r)) ? 1 : 0) << i;
+						bits |= ((joypad[mp5[n].pads[j] - JOYPAD0] & (0x8000 >> r)) ? 1 : 0) << i;
 				}
 
 				return (bits);
@@ -2576,7 +2573,7 @@ uint8 S9xReadJOYSERn (int n)
 					return (bits | 1);
 				}
 				else
-					return (bits | ((joypad[i - JOYPAD0].buttons & (0x8000 >> read_idx[n][0]++)) ? 1 : 0));
+					return (bits | ((joypad[i - JOYPAD0] & (0x8000 >> read_idx[n][0]++)) ? 1 : 0));
 
 			case MOUSE0:
 			case MOUSE1:
@@ -2658,7 +2655,7 @@ void S9xDoAutoJoypad (void)
 					if (mp5[n].pads[j] == NONE)
 						WRITE_WORD(Memory.FillRAM + 0x4218 + n * 2 + i * 4, 0);
 					else
-						WRITE_WORD(Memory.FillRAM + 0x4218 + n * 2 + i * 4, joypad[mp5[n].pads[j] - JOYPAD0].buttons);
+						WRITE_WORD(Memory.FillRAM + 0x4218 + n * 2 + i * 4, joypad[mp5[n].pads[j] - JOYPAD0]);
 				}
 
 				read_idx[n][FLAG_IOBIT(n) ? 0 : 1] = 16;
@@ -2673,7 +2670,7 @@ void S9xDoAutoJoypad (void)
 			case JOYPAD6:
 			case JOYPAD7:
 				read_idx[n][0] = 16;
-				WRITE_WORD(Memory.FillRAM + 0x4218 + n * 2, joypad[i - JOYPAD0].buttons);
+				WRITE_WORD(Memory.FillRAM + 0x4218 + n * 2, joypad[i - JOYPAD0]);
 				WRITE_WORD(Memory.FillRAM + 0x421c + n * 2, 0);
 				break;
 
@@ -2989,7 +2986,7 @@ void S9xControlPreSaveState (struct SControlSnapshot *s)
 	int	i = 0;
 
 	for (int j = 0; j < 8; j++)
-		COPY(joypad[j].buttons);
+		COPY(joypad[j]);
 
 	for (int j = 0; j < 2; j++)
 	{
@@ -3059,7 +3056,7 @@ void S9xControlPostLoadState (struct SControlSnapshot *s)
 		int	i = 0;
 
 		for (int j = 0; j < 8; j++)
-			COPY(joypad[j].buttons);
+			COPY(joypad[j]);
 
 		for (int j = 0; j < 2; j++)
 		{
