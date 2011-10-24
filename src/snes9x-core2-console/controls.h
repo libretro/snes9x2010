@@ -319,7 +319,6 @@ enum controllers
 };
 
 void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2, int8 id3, int8 id4); // port=0-1
-void S9xGetController (int port, enum controllers *controller, int8 *id1, int8 *id2, int8 *id3, int8 *id4);
 void S9xReportControllers (void);
 
 // Call this when you're done with S9xSetController, or if you change any of the controller Settings.*Master flags. 
@@ -332,12 +331,6 @@ bool S9xVerifyControllers (void);
 
 char * S9xGetCommandName (s9xcommand_t command);
 s9xcommand_t S9xGetCommandT (const char *name);
-
-// Returns an array of strings naming all the snes9x commands.
-// Note that this is only the strings for S9xButtonCommand!
-// The idea is that this would be used for a pull-down list in a config GUI. DO NOT free() the returned value.
-
-const char ** S9xGetAllSnes9xCommands (void);
 
 // Generic mapping functions
 

@@ -437,20 +437,6 @@ static const char	*command_names[LAST_COMMAND + 1] =
 #undef S
 #undef THE_COMMANDS
 
-static string& operator += (string &s, int i)
-{
-	snprintf(buf, sizeof(buf), "%d", i);
-	s.append(buf);
-	return (s);
-}
-
-static string& operator += (string &s, double d)
-{
-	snprintf(buf, sizeof(buf), "%g", d);
-	s.append(buf);
-	return (s);
-}
-
 static void DisplayStateChange (const char *str, bool8 on)
 {
 	snprintf(buf, sizeof(buf), "%s: %s", str, on ? "on":"off");
@@ -809,57 +795,6 @@ bool S9xVerifyControllers (void)
 	}
 
 	return (ret);
-}
-
-void S9xGetController (int port, enum controllers *controller, int8 *id1, int8 *id2, int8 *id3, int8 *id4)
-{
-	int	i;
-
-	*controller = CTL_NONE;
-	*id1 = *id2 = *id3 = *id4 = -1;
-
-	if (port < 0 || port > 1)
-		return;
-
-	switch (i = newcontrollers[port])
-	{
-		case MP5:
-			*controller = CTL_MP5;
-			*id1 = (mp5[port].pads[0] == NONE) ? -1 : mp5[port].pads[0] - JOYPAD0;
-			*id2 = (mp5[port].pads[1] == NONE) ? -1 : mp5[port].pads[1] - JOYPAD0;
-			*id3 = (mp5[port].pads[2] == NONE) ? -1 : mp5[port].pads[2] - JOYPAD0;
-			*id4 = (mp5[port].pads[3] == NONE) ? -1 : mp5[port].pads[3] - JOYPAD0;
-			return;
-
-		case JOYPAD0:
-		case JOYPAD1:
-		case JOYPAD2:
-		case JOYPAD3:
-		case JOYPAD4:
-		case JOYPAD5:
-		case JOYPAD6:
-		case JOYPAD7:
-			*controller = CTL_JOYPAD;
-			*id1 = i - JOYPAD0;
-			return;
-
-		case MOUSE0:
-		case MOUSE1:
-			*controller = CTL_MOUSE;
-			*id1 = i - MOUSE0;
-			return;
-
-		case SUPERSCOPE:
-			*controller = CTL_SUPERSCOPE;
-			*id1 = 1;
-			return;
-
-		case ONE_JUSTIFIER:
-		case TWO_JUSTIFIERS:
-			*controller = CTL_JUSTIFIER;
-			*id1 = i - ONE_JUSTIFIER;
-			return;
-	}
 }
 
 void S9xReportControllers (void)
@@ -1634,11 +1569,6 @@ s9xcommand_t S9xGetCommandT (const char *name)
 	}
 
 	return (cmd);
-}
-
-const char ** S9xGetAllSnes9xCommands (void)
-{
-	return (command_names);
 }
 
 s9xcommand_t S9xGetMapping (uint32 id)

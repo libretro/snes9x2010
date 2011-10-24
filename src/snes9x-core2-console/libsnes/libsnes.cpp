@@ -81,6 +81,56 @@ void snes_reset()
    S9xSoftReset();
 }
 
+#define MAP_BUTTON(id, name) S9xMapButton((id), S9xGetCommandT((name)), false)
+#define MAKE_BUTTON(pad, btn) (((pad)<<4)|(btn))
+
+#define PAD_1 1
+#define PAD_2 2
+#define PAD_3 3
+#define PAD_4 4
+#define PAD_5 5
+
+#define BTN_B SNES_DEVICE_ID_JOYPAD_B
+#define BTN_Y SNES_DEVICE_ID_JOYPAD_Y
+#define BTN_SELECT SNES_DEVICE_ID_JOYPAD_SELECT
+#define BTN_START SNES_DEVICE_ID_JOYPAD_START
+#define BTN_UP SNES_DEVICE_ID_JOYPAD_UP
+#define BTN_DOWN SNES_DEVICE_ID_JOYPAD_DOWN
+#define BTN_LEFT SNES_DEVICE_ID_JOYPAD_LEFT
+#define BTN_RIGHT SNES_DEVICE_ID_JOYPAD_RIGHT
+#define BTN_A SNES_DEVICE_ID_JOYPAD_A
+#define BTN_X SNES_DEVICE_ID_JOYPAD_X
+#define BTN_L SNES_DEVICE_ID_JOYPAD_L
+#define BTN_R SNES_DEVICE_ID_JOYPAD_R
+#define BTN_FIRST BTN_B
+#define BTN_LAST BTN_R
+
+#define MOUSE_X SNES_DEVICE_ID_MOUSE_X
+#define MOUSE_Y SNES_DEVICE_ID_MOUSE_Y
+#define MOUSE_LEFT SNES_DEVICE_ID_MOUSE_LEFT
+#define MOUSE_RIGHT SNES_DEVICE_ID_MOUSE_RIGHT
+#define MOUSE_FIRST MOUSE_X
+#define MOUSE_LAST MOUSE_RIGHT
+
+#define SCOPE_X SNES_DEVICE_ID_SUPER_SCOPE_X
+#define SCOPE_Y SNES_DEVICE_ID_SUPER_SCOPE_Y
+#define SCOPE_TRIGGER SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER
+#define SCOPE_CURSOR SNES_DEVICE_ID_SUPER_SCOPE_CURSOR
+#define SCOPE_TURBO SNES_DEVICE_ID_SUPER_SCOPE_TURBO
+#define SCOPE_PAUSE SNES_DEVICE_ID_SUPER_SCOPE_PAUSE
+#define SCOPE_FIRST SCOPE_X
+#define SCOPE_LAST SCOPE_PAUSE
+
+#define JUSTIFIER_X SNES_DEVICE_ID_JUSTIFIER_X
+#define JUSTIFIER_Y SNES_DEVICE_ID_JUSTIFIER_Y
+#define JUSTIFIER_TRIGGER SNES_DEVICE_ID_JUSTIFIER_TRIGGER
+#define JUSTIFIER_START SNES_DEVICE_ID_JUSTIFIER_START
+#define JUSTIFIER_FIRST JUSTIFIER_X
+#define JUSTIFIER_LAST JUSTIFIER_START
+
+#define BTN_POINTER (BTN_LAST + 1)
+#define BTN_POINTER2 (BTN_POINTER + 1)
+
 static unsigned snes_devices[2];
 void snes_set_controller_port_device(bool in_port, unsigned device)
 {
@@ -113,6 +163,43 @@ void snes_set_controller_port_device(bool in_port, unsigned device)
          break;
       default:
          fprintf(stderr, "[libsnes]: Invalid device!\n");
+   }
+
+   //mapping pointers here
+
+   switch(device)
+   {
+   	case SNES_DEVICE_MOUSE:
+	case SNES_DEVICE_SUPER_SCOPE:
+		S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"), false);
+		S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"), false);
+		break;
+	default:
+		break;
+   }
+
+   //mapping extra buttons here
+
+   switch(device)
+   {
+   	case SNES_DEVICE_MOUSE:
+   		MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_SELECT), "Mouse1 L");
+   		MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_START), "Mouse1 R");
+   		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Mouse2 L");
+   		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Mouse2 R");
+		break;
+	case SNES_DEVICE_SUPER_SCOPE:
+		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Superscope Fire");
+		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Superscope Cursor");
+		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_UP), "Superscope ToggleTurbo");
+		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_DOWN), "Superscope Pause");
+		break;
+	case SNES_DEVICE_JUSTIFIER:
+		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Justifier1 Trigger");
+		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Justifier1 Start");
+		break;
+	default:
+		break;
    }
 }
 
@@ -212,55 +299,6 @@ void snes_init()
    map_buttons();
 }
 
-#define MAP_BUTTON(id, name) S9xMapButton((id), S9xGetCommandT((name)), false)
-#define MAKE_BUTTON(pad, btn) (((pad)<<4)|(btn))
-
-#define PAD_1 1
-#define PAD_2 2
-#define PAD_3 3
-#define PAD_4 4
-#define PAD_5 5
-
-#define BTN_B SNES_DEVICE_ID_JOYPAD_B
-#define BTN_Y SNES_DEVICE_ID_JOYPAD_Y
-#define BTN_SELECT SNES_DEVICE_ID_JOYPAD_SELECT
-#define BTN_START SNES_DEVICE_ID_JOYPAD_START
-#define BTN_UP SNES_DEVICE_ID_JOYPAD_UP
-#define BTN_DOWN SNES_DEVICE_ID_JOYPAD_DOWN
-#define BTN_LEFT SNES_DEVICE_ID_JOYPAD_LEFT
-#define BTN_RIGHT SNES_DEVICE_ID_JOYPAD_RIGHT
-#define BTN_A SNES_DEVICE_ID_JOYPAD_A
-#define BTN_X SNES_DEVICE_ID_JOYPAD_X
-#define BTN_L SNES_DEVICE_ID_JOYPAD_L
-#define BTN_R SNES_DEVICE_ID_JOYPAD_R
-#define BTN_FIRST BTN_B
-#define BTN_LAST BTN_R
-
-#define MOUSE_X SNES_DEVICE_ID_MOUSE_X
-#define MOUSE_Y SNES_DEVICE_ID_MOUSE_Y
-#define MOUSE_LEFT SNES_DEVICE_ID_MOUSE_LEFT
-#define MOUSE_RIGHT SNES_DEVICE_ID_MOUSE_RIGHT
-#define MOUSE_FIRST MOUSE_X
-#define MOUSE_LAST MOUSE_RIGHT
-
-#define SCOPE_X SNES_DEVICE_ID_SUPER_SCOPE_X
-#define SCOPE_Y SNES_DEVICE_ID_SUPER_SCOPE_Y
-#define SCOPE_TRIGGER SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER
-#define SCOPE_CURSOR SNES_DEVICE_ID_SUPER_SCOPE_CURSOR
-#define SCOPE_TURBO SNES_DEVICE_ID_SUPER_SCOPE_TURBO
-#define SCOPE_PAUSE SNES_DEVICE_ID_SUPER_SCOPE_PAUSE
-#define SCOPE_FIRST SCOPE_X
-#define SCOPE_LAST SCOPE_PAUSE
-
-#define JUSTIFIER_X SNES_DEVICE_ID_JUSTIFIER_X
-#define JUSTIFIER_Y SNES_DEVICE_ID_JUSTIFIER_Y
-#define JUSTIFIER_TRIGGER SNES_DEVICE_ID_JUSTIFIER_TRIGGER
-#define JUSTIFIER_START SNES_DEVICE_ID_JUSTIFIER_START
-#define JUSTIFIER_FIRST JUSTIFIER_X
-#define JUSTIFIER_LAST JUSTIFIER_START
-
-#define BTN_POINTER (BTN_LAST + 1)
-#define BTN_POINTER2 (BTN_POINTER + 1)
 
 static void map_buttons()
 {
@@ -268,29 +306,27 @@ static void map_buttons()
    MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_B), "Joypad1 B");
    MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_X), "Joypad1 X");
    MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_Y), "Joypad1 Y");
-   MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_SELECT), "{Joypad1 Select,Mouse1 L}");
-   MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_START), "{Joypad1 Start,Mouse1 R}");
+   MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_SELECT), "Joypad1 Select");
+   MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_START), "Joypad1 Start");
    MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_L), "Joypad1 L");
    MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_R), "Joypad1 R");
    MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_LEFT), "Joypad1 Left");
    MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_RIGHT), "Joypad1 Right");
    MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_UP), "Joypad1 Up");
    MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_DOWN), "Joypad1 Down");
-   S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"), false);
-   S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"), false);
 
    MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_A), "Joypad2 A");
    MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_B), "Joypad2 B");
    MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_X), "Joypad2 X");
    MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_Y), "Joypad2 Y");
-   MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "{Joypad2 Select,Mouse2 L,Superscope Fire,Justifier1 Trigger}");
-   MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "{Joypad2 Start,Mouse2 R,Superscope Cursor,Justifier1 Start}");
+   MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Joypad2 Select");
+   MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Joypad2 Start");
    MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_L), "Joypad2 L");
    MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_R), "Joypad2 R");
    MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_LEFT), "Joypad2 Left");
    MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_RIGHT), "Joypad2 Right");
-   MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_UP), "{Joypad2 Up,Superscope ToggleTurbo}");
-   MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_DOWN), "{Joypad2 Down,Superscope Pause}");
+   MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_UP), "Joypad2 Up");
+   MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_DOWN), "Joypad2 Down");
 
    MAP_BUTTON(MAKE_BUTTON(PAD_3, BTN_A), "Joypad3 A");
    MAP_BUTTON(MAKE_BUTTON(PAD_3, BTN_B), "Joypad3 B");
