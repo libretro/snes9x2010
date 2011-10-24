@@ -1727,29 +1727,10 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 		case S9xButtonJoypad:
 			{
-				uint16	r;
-
-				r = cmd.button.joypad.buttons;
+				uint16	r = cmd.button.joypad.buttons;
 
 				if (data1)
-				{
-					if (!Settings.UpAndDown) // if up+down isn't allowed
-					{
-						if (cmd.button.joypad.buttons & (SNES_LEFT_MASK | SNES_RIGHT_MASK))
-						{
-							// if we're pressing left or right, then unpress and unturbo them both first
-							// so we don't end up hittnig left AND right accidentally.
-							// Note though that the user can still do it on purpose, if Settings.UpAndDown = true.
-							// This is a feature, look up glitches in tLoZ:aLttP to find out why.
-							joypad[cmd.button.joypad.idx] &= ~(SNES_LEFT_MASK | SNES_RIGHT_MASK);
-						}
-
-						if (cmd.button.joypad.buttons & (SNES_UP_MASK | SNES_DOWN_MASK))
-							joypad[cmd.button.joypad.idx] &= ~(SNES_UP_MASK | SNES_DOWN_MASK); // and ditto for up/down
-					}
-
 					joypad[cmd.button.joypad.idx] |= r;
-				}
 				else
 					joypad[cmd.button.joypad.idx] &= ~r;
 			}

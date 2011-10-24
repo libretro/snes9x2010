@@ -432,7 +432,6 @@ struct SSettings
 	bool8	NoPatch;
 	int32	AutoSaveDelay;
 	bool8	DontSaveOopsSnapshot;
-	bool8	UpAndDown;
 };
 
 struct SSNESGameFixes

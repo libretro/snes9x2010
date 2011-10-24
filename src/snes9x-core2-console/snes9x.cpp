@@ -427,7 +427,6 @@ void S9xLoadConfigFiles (char **argv, int argc)
 	Settings.SuperScopeMaster           =  conf.GetBool("Controls::SuperscopeMaster",          true);
 	Settings.JustifierMaster            =  conf.GetBool("Controls::JustifierMaster",           true);
 	Settings.MultiPlayer5Master         =  conf.GetBool("Controls::MP5Master",                 true);
-	Settings.UpAndDown                  =  conf.GetBool("Controls::AllowLeftRight",            false);
 
 	if (conf.Exists("Controls::Port1"))
 		parse_controller_spec(0, conf.GetString("Controls::Port1"));
@@ -785,9 +784,6 @@ char * S9xParseArgs (char **argv, int argc)
 				else
 					S9xUsage();
 			}
-			else
-			if (!strcasecmp(argv[i], "-upanddown"))
-				Settings.UpAndDown = TRUE;
 			else
 			if (!strcasecmp(argv[i], "-conf"))
 			{
