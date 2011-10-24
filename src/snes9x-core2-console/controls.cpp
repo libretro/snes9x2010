@@ -174,9 +174,6 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
-#include <map>
-#include <set>
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -286,8 +283,7 @@ static struct
 	int8				pads[4];
 }	mp5[2];
 
-static set<uint32>			pollmap[NUMCTLS + 1];
-static map<uint32, s9xcommand_t>	keymap;
+static s9xcommand_t			keymap[1024];
 static uint8				turbo_time;
 static uint8				pseudobuttons[256];
 static bool8				FLAG_LATCH = FALSE;
@@ -498,11 +494,6 @@ void S9xControlsSoftReset (void)
 void S9xUnmapAllControls (void)
 {
 	S9xControlsReset();
-
-	keymap.clear();
-
-	for (int i = 0; i < NUMCTLS + 1; i++)
-		pollmap[i].clear();
 
 	for (int i = 0; i < 8; i++)
 	{
@@ -1383,14 +1374,7 @@ s9xcommand_t S9xGetCommandT (const char *name)
 
 s9xcommand_t S9xGetMapping (uint32 id)
 {
-	if (keymap.count(id) == 0)
-	{
-		s9xcommand_t	cmd;
-		cmd.type = S9xNoMapping;
-		return (cmd);
-	}
-	else
-		return (keymap[id]);
+	return (keymap[id]);
 }
 
 static const char * maptypename (int t)
@@ -1407,9 +1391,6 @@ static const char * maptypename (int t)
 
 void S9xUnmapID (uint32 id)
 {
-	for (int i = 0; i < NUMCTLS + 1; i++)
-		pollmap[i].erase(id);
-
 	if (mouse[0].ID     == id)	mouse[0].ID     = InvalidControlID;
 	if (mouse[1].ID     == id)	mouse[1].ID     = InvalidControlID;
 	if (superscope.ID   == id)	superscope.ID   = InvalidControlID;
@@ -1418,8 +1399,6 @@ void S9xUnmapID (uint32 id)
 
 	if (id >= PseudoPointerBase)
 		pseudopointer[id - PseudoPointerBase].mapped = false;
-
-	keymap.erase(id);
 }
 
 bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll)
@@ -1493,17 +1472,11 @@ bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll)
 
 	keymap[id] = mapping;
 
-	if (t >= 0)
-		pollmap[t].insert(id);
-
 	return (true);
 }
 
 void S9xReportButton (uint32 id, bool pressed)
 {
-	if (keymap.count(id) == 0)
-		return;
-
 	if (keymap[id].type == S9xNoMapping)
 		return;
 
@@ -1585,29 +1558,6 @@ bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll)
 
 	S9xUnmapID(id);
 
-	if (poll)
-	{
-		if (id >= PseudoPointerBase)
-			fprintf(stderr, "INFO: Ignoring attempt to set pseudo-pointer #%d to polling\n", id - PseudoPointerBase);
-		else
-		{
-			switch (mapping.type)
-			{
-				case S9xPointer:
-					if (mapping.pointer.aim_mouse0    )	pollmap[MOUSE0        ].insert(id);
-					if (mapping.pointer.aim_mouse1    )	pollmap[MOUSE1        ].insert(id);
-					if (mapping.pointer.aim_scope     )	pollmap[SUPERSCOPE    ].insert(id);
-					if (mapping.pointer.aim_justifier0)	pollmap[ONE_JUSTIFIER ].insert(id);
-					if (mapping.pointer.aim_justifier1)	pollmap[TWO_JUSTIFIERS].insert(id);
-					break;
-
-				case S9xPointerPort:
-					pollmap[POLL_ALL].insert(id);
-					break;
-			}
-		}
-	}
-
 	if (id >= PseudoPointerBase)
 		pseudopointer[id - PseudoPointerBase].mapped = true;
 
@@ -1624,9 +1574,6 @@ bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll)
 
 void S9xReportPointer (uint32 id, int16 x, int16 y)
 {
-	if (keymap.count(id) == 0)
-		return;
-
 	if (keymap[id].type == S9xNoMapping)
 		return;
 
@@ -1693,17 +1640,11 @@ bool S9xMapAxis (uint32 id, s9xcommand_t mapping, bool poll)
 
 	keymap[id] = mapping;
 
-	if (t >= 0)
-		pollmap[t].insert(id);
-
 	return (true);
 }
 
 void S9xReportAxis (uint32 id, int16 value)
 {
-	if (keymap.count(id) == 0)
-		return;
-
 	if (keymap[id].type == S9xNoMapping)
 		return;
 
@@ -2293,47 +2234,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 	}
 }
 
-static void do_polling (int mp)
-{
-	set<uint32>::iterator	itr;
-
-	if (pollmap[mp].empty())
-		return;
-
-	for (itr = pollmap[mp].begin(); itr != pollmap[mp].end(); itr++)
-	{
-		switch (maptype(keymap[*itr].type))
-		{
-			case MAP_BUTTON:
-			{
-				bool	pressed;
-				if (S9xPollButton(*itr, &pressed))
-					S9xReportButton(*itr, pressed);
-				break;
-			}
-
-			case MAP_AXIS:
-			{
-				int16	value;
-				if (S9xPollAxis(*itr, &value))
-					S9xReportAxis(*itr, value);
-				break;
-			}
-
-			case MAP_POINTER:
-			{
-				int16	x, y;
-				if (S9xPollPointer(*itr, &x, &y))
-					S9xReportPointer(*itr, x, y);
-				break;
-			}
-
-			default:
-				break;
-		}
-	}
-}
-
 static void UpdatePolledMouse (int i)
 {
 	int16	j;
@@ -2410,15 +2310,6 @@ void S9xSetJoypadLatch (bool latch)
 			switch (i = curcontrollers[n])
 			{
 				case MP5:
-					for (int j = 0, k = mp5[n].pads[j]; j < 4; k = mp5[n].pads[++j])
-					{
-						if (k == NONE)
-							continue;
-						do_polling(k);
-					}
-
-					break;
-
 				case JOYPAD0:
 				case JOYPAD1:
 				case JOYPAD2:
@@ -2427,12 +2318,9 @@ void S9xSetJoypadLatch (bool latch)
 				case JOYPAD5:
 				case JOYPAD6:
 				case JOYPAD7:
-					do_polling(i);
 					break;
-
 				case MOUSE0:
 				case MOUSE1:
-					do_polling(i);
 					UpdatePolledMouse(i);
 					break;
 
@@ -2455,16 +2343,12 @@ void S9xSetJoypadLatch (bool latch)
 					if (!(superscope.phys_buttons & SUPERSCOPE_TURBO))
 						superscope.next_buttons &= ~(SUPERSCOPE_CURSOR | SUPERSCOPE_FIRE);
 
-					do_polling(i);
 					break;
 
 				case TWO_JUSTIFIERS:
-					do_polling(TWO_JUSTIFIERS);
 					// fall through
-
 				case ONE_JUSTIFIER:
 					justifier.buttons ^= JUSTIFIER_SELECT;
-					do_polling(ONE_JUSTIFIER);
 					break;
 
 				default:
@@ -2816,8 +2700,6 @@ void S9xControlEOF (void)
 
 		S9xReportPointer(PseudoPointerBase + n, pseudopointer[n].x, pseudopointer[n].y);
 	}
-
-	do_polling(POLL_ALL);
 
 	pad_read_last = pad_read;
 	pad_read      = false;
