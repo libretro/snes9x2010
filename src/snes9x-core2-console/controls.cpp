@@ -233,13 +233,6 @@ using namespace	std;
 bool8	pad_read = 0, pad_read_last = 0;
 uint8	read_idx[2 /* ports */][2 /* per port */];
 
-struct exemulti
-{
-	int32				pos;
-	bool8				data1;
-	s9xcommand_t		*script;
-};
-
 struct crosshair
 {
 	uint8				set;
@@ -300,10 +293,8 @@ static struct
 	int8				pads[4];
 }	mp5[2];
 
-static set<struct exemulti *>		exemultis;
 static set<uint32>			pollmap[NUMCTLS + 1];
 static map<uint32, s9xcommand_t>	keymap;
-static vector<s9xcommand_t *>		multis;
 static uint8				turbo_time;
 static uint8				pseudobuttons[256];
 static bool8				FLAG_LATCH = FALSE;
@@ -477,7 +468,6 @@ static int maptype (int t)
 		case S9xButtonCommand:
 		case S9xButtonPseudopointer:
 		case S9xButtonPort:
-		case S9xButtonMulti:
 			return (MAP_BUTTON);
 
 		case S9xAxisJoypad:
@@ -505,10 +495,6 @@ void S9xControlsReset (void)
 
 void S9xControlsSoftReset (void)
 {
-	for (set<struct exemulti *>::iterator it = exemultis.begin(); it != exemultis.end(); it++)
-		delete *it;
-	exemultis.clear();
-
 	for (int i = 0; i < 2; i++)
 		for (int j = 0; j < 2; j++)
 			read_idx[i][j]=0;
@@ -521,10 +507,6 @@ void S9xUnmapAllControls (void)
 	S9xControlsReset();
 
 	keymap.clear();
-
-	for (int i = 0; i < (int) multis.size(); i++)
-		free(multis[i]);
-	multis.clear();
 
 	for (int i = 0; i < NUMCTLS + 1; i++)
 		pollmap[i].clear();
@@ -1038,40 +1020,6 @@ char * S9xGetCommandName (s9xcommand_t command)
 
 		case S9xNoMapping:
 			return (strdup("None"));
-
-		case S9xButtonMulti:
-		{
-			if (command.button.multi_idx >= (int) multis.size())
-				return (strdup("None"));
-
-			s = "{";
-			if (multis[command.button.multi_idx]->multi_press)	s = "+{";
-
-			bool	sep = false;
-
-			for (s9xcommand_t *m = multis[command.button.multi_idx]; m->multi_press != 3; m++)
-			{
-				if (m->type == S9xNoMapping)
-				{
-					s += ";";
-					sep = false;
-				}
-				else
-				{
-					if (sep)					s += ",";
-					if (m->multi_press == 1)	s += "+";
-					if (m->multi_press == 2)	s += "-";
-
-					s += S9xGetCommandName(*m);
-					sep = true;
-				}
-			}
-
-			s += "}";
-
-			break;
-		}
-
 		default:
 			return (strdup("BUG: Unknown command type"));
 	}
@@ -1442,123 +1390,6 @@ s9xcommand_t S9xGetCommandT (const char *name)
 		cmd.type = S9xAxisPseudobuttons;
 	}
 	else
-	if (!strncmp(name, "MULTI#", 6))
-	{
-		i = strtol(name + 6, (char **) &s, 10);
-		if (s != NULL && *s != '\0')
-			return (cmd);
-		if (i >= (int) multis.size())
-			return (cmd);
-
-		cmd.button.multi_idx = i;
-		cmd.type = S9xButtonMulti;
-	}
-	else
-	if (((name[0] == '+' && name[1] == '{') || name[0] == '{') && name[strlen(name) - 1] == '}')
-	{
-		if (multis.size() > 2147483640)
-		{
-			fprintf(stderr, "Too many multis!");
-			return (cmd);
-		}
-
-		string	x;
-		int		n;
-
-		j = 2;
-		for (i = (name[0] == '+') ? 2 : 1; name[i] != '\0'; i++)
-		{
-			if (name[i] == ',' || name[i] == ';')
-			{
-				if (name[i] == ';')
-					j++;
-				if (++j > 2147483640)
-				{
-					fprintf(stderr, "Multi too long!");
-					return (cmd);
-				}
-			}
-
-			if (name[i] == '{')
-				return (cmd);
-		}
-
-		s9xcommand_t	*c = (s9xcommand_t *) calloc(j, sizeof(s9xcommand_t));
-		if (c == NULL)
-		{
-			perror("malloc error while parsing multi");
-			return (cmd);
-		}
-
-		n = 0;
-		i = (name[0] == '+') ? 2 : 1;
-
-		do
-		{
-			if (name[i] == ';')
-			{
-				c[n].type         = S9xNoMapping;
-				c[n].multi_press  = 0;
-				c[n].button_norpt = 0;
-
-				j = i;
-			}
-			else
-			if (name[i] == ',')
-			{
-				free(c);
-				return (cmd);
-			}
-			else
-			{
-				uint8	press = 0;
-
-				if (name[0] == '+')
-				{
-					if (name[i] == '+')
-						press = 1;
-					else
-					if (name[i] == '-')
-						press = 2;
-					else
-					{
-						free(c);
-						return (cmd);
-					}
-
-					i++;
-				}
-
-				for (j = i; name[j] != ';' && name[j] != ',' && name[j] != '}'; j++) ;
-
-				x.assign(name + i, j - i);
-				c[n] = S9xGetCommandT(x.c_str());
-				c[n].multi_press = press;
-
-				if (maptype(c[n].type) != MAP_BUTTON)
-				{
-					free(c);
-					return (cmd);
-				}
-
-				if (name[j] == ';')
-					j--;
-			}
-
-			i = j + 1;
-			n++;
-		}
-		while (name[i] != '\0');
-
-		c[n].type        = S9xNoMapping;
-		c[n].multi_press = 3;
-
-		multis.push_back(c);
-
-		cmd.button.multi_idx = multis.size() - 1;
-		cmd.type = S9xButtonMulti;
-	}
-	else
 	{
 		i = findstr(name, command_names, LAST_COMMAND);
 		if (i < 0)
@@ -1673,7 +1504,6 @@ bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll)
 				case S9xButtonCommand:
 				case S9xButtonPseudopointer:
 				case S9xButtonPort:
-				case S9xButtonMulti:
 					t = POLL_ALL;
 					break;
 			}
@@ -1905,27 +1735,6 @@ void S9xReportAxis (uint32 id, int16 value)
 	}
 
 	S9xApplyCommand(keymap[id], value, 0);
-}
-
-static int32 ApplyMulti (s9xcommand_t *multi, int32 pos, int16 data1)
-{
-	while (1)
-	{
-		if (multi[pos].multi_press == 3)
-			return (-1);
-
-		if (multi[pos].type == S9xNoMapping)
-			break;
-
-		if (multi[pos].multi_press)
-			S9xApplyCommand(multi[pos], multi[pos].multi_press == 1, 0);
-		else
-			S9xApplyCommand(multi[pos], data1, 0);
-
-		pos++;
-	}
-
-	return (pos + 1);
 }
 
 void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
@@ -2569,26 +2378,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 		case S9xPointerPort:
 			S9xHandlePortCommand(cmd, data1, data2);
 			return;
-
-		case S9xButtonMulti:
-			if (cmd.button.multi_idx >= (int) multis.size())
-				return;
-
-			if (multis[cmd.button.multi_idx]->multi_press && !data1)
-				return;
-
-			i = ApplyMulti(multis[cmd.button.multi_idx], 0, data1);
-			if (i >= 0)
-			{
-				struct exemulti	*e = new struct exemulti;
-				e->pos    = i;
-				e->data1  = data1 != 0;
-				e->script = multis[cmd.button.multi_idx];
-				exemultis.insert(e);
-			}
-
-			return;
-
 		default:
 			fprintf(stderr, "WARNING: Unknown command type %d\n", cmd.type);
 			return;
@@ -3138,23 +2927,6 @@ void S9xControlEOF (void)
 		}
 
 		S9xReportPointer(PseudoPointerBase + n, pseudopointer[n].x, pseudopointer[n].y);
-	}
-
-	set<struct exemulti *>::iterator	it, jt;
-
-	for (it = exemultis.begin(); it != exemultis.end(); it++)
-	{
-		i = ApplyMulti((*it)->script, (*it)->pos, (*it)->data1);
-
-		if (i >= 0)
-			(*it)->pos = i;
-		else
-		{
-			jt = it;
-			it--;
-			delete *jt;
-			exemultis.erase(jt);
-		}
 	}
 
 	do_polling(POLL_ALL);

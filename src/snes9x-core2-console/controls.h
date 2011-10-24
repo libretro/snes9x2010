@@ -184,7 +184,6 @@
 #define S9xButtonSuperscope		3
 #define S9xButtonJustifier		4
 #define S9xButtonCommand		5
-#define S9xButtonMulti			6
 #define S9xAxisJoypad			7
 #define S9xPointer				8
 
