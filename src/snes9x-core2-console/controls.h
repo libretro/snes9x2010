@@ -220,9 +220,6 @@ typedef struct
 			struct
 			{
 				uint8	idx:3;				// Pad number 0-7
-				uint8	toggle:1;			// If set, toggle turbo/sticky for the button
-				uint8	turbo:1;			// If set, be a 'turbo' button
-				uint8	sticky:1;			// If set, toggle button state (on/turbo or off) when pressed and do nothing on release
 				uint16	buttons;			// Which buttons to actuate. Use SNES_*_MASK constants from snes9x.h
 			}	joypad;
 
