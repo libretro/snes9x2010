@@ -641,7 +641,6 @@ bool S9xPollButton(unsigned int, bool*) { return false; }
 void S9xToggleSoundChannel(int) {}
 const char* S9xGetFilenameInc(const char* in, s9x_getdirtype) { return NULL; }
 const char* S9xBasename(const char* in) { return in; }
-bool8 S9xInitUpdate() { return TRUE; }
 bool8 S9xOpenSoundDevice() { return TRUE; }
 void S9xMessage(int, int, const char*) {}
 bool S9xPollAxis(unsigned int, short*) { return FALSE; }

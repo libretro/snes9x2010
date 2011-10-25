@@ -315,12 +315,6 @@ void S9xStartScreenRefresh (void)
 			GFX.InterlaceFrame = 1;
 		else
 		{
-			if (!S9xInitUpdate())
-			{
-				IPPU.RenderThisFrame = FALSE;
-				return;
-			}
-
 			GFX.InterlaceFrame = 0;
 			if (GFX.DoInterlace)
 				GFX.DoInterlace--;
@@ -395,7 +389,6 @@ void S9xEndScreenRefresh (void)
 		if (GFX.DoInterlace && GFX.InterlaceFrame == 0)
 		{
 			S9xControlEOF();
-			S9xContinueUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
 		}
 		else
 		{
