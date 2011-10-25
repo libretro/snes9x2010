@@ -179,7 +179,7 @@
 #define _SNES9X_H_
 
 #ifndef VERSION
-#define VERSION	"1.53"
+#define VERSION	"Next"
 #endif
 
 #include "port.h"
@@ -232,8 +232,13 @@
 #define SNES_WIDTH		256
 #define SNES_HEIGHT		224
 #define SNES_HEIGHT_EXTENDED	239
-#define MAX_SNES_WIDTH		(SNES_WIDTH * 2)
-#define MAX_SNES_HEIGHT		(SNES_HEIGHT_EXTENDED * 2)
+
+//MAX_SNES_WIDTH = SNES_WIDTH * 2
+#define MAX_SNES_WIDTH		512
+
+//MAX_SNES_HEIGHT = SNES_HEIGHT_EXTENDED * 2
+#define MAX_SNES_HEIGHT		478
+
 #define IMAGE_WIDTH		MAX_SNES_WIDTH
 #define IMAGE_HEIGHT		MAX_SNES_HEIGHT
 
@@ -249,7 +254,8 @@
 #define TWO_CYCLES		12
 #define	ONE_DOT_CYCLE		4
 
-#define SNES_CYCLES_PER_SCANLINE	(SNES_HCOUNTER_MAX * ONE_DOT_CYCLE)
+//SNES_CYCLES_PER_SCANLINE = SNES_HCOUNTER_MAX * ONE_DOT_CYCLE
+#define SNES_CYCLES_PER_SCANLINE	1364
 #define SNES_SCANLINE_TIME		(SNES_CYCLES_PER_SCANLINE / NTSC_MASTER_CLOCK)
 
 #define SNES_WRAM_REFRESH_HC_v1		530
@@ -260,20 +266,22 @@
 #define	SNES_HDMA_START_HC		1106					// FIXME: not true
 #define	SNES_HBLANK_END_HC		4					// H=1
 #define	SNES_HDMA_INIT_HC		20					// FIXME: not true
-#define	SNES_RENDER_START_HC		(48 * ONE_DOT_CYCLE)			// FIXME: Snes9x renders a line at a time.
 
-#define SNES_TR_MASK			(1 <<  4)
-#define SNES_TL_MASK			(1 <<  5)
-#define SNES_X_MASK			(1 <<  6)
-#define SNES_A_MASK			(1 <<  7)
-#define SNES_RIGHT_MASK			(1 <<  8)
-#define SNES_LEFT_MASK			(1 <<  9)
-#define SNES_DOWN_MASK			(1 << 10)
-#define SNES_UP_MASK			(1 << 11)
-#define SNES_START_MASK			(1 << 12)
-#define SNES_SELECT_MASK		(1 << 13)
-#define SNES_Y_MASK			(1 << 14)
-#define SNES_B_MASK			(1 << 15)
+//SNES_RENDER_START_HC = 48 * ONE_DOT_CYCLE
+#define	SNES_RENDER_START_HC		192					// FIXME: Snes9x renders a line at a time.
+
+#define SNES_TR_MASK			16
+#define SNES_TL_MASK			32
+#define SNES_X_MASK			64
+#define SNES_A_MASK			128
+#define SNES_RIGHT_MASK			256
+#define SNES_LEFT_MASK			512
+#define SNES_DOWN_MASK			1024
+#define SNES_UP_MASK			2048
+#define SNES_START_MASK			4096
+#define SNES_SELECT_MASK		8192
+#define SNES_Y_MASK			16384
+#define SNES_B_MASK			32768
 
 #define DEBUG_MODE_FLAG			(1 <<  0)	// debugger
 #define TRACE_FLAG			(1 <<  1)	// debugger
@@ -283,7 +291,6 @@
 #define IRQ_FLAG			(1 << 11)	// CPU
 #define SCAN_KEYS_FLAG			(1 <<  4)	// CPU
 #define HALTED_FLAG			(1 << 12)	// APU
-#define FRAME_ADVANCE_FLAG		(1 <<  9)
 
 #define ROM_NAME_LEN	23
 #define AUTO_FRAMERATE	200
@@ -412,9 +419,7 @@ struct SSettings
 	bool8	DisableHDMA;
 	int32	HDMATimingHack;
 
-	bool8	ForcedPause;
 	bool8	Paused;
-	bool8	StopEmulation;
 
 	uint32	SkipFrames;
 	uint32	TurboSkipFrames;
@@ -430,18 +435,6 @@ struct SSNESGameFixes
 {
 	uint8	SRAMInitialValue;
 	uint8	Uniracers;
-};
-
-enum
-{
-	PAUSE_NETPLAY_CONNECT		= (1 << 0),
-	PAUSE_TOGGLE_FULL_SCREEN	= (1 << 1),
-	PAUSE_EXIT			= (1 << 2),
-	PAUSE_MENU			= (1 << 3),
-	PAUSE_INACTIVE_WINDOW		= (1 << 4),
-	PAUSE_WINDOW_ICONISED		= (1 << 5),
-	PAUSE_RESTORE_GUI		= (1 << 6),
-	PAUSE_FREEZE_FILE		= (1 << 7)
 };
 
 void S9xSetPause(uint32);
