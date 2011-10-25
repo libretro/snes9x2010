@@ -381,8 +381,7 @@ static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
 	S(ToggleBG3), \
 	S(ToggleEmuTurbo), \
 	S(ToggleHDMA), \
-	S(ToggleSprites), \
-	S(ToggleTransparency) \
+	S(ToggleSprites) \
 
 #define S(x)	x
 
@@ -1380,11 +1379,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 						Settings.TurboMode = !Settings.TurboMode;
 						DisplayStateChange("Turbo mode", Settings.TurboMode);
 						break;
-
-					case ClipWindows:
-						Settings.DisableGraphicWindows = !Settings.DisableGraphicWindows;
-						DisplayStateChange("Graphic clip windows", !Settings.DisableGraphicWindows);
-						break;
 					case IncFrameRate:
 						if (Settings.SkipFrames == AUTO_FRAMERATE)
 							Settings.SkipFrames = 1;
@@ -1600,11 +1594,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 					case ToggleHDMA:
 						Settings.DisableHDMA = !Settings.DisableHDMA;
 						DisplayStateChange("HDMA emulation", !Settings.DisableHDMA);
-						break;
-
-					case ToggleTransparency:
-						Settings.Transparency = !Settings.Transparency;
-						DisplayStateChange("Transparency effects", Settings.Transparency);
 						break;
 					case SwapJoypads:
 						if ((curcontrollers[0] != NONE && !(curcontrollers[0] >= JOYPAD0 && curcontrollers[0] <= JOYPAD7)))

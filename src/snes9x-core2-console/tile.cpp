@@ -577,19 +577,12 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	GFX.DrawMode7BG1Nomath    = DM7BG1[0];
 	GFX.DrawMode7BG2Nomath    = DM7BG2[0];
 
-	int	i;
-
-	if (!Settings.Transparency)
-		i = 0;
-	else
+	int	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
+	if (Memory.FillRAM[0x2131] & 0x40)
 	{
-		i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
-		if (Memory.FillRAM[0x2131] & 0x40)
-		{
+		i++;
+		if (Memory.FillRAM[0x2130] & 2)
 			i++;
-			if (Memory.FillRAM[0x2130] & 2)
-				i++;
-		}
 	}
 
 	GFX.DrawTileMath        = DT[i];

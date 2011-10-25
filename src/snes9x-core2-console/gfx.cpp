@@ -215,7 +215,7 @@ bool8 S9xGraphicsInit (void)
 	GFX.X2   = (uint16 *) malloc(sizeof(uint16) * 0x10000);
 	GFX.ZERO = (uint16 *) malloc(sizeof(uint16) * 0x10000);
 
-	GFX.ScreenSize = GFX.Pitch / 2 * SNES_HEIGHT_EXTENDED * (Settings.SupportHiRes ? 2 : 1);
+	GFX.ScreenSize = GFX.Pitch / 2 * SNES_HEIGHT_EXTENDED * 2;
 	GFX.SubScreen  = (uint16 *) malloc(GFX.ScreenSize * sizeof(uint16));
 	GFX.ZBuffer    = (uint8 *)  malloc(GFX.ScreenSize);
 	GFX.SubZBuffer = (uint8 *)  malloc(GFX.ScreenSize);
@@ -328,7 +328,7 @@ void S9xStartScreenRefresh (void)
 				IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
 			}
 
-			if (Settings.SupportHiRes && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
+			if ((PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
 			{
 				GFX.RealPPL = GFX.Pitch >> 1;
 				IPPU.DoubleWidthPixels = TRUE;
@@ -1807,41 +1807,38 @@ void S9xUpdateScreen (void)
 			PPU.RecomputeClipWindows = FALSE;
 		}
 
-		if (Settings.SupportHiRes)
+		if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
 		{
-			if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires || IPPU.Interlace || IPPU.InterlaceOBJ))
+			// Have to back out of the regular speed hack
+			for (register uint32 y = 0; y < GFX.StartY; y++)
 			{
-				// Have to back out of the regular speed hack
-				for (register uint32 y = 0; y < GFX.StartY; y++)
-				{
-					register uint16	*p = GFX.Screen + y * GFX.PPL + 255;
-					register uint16	*q = GFX.Screen + y * GFX.PPL + 510;
+				register uint16	*p = GFX.Screen + y * GFX.PPL + 255;
+				register uint16	*q = GFX.Screen + y * GFX.PPL + 510;
 
-					for (register int x = 255; x >= 0; x--, p--, q -= 2)
-						*q = *(q + 1) = *p;
-				}
-
-				IPPU.DoubleWidthPixels = TRUE;
-				IPPU.RenderedScreenWidth = 512;
+				for (register int x = 255; x >= 0; x--, p--, q -= 2)
+					*q = *(q + 1) = *p;
 			}
 
-			if (!IPPU.DoubleHeightPixels && (IPPU.Interlace || IPPU.InterlaceOBJ))
-			{
-				IPPU.DoubleHeightPixels = TRUE;
-				IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
-				GFX.PPL = GFX.RealPPL << 1;
-				GFX.DoInterlace = 2;
+			IPPU.DoubleWidthPixels = TRUE;
+			IPPU.RenderedScreenWidth = 512;
+		}
 
-				for (register int32 y = (int32) GFX.StartY - 1; y >= 0; y--)
-					memmove(GFX.Screen + y * GFX.PPL, GFX.Screen + y * GFX.RealPPL, IPPU.RenderedScreenWidth * sizeof(uint16));
-			}
+		if (!IPPU.DoubleHeightPixels && (IPPU.Interlace || IPPU.InterlaceOBJ))
+		{
+			IPPU.DoubleHeightPixels = TRUE;
+			IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
+			GFX.PPL = GFX.RealPPL << 1;
+			GFX.DoInterlace = 2;
+
+			for (register int32 y = (int32) GFX.StartY - 1; y >= 0; y--)
+				memmove(GFX.Screen + y * GFX.PPL, GFX.Screen + y * GFX.RealPPL, IPPU.RenderedScreenWidth * sizeof(uint16));
 		}
 
 		if ((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2131] & 0x3f))
 			GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed], IPPU.XB[PPU.FixedColourGreen], IPPU.XB[PPU.FixedColourBlue]);
 
 		if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
-			((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
+				((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
 			// If hires (Mode 5/6 or pseudo-hires) or math is to be done
 			// involving the subscreen, then we need to render the subscreen...
 			RenderScreen(TRUE);

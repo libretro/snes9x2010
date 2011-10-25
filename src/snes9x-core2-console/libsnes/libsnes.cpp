@@ -255,8 +255,6 @@ void snes_init()
    Settings.FrameTimeNTSC = 16667;
    Settings.SoundPlaybackRate = 32000;
    Settings.SoundInputRate = 32000;
-   Settings.SupportHiRes = TRUE;
-   Settings.Transparency = TRUE;
    Settings.AutoDisplayMessages = TRUE;
    Settings.InitialInfoStringTimeout = 120;
    Settings.HDMATimingHack = 100;

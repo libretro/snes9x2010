@@ -234,8 +234,8 @@
 #define SNES_HEIGHT_EXTENDED	239
 #define MAX_SNES_WIDTH		(SNES_WIDTH * 2)
 #define MAX_SNES_HEIGHT		(SNES_HEIGHT_EXTENDED * 2)
-#define IMAGE_WIDTH		(Settings.SupportHiRes ? MAX_SNES_WIDTH : SNES_WIDTH)
-#define IMAGE_HEIGHT		(Settings.SupportHiRes ? MAX_SNES_HEIGHT : SNES_HEIGHT_EXTENDED)
+#define IMAGE_WIDTH		MAX_SNES_WIDTH
+#define IMAGE_HEIGHT		MAX_SNES_HEIGHT
 
 #define	NTSC_MASTER_CLOCK	21477272.0
 #define	PAL_MASTER_CLOCK	21281370.0
@@ -393,10 +393,7 @@ struct SSettings
 	uint32	SoundInputRate;
 	bool8	Mute;
 
-	bool8	SupportHiRes;
-	bool8	Transparency;
 	uint8	BG_Forced;
-	bool8	DisableGraphicWindows;
 
 	bool8	DisplayFrameRate;
 	bool8	DisplayWatchedAddresses;
