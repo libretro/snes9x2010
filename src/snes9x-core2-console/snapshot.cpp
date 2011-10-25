@@ -1567,13 +1567,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 
 		S9xControlPostLoadState(&ctl_snap);
 
-	#ifndef ZSNES_FX
-		if (local_superfx)
-		{
-			GSU.pfPlot = fx_PlotTable[GSU.vMode];
-			GSU.pfRpix = fx_PlotTable[GSU.vMode + 5];
-		}
-	#else
+	#ifdef ZSNES_FX
 		if (Settings.SuperFX)
 			S9xSuperFXPostLoadState();
 	#endif
