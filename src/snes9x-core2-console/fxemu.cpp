@@ -579,142 +579,129 @@ void fx_computeScreenPointers (void)
 		GSU.vSCBRDirty = FALSE;
 
 		// Make a list of pointers to the start of each screen column
-		switch (GSU.vScreenHeight)
+		uint8* pvScreenBase = GSU.pvScreenBase;
+		uint32_t vmode = GSU.vMode;
+		int32_t condition = vmode - 2;
+		int32_t mask = (condition | -condition) >> 31;
+		int32_t result = (vmode & mask) | (3 & ~mask);
+		uint32_t screenheight = GSU.vScreenHeight;
+		uint32_t incrementvalue = screenheight+screenheight;
+		uint32_t tempvalue[32];
+		vmode = result;
+		vmode++;
+		switch (screenheight)
 		{
 			case 128:
-				switch (GSU.vMode)
-				{
-					case 0:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + (i << 4);
-							GSU.x[i] = i <<  8;
-						}
-
-						break;
-
-					case 1:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + (i << 5);
-							GSU.x[i] = i <<  9;
-						}
-
-						break;
-
-					case 2:
-					case 3:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + (i << 6);
-							GSU.x[i] = i << 10;
-						}
-
-						break;
-				}
-
-				break;
-
 			case 160:
-				switch (GSU.vMode)
-				{
-					case 0:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + (i << 4);
-							GSU.x[i] = (i <<  8) + (i << 6);
-						}
-
-						break;
-
-					case 1:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + (i << 5);
-							GSU.x[i] = (i <<  9) + (i << 7);
-						}
-
-						break;
-
-					case 2:
-					case 3:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + (i << 6);
-							GSU.x[i] = (i << 10) + (i << 8);
-						}
-
-						break;
-				}
-
-				break;
-
 			case 192:
-				switch (GSU.vMode)
+				for(int i = 0; i < 32; i++)
 				{
-					case 0:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + (i << 4);
-							GSU.x[i] = (i <<  8) + (i << 7);
-						}
-
-						break;
-
-					case 1:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + (i << 5);
-							GSU.x[i] = (i <<  9) + (i << 8);
-						}
-
-						break;
-
-					case 2:
-					case 3:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + (i << 6);
-							GSU.x[i] = (i << 10) + (i << 9);
-						}
-
-						break;
+					tempvalue[i] = incrementvalue * i * vmode;
+					GSU.x[i] = tempvalue[i];
 				}
 
+				GSU.apvScreen[0] = pvScreenBase;
+				GSU.apvScreen[1] = pvScreenBase + (16 * vmode);
+				GSU.apvScreen[2] = pvScreenBase + (32 * vmode);
+				GSU.apvScreen[3] = pvScreenBase + (48 * vmode);
+				GSU.apvScreen[4] = pvScreenBase + (64 * vmode);
+				GSU.apvScreen[5] = pvScreenBase + (80 * vmode);
+				GSU.apvScreen[6] = pvScreenBase + (96 * vmode);
+				GSU.apvScreen[7] = pvScreenBase + (112 * vmode);
+				GSU.apvScreen[8] = pvScreenBase + (128 * vmode);
+				GSU.apvScreen[9] = pvScreenBase + (144 * vmode);
+				GSU.apvScreen[10] = pvScreenBase + (160 * vmode);
+				GSU.apvScreen[11] = pvScreenBase + (176 * vmode);
+				GSU.apvScreen[12] = pvScreenBase + (192 * vmode);
+				GSU.apvScreen[13] = pvScreenBase + (208 * vmode);
+				GSU.apvScreen[14] = pvScreenBase + (224 * vmode);
+				GSU.apvScreen[15] = pvScreenBase + (240 * vmode);
+				GSU.apvScreen[16] = pvScreenBase + (256 * vmode);
+				GSU.apvScreen[17] = pvScreenBase + (272 * vmode);
+				GSU.apvScreen[18] = pvScreenBase + (288 * vmode);
+				GSU.apvScreen[19] = pvScreenBase + (304 * vmode);
+				GSU.apvScreen[20] = pvScreenBase + (320 * vmode);
+				GSU.apvScreen[21] = pvScreenBase + (336 * vmode);
+				GSU.apvScreen[22] = pvScreenBase + (352 * vmode);
+				GSU.apvScreen[23] = pvScreenBase + (368 * vmode);
+				GSU.apvScreen[24] = pvScreenBase + (384 * vmode);
+				GSU.apvScreen[25] = pvScreenBase + (400 * vmode);
+				GSU.apvScreen[26] = pvScreenBase + (416 * vmode);
+				GSU.apvScreen[27] = pvScreenBase + (432 * vmode);
+				GSU.apvScreen[28] = pvScreenBase + (448 * vmode);
+				GSU.apvScreen[29] = pvScreenBase + (464 * vmode);
+				GSU.apvScreen[30] = pvScreenBase + (480 * vmode);
+				GSU.apvScreen[31] = pvScreenBase + (496 * vmode);
 				break;
-
 			case 256:
-				switch (GSU.vMode)
-				{
-					case 0:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + ((i & 0x10) <<  9) + ((i & 0xf) <<  8);
-							GSU.x[i] = ((i & 0x10) <<  8) + ((i & 0xf) << 4);
-						}
+				const uint32_t mul_8192 = vmode << 13;
 
-						break;
+				GSU.apvScreen[0] = GSU.apvScreen[16] = pvScreenBase;
+				GSU.apvScreen[1] = GSU.apvScreen[17] = pvScreenBase + (256 * vmode);
+				GSU.apvScreen[2] = GSU.apvScreen[18] = pvScreenBase + (512 * vmode);
+				GSU.apvScreen[3] = GSU.apvScreen[19] = pvScreenBase + (768 * vmode);
+				GSU.apvScreen[4] = GSU.apvScreen[20] = pvScreenBase + (1024 * vmode);
+				GSU.apvScreen[5] = GSU.apvScreen[21] = pvScreenBase + (1280 * vmode);
+				GSU.apvScreen[6] = GSU.apvScreen[22] = pvScreenBase + (1536 * vmode);
+				GSU.apvScreen[7] = GSU.apvScreen[23] = pvScreenBase + (1792 * vmode);
+				GSU.apvScreen[8] = GSU.apvScreen[24] = pvScreenBase + (2048 * vmode);
+				GSU.apvScreen[9] = GSU.apvScreen[25] = pvScreenBase + (2304 * vmode);
+				GSU.apvScreen[10] = GSU.apvScreen[26] = pvScreenBase + (2560 * vmode);
+				GSU.apvScreen[11] = GSU.apvScreen[27] = pvScreenBase + (2816 * vmode);
+				GSU.apvScreen[12] = GSU.apvScreen[28] = pvScreenBase + (3072 * vmode);
+				GSU.apvScreen[13] = GSU.apvScreen[29] = pvScreenBase + (3328 * vmode);
+				GSU.apvScreen[14] = GSU.apvScreen[30] = pvScreenBase + (3584 * vmode);
+				GSU.apvScreen[15] = GSU.apvScreen[31] = pvScreenBase + (3840 * vmode);
+				GSU.apvScreen[16] += mul_8192;
+				GSU.apvScreen[17] += mul_8192;
+				GSU.apvScreen[18] += mul_8192;
+				GSU.apvScreen[19] += mul_8192;
+				GSU.apvScreen[20] += mul_8192;
+				GSU.apvScreen[21] += mul_8192;
+				GSU.apvScreen[22] += mul_8192;
+				GSU.apvScreen[23] += mul_8192;
+				GSU.apvScreen[24] += mul_8192;
+				GSU.apvScreen[25] += mul_8192;
+				GSU.apvScreen[26] += mul_8192;
+				GSU.apvScreen[27] += mul_8192;
+				GSU.apvScreen[28] += mul_8192;
+				GSU.apvScreen[29] += mul_8192;
+				GSU.apvScreen[30] += mul_8192;
+				GSU.apvScreen[31] += mul_8192;
 
-					case 1:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + ((i & 0x10) << 10) + ((i & 0xf) <<  9);
-							GSU.x[i] = ((i & 0x10) <<  9) + ((i & 0xf) << 5);
-						}
-
-						break;
-
-					case 2:
-					case 3:
-						for (int i = 0; i < 32; i++)
-						{
-							GSU.apvScreen[i] = GSU.pvScreenBase + ((i & 0x10) << 11) + ((i & 0xf) << 10);
-							GSU.x[i] = ((i & 0x10) << 10) + ((i & 0xf) << 6);
-						}
-
-						break;
-				}
-
+				const uint32_t mul_4096 = vmode << 12;
+				GSU.x[0] = GSU.x[16] = 0; 
+				GSU.x[1] = GSU.x[17] = 16 * vmode;
+				GSU.x[2] = GSU.x[18] = 32 * vmode;
+				GSU.x[3] = GSU.x[19] = 48 * vmode;
+				GSU.x[4] = GSU.x[20] = 64 * vmode;
+				GSU.x[5] = GSU.x[21] = 80 * vmode;
+				GSU.x[6] = GSU.x[22] = 96 * vmode;
+				GSU.x[7] = GSU.x[23] = 112 * vmode;
+				GSU.x[8] = GSU.x[24] = 128 * vmode;
+				GSU.x[9] = GSU.x[25] = 144 * vmode;
+				GSU.x[10] = GSU.x[26] = 160 * vmode;
+				GSU.x[11] = GSU.x[27] = 176 * vmode;
+				GSU.x[12] = GSU.x[28] = 192 * vmode;
+				GSU.x[13] = GSU.x[29] = 208 * vmode;
+				GSU.x[14] = GSU.x[30] = 224 * vmode;
+				GSU.x[15] = GSU.x[31] = 240 * vmode;
+				GSU.x[16] += mul_4096;
+				GSU.x[17] += mul_4096;
+				GSU.x[18] += mul_4096;
+				GSU.x[19] += mul_4096;
+				GSU.x[20] += mul_4096;
+				GSU.x[21] += mul_4096;
+				GSU.x[22] += mul_4096;
+				GSU.x[23] += mul_4096;
+				GSU.x[24] += mul_4096;
+				GSU.x[25] += mul_4096;
+				GSU.x[26] += mul_4096;
+				GSU.x[27] += mul_4096;
+				GSU.x[28] += mul_4096;
+				GSU.x[29] += mul_4096;
+				GSU.x[30] += mul_4096;
+				GSU.x[31] += mul_4096;
 				break;
 		}
 
