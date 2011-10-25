@@ -342,6 +342,7 @@ struct SPPU
 	uint8	Mosaic;
 	uint8	MosaicStart;
 	bool8	BGMosaic[4];
+	bool8	DisableMosaicHack;
 
 	uint8	Window1Left;
 	uint8	Window1Right;

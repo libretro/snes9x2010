@@ -1706,14 +1706,14 @@ static inline void RenderScreen (bool8 sub)
 				BG.OffsetSizeH = (!hires && PPU.BG[2].BGSize) ? 16 : 8; \
 				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 				\
-				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
+				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
 					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 				else \
 					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
 			} \
 			else \
 			{ \
-				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
+				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
 					DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 				else \
 					DrawBackground(n, D + Zh, D + Zl); \

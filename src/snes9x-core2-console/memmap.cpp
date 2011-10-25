@@ -3515,6 +3515,18 @@ void CMemory::ApplyROMFixes (void)
 			Timings.APUAllowTimeOverflow = TRUE;
 	}
 
+
+	//We don't want Seiken Densetsu 3/Romancing Saga 3 unbearably slow in
+	//hi-res mosaic mode - no difference with these games between normal
+	//hi-res renderer and mosaic version - only double the FPS
+	if (
+	match_nn("SeikenDensetsu3") ||
+	match_na("SeikenDensetsu3Sample1") ||	// Seiken Densetsu 3
+	match_na("ROMANCING SAGA3"))		// Romancing Saga 3
+		PPU.DisableMosaicHack = false;
+	else
+		PPU.DisableMosaicHack = true;
+
 	S9xAPUTimingSetSpeedup(Timings.APUSpeedup);
 	S9xAPUAllowTimeOverflow(Timings.APUAllowTimeOverflow);
 
