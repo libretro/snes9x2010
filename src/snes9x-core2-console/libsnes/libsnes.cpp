@@ -394,11 +394,21 @@ static void report_buttons()
 			joypad[cmd.button.joypad.idx] &= ~r;
 	    }
             break;
-
          case SNES_DEVICE_MULTITAP:
             for (int j = 0; j < 4; j++)
-               for (int i = BTN_FIRST; i <= BTN_LAST; i++)
-                  S9xReportButton(MAKE_BUTTON(j + 2, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MULTITAP, j, i));
+	    {
+		    for (int i = BTN_FIRST; i <= BTN_LAST; i++)
+		    {
+			    s9xcommand_t cmd = keymap[MAKE_BUTTON(j + 2, i)];
+			    uint16 r = cmd.button.joypad.buttons;
+			    bool pressed = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MULTITAP, j, i);
+
+			    if (pressed)
+				    joypad[cmd.button.joypad.idx] |= r;
+			    else
+				    joypad[cmd.button.joypad.idx] &= ~r;
+		    }
+	    }
             break;
 
          case SNES_DEVICE_MOUSE:

@@ -266,17 +266,13 @@ static struct
 	struct crosshair	crosshair[2];
 }	justifier;
 
-static struct
-{
-	int8				pads[4];
-}	mp5[2];
-
+static int8 mp5[2][4];
 extern s9xcommand_t			keymap[1024];
-static uint8				turbo_time;
 static bool8				FLAG_LATCH = FALSE;
 static int32				curcontrollers[2] = { NONE,    NONE };
 static int32				newcontrollers[2] = { JOYPAD0, NONE };
 static char				buf[256];
+extern uint16_t joypad[8];
 
 static const char	*color_names[32] =
 {
@@ -314,28 +310,16 @@ static const char	*color_names[32] =
 	"tPurple"
 };
 
-static const char	*speed_names[4] =
-{
-	"Var",
-	"Slow",
-	"Med",
-	"Fast"
-};
-
-static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
-
 // Note: these should be in asciibetical order!
 #define THE_COMMANDS \
 	S(DecEmuTurbo), \
 	S(DecFrameRate), \
 	S(DecFrameTime), \
-	S(DecTurboSpeed), \
 	S(EmuTurbo), \
 	S(ExitEmu), \
 	S(IncEmuTurbo), \
 	S(IncFrameRate), \
 	S(IncFrameTime), \
-	S(IncTurboSpeed), \
 	S(LoadFreezeFile), \
 	S(LoadOopsFile), \
 	S(Pause), \
@@ -499,8 +483,6 @@ void S9xUnmapAllControls (void)
 		superscope.crosshair.fg  = 5;
 	if (!(superscope.crosshair.set & 4))
 		superscope.crosshair.bg  = 1;
-
-	turbo_time = 1;
 }
 
 void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2, int8 id3, int8 id4)
@@ -570,10 +552,10 @@ void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2
 			}
 
 			newcontrollers[port] = MP5;
-			mp5[port].pads[0] = (id1 < 0) ? NONE : JOYPAD0 + id1;
-			mp5[port].pads[1] = (id2 < 0) ? NONE : JOYPAD0 + id2;
-			mp5[port].pads[2] = (id3 < 0) ? NONE : JOYPAD0 + id3;
-			mp5[port].pads[3] = (id4 < 0) ? NONE : JOYPAD0 + id4;
+			mp5[port][0] = (id1 < 0) ? NONE : JOYPAD0 + id1;
+			mp5[port][1] = (id2 < 0) ? NONE : JOYPAD0 + id2;
+			mp5[port][2] = (id3 < 0) ? NONE : JOYPAD0 + id3;
+			mp5[port][3] = (id4 < 0) ? NONE : JOYPAD0 + id4;
 			return;
 
 		default:
@@ -668,13 +650,13 @@ bool S9xVerifyControllers (void)
 
 				for (i = 0; i < 4; i++)
 				{
-					if (mp5[port].pads[i] != NONE)
+					if (mp5[port][i] != NONE)
 					{
-						if (used[mp5[port].pads[i] - JOYPAD0]++ > 0)
+						if (used[mp5[port][i] - JOYPAD0]++ > 0)
 						{
-							snprintf(buf, sizeof(buf), "Joypad%d used more than once! Disabling extra instances", mp5[port].pads[i] - JOYPAD0 + 1);
+							snprintf(buf, sizeof(buf), "Joypad%d used more than once! Disabling extra instances", mp5[port][i] - JOYPAD0 + 1);
 							S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
-							mp5[port].pads[i] = NONE;
+							mp5[port][i] = NONE;
 							ret = true;
 							break;
 						}
@@ -731,10 +713,10 @@ void S9xReportControllers (void)
 				c += sprintf(c, "MP5 with pads");
 				for (int i = 0; i < 4; i++)
 				{
-					if (mp5[port].pads[i] == NONE)
+					if (mp5[port][i] == NONE)
 						c += sprintf(c, " <none>. ");
 					else
-						c += sprintf(c, " #%d. ", mp5[port].pads[i] + 1 - JOYPAD0);
+						c += sprintf(c, " #%d. ", mp5[port][i] + 1 - JOYPAD0);
 				}
 
 				break;
@@ -904,56 +886,6 @@ static int findstr (const char *needle, const char **haystack, int numstr)
 		return (-1);
 
 	return (r - haystack);
-}
-
-static int get_threshold (const char **ss)
-{
-	const char	*s = *ss;
-	int			i;
-
-	if (s[0] != 'T' || s[1] != '=')
-		return (-1);
-
-	s += 2;
-	i = 0;
-
-	if (s[0] == '0')
-	{
-		if (s[1] != '.')
-			return (-1);
-
-		s++;
-	}
-	else
-	{
-		do
-		{
-			if (*s < '0' || *s > '9')
-				return (-1);
-
-			i = i * 10 + 10 * (*s - '0');
-			if (i > 1000)
-				return (-1);
-
-			s++;
-		}
-		while (*s != '.' && *s != '%');
-	}
-
-	if (*s == '.')
-	{
-		if (s[1] < '0' || s[1] > '9' || s[2] != '%')
-			return (-1);
-
-		i += s[1] - '0';
-	}
-
-	if (i > 1000)
-		return (-1);
-
-	*ss = s;
-
-	return (i);
 }
 
 s9xcommand_t S9xGetCommandT (const char *name)
@@ -1430,23 +1362,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 						sprintf(buf, "Emulated frame time: %dms", Settings.FrameTime / 1000);
 						S9xSetInfoString(buf);
 						break;
-
-					case IncTurboSpeed:
-						if (turbo_time >= 120)
-							break;
-						turbo_time++;
-						sprintf(buf, "Turbo speed: %d", turbo_time);
-						S9xSetInfoString(buf);
-						break;
-
-					case DecTurboSpeed:
-						if (turbo_time <= 1)
-							break;
-						turbo_time--;
-						sprintf(buf, "Turbo speed: %d", turbo_time);
-						S9xSetInfoString(buf);
-						break;
-
 					case LoadFreezeFile:
 						S9xUnfreezeGame(S9xChooseFilename(TRUE));
 						break;
@@ -1693,8 +1608,8 @@ void S9xSetJoypadLatch (bool latch)
 
 		for (int n = 0; n < 2; n++)
 		{
-			for (int j = 0; j < 2; j++)
-				read_idx[n][j] = 0;
+			read_idx[n][0] = 0;
+			read_idx[n][1] = 0;
 
 			switch (i = curcontrollers[n])
 			{
@@ -1749,7 +1664,6 @@ void S9xSetJoypadLatch (bool latch)
 	FLAG_LATCH = latch;
 }
 
-extern uint16_t joypad[8];
 
 uint8 S9xReadJOYSERn (int n)
 {
@@ -1805,12 +1719,12 @@ uint8 S9xReadJOYSERn (int n)
 
 				for (i = 0; i < 2; i++, j++)
 				{
-					if (mp5[n].pads[j] == NONE)
+					if (mp5[n][j] == NONE)
 						continue;
 					if (r >= 16)
 						bits |= 1 << i;
 					else
-						bits |= ((joypad[mp5[n].pads[j] - JOYPAD0] & (0x8000 >> r)) ? 1 : 0) << i;
+						bits |= ((joypad[mp5[n][j] - JOYPAD0] & (0x8000 >> r)) ? 1 : 0) << i;
 				}
 
 				return (bits);
@@ -1908,10 +1822,10 @@ void S9xDoAutoJoypad (void)
 				j = FLAG_IOBIT(n) ? 0 : 2;
 				for (i = 0; i < 2; i++, j++)
 				{
-					if (mp5[n].pads[j] == NONE)
+					if (mp5[n][j] == NONE)
 						WRITE_WORD(Memory.FillRAM + 0x4218 + n * 2 + i * 4, 0);
 					else
-						WRITE_WORD(Memory.FillRAM + 0x4218 + n * 2 + i * 4, joypad[mp5[n].pads[j] - JOYPAD0]);
+						WRITE_WORD(Memory.FillRAM + 0x4218 + n * 2 + i * 4, joypad[mp5[n][j] - JOYPAD0]);
 				}
 
 				read_idx[n][FLAG_IOBIT(n) ? 0 : 1] = 16;
@@ -1962,7 +1876,7 @@ void S9xDoAutoJoypad (void)
 void S9xControlEOF (void)
 {
 	struct crosshair	*c;
-	int					i;
+	int			i;
 
 	PPU.GunVLatch = 1000; // i.e., never latch
 	PPU.GunHLatch = 0;
@@ -2168,14 +2082,14 @@ void S9xControlPreSaveState (struct SControlSnapshot *s)
 	ZeroMemory(s, sizeof(*s));
 	s->ver = 3;
 
-	for (int j = 0; j < 2; j++)
-	{
-		s->port1_read_idx[j] = read_idx[0][j];
-		s->port2_read_idx[j] = read_idx[1][j];
-	}
+	s->port1_read_idx[0] = read_idx[0][0];
+	s->port2_read_idx[0] = read_idx[1][0];
 
-	for (int j = 0; j < 2; j++)
-		s->mouse_speed[j] = (mouse[j].buttons & 0x30) >> 4;
+	s->port1_read_idx[1] = read_idx[0][1];
+	s->port2_read_idx[1] = read_idx[1][1];
+
+	s->mouse_speed[0] = (mouse[0].buttons & 0x30) >> 4;
+	s->mouse_speed[1] = (mouse[1].buttons & 0x30) >> 4;
 
 	s->justifier_select = ((justifier.buttons & JUSTIFIER_SELECT) ? 1 : 0);
 
@@ -2203,17 +2117,20 @@ void S9xControlPreSaveState (struct SControlSnapshot *s)
 	COPY(superscope.next_buttons);
 	COPY(superscope.read_buttons);
 
-	for (int j = 0; j < 2; j++)
-		COPY(justifier.x[j]);
-	for (int j = 0; j < 2; j++)
-		COPY(justifier.y[j]);
+	COPY(justifier.x[0]);
+	COPY(justifier.x[1]);
+	COPY(justifier.y[0]);
+	COPY(justifier.y[1]);
 	COPY(justifier.buttons);
-	for (int j = 0; j < 2; j++)
-		COPY(justifier.offscreen[j]);
 
-	for (int j = 0; j < 2; j++)
-		for (int k = 0; k < 2; k++)
-			COPY(mp5[j].pads[k]);
+	COPY(justifier.offscreen[0]);
+	COPY(justifier.offscreen[1]);
+
+	COPY(mp5[0][0]);
+	COPY(mp5[0][1]);
+
+	COPY(mp5[1][0]);
+	COPY(mp5[1][1]);
 
 #undef COPY
 
@@ -2228,17 +2145,17 @@ void S9xControlPostLoadState (struct SControlSnapshot *s)
 		// Crap. Old snes9x didn't support this.
 		S9xMessage(S9X_WARNING, S9X_FREEZE_FILE_INFO, "Old savestate has no support for MP5 in port 1.");
 		newcontrollers[0] = curcontrollers[0];
-		curcontrollers[0] = mp5[0].pads[0];
+		curcontrollers[0] = mp5[0][0];
 	}
 
-	for (int j = 0; j < 2; j++)
-	{
-		read_idx[0][j] = s->port1_read_idx[j];
-		read_idx[1][j] = s->port2_read_idx[j];
-	}
+	read_idx[0][0] = s->port1_read_idx[0];
+	read_idx[1][0] = s->port2_read_idx[0];
 
-	for (int j = 0; j < 2; j++)
-		mouse[j].buttons |= (s->mouse_speed[j] & 3) << 4;
+	read_idx[0][1] = s->port1_read_idx[1];
+	read_idx[1][1] = s->port2_read_idx[1];
+
+	mouse[0].buttons |= (s->mouse_speed[0] & 3) << 4;
+	mouse[1].buttons |= (s->mouse_speed[1] & 3) << 4;
 
 	if (s->justifier_select & 1)
 		justifier.buttons |=  JUSTIFIER_SELECT;
@@ -2273,16 +2190,20 @@ void S9xControlPostLoadState (struct SControlSnapshot *s)
 		COPY(superscope.next_buttons);
 		COPY(superscope.read_buttons);
 
-		for (int j = 0; j < 2; j++)
-			COPY(justifier.x[j]);
-		for (int j = 0; j < 2; j++)
-			COPY(justifier.y[j]);
+		COPY(justifier.x[0]);
+		COPY(justifier.x[1]);
+		COPY(justifier.y[0]);
+		COPY(justifier.y[1]);
 		COPY(justifier.buttons);
-		for (int j = 0; j < 2; j++)
-			COPY(justifier.offscreen[j]);
-		for (int j = 0; j < 2; j++)
-			for (int k = 0; k < 2; k++)
-				COPY(mp5[j].pads[k]);
+
+		COPY(justifier.offscreen[0]);
+		COPY(justifier.offscreen[1]);
+
+		COPY(mp5[0][0]);
+		COPY(mp5[0][1]);
+
+		COPY(mp5[1][0]);
+		COPY(mp5[1][1]);
 
 	#undef COPY
 	}
