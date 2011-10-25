@@ -483,7 +483,6 @@ inline void SPC_DSP::voice_output( voice_t const* v, int ch )
 {
 	// Apply left/right volume
 	int amp = (m.t_output * (int8_t) VREG(v->regs,voll + ch)) >> 7;
-	amp *= ((stereo_switch & (1 << (v->voice_number + ch * voice_count))) ? 1 : 0);
 
 	// Add to output total
 	m.t_main_out [ch] += amp;
@@ -808,8 +807,6 @@ void SPC_DSP::init( void* ram_64k )
 	disable_surround( false );
 	set_output( 0, 0 );
 	reset();
-
-	stereo_switch = 0xffff;
 }
 
 void SPC_DSP::soft_reset_common()
@@ -1002,17 +999,7 @@ void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
 
 //// Snes9x Accessor
 
-void SPC_DSP::set_stereo_switch( int value )
-{
-	stereo_switch = value;
-}
-
 SPC_DSP::uint8_t SPC_DSP::reg_value( int ch, int addr )
 {
 	return m.voices[ch].regs[addr];
-}
-
-int SPC_DSP::envx_value( int ch )
-{
-	return m.voices[ch].env;
 }

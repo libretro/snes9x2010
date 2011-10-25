@@ -65,12 +65,7 @@ public:
 	bool check_kon();
 
 // Snes9x Accessor
-
-	int  stereo_switch;
-
-	void    set_stereo_switch( int );
 	uint8_t reg_value( int, int );
-	int     envx_value( int );
 
 // DSP register addresses
 
