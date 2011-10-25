@@ -82,9 +82,9 @@ void SNES_SPC::enable_rom( int enable )
 {
 	if ( m.rom_enabled != enable )
 	{
-		m.rom_enabled = enable;
+		m.rom_enabled = dsp.rom_enabled = enable;
 		if ( enable )
-			memcpy( m.hi_ram, &RAM [rom_addr], sizeof m.hi_ram );
+			memcpy( m.hi_ram, &RAM [rom_addr], sizeof(m.hi_ram));
 		memcpy( &RAM [rom_addr], (enable ? m.rom : m.hi_ram), rom_size );
 		// TODO: ROM can still get overwritten when DSP writes to echo buffer
 	}

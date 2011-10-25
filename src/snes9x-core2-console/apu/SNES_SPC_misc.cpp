@@ -70,6 +70,9 @@ blargg_err_t SNES_SPC::init()
 	}
 
 	allow_time_overflow = false;
+
+	dsp.rom = m.rom;
+	dsp.hi_ram = m.hi_ram;
 	
 	#if SPC_LESS_ACCURATE
 		memcpy( reg_times, reg_times_, sizeof reg_times );
