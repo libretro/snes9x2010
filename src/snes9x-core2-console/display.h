@@ -195,9 +195,6 @@ enum s9x_getdirtype
 	LAST_DIR
 };
 
-void S9xUsage (void);
-char * S9xParseArgs (char **, int);
-void S9xLoadConfigFiles (char **, int);
 void S9xSetInfoString (const char *);
 
 // Routines the port has to implement even if it doesn't use them
@@ -219,9 +216,6 @@ const char * S9xChooseFilename (bool8);
 const char * S9xBasename (const char *);
 
 // Routines the port has to implement if it uses command-line
-
-void S9xExtraUsage (void);
-void S9xParseArg (char **, int &, int);
 
 // Routines the port may implement as needed
 

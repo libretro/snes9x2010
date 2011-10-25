@@ -9,7 +9,6 @@
 #include "controls.h"
 #include "cheats.h"
 #include "display.h"
-#include "conffile.h"
 #include <stdio.h>
 #ifndef __WIN32__
 #include <unistd.h>
@@ -636,7 +635,6 @@ bool8 S9xContinueUpdate(int width, int height)
 
 
 // Dummy functions that should probably be implemented correctly later.
-void S9xParsePortConfig(ConfigFile&, int) {}
 void S9xSyncSpeed() {}
 //void S9xPollPointer(int, short*, short*) {}
 const char* S9xStringInput(const char* in) { return in; }
@@ -650,12 +648,10 @@ void S9xToggleSoundChannel(int) {}
 const char* S9xGetFilenameInc(const char* in, s9x_getdirtype) { return NULL; }
 const char* S9xBasename(const char* in) { return in; }
 bool8 S9xInitUpdate() { return TRUE; }
-void S9xExtraUsage() {}
 bool8 S9xOpenSoundDevice() { return TRUE; }
 void S9xMessage(int, int, const char*) {}
 bool S9xPollAxis(unsigned int, short*) { return FALSE; }
 void S9xSetPalette() {}
-void S9xParseArg(char**, int&, int) {}
 void S9xExit() {}
 bool S9xPollPointer(unsigned int, short*, short*) { return false; }
 
