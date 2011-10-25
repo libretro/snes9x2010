@@ -49,7 +49,6 @@ public:
 	// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
 	// Reduces emulation accuracy.
 	enum { voice_count = 8 };
-	void mute_voices( int mask );
 
 // State
 	
@@ -188,7 +187,6 @@ private:
 		
 		// non-emulation state
 		uint8_t* ram; // 64K shared RAM between DSP and SMP
-		int mute_mask;
 		sample_t* out;
 		sample_t* out_end;
 		sample_t* out_begin;
@@ -274,8 +272,6 @@ inline void SPC_DSP::write( int addr, int data )
 		break;
 	}
 }
-
-inline void SPC_DSP::mute_voices( int mask ) { m.mute_mask = mask; }
 
 inline bool SPC_DSP::check_kon()
 {

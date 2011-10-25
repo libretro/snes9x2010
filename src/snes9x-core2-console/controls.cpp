@@ -326,7 +326,6 @@ static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
 
 // Note: these should be in asciibetical order!
 #define THE_COMMANDS \
-	S(ClipWindows), \
 	S(DecEmuTurbo), \
 	S(DecFrameRate), \
 	S(DecFrameTime), \
@@ -365,23 +364,9 @@ static const int	ptrspeeds[4] = { 1, 1, 4, 8 };
 	S(Reset), \
 	S(SaveFreezeFile), \
 	S(SoftReset), \
-	S(SoundChannel0), \
-	S(SoundChannel1), \
-	S(SoundChannel2), \
-	S(SoundChannel3), \
-	S(SoundChannel4), \
-	S(SoundChannel5), \
-	S(SoundChannel6), \
-	S(SoundChannel7), \
-	S(SoundChannelsOn), \
 	S(SwapJoypads), \
-	S(ToggleBG0), \
-	S(ToggleBG1), \
-	S(ToggleBG2), \
-	S(ToggleBG3), \
 	S(ToggleEmuTurbo), \
-	S(ToggleHDMA), \
-	S(ToggleSprites) \
+	S(ToggleHDMA) \
 
 #define S(x)	x
 
@@ -1547,50 +1532,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 						S9xFreezeGame(filename);
 						break;
 					}
-
-					case SoundChannel0:
-					case SoundChannel1:
-					case SoundChannel2:
-					case SoundChannel3:
-					case SoundChannel4:
-					case SoundChannel5:
-					case SoundChannel6:
-					case SoundChannel7:
-						S9xToggleSoundChannel(i - SoundChannel0);
-						sprintf(buf, "Sound channel %d toggled", i - SoundChannel0);
-						S9xSetInfoString(buf);
-						break;
-
-					case SoundChannelsOn:
-						S9xToggleSoundChannel(8);
-						S9xSetInfoString("All sound channels on");
-						break;
-
-					case ToggleBG0:
-						Settings.BG_Forced ^= 1;
-						DisplayStateChange("BG#0", !(Settings.BG_Forced & 1));
-						break;
-
-					case ToggleBG1:
-						Settings.BG_Forced ^= 2;
-						DisplayStateChange("BG#1", !(Settings.BG_Forced & 2));
-						break;
-
-					case ToggleBG2:
-						Settings.BG_Forced ^= 4;
-						DisplayStateChange("BG#2", !(Settings.BG_Forced & 4));
-						break;
-
-					case ToggleBG3:
-						Settings.BG_Forced ^= 8;
-						DisplayStateChange("BG#3", !(Settings.BG_Forced & 8));
-						break;
-
-					case ToggleSprites:
-						Settings.BG_Forced ^= 16;
-						DisplayStateChange("Sprites", !(Settings.BG_Forced & 16));
-						break;
-
 					case ToggleHDMA:
 						Settings.DisableHDMA = !Settings.DisableHDMA;
 						DisplayStateChange("HDMA emulation", !Settings.DisableHDMA);

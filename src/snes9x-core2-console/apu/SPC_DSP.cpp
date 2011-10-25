@@ -64,9 +64,6 @@ static BOOST::uint8_t const initial_regs [SPC_DSP::register_count] =
 	out += 2;\
 	if ( out >= m.out_end )\
 	{\
-		check( out == m.out_end );\
-		check( m.out_end != &m.extra [extra_size] || \
-			(m.extra <= m.out_begin && m.extra < &m.extra [extra_size]) );\
 		out       = m.extra;\
 		m.out_end = &m.extra [extra_size];\
 	}\
@@ -366,7 +363,7 @@ MISC_CLOCK( 30 )
 	if ( m.every_other_sample )
 	{
 		m.kon    = m.new_kon;
-		m.t_koff = REG(koff) | m.mute_mask; 
+		m.t_koff = REG(koff); 
 	}
 	
 	run_counters();
@@ -808,7 +805,6 @@ void SPC_DSP::run( int clocks_remain )
 void SPC_DSP::init( void* ram_64k )
 {
 	m.ram = (uint8_t*) ram_64k;
-	mute_voices( 0 );
 	disable_surround( false );
 	set_output( 0, 0 );
 	reset();

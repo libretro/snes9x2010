@@ -395,8 +395,6 @@ struct SSettings
 
 	uint8	BG_Forced;
 
-	bool8	DisplayFrameRate;
-	bool8	DisplayWatchedAddresses;
 	bool8	AutoDisplayMessages;
 	uint32	InitialInfoStringTimeout;
 	uint16	DisplayColor;
@@ -422,13 +420,10 @@ struct SSettings
 	uint32	TurboSkipFrames;
 	uint32	AutoMaxSkipFrames;
 	bool8	TurboMode;
-	uint32	HighSpeedSeek;
-	bool8	FrameAdvance;
 
 	bool8	ApplyCheats;
 	bool8	NoPatch;
 	int32	AutoSaveDelay;
-	bool8	DontSaveOopsSnapshot;
 };
 
 struct SSNESGameFixes

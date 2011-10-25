@@ -197,7 +197,6 @@ struct SICPU
 	uint32	ShiftedPB;
 	uint32	ShiftedDB;
 	uint32	Frame;
-	uint32	FrameAdvanceCount;
 };
 
 extern struct SICPU		ICPU;

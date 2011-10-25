@@ -14,12 +14,6 @@ static inline void blargg_dprintf_( const char*, ... ) { }
 #undef dprintf
 #define dprintf (1) ? (void) 0 : blargg_dprintf_
 
-// If enabled, evaluate expr and if false, make debug log entry with source file
-// and line. Meant for finding situations that should be examined further, but that
-// don't indicate a problem. In all cases, execution continues normally.
-#undef check
-#define check( expr ) ((void) 0)
-
 // If expr yields error string, return it from current function, otherwise continue.
 #undef RETURN_ERR
 #define RETURN_ERR( expr ) do {                         \

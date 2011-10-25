@@ -57,7 +57,6 @@ public:
 	// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
 	// Reduces emulation accuracy.
 	enum { voice_count = 8 };
-	void mute_voices( int mask );
 	
 	// If true, prevents channels and global volumes from being phase-negated.
 	// Only supported by fast DSP.
@@ -270,8 +269,6 @@ inline void SNES_SPC::write_port( time_t t, int port, int data )
 	m.ram.ram [0xF4 + port] = data;
 }
 
-inline void SNES_SPC::mute_voices( int mask ) { dsp.mute_voices( mask ); }
-	
 inline void SNES_SPC::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
 
 #if !SPC_NO_COPY_STATE_FUNCS

@@ -226,7 +226,6 @@ namespace spc
 	static int		lag             = 0;
 
 	static uint8		*landing_buffer = NULL;
-	static uint8		*shrink_buffer  = NULL;
 
 #ifdef USE_LINEAR_RESAMPLER
 	static Resampler	*resampler      = NULL;
@@ -253,7 +252,6 @@ static inline int S9xAPUGetClockRemainder (int32);
 
 bool8 S9xMixSamples (uint8 *buffer, int sample_count)
 {
-	static int	shrink_buffer_size = -1;
 	uint8		*dest;
 
 	dest = buffer;
@@ -429,7 +427,6 @@ bool8 S9xInitAPU (void)
 	spc_core->init_rom(APUROM);
 
 	spc::landing_buffer = NULL;
-	spc::shrink_buffer  = NULL;
 	spc::resampler      = NULL;
 
 	return (TRUE);
@@ -453,12 +450,6 @@ void S9xDeinitAPU (void)
 	{
 		delete[] spc::landing_buffer;
 		spc::landing_buffer = NULL;
-	}
-
-	if (spc::shrink_buffer)
-	{
-		delete[] spc::shrink_buffer;
-		spc::shrink_buffer = NULL;
 	}
 }
 

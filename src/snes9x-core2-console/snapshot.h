@@ -189,7 +189,6 @@
 #define NOT_A_MOVIE_SNAPSHOT	(-5)
 #define SNAPSHOT_INCONSISTENT	(-6)
 
-void S9xResetSaveTimer (bool8);
 bool8 S9xFreezeGame (const char *);
 bool8 S9xUnfreezeGame (const char *);
 void S9xFreezeToStream (STREAM);

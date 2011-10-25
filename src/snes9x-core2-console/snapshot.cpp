@@ -1111,24 +1111,6 @@ static void FreezeBlock (STREAM, const char *, uint8 *, int);
 static void FreezeStruct (STREAM, const char *, void *, FreezeData *, int);
 
 
-void S9xResetSaveTimer (bool8 dontsave)
-{
-	static time_t	t = -1;
-
-	if (!Settings.DontSaveOopsSnapshot && !dontsave && t != -1 && time(NULL) - t > 300)
-	{
-		char	filename[PATH_MAX + 1];
-		char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], def[_MAX_FNAME + 1], ext[_MAX_EXT + 1];
-
-		_splitpath(Memory.ROMFilename, drive, dir, def, ext);
-		sprintf(filename, "%s%s%s.%.*s", S9xGetDirectory(SNAPSHOT_DIR), SLASH_STR, def, _MAX_EXT - 1, "oops");
-		S9xMessage(S9X_INFO, S9X_FREEZE_FILE_INFO, SAVE_INFO_OOPS);
-		S9xFreezeGame(filename);
-	}
-
-	t = time(NULL);
-}
-
 bool8 S9xFreezeGame (const char *filename)
 {
 	STREAM	stream = NULL;
@@ -1137,8 +1119,6 @@ bool8 S9xFreezeGame (const char *filename)
 	{
 		S9xFreezeToStream(stream);
 		S9xCloseSnapshotFile(stream);
-
-		S9xResetSaveTimer(TRUE);
 
 		const char *base = S9xBasename(filename);
 		sprintf(String, SAVE_INFO_SNAPSHOT " %s", base);
@@ -1159,7 +1139,6 @@ bool8 S9xUnfreezeGame (const char *filename)
 	const char	*base = S9xBasename(filename);
 
 	_splitpath(filename, drive, dir, def, ext);
-	S9xResetSaveTimer(!strcmp(ext, "oops") || !strcmp(ext, "oop") || !strcmp(ext, ".oops") || !strcmp(ext, ".oop"));
 
 	if (S9xOpenSnapshotFile(filename, TRUE, &stream))
 	{
