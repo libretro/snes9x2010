@@ -628,12 +628,6 @@ bool8 S9xDeinitUpdate(int width, int height)
    return TRUE;
 }
 
-bool8 S9xContinueUpdate(int width, int height)
-{
-   return S9xDeinitUpdate(width, height);
-}
-
-
 // Dummy functions that should probably be implemented correctly later.
 void S9xSyncSpeed() {}
 //void S9xPollPointer(int, short*, short*) {}
