@@ -3503,10 +3503,15 @@ void CMemory::ApplyROMFixes (void)
 			match_nn("SANKYO Fever! \xCC\xA8\xB0\xCA\xDE\xB0!"))   // SANKYO Fever! Fever!
 			Timings.APUSpeedup = 1;
 
-		if (match_na ("EARTHWORM JIM 2")						|| // Earthworm Jim 2
-			match_na ("NBA Hangtime")							|| // NBA Hang Time
-			match_na ("MSPACMAN")								|| // Ms Pacman
-			match_na ("THE MASK"))								   // The Mask
+		if (match_na ("EARTHWORM JIM 2")			|| // Earthworm Jim 2
+			match_na ("NBA Hangtime")			|| // NBA Hang Time
+			match_na ("MSPACMAN")				|| // Ms Pacman
+			match_na ("THE MASK")				|| // The Mask
+			match_na ("PRIMAL RAGE")			|| // Primal Rage
+			match_na ("DOOM TROOPERS")			|| // Doom Troopers
+			match_na ("PORKY PIGS HAUNTED")			|| // Porky Pig's Haunted Holiday
+			match_na ("Big Sky Trooper")			|| // Big Sky Trooper
+			match_na ("A35"))				// Mechwarrior 3050/Battle Tech 3050
 			Timings.APUAllowTimeOverflow = TRUE;
 	}
 
