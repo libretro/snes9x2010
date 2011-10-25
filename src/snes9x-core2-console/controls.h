@@ -184,28 +184,18 @@
 #define S9xButtonSuperscope		3
 #define S9xButtonJustifier		4
 #define S9xButtonCommand		5
-#define S9xAxisJoypad			7
 #define S9xPointer				8
 
 #define S9xButtonPseudopointer	254
-#define S9xAxisPseudopointer	253
-#define S9xAxisPseudobuttons	252
 
 // These are automatically kicked out to the S9xHandlePortCommand function.
 // If your port wants to define port-specific commands or whatever, use these values for the s9xcommand_t type field.
 
 #define S9xButtonPort			251
-#define S9xAxisPort				250
 #define S9xPointerPort			249
 
 #define S9xBadMapping			255
 #define InvalidControlID		((uint32) -1)
-
-// S9xButtonPseudopointer and S9xAxisPseudopointer will report pointer motion using IDs PseudoPointerBase through PseudoPointerBase+7.
-// S9xAxisPseudopointer command types. S9xAxisPseudobuttons will report buttons with IDs PseudoButtonBase to PseudoButtonBase+255.
-
-#define PseudoPointerBase		(InvalidControlID - 8)
-#define PseudoButtonBase		(PseudoPointerBase - 256)
 
 typedef struct
 {
@@ -258,32 +248,6 @@ typedef struct
 			int32	multi_idx;
 			uint16	command;
 		}	button;
-
-		union
-		{
-			struct
-			{
-				uint8	idx:3;				// Pad number 0-7
-				uint8	invert:1;			// 1 = positive is Left/Up/Y/X/L
-				uint8	axis:3;				// 0=Left/Right, 1=Up/Down, 2=Y/A, 3=X/B, 4=L/R
-				uint8	threshold;			// (threshold+1)/256% deflection is a button press
-			}	joypad;
-
-			struct
-			{
-				uint8	idx:3;				// Pseudo-pointer number 0-7
-				uint8	speed_type:2;		// 0=variable, 1=slow, 2=med, 3=fast
-				uint8	invert:1;			// 1 = invert axis, so positive is up/left
-				uint8	HV:1;				// 0=horizontal, 1=vertical
-			}	pointer;
-
-			struct
-			{
-				uint8	threshold;			// (threshold+1)/256% deflection is a button press
-				uint8	negbutton;			// Button ID for negative deflection
-				uint8	posbutton;			// Button ID for positive deflection
-			}	button;
-		}	axis;
 
 		struct								// Which SNES-pointers to control with this pointer
 		{

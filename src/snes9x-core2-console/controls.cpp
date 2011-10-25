@@ -239,16 +239,6 @@ struct crosshair
 
 static struct
 {
-	int16				x, y;
-	int16				V_adj;
-	bool8				V_var;
-	int16				H_adj;
-	bool8				H_var;
-	bool8				mapped;
-}	pseudopointer[8];
-
-static struct
-{
 	uint8				delta_x, delta_y;
 	int16				old_x, old_y;
 	int16				cur_x, cur_y;
@@ -283,7 +273,6 @@ static struct
 
 extern s9xcommand_t			keymap[1024];
 static uint8				turbo_time;
-static uint8				pseudobuttons[256];
 static bool8				FLAG_LATCH = FALSE;
 static int32				curcontrollers[2] = { NONE,    NONE };
 static int32				newcontrollers[2] = { JOYPAD0, NONE };
@@ -456,12 +445,6 @@ static int maptype (int t)
 		case S9xButtonPseudopointer:
 		case S9xButtonPort:
 			return (MAP_BUTTON);
-
-		case S9xAxisPseudopointer:
-		case S9xAxisPseudobuttons:
-		case S9xAxisPort:
-			return (MAP_AXIS);
-
 		case S9xPointer:
 		case S9xPointerPort:
 			return (MAP_POINTER);
@@ -491,17 +474,6 @@ void S9xControlsSoftReset (void)
 void S9xUnmapAllControls (void)
 {
 	S9xControlsReset();
-
-	for (int i = 0; i < 8; i++)
-	{
-		pseudopointer[i].x = 0;
-		pseudopointer[i].y = 0;
-		pseudopointer[i].H_adj = 0;
-		pseudopointer[i].V_adj = 0;
-		pseudopointer[i].H_var = 0;
-		pseudopointer[i].V_var = 0;
-		pseudopointer[i].mapped = false;
-	}
 
 	for (int i = 0; i < 2; i++)
 	{
@@ -543,8 +515,6 @@ void S9xUnmapAllControls (void)
 		superscope.crosshair.fg  = 5;
 	if (!(superscope.crosshair.set & 4))
 		superscope.crosshair.bg  = 1;
-
-	ZeroMemory(pseudobuttons, sizeof(pseudobuttons));
 
 	turbo_time = 1;
 }
@@ -923,48 +893,7 @@ char * S9xGetCommandName (s9xcommand_t command)
 			if (command.pointer.aim_justifier1)	{ s += c; s += "Justifier2"; c = '+'; }
 
 			break;
-
-		case S9xButtonPseudopointer:
-			if (!command.button.pointer.UD && !command.button.pointer.LR)
-				return (strdup("None"));
-			if (command.button.pointer.UD == -2 || command.button.pointer.LR == -2)
-				return (strdup("None"));
-
-			s = "ButtonToPointer ";
-			s += command.button.pointer.idx + 1;
-
-			if (command.button.pointer.UD)	s += (command.button.pointer.UD == 1) ? 'd' : 'u';
-			if (command.button.pointer.LR)	s += (command.button.pointer.LR == 1) ? 'r' : 'l';
-
-			s += " ";
-			s += speed_names[command.button.pointer.speed_type];
-
-			break;
-		case S9xAxisPseudopointer:
-			s = "AxisToPointer ";
-			s += command.axis.pointer.idx + 1;
-			s += command.axis.pointer.HV ? 'v' : 'h';
-			s += " ";
-
-			if (command.axis.pointer.invert)	s += "-";
-
-			s += speed_names[command.axis.pointer.speed_type];
-
-			break;
-
-		case S9xAxisPseudobuttons:
-			s = "AxisToButtons ";
-			s += command.axis.button.negbutton;
-			s += "/";
-			s += command.axis.button.posbutton;
-			s += " T=";
-			s += int((command.axis.button.threshold + 1) * 1000 / 256) / 10.0;
-			s += "%";
-
-			break;
-
 		case S9xButtonPort:
-		case S9xAxisPort:
 		case S9xPointerPort:
 			return (strdup("BUG: Port should have handled this instead of calling S9xGetCommandName()"));
 
@@ -1169,131 +1098,6 @@ s9xcommand_t S9xGetCommandT (const char *name)
 		cmd.type = S9xPointer;
 	}
 	else
-	if (!strncmp(name, "ButtonToPointer ", 16))
-	{
-		if (name[16] < '1' || name[16] > '8')
-			return (cmd);
-
-		cmd.button.pointer.idx = name[16] - '1';
-		s = name + 17;
-		i = 0;
-
-		if ((cmd.button.pointer.UD = (*s == 'u' ? -1 : (*s == 'd' ? 1 : 0))))	s += i = 1;
-		if ((cmd.button.pointer.LR = (*s == 'l' ? -1 : (*s == 'r' ? 1 : 0))))	s += i = 1;
-
-		if (i == 0 || *(s++) != ' ')
-			return (cmd);
-
-		for (i = 0; i < 4; i++)
-			if (!strcmp(s, speed_names[i]))
-				break;
-		if (i > 3)
-			return (cmd);
-
-		cmd.button.pointer.speed_type = i;
-
-		cmd.type = S9xButtonPseudopointer;
-	}
-	else
-	if (!strncmp(name, "AxisToPointer ", 14))
-	{
-		if (name[14] < '1' || name[14] > '8')
-			return (cmd);
-
-		cmd.axis.pointer.idx = name[14] - '1';
-		s= name + 15;
-		i = 0;
-
-		if (*s == 'h')
-			cmd.axis.pointer.HV = 0;
-		else
-		if (*s == 'v')
-			cmd.axis.pointer.HV = 1;
-		else
-			return (cmd);
-
-		if (s[1] != ' ')
-			return (cmd);
-
-		s += 2;
-		if ((cmd.axis.pointer.invert = *s == '-'))
-			s++;
-
-		for (i = 0; i < 4; i++)
-			if (!strcmp(s, speed_names[i]))
-				break;
-		if (i > 3)
-			return (cmd);
-
-		cmd.axis.pointer.speed_type = i;
-
-		cmd.type = S9xAxisPseudopointer;
-	}
-	else
-	if (!strncmp(name, "AxisToButtons ", 14))
-	{
-		s = name + 14;
-
-		if (s[0] == '0')
-		{
-			if (s[1] != '/')
-				return (cmd);
-
-			cmd.axis.button.negbutton = 0;
-			s += 2;
-		}
-		else
-		{
-			i = 0;
-			do
-			{
-				if (*s < '0' || *s > '9')
-					return (cmd);
-
-				i = i * 10 + *s - '0';
-				if (i > 255)
-					return (cmd);
-			}
-			while (*++s != '/');
-
-			cmd.axis.button.negbutton = i;
-			s++;
-		}
-
-		if (s[0] == '0')
-		{
-			if (s[1] != ' ')
-				return (cmd);
-
-			cmd.axis.button.posbutton = 0;
-			s += 2;
-		}
-		else
-		{
-			i = 0;
-			do
-			{
-				if (*s < '0' || *s > '9')
-					return (cmd);
-
-				i = i * 10 + *s - '0';
-				if (i > 255)
-					return (cmd);
-			}
-			while (*++s != ' ');
-
-			cmd.axis.button.posbutton = i;
-			s++;
-		}
-
-		i = get_threshold(&s);
-		if (i < 0)
-			return (cmd);
-		cmd.axis.button.threshold = (i - 1) * 256 / 1000;
-
-		cmd.type = S9xAxisPseudobuttons;
-	}
-	else
 	{
 		i = findstr(name, command_names, LAST_COMMAND);
 		if (i < 0)
@@ -1317,7 +1121,6 @@ static const char * maptypename (int t)
 	{
 		case MAP_NONE:		return ("unmapped");
 		case MAP_BUTTON:	return ("button");
-		case MAP_AXIS:		return ("axis");
 		case MAP_POINTER:	return ("pointer");
 		default:			return ("unknown");
 	}
@@ -1330,9 +1133,6 @@ void S9xUnmapID (uint32 id)
 	if (superscope.ID   == id)	superscope.ID   = InvalidControlID;
 	if (justifier.ID[0] == id)	justifier.ID[0] = InvalidControlID;
 	if (justifier.ID[1] == id)	justifier.ID[1] = InvalidControlID;
-
-	if (id >= PseudoPointerBase)
-		pseudopointer[id - PseudoPointerBase].mapped = false;
 }
 
 bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll)
@@ -1361,46 +1161,7 @@ bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll)
 	if (t != MAP_NONE && t != MAP_BUTTON)
 		fprintf(stderr, "WARNING: Remapping ID 0x%08x from %s to button\n", id, maptypename(t));
 
-	if (id >= PseudoPointerBase)
-	{
-		fprintf(stderr, "ERROR: Refusing to map pseudo-pointer #%d as a button\n", id - PseudoPointerBase);
-		return (false);
-	}
-
 	t = -1;
-
-	if (poll)
-	{
-		if (id >= PseudoButtonBase)
-			fprintf(stderr, "INFO: Ignoring attempt to set pseudo-button #%d to polling\n", id - PseudoButtonBase);
-		else
-		{
-			switch (mapping.type)
-			{
-				case S9xButtonJoypad:
-					t = JOYPAD0 + mapping.button.joypad.idx;
-					break;
-
-				case S9xButtonMouse:
-					t = MOUSE0 + mapping.button.mouse.idx;
-					break;
-
-				case S9xButtonSuperscope:
-					t = SUPERSCOPE;
-					break;
-
-				case S9xButtonJustifier:
-					t = ONE_JUSTIFIER + mapping.button.justifier.idx;
-					break;
-
-				case S9xButtonCommand:
-				case S9xButtonPseudopointer:
-				case S9xButtonPort:
-					t = POLL_ALL;
-					break;
-			}
-		}
-	}
 
 	S9xUnmapID(id);
 
@@ -1451,12 +1212,6 @@ bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll)
 	if (t != MAP_NONE && t != MAP_POINTER)
 		fprintf(stderr, "WARNING: Remapping ID 0x%08x from %s to pointer\n", id, maptypename(t));
 
-	if (id < PseudoPointerBase && id >= PseudoButtonBase)
-	{
-		fprintf(stderr, "ERROR: Refusing to map pseudo-button #%d as a pointer\n", id - PseudoButtonBase);
-		return (false);
-	}
-
 	if (mapping.type == S9xPointer)
 	{
 		if (mapping.pointer.aim_mouse0 && mouse[0].ID != InvalidControlID && mouse[0].ID != id)
@@ -1492,9 +1247,6 @@ bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll)
 
 	S9xUnmapID(id);
 
-	if (id >= PseudoPointerBase)
-		pseudopointer[id - PseudoPointerBase].mapped = true;
-
 	keymap[id] = mapping;
 
 	if (mapping.pointer.aim_mouse0    )	mouse[0].ID     = id;
@@ -1518,73 +1270,6 @@ void S9xReportPointer (uint32 id, int16 x, int16 y)
 	}
 
 	S9xApplyCommand(keymap[id], x, y);
-}
-
-bool S9xMapAxis (uint32 id, s9xcommand_t mapping, bool poll)
-{
-	int	t;
-
-	if (id == InvalidControlID)
-	{
-		fprintf(stderr, "Cannot map InvalidControlID\n");
-		return (false);
-	}
-
-	t = maptype(mapping.type);
-
-	if (t == MAP_NONE)
-	{
-		S9xUnmapID(id);
-		return (true);
-	}
-
-	if (t != MAP_AXIS)
-		return (false);
-
-	t = maptype(S9xGetMapping(id).type);
-
-	if (t != MAP_NONE && t != MAP_AXIS)
-		fprintf(stderr, "WARNING: Remapping ID 0x%08x from %s to axis\n", id, maptypename(t));
-
-	if (id >= PseudoPointerBase)
-	{
-		fprintf(stderr, "ERROR: Refusing to map pseudo-pointer #%d as an axis\n", id - PseudoPointerBase);
-		return (false);
-	}
-
-	t = -1;
-
-	if (poll)
-	{
-		switch (mapping.type)
-		{
-			case S9xAxisPseudopointer:
-			case S9xAxisPseudobuttons:
-			case S9xAxisPort:
-				t=POLL_ALL;
-				break;
-		}
-	}
-
-	S9xUnmapID(id);
-
-	keymap[id] = mapping;
-
-	return (true);
-}
-
-void S9xReportAxis (uint32 id, int16 value)
-{
-	if (keymap[id].type == S9xNoMapping)
-		return;
-
-	if (maptype(keymap[id].type) != MAP_AXIS)
-	{
-		fprintf(stderr, "ERROR: S9xReportAxis called on %s ID 0x%08x\n", maptypename(maptype(keymap[id].type)), id);
-		return;
-	}
-
-	S9xApplyCommand(keymap[id], value, 0);
 }
 
 void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
@@ -1998,114 +1683,7 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 			}
 
 			return;
-
-		case S9xButtonPseudopointer:
-			if (data1)
-			{
-				if (cmd.button.pointer.UD)
-				{
-					if (!pseudopointer[cmd.button.pointer.idx].V_adj)
-						pseudopointer[cmd.button.pointer.idx].V_adj = cmd.button.pointer.UD * ptrspeeds[cmd.button.pointer.speed_type];
-					pseudopointer[cmd.button.pointer.idx].V_var = (cmd.button.pointer.speed_type == 0);
-				}
-
-				if (cmd.button.pointer.LR)
-				{
-					if (!pseudopointer[cmd.button.pointer.idx].H_adj)
-						pseudopointer[cmd.button.pointer.idx].H_adj = cmd.button.pointer.LR * ptrspeeds[cmd.button.pointer.speed_type];
-					pseudopointer[cmd.button.pointer.idx].H_var = (cmd.button.pointer.speed_type == 0);
-				}
-			}
-			else
-			{
-				if (cmd.button.pointer.UD)
-				{
-					pseudopointer[cmd.button.pointer.idx].V_adj = 0;
-					pseudopointer[cmd.button.pointer.idx].V_var = false;
-				}
-
-				if (cmd.button.pointer.LR)
-				{
-					pseudopointer[cmd.button.pointer.idx].H_adj = 0;
-					pseudopointer[cmd.button.pointer.idx].H_var = false;
-				}
-			}
-
-			return;
-		case S9xAxisPseudopointer:
-			if (data1 == 0)
-			{
-				if (cmd.axis.pointer.HV)
-				{
-					pseudopointer[cmd.axis.pointer.idx].V_adj = 0;
-					pseudopointer[cmd.axis.pointer.idx].V_var = false;
-				}
-				else
-				{
-					pseudopointer[cmd.axis.pointer.idx].H_adj = 0;
-					pseudopointer[cmd.axis.pointer.idx].H_var = false;
-				}
-			}
-			else
-			{
-				if (cmd.axis.pointer.invert)
-					data1 = -data1;
-
-				if (cmd.axis.pointer.HV)
-				{
-					if (!pseudopointer[cmd.axis.pointer.idx].V_adj)
-						pseudopointer[cmd.axis.pointer.idx].V_adj = (int16) ((int32) data1 * ptrspeeds[cmd.axis.pointer.speed_type] / 32767);
-					pseudopointer[cmd.axis.pointer.idx].V_var = (cmd.axis.pointer.speed_type == 0);
-				}
-				else
-				{
-					if (!pseudopointer[cmd.axis.pointer.idx].H_adj)
-						pseudopointer[cmd.axis.pointer.idx].H_adj = (int16) ((int32) data1 * ptrspeeds[cmd.axis.pointer.speed_type] / 32767);
-					pseudopointer[cmd.axis.pointer.idx].H_var = (cmd.axis.pointer.speed_type == 0);
-				}
-			}
-
-			return;
-
-		case S9xAxisPseudobuttons:
-			if (data1 >  ((cmd.axis.button.threshold + 1) *  127))
-			{
-				if (!pseudobuttons[cmd.axis.button.posbutton])
-				{
-					pseudobuttons[cmd.axis.button.posbutton] = 1;
-					S9xReportButton(PseudoButtonBase + cmd.axis.button.posbutton, true);
-				}
-			}
-			else
-			{
-				if (pseudobuttons[cmd.axis.button.posbutton])
-				{
-					pseudobuttons[cmd.axis.button.posbutton] = 0;
-					S9xReportButton(PseudoButtonBase + cmd.axis.button.posbutton, false);
-				}
-			}
-
-			if (data1 <= ((cmd.axis.button.threshold + 1) * -127))
-			{
-				if (!pseudobuttons[cmd.axis.button.negbutton])
-				{
-					pseudobuttons[cmd.axis.button.negbutton] = 1;
-					S9xReportButton(PseudoButtonBase + cmd.axis.button.negbutton, true);
-				}
-			}
-			else
-			{
-				if (pseudobuttons[cmd.axis.button.negbutton])
-				{
-					pseudobuttons[cmd.axis.button.negbutton] = 0;
-					S9xReportButton(PseudoButtonBase + cmd.axis.button.negbutton, false);
-				}
-			}
-
-			return;
-
 		case S9xButtonPort:
-		case S9xAxisPort:
 		case S9xPointerPort:
 			S9xHandlePortCommand(cmd, data1, data2);
 			return;
@@ -2526,62 +2104,6 @@ void S9xControlEOF (void)
 			default:
 				break;
 		}
-	}
-
-	for (int n = 0; n < 8; n++)
-	{
-		if (!pseudopointer[n].mapped)
-			continue;
-
-		if (pseudopointer[n].H_adj)
-		{
-			pseudopointer[n].x += pseudopointer[n].H_adj;
-			if (pseudopointer[n].x < 0)
-				pseudopointer[n].x = 0;
-			else
-			if (pseudopointer[n].x > 255)
-				pseudopointer[n].x = 255;
-
-			if (pseudopointer[n].H_var)
-			{
-				if (pseudopointer[n].H_adj < 0)
-				{
-					if (pseudopointer[n].H_adj > -ptrspeeds[3])
-						pseudopointer[n].H_adj--;
-				}
-				else
-				{
-					if (pseudopointer[n].H_adj <  ptrspeeds[3])
-						pseudopointer[n].H_adj++;
-				}
-			}
-		}
-
-		if (pseudopointer[n].V_adj)
-		{
-			pseudopointer[n].y += pseudopointer[n].V_adj;
-			if (pseudopointer[n].y < 0)
-				pseudopointer[n].y = 0;
-			else
-			if (pseudopointer[n].y > PPU.ScreenHeight - 1)
-				pseudopointer[n].y = PPU.ScreenHeight - 1;
-
-			if (pseudopointer[n].V_var)
-			{
-				if (pseudopointer[n].V_adj < 0)
-				{
-					if (pseudopointer[n].V_adj > -ptrspeeds[3])
-						pseudopointer[n].V_adj--;
-				}
-				else
-				{
-					if (pseudopointer[n].V_adj <  ptrspeeds[3])
-						pseudopointer[n].V_adj++;
-				}
-			}
-		}
-
-		S9xReportPointer(PseudoPointerBase + n, pseudopointer[n].x, pseudopointer[n].y);
 	}
 
 	pad_read_last = pad_read;
