@@ -1821,7 +1821,7 @@ void S9xUpdateScreen (void)
 			IPPU.RenderedScreenWidth = 512;
 		}
 
-		if (!IPPU.DoubleHeightPixels && IPPU.Interlace)
+		if (!IPPU.DoubleHeightPixels && IPPU.Interlace && (PPU.BGMode == 5 || PPU.BGMode == 6))
 		{
 			IPPU.DoubleHeightPixels = TRUE;
 			IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
