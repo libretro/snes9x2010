@@ -375,6 +375,9 @@ static void map_buttons()
 static int16_t snes_mouse_state[2][2] = {{0}, {0}};
 static int16_t snes_scope_state[2] = {0};
 static int16_t snes_justifier_state[2][2] = {{0}, {0}};
+uint16_t joypad[8];
+s9xcommand_t keymap[1024];
+
 static void report_buttons()
 {
    int _x, _y;
@@ -384,7 +387,16 @@ static void report_buttons()
       {
          case SNES_DEVICE_JOYPAD:
             for (int i = BTN_FIRST; i <= BTN_LAST; i++)
-               S9xReportButton(MAKE_BUTTON(port + 1, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JOYPAD, 0, i));
+	    {
+		s9xcommand_t cmd = keymap[MAKE_BUTTON(port + 1, i)];
+	    	uint16 r = cmd.button.joypad.buttons;
+	    	bool pressed = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JOYPAD, 0, i);
+
+		if (pressed)
+			joypad[cmd.button.joypad.idx] |= r;
+		else
+			joypad[cmd.button.joypad.idx] &= ~r;
+	    }
             break;
 
          case SNES_DEVICE_MULTITAP:

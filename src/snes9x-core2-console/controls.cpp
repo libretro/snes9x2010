@@ -247,8 +247,6 @@ static struct
 	bool8				mapped;
 }	pseudopointer[8];
 
-uint16_t joypad[8];
-
 static struct
 {
 	uint8				delta_x, delta_y;
@@ -283,7 +281,7 @@ static struct
 	int8				pads[4];
 }	mp5[2];
 
-static s9xcommand_t			keymap[1024];
+extern s9xcommand_t			keymap[1024];
 static uint8				turbo_time;
 static uint8				pseudobuttons[256];
 static bool8				FLAG_LATCH = FALSE;
@@ -459,7 +457,6 @@ static int maptype (int t)
 		case S9xButtonPort:
 			return (MAP_BUTTON);
 
-		case S9xAxisJoypad:
 		case S9xAxisPseudopointer:
 		case S9xAxisPseudobuttons:
 		case S9xAxisPort:
@@ -504,8 +501,6 @@ void S9xUnmapAllControls (void)
 		pseudopointer[i].H_var = 0;
 		pseudopointer[i].V_var = 0;
 		pseudopointer[i].mapped = false;
-
-		joypad[i]  = 0;
 	}
 
 	for (int i = 0; i < 2; i++)
@@ -945,28 +940,6 @@ char * S9xGetCommandName (s9xcommand_t command)
 			s += speed_names[command.button.pointer.speed_type];
 
 			break;
-
-		case S9xAxisJoypad:
-			s = "Joypad";
-			s += command.axis.joypad.idx + 1;
-			s += " Axis ";
-
-			switch (command.axis.joypad.axis)
-			{
-				case 0:	s += (command.axis.joypad.invert ? "Right/Left" : "Left/Right");	break;
-				case 1:	s += (command.axis.joypad.invert ? "Down/Up"    : "Up/Down"   );	break;
-				case 2:	s += (command.axis.joypad.invert ? "A/Y"        : "Y/A"       );	break;
-				case 3:	s += (command.axis.joypad.invert ? "B/X"        : "X/B"       );	break;
-				case 4:	s += (command.axis.joypad.invert ? "R/L"        : "L/R"       );	break;
-				default:	return (strdup("None"));
-			}
-
-			s += " T=";
-			s += int((command.axis.joypad.threshold + 1) * 1000 / 256) / 10.0;
-			s += "%";
-
-			break;
-
 		case S9xAxisPseudopointer:
 			s = "AxisToPointer ";
 			s += command.axis.pointer.idx + 1;
@@ -1073,7 +1046,7 @@ static int get_threshold (const char **ss)
 s9xcommand_t S9xGetCommandT (const char *name)
 {
 	s9xcommand_t	cmd;
-	int				i, j;
+	int				i;
 	const char		*s;
 
 	ZeroMemory(&cmd, sizeof(cmd));
@@ -1089,79 +1062,40 @@ s9xcommand_t S9xGetCommandT (const char *name)
 		if (name[6] < '1' || name[6] > '8' || name[7] != ' ')
 			return (cmd);
 
-		if (!strncmp(name + 8, "Axis ", 5))
+		cmd.button.joypad.idx = name[6] - '1';
+		s = name + 8;
+		i = 0;
+
+		if (i)
 		{
-			cmd.axis.joypad.idx = name[6] - '1';
-			s = name + 13;
-
-			if (!strncmp(s, "Left/Right ", 11))	{ j = 0; i = 0; s += 11; }
-			else
-			if (!strncmp(s, "Right/Left ", 11))	{ j = 0; i = 1; s += 11; }
-			else
-			if (!strncmp(s, "Up/Down ",     8))	{ j = 1; i = 0; s +=  8; }
-			else
-			if (!strncmp(s, "Down/Up ",     8))	{ j = 1; i = 1; s +=  8; }
-			else
-			if (!strncmp(s, "Y/A ",         4))	{ j = 2; i = 0; s +=  4; }
-			else
-			if (!strncmp(s, "A/Y ",         4))	{ j = 2; i = 1; s +=  4; }
-			else
-			if (!strncmp(s, "X/B ",         4))	{ j = 3; i = 0; s +=  4; }
-			else
-			if (!strncmp(s, "B/X ",         4))	{ j = 3; i = 1; s +=  4; }
-			else
-			if (!strncmp(s, "L/R ",         4))	{ j = 4; i = 0; s +=  4; }
-			else
-			if (!strncmp(s, "R/L ",         4))	{ j = 4; i = 1; s +=  4; }
-			else
+			if (*s != ' ')
 				return (cmd);
-
-			cmd.axis.joypad.axis      = j;
-			cmd.axis.joypad.invert    = i;
-			i = get_threshold(&s);
-			if (i < 0)
-				return (cmd);
-			cmd.axis.joypad.threshold = (i - 1) * 256 / 1000;
-
-			cmd.type = S9xAxisJoypad;
+			s++;
 		}
-		else
-		{
-			cmd.button.joypad.idx = name[6] - '1';
-			s = name + 8;
-			i = 0;
 
-			if (i)
-			{
-				if (*s != ' ')
-					return (cmd);
-				s++;
-			}
+		i = 0;
 
-			i = 0;
+		if (!strncmp(s, "Up",     2))	{ i |= SNES_UP_MASK;     s += 2; if (*s == '+') s++; }
+		if (!strncmp(s, "Down",   4))	{ i |= SNES_DOWN_MASK;   s += 4; if (*s == '+') s++; }
+		if (!strncmp(s, "Left",   4))	{ i |= SNES_LEFT_MASK;   s += 4; if (*s == '+') s++; }
+		if (!strncmp(s, "Right",  5))	{ i |= SNES_RIGHT_MASK;  s += 5; if (*s == '+') s++; }
 
-			if (!strncmp(s, "Up",     2))	{ i |= SNES_UP_MASK;     s += 2; if (*s == '+') s++; }
-			if (!strncmp(s, "Down",   4))	{ i |= SNES_DOWN_MASK;   s += 4; if (*s == '+') s++; }
-			if (!strncmp(s, "Left",   4))	{ i |= SNES_LEFT_MASK;   s += 4; if (*s == '+') s++; }
-			if (!strncmp(s, "Right",  5))	{ i |= SNES_RIGHT_MASK;  s += 5; if (*s == '+') s++; }
+		if (*s == 'A')	{ i |= SNES_A_MASK;  s++; if (*s == '+') s++; }
+		if (*s == 'B')	{ i |= SNES_B_MASK;  s++; if (*s == '+') s++; }
+		if (*s == 'X')	{ i |= SNES_X_MASK;  s++; if (*s == '+') s++; }
+		if (*s == 'Y')	{ i |= SNES_Y_MASK;  s++; if (*s == '+') s++; }
+		if (*s == 'L')	{ i |= SNES_TL_MASK; s++; if (*s == '+') s++; }
+		if (*s == 'R')	{ i |= SNES_TR_MASK; s++; if (*s == '+') s++; }
 
-			if (*s == 'A')	{ i |= SNES_A_MASK;  s++; if (*s == '+') s++; }
-			if (*s == 'B')	{ i |= SNES_B_MASK;  s++; if (*s == '+') s++; }
-			if (*s == 'X')	{ i |= SNES_X_MASK;  s++; if (*s == '+') s++; }
-			if (*s == 'Y')	{ i |= SNES_Y_MASK;  s++; if (*s == '+') s++; }
-			if (*s == 'L')	{ i |= SNES_TL_MASK; s++; if (*s == '+') s++; }
-			if (*s == 'R')	{ i |= SNES_TR_MASK; s++; if (*s == '+') s++; }
+		if (!strncmp(s, "Start",  5))	{ i |= SNES_START_MASK;  s += 5; if (*s == '+') s++; }
+		if (!strncmp(s, "Select", 6))	{ i |= SNES_SELECT_MASK; s += 6; }
 
-			if (!strncmp(s, "Start",  5))	{ i |= SNES_START_MASK;  s += 5; if (*s == '+') s++; }
-			if (!strncmp(s, "Select", 6))	{ i |= SNES_SELECT_MASK; s += 6; }
+		if (i == 0 || *s != 0 || *(s - 1) == '+')
+			return (cmd);
 
-			if (i == 0 || *s != 0 || *(s - 1) == '+')
-				return (cmd);
+		cmd.button.joypad.buttons = i;
 
-			cmd.button.joypad.buttons = i;
-
-			cmd.type = S9xButtonJoypad;
-		}
+		cmd.type = S9xButtonJoypad;
 	}
 	else
 	if (!strncmp(name, "Mouse", 5))
@@ -1482,7 +1416,7 @@ void S9xReportButton (uint32 id, bool pressed)
 
 	if (maptype(keymap[id].type) != MAP_BUTTON)
 	{
-		fprintf(stderr, "ERROR: S9xReportButton called on %s ID 0x%08x\n", maptypename(maptype(keymap[id].type)), id);
+		//fprintf(stderr, "ERROR: S9xReportButton called on %s ID 0x%08x\n", maptypename(maptype(keymap[id].type)), id);
 		return;
 	}
 
@@ -1624,10 +1558,6 @@ bool S9xMapAxis (uint32 id, s9xcommand_t mapping, bool poll)
 	{
 		switch (mapping.type)
 		{
-			case S9xAxisJoypad:
-				t = JOYPAD0 + mapping.axis.joypad.idx;
-				break;
-
 			case S9xAxisPseudopointer:
 			case S9xAxisPseudobuttons:
 			case S9xAxisPort:
@@ -1665,18 +1595,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 	{
 		case S9xNoMapping:
 			return;
-
-		case S9xButtonJoypad:
-			{
-				uint16	r = cmd.button.joypad.buttons;
-
-				if (data1)
-					joypad[cmd.button.joypad.idx] |= r;
-				else
-					joypad[cmd.button.joypad.idx] &= ~r;
-			}
-			return;
-
 		case S9xButtonMouse:
 			i = 0;
 			if (cmd.button.mouse.left )	i |= 0x40;
@@ -2114,43 +2032,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 			}
 
 			return;
-
-		case S9xAxisJoypad:
-		{
-			uint16	pos, neg;
-
-			switch (cmd.axis.joypad.axis)
-			{
-				case 0: neg = SNES_LEFT_MASK;	pos = SNES_RIGHT_MASK;	break;
-				case 1: neg = SNES_UP_MASK;		pos = SNES_DOWN_MASK;	break;
-				case 2: neg = SNES_Y_MASK;		pos = SNES_A_MASK;		break;
-				case 3: neg = SNES_X_MASK;		pos = SNES_B_MASK;		break;
-				case 4: neg = SNES_TL_MASK;		pos = SNES_TR_MASK;		break;
-				default: return;
-			}
-
-			if (cmd.axis.joypad.invert)
-				data1 = -data1;
-
-			uint16	p, r;
-
-			p = r = 0;
-			if (data1 >  ((cmd.axis.joypad.threshold + 1) *  127))
-				p |= pos;
-			else
-				r |= pos;
-
-			if (data1 <= ((cmd.axis.joypad.threshold + 1) * -127))
-				p |= neg;
-			else
-				r |= neg;
-
-			joypad[cmd.axis.joypad.idx] |= p;
-			joypad[cmd.axis.joypad.idx] &= ~r;
-
-			return;
-		}
-
 		case S9xAxisPseudopointer:
 			if (data1 == 0)
 			{
@@ -2359,6 +2240,8 @@ void S9xSetJoypadLatch (bool latch)
 
 	FLAG_LATCH = latch;
 }
+
+extern uint16_t joypad[8];
 
 uint8 S9xReadJOYSERn (int n)
 {
@@ -2571,7 +2454,7 @@ void S9xDoAutoJoypad (void)
 void S9xControlEOF (void)
 {
 	struct crosshair	*c;
-	int					i, j;
+	int					i;
 
 	PPU.GunVLatch = 1000; // i.e., never latch
 	PPU.GunHLatch = 0;

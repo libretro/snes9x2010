@@ -354,17 +354,6 @@ void S9xReportButton (uint32 id, bool pressed);
 bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll);
 void S9xReportPointer (uint32 id, int16 x, int16 y);
 
-// Axis mapping functions.
-// If an axis is mapped with poll=TRUE, then S9xPollAxis will be called whenever snes9x feels a need for that mapping.
-// Otherwise, snes9x will assume you will call S9xReportAxis() whenever the axis deflection changes.
-// S9xMapAxis() will fail and return FALSE if mapping.type isn't an S9xAxis* type.
-
-// Note that value is linear -32767 through 32767 with 0 being no deflection.
-// If your axis reports differently you should transform the value before passing it to S9xReportAxis().
-
-bool S9xMapAxis (uint32 id, s9xcommand_t mapping, bool poll);
-void S9xReportAxis (uint32 id, int16 value);
-
 // Do whatever the s9xcommand_t says to do.
 // If cmd.type is a button type, data1 should be TRUE (non-0) or FALSE (0) to indicate whether the 'button' is pressed or released.
 // If cmd.type is an axis, data1 holds the deflection value.
@@ -380,7 +369,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2);
 
 bool S9xPollButton (uint32 id, bool *pressed);
 bool S9xPollPointer (uint32 id, int16 *x, int16 *y);
-bool S9xPollAxis (uint32 id, int16 *value);
 
 // These are called when snes9x tries to apply a command with a S9x*Port type.
 // data1 and data2 are filled in like S9xApplyCommand.
