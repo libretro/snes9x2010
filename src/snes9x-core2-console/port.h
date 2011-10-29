@@ -189,11 +189,6 @@
 #endif
 #include <sys/types.h>
 
-#ifdef __WIN32__
-#define NOMINMAX
-#include <windows.h>
-#endif
-
 #define GFX_MULTI_FORMAT
 
 #ifdef __WIN32__

@@ -87,7 +87,6 @@ enum {
 void enable_apply_border(bool enable);
 void emulator_implementation_set_texture (const char * fname);
 void emulator_init_settings(void);
-bool emulator_init_system(void);
 const char * emulator_input_cheat(void);
 const char * emulator_input_cheatlabel(void);
 void emulator_implementation_button_mapping_settings(int map_button_option_enum);
