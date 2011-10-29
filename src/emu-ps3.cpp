@@ -2178,6 +2178,19 @@ void _makepath (char *path, const char *, const char *dir, const char *fname, co
       Graphics->set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1); \
    }
 
+static void Emulator_Initialize(void)
+{
+	if(emulator_init_system())
+	{
+		if(!emulator_initialized)
+			emulator_initialized = 1;
+
+		need_load_rom = false;
+	}
+	else
+		need_load_rom = true;
+}
+
 static void emulator_start(void)
 {
 	if(need_load_rom)
@@ -2360,18 +2373,6 @@ void Emulator_StartROMRunning(uint32_t set_is_running)
 	mode_switch = MODE_EMULATION;
 }
 
-static void Emulator_Initialize(void)
-{
-	if(emulator_init_system())
-	{
-		if(!emulator_initialized)
-			emulator_initialized = 1;
-
-		need_load_rom = false;
-	}
-	else
-		need_load_rom = true;
-}
 
 
 void ingame_menu_enable (int enable)

@@ -103,8 +103,6 @@ int Emulator_SaveSettings(void);
 bool Emulator_IsROMLoaded(void);
 void Emulator_StartROMRunning(uint32_t set_is_running = 1);
 void Emulator_GraphicsInit(uint32_t resId);
-bool Emulator_IsInitialized(void);
-void Emulator_Initialize(void);
 void emulator_save_settings(uint64_t filetosave = 0);
 void ingame_menu_enable( int enable);
 
