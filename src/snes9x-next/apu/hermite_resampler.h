@@ -19,8 +19,8 @@ class HermiteResampler
 	protected:
 
 	double r_step;
-	double r_frac;
-	int    r_left[4], r_right[4];
+	float r_frac;
+	int    chandata[2][4];
 
 	//from ring buffer
 	int size;
@@ -81,8 +81,8 @@ class HermiteResampler
 
 		//from hermite
 		r_frac = 1.0;
-		r_left [0] = r_left [1] = r_left [2] = r_left [3] = 0;
-		r_right[0] = r_right[1] = r_right[2] = r_right[3] = 0;
+		chandata[0][0] = chandata[0][1] = chandata[0][2] = chandata[0][3] = 0;
+		chandata[1][0] = chandata[1][1] = chandata[1][2] = chandata[1][3] = 0;
 	}
 
 	void read (short *data, int num_samples)
@@ -100,8 +100,8 @@ class HermiteResampler
 
 			while (r_frac <= 1.0 && o_position < num_samples)
 			{
-				data[o_position]     = SHORT_CLAMP (hermite (r_frac, r_left [0], r_left [1], r_left [2], r_left [3]));
-				data[o_position + 1] = SHORT_CLAMP (hermite (r_frac, r_right[0], r_right[1], r_right[2], r_right[3]));
+				data[o_position]     = SHORT_CLAMP (hermite (r_frac, chandata[0][0], chandata[0][1], chandata[0][2], chandata[0][3]));
+				data[o_position + 1] = SHORT_CLAMP (hermite (r_frac, chandata[1][0], chandata[1][1], chandata[1][2], chandata[1][3]));
 
 				o_position += 2;
 
@@ -110,17 +110,17 @@ class HermiteResampler
 
 			if (r_frac > 1.0)
 			{
-				r_left [0] = r_left [1];
-				r_left [1] = r_left [2];
-				r_left [2] = r_left [3];
-				r_left [3] = s_left;
-
-				r_right[0] = r_right[1];
-				r_right[1] = r_right[2];
-				r_right[2] = r_right[3];
-				r_right[3] = s_right;                    
-
 				r_frac -= 1.0;
+
+				chandata[0][0] = chandata[0][1];
+				chandata[0][1] = chandata[0][2];
+				chandata[0][2] = chandata[0][3];
+				chandata[0][3] = s_left;
+
+				chandata[1][0] = chandata[1][1];
+				chandata[1][1] = chandata[1][2];
+				chandata[1][2] = chandata[1][3];
+				chandata[1][3] = s_right;                    
 
 				i_position += 2;
 				if (i_position >= max_samples)
