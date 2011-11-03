@@ -214,7 +214,7 @@ inline void SNES_SPC::dsp_write( int data, rel_time_t time )
 		return false;
 	}
 	
-	#define MEM_ACCESS( time, addr ) check( !check_echo_access( (uint16_t) addr ) );
+	#define MEM_ACCESS( time, addr )
 #else
 	#define MEM_ACCESS( time, addr )
 #endif
