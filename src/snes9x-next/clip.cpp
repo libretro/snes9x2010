@@ -334,7 +334,7 @@ void S9xComputeClipWindows (void)
 
 	// Get a bitmap of which regions correspond to each window.
 
-	uint8	W1, W2;
+	uint8	W1 = 0, W2 = 0;
 
 	if (PPU.Window1Left <= PPU.Window1Right)
 	{
@@ -342,8 +342,6 @@ void S9xComputeClipWindows (void)
 		for (j = i; windows[j] != PPU.Window1Right + 1; j++) ;
 		W1 = region_map[i][j];
 	}
-	else
-		W1 = 0;
 
 	if (PPU.Window2Left <= PPU.Window2Right)
 	{
@@ -351,8 +349,6 @@ void S9xComputeClipWindows (void)
 		for (j = i; windows[j] != PPU.Window2Right + 1; j++) ;
 		W2 = region_map[i][j];
 	}
-	else
-		W2 = 0;
 
 	// Color Window affects the drawing mode for each region.
 	// Modes are: 3=Draw as normal, 2=clip color (math only), 1=no math (draw only), 0=nothing.
@@ -362,7 +358,6 @@ void S9xComputeClipWindows (void)
 
 	switch (Memory.FillRAM[0x2130] & 0xc0)
 	{
-		case 0x00:	CW_color = 0;		break;
 		case 0x40:	CW_color = ~CW;		break;
 		case 0x80:	CW_color = CW;		break;
 		case 0xc0:	CW_color = 0xff;	break;
@@ -370,7 +365,6 @@ void S9xComputeClipWindows (void)
 
 	switch (Memory.FillRAM[0x2130] & 0x30)
 	{
-		case 0x00:	CW_math  = 0;		break;
 		case 0x10:	CW_math  = ~CW;		break;
 		case 0x20:	CW_math  = CW;		break;
 		case 0x30:	CW_math  = 0xff;	break;
@@ -394,12 +388,17 @@ void S9xComputeClipWindows (void)
 	for (j = 0; j < 5; j++)
 	{
 		uint8	W = CalcWindowMask(j, W1, W2);
-		for (int sub = 0; sub < 2; sub++)
-		{
-			if (Memory.FillRAM[sub + 0x212e] & (1 << j))
-				StoreWindowRegions(W, &IPPU.Clip[sub][j], n_regions, windows, drawing_modes, sub);
-			else
-				StoreWindowRegions(0, &IPPU.Clip[sub][j], n_regions, windows, drawing_modes, sub);
-		}
+		uint8 mask_a = 0;
+		uint8 mask_b = 0;
+
+		if (Memory.FillRAM[0x212e] & (1 << j))
+			mask_a = W;
+		
+		StoreWindowRegions(mask_a, &IPPU.Clip[0][j], n_regions, windows, drawing_modes, 0);
+
+		if (Memory.FillRAM[0x212f] & (1 << j))
+			mask_b = W;
+		
+		StoreWindowRegions(mask_b, &IPPU.Clip[1][j], n_regions, windows, drawing_modes, 1);
 	}
 }
