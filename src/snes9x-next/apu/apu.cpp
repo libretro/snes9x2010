@@ -180,11 +180,7 @@
 #include "apu.h"
 #include "snapshot.h"
 #include "display.h"
-#ifdef USE_LINEAR_RESAMPLER
-#include "linear_resampler.h"
-#else
 #include "hermite_resampler.h"
-#endif
 
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512
@@ -193,11 +189,7 @@
 #define APU_DENOMINATOR_NTSC		328125
 #define APU_NUMERATOR_PAL		34176
 #define APU_DENOMINATOR_PAL		709379
-#ifdef USE_LINEAR_RESAMPLER
-#define APU_DEFAULT_RESAMPLER		LinearResampler
-#else
 #define APU_DEFAULT_RESAMPLER		HermiteResampler
-#endif
 
 SNES_SPC	*spc_core = NULL;
 
@@ -222,11 +214,7 @@ static int		buffer_size;
 
 static uint8		*landing_buffer = NULL;
 
-#ifdef USE_LINEAR_RESAMPLER
-static Resampler	*resampler      = NULL;
-#else
 static HermiteResampler	*resampler      = NULL;
-#endif
 
 static int32		reference_time;
 static uint32		spc_remainder;
