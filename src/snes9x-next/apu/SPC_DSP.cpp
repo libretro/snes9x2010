@@ -342,17 +342,20 @@ MISC_CLOCK( 27 )
 {
 	m.t_pmon = REG(pmon) & 0xFE; // voice 0 doesn't support PMON
 }
+
 MISC_CLOCK( 28 )
 {
 	m.t_non = REG(non);
 	m.t_eon = REG(eon);
 	m.t_dir = REG(dir);
 }
+
 MISC_CLOCK( 29 )
 {
 	if ( (m.every_other_sample ^= 1) != 0 )
 		m.new_kon &= ~m.kon; // clears KON 63 clocks after it was last read
 }
+
 MISC_CLOCK( 30 )
 {
 	if ( m.every_other_sample )

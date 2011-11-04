@@ -74,9 +74,7 @@ blargg_err_t SNES_SPC::init()
 	dsp.rom = m.rom;
 	dsp.hi_ram = m.hi_ram;
 	
-	#if SPC_LESS_ACCURATE
-		memcpy( reg_times, reg_times_, sizeof reg_times );
-	#endif
+	memcpy( reg_times, reg_times_, sizeof reg_times );
 	
 	reset();
 	return 0;
@@ -164,10 +162,7 @@ void SNES_SPC::reset_time_regs()
 	m.cpu_error     = 0;
 	m.echo_accessed = 0;
 	m.spc_time      = 0;
-	m.dsp_time      = 0;
-	#if SPC_LESS_ACCURATE
-		m.dsp_time = clocks_per_sample + 1;
-	#endif
+	m.dsp_time = clocks_per_sample + 1;
 	
 	for ( int i = 0; i < timer_count; i++ )
 	{
@@ -353,7 +348,6 @@ blargg_err_t SNES_SPC::play( int count, sample_t* out )
 
 blargg_err_t SNES_SPC::skip( int count )
 {
-	#if SPC_LESS_ACCURATE
 	if ( count > 2 * sample_rate * 2 )
 	{
 		set_output( 0, 0 );
@@ -377,7 +371,6 @@ blargg_err_t SNES_SPC::skip( int count )
 		dsp.write( SPC_DSP::r_kon , m.skipped_kon );
 		clear_echo();
 	}
-	#endif
 	
 	return play( count, 0 );
 }

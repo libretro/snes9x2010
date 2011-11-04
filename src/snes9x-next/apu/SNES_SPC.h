@@ -132,10 +132,8 @@ public:
 private:
 	SPC_DSP dsp;
 	
-	#if SPC_LESS_ACCURATE
-		static signed char const reg_times_ [256];
-		signed char reg_times [256];
-	#endif
+	static signed char const reg_times_ [256];
+	signed char reg_times [256];
 	
 	struct state_t
 	{

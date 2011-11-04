@@ -87,46 +87,37 @@ void SNES_SPC::enable_rom( int enable )
 
 //// DSP
 
-#if SPC_LESS_ACCURATE
-	int const max_reg_time = 29;
-	
-	signed char const SNES_SPC::reg_times_ [256] =
-	{
-		 -1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
-		  2,  3,  0,  1,-12,  0,  1,  1,  7,  6, 14, 14, 27, 14, 14, 23,
-		  5,  6,  3,  4, -1,  3,  4,  4, 10,  9, 14, 14, 26, -5, 14, 23,
-		  8,  9,  6,  7,  2,  6,  7,  7, 13, 12, 14, 14, 27, -4, 14, 24,
-		 11, 12,  9, 10,  5,  9, 10, 10, 16, 15, 14, 14, -2, -4, 14, 24,
-		 14, 15, 12, 13,  8, 12, 13, 13, 19, 18, 14, 14, -2,-36, 14, 24,
-		 17, 18, 15, 16, 11, 15, 16, 16, 22, 21, 14, 14, 28, -3, 14, 25,
-		 20, 21, 18, 19, 14, 18, 19, 19, 25, 24, 14, 14, 14, 29, 14, 25,
-		 
-		 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-	};
-	
-	#define RUN_DSP( time, offset ) \
-		int count = (time) - (offset) - m.dsp_time;\
-		if ( count >= 0 )\
-		{\
-			int clock_count = (count & ~(clocks_per_sample - 1)) + clocks_per_sample;\
-			m.dsp_time += clock_count;\
-			dsp.run( clock_count );\
-		}
-#else
-	#define RUN_DSP( time, offset ) \
-		{\
-			int count = (time) - m.dsp_time;\
-			m.dsp_time = (time);\
-			dsp.run( count );\
-		}
-#endif
+int const max_reg_time = 29;
+
+signed char const SNES_SPC::reg_times_ [256] =
+{
+	-1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
+	2,  3,  0,  1,-12,  0,  1,  1,  7,  6, 14, 14, 27, 14, 14, 23,
+	5,  6,  3,  4, -1,  3,  4,  4, 10,  9, 14, 14, 26, -5, 14, 23,
+	8,  9,  6,  7,  2,  6,  7,  7, 13, 12, 14, 14, 27, -4, 14, 24,
+	11, 12,  9, 10,  5,  9, 10, 10, 16, 15, 14, 14, -2, -4, 14, 24,
+	14, 15, 12, 13,  8, 12, 13, 13, 19, 18, 14, 14, -2,-36, 14, 24,
+	17, 18, 15, 16, 11, 15, 16, 16, 22, 21, 14, 14, 28, -3, 14, 25,
+	20, 21, 18, 19, 14, 18, 19, 19, 25, 24, 14, 14, 14, 29, 14, 25,
+
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+};
+
+#define RUN_DSP( time, offset ) \
+	int count = (time) - (offset) - m.dsp_time; \
+	if ( count >= 0 ) \
+	{\
+		int clock_count = (count & ~(clocks_per_sample - 1)) + clocks_per_sample; \
+		m.dsp_time += clock_count; \
+		dsp.run( clock_count ); \
+	}
 
 int SNES_SPC::dsp_read( rel_time_t time )
 {
@@ -144,20 +135,18 @@ int SNES_SPC::dsp_read( rel_time_t time )
 inline void SNES_SPC::dsp_write( int data, rel_time_t time )
 {
 	RUN_DSP( time, reg_times [REGS [r_dspaddr]] )
-	#if SPC_LESS_ACCURATE
 		else if ( m.dsp_time == skipping_time )
 		{
 			int r = REGS [r_dspaddr];
 			if ( r == SPC_DSP::r_kon )
 				m.skipped_kon |= data & ~dsp.read( SPC_DSP::r_koff );
-			
+
 			if ( r == SPC_DSP::r_koff )
 			{
 				m.skipped_koff |= data;
 				m.skipped_kon &= ~data;
 			}
 		}
-	#endif
 	
 	#ifdef SPC_DSP_WRITE_HOOK
 		SPC_DSP_WRITE_HOOK( m.spc_time + time, REGS [r_dspaddr], (uint8_t) data );
