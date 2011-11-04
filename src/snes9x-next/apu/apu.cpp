@@ -180,7 +180,6 @@
 #include "apu.h"
 #include "snapshot.h"
 #include "display.h"
-#include "hermite_resampler.h"
 
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512
@@ -189,7 +188,6 @@
 #define APU_DENOMINATOR_NTSC		328125
 #define APU_NUMERATOR_PAL		34176
 #define APU_DENOMINATOR_PAL		709379
-#define APU_DEFAULT_RESAMPLER		HermiteResampler
 
 SNES_SPC	*spc_core = NULL;
 
@@ -214,7 +212,6 @@ static int		buffer_size;
 
 static uint8		*landing_buffer = NULL;
 
-static HermiteResampler	*resampler      = NULL;
 
 static int32		reference_time;
 static uint32		spc_remainder;
@@ -226,19 +223,128 @@ static int		timing_hack_denominator = SNES_SPC::tempo_unit;
 static uint32		ratio_numerator = APU_NUMERATOR_NTSC;
 static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 
+bool resampler = false;
+double r_step;
+float r_frac;
+int r_chandata[2][4];
+int r_size;
+int r_buffer_size;
+int r_start;
+unsigned char * r_buffer;
+
+#undef CLAMP
+#undef SHORT_CLAMP
+#define RESAMPLER_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+#define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
+
+static inline float hermite (float mu1, float a, float b, float c, float d)
+{
+	float mu2 = mu1 + mu1;
+	float mu3 = mu1 + mu1 + mu1;
+
+	float m0  = (c - a) * 0.5;
+	float m1 = (d - b) * 0.5;
+
+	float a0 = +2 * mu3 - 3 * mu2 + 1;
+	float a1 =      mu3 - 2 * mu2 + mu1;
+	float a2 =      mu3 -     mu2;
+	float a3 = -2 * mu3 + 3 * mu2;
+
+	return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
+}
+
 void S9xMixSamples (uint8 *buffer, int sample_count)
 {
-	resampler->read((short *)buffer, sample_count);
+	short * data = (short*)buffer;
+	int i_position = r_start >> 1;
+	short *internal_buffer = (short *)r_buffer;
+	int o_position = 0;
+	int consumed = 0;
+
+	while (o_position < sample_count)
+	{
+		int s_left = internal_buffer[i_position];
+		int s_right = internal_buffer[i_position + 1];
+		int max_samples = r_buffer_size >> 1;
+
+		while (r_frac <= 1.0 && o_position < sample_count)
+		{
+			data[o_position]     = SHORT_CLAMP (hermite (r_frac, r_chandata[0][0], r_chandata[0][1], r_chandata[0][2], r_chandata[0][3]));
+			data[o_position + 1] = SHORT_CLAMP (hermite (r_frac, r_chandata[1][0], r_chandata[1][1], r_chandata[1][2], r_chandata[1][3]));
+
+			o_position += 2;
+
+			r_frac += r_step;
+		}
+
+		if (r_frac > 1.0)
+		{
+			r_frac -= 1.0;
+
+			r_chandata[0][0] = r_chandata[0][1];
+			r_chandata[0][1] = r_chandata[0][2];
+			r_chandata[0][2] = r_chandata[0][3];
+			r_chandata[0][3] = s_left;
+
+			r_chandata[1][0] = r_chandata[1][1];
+			r_chandata[1][1] = r_chandata[1][2];
+			r_chandata[1][2] = r_chandata[1][3];
+			r_chandata[1][3] = s_right;                    
+
+			i_position += 2;
+			if (i_position >= max_samples)
+				i_position -= max_samples;
+			consumed += 2;
+		}
+	}
+
+	r_size -= consumed << 1;
+	r_start += consumed << 1;
+	if (r_start >= r_buffer_size)
+		r_start -= r_buffer_size;
 }
 
 int S9xGetSampleCount (void)
 {
-	return resampler->avail();
+	return (int) floor(((r_size >> 2) - r_frac) / r_step) * 2;
+}
+
+#define resampler_space_empty() (r_buffer_size - r_size)
+
+bool ring_buffer_push (unsigned char *src, int bytes)
+{
+	if (resampler_space_empty () < bytes)
+		return false;
+
+	int end = (r_start + r_size) % r_buffer_size;
+	int first_write_size = RESAMPLER_MIN(bytes, r_buffer_size - end);
+
+	memcpy (r_buffer + end, src, first_write_size);
+
+	if (bytes > first_write_size)
+		memcpy (r_buffer, src + first_write_size, bytes - first_write_size);
+
+	r_size += bytes;
+
+	return true;
+}
+
+#define resampler_max_write() (resampler_space_empty() >> 1)
+
+inline bool resampler_push (short *src, int num_samples)
+{
+	if (resampler_max_write () < num_samples)
+		return false;
+
+	!num_samples || ring_buffer_push((unsigned char *) src, num_samples << 1);
+
+	return true;
 }
 
 void S9xFinalizeSamples (void)
 {
-	if (!resampler->push((short *)landing_buffer, spc_core->sample_count()))
+	if (!resampler_push((short *)landing_buffer, spc_core->sample_count()))
 	{
 		/* We weren't able to process the entire buffer. Potential overrun. */
 		sound_in_sync = FALSE;
@@ -247,7 +353,7 @@ void S9xFinalizeSamples (void)
 			return;
 	}
 
-	if (Settings.TurboMode || resampler->space_empty() >= resampler->space_filled())
+	if (Settings.TurboMode || resampler_space_empty() >= r_size)
 		sound_in_sync = TRUE;
 	else
 		sound_in_sync = FALSE;
@@ -255,9 +361,22 @@ void S9xFinalizeSamples (void)
 	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
 }
 
+void resampler_clear (void)
+{
+	//from ring buffer
+	r_start = 0;
+	r_size = 0;
+	memset (r_buffer, 0, r_buffer_size);
+
+	//from hermite
+	r_frac = 1.0;
+	r_chandata[0][0] = r_chandata[0][1] = r_chandata[0][2] = r_chandata[0][3] = 0;
+	r_chandata[1][0] = r_chandata[1][1] = r_chandata[1][2] = r_chandata[1][3] = 0;
+}
+
 void S9xClearSamples (void)
 {
-	resampler->clear();
+	resampler_clear();
 }
 
 bool8 S9xSyncSound (void)
@@ -276,13 +395,44 @@ void S9xSetSamplesAvailableCallback (apu_callback callback, void *data)
 	extra_data  = data;
 }
 
+void resampler_time_ratio (double ratio)
+{
+	r_step = ratio;
+	resampler_clear();
+}
+
 static void UpdatePlaybackRate (void)
 {
 	if (Settings.SoundInputRate == 0)
 		Settings.SoundInputRate = APU_DEFAULT_INPUT_RATE;
 
 	double time_ratio = (double) Settings.SoundInputRate * timing_hack_numerator / (Settings.SoundPlaybackRate * timing_hack_denominator);
-	resampler->time_ratio(time_ratio);
+	resampler_time_ratio(time_ratio);
+}
+
+void resampler_ring_buffer_resize (int size)
+{
+	delete[] r_buffer;
+	r_buffer_size = r_size;
+	r_buffer = new unsigned char[r_buffer_size];
+	memset (r_buffer, 0, r_buffer_size);
+
+	r_size = 0;
+	r_start = 0;
+}
+
+void resampler_new(int num_samples)
+{
+	//from ring buffer
+	r_buffer_size = num_samples << 1;
+	r_buffer = new unsigned char[r_buffer_size];
+	memset (r_buffer, 0, r_buffer_size);
+
+	r_size = 0;
+	r_start = 0;
+
+	//from hermite resampler
+	resampler_clear();
 }
 
 bool8 S9xInitSound (int buffer_ms, int lag_ms)
@@ -311,15 +461,11 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
 	if (!resampler)
 	{
-		resampler = new APU_DEFAULT_RESAMPLER(buffer_size);
-		if (!resampler)
-		{
-			delete[] landing_buffer;
-			return (FALSE);
-		}
+		resampler_new(buffer_size);
+		resampler = true;
 	}
 	else
-		resampler->ring_buffer_resize(buffer_size << 1);
+		resampler_ring_buffer_resize(buffer_size << 1);
 
 	spc_core->set_output((SNES_SPC::sample_t *)landing_buffer, buffer_size >> 1);
 
@@ -353,8 +499,8 @@ void S9xDeinitAPU (void)
 
 	if (resampler)
 	{
-		delete resampler;
-		resampler = NULL;
+		delete[] r_buffer;
+		resampler = false;
 	}
 
 	if (landing_buffer)
@@ -434,7 +580,7 @@ void S9xResetAPU (void)
 	spc_core->reset();
 	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
 
-	resampler->clear();
+	resampler_clear();
 }
 
 void S9xSoftResetAPU (void)
@@ -444,7 +590,7 @@ void S9xSoftResetAPU (void)
 	spc_core->soft_reset();
 	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
 
-	resampler->clear();
+	resampler_clear();
 }
 
 static void from_apu_to_state (uint8 **buf, void *var, size_t size)
