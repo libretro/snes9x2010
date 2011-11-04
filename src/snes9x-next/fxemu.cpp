@@ -586,7 +586,6 @@ void fx_computeScreenPointers (void)
 		int32_t result = (vmode & mask) | (3 & ~mask);
 		uint32_t screenheight = GSU.vScreenHeight;
 		uint32_t incrementvalue = screenheight+screenheight;
-		uint32_t tempvalue[32];
 		vmode = result;
 		vmode++;
 		switch (screenheight)
@@ -594,44 +593,47 @@ void fx_computeScreenPointers (void)
 			case 128:
 			case 160:
 			case 192:
-				for(int i = 0; i < 32; i++)
 				{
-					tempvalue[i] = incrementvalue * i * vmode;
-					GSU.x[i] = tempvalue[i];
-				}
+					uint32_t tempvalue[32];
+					for(int i = 0; i < 32; i++)
+					{
+						tempvalue[i] = incrementvalue * i * vmode;
+						GSU.x[i] = tempvalue[i];
+					}
 
-				GSU.apvScreen[0] = pvScreenBase;
-				GSU.apvScreen[1] = pvScreenBase + (16 * vmode);
-				GSU.apvScreen[2] = pvScreenBase + (32 * vmode);
-				GSU.apvScreen[3] = pvScreenBase + (48 * vmode);
-				GSU.apvScreen[4] = pvScreenBase + (64 * vmode);
-				GSU.apvScreen[5] = pvScreenBase + (80 * vmode);
-				GSU.apvScreen[6] = pvScreenBase + (96 * vmode);
-				GSU.apvScreen[7] = pvScreenBase + (112 * vmode);
-				GSU.apvScreen[8] = pvScreenBase + (128 * vmode);
-				GSU.apvScreen[9] = pvScreenBase + (144 * vmode);
-				GSU.apvScreen[10] = pvScreenBase + (160 * vmode);
-				GSU.apvScreen[11] = pvScreenBase + (176 * vmode);
-				GSU.apvScreen[12] = pvScreenBase + (192 * vmode);
-				GSU.apvScreen[13] = pvScreenBase + (208 * vmode);
-				GSU.apvScreen[14] = pvScreenBase + (224 * vmode);
-				GSU.apvScreen[15] = pvScreenBase + (240 * vmode);
-				GSU.apvScreen[16] = pvScreenBase + (256 * vmode);
-				GSU.apvScreen[17] = pvScreenBase + (272 * vmode);
-				GSU.apvScreen[18] = pvScreenBase + (288 * vmode);
-				GSU.apvScreen[19] = pvScreenBase + (304 * vmode);
-				GSU.apvScreen[20] = pvScreenBase + (320 * vmode);
-				GSU.apvScreen[21] = pvScreenBase + (336 * vmode);
-				GSU.apvScreen[22] = pvScreenBase + (352 * vmode);
-				GSU.apvScreen[23] = pvScreenBase + (368 * vmode);
-				GSU.apvScreen[24] = pvScreenBase + (384 * vmode);
-				GSU.apvScreen[25] = pvScreenBase + (400 * vmode);
-				GSU.apvScreen[26] = pvScreenBase + (416 * vmode);
-				GSU.apvScreen[27] = pvScreenBase + (432 * vmode);
-				GSU.apvScreen[28] = pvScreenBase + (448 * vmode);
-				GSU.apvScreen[29] = pvScreenBase + (464 * vmode);
-				GSU.apvScreen[30] = pvScreenBase + (480 * vmode);
-				GSU.apvScreen[31] = pvScreenBase + (496 * vmode);
+					GSU.apvScreen[0] = pvScreenBase;
+					GSU.apvScreen[1] = pvScreenBase + (16 * vmode);
+					GSU.apvScreen[2] = pvScreenBase + (32 * vmode);
+					GSU.apvScreen[3] = pvScreenBase + (48 * vmode);
+					GSU.apvScreen[4] = pvScreenBase + (64 * vmode);
+					GSU.apvScreen[5] = pvScreenBase + (80 * vmode);
+					GSU.apvScreen[6] = pvScreenBase + (96 * vmode);
+					GSU.apvScreen[7] = pvScreenBase + (112 * vmode);
+					GSU.apvScreen[8] = pvScreenBase + (128 * vmode);
+					GSU.apvScreen[9] = pvScreenBase + (144 * vmode);
+					GSU.apvScreen[10] = pvScreenBase + (160 * vmode);
+					GSU.apvScreen[11] = pvScreenBase + (176 * vmode);
+					GSU.apvScreen[12] = pvScreenBase + (192 * vmode);
+					GSU.apvScreen[13] = pvScreenBase + (208 * vmode);
+					GSU.apvScreen[14] = pvScreenBase + (224 * vmode);
+					GSU.apvScreen[15] = pvScreenBase + (240 * vmode);
+					GSU.apvScreen[16] = pvScreenBase + (256 * vmode);
+					GSU.apvScreen[17] = pvScreenBase + (272 * vmode);
+					GSU.apvScreen[18] = pvScreenBase + (288 * vmode);
+					GSU.apvScreen[19] = pvScreenBase + (304 * vmode);
+					GSU.apvScreen[20] = pvScreenBase + (320 * vmode);
+					GSU.apvScreen[21] = pvScreenBase + (336 * vmode);
+					GSU.apvScreen[22] = pvScreenBase + (352 * vmode);
+					GSU.apvScreen[23] = pvScreenBase + (368 * vmode);
+					GSU.apvScreen[24] = pvScreenBase + (384 * vmode);
+					GSU.apvScreen[25] = pvScreenBase + (400 * vmode);
+					GSU.apvScreen[26] = pvScreenBase + (416 * vmode);
+					GSU.apvScreen[27] = pvScreenBase + (432 * vmode);
+					GSU.apvScreen[28] = pvScreenBase + (448 * vmode);
+					GSU.apvScreen[29] = pvScreenBase + (464 * vmode);
+					GSU.apvScreen[30] = pvScreenBase + (480 * vmode);
+					GSU.apvScreen[31] = pvScreenBase + (496 * vmode);
+				}
 				break;
 			case 256:
 				const uint32_t mul_8192 = vmode << 13;

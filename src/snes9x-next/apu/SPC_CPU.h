@@ -14,11 +14,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 //// Memory access
 //#define SUSPICIOUS_OPCODE( name ) dprintf( "SPC: suspicious opcode: " name "\n" )
 
-#if SPC_MORE_ACCURACY
-	#define SUSPICIOUS_OPCODE( name ) ((void) 0)
-#else
-	#define SUSPICIOUS_OPCODE( name )
-#endif
+#define SUSPICIOUS_OPCODE( name )
 
 #define CPU_READ( time, offset, addr )\
 	cpu_read( addr, time + offset )
@@ -26,34 +22,28 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define CPU_WRITE( time, offset, addr, data )\
 	cpu_write( data, addr, time + offset )
 
-#if SPC_MORE_ACCURACY
-	#define CPU_READ_TIMER( time, offset, addr, out )\
-		{ out = CPU_READ( time, offset, addr ); }
-
-#else
-	// timers are by far the most common thing read from dp
-	#define CPU_READ_TIMER( time, offset, addr_, out )\
+// timers are by far the most common thing read from dp
+#define CPU_READ_TIMER( time, offset, addr_, out )\
+{\
+	rel_time_t adj_time = time + offset;\
+	int dp_addr = addr_;\
+	int ti = dp_addr - (r_t0out + 0xF0);\
+	if ( (unsigned) ti < timer_count )\
 	{\
-		rel_time_t adj_time = time + offset;\
-		int dp_addr = addr_;\
-		int ti = dp_addr - (r_t0out + 0xF0);\
-		if ( (unsigned) ti < timer_count )\
-		{\
-			Timer* t = &m.timers [ti];\
-			if ( adj_time >= t->next_time )\
-				t = run_timer_( t, adj_time );\
-			out = t->counter;\
-			t->counter = 0;\
-		}\
-		else\
-		{\
-			out = ram [dp_addr];\
-			int i = dp_addr - 0xF0;\
-			if ( (unsigned) i < 0x10 )\
-				out = cpu_read_smp_reg( i, adj_time );\
-		}\
-	}
-#endif
+		Timer* t = &m.timers [ti];\
+		if ( adj_time >= t->next_time )\
+		t = run_timer_( t, adj_time );\
+		out = t->counter;\
+		t->counter = 0;\
+	}\
+	else\
+	{\
+		out = ram [dp_addr];\
+		int i = dp_addr - 0xF0;\
+		if ( (unsigned) i < 0x10 )\
+		out = cpu_read_smp_reg( i, adj_time );\
+	}\
+}
 
 #define TIME_ADJ( n )   (n)
 
@@ -283,7 +273,6 @@ loop:
 		int temp = READ_PC( pc + 1 );
 		pc += 2;
 		
-		#if !SPC_MORE_ACCURACY
 		{
 			int i = dp + temp;
 			ram [i] = (uint8_t) data;
@@ -295,18 +284,19 @@ loop:
 				// Registers other than $F2 and $F4-$F7
 				//if ( i != 2 && i != 4 && i != 5 && i != 6 && i != 7 )
 				if ( ((~0x2F00 << (bits_in_int - 16)) << i) < 0 ) // 12%
-					cpu_write_smp_reg( data, rel_time, i );
+				{
+					if (i == r_dspdata)	// 99%
+						dsp_write(data, rel_time);
+					else
+						cpu_write_smp_reg_( data, rel_time, i );
+				}
 			}
 		}
-		#else
-			WRITE_DP( 0, temp, data );
-		#endif
 		goto loop;
 	}
 	
 	case 0xC4: // MOV dp,a
 		++pc;
-		#if !SPC_MORE_ACCURACY
 		{
 			int i = dp + data;
 			ram [i] = (uint8_t) a;
@@ -322,9 +312,6 @@ loop:
 					cpu_write_smp_reg_( a, rel_time, i );
 			}
 		}
-		#else
-			WRITE_DP( 0, data, a );
-		#endif
 		goto loop;
 	
 #define CASE( n )   case n:

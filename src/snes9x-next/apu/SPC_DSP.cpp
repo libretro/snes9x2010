@@ -180,16 +180,11 @@ static unsigned const counter_offsets [32] =
 	     0
 };
 
-inline void SPC_DSP::init_counter()
-{
-	m.counter = 0;
-}
+#define SPC_DSP_INIT_COUNTER() m.counter = 0;
 
-inline void SPC_DSP::run_counters()
-{
-	if ( --m.counter < 0 )
+#define SPC_DSP_RUN_COUNTERS() \
+	if ( --m.counter < 0 ) \
 		m.counter = simple_counter_range - 1;
-}
 
 inline unsigned SPC_DSP::read_counter( int rate )
 {
@@ -366,7 +361,7 @@ MISC_CLOCK( 30 )
 		m.t_koff = REG(koff); 
 	}
 	
-	run_counters();
+	SPC_DSP_RUN_COUNTERS();
 	
 	// Noise
 	if ( !read_counter( REG(flg) & 0x1F ) )
@@ -479,22 +474,21 @@ VOICE_CLOCK( V3c )
 		run_envelope( v );
 }
 
-inline void SPC_DSP::voice_output( voice_t const* v, int ch )
-{
-	// Apply left/right volume
-	int amp = (m.t_output * (int8_t) VREG(v->regs,voll + ch)) >> 7;
-
-	// Add to output total
-	m.t_main_out [ch] += amp;
-	CLAMP16( m.t_main_out [ch] );
-	
-	// Optionally add to echo total
-	if ( m.t_eon & v->vbit )
-	{
-		m.t_echo_out [ch] += amp;
-		CLAMP16( m.t_echo_out [ch] );
+#define SPC_DSP_VOICE_OUTPUT(v, ch) \
+	/* Apply left/right volume */ \
+	int amp = (m.t_output * (int8_t) VREG(v->regs,voll + ch)) >> 7; \
+	\
+	/* Add to output total */ \
+	m.t_main_out [ch] += amp; \
+	CLAMP16( m.t_main_out [ch] ); \
+	\
+	/* Optionally add to echo total */ \
+	if ( m.t_eon & v->vbit ) \
+	{ \
+		m.t_echo_out [ch] += amp; \
+		CLAMP16( m.t_echo_out [ch]); \
 	}
-}
+
 VOICE_CLOCK( V4 )
 {
 	// Decode BRR
@@ -524,12 +518,12 @@ VOICE_CLOCK( V4 )
 		v->interp_pos = 0x7FFF;
 	
 	// Output left
-	voice_output( v, 0 );
+	SPC_DSP_VOICE_OUTPUT( v, 0 );
 }
 inline VOICE_CLOCK( V5 )
 {
 	// Output right
-	voice_output( v, 1 );
+	SPC_DSP_VOICE_OUTPUT( v, 1 );
 	
 	// ENDX, OUTX, and ENVX won't update if you wrote to them 1-2 clocks earlier
 	int endx_buf = REG(endx) | m.t_looped;
@@ -590,16 +584,14 @@ VOICE_CLOCK(V9_V6_V3) { voice_V9(v); voice_V6(v+1); voice_V3(v+2); }
 
 #define ECHO_CLOCK( n ) inline void SPC_DSP::echo_##n()
 
-inline void SPC_DSP::echo_read( int ch )
-{
-	int s;
-	if (m.t_echo_ptr >= 0xffc0 && rom_enabled)
-		s = GET_LE16SA(&hi_ram[m.t_echo_ptr + ch * 2 - 0xffc0]);
-	else
-		s = GET_LE16SA( ECHO_PTR( ch ) );
-	// second copy simplifies wrap-around handling
+#define SPC_DSP_ECHO_READ(ch) \
+	int s; \
+	if (m.t_echo_ptr >= 0xffc0 && rom_enabled) \
+		s = GET_LE16SA(&hi_ram[m.t_echo_ptr + ch * 2 - 0xffc0]); \
+	else \
+		s = GET_LE16SA( ECHO_PTR( ch ) ); \
+	/* second copy simplifies wrap-around handling */ \
 	ECHO_FIR( 0 ) [ch] = ECHO_FIR( 8 ) [ch] = s >> 1;
-}
 
 ECHO_CLOCK( 22 )
 {
@@ -608,7 +600,7 @@ ECHO_CLOCK( 22 )
 		m.echo_hist_pos = m.echo_hist;
 	
 	m.t_echo_ptr = (m.t_esa * 0x100 + m.echo_offset) & 0xFFFF;
-	echo_read( 0 );
+	SPC_DSP_ECHO_READ( 0 );
 	
 	// FIR (using l and r temporaries below helps compiler optimize)
 	int l = CALC_FIR( 0, 0 );
@@ -625,7 +617,7 @@ ECHO_CLOCK( 23 )
 	m.t_echo_in [0] += l;
 	m.t_echo_in [1] += r;
 	
-	echo_read( 1 );
+	SPC_DSP_ECHO_READ( 1 );
 }
 ECHO_CLOCK( 24 )
 {
@@ -704,18 +696,17 @@ ECHO_CLOCK( 28 )
 {
 	m.t_echo_enabled = REG(flg);
 }
-inline void SPC_DSP::echo_write( int ch )
-{
-	if ( !(m.t_echo_enabled & 0x20) )
-	{
-		if (m.t_echo_ptr >= 0xffc0 && rom_enabled)
-			SET_LE16A(&hi_ram[m.t_echo_ptr + ch * 2 - 0xffc0], m.t_echo_out[ch]);
-		else
-			SET_LE16A( ECHO_PTR( ch ), m.t_echo_out [ch] );
-	}
 
+#define SPC_DSP_ECHO_WRITE(ch) \
+	if ( !(m.t_echo_enabled & 0x20) ) \
+	{ \
+		if (m.t_echo_ptr >= 0xffc0 && rom_enabled) \
+			SET_LE16A(&hi_ram[m.t_echo_ptr + ch * 2 - 0xffc0], m.t_echo_out[ch]); \
+		else \
+			SET_LE16A( ECHO_PTR( ch ), m.t_echo_out [ch] ); \
+	} \
 	m.t_echo_out [ch] = 0;
-}
+
 ECHO_CLOCK( 29 )
 {
 	m.t_esa = REG(esa);
@@ -728,14 +719,14 @@ ECHO_CLOCK( 29 )
 		m.echo_offset = 0;
 	
 	// Write left echo
-	echo_write( 0 );
+	SPC_DSP_ECHO_WRITE( 0 );
 	
 	m.t_echo_enabled = REG(flg);
 }
 ECHO_CLOCK( 30 )
 {
 	// Write right echo
-	echo_write( 1 );
+	SPC_DSP_ECHO_WRITE( 1 );
 }
 
 
@@ -827,7 +818,7 @@ void SPC_DSP::soft_reset_common()
 	m.echo_offset        = 0;
 	m.phase              = 0;
 	
-	init_counter();
+	SPC_DSP_INIT_COUNTER();
 
 	for (int i = 0; i < voice_count; i++)
 		m.voices[i].voice_number = i;

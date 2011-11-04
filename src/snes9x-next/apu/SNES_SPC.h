@@ -219,7 +219,6 @@ private:
 	int dsp_read           ( rel_time_t );
 	void dsp_write         ( int data, rel_time_t );
 	void cpu_write_smp_reg_( int data, rel_time_t, int addr );
-	void cpu_write_smp_reg ( int data, rel_time_t, int addr );
 	void cpu_write_high    ( int data, int i, rel_time_t );
 	void cpu_write         ( int data, int addr, rel_time_t );
 	int cpu_read_smp_reg   ( int i, rel_time_t );

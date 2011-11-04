@@ -191,8 +191,6 @@ private:
 	};
 	state_t m;
 	
-	void init_counter();
-	void run_counters();
 	unsigned read_counter( int rate );
 	
 	int  interpolate( voice_t const* v );
@@ -221,9 +219,7 @@ private:
 	void voice_V8_V5_V2( voice_t* const );
 	void voice_V9_V6_V3( voice_t* const );
 
-	void echo_read( int ch );
 	int  echo_output( int ch );
-	void echo_write( int ch );
 	void echo_22();
 	void echo_23();
 	void echo_24();

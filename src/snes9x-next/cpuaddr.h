@@ -260,7 +260,7 @@ static inline uint32 RelativeLong (AccessMode a)						// BRL $xxxx
 
 static inline uint32 AbsoluteIndexedIndirectSlow (AccessMode a)			// (a,X)
 {
-	uint16	addr;
+	uint16	addr = Immediate16Slow(READ);
 
 	if (a & JSR)
 	{
@@ -271,8 +271,6 @@ static inline uint32 AbsoluteIndexedIndirectSlow (AccessMode a)			// (a,X)
 			OpenBus = Registers.PCl;
 		addr |= Immediate8Slow(READ) << 8;
 	}
-	else
-		addr = Immediate16Slow(READ);
 
 	AddCycles(ONE_CYCLE);
 	addr += Registers.X.W;
