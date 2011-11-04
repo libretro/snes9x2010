@@ -328,25 +328,9 @@ bool ring_buffer_push (unsigned char *src, int bytes)
 
 #define resampler_max_write() (resampler_space_empty() >> 1)
 
-inline bool resampler_push (short *src, int num_samples)
-{
-	if (resampler_max_write () < num_samples)
-		return false;
-
-	!num_samples || ring_buffer_push((unsigned char *) src, num_samples << 1);
-
-	return true;
-}
-
 void S9xFinalizeSamples (void)
 {
-	if (!resampler_push((short *)landing_buffer, spc_core->sample_count()))
-	{
-		/* We weren't able to process the entire buffer. Potential overrun. */
-		if (!Settings.TurboMode)
-			return;
-	}
-
+	ring_buffer_push((unsigned char *)landing_buffer, spc_core->sample_count() << 1);
 	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
 }
 
