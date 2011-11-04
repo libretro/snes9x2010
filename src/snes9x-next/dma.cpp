@@ -269,8 +269,7 @@ bool8 S9xDoDMA (uint8 Channel)
 	{
 		case 0x18:
 		case 0x19:
-			if (IPPU.RenderThisFrame)
-				FLUSH_REDRAW();
+			FLUSH_REDRAW();
 			break;
 	}
 

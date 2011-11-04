@@ -236,15 +236,8 @@ struct InternalPPU
 	uint32	Blue[256];
 	uint16	ScreenColors[256];
 	uint8	MaxBrightness;
-	bool8	RenderThisFrame;
 	int	RenderedScreenWidth;
 	int	RenderedScreenHeight;
-	uint32	FrameCount;
-	uint32	RenderedFramesCount;
-	uint32	DisplayedRenderedFrameCount;
-	uint32	TotalEmulatedFrames;
-	uint32	SkippedFrames;
-	uint32	FrameSkip;
 };
 
 struct SOBJ

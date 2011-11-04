@@ -309,101 +309,82 @@ void S9xBuildDirectColourMaps (void)
 
 void S9xStartScreenRefresh (void)
 {
-	if (IPPU.RenderThisFrame)
+	GFX.InterlaceFrame = !GFX.InterlaceFrame;
+	if (!GFX.DoInterlace || !GFX.InterlaceFrame)
 	{
-		GFX.InterlaceFrame = !GFX.InterlaceFrame;
-		if (!GFX.DoInterlace || !GFX.InterlaceFrame)
+		if (GFX.DoInterlace)
+			GFX.DoInterlace--;
+
+		IPPU.MaxBrightness = PPU.Brightness;
+
+		IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
+		IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
+		IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
+
+		if ((PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
 		{
-			if (GFX.DoInterlace)
-				GFX.DoInterlace--;
-
-			IPPU.MaxBrightness = PPU.Brightness;
-
-			IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
-			IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
-			IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
-
-			if ((PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
-			{
-				GFX.RealPPL = GFX.Pitch >> 1;
-				IPPU.DoubleWidthPixels = TRUE;
-				IPPU.RenderedScreenWidth = SNES_WIDTH << 1;
-			}
-			else
-			{
-				GFX.RealPPL = GFX.Pitch >> 1;
-				IPPU.DoubleWidthPixels = FALSE;
-				IPPU.RenderedScreenWidth = SNES_WIDTH;
-			}
-
-			if (IPPU.Interlace)
-			{
-				GFX.PPL = GFX.RealPPL << 1;
-				IPPU.DoubleHeightPixels = TRUE;
-				IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
-				GFX.DoInterlace++;
-			}
-			else
-			{
-				GFX.PPL = GFX.RealPPL;
-				IPPU.DoubleHeightPixels = FALSE;
-				IPPU.RenderedScreenHeight = PPU.ScreenHeight;
-			}
-
-			IPPU.RenderedFramesCount++;
+			GFX.RealPPL = GFX.Pitch >> 1;
+			IPPU.DoubleWidthPixels = TRUE;
+			IPPU.RenderedScreenWidth = SNES_WIDTH << 1;
+		}
+		else
+		{
+			GFX.RealPPL = GFX.Pitch >> 1;
+			IPPU.DoubleWidthPixels = FALSE;
+			IPPU.RenderedScreenWidth = SNES_WIDTH;
 		}
 
-		PPU.MosaicStart = 0;
-		PPU.RecomputeClipWindows = TRUE;
-		IPPU.PreviousLine = IPPU.CurrentLine = 0;
-
-		ZeroMemory(GFX.ZBuffer, GFX.ScreenSize);
-		ZeroMemory(GFX.SubZBuffer, GFX.ScreenSize);
+		if (IPPU.Interlace)
+		{
+			GFX.PPL = GFX.RealPPL << 1;
+			IPPU.DoubleHeightPixels = TRUE;
+			IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
+			GFX.DoInterlace++;
+		}
+		else
+		{
+			GFX.PPL = GFX.RealPPL;
+			IPPU.DoubleHeightPixels = FALSE;
+			IPPU.RenderedScreenHeight = PPU.ScreenHeight;
+		}
 	}
 
-	if (++IPPU.FrameCount % Memory.ROMFramesPerSecond == 0)
-	{
-		IPPU.DisplayedRenderedFrameCount = IPPU.RenderedFramesCount;
-		IPPU.RenderedFramesCount = 0;
-		IPPU.FrameCount = 0;
-	}
+	PPU.MosaicStart = 0;
+	PPU.RecomputeClipWindows = TRUE;
+	IPPU.PreviousLine = IPPU.CurrentLine = 0;
+
+	ZeroMemory(GFX.ZBuffer, GFX.ScreenSize);
+	ZeroMemory(GFX.SubZBuffer, GFX.ScreenSize);
 
 	if (GFX.InfoStringTimeout > 0 && --GFX.InfoStringTimeout == 0)
 		GFX.InfoString = NULL;
-
-	IPPU.TotalEmulatedFrames++;
 }
 
 void S9xEndScreenRefresh (void)
 {
-	if (IPPU.RenderThisFrame)
+	FLUSH_REDRAW();
+
+	if (GFX.DoInterlace && GFX.InterlaceFrame == 0)
 	{
-		FLUSH_REDRAW();
-
-		if (GFX.DoInterlace && GFX.InterlaceFrame == 0)
-		{
-			S9xControlEOF();
-		}
-		else
-		{
-			if (IPPU.ColorsChanged)
-			{
-				uint32 saved = PPU.CGDATA[0];
-				IPPU.ColorsChanged = FALSE;
-				S9xSetPalette();
-				PPU.CGDATA[0] = saved;
-			}
-
-			S9xControlEOF();
-
-			if (Settings.AutoDisplayMessages)
-				S9xDisplayMessages(GFX.Screen, GFX.RealPPL, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
-
-			S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
-		}
+		S9xControlEOF();
 	}
 	else
+	{
+		if (IPPU.ColorsChanged)
+		{
+			uint32 saved = PPU.CGDATA[0];
+			IPPU.ColorsChanged = FALSE;
+			S9xSetPalette();
+			PPU.CGDATA[0] = saved;
+		}
+
 		S9xControlEOF();
+
+		if (Settings.AutoDisplayMessages)
+			S9xDisplayMessages(GFX.Screen, GFX.RealPPL, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
+
+		S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
+	}
 
 	S9xApplyCheats();
 
@@ -649,43 +630,32 @@ static void SetupOBJ (void)
 
 void RenderLine (uint8 C)
 {
-	if (IPPU.RenderThisFrame)
+	LineData[C].BG[0].VOffset = PPU.BG[0].VOffset + 1;
+	LineData[C].BG[0].HOffset = PPU.BG[0].HOffset;
+	LineData[C].BG[1].VOffset = PPU.BG[1].VOffset + 1;
+	LineData[C].BG[1].HOffset = PPU.BG[1].HOffset;
+
+	if (PPU.BGMode == 7)
 	{
-		LineData[C].BG[0].VOffset = PPU.BG[0].VOffset + 1;
-		LineData[C].BG[0].HOffset = PPU.BG[0].HOffset;
-		LineData[C].BG[1].VOffset = PPU.BG[1].VOffset + 1;
-		LineData[C].BG[1].HOffset = PPU.BG[1].HOffset;
-
-		if (PPU.BGMode == 7)
-		{
-			struct SLineMatrixData *p = &LineMatrixData[C];
-			p->MatrixA = PPU.MatrixA;
-			p->MatrixB = PPU.MatrixB;
-			p->MatrixC = PPU.MatrixC;
-			p->MatrixD = PPU.MatrixD;
-			p->CentreX = PPU.CentreX;
-			p->CentreY = PPU.CentreY;
-			p->M7HOFS  = PPU.M7HOFS;
-			p->M7VOFS  = PPU.M7VOFS;
-		}
-		else
-		{
-			LineData[C].BG[2].VOffset = PPU.BG[2].VOffset + 1;
-			LineData[C].BG[2].HOffset = PPU.BG[2].HOffset;
-			LineData[C].BG[3].VOffset = PPU.BG[3].VOffset + 1;
-			LineData[C].BG[3].HOffset = PPU.BG[3].HOffset;
-		}
-
-		IPPU.CurrentLine = C + 1;
+		struct SLineMatrixData *p = &LineMatrixData[C];
+		p->MatrixA = PPU.MatrixA;
+		p->MatrixB = PPU.MatrixB;
+		p->MatrixC = PPU.MatrixC;
+		p->MatrixD = PPU.MatrixD;
+		p->CentreX = PPU.CentreX;
+		p->CentreY = PPU.CentreY;
+		p->M7HOFS  = PPU.M7HOFS;
+		p->M7VOFS  = PPU.M7VOFS;
 	}
 	else
 	{
-		// if we're not rendering this frame, we still need to update this
-		// XXX: Check ForceBlank? Or anything else?
-		if (IPPU.OBJChanged)
-			SetupOBJ();
-		PPU.RangeTimeOver |= GFX.OBJLines[C].RTOFlags;
+		LineData[C].BG[2].VOffset = PPU.BG[2].VOffset + 1;
+		LineData[C].BG[2].HOffset = PPU.BG[2].HOffset;
+		LineData[C].BG[3].VOffset = PPU.BG[3].VOffset + 1;
+		LineData[C].BG[3].HOffset = PPU.BG[3].HOffset;
 	}
+
+	IPPU.CurrentLine = C + 1;
 }
 
 static void DrawOBJS (int D)

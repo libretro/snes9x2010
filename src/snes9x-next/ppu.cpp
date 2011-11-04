@@ -1936,14 +1936,8 @@ void S9xSoftResetPPU (void)
 	for (int c = 0; c < 256; c++)
 		IPPU.ScreenColors[c] = c;
 	IPPU.MaxBrightness = 0;
-	IPPU.RenderThisFrame = TRUE;
 	IPPU.RenderedScreenWidth = SNES_WIDTH;
 	IPPU.RenderedScreenHeight = SNES_HEIGHT;
-	IPPU.FrameCount = 0;
-	IPPU.RenderedFramesCount = 0;
-	IPPU.DisplayedRenderedFrameCount = 0;
-	IPPU.SkippedFrames = 0;
-	IPPU.FrameSkip = 0;
 
 	S9xFixColourBrightness();
 

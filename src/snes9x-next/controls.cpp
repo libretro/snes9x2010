@@ -1898,8 +1898,7 @@ void S9xControlEOF (void)
 			case MOUSE0:
 			case MOUSE1:
 				c = &mouse[i - MOUSE0].crosshair;
-				if (IPPU.RenderThisFrame)
-					S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, mouse[i - MOUSE0].cur_x, mouse[i - MOUSE0].cur_y);
+				S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, mouse[i - MOUSE0].cur_x, mouse[i - MOUSE0].cur_y);
 				break;
 
 			case SUPERSCOPE:
@@ -1909,8 +1908,7 @@ void S9xControlEOF (void)
 						DoGunLatch(superscope.x, superscope.y);
 
 					c = &superscope.crosshair;
-					if (IPPU.RenderThisFrame)
-						S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, superscope.x, superscope.y);
+					S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, superscope.x, superscope.y);
 				}
 
 				break;
@@ -1919,8 +1917,7 @@ void S9xControlEOF (void)
 				if (n == 1 && !justifier.offscreen[1])
 				{
 					c = &justifier.crosshair[1];
-					if (IPPU.RenderThisFrame)
-						S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[1], justifier.y[1]);
+					S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[1], justifier.y[1]);
 				}
 
 				i = (justifier.buttons & JUSTIFIER_SELECT) ?  1 : 0;
@@ -1938,8 +1935,7 @@ void S9xControlEOF (void)
 					if (!justifier.offscreen[0])
 					{
 						c = &justifier.crosshair[0];
-						if (IPPU.RenderThisFrame)
-							S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[0], justifier.y[0]);
+						S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[0], justifier.y[0]);
 					}
 				}
 
