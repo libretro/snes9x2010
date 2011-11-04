@@ -308,11 +308,8 @@ int S9xGetSampleCount (void)
 
 #define resampler_space_empty() (r_buffer_size - r_size)
 
-bool ring_buffer_push (unsigned char *src, int bytes)
+static void ring_buffer_push (unsigned char *src, int bytes)
 {
-	if (resampler_space_empty () < bytes)
-		return false;
-
 	int end = (r_start + r_size) % r_buffer_size;
 	int first_write_size = RESAMPLER_MIN(bytes, r_buffer_size - end);
 
@@ -322,19 +319,17 @@ bool ring_buffer_push (unsigned char *src, int bytes)
 		memcpy (r_buffer, src + first_write_size, bytes - first_write_size);
 
 	r_size += bytes;
-
-	return true;
 }
 
 #define resampler_max_write() (resampler_space_empty() >> 1)
 
 void S9xFinalizeSamples (void)
 {
-	ring_buffer_push((unsigned char *)landing_buffer, spc_core->sample_count() << 1);
+	ring_buffer_push(landing_buffer, spc_core->sample_count() << 1);
 	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
 }
 
-void resampler_clear (void)
+static void resampler_clear (void)
 {
 	//from ring buffer
 	r_start = 0;
@@ -357,7 +352,7 @@ void S9xSetSamplesAvailableCallback (apu_callback callback)
 	sa_callback = callback;
 }
 
-void resampler_time_ratio (double ratio)
+static void resampler_time_ratio (double ratio)
 {
 	r_step = ratio;
 	resampler_clear();
@@ -372,7 +367,7 @@ static void UpdatePlaybackRate (void)
 	resampler_time_ratio(time_ratio);
 }
 
-void resampler_ring_buffer_resize (int size)
+static void resampler_ring_buffer_resize (int size)
 {
 	delete[] r_buffer;
 	r_buffer_size = r_size;
@@ -383,7 +378,7 @@ void resampler_ring_buffer_resize (int size)
 	r_start = 0;
 }
 
-void resampler_new(int num_samples)
+static void resampler_new(int num_samples)
 {
 	//from ring buffer
 	r_buffer_size = num_samples << 1;
