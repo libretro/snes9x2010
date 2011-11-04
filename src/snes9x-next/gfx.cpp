@@ -321,32 +321,28 @@ void S9xStartScreenRefresh (void)
 		IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
 		IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
 
+		GFX.RealPPL = GFX.Pitch >> 1;
+		IPPU.RenderedScreenWidth = SNES_WIDTH;
+		IPPU.RenderedScreenHeight = PPU.ScreenHeight;
+
 		if ((PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
 		{
-			GFX.RealPPL = GFX.Pitch >> 1;
 			IPPU.DoubleWidthPixels = TRUE;
-			IPPU.RenderedScreenWidth = SNES_WIDTH << 1;
+			IPPU.RenderedScreenWidth += SNES_WIDTH;
 		}
 		else
-		{
-			GFX.RealPPL = GFX.Pitch >> 1;
 			IPPU.DoubleWidthPixels = FALSE;
-			IPPU.RenderedScreenWidth = SNES_WIDTH;
-		}
 
+		GFX.PPL = GFX.RealPPL;
 		if (IPPU.Interlace)
 		{
-			GFX.PPL = GFX.RealPPL << 1;
+			GFX.PPL += GFX.RealPPL;
 			IPPU.DoubleHeightPixels = TRUE;
-			IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
+			IPPU.RenderedScreenHeight += PPU.ScreenHeight;
 			GFX.DoInterlace++;
 		}
 		else
-		{
-			GFX.PPL = GFX.RealPPL;
 			IPPU.DoubleHeightPixels = FALSE;
-			IPPU.RenderedScreenHeight = PPU.ScreenHeight;
-		}
 	}
 
 	PPU.MosaicStart = 0;
@@ -358,6 +354,45 @@ void S9xStartScreenRefresh (void)
 
 	if (GFX.InfoStringTimeout > 0 && --GFX.InfoStringTimeout == 0)
 		GFX.InfoString = NULL;
+}
+
+static void DisplayStringFromBottom (const char *string, int linesFromBottom, int pixelsFromLeft, bool allowWrap)
+{
+	if (linesFromBottom <= 0)
+		linesFromBottom = 1;
+
+	uint16	*dst = GFX.Screen + (IPPU.RenderedScreenHeight - font_height * linesFromBottom) * GFX.RealPPL + pixelsFromLeft;
+
+	int	len = strlen(string);
+	int	max_chars = IPPU.RenderedScreenWidth / (font_width - 1);
+	int	char_count = 0;
+
+	for (int i = 0 ; i < len ; i++, char_count++)
+	{
+		if (char_count >= max_chars || (uint8) string[i] < 32)
+		{
+			if (!allowWrap)
+				break;
+
+			dst += font_height * GFX.RealPPL - (font_width - 1) * max_chars;
+			if (dst >= GFX.Screen + IPPU.RenderedScreenHeight * GFX.RealPPL)
+				break;
+
+			char_count -= max_chars;
+		}
+
+		if ((uint8) string[i] < 32)
+			continue;
+
+		S9xDisplayChar(dst, string[i]);
+		dst += font_width - 1;
+	}
+}
+
+static void S9xDisplayMessages (uint16 *screen, int ppl, int width, int height, int scale)
+{
+	if (GFX.InfoString && *GFX.InfoString)
+		S9xDisplayString(GFX.InfoString, 5, 1, true);
 }
 
 void S9xEndScreenRefresh (void)
@@ -1826,14 +1861,6 @@ void S9xUpdateScreen (void)
 	IPPU.PreviousLine = IPPU.CurrentLine;
 }
 
-
-
-
-
-
-
-
-
 void S9xReRefresh (void)
 {
 	// Be careful when calling this function from the thread other than the emulation one...
@@ -1872,44 +1899,7 @@ void S9xDisplayChar (uint16 *s, uint8 c)
 	}
 }
 
-static void DisplayStringFromBottom (const char *string, int linesFromBottom, int pixelsFromLeft, bool allowWrap)
-{
-	if (linesFromBottom <= 0)
-		linesFromBottom = 1;
 
-	uint16	*dst = GFX.Screen + (IPPU.RenderedScreenHeight - font_height * linesFromBottom) * GFX.RealPPL + pixelsFromLeft;
-
-	int	len = strlen(string);
-	int	max_chars = IPPU.RenderedScreenWidth / (font_width - 1);
-	int	char_count = 0;
-
-	for (int i = 0 ; i < len ; i++, char_count++)
-	{
-		if (char_count >= max_chars || (uint8) string[i] < 32)
-		{
-			if (!allowWrap)
-				break;
-
-			dst += font_height * GFX.RealPPL - (font_width - 1) * max_chars;
-			if (dst >= GFX.Screen + IPPU.RenderedScreenHeight * GFX.RealPPL)
-				break;
-
-			char_count -= max_chars;
-		}
-
-		if ((uint8) string[i] < 32)
-			continue;
-
-		S9xDisplayChar(dst, string[i]);
-		dst += font_width - 1;
-	}
-}
-
-void S9xDisplayMessages (uint16 *screen, int ppl, int width, int height, int scale)
-{
-	if (GFX.InfoString && *GFX.InfoString)
-		S9xDisplayString(GFX.InfoString, 5, 1, true);
-}
 
 static uint16 get_crosshair_color (uint8 color)
 {

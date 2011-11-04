@@ -292,11 +292,11 @@ void S9xUpdateHVTimerPosition (void)
 					PPU.HTimerPosition += (ONE_DOT_CYCLE / 2);
 			}
 
-			PPU.HTimerPosition += 14;
-			// /IRQ
-			PPU.HTimerPosition += 4;
-			// after CPU executing
-			PPU.HTimerPosition += 6;
+			// Add 14 to HTimerPosition
+			// /IRQ - add 4 to HTimerPosition
+			// after CPU executing - add 6 to HTimerPosition
+			// Total = add 24
+			PPU.HTimerPosition += 24;
 		}
 		else
 			PPU.HTimerPosition = 20;
