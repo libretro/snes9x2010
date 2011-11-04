@@ -181,7 +181,7 @@
 #include "snes9x.h"
 #include "SNES_SPC.h"
 
-typedef void (*apu_callback) (void *);
+typedef void (*apu_callback)();
 
 #define SPC_SAVE_STATE_BLOCK_SIZE	(SNES_SPC::state_size + 8)
 
@@ -202,12 +202,11 @@ void S9xAPUSaveState (uint8 *);
 bool8 S9xInitSound (int, int);
 bool8 S9xOpenSoundDevice (void);
 
-bool8 S9xSyncSound (void);
 int S9xGetSampleCount (void);
 void S9xFinalizeSamples (void);
 void S9xClearSamples (void);
-void S9xMixSamples (uint8 *, int);
-void S9xSetSamplesAvailableCallback (apu_callback, void *);
+void S9xMixSamples (short *, int);
+void S9xSetSamplesAvailableCallback (apu_callback);
 
 extern SNES_SPC	*spc_core;
 

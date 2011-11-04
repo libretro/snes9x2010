@@ -43,14 +43,14 @@ void snes_set_input_state(snes_input_state_t cb)
    s9x_input_state_cb = cb;
 }
 
-static void S9xAudioCallback(void*)
+static void S9xAudioCallback()
 {
    // Just pick a big buffer. We won't use it all.
    static int16_t audio_buf[0x10000];
 
    S9xFinalizeSamples();
    size_t avail = S9xGetSampleCount();
-   S9xMixSamples((uint8*)audio_buf, avail);
+   S9xMixSamples(audio_buf, avail);
    for (size_t i = 0; i < avail; i+=2)
       s9x_audio_cb((uint16_t)audio_buf[i], (uint16_t)audio_buf[i + 1]);
 }
@@ -61,8 +61,7 @@ const char *snes_library_id()
 }
 
 unsigned snes_library_revision_major()
-{
-   return 1;
+{ return 1;
 }
 
 unsigned snes_library_revision_minor()
@@ -276,7 +275,7 @@ void snes_init()
    }
 
    S9xInitSound(16, 0);
-   S9xSetSamplesAvailableCallback(S9xAudioCallback, NULL);
+   S9xSetSamplesAvailableCallback(S9xAudioCallback);
 
    S9xSetRenderPixelFormat(RGB555);
    GFX.Pitch = 2048;

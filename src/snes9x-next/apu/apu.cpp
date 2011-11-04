@@ -204,9 +204,6 @@ static uint8 APUROM[64] =
 };
 
 static apu_callback	sa_callback     = NULL;
-static void		*extra_data     = NULL;
-
-static bool8		sound_in_sync   = TRUE;
 
 static int		buffer_size;
 
@@ -254,9 +251,8 @@ static inline float hermite (float mu1, float a, float b, float c, float d)
 	return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }
 
-void S9xMixSamples (uint8 *buffer, int sample_count)
+void S9xMixSamples (short * data, int sample_count)
 {
-	short * data = (short*)buffer;
 	int i_position = r_start >> 1;
 	short *internal_buffer = (short *)r_buffer;
 	int o_position = 0;
@@ -347,16 +343,9 @@ void S9xFinalizeSamples (void)
 	if (!resampler_push((short *)landing_buffer, spc_core->sample_count()))
 	{
 		/* We weren't able to process the entire buffer. Potential overrun. */
-		sound_in_sync = FALSE;
-
 		if (!Settings.TurboMode)
 			return;
 	}
-
-	if (Settings.TurboMode || resampler_space_empty() >= r_size)
-		sound_in_sync = TRUE;
-	else
-		sound_in_sync = FALSE;
 
 	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
 }
@@ -379,20 +368,9 @@ void S9xClearSamples (void)
 	resampler_clear();
 }
 
-bool8 S9xSyncSound (void)
-{
-	if (sound_in_sync)
-		return (TRUE);
-
-	sa_callback(extra_data);
-
-	return (sound_in_sync);
-}
-
-void S9xSetSamplesAvailableCallback (apu_callback callback, void *data)
+void S9xSetSamplesAvailableCallback (apu_callback callback)
 {
 	sa_callback = callback;
-	extra_data  = data;
 }
 
 void resampler_time_ratio (double ratio)
@@ -548,9 +526,7 @@ void S9xAPUExecute (void)
 void S9xAPUEndScanline (void)
 {
 	S9xAPUExecute();
-
-	if (spc_core->sample_count() >= APU_MINIMUM_SAMPLE_BLOCK || !sound_in_sync)
-		sa_callback(extra_data);
+	sa_callback();
 }
 
 void S9xAPUTimingSetSpeedup (int ticks)
