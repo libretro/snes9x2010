@@ -410,11 +410,9 @@ extern SnesModel	M2SNES;
 #define MAX_5C78_VERSION	0x03
 #define MAX_5A22_VERSION	0x02
 
-static inline void FLUSH_REDRAW (void)
-{
-	if (IPPU.PreviousLine != IPPU.CurrentLine)
+#define FLUSH_REDRAW() \
+	if (IPPU.PreviousLine != IPPU.CurrentLine) \
 		S9xUpdateScreen();
-}
 
 static inline void REGISTER_2104 (uint8 Byte)
 {
@@ -712,11 +710,9 @@ static inline void REGISTER_2122 (uint8 Byte)
 	PPU.CGFLIP ^= 1;
 }
 
-static inline void REGISTER_2180 (uint8 Byte)
-{
-	Memory.RAM[PPU.WRAM++] = Byte;
+#define REGISTER_2180(Byte) \
+	Memory.RAM[PPU.WRAM++] = Byte; \
 	PPU.WRAM &= 0x1ffff;
-}
 
 static inline uint8 REGISTER_4212 (void)
 {

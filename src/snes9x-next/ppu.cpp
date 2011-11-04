@@ -299,10 +299,10 @@ void S9xUpdateHVTimerPosition (void)
 			PPU.HTimerPosition += 6;
 		}
 		else
-			PPU.HTimerPosition = 10 + 4 + 6;
+			PPU.HTimerPosition = 20;
 	}
 	else
-		PPU.HTimerPosition = 10 + 4 + 6;
+		PPU.HTimerPosition = 20;
 
 	PPU.VTimerPosition = PPU.IRQVBeamPos;
 
@@ -442,6 +442,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 		if (CPU.CurrentDMAorHDMAChannel >= 0 && DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer)
 		{
 			// S9xSetPPU() is called to write to DMA[].AAddress
+			#if 0
 			if ((Address & 0xff00) == 0x2100)
 			{
 				// Cannot access to Address Bus B ($2100-$21ff) via (H)DMA
@@ -454,6 +455,8 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 				// I don't bother for now...
 				return;
 			}
+			#endif
+			return;
 		}
 		else
 		{
@@ -601,45 +604,17 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 				break;
 
 			case 0x2107: // BG1SC
-				if (Byte != Memory.FillRAM[0x2107])
-				{
-					FLUSH_REDRAW();
-					PPU.BG[0].SCSize = Byte & 3;
-					PPU.BG[0].SCBase = (Byte & 0x7c) << 8;
-				}
-
-				break;
-
 			case 0x2108: // BG2SC
-				if (Byte != Memory.FillRAM[0x2108])
-				{
-					FLUSH_REDRAW();
-					PPU.BG[1].SCSize = Byte & 3;
-					PPU.BG[1].SCBase = (Byte & 0x7c) << 8;
-				}
-
-				break;
-
 			case 0x2109: // BG3SC
-				if (Byte != Memory.FillRAM[0x2109])
-				{
-					FLUSH_REDRAW();
-					PPU.BG[2].SCSize = Byte & 3;
-					PPU.BG[2].SCBase = (Byte & 0x7c) << 8;
-				}
-
-				break;
-
 			case 0x210a: // BG4SC
-				if (Byte != Memory.FillRAM[0x210a])
+				if (Byte != Memory.FillRAM[Address])
 				{
 					FLUSH_REDRAW();
-					PPU.BG[3].SCSize = Byte & 3;
-					PPU.BG[3].SCBase = (Byte & 0x7c) << 8;
+					PPU.BG[Address-0x2107].SCSize = Byte & 3;
+					PPU.BG[Address-0x2107].SCBase = (Byte & 0x7c) << 8;
 				}
 
 				break;
-
 			case 0x210b: // BG12NBA
 				if (Byte != Memory.FillRAM[0x210b])
 				{
@@ -949,50 +924,17 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 				break;
 
 			case 0x212c: // TM
-				if (Byte != Memory.FillRAM[0x212c])
-				{
-					FLUSH_REDRAW();
-					PPU.RecomputeClipWindows = TRUE;
-				}
-
-				break;
-
 			case 0x212d: // TS
-				if (Byte != Memory.FillRAM[0x212d])
-				{
-					FLUSH_REDRAW();
-					PPU.RecomputeClipWindows = TRUE;
-				}
-
-				break;
-
 			case 0x212e: // TMW
-				if (Byte != Memory.FillRAM[0x212e])
-				{
-					FLUSH_REDRAW();
-					PPU.RecomputeClipWindows = TRUE;
-				}
-
-				break;
-
 			case 0x212f: // TSW
-				if (Byte != Memory.FillRAM[0x212f])
-				{
-					FLUSH_REDRAW();
-					PPU.RecomputeClipWindows = TRUE;
-				}
-
-				break;
-
 			case 0x2130: // CGWSEL
-				if (Byte != Memory.FillRAM[0x2130])
+				if (Byte != Memory.FillRAM[Address])
 				{
 					FLUSH_REDRAW();
 					PPU.RecomputeClipWindows = TRUE;
 				}
 
 				break;
-
 			case 0x2131: // CGADSUB
 				if (Byte != Memory.FillRAM[0x2131])
 				{
@@ -1654,11 +1596,7 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 				break;
 
 			case 0x4210: // RDNMI
-				return;
-
 			case 0x4211: // TIMEUP
-				return;
-
 			case 0x4212: // HVBJOY
 			case 0x4213: // RDIO
 			case 0x4214: // RDDIVL
