@@ -378,7 +378,7 @@ void S9xDoHEventProcessing (void)
 				PPU.RangeTimeOver = 0;
 
 				// FIXME: reading $4210 will wait 2 cycles, then perform reading, then wait 4 more cycles.
-				Memory.FillRAM[0x4210] = Model->_5A22;
+				Memory.FillRAM[0x4210] = MAX_5A22_VERSION;
 				CPU.Flags &= ~NMI_FLAG;
 				Timings.NMITriggerPos = 0xffff;
 
@@ -398,18 +398,13 @@ void S9xDoHEventProcessing (void)
 			else
 				Timings.H_Max = Timings.H_Max_Master;					// HC=1364
 
-			if (Model->_5A22 == 2)
+			if (CPU.V_Counter != 240 || IPPU.Interlace || !Timings.InterlaceField)	// V=240
 			{
-				if (CPU.V_Counter != 240 || IPPU.Interlace || !Timings.InterlaceField)	// V=240
-				{
-					if (Timings.WRAMRefreshPos == SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE)	// HC=534
-						Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2;					// HC=538
-					else
-						Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE;	// HC=534
-				}
+				if (Timings.WRAMRefreshPos == SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE)	// HC=534
+					Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2;					// HC=538
+				else
+					Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE;	// HC=534
 			}
-			else
-				Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v1;
 
 			S9xCheckMissingHTimerPosition(0);
 
@@ -439,7 +434,7 @@ void S9xDoHEventProcessing (void)
 				}
 
 				// FIXME: writing to $4210 will wait 6 cycles.
-				Memory.FillRAM[0x4210] = 0x80 | Model->_5A22;
+				Memory.FillRAM[0x4210] = 0x80 | MAX_5A22_VERSION;
 				if (Memory.FillRAM[0x4200] & 0x80)
 				{
 					// FIXME: triggered at HC=6, checked just before the final CPU cycle,

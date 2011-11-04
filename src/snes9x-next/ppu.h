@@ -388,17 +388,6 @@ void S9xDoAutoJoypad (void);
 #include "gfx.h"
 #include "memmap.h"
 
-typedef struct
-{
-	uint8	_5C77;
-	uint8	_5C78;
-	uint8	_5A22;
-}	SnesModel;
-
-extern SnesModel	*Model;
-extern SnesModel	M1SNES;
-extern SnesModel	M2SNES;
-
 #define MAX_5C77_VERSION	0x01
 #define MAX_5C78_VERSION	0x03
 #define MAX_5A22_VERSION	0x02
@@ -625,9 +614,9 @@ static inline void REGISTER_2118_linear (uint8 Byte)
 {
 	CHECK_INBLANK();
 
-	uint32	address;
+	uint32	address = (PPU.VMA.Address << 1) & 0xffff;
 
-	Memory.VRAM[address = (PPU.VMA.Address << 1) & 0xffff] = Byte;
+	Memory.VRAM[address] = Byte;
 
 	IPPU.TileCached[TILE_2BIT][address >> 4] = FALSE;
 	IPPU.TileCached[TILE_4BIT][address >> 5] = FALSE;
@@ -649,9 +638,9 @@ static inline void REGISTER_2119_linear (uint8 Byte)
 {
 	CHECK_INBLANK();
 
-	uint32	address;
+	uint32	address = ((PPU.VMA.Address << 1) + 1) & 0xffff;
 
-	Memory.VRAM[address = ((PPU.VMA.Address << 1) + 1) & 0xffff] = Byte;
+	Memory.VRAM[address] = Byte;
 
 	IPPU.TileCached[TILE_2BIT][address >> 4] = FALSE;
 	IPPU.TileCached[TILE_4BIT][address >> 5] = FALSE;
@@ -711,14 +700,14 @@ static inline uint8 REGISTER_4212 (void)
 {
 	uint8	byte = 0;
 
-    if ((CPU.V_Counter >= PPU.ScreenHeight + FIRST_VISIBLE_LINE) && (CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE + 3))
+	if ((CPU.V_Counter >= PPU.ScreenHeight + FIRST_VISIBLE_LINE) && (CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE + 3))
 		byte = 1;
 	if ((CPU.Cycles < Timings.HBlankEnd) || (CPU.Cycles >= Timings.HBlankStart))
 		byte |= 0x40;
-    if (CPU.V_Counter >= PPU.ScreenHeight + FIRST_VISIBLE_LINE)
+	if (CPU.V_Counter >= PPU.ScreenHeight + FIRST_VISIBLE_LINE)
 		byte |= 0x80;
 
-    return (byte);
+	return (byte);
 }
 
 #endif

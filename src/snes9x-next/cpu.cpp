@@ -232,10 +232,7 @@ static void S9xSoftResetCPU (void)
 	Timings.H_Max = Timings.H_Max_Master;
 	Timings.V_Max = Timings.V_Max_Master;
 	Timings.NMITriggerPos = 0xffff;
-	if (Model->_5A22 == 2)
-		Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2;
-	else
-		Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v1;
+	Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2;
 
 	S9xSetPCBase(Registers.PBPC);
 

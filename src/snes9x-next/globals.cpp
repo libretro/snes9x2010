@@ -227,10 +227,6 @@ uint8	*HDMAMemPointers[8];
 uint16	BlackColourMap[256];
 uint16	DirectColourMaps[8][256];
 
-SnesModel	M1SNES = { 1, 3, 2 };
-SnesModel	M2SNES = { 2, 4, 3 };
-SnesModel	*Model = &M1SNES;
-
 #if defined(ZSNES_FX) || defined(ZSNES_C4)
 uint8	*ROM    = NULL;
 uint8	*SRAM   = NULL;

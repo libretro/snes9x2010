@@ -1282,13 +1282,13 @@ uint8 S9xGetPPU (uint16 Address)
 
 			case 0x213e: // STAT77
 				FLUSH_REDRAW();
-				byte = (PPU.OpenBus1 & 0x10) | PPU.RangeTimeOver | Model->_5C77;
+				byte = (PPU.OpenBus1 & 0x10) | PPU.RangeTimeOver | MAX_5C77_VERSION;
 				return (PPU.OpenBus1 = byte);
 
 			case 0x213f: // STAT78
 				S9xTryGunLatch(false);
 				PPU.VBeamFlip = PPU.HBeamFlip = 0;
-				byte = (PPU.OpenBus2 & 0x20) | (Memory.FillRAM[0x213f] & 0xc0) | (Settings.PAL ? 0x10 : 0) | Model->_5C78;
+				byte = (PPU.OpenBus2 & 0x20) | (Memory.FillRAM[0x213f] & 0xc0) | (Settings.PAL ? 0x10 : 0) | MAX_5C78_VERSION;
 				Memory.FillRAM[0x213f] &= ~0x40;
 				return (PPU.OpenBus2 = byte);
 
@@ -1320,21 +1320,7 @@ uint8 S9xGetPPU (uint16 Address)
 		if (Settings.SRTC    && Address == 0x2800)
 			return (S9xGetSRTC(Address));
 		else
-		switch (Address)
-		{
-			case 0x21c2:
-				if (Model->_5C77 == 2)
-					return (0x20);
 				return (OpenBus);
-
-			case 0x21c3:
-				if (Model->_5C77 == 2)
-					return (0);
-				return (OpenBus);
-
-			default:
-				return (OpenBus);
-		}
 	}
 }
 
@@ -1716,8 +1702,8 @@ uint8 S9xGetCPU (uint16 Address)
 				CPU.WaitAddress = CPU.PBPCAtOpcodeStart;
 			#endif
 				byte = Memory.FillRAM[0x4210];
-				Memory.FillRAM[0x4210] = Model->_5A22;
-				return ((byte & 0x80) | (OpenBus & 0x70) | Model->_5A22);
+				Memory.FillRAM[0x4210] = MAX_5A22_VERSION;
+				return ((byte & 0x80) | (OpenBus & 0x70) | MAX_5A22_VERSION);
 
 			case 0x4211: // TIMEUP
 				byte = (CPU.IRQActive & PPU_IRQ_SOURCE) ? 0x80 : 0;
