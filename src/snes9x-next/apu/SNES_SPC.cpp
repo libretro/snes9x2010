@@ -33,13 +33,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 //// Timers
 
-#if SPC_DISABLE_TEMPO
-	#define TIMER_DIV( t, n ) ((n) >> t->prescaler)
-	#define TIMER_MUL( t, n ) ((n) << t->prescaler)
-#else
-	#define TIMER_DIV( t, n ) ((n) / t->prescaler)
-	#define TIMER_MUL( t, n ) ((n) * t->prescaler)
-#endif
+#define TIMER_DIV( t, n ) ((n) >> t->prescaler)
+#define TIMER_MUL( t, n ) ((n) << t->prescaler)
 
 SNES_SPC::Timer* SNES_SPC::run_timer_( Timer* t, rel_time_t time )
 {

@@ -91,21 +91,9 @@ void SNES_SPC::set_tempo( int t )
 	int const timer2_shift = 4; // 64 kHz
 	int const other_shift  = 3; //  8 kHz
 	
-	#if SPC_DISABLE_TEMPO
-		m.timers [2].prescaler = timer2_shift;
-		m.timers [1].prescaler = timer2_shift + other_shift;
-		m.timers [0].prescaler = timer2_shift + other_shift;
-	#else
-		if ( !t )
-			t = 1;
-		int const timer2_rate  = 1 << timer2_shift;
-		int rate = (timer2_rate * tempo_unit + (t >> 1)) / t;
-		if ( rate < timer2_rate / 4 )
-			rate = timer2_rate / 4; // max 4x tempo
-		m.timers [2].prescaler = rate;
-		m.timers [1].prescaler = rate << other_shift;
-		m.timers [0].prescaler = rate << other_shift;
-	#endif
+	m.timers [2].prescaler = timer2_shift;
+	m.timers [1].prescaler = timer2_shift + other_shift;
+	m.timers [0].prescaler = timer2_shift + other_shift;
 }
 
 // Timer registers have been loaded. Applies these to the timers. Does not
