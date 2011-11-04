@@ -204,11 +204,9 @@ bool8 S9xOpenSoundDevice (void);
 
 bool8 S9xSyncSound (void);
 int S9xGetSampleCount (void);
-void S9xSetSoundMute (bool8);
-void S9xLandSamples (void);
 void S9xFinalizeSamples (void);
 void S9xClearSamples (void);
-bool8 S9xMixSamples (uint8 *, int);
+void S9xMixSamples (uint8 *, int);
 void S9xSetSamplesAvailableCallback (apu_callback, void *);
 
 extern SNES_SPC	*spc_core;

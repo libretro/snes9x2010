@@ -1198,8 +1198,6 @@ void S9xFreezeToStream (STREAM stream)
 {
 	char	buffer[1024];
 
-	S9xSetSoundMute(TRUE);
-
 #ifdef ZSNES_FX
 	if (Settings.SuperFX)
 		S9xSuperFXPreSaveState();
@@ -1302,8 +1300,6 @@ void S9xFreezeToStream (STREAM stream)
 	if (Settings.SuperFX)
 		S9xSuperFXPostSaveState();
 #endif
-
-	S9xSetSoundMute(FALSE);
 }
 
 int S9xUnfreezeFromStream (STREAM stream)
@@ -1465,8 +1461,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 		uint32 old_flags     = CPU.Flags;
 		uint32 sa1_old_flags = SA1.Flags;
 
-		S9xSetSoundMute(TRUE);
-
 		S9xReset();
 
 		UnfreezeStructFromCopy(&CPU, SnapCPU, COUNT(SnapCPU), local_cpu, version);
@@ -1589,8 +1583,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 
 		if (local_bsx_data)
 			S9xBSXPostLoadState();
-
-		S9xSetSoundMute(FALSE);
 	}
 
 	if (local_cpu)				delete [] local_cpu;

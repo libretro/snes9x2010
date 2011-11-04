@@ -398,7 +398,6 @@ struct SSettings
 	bool8	SoundSync;
 	uint32	SoundPlaybackRate;
 	uint32	SoundInputRate;
-	bool8	Mute;
 
 	uint8	BG_Forced;
 

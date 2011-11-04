@@ -276,7 +276,6 @@ void snes_init()
    }
 
    S9xInitSound(16, 0);
-   S9xSetSoundMute(FALSE);
    S9xSetSamplesAvailableCallback(S9xAudioCallback, NULL);
 
    S9xSetRenderPixelFormat(RGB555);
