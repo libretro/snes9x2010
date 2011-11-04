@@ -1815,15 +1815,12 @@ void S9xUpdateScreen (void)
 	}
 	else
 	{
-		const uint16	black = BUILD_PIXEL(0, 0, 0);
-
 		GFX.S = GFX.Screen + GFX.StartY * GFX.PPL;
 		if (GFX.DoInterlace && GFX.InterlaceFrame)
 			GFX.S += GFX.RealPPL;
 
 		for (uint32 l = GFX.StartY; l <= GFX.EndY; l++, GFX.S += GFX.PPL)
-			for (int x = 0; x < IPPU.RenderedScreenWidth; x++)
-				GFX.S[x] = black;
+			memset(GFX.S, 0, IPPU.RenderedScreenWidth * sizeof(int));
 	}
 
 	IPPU.PreviousLine = IPPU.CurrentLine;
@@ -1857,8 +1854,6 @@ void S9xSetInfoString (const char *string)
 
 void S9xDisplayChar (uint16 *s, uint8 c)
 {
-	const uint16	black = BUILD_PIXEL(0, 0, 0);
-
 	int	line   = ((c - 32) >> 4) * font_height;
 	int	offset = ((c - 32) & 15) * font_width;
 
@@ -1872,7 +1867,7 @@ void S9xDisplayChar (uint16 *s, uint8 c)
 				*s = Settings.DisplayColor;
 			else
 			if (p == '.')
-				*s = black;
+				*s = 0;
 		}
 	}
 }
