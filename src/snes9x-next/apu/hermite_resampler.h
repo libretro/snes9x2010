@@ -92,7 +92,7 @@ class HermiteResampler
 		int o_position = 0;
 		int consumed = 0;
 
-		while (o_position < num_samples && consumed < buffer_size)
+		while (o_position < num_samples)
 		{
 			int s_left = internal_buffer[i_position];
 			int s_right = internal_buffer[i_position + 1];

@@ -395,7 +395,6 @@ struct SSettings
 	uint32	FrameTimeNTSC;
 	uint32	FrameTime;
 
-	bool8	SoundSync;
 	uint32	SoundPlaybackRate;
 	uint32	SoundInputRate;
 

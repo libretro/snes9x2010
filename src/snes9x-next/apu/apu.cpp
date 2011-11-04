@@ -255,11 +255,11 @@ void S9xFinalizeSamples (void)
 		/* We weren't able to process the entire buffer. Potential overrun. */
 		sound_in_sync = FALSE;
 
-		if (Settings.SoundSync && !Settings.TurboMode)
+		if (!Settings.TurboMode)
 			return;
 	}
 
-	if (!Settings.SoundSync || Settings.TurboMode || resampler->space_empty() >= resampler->space_filled())
+	if (Settings.TurboMode || resampler->space_empty() >= resampler->space_filled())
 		sound_in_sync = TRUE;
 	else
 		sound_in_sync = FALSE;
@@ -274,7 +274,7 @@ void S9xClearSamples (void)
 
 bool8 S9xSyncSound (void)
 {
-	if (!Settings.SoundSync || sound_in_sync)
+	if (sound_in_sync)
 		return (TRUE);
 
 	sa_callback(extra_data);
@@ -323,7 +323,7 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
 	if (!resampler)
 	{
-		resampler = new APU_DEFAULT_RESAMPLER(buffer_size >> (Settings.SoundSync ? 0 : 1));
+		resampler = new APU_DEFAULT_RESAMPLER(buffer_size);
 		if (!resampler)
 		{
 			delete[] landing_buffer;
@@ -331,7 +331,7 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 		}
 	}
 	else
-		resampler->resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
+		resampler->ring_buffer_resize(buffer_size << 1);
 
 	spc_core->set_output((SNES_SPC::sample_t *)landing_buffer, buffer_size >> 1);
 
