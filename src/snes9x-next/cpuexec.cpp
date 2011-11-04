@@ -240,7 +240,7 @@ void S9xMainLoop (void)
 	#endif
 
 		register uint8				Op;
-		register struct	SOpcodes	*Opcodes;
+		register struct	SOpcodes	*Opcodes = S9xOpcodesSlow;
 
 		CPU.PrevCycles = CPU.Cycles;
 
@@ -254,7 +254,6 @@ void S9xMainLoop (void)
 		{
 			Op = S9xGetByte(Registers.PBPC);
 			OpenBus = Op;
-			Opcodes = S9xOpcodesSlow;
 		}
 
 		if ((Registers.PCw & MEMMAP_MASK) + ICPU.S9xOpLengths[Op] >= MEMMAP_BLOCK_SIZE)
@@ -369,10 +368,11 @@ void S9xDoHEventProcessing (void)
 				// [PAL] <PAL info is unverified on hardware>
 				// interlace mode has 625 scanlines: 313 on the even frame, and 312 on the odd.
 				// non-interlace mode has 624 scanlines: 312 scanlines on both even and odd frames.
+
+				Timings.V_Max = Timings.V_Max_Master;	// 262 (NTSC), 312?(PAL)
+
 				if (IPPU.Interlace && !Timings.InterlaceField)
-					Timings.V_Max = Timings.V_Max_Master + 1;	// 263 (NTSC), 313?(PAL)
-				else
-					Timings.V_Max = Timings.V_Max_Master;		// 262 (NTSC), 312?(PAL)
+					Timings.V_Max += 1;	// 263 (NTSC), 313?(PAL)
 
 				Memory.FillRAM[0x213F] ^= 0x80;
 				PPU.RangeTimeOver = 0;
@@ -393,10 +393,11 @@ void S9xDoHEventProcessing (void)
 			// In interlace mode, there are always 341 dots per scanline. Even frames have 263 scanlines,
 			// and odd frames have 262 scanlines.
 			// Interlace mode scanline 240 on odd frames is not missing a dot.
+
+			Timings.H_Max = Timings.H_Max_Master;					// HC=1364
+
 			if (CPU.V_Counter == 240 && !IPPU.Interlace && Timings.InterlaceField)	// V=240
-				Timings.H_Max = Timings.H_Max_Master - ONE_DOT_CYCLE;	// HC=1360
-			else
-				Timings.H_Max = Timings.H_Max_Master;					// HC=1364
+				Timings.H_Max -= ONE_DOT_CYCLE;					// HC=1360
 
 			if (CPU.V_Counter != 240 || IPPU.Interlace || !Timings.InterlaceField)	// V=240
 			{
@@ -495,10 +496,7 @@ void S9xDoHEventProcessing (void)
 		case HC_IRQ_7_9_EVENT:
 		case HC_IRQ_9_A_EVENT:
 		case HC_IRQ_A_1_EVENT:
-			if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
-				S9xSetIRQ(PPU_IRQ_SOURCE);
-			else
-			if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
+			if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)) || PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
 				S9xSetIRQ(PPU_IRQ_SOURCE);
 
 			S9xReschedule();

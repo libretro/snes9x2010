@@ -185,14 +185,10 @@
 #define ADD_CYCLES(n)	CPU.Cycles += (n)
 
 extern uint8	*HDMAMemPointers[8];
-extern int		HDMA_ModeByteCounts[8];
+extern int	HDMA_ModeByteCounts[8];
 extern SPC7110	s7emu;
 
 static uint8	sdd1_decode_buffer[0x10000];
-
-static inline bool8 addCyclesInDMA (uint8);
-static inline bool8 HDMAReadLineCount (int);
-
 
 static inline bool8 addCyclesInDMA (uint8 dma_channel)
 {
@@ -243,7 +239,7 @@ bool8 S9xDoDMA (uint8 Channel)
 		// 8 cycles per channel
 		ADD_CYCLES(SLOW_ONE_CYCLE);
 		// 8 cycles per byte
-		while (c)
+		do
 		{
 			d->TransferBytes--;
 			d->AAddress++;
@@ -255,7 +251,7 @@ bool8 S9xDoDMA (uint8 Channel)
 				CPU.CurrentDMAorHDMAChannel = -1;
 				return (FALSE);
 			}
-		}
+		}while(c);
 
 
 		CPU.InDMA = FALSE;
@@ -473,7 +469,6 @@ bool8 S9xDoDMA (uint8 Channel)
 		int32	b = 0;
 		uint16	p = d->AAddress;
 		uint8	*base = S9xGetBasePointer((d->ABank << 16) + d->AAddress);
-		bool8	inWRAM_DMA;
 
 		int32	rem = count;
 		// Transfer per block if d->AAdressFixed is FALSE
@@ -501,7 +496,7 @@ bool8 S9xDoDMA (uint8 Channel)
 					count = rem;
 				}
 
-		inWRAM_DMA = ((!in_sa1_dma && !in_sdd1_dma && !spc7110_dma) &&
+		bool8 inWRAM_DMA = ((!in_sa1_dma && !in_sdd1_dma && !spc7110_dma) &&
 				(d->ABank == 0x7e || d->ABank == 0x7f || (!(d->ABank & 0x40) && d->AAddress < 0x2000)));
 
 		// 8 cycles per byte
@@ -518,7 +513,7 @@ bool8 S9xDoDMA (uint8 Channel)
 			return (FALSE); \
 		}
 
-		while (1)
+		do
 		{
 			if (count > rem)
 				count = rem;
@@ -536,7 +531,7 @@ bool8 S9xDoDMA (uint8 Channel)
 						Work = S9xGetByte((d->ABank << 16) + p);
 						S9xSetPPU(Work, 0x2100 + d->BAddress);
 						UPDATE_COUNTERS;
-					} while (--count > 0);
+					}while(--count > 0);
 				}
 				else
 					if (d->TransferMode == 1 || d->TransferMode == 5)
@@ -616,7 +611,7 @@ bool8 S9xDoDMA (uint8 Channel)
 											b = 0;
 											break;
 										}
-									} while (1);
+									}while(1);
 							}
 						}
 						else
@@ -665,7 +660,7 @@ bool8 S9xDoDMA (uint8 Channel)
 												b = 0;
 												break;
 											}
-										} while (1);
+										}while(1);
 								}
 							}
 			}
@@ -682,7 +677,7 @@ bool8 S9xDoDMA (uint8 Channel)
 								Work = *(base + p);
 								REGISTER_2104(Work);
 								UPDATE_COUNTERS;
-							} while (--count > 0);
+							}while(--count > 0);
 
 							break;
 
@@ -986,7 +981,7 @@ bool8 S9xDoDMA (uint8 Channel)
 			count = MEMMAP_BLOCK_SIZE;
 			inWRAM_DMA = ((!in_sa1_dma && !in_sdd1_dma && !spc7110_dma) &&
 					(d->ABank == 0x7e || d->ABank == 0x7f || (!(d->ABank & 0x40) && d->AAddress < 0x2000)));
-		}
+		}while(1);
 
 #undef UPDATE_COUNTERS
 	}

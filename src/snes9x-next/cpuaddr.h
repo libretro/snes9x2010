@@ -665,7 +665,11 @@ static inline uint32 StackRelative (AccessMode a)						// d,S
 
 static inline uint32 StackRelativeIndirectIndexedSlow (AccessMode a)	// (d,S),Y
 {
-	uint32	addr = S9xGetWord(StackRelativeSlow(READ));
+	//StackRelativeSlow
+	uint16	addr_stack_relative_slow = Immediate8Slow(READ) + Registers.S.W;
+	AddCycles(ONE_CYCLE);
+	//end of StackRelativeSlow
+	uint32	addr = S9xGetWord(addr_stack_relative_slow);
 	if (a & READ)
 		OpenBus = (uint8) (addr >> 8);
 	addr = (addr + Registers.Y.W + ICPU.ShiftedDB) & 0xffffff;
@@ -676,7 +680,11 @@ static inline uint32 StackRelativeIndirectIndexedSlow (AccessMode a)	// (d,S),Y
 
 static inline uint32 StackRelativeIndirectIndexed (AccessMode a)		// (d,S),Y
 {
-	uint32	addr = S9xGetWord(StackRelative(READ));
+	//StackRelative
+	uint16 addr_stack_relative = Immediate8Slow(READ) + Registers.S.W;
+	AddCycles(ONE_CYCLE);
+	uint32	addr = S9xGetWord(addr_stack_relative);
+	//End of StackRelative
 	if (a & READ)
 		OpenBus = (uint8) (addr >> 8);
 	addr = (addr + Registers.Y.W + ICPU.ShiftedDB) & 0xffffff;
