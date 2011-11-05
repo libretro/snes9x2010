@@ -264,7 +264,7 @@ void S9xMainLoop (void)
 		Registers.PCw++;
 		(*Opcodes[Op].S9xOpcode)();
 
-		if (SA1.Executing)
+		if (Settings.SA1)
 			S9xSA1MainLoop();
 
 	#if (S9X_ACCURACY_LEVEL <= 2)
