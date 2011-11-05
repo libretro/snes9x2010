@@ -235,7 +235,6 @@ static void S9xSoftResetCPU (void)
 
 	ICPU.S9xOpcodes = S9xOpcodesE1;
 	ICPU.S9xOpLengths = S9xOpLengthsM1X1;
-	ICPU.CPUExecuting = TRUE;
 
 	S9xUnpackStatus();
 }

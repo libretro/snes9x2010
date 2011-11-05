@@ -639,7 +639,6 @@ static FreezeData	SnapFX[] =
 
 static FreezeData	SnapSA1[] =
 {
-	INT_ENTRY(6, CPUExecuting),
 	INT_ENTRY(6, ShiftedPB),
 	INT_ENTRY(6, ShiftedDB),
 	INT_ENTRY(6, Flags),

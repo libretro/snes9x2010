@@ -198,7 +198,6 @@ struct SSA1
 	uint8	_Zero;
 	uint8	_Negative;
 	uint8	_Overflow;
-	bool8	CPUExecuting;
 	uint32	ShiftedPB;
 	uint32	ShiftedDB;
 
