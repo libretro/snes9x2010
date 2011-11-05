@@ -234,8 +234,9 @@ static inline void S9xFixCycles (void)
 	{
 		ICPU.S9xOpcodes = S9xOpcodesE1;
 		ICPU.S9xOpLengths = S9xOpLengthsM1X1;
+		return;
 	}
-	else
+
 	if (CheckMemory())
 	{
 		if (CheckIndex())
@@ -248,19 +249,18 @@ static inline void S9xFixCycles (void)
 			ICPU.S9xOpcodes = S9xOpcodesM1X0;
 			ICPU.S9xOpLengths = S9xOpLengthsM1X0;
 		}
+		return;
+	}
+
+	if (CheckIndex())
+	{
+		ICPU.S9xOpcodes = S9xOpcodesM0X1;
+		ICPU.S9xOpLengths = S9xOpLengthsM0X1;
 	}
 	else
 	{
-		if (CheckIndex())
-		{
-			ICPU.S9xOpcodes = S9xOpcodesM0X1;
-			ICPU.S9xOpLengths = S9xOpLengthsM0X1;
-		}
-		else
-		{
-			ICPU.S9xOpcodes = S9xOpcodesM0X0;
-			ICPU.S9xOpLengths = S9xOpLengthsM0X0;
-		}
+		ICPU.S9xOpcodes = S9xOpcodesM0X0;
+		ICPU.S9xOpLengths = S9xOpLengthsM0X0;
 	}
 }
 

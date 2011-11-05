@@ -1076,6 +1076,7 @@ uint8 S9xGetPPU (uint16 Address)
 		if (CPU.CurrentDMAorHDMAChannel >= 0 && !DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer)
 		{
 			// S9xGetPPU() is called to read from DMA[].AAddress
+			#if 0
 			if ((Address & 0xff00) == 0x2100)
 				// Cannot access to Address Bus B ($2100-$21FF) via (H)DMA
 				return (OpenBus);
@@ -1083,6 +1084,7 @@ uint8 S9xGetPPU (uint16 Address)
 				// $2200-$3FFF are connected to Address Bus A
 				// SA1, SuperFX and SRTC are mapped here
 				// I don't bother for now...
+			#endif
 				return (OpenBus);
 		}
 		else
