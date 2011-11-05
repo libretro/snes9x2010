@@ -235,10 +235,6 @@ void S9xMainLoop (void)
 
 		}
 
-	#ifdef CPU_SHUTDOWN
-		CPU.PBPCAtOpcodeStart = Registers.PBPC;
-	#endif
-
 		register uint8				Op;
 		register struct	SOpcodes	*Opcodes = S9xOpcodesSlow;
 
@@ -312,12 +308,6 @@ void S9xClearIRQ (uint32 source)
 
 void S9xDoHEventProcessing (void)
 {
-
-
-#ifdef CPU_SHUTDOWN
-	CPU.WaitCounter++;
-#endif
-
 	switch (CPU.WhichEvent)
 	{
 		case HC_HBLANK_START_EVENT:

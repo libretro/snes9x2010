@@ -247,10 +247,6 @@ inline uint8 S9xGetByte (uint32 Address)
 
 	if (GetAddress >= (uint8 *) CMemory::MAP_LAST)
 	{
-	#ifdef CPU_SHUTDOWN
-		if (Memory.BlockIsRAM[block])
-			CPU.WaitAddress = CPU.PBPCAtOpcodeStart;
-	#endif
 		byte = *(GetAddress + (Address & 0xffff));
 		addCyclesInMemoryAccess;
 		return (byte);
@@ -379,10 +375,6 @@ inline uint16 S9xGetWord (uint32 Address, enum s9xwrap_t w = WRAP_NONE)
 
 	if (GetAddress >= (uint8 *) CMemory::MAP_LAST)
 	{
-	#ifdef CPU_SHUTDOWN
-		if (Memory.BlockIsRAM[block])
-			CPU.WaitAddress = CPU.PBPCAtOpcodeStart;
-	#endif
 		word = READ_WORD(GetAddress + (Address & 0xffff));
 		addCyclesInMemoryAccess_x2;
 		return (word);
@@ -510,9 +502,6 @@ inline uint16 S9xGetWord (uint32 Address, enum s9xwrap_t w = WRAP_NONE)
 
 inline void S9xSetByte (uint8 Byte, uint32 Address)
 {
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 
 	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
 	uint8	*SetAddress = Memory.WriteMap[block];
@@ -520,23 +509,8 @@ inline void S9xSetByte (uint8 Byte, uint32 Address)
 
 	if (SetAddress >= (uint8 *) CMemory::MAP_LAST)
 	{
-	#ifdef CPU_SHUTDOWN
-		SetAddress += (Address & 0xffff);
-		*SetAddress = Byte;
-		addCyclesInMemoryAccess;
-
-		if (Settings.SA1)
-		{
-			if (SetAddress == SA1.WaitByteAddress1 || SetAddress == SA1.WaitByteAddress2)
-			{
-				SA1.Executing = SA1.S9xOpcodes != NULL;
-				SA1.WaitCounter = 0;
-			}
-		}
-	#else
 		*(SetAddress + (Address & 0xffff)) = Byte;
 		addCyclesInMemoryAccess;
-	#endif
 		return;
 	}
 
@@ -670,9 +644,6 @@ inline void S9xSetWord (uint16 Word, uint32 Address, enum s9xwrap_t w = WRAP_NON
 		return;
 	}
 
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 
 	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
 	uint8	*SetAddress = Memory.WriteMap[block];
@@ -680,23 +651,8 @@ inline void S9xSetWord (uint16 Word, uint32 Address, enum s9xwrap_t w = WRAP_NON
 
 	if (SetAddress >= (uint8 *) CMemory::MAP_LAST)
 	{
-	#ifdef CPU_SHUTDOWN
-		SetAddress += (Address & 0xffff);
-		WRITE_WORD(SetAddress, Word);
-		addCyclesInMemoryAccess_x2;
-
-		if (Settings.SA1)
-		{
-			if (SetAddress == SA1.WaitByteAddress1 || SetAddress == SA1.WaitByteAddress2)
-			{
-				SA1.Executing = SA1.S9xOpcodes != NULL;
-				SA1.WaitCounter = 0;
-			}
-		}
-	#else
 		WRITE_WORD(SetAddress + (Address & 0xffff), Word);
 		addCyclesInMemoryAccess_x2;
-	#endif
 		return;
 	}
 

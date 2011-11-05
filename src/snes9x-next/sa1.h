@@ -207,11 +207,6 @@ struct SSA1
 	bool8	IRQActive;
 	bool8	Waiting;
 	bool8	WaitingForInterrupt;
-	uint32	WaitAddress;
-	uint32	WaitCounter;
-	uint32	PBPCAtOpcodeStart;
-	uint8	*WaitByteAddress1;
-	uint8	*WaitByteAddress2;
 
 	uint8	*Map[MEMMAP_NUM_BLOCKS];
 	uint8	*WriteMap[MEMMAP_NUM_BLOCKS];

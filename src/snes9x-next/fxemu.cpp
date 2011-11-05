@@ -448,10 +448,6 @@ uint8 S9xGetSuperFX (uint16 address)
 	uint8	byte;
 
 	byte = Memory.FillRAM[address];
-#ifdef CPU_SHUTDOWN
-	if (address == 0x3030)
-		CPU.WaitAddress = CPU.PBPCAtOpcodeStart;
-#endif
 	if (address == 0x3031)
 	{
 		S9xClearIRQ(GSU_IRQ_SOURCE);

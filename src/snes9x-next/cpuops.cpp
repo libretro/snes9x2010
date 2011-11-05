@@ -653,9 +653,6 @@ rOPX (CCSlow,   AbsoluteSlow,                     WRAP_NONE, CPY)
 static void Op3AM1 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.AL--;
 	SetZN(Registers.AL);
 }
@@ -663,9 +660,6 @@ static void Op3AM1 (void)
 static void Op3AM0 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.A.W--;
 	SetZN(Registers.A.W);
 }
@@ -673,9 +667,6 @@ static void Op3AM0 (void)
 static void Op3ASlow (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 
 	if (CheckMemory())
 	{
@@ -807,9 +798,6 @@ rOPM (53Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, EOR)
 static void Op1AM1 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.AL++;
 	SetZN(Registers.AL);
 }
@@ -817,9 +805,6 @@ static void Op1AM1 (void)
 static void Op1AM0 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.A.W++;
 	SetZN(Registers.A.W);
 }
@@ -827,9 +812,6 @@ static void Op1AM0 (void)
 static void Op1ASlow (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 
 	if (CheckMemory())
 	{
@@ -1544,54 +1526,6 @@ mOPM (0CSlow,   AbsoluteSlow,                     WRAP_BANK, TSB)
 
 /* Branch Instructions ***************************************************** */
 
-#ifdef CPU_SHUTDOWN
-
-#ifndef SA1_OPCODES
-
-inline void CPUShutdown (void)
-{
-	if (Settings.Shutdown && Registers.PBPC == CPU.WaitAddress)
-	{
-		// Don't skip cycles with a pending NMI or IRQ - could cause delayed interrupt.
-		if (CPU.WaitCounter == 0 && !(CPU.Flags & (IRQ_FLAG | NMI_FLAG)))
-		{
-			CPU.WaitAddress = 0xffffffff;
-			if (Settings.SA1)
-				S9xSA1ExecuteDuringSleep();
-			CPU.Cycles = CPU.NextEvent;
-			ICPU.CPUExecuting = FALSE;
-			S9xAPUExecute();
-			ICPU.CPUExecuting = TRUE;
-		}
-		else
-		if (CPU.WaitCounter >= 2)
-			CPU.WaitCounter = 1;
-		else
-			CPU.WaitCounter--;
-	}
-}
-
-#else
-
-inline void CPUShutdown (void)
-{
-	if (Settings.Shutdown && Registers.PBPC == CPU.WaitAddress)
-	{
-		if (CPU.WaitCounter >= 1)
-			SA1.Executing = FALSE;
-		else
-			CPU.WaitCounter++;
-	}
-}
-
-#endif
-
-#else
-
-#define CPUShutdown()
-
-#endif
-
 // BCC
 bOP(90E0,   Relative,     !CheckCarry(),    0, 0)
 bOP(90E1,   Relative,     !CheckCarry(),    0, 1)
@@ -1705,9 +1639,6 @@ static void OpB8 (void)
 static void OpCAX1 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.XL--;
 	SetZN(Registers.XL);
 }
@@ -1715,9 +1646,6 @@ static void OpCAX1 (void)
 static void OpCAX0 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.X.W--;
 	SetZN(Registers.X.W);
 }
@@ -1725,9 +1653,6 @@ static void OpCAX0 (void)
 static void OpCASlow (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 
 	if (CheckIndex())
 	{
@@ -1744,9 +1669,6 @@ static void OpCASlow (void)
 static void Op88X1 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.YL--;
 	SetZN(Registers.YL);
 }
@@ -1754,9 +1676,6 @@ static void Op88X1 (void)
 static void Op88X0 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.Y.W--;
 	SetZN(Registers.Y.W);
 }
@@ -1764,9 +1683,6 @@ static void Op88X0 (void)
 static void Op88Slow (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 
 	if (CheckIndex())
 	{
@@ -1785,9 +1701,6 @@ static void Op88Slow (void)
 static void OpE8X1 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.XL++;
 	SetZN(Registers.XL);
 }
@@ -1795,9 +1708,6 @@ static void OpE8X1 (void)
 static void OpE8X0 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.X.W++;
 	SetZN(Registers.X.W);
 }
@@ -1805,9 +1715,6 @@ static void OpE8X0 (void)
 static void OpE8Slow (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 
 	if (CheckIndex())
 	{
@@ -1824,9 +1731,6 @@ static void OpE8Slow (void)
 static void OpC8X1 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.YL++;
 	SetZN(Registers.YL);
 }
@@ -1834,9 +1738,6 @@ static void OpC8X1 (void)
 static void OpC8X0 (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 	Registers.Y.W++;
 	SetZN(Registers.Y.W);
 }
@@ -1844,9 +1745,6 @@ static void OpC8X0 (void)
 static void OpC8Slow (void)
 {
 	AddCycles(ONE_CYCLE);
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
 
 	if (CheckIndex())
 	{
@@ -3033,17 +2931,11 @@ static void Op5CSlow (void)
 static void Op4C (void)
 {
 	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) Absolute(JUMP)));
-#if defined(CPU_SHUTDOWN) && defined(SA1_OPCODES)
-	CPUShutdown();
-#endif
 }
 
 static void Op4CSlow (void)
 {
 	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteSlow(JUMP)));
-#if defined(CPU_SHUTDOWN) && defined(SA1_OPCODES)
-	CPUShutdown();
-#endif
 }
 
 static void Op6C (void)
@@ -3527,19 +3419,7 @@ static void OpCB (void)
 	{
 		CPU.WaitingForInterrupt = TRUE;
 		Registers.PCw--;
-	#ifdef CPU_SHUTDOWN
-		if (Settings.Shutdown)
-		{
-			CPU.Cycles = CPU.NextEvent;
-			ICPU.CPUExecuting = FALSE;
-			S9xAPUExecute();
-			ICPU.CPUExecuting = TRUE;
-		}
-		else
-			AddCycles(TWO_CYCLES);
-	#else
 		AddCycles(TWO_CYCLES);
-#endif
 	}
 #endif	// SA1_OPCODES
 }

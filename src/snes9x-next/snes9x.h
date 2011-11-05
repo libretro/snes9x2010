@@ -316,9 +316,6 @@ struct SCPUState
 	uint8	WhichEvent;
 	int32	NextEvent;
 	bool8	WaitingForInterrupt;
-	uint32	WaitAddress;
-	uint32	WaitCounter;
-	uint32	PBPCAtOpcodeStart;
 	uint32	AutoSaveTimer;
 	bool8	SRAMModified;
 };
@@ -409,8 +406,6 @@ struct SSettings
 	char	CartBName[PATH_MAX + 1];
 
 	bool8	DisableGameSpecificHacks;
-	bool8	ShutdownMaster;
-	bool8	Shutdown;
 	bool8	BlockInvalidVRAMAccessMaster;
 	bool8	BlockInvalidVRAMAccess;
 	int32	HDMATimingHack;

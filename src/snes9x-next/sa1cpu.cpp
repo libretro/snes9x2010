@@ -221,7 +221,6 @@
 #define StackRelative					SA1StackRelative
 #define StackRelativeIndirectIndexed	SA1StackRelativeIndirectIndexed
 
-//#undef CPU_SHUTDOWN
 #define SA1_OPCODES
 
 #include "cpuops.cpp"
@@ -265,11 +264,6 @@ void S9xSA1MainLoop (void)
 
 	for (int i = 0; i < 3 && SA1.Executing; i++)
 	{
-
-	#ifdef CPU_SHUTDOWN
-		SA1.PBPCAtOpcodeStart = SA1Registers.PBPC;
-	#endif
-
 		register uint8				Op;
 		register struct SOpcodes	*Opcodes;
 

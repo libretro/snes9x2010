@@ -186,12 +186,10 @@ static void S9xSetByteFree (uint8, uint32);
 static uint8 S9xGetByteFree (uint32 address)
 {
 	uint32	Cycles = CPU.Cycles;
-	uint32	WaitAddress = CPU.WaitAddress;
 	uint8	byte;
 
 	byte = S9xGetByte(address);
 
-	CPU.WaitAddress = WaitAddress;
 	CPU.Cycles = Cycles;
 
 	return (byte);
@@ -200,11 +198,9 @@ static uint8 S9xGetByteFree (uint32 address)
 static void S9xSetByteFree (uint8 byte, uint32 address)
 {
 	uint32	Cycles = CPU.Cycles;
-	uint32	WaitAddress = CPU.WaitAddress;
 
 	S9xSetByte(byte, address);
 
-	CPU.WaitAddress = WaitAddress;
 	CPU.Cycles = Cycles;
 }
 

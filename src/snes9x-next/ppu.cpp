@@ -1696,9 +1696,6 @@ uint8 S9xGetCPU (uint16 Address)
 		switch (Address)
 		{
 			case 0x4210: // RDNMI
-			#ifdef CPU_SHUTDOWN
-				CPU.WaitAddress = CPU.PBPCAtOpcodeStart;
-			#endif
 				byte = Memory.FillRAM[0x4210];
 				Memory.FillRAM[0x4210] = MAX_5A22_VERSION;
 				return ((byte & 0x80) | (OpenBus & 0x70) | MAX_5A22_VERSION);
@@ -1709,9 +1706,6 @@ uint8 S9xGetCPU (uint16 Address)
 				return (byte | (OpenBus & 0x7f));
 
 			case 0x4212: // HVBJOY
-			#ifdef CPU_SHUTDOWN
-				CPU.WaitAddress = CPU.PBPCAtOpcodeStart;
-			#endif
 				return (REGISTER_4212() | (OpenBus & 0x3e));
 
 			case 0x4213: // RDIO
