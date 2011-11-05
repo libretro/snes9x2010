@@ -336,6 +336,7 @@ struct SPPU
 	uint8	MosaicStart;
 	bool8	BGMosaic[4];
 	bool8	DisableMosaicHack;
+	bool8	SFXSpeedupHack;
 
 	uint8	Window1Left;
 	uint8	Window1Right;

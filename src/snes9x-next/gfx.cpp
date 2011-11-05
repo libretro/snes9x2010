@@ -1659,6 +1659,178 @@ static inline void DrawBackgroundMode7 (int bg, void (*DrawMath) (uint32, uint32
 	}
 }
 
+static inline void RenderScreen_SFXSpeedupHack()
+{
+	uint8	BGActive;
+	int		D;
+
+	GFX.S = GFX.SubScreen;
+	GFX.DB = GFX.SubZBuffer;
+	GFX.Clip = IPPU.Clip[1];
+	BGActive = Memory.FillRAM[0x212d] & ~Settings.BG_Forced;
+	D = (Memory.FillRAM[0x2130] & 2) << 4; // 'do math' depth flag
+
+	if (BGActive & 0x10)
+	{
+		BG.TileAddress = PPU.OBJNameBase;
+		BG.NameSelect = PPU.OBJNameSelect;
+		BG.EnableMath = 0;
+		BG.StartPalette = 128;
+		S9xSelectTileConverter(4, FALSE, 1, FALSE);
+		S9xSelectTileRenderers(PPU.BGMode, 1, TRUE);
+		DrawOBJS(D + 4);
+	}
+
+	BG.NameSelect = 0;
+	S9xSelectTileRenderers(PPU.BGMode, 1, FALSE);
+
+	#define DO_BG(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = 0; \
+			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter(depth, hires, 1, PPU.BGMosaic[n]); \
+			\
+			if (offset) \
+			{ \
+				BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
+				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+			} \
+			else \
+			{ \
+				DrawBackground(n, D + Zh, D + Zl); \
+			} \
+		}
+
+	switch (PPU.BGMode)
+	{
+		case 0:
+			DO_BG(0,  0, 2, FALSE, FALSE, 15, 11, 0);
+			DO_BG(1, 32, 2, FALSE, FALSE, 14, 10, 0);
+			DO_BG(2, 64, 2, FALSE, FALSE,  7,  3, 0);
+			DO_BG(3, 96, 2, FALSE, FALSE,  6,  2, 0);
+			break;
+
+		case 1:
+			DO_BG(0,  0, 4, FALSE, FALSE, 15, 11, 0);
+			DO_BG(1,  0, 4, FALSE, FALSE, 14, 10, 0);
+			DO_BG(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			break;
+
+		case 2:
+			DO_BG(0,  0, 4, FALSE, TRUE,  15,  7, 8);
+			DO_BG(1,  0, 4, FALSE, TRUE,  11,  3, 8);
+			break;
+
+		case 3:
+			DO_BG(0,  0, 8, FALSE, FALSE, 15,  7, 0);
+			DO_BG(1,  0, 4, FALSE, FALSE, 11,  3, 0);
+			break;
+
+		case 4:
+			DO_BG(0,  0, 8, FALSE, TRUE,  15,  7, 0);
+			DO_BG(1,  0, 2, FALSE, TRUE,  11,  3, 0);
+			break;
+	}
+
+	#undef DO_BG
+
+	BG.EnableMath = 0;
+
+	//ghetto inline of DrawBackdrop - no math
+	uint32	Offset = GFX.StartY * GFX.PPL;
+
+	for (int clip = 0; clip < GFX.Clip[5].Count; clip++)
+	{
+		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1);
+		GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
+	}
+	//END - ghetto inline of DrawBackdrop - no math
+
+	BGActive = 0;
+	D = 0;
+
+	GFX.S = GFX.Screen;
+	if (GFX.DoInterlace && GFX.InterlaceFrame)
+		GFX.S += GFX.RealPPL;
+	GFX.DB = GFX.ZBuffer;
+	GFX.Clip = IPPU.Clip[0];
+	BGActive = Memory.FillRAM[0x212c] & ~Settings.BG_Forced;
+	D = 32;
+
+	if (BGActive & 0x10)
+	{
+		BG.TileAddress = PPU.OBJNameBase;
+		BG.NameSelect = PPU.OBJNameSelect;
+		BG.EnableMath = (Memory.FillRAM[0x2131] & 0x10);
+		BG.StartPalette = 128;
+		S9xSelectTileConverter(4, FALSE, 0, FALSE);
+		S9xSelectTileRenderers(PPU.BGMode, 0, TRUE);
+		DrawOBJS(D + 4);
+	}
+
+	BG.NameSelect = 0;
+	S9xSelectTileRenderers(PPU.BGMode, 0, FALSE);
+
+	#define DO_BG(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter(depth, hires, 0, PPU.BGMosaic[n]); \
+			\
+			if (offset) \
+			{ \
+				BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+				DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
+			} \
+			else \
+			{ \
+				DrawBackground(n, D + Zh, D + Zl); \
+			} \
+		}
+
+	switch (PPU.BGMode)
+	{
+		case 0:
+			DO_BG(0,  0, 2, FALSE, FALSE, 15, 11, 0);
+			DO_BG(1, 32, 2, FALSE, FALSE, 14, 10, 0);
+			DO_BG(2, 64, 2, FALSE, FALSE,  7,  3, 0);
+			DO_BG(3, 96, 2, FALSE, FALSE,  6,  2, 0);
+			break;
+
+		case 1:
+			DO_BG(0,  0, 4, FALSE, FALSE, 15, 11, 0);
+			DO_BG(1,  0, 4, FALSE, FALSE, 14, 10, 0);
+			DO_BG(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			break;
+
+		case 2:
+			DO_BG(0,  0, 4, FALSE, TRUE,  15,  7, 8);
+			DO_BG(1,  0, 4, FALSE, TRUE,  11,  3, 8);
+			break;
+
+		case 3:
+			DO_BG(0,  0, 8, FALSE, FALSE, 15,  7, 0);
+			DO_BG(1,  0, 4, FALSE, FALSE, 11,  3, 0);
+			break;
+
+		case 4:
+			DO_BG(0,  0, 8, FALSE, TRUE,  15,  7, 0);
+			DO_BG(1,  0, 2, FALSE, TRUE,  11,  3, 0);
+			break;
+	}
+
+	#undef DO_BG
+
+	BG.EnableMath = (Memory.FillRAM[0x2131] & 0x20);
+
+	DrawBackdrop();
+}
+
 static inline void RenderScreen (bool8 sub)
 {
 	uint8	BGActive;
@@ -1840,13 +2012,18 @@ void S9xUpdateScreen (void)
 		if ((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2131] & 0x3f))
 			GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed], IPPU.XB[PPU.FixedColourGreen], IPPU.XB[PPU.FixedColourBlue]);
 
-		if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
-				((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
-			// If hires (Mode 5/6 or pseudo-hires) or math is to be done
-			// involving the subscreen, then we need to render the subscreen...
-			RenderScreen(TRUE);
+		if(!PPU.SFXSpeedupHack)
+		{
+			if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
+					((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
+				// If hires (Mode 5/6 or pseudo-hires) or math is to be done
+				// involving the subscreen, then we need to render the subscreen...
+				RenderScreen(TRUE);
 
-		RenderScreen(FALSE);
+			RenderScreen(FALSE);
+		}
+		else
+			RenderScreen_SFXSpeedupHack();
 	}
 	else
 	{

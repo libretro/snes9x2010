@@ -3510,19 +3510,28 @@ void CMemory::ApplyROMFixes (void)
 			match_na ("Big Sky Trooper")			|| // Big Sky Trooper
 			match_na ("A35"))				// Mechwarrior 3050/Battle Tech 3050
 			Timings.APUAllowTimeOverflow = TRUE;
+
+		//We don't want Seiken Densetsu 3/Romancing Saga 3 unbearably slow in
+		//hi-res mosaic mode - no difference with these games between normal
+		//hi-res renderer and mosaic version - only double the FPS
+		if (
+				match_nn("SeikenDensetsu3") ||
+				match_na("SeikenDensetsu3Sample1") ||	// Seiken Densetsu 3
+				match_na("ROMANCING SAGA3"))		// Romancing Saga 3
+			PPU.DisableMosaicHack = false;
+		else
+			PPU.DisableMosaicHack = true;
+
+		//Speedup hack for Star Fox 2/Vortex
+		if (
+				match_na("VORTEX") ||			// Vortex
+				match_na("STAR FOX 2"))			// Star Fox 2
+					PPU.SFXSpeedupHack = true;
+				else
+					PPU.SFXSpeedupHack = false;
 	}
 
 
-	//We don't want Seiken Densetsu 3/Romancing Saga 3 unbearably slow in
-	//hi-res mosaic mode - no difference with these games between normal
-	//hi-res renderer and mosaic version - only double the FPS
-	if (
-	match_nn("SeikenDensetsu3") ||
-	match_na("SeikenDensetsu3Sample1") ||	// Seiken Densetsu 3
-	match_na("ROMANCING SAGA3"))		// Romancing Saga 3
-		PPU.DisableMosaicHack = false;
-	else
-		PPU.DisableMosaicHack = true;
 
 	S9xAPUTimingSetSpeedup(Timings.APUSpeedup);
 	S9xAPUAllowTimeOverflow(Timings.APUAllowTimeOverflow);
