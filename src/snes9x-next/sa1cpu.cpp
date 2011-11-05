@@ -262,7 +262,8 @@ void S9xSA1MainLoop (void)
 			SA1.Flags &= ~IRQ_FLAG;
 	}
 
-	for (int i = 0; i < 3 && SA1.Executing; i++)
+	bool sa1_quit = Memory.FillRAM[0x2200] & 0x60;
+	for (int i = 0; i < 3 && !sa1_quit; i++)
 	{
 		register uint8				Op;
 		register struct SOpcodes	*Opcodes;

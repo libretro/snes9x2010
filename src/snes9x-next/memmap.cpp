@@ -2218,7 +2218,6 @@ void CMemory::InitROM (void)
 #ifndef ZSNES_FX
 	SuperFX.nRomBanks = CalculatedSize >> 15;
 #endif
-	SA1.Executing = FALSE;
 
 	//// Parse ROM header and read ROM informatoin
 

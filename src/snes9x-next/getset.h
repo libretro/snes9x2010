@@ -567,7 +567,6 @@ inline void S9xSetByte (uint8 Byte, uint32 Address)
 
 		case CMemory::MAP_SA1RAM:
 			*(Memory.SRAM + (Address & 0xffff)) = Byte;
-			SA1.Executing = !SA1.Waiting;
 			addCyclesInMemoryAccess;
 			return;
 
@@ -762,7 +761,6 @@ inline void S9xSetWord (uint16 Word, uint32 Address, enum s9xwrap_t w = WRAP_NON
 
 		case CMemory::MAP_SA1RAM:
 			WRITE_WORD(Memory.SRAM + (Address & 0xffff), Word);
-			SA1.Executing = !SA1.Waiting;
 			addCyclesInMemoryAccess_x2;
 			return;
 

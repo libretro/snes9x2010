@@ -184,9 +184,7 @@ void S9xSA1Init (void)
 {
 	SA1.IRQActive = FALSE;
 	SA1.WaitingForInterrupt = FALSE;
-	SA1.Waiting = FALSE;
 	SA1.Flags = 0;
-	SA1.Executing = FALSE;
 	memset(&Memory.FillRAM[0x2200], 0, 0x200);
 	Memory.FillRAM[0x2200] = 0x20;
 	Memory.FillRAM[0x2220] = 0x00;
@@ -228,7 +226,6 @@ static void S9xSA1Reset (void)
 
 	S9xSA1UnpackStatus();
 	S9xSA1FixCycles();
-	SA1.Executing = TRUE;
 	SA1.BWRAM = Memory.SRAM;
 	Memory.FillRAM[0x2225] = 0;
 }
@@ -272,13 +269,6 @@ void S9xSA1PostLoadState (void)
 	SA1.VirtualBitmapFormat = (Memory.FillRAM[0x223f] & 0x80) ? 2 : 4;
 	Memory.BWRAM = Memory.SRAM + (Memory.FillRAM[0x2224] & 7) * 0x2000;
 	S9xSA1SetBWRAMMemMap(Memory.FillRAM[0x2225]);
-
-	SA1.Waiting = (Memory.FillRAM[0x2200] & 0x60) != 0;
-	SA1.Executing = !SA1.Waiting;
-}
-
-void S9xSA1ExecuteDuringSleep (void)
-{
 }
 
 static void S9xSetSA1MemMap (uint32 which1, uint8 map)
@@ -501,7 +491,6 @@ static void S9xSA1DMA (void)
 	{
 		SA1.Flags |= IRQ_FLAG;
 		SA1.IRQActive |= DMA_IRQ_SOURCE;
-		//SA1.Executing = !SA1.Waiting;
 	}
 }
 
@@ -510,9 +499,6 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 	switch (address)
 	{
 		case 0x2200:
-			SA1.Waiting = (byte & 0x60) != 0;
-			//SA1.Executing = !SA1.Waiting && SA1.S9xOpcodes;
-
 			if (!(byte & 0x20) && (Memory.FillRAM[0x2200] & 0x20))
 				S9xSA1Reset();
 
@@ -523,7 +509,6 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 				{
 					SA1.Flags |= IRQ_FLAG;
 					SA1.IRQActive |= SNES_IRQ_SOURCE;
-					SA1.Executing = !SA1.Waiting && SA1.S9xOpcodes;
 				}
 			}
 
@@ -533,7 +518,6 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 				if (Memory.FillRAM[0x220a] & 0x10)
 				{
 					SA1.Flags |= NMI_FLAG;
-					SA1.Executing = !SA1.Waiting && SA1.S9xOpcodes;
 				}
 			}
 
@@ -603,27 +587,23 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 			{
 				SA1.Flags |= IRQ_FLAG;
 				SA1.IRQActive |= SNES_IRQ_SOURCE;
-				//SA1.Executing = !SA1.Waiting;
 			}
 
 			if (((byte ^ Memory.FillRAM[0x220a]) & 0x40) && (Memory.FillRAM[0x2301] & byte & 0x40))
 			{
 				SA1.Flags |= IRQ_FLAG;
 				SA1.IRQActive |= TIMER_IRQ_SOURCE;
-				//SA1.Executing = !SA1.Waiting;
 			}
 
 			if (((byte ^ Memory.FillRAM[0x220a]) & 0x20) && (Memory.FillRAM[0x2301] & byte & 0x20))
 			{
 				SA1.Flags |= IRQ_FLAG;
 				SA1.IRQActive |= DMA_IRQ_SOURCE;
-				//SA1.Executing = !SA1.Waiting;
 			}
 
 			if (((byte ^ Memory.FillRAM[0x220a]) & 0x10) && (Memory.FillRAM[0x2301] & byte & 0x10))
 			{
 				SA1.Flags |= NMI_FLAG;
-				//SA1.Executing = !SA1.Waiting;
 			}
 
 			break;

@@ -204,14 +204,12 @@ struct SSA1
 	uint32	Flags;
 	uint8	*PCBase;
 	bool8	IRQActive;
-	bool8	Waiting;
 	bool8	WaitingForInterrupt;
 
 	uint8	*Map[MEMMAP_NUM_BLOCKS];
 	uint8	*WriteMap[MEMMAP_NUM_BLOCKS];
 	uint8	*BWRAM;
 
-	bool8	Executing;
 	bool8	overflow;
 	bool8	in_char_dma;
 	int16	op1;
