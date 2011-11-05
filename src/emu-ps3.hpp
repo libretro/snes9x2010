@@ -119,6 +119,7 @@ extern char BORDERS_DIR_PATH[MAX_PATH_LENGTH];
 extern char SHADERS_DIR_PATH[MAX_PATH_LENGTH];
 extern char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 extern char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
+extern char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 extern oskutil_params oskutil_handle;
 extern uint64_t mode_switch;
 

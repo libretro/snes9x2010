@@ -176,10 +176,9 @@
 
 
 #include <math.h>
-#include "snes9x.h"
 #include "apu.h"
-#include "snapshot.h"
-#include "display.h"
+#include "../snapshot.h"
+#include "../display.h"
 
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512

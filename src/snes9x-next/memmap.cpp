@@ -177,6 +177,7 @@
 
 #include <string>
 #include <numeric>
+#include <ctype.h>
 
 #ifdef UNZIP_SUPPORT
 #include "unzip/unzip.h"
@@ -3889,7 +3890,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 		unzFile	file = unzOpen(rom_filename);
 		if (file)
 		{
-			int	port = unzFindExtension(file, "ups");
+			int	port = unzFindExtension(file, "ups", TRUE, TRUE);
 			if (port == UNZ_OK)
 			{
 				printf(" in %s", rom_filename);
@@ -4055,7 +4056,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 		unzFile	file = unzOpen(rom_filename);
 		if (file)
 		{
-			int	port = unzFindExtension(file, "ips");
+			int	port = unzFindExtension(file, "ips", TRUE, TRUE);
 			while (port == UNZ_OK)
 			{
 				printf(" in %s", rom_filename);
@@ -4071,7 +4072,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 				else
 					printf(" failed!\n");
 
-				port = unzFindExtension(file, "ips", false);
+				port = unzFindExtension(file, "ips", false, TRUE);
 			}
 
 			if (!flag)
@@ -4082,7 +4083,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 				{
 					snprintf(ips, 8, "%03d.ips", i);
 
-					if (unzFindExtension(file, ips) != UNZ_OK)
+					if (unzFindExtension(file, ips, TRUE, TRUE) != UNZ_OK)
 						break;
 
 					printf(" in %s", rom_filename);
@@ -4116,7 +4117,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 					if (strlen(ips) > _MAX_EXT)
 						break;
 
-					if (unzFindExtension(file, ips) != UNZ_OK)
+					if (unzFindExtension(file, ips, TRUE, TRUE) != UNZ_OK)
 						break;
 
 					printf(" in %s", rom_filename);
@@ -4148,7 +4149,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 				{
 					snprintf(ips, 4, "ip%d", i);
 
-					if (unzFindExtension(file, ips) != UNZ_OK)
+					if (unzFindExtension(file, ips, TRUE, TRUE) != UNZ_OK)
 						break;
 
 					printf(" in %s", rom_filename);

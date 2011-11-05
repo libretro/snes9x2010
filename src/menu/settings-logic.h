@@ -652,7 +652,6 @@ static void producesettingentry(uint64_t switchvalue)
 				Settings.ForceNTSC = 0;
 				Settings.ForcePAL = 0;
 				Settings.FrameTimePAL = 20000;
-				Settings.ShutdownMaster = false;
 				Settings.NoPatch = 0;
 				Settings.ApplyCheats = 1;
 				Settings.ResetBeforeRecordingMovie = 0;

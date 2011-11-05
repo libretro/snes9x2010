@@ -181,7 +181,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#ifdef __CELLOS_LV2__
+#include <memory>
+#else
 #include <memory.h>
+#endif
 #include <time.h>
 #include <string.h>
 #ifdef HAVE_STRINGS_H

@@ -959,8 +959,8 @@ inline void S9xSetPCBase (uint32 Address)
 	Registers.PBPC = Address & 0xffffff;
 	ICPU.ShiftedPB = Address & 0xff0000;
 
-	int		block;
-	uint8	*GetAddress = Memory.Map[block = ((Address & 0xffffff) >> MEMMAP_SHIFT)];
+	int block = ((Address & 0xffffff) >> MEMMAP_SHIFT);
+	uint8	*GetAddress = Memory.Map[block];
 
 	CPU.MemSpeed = memory_speed(Address);
 	CPU.MemSpeedx2 = CPU.MemSpeed << 1;

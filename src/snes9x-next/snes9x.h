@@ -190,7 +190,7 @@
 
 #ifdef CLUNKY_FILE_ABSTRACTION
 #ifdef ZLIB
-#include <zlib.h>
+#include "unzip/zlib.h"
 #define STREAM			gzFile
 #define READ_STREAM(p, l, s)	gzread(s, p, l)
 #define WRITE_STREAM(p, l, s)	gzwrite(s, p, l)
@@ -359,35 +359,44 @@ struct STimings
 
 struct SSettings
 {
-	bool8	SuperFX;
+	bool	SuperFX;
 	uint8	DSP;
-	bool8	SA1;
-	bool8	C4;
-	bool8	SDD1;
-	bool8	SPC7110;
-	bool8	SPC7110RTC;
-	bool8	OBC1;
+	bool	SA1;
+	bool	C4;
+	bool	SDD1;
+	bool	SPC7110;
+	bool	SPC7110RTC;
+	bool	OBC1;
 	uint8	SETA;
-	bool8	SRTC;
-	bool8	BS;
-	bool8	BSXItself;
-	bool8	BSXBootup;
-	bool8	MouseMaster;
-	bool8	SuperScopeMaster;
-	bool8	JustifierMaster;
-	bool8	MultiPlayer5Master;
+	bool	SRTC;
+	bool	BS;
+	bool	BSXItself;
+	bool	BSXBootup;
+	bool	MouseMaster;
+	bool	SuperScopeMaster;
+	bool	JustifierMaster;
+	bool	MultiPlayer5Master;
 
-	bool8	ForceLoROM;
-	bool8	ForceHiROM;
-	bool8	ForceHeader;
-	bool8	ForceNoHeader;
-	bool8	ForceInterleaved;
-	bool8	ForceInterleaved2;
-	bool8	ForceInterleaveGD24;
+	bool	ForceLoROM;
+	bool	ForceHiROM;
+	bool	ForceHeader;
+	bool	ForceNoHeader;
+	bool	ForceInterleaved;
+	bool	ForceInterleaved2;
+	bool	ForceInterleaveGD24;
 	bool8	ForceNotInterleaved;
-	bool8	ForcePAL;
-	bool8	ForceNTSC;
-	bool8	PAL;
+	#ifdef __CELLOS_LV2__
+	uint32	ForcePAL;
+	uint32	ForceNTSC;
+	uint32	ApplyCheats;
+	uint32	NoPatch;
+	#else
+	bool	ForcePAL;
+	bool	ForceNTSC;
+	bool	ApplyCheats;
+	bool	NoPatch;
+	#endif
+	bool	PAL;
 	uint32	FrameTimePAL;
 	uint32	FrameTimeNTSC;
 	uint32	FrameTime;
@@ -397,29 +406,69 @@ struct SSettings
 
 	uint8	BG_Forced;
 
-	bool8	AutoDisplayMessages;
+	bool	AutoDisplayMessages;
 	uint32	InitialInfoStringTimeout;
 	uint16	DisplayColor;
 
-	bool8	Multi;
+	bool	Multi;
 	char	CartAName[PATH_MAX + 1];
 	char	CartBName[PATH_MAX + 1];
 
-	bool8	DisableGameSpecificHacks;
-	bool8	BlockInvalidVRAMAccessMaster;
-	bool8	BlockInvalidVRAMAccess;
+	bool	DisableGameSpecificHacks;
+	bool	BlockInvalidVRAMAccessMaster;
+	bool	BlockInvalidVRAMAccess;
 	int32	HDMATimingHack;
 
-	bool8	Paused;
+	bool	Paused;
 
 	uint32	SkipFrames;
 	uint32	TurboSkipFrames;
 	uint32	AutoMaxSkipFrames;
-	bool8	TurboMode;
+	bool	TurboMode;
 
-	bool8	ApplyCheats;
-	bool8	NoPatch;
 	int32	AutoSaveDelay;
+	#ifdef __CELLOS_LV2__
+	uint32_t	PS3KeepAspect;
+	uint32_t	PS3Smooth;
+	uint32_t	PS3Smooth2;
+	uint32_t	SRAMWriteProtect;
+	uint32_t	PS3OverscanEnabled;
+	uint32_t	SoundMode;
+	uint32_t	PS3CurrentResolution;
+	uint32_t	PS3PALTemporalMode60Hz;
+	uint32_t	PS3FontSize;
+	uint32_t	ScreenshotsEnabled;
+	uint32_t	AccessoryType;
+	uint32_t	OddScreenHeightJumpFix;
+	uint32_t	Throttled;
+	uint32_t	TripleBuffering;
+	uint32_t	CurrentSaveStateSlot;
+	uint32_t	CurrentCheatPosition;
+	uint32_t	ScaleEnabled;
+	uint32_t	ScaleFactor;
+	uint32_t	ResetBeforeRecordingMovie;
+	uint32_t	ApplyShaderPresetOnStartup;
+	uint32_t	ViewportX;
+	uint32_t	ViewportY;
+	uint32_t	ViewportWidth;
+	uint32_t	ViewportHeight;
+	char		PS3PathSaveStates[PATH_MAX];
+	char		PS3PathSRAM[PATH_MAX];
+	char		PS3PathScreenshots[PATH_MAX];
+	char		PS3PathCheats[PATH_MAX];
+	char		PS3CurrentShader[PATH_MAX];
+	char		PS3CurrentShader2[PATH_MAX];
+	char		PS3CurrentBorder[PATH_MAX];
+	char		PS3PathROMDirectory[PATH_MAX];
+	char		RSoundServerIPAddress[PATH_MAX];
+	char		GameAwareShaderPath[PATH_MAX];
+	char		ShaderPresetPath[PATH_MAX];
+	char		ShaderPresetTitle[PATH_MAX];
+	bool		SaveCustomControlScheme;
+	int32_t		PS3OverscanAmount;
+	int32_t		ControlScheme;
+	int32_t		AccessoryAutoDetection;
+	#endif
 };
 
 struct SSNESGameFixes
@@ -431,6 +480,7 @@ struct SSNESGameFixes
 void S9xSetPause(uint32);
 void S9xClearPause(uint32);
 void S9xExit(void);
+void S9xExitToMenu(void);
 void S9xMessage(int, int, const char *);
 
 extern struct SSettings			Settings;

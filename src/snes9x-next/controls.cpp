@@ -317,6 +317,7 @@ static const char	*color_names[32] =
 	S(DecFrameTime), \
 	S(EmuTurbo), \
 	S(ExitEmu), \
+	S(ExitToMenu), \
 	S(IncEmuTurbo), \
 	S(IncFrameRate), \
 	S(IncFrameTime), \
@@ -1278,7 +1279,9 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 					case ExitEmu:
 						S9xExit();
 						break;
-
+					case ExitToMenu:
+						S9xExitToMenu();
+						break;
 					case Reset:
 						S9xReset();
 						break;

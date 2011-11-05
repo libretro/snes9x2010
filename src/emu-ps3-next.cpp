@@ -23,13 +23,13 @@
 #endif
 
 #include <pthread.h>
-#include "snes9x/snes9x.h"
-#include "snes9x/memmap.h"
-#include "snes9x/apu/apu.h"
-#include "snes9x/ppu.h"
-#include "snes9x/controls.h"
-#include "snes9x/cheats.h"
-#include "snes9x/display.h"
+#include "snes9x-next/snes9x.h"
+#include "snes9x-next/memmap.h"
+#include "snes9x-next/apu/apu.h"
+#include "snes9x-next/ppu.h"
+#include "snes9x-next/controls.h"
+#include "snes9x-next/cheats.h"
+#include "snes9x-next/display.h"
 
 #include "snes_state/config_file.h"
 
@@ -86,10 +86,11 @@ static uint32_t special_action_msg_expired;		// time at which the message no lon
 uint64_t ingame_menu_item = 0;
 bool need_load_settings = true;							// needs settings loaded
 static uint32_t controller_settings = NO_JOYSTICKS;					// controller mode to run emulator in
+bool audio_active = false;
 
 //emulator-specific
 s9xcommand_t keymap[1024];
-extern uint16_t joypad[8];
+uint16_t joypad[8];
 
 /* PS3 frontend - save state/emulator SRAM related functions */
 
@@ -127,14 +128,14 @@ extern uint16_t joypad[8];
 #define S9xReportButton(id, pressed) \
       if(keymap[id].type == S9xButtonJoypad) \
       joypad[keymap[id].button.joypad.idx] = ((joypad[keymap[id].button.joypad.idx] | keymap[id].button.joypad.buttons) & (((pressed) | -(pressed)) >> 31)) | ((joypad[keymap[id].button.joypad.idx] & ~keymap[id].button.joypad.buttons) & ~(((pressed) | -(pressed)) >> 31)); \
-      else if(pressed)\
-         S9xApplyCommand_Button(keymap[id], pressed);
+      else if(pressed) \
+         S9xApplyCommand(keymap[id], pressed, 0);
 
 #define S9xReportButton_Mouse(id, pressed) \
       if(keymap[id].type == S9xButtonJoypad) \
       joypad[keymap[id].button.joypad.idx] = ((joypad[keymap[id].button.joypad.idx] | keymap[id].button.joypad.buttons) & (((pressed) | -(pressed)) >> 31)) | ((joypad[keymap[id].button.joypad.idx] & ~keymap[id].button.joypad.buttons) & ~(((pressed) | -(pressed)) >> 31)); \
-      else if(keymap[id].type == S9xButtonMouse || pressed) \
-         S9xApplyCommand_Button(keymap[id], pressed);
+      /* else if(keymap[id].type == S9xButtonMouse || pressed) */ \
+         /* S9xApplyCommand_Button(keymap[id], pressed); */
 
 #define create_msg_dialog(text, callback) \
 	dialog_is_running = true; \
@@ -180,12 +181,22 @@ void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 	}
 }
 
+static void S9xAudioCallback()
+{
+	S9xFinalizeSamples();	
+}
+
 uint32_t emulator_audio_callback(int16_t *out)
 {
-	pthread_mutex_lock(&audio_lock);
-	S9xMixSamples((uint32_t*)out);
-	pthread_mutex_unlock(&audio_lock);
-	return 512;
+	if(audio_active)
+	{
+		pthread_mutex_lock(&audio_lock);
+		S9xMixSamples(out, 512);
+		pthread_mutex_unlock(&audio_lock);
+		return 512;
+	}
+	else
+		return 0;
 }
 
 #define audio_default_params() \
@@ -222,8 +233,6 @@ static void callback_rsound_dialog_ok(int button_type, void *userdata)
 		   setting = false; \
 		   break; \
 	} \
-   if(mute_sound) \
-      S9xSetSoundMute(false); \
    dialog_is_running = false; \
    cellMsgDialogClose(0.0f);
 
@@ -231,8 +240,6 @@ static void callback_rsound_dialog_ok(int button_type, void *userdata)
 #define create_callback_loop(mute_sound) \
    do \
    { \
-      if(mute_sound) \
-         S9xSetSoundMute(true); \
       glClear(GL_COLOR_BUFFER_BIT); \
       psglSwap(); \
       cellSysutilCheckCallback(); \
@@ -265,6 +272,7 @@ static void callback_rsound_dialog_ok(int button_type, void *userdata)
 	   cellSysutilCheckCallback(); \
 	}while(is_running);
 
+#if 0
 static void callback_multitap_compatible(int button_type, void *userdata)
 {
 	create_callback(Settings.CurrentROMisMultitapCompatible, 1);
@@ -284,6 +292,7 @@ static void callback_justifier_compatible(int button_type, void *userdata)
 {
 	create_callback(Settings.CurrentROMisJustifierCompatible, 1);
 }
+#endif
 
 static void callback_save_custom_controls(int button_type, void *userdata)
 {
@@ -337,7 +346,6 @@ const char * emulator_input_cheat(void)
 	oskutil_write_initial_message(&oskutil_handle, L"");
 	oskutil_write_message(&oskutil_handle, L"Enter cheat code (Game Genie/Action Replay/GoldFinger Pro format)");
 	oskutil_start(&oskutil_handle);
-
 
 	create_osk_loop();
 
@@ -394,6 +402,7 @@ const char * emulator_input_cheat(void)
 	return "";
 }
 
+#if 0
 static bool emulator_is_super_scope_compatible(void)
 {
 	if	(
@@ -714,6 +723,7 @@ static bool emulator_is_multitap_compatible(void)
 	else
 		return false;
 }
+#endif
 
 static void emulator_odd_screen_height_jump_fix(void)
 {
@@ -1094,7 +1104,7 @@ void emulator_switch_pal_60hz(bool pal60Hz)
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_CHEATDISABLE), "CheatDisable"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_CHEATINPUT), "CheatInput"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_CHEATINPUTLABEL), "CheatInputLabel"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_EXITTOMENU), "ExitToMenu"); \
+   MAP_BUTTON(MAKE_BUTTON(padno, BTN_EXITTOMENU), "ExitEmu"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_PAUSE), "Pause"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_FASTFORWARD), "ToggleEmuTurbo"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_RESET), "Reset"); \
@@ -1103,7 +1113,7 @@ void emulator_switch_pal_60hz(bool pal60Hz)
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_DECREMENTTURBO), "DecEmuTurbo"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_SWAPJOYPADS), "SwapJoypads"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_SRAM_WRITEPROTECT), "SramWriteProtect"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_INGAME_MENU), "IngameMenu");
+   MAP_BUTTON(MAKE_BUTTON(padno, BTN_INGAME_MENU), "ExitToMenu");
 
 
 static bool emulator_init_system(void)
@@ -1127,11 +1137,10 @@ static bool emulator_init_system(void)
 
 	S9xInitSound(64, 0);
 
-	//S9xSetSamplesAvailableCallback(emulator_s9x_audio_callback, NULL);
-	//audio_active = true;
+	S9xSetSamplesAvailableCallback(S9xAudioCallback);
+	audio_active = true;
 	pthread_mutex_unlock(&audio_lock);
 
-	S9xSetSoundMute(true);
 	S9xSetRenderPixelFormat(RGB555);
 
 	if (current_rom == NULL)
@@ -1140,6 +1149,7 @@ static bool emulator_init_system(void)
 	if (!Memory.LoadROM(current_rom))
 		return false; //Load ROM failed
 
+	#if 0
 	if(emulator_is_multitap_compatible())
 	{
 		if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
@@ -1200,6 +1210,7 @@ static bool emulator_init_system(void)
 		if(Settings.CurrentROMisJustifierCompatible)
 			Emulator_SetControllerMode(TWO_JUSTIFIERS);
 	}
+	#endif
 	//this last rule is in case Multitap has been set manually by the user by pressing TRIANGLE on a ROM
 	else if (controller_settings != MULTITAP)
 		Emulator_SetControllerMode(TWO_JOYSTICKS);
@@ -1223,8 +1234,8 @@ static bool emulator_init_system(void)
 	S9xGraphicsInit();
 
 
-#define MAP_BUTTON(id, name) S9xMapButton((id), S9xGetCommandT((name)), false, keymap)
-#define MAP_POINTER(id, name) S9xMapPointer((id), S9xGetCommandT((name)), false, keymap)
+#define MAP_BUTTON(id, name) S9xMapButton((id), S9xGetCommandT((name)), false)
+#define MAP_POINTER(id, name) S9xMapPointer((id), S9xGetCommandT((name)), false)
 
 	// Controller initialization
 	switch(controller_settings)
@@ -1340,14 +1351,17 @@ void emulator_init_settings(void)
 {
 	memset(&Settings, 0, sizeof(Settings));
 
+	printf("Gets to here #1..\n");
 	if(!file_exists(SYS_CONFIG_FILE))
 	{
 		FILE * f;
 		f = fopen(SYS_CONFIG_FILE, "w");
 		fclose(f);
 	}
+	printf("Gets to here #2..\n");
 
 	config_file_t * currentconfig = config_file_new(SYS_CONFIG_FILE);
+	printf("Gets to here #3..\n");
 
 	/* emulator-specific settings */
 
@@ -1385,28 +1399,15 @@ void emulator_init_settings(void)
 	init_setting_bool("ROM::Interleaved", Settings.ForceInterleaved, false);
 	Settings.ForceNotInterleaved = !Settings.ForceInterleaved;
 
-	//rom_filename = conf.GetStringDup("ROM::Filename", NULL);
-
-	// Sound
-
-	init_setting_bool("Sound::Sync", Settings.SoundSync, true);
-	init_setting_bool("Sound::16BitSound", Settings.SixteenBitSound, true);
-	init_setting_bool("Sound::Stereo", Settings.Stereo, true);
-	init_setting_bool("Sound::Mute", Settings.Mute, false);
-
 	// Display
 
-	init_setting_bool("Display::HiRes", Settings.SupportHiRes, true);
-	init_setting_uint("Display::MessagesInImage", Settings.AutoDisplayMessages, true);
+	init_setting_bool("Display::MessagesInImage", Settings.AutoDisplayMessages, true);
 	init_setting_uint("Display::MessageDisplayTime", Settings.InitialInfoStringTimeout, 120);
 
 	// Settings
 
 	init_setting_bool("Settings::BSXBootup", Settings.BSXBootup, false);
 	init_setting_bool("Settings::TurboMode", Settings.TurboMode, false);
-	init_setting_uint("Settings::StretchScreenshots", Settings.StretchScreenshots, 1);
-	init_setting_bool("Settings::SnapshotScreenshots", Settings.SnapshotScreenshots, true);
-	Settings.DontSaveOopsSnapshot = true;
 	init_setting_int("Settings::AutoSaveDelay", Settings.AutoSaveDelay, 0);
 
 	/*
@@ -1423,24 +1424,12 @@ void emulator_init_settings(void)
 	init_setting_uint("Settings::FrameTime", Settings.FrameTimePAL, 1667);
 	init_setting_uint("Settings::FrameTime", Settings.FrameTimeNTSC, 1667);
 
-#if 0
-	if (!strcasecmp(conf.GetString("Settings::FrameSkip", "Auto"), "Auto"))
-	{
-		Settings.SkipFrames = AUTO_FRAMERATE;
-	}
-	else
-	{
-		Settings.SkipFrames = conf.GetUInt("Settings::FrameSkip", 0) + 1;
-	}
-#endif
-
 	// Controls
 
 	init_setting_bool("Controls::MouseMaster", Settings.MouseMaster, true);
 	init_setting_bool("Controls::SuperscopeMaster", Settings.SuperScopeMaster, true);
 	init_setting_bool("Controls::JustifierMaster", Settings.JustifierMaster, true);
 	init_setting_bool("Controls::MP5Master", Settings.MultiPlayer5Master, true);
-	//Settings.UpAndDown                  =  conf.GetBool("Controls::AllowLeftRight",            false);
 
 #if 0
 	if (conf.Exists("Controls::Port1"))
@@ -1476,28 +1465,8 @@ void emulator_init_settings(void)
 
 	init_setting_bool("Hack::DisableGameSpecificHacks", Settings.DisableGameSpecificHacks, false);
 	init_setting_bool("Hack::BlockInvalidVRAMAccess", Settings.BlockInvalidVRAMAccessMaster, true)
-		init_setting_bool("Hack::SpeedHacks", Settings.ShutdownMaster, false);
-	init_setting_bool("Hack::DisableIRQ", Settings.DisableIRQ, false);
-	init_setting_bool("Hack::DisableHDMA", Settings.DisableHDMA, false);
 	init_setting_int("Hack::HDMATiming", Settings.HDMATimingHack, 100);
 
-	// Netplay
-
-#ifdef NETPLAY_SUPPORT
-	Settings.NetPlay = conf.GetBool("Netplay::Enable");
-
-	Settings.Port = NP_DEFAULT_PORT;
-	if (conf.Exists("Netplay::Port"))
-	{
-		Settings.Port = -(int) conf.GetUInt("Netplay::Port");
-	}
-
-	Settings.ServerName[0] = '\0';
-	if (conf.Exists("Netplay::Server"))
-	{
-		conf.GetString("Netplay::Server", Settings.ServerName, 128);
-	}
-#endif
 	S9xVerifyControllers();
 
 	int tmp_int;
@@ -1867,12 +1836,11 @@ void emulator_save_settings(uint64_t filetosave)
 			config_set_uint(currentconfig, "PS3SNES9x::AccessoryAutoDetection",Settings.AccessoryAutoDetection);
 			config_set_uint(currentconfig, "PS3SNES9x::AccessoryType",Settings.AccessoryType);
 			config_set_uint(currentconfig, "PS3SNES9x::SRAMWriteProtect",Settings.SRAMWriteProtect);
-			config_set_bool(currentconfig, "Sound::Sync",Settings.SoundSync);
 			config_set_uint(currentconfig, "ROM::PAL",Settings.ForcePAL);
 			config_set_uint(currentconfig, "ROM::NTSC",Settings.ForceNTSC);
 			config_set_uint(currentconfig, "ROM::Cheat",Settings.ApplyCheats);
 			config_set_uint(currentconfig, "ROM::Patch", !Settings.NoPatch);
-			config_set_uint(currentconfig, "Display::MessagesInImage",Settings.AutoDisplayMessages);
+			config_set_bool(currentconfig, "Display::MessagesInImage",Settings.AutoDisplayMessages);
 			config_set_bool(currentconfig, "Settings::BSXBootup",Settings.BSXBootup);
 			config_set_uint(currentconfig, "Settings::TurboFrameSkip",Settings.TurboSkipFrames);
 
@@ -1955,6 +1923,15 @@ void S9xCloseSnapshotFile (STREAM file)
 
 void S9xExit (void)
 {
+	emulator_stop_rom_running();
+	ingame_menu_enable(0);
+	mode_switch = MODE_MENU;
+}
+
+void S9xExitToMenu(void)
+{
+	emulator_stop_rom_running();
+	ingame_menu_enable(1);
 }
 
 void S9xMessage (int type, int number, char const *message)
@@ -2050,39 +2027,6 @@ const char *S9xChooseFilename (bool8 read_only)
 	return filename;
 }
 
-#if 0
-const char * S9xChooseMovieFilename (bool8 read_only)
-{
-	char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], fname[_MAX_FNAME + 1], ext[_MAX_EXT + 1];
-
-	char	title[64];
-
-	_splitpath(Memory.ROMFilename, drive, dir, fname, ext);
-	sprintf(title, "Choose movie %s filename", read_only ? "playback" : "record");
-	const char	*filename;
-
-	S9xSetSoundMute(TRUE);
-	filename = S9xGetFilename(".smv", SNAPSHOT_DIR);
-	S9xSetSoundMute(FALSE);
-
-	return (filename);
-}
-#endif
-
-#if 0
-void S9xToggleSoundChannel (int c)
-{
-	static uint8	sound_switch = 255;
-	
-	if (c == 8)
-		sound_switch = 255;
-	else
-		sound_switch ^= 1 << c;
-
-	S9xSetSoundControl(sound_switch);
-}
-#endif
-
 void _splitpath (const char *path, char *drive, char *dir, char *fname, char *ext)
 {
 	*drive = 0;
@@ -2143,13 +2087,39 @@ void _makepath (char *path, const char *, const char *dir, const char *fname, co
 	}
 }
 
+#define emulator_s9x_mainloop_scope() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_MOUSE_SCOPE, S9xMainLoop);
+
+#define emulator_s9x_mainloop_mouse() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_MOUSE, S9xMainLoop);
+
+#define emulator_s9x_mainloop_analog() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_ANALOG, S9xMainLoop);
+
 #define emulator_s9x_mainloop() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP, S9xMainLoop);
+
+#define emulator_implementation_s9x_sa1_mainloop() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP, SA1S9xMainLoop);
+
+#define emulator_implementation_s9x_superfx_mainloop_analog() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_ANALOG, SuperFXS9xMainLoop);
+
+#define emulator_implementation_s9x_superfx_mainloop_mouse() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_MOUSE, SuperFXS9xMainLoop);
+
+#define emulator_implementation_s9x_superfx_mainloop() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP, SuperFXS9xMainLoop);
 
 #define calculate_aspect_ratio_before_load() \
    if (Graphics->calculate_aspect_ratio_before_game_load()) \
    { \
       Graphics->set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1); \
    }
+
+void S9xSyncSpeed() {}
+void S9xSetPalette() {}
+void S9xHandlePortCommand(s9xcommand_t, short, short) {}
+void S9xAutoSaveSRAM() { }
+
+bool8 S9xDeinitUpdate(int width, int height)
+{
+	Graphics->Draw(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, GFX.Screen);
+	psglSwap();
+	return 1;
+}
 
 static void Emulator_Initialize(void)
 {
@@ -2168,8 +2138,6 @@ static void emulator_start(void)
 {
 	if(need_load_rom)
 		Emulator_Initialize();
-
-	S9xSetSoundMute(false);
 
 	if (Graphics->GetCurrentResolution() == CELL_VIDEO_OUT_RESOLUTION_576)
 	{
@@ -2197,12 +2165,12 @@ static void emulator_start(void)
 	if(Settings.Throttled)
 		audio_driver->unpause(audio_handle);
 
+	audio_active = true;
 
 	//Game - standard controls
 	emulator_s9x_mainloop();
 
 	emulator_save_sram();
-	S9xSetSoundMute(true);
 }
 
 float Emulator_GetFontSize(void)
@@ -2242,7 +2210,7 @@ static void emulator_shutdown(void)
 #ifdef MULTIMAN_SUPPORT
 	if(return_to_MM)
 	{
-		//audio_active = false;
+		audio_active = false;
 		pthread_mutex_unlock(&audio_lock);
 
 		if(audio_handle)
@@ -2293,6 +2261,7 @@ void Emulator_StartROMRunning(uint32_t set_is_running)
 void ingame_menu_enable (int enable)
 {
 	is_running = false;
+	audio_active = false;
 	is_ingame_menu_running = enable;
 }
 
@@ -2713,6 +2682,7 @@ void get_path_settings(bool multiman_support)
 		snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/shaders", usrDirPath);
 		snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/shaders/stock.cg", usrDirPath);
 		snprintf(DEFAULT_MENU_SHADER_FILE, sizeof(DEFAULT_MENU_SHADER_FILE), "%s/shaders/Borders/Menu/border-only.cg", usrDirPath);
+		snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/snes9x.conf", usrDirPath);
 	}
 }
 
