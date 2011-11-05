@@ -1768,12 +1768,12 @@ static void OpEA (void)
 /* PUSH Instructions ******************************************************* */
 
 #define PushW(w) \
-	S9xSetWord(w, Registers.S.W - 1, WRAP_BANK, WRITE_10); \
+	S9xSetWord_Write1(w, Registers.S.W - 1, WRAP_BANK); \
 	Registers.S.W -= 2;
 
 #define PushWE(w) \
 	Registers.SL--; \
-	S9xSetWord(w, Registers.S.W, WRAP_PAGE, WRITE_10); \
+	S9xSetWord_Write1(w, Registers.S.W, WRAP_PAGE); \
 	Registers.SL--;
 
 #define PushB(b) \
