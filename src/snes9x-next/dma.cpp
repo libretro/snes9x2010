@@ -1293,12 +1293,7 @@ static inline bool8 HDMAReadLineCount (int d)
 
 void S9xStartHDMA (void)
 {
-	if (Settings.DisableHDMA)
-		PPU.HDMA = 0;
-	else
-		PPU.HDMA = Memory.FillRAM[0x420c];
-
-
+	PPU.HDMA = Memory.FillRAM[0x420c];
 	PPU.HDMAEnded = 0;
 
 	int32	tmpch;

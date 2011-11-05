@@ -1561,8 +1561,6 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 			case 0x420c: // HDMAEN
 				if (CPU.InDMAorHDMA)
 					return;
-				if (Settings.DisableHDMA)
-					Byte = 0;
 				Memory.FillRAM[0x420c] = Byte;
 				// Yoshi's Island, Genjyu Ryodan, Mortal Kombat, Tales of Phantasia
 				PPU.HDMA = Byte & ~PPU.HDMAEnded;

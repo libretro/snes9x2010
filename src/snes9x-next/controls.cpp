@@ -349,8 +349,7 @@ static const char	*color_names[32] =
 	S(SaveFreezeFile), \
 	S(SoftReset), \
 	S(SwapJoypads), \
-	S(ToggleEmuTurbo), \
-	S(ToggleHDMA) \
+	S(ToggleEmuTurbo) \
 
 #define S(x)	x
 
@@ -1447,10 +1446,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 						S9xFreezeGame(filename);
 						break;
 					}
-					case ToggleHDMA:
-						Settings.DisableHDMA = !Settings.DisableHDMA;
-						DisplayStateChange("HDMA emulation", !Settings.DisableHDMA);
-						break;
 					case SwapJoypads:
 						if ((curcontrollers[0] != NONE && !(curcontrollers[0] >= JOYPAD0 && curcontrollers[0] <= JOYPAD7)))
 						{

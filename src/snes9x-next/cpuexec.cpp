@@ -219,7 +219,7 @@ void S9xMainLoop (void)
 						Registers.PCw++;
 					}
 
-					if (CPU.IRQActive && !Settings.DisableIRQ)
+					if (CPU.IRQActive)
 					{
 						if (!CheckFlag(IRQ))
 						// in IRQ handler $4211 is supposed to be read, so IRQ_FLAG should be cleared.

@@ -413,8 +413,6 @@ struct SSettings
 	bool8	Shutdown;
 	bool8	BlockInvalidVRAMAccessMaster;
 	bool8	BlockInvalidVRAMAccess;
-	bool8	DisableIRQ;
-	bool8	DisableHDMA;
 	int32	HDMATimingHack;
 
 	bool8	Paused;
