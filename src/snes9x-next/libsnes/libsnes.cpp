@@ -605,32 +605,22 @@ static void stretch_frame(uint16_t *frame, int width, int height)
    }
 }
 
-static inline int real_height(int height)
-{
-   if (height == 478)
-      return 448;
-   if (height == 239)
-      return 224;
-   return height;
-}
-
-bool8 S9xDeinitUpdate(int width, int height)
+void S9xDeinitUpdate(int width, int height)
 {
    if (height == 448 || height == 478)
    {
       if (GFX.Pitch == 2048)
-         pack_frame(GFX.Screen, width, real_height(height));
+         pack_frame(GFX.Screen, width, height);
       GFX.Pitch = 1024;
    }
    else
    {
       if (GFX.Pitch == 1024)
-         stretch_frame(GFX.Screen, width, real_height(height));
+         stretch_frame(GFX.Screen, width, height);
       GFX.Pitch = 2048;
    }
 
-   s9x_video_cb(GFX.Screen, width, real_height(height));
-   return TRUE;
+   s9x_video_cb(GFX.Screen, width, height);
 }
 
 // Dummy functions that should probably be implemented correctly later.

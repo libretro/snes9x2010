@@ -3529,6 +3529,18 @@ void CMemory::ApplyROMFixes (void)
 					PPU.SFXSpeedupHack = true;
 				else
 					PPU.SFXSpeedupHack = false;
+
+		// Check if Chrono Trigger is loaded, if so, we need to set a variable to true
+		// to get rid of an annoying mid-frame resolution switch to 256x239 which can cause
+		// an undesirable flicker/breakup of the screen for a split second - this happens
+		// whenever the game switches from normal mode to battle mode and vice versa
+		if(	Memory.match_nc("CHRONO TRIGGER") ||			// Chrono Trigger
+			Memory.match_id("ACT") ||
+			Memory.match_id("AC9J")					// Chrono Trigger (Sample)
+		  )
+			Settings.ChronoTriggerFrameHack = 1;
+		else
+			Settings.ChronoTriggerFrameHack = 0;
 	}
 
 

@@ -469,6 +469,7 @@ struct SSettings
 	int32_t		ControlScheme;
 	int32_t		AccessoryAutoDetection;
 	#endif
+	bool		ChronoTriggerFrameHack;
 };
 
 struct SSNESGameFixes

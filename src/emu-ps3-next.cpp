@@ -718,20 +718,6 @@ static bool emulator_is_multitap_compatible(void)
 }
 #endif
 
-static void emulator_odd_screen_height_jump_fix(void)
-{
-	if(Memory.match_nc("CHRONO TRIGGER") ||					// Chrono Trigger
-			Memory.match_id("ACT") ||
-			Memory.match_id("AC9J")					// Chrono Trigger (Sample)
-	  )
-	{
-		Settings.OddScreenHeightJumpFix = 1;
-	}
-	else
-		Settings.OddScreenHeightJumpFix = 0;
-}
-
-
 void emulator_toggle_sound(uint64_t soundmode)
 {
 	audio_default_params();
@@ -1207,12 +1193,6 @@ static bool emulator_init_system(void)
 	//this last rule is in case Multitap has been set manually by the user by pressing TRIANGLE on a ROM
 	else if (controller_settings != MULTITAP)
 		Emulator_SetControllerMode(TWO_JOYSTICKS);
-
-	// Check if Chrono Trigger is loaded, if so, we need to set a variable to true
-	// to get rid of an annoying mid-frame resolution switch to 256x239 which can cause
-	// an undesirable flicker/breakup of the screen for a split second - this happens
-	// whenever the game switches from normal mode to battle mode and vice versa
-	emulator_odd_screen_height_jump_fix();
 
 	Memory.LoadSRAM(S9xGetFilename(".srm", SRAM_DIR));
 
@@ -2107,11 +2087,10 @@ void S9xSetPalette() {}
 void S9xHandlePortCommand(s9xcommand_t, short, short) {}
 void S9xAutoSaveSRAM() { }
 
-bool8 S9xDeinitUpdate(int width, int height)
+void S9xDeinitUpdate(int width, int height)
 {
-	Graphics->Draw(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, GFX.Screen);
+	Graphics->Draw(width, height, GFX.Screen);
 	psglSwap();
-	return 1;
 }
 
 static void Emulator_Initialize(void)
