@@ -278,6 +278,7 @@ struct SPPU
 
 	uint8	BGMode;
 	uint8	BG3Priority;
+	bool8	RenderSub;
 
 	bool8	CGFLIP;
 	uint8	CGFLIPRead;

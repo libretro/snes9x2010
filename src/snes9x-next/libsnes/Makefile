@@ -34,7 +34,7 @@ CC         = gcc
 INCLUDES   = -I. -I.. -I../apu/
 
 CXXFLAGS    += -O3 -fomit-frame-pointer -fno-exceptions -fno-rtti -pedantic -Wall -W -Wno-unused-parameter $(fpic)
-CXXFLAGS    += -DHAVE_STRINGS_H -DHAVE_STDINT_H -DRIGHTSHIFT_IS_SAR
+CXXFLAGS    += -DHAVE_STRINGS_H -DHAVE_STDINT_H -DRIGHTSHIFT_IS_SAR -D__LIBSNES__
 CFLAGS     = $(CXXFLAGS)
 
 all: $(TARGET)
@@ -50,5 +50,3 @@ $(TARGET): $(OBJECTS)
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)
-
-

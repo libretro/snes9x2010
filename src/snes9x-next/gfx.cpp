@@ -191,6 +191,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 void S9xComputeClipWindows (void);
 
 static int	font_width = 8, font_height = 9;
+static int counter = 0;
 
 #define TILE_PLUS(t, x)	(((t) & 0xfc00) | ((t + x) & 0x3ff))
 
@@ -1935,8 +1936,6 @@ static inline void RenderScreen (bool8 sub)
 	#undef DO_BG
 
 	BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x20);
-
-	DrawBackdrop();
 }
 
 void S9xUpdateScreen (void)
@@ -1996,11 +1995,17 @@ void S9xUpdateScreen (void)
 		{
 			if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
 					((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
+			{
 				// If hires (Mode 5/6 or pseudo-hires) or math is to be done
 				// involving the subscreen, then we need to render the subscreen...
+				//fprintf(stderr, "RenderScreen_Sub1() #%d\n", counter++);
 				RenderScreen(TRUE);
+				if(PPU.RenderSub)
+					DrawBackdrop();
+			}
 
 			RenderScreen(FALSE);
+			DrawBackdrop();
 		}
 		else
 			RenderScreen_SFXSpeedupHack();

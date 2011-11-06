@@ -1055,6 +1055,10 @@ bool8 CMemory::Init (void)
 	IPPU.TileCached[TILE_4BIT_EVEN] = (uint8 *) malloc(MAX_4BIT_TILES);
 	IPPU.TileCached[TILE_4BIT_ODD]  = (uint8 *) malloc(MAX_4BIT_TILES);
 
+	// don't render subscreen speed hack - disable this by default by turning the variable (RenderSub - opposite of
+	// don't render sub) on
+	PPU.RenderSub = true;
+
 	if (!RAM || !SRAM || !VRAM || !ROM ||
 		!IPPU.TileCache[TILE_2BIT]       ||
 		!IPPU.TileCache[TILE_4BIT]       ||
@@ -2579,6 +2583,9 @@ void CMemory::InitROM (void)
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
 		MapType(), Size(), KartContents(), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), ROMId, ROMCRC32);
 	S9xMessage(S9X_INFO, S9X_ROM_INFO, String);
+	#ifdef __LIBSNES__
+	fprintf(stderr, "%s\n", String);
+	#endif
 
 	Settings.ForceLoROM = FALSE;
 	Settings.ForceHiROM = FALSE;
@@ -3541,6 +3548,117 @@ void CMemory::ApplyROMFixes (void)
 			Settings.ChronoTriggerFrameHack = 1;
 		else
 			Settings.ChronoTriggerFrameHack = 0;
+
+		// Don't render subscreen for games that don't switch to high-res mode in-game or
+		// don't use hi-res at all - and yet still need to do stuff with the subscreen
+		// FPS improvement ranges from 7/10fps to 20/25fps depending on the game ( +25/30fps in
+		// some occassions - benchmarked on PC)
+		if(
+			Memory.match_na("Super Metroid") 	// Super Metroid
+			|| Memory.match_id("ATVE")		// Tales of Phantasia (EN) (DeJap)
+			|| Memory.match_na("SECRET OF EVERMORE") 	// Secret of Evermore
+			|| Memory.match_id("AKL")		// Killer Instinct
+			|| Memory.match_na("FINAL FANTASY 6")	// Final Fantasy VI (JP)
+			|| Memory.match_na("FINAL FANTASY 3")	// Final Fantasy III (US)
+			|| Memory.match_na("ILLUSION OF GAIA USA") // Illusion of Gaia (US)
+			|| Memory.match_na("GAIA GENSOUKI 1 JPN")	// Gaia Gensouki (JPN)
+			|| Memory.match_id("AEJ") 		// Earthworm Jim
+			|| Memory.match_id("YI")		// Yoshi's Island
+			|| Memory.match_na("SUPER MARIOWORLD")	// Super Mario World
+			|| Memory.match_na("THE LEGEND OF ZELDA")	// Zelda 3
+			|| Memory.match_na("LA LEGENDE DE ZELDA")	// Zelda 3 (FR)
+			|| Memory.match_na("ZELDANODENSETSU")		// Zelda 3 (JPN)
+			|| Memory.match_na("SPARKSTER")		// Sparkster
+			|| Memory.match_na("PLOK")		// Plok!
+			|| Memory.match_na("GS MIKAMI")		// GS Mikami - Joreishi wa Nice Body
+			|| Memory.match_id("AJOJ")		// Jikkyou Oshaberi Parodius
+			|| Memory.match_na("RISE OF THE ROBOTS")	// Rise Of The Robots
+			|| Memory.match_na("MORTAL KOMBAT II")	// Mortal Kombat II
+			|| Memory.match_na("STAR FOX")		// Star Fox (US/JP)
+			|| Memory.match_na("STAR WING")		// Star Wing (EU)
+			|| Memory.match_id("3Z")		// Demon's Crest
+			|| Memory.match_na("AXELAY")		// Axelay
+			|| Memory.match_na("ZOMBIES")		// Zombies (EU)
+			|| Memory.match_na("ZOMBIES ATE MY NEIGHB")	// Zombies Ate My Neighbors
+			|| Memory.match_na("UNIRACERS")		// Uniracers
+			|| Memory.match_na("UNIRALLY")		// Unirally
+			|| Memory.match_na("CHRONO TRIGGER")	// Chrono Trigger
+			|| Memory.match_na("JURASSIC PARK")	// Jurassic Park
+			|| Memory.match_na("SOULBLAZER - 1 USA")	// Soul Blazer (US)
+			|| Memory.match_na("SOULBLAZER - 1 ENG")	// Soul Blazer (PAL)
+			|| Memory.match_na("SOULBLADER - 1")		// Soul Blader
+			|| Memory.match_na("GOKUJYOU PARODIUS")		// Gokujou Parodius
+			|| Memory.match_id("ABT")		// Adventures of Batman and Robin
+			|| Memory.match_id("A3C")		// Donkey Kong Country 3
+			|| Memory.match_id("5M")		// Mario All-Stars + World
+			|| Memory.match_na("SUPER MARIO ALL_STARS") // Super Mario All-Stars (EU/US)
+			|| Memory.match_na("SUPERMARIO COLLECTION") // Super Mario Collection (JP)
+			|| Memory.match_id("4Q")		// Super Punch-Out
+			|| Memory.match_na("HARVEST MOON")	// Harvest Moon
+			|| Memory.match_id("ADZ")		// Dracula X
+			|| Memory.match_id("A3M")		// Mortal Kombat 3
+			|| Memory.match_id("AM4J")		// Do-Re-Mi Fantasy - Milon no Dokidoki Daibouken
+			|| Memory.match_na("BT IN BATTLEMANIACS")	// Battletoads in Battlemaniacs
+			|| Memory.match_na("SPACE MEGAFORCE")	// Space Megaforce (US)
+			|| Memory.match_na("SUPER ALESTE")	// Super Aleste (EU/JP)
+			|| Memory.match_na("VALKEN")		// Assault Suits Valken (JP)
+			|| Memory.match_na("CYBERNATOR")	// Cybernator (EU/US)
+			|| Memory.match_na("SUPER BOMBERMAN")	// Super Bomberman 1
+			|| Memory.match_na("SUPER BOMBERMAN2")	// Super Bomberman 2
+			|| Memory.match_id("AS6")		// Super Bomberman 3
+			|| Memory.match_id("A4B")		// Super Bomberman 4
+			|| Memory.match_id("AYL")		// Tetris Attack
+			|| Memory.match_na("POCKY ROCKY")	// Pocky & Rocky (US/EU)
+			|| Memory.match_na("KIKIKAIKAI")	// Kiki Kaikai (JP)
+			|| Memory.match_id("ANI")		// Lufia 2 / Estpolis Denki 2
+			|| Memory.match_id("AQT")		// Terranigma
+			|| Memory.match_na("twinbee")		// Twinbee Rainbow Bell Adventures
+			|| Memory.match_id("AO7")		// Tactics Ogre
+			|| Memory.match_na("Ogre Battle USA")	// Ogre Battle (US)
+			|| Memory.match_id("AQ3")		// Dragon Quest 3
+			|| Memory.match_na("DRAGONQUEST5")	// Dragon Quest 5
+			|| Memory.match_id("AQ6J")		// Dragon Quest 6
+			|| Memory.match_na("DARIUS FORCE")	// Darius Force
+			|| Memory.match_id("AGC")		// Front Mission
+			|| Memory.match_id("AZGJ")		// Front Mission Gun Hazard
+			|| Memory.match_na("GANBARE GOEMON")	// Ganbare Goemon (JP)
+			|| Memory.match_na("GANBARE GOEMON 2")	// Ganbare Goemon 2
+			|| Memory.match_na("mystical ninja")	// Legend of Mystical Ninja (US/EU)
+			|| Memory.match_na("NOSFERATU")		// Nosferatu
+			|| Memory.match_na("PAC ATTACK")	// Pac Attack
+			|| Memory.match_na("PARODIUS")		// Parodius 1
+			|| Memory.match_na("PRINCE OF PERSIA")	// Prince of Persia
+			|| Memory.match_na("FINAL FANTASY 5")	// Final Fantasy 5
+			|| Memory.match_na("OUT OF THIS WORLD") // Out Of This World (US)
+			|| Memory.match_na("OUTER WORLD")	// Outer World (JP)
+			|| Memory.match_na("ANOTHER WORLD")	// Another World (EU)
+			|| Memory.match_id("ABZE")		// Ballz 3D
+			|| Memory.match_id("AXSP")		// Winter Gold
+			|| Memory.match_id("APJJ")		// Wonder Project J
+			|| Memory.match_na("KRUSTYS SUPER FUNHOUSE")	// Krustys Super Fun House
+			|| Memory.match_na("KRUSTYS SUPERFUNHOUSE")	// Krustys Super Fun House
+			|| Memory.match_na("LEMMINGS")		// Lemmings 1
+			|| Memory.match_id("A3Z")		// Ultimate Mortal Kombat 3
+			|| Memory.match_id("ARFJ")		// Star Ocean
+			|| Memory.match_id("AXBE")		// Bahamut Lagoon
+			|| Memory.match_id("AC6J")		// Cu-On-Pa
+			|| Memory.match_id("ASR")		// Street Racer
+			|| Memory.match_na("SUPER PANG")	// Super Pang
+			|| Memory.match_na("SUPER WIDGET")	// Super Widget
+			|| Memory.match_na("R-TYPE 3")		// R-Type 3
+			|| Memory.match_id("ARW")		// Super Mario RPG
+			|| Memory.match_na("SHVC FIREEMBLEM")	// Fire Emblem - Monshou no Nazo
+			|| Memory.match_id("BFRJ")		// Fire Emblem - Thracia 776
+			|| Memory.match_id("A32J")		// Fire Emblem - Seisen no Keifu
+			|| Memory.match_id("AR9")		// Primal Rage
+			|| Memory.match_id("APUE")		// Prehistorik Man
+			|| Memory.match_id("ALSJ")		// Lady Stalker
+		  )
+		  	PPU.RenderSub = false;
+		else
+			PPU.RenderSub = true;
+
+		fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
 	}
 
 

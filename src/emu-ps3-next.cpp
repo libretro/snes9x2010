@@ -1324,17 +1324,14 @@ void emulator_init_settings(void)
 {
 	memset(&Settings, 0, sizeof(Settings));
 
-	printf("Gets to here #1..\n");
 	if(!file_exists(SYS_CONFIG_FILE))
 	{
 		FILE * f;
 		f = fopen(SYS_CONFIG_FILE, "w");
 		fclose(f);
 	}
-	printf("Gets to here #2..\n");
 
 	config_file_t * currentconfig = config_file_new(SYS_CONFIG_FILE);
-	printf("Gets to here #3..\n");
 
 	/* emulator-specific settings */
 
@@ -1538,7 +1535,6 @@ void emulator_implementation_set_shader_preset(const char * fname)
 	strncpy(Settings.ShaderPresetPath, fname, sizeof(Settings.ShaderPresetPath));
 
 	init_setting_char("ShaderPresetTitle", Settings.ShaderPresetTitle, "Custom/None");
-	printf("Gets to ShaderPresetTitle: %s\n", Settings.ShaderPresetTitle);
 
 	//FIXME: This does not yet work
 #if 0
@@ -1865,7 +1861,6 @@ const char *S9xStringInput (const char *message)
 {
 	static char	buffer[256];
 	
-	printf("%s: ", message);
 	fflush(stdout);
 
 	if (fgets(buffer, sizeof(buffer) - 2, stdin))
