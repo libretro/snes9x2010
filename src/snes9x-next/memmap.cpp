@@ -3643,7 +3643,6 @@ void CMemory::ApplyROMFixes (void)
 			|| Memory.match_id("AXBE")		// Bahamut Lagoon
 			|| Memory.match_id("AC6J")		// Cu-On-Pa
 			|| Memory.match_id("ASR")		// Street Racer
-			|| Memory.match_na("SUPER PANG")	// Super Pang
 			|| Memory.match_na("SUPER WIDGET")	// Super Widget
 			|| Memory.match_na("R-TYPE 3")		// R-Type 3
 			|| Memory.match_id("ARW")		// Super Mario RPG
