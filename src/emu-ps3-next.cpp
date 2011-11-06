@@ -183,20 +183,13 @@ void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 
 static void S9xAudioCallback()
 {
-	S9xFinalizeSamples();	
-}
+	// Just pick a big buffer. We won't use it all.
+	static int16_t audio_buf[0x10000];
 
-uint32_t emulator_audio_callback(int16_t *out)
-{
-	if(audio_active)
-	{
-		pthread_mutex_lock(&audio_lock);
-		S9xMixSamples(out, 512);
-		pthread_mutex_unlock(&audio_lock);
-		return 512;
-	}
-	else
-		return 0;
+	S9xFinalizeSamples();
+	size_t avail = S9xGetSampleCount();
+	S9xMixSamples(audio_buf, avail);
+	audio_driver->write(audio_handle, audio_buf, avail);
 }
 
 #define audio_default_params() \
@@ -205,7 +198,7 @@ uint32_t emulator_audio_callback(int16_t *out)
    params.channels=2; \
    params.samplerate=48000; \
    params.buffer_size=8192; \
-   params.sample_cb = emulator_audio_callback; \
+   params.sample_cb = NULL; \
    params.userdata = NULL;
 
 static void callback_rsound_dialog_ok(int button_type, void *userdata)

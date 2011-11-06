@@ -1676,27 +1676,36 @@ static inline void RenderScreen_SFXSpeedupHack()
 		BG.NameSelect = PPU.OBJNameSelect;
 		BG.EnableMath = 0;
 		BG.StartPalette = 128;
-		S9xSelectTileConverter(4, FALSE, 1, FALSE);
-		S9xSelectTileRenderers(PPU.BGMode, 1, TRUE);
+		S9xSelectTileConverter_SFXDepth4();
+		S9xSelectTileRenderers_SFXSpeedup();
 		DrawOBJS(D + 4);
 	}
 
 	BG.NameSelect = 0;
-	S9xSelectTileRenderers(PPU.BGMode, 1, FALSE);
+	S9xSelectTileRenderers_SFXSpeedup();
 
-	#define DO_BG(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+	#define DO_BG_DEPTH2(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = 0; \
 			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter(depth, hires, 1, PPU.BGMosaic[n]); \
-			\
+			S9xSelectTileConverter_SFXDepth2(); \
+			DrawBackground(n, D + Zh, D + Zl); \
+		}
+
+	#define DO_BG_DEPTH4(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = 0; \
+			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter_SFXDepth4(); \
 			if (offset) \
 			{ \
-				BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
-				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+				BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 			} \
 			else \
 			{ \
@@ -1706,55 +1715,30 @@ static inline void RenderScreen_SFXSpeedupHack()
 
 	switch (PPU.BGMode)
 	{
-		case 0:
-			DO_BG(0,  0, 2, FALSE, FALSE, 15, 11, 0);
-			DO_BG(1, 32, 2, FALSE, FALSE, 14, 10, 0);
-			DO_BG(2, 64, 2, FALSE, FALSE,  7,  3, 0);
-			DO_BG(3, 96, 2, FALSE, FALSE,  6,  2, 0);
-			break;
-
 		case 1:
-			DO_BG(0,  0, 4, FALSE, FALSE, 15, 11, 0);
-			DO_BG(1,  0, 4, FALSE, FALSE, 14, 10, 0);
-			DO_BG(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			DO_BG_DEPTH4(0,  0, 4, FALSE, FALSE, 15, 11, 0);
+			DO_BG_DEPTH4(1,  0, 4, FALSE, FALSE, 14, 10, 0);
+			DO_BG_DEPTH2(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
 			break;
 
 		case 2:
-			DO_BG(0,  0, 4, FALSE, TRUE,  15,  7, 8);
-			DO_BG(1,  0, 4, FALSE, TRUE,  11,  3, 8);
-			break;
-
-		case 3:
-			DO_BG(0,  0, 8, FALSE, FALSE, 15,  7, 0);
-			DO_BG(1,  0, 4, FALSE, FALSE, 11,  3, 0);
-			break;
-
-		case 4:
-			DO_BG(0,  0, 8, FALSE, TRUE,  15,  7, 0);
-			DO_BG(1,  0, 2, FALSE, TRUE,  11,  3, 0);
+			DO_BG_DEPTH4(0,  0, 4, FALSE, TRUE,  15,  7, 8);
+			DO_BG_DEPTH4(1,  0, 4, FALSE, TRUE,  11,  3, 8);
 			break;
 	}
 
-	#undef DO_BG
+	#undef DO_BG_DEPTH2
+	#undef DO_BG_DEPTH4
 
 	BG.EnableMath = 0;
 
-	//ghetto inline of DrawBackdrop - no math
-	uint32	Offset = GFX.StartY * GFX.PPL;
-
-	for (int clip = 0; clip < GFX.Clip[5].Count; clip++)
-	{
-		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1);
-		GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
-	}
+	//ghetto inline of DrawBackdrop - no math - 
 	//END - ghetto inline of DrawBackdrop - no math
 
 	BGActive = 0;
 	D = 0;
 
 	GFX.S = GFX.Screen;
-	if (GFX.DoInterlace && GFX.InterlaceFrame)
-		GFX.S += GFX.RealPPL;
 	GFX.DB = GFX.ZBuffer;
 	GFX.Clip = IPPU.Clip[0];
 	BGActive = Memory.FillRAM[0x212c] & ~Settings.BG_Forced;
@@ -1766,22 +1750,31 @@ static inline void RenderScreen_SFXSpeedupHack()
 		BG.NameSelect = PPU.OBJNameSelect;
 		BG.EnableMath = (Memory.FillRAM[0x2131] & 0x10);
 		BG.StartPalette = 128;
-		S9xSelectTileConverter(4, FALSE, 0, FALSE);
-		S9xSelectTileRenderers(PPU.BGMode, 0, TRUE);
+		S9xSelectTileConverter_SFXDepth4();
+		S9xSelectTileRenderers_SFXSpeedup();
 		DrawOBJS(D + 4);
 	}
 
 	BG.NameSelect = 0;
-	S9xSelectTileRenderers(PPU.BGMode, 0, FALSE);
+	S9xSelectTileRenderers_SFXSpeedup();
 
-	#define DO_BG(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+	#define DO_BG_DEPTH2(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
 			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter(depth, hires, 0, PPU.BGMosaic[n]); \
-			\
+			S9xSelectTileConverter_SFXDepth2(); \
+			DrawBackground(n, D + Zh, D + Zl); \
+		}
+
+	#define DO_BG_DEPTH4(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter_SFXDepth4(); \
 			if (offset) \
 			{ \
 				BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
@@ -1795,36 +1788,20 @@ static inline void RenderScreen_SFXSpeedupHack()
 
 	switch (PPU.BGMode)
 	{
-		case 0:
-			DO_BG(0,  0, 2, FALSE, FALSE, 15, 11, 0);
-			DO_BG(1, 32, 2, FALSE, FALSE, 14, 10, 0);
-			DO_BG(2, 64, 2, FALSE, FALSE,  7,  3, 0);
-			DO_BG(3, 96, 2, FALSE, FALSE,  6,  2, 0);
-			break;
-
 		case 1:
-			DO_BG(0,  0, 4, FALSE, FALSE, 15, 11, 0);
-			DO_BG(1,  0, 4, FALSE, FALSE, 14, 10, 0);
-			DO_BG(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			DO_BG_DEPTH4(0,  0, 4, FALSE, FALSE, 15, 11, 0);
+			DO_BG_DEPTH4(1,  0, 4, FALSE, FALSE, 14, 10, 0);
+			DO_BG_DEPTH2(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
 			break;
 
 		case 2:
-			DO_BG(0,  0, 4, FALSE, TRUE,  15,  7, 8);
-			DO_BG(1,  0, 4, FALSE, TRUE,  11,  3, 8);
-			break;
-
-		case 3:
-			DO_BG(0,  0, 8, FALSE, FALSE, 15,  7, 0);
-			DO_BG(1,  0, 4, FALSE, FALSE, 11,  3, 0);
-			break;
-
-		case 4:
-			DO_BG(0,  0, 8, FALSE, TRUE,  15,  7, 0);
-			DO_BG(1,  0, 2, FALSE, TRUE,  11,  3, 0);
+			DO_BG_DEPTH4(0,  0, 4, FALSE, TRUE,  15,  7, 8);
+			DO_BG_DEPTH4(1,  0, 4, FALSE, TRUE,  11,  3, 8);
 			break;
 	}
 
-	#undef DO_BG
+	#undef DO_BG_DEPTH2
+	#undef DO_BG_DEPTH4
 
 	BG.EnableMath = (Memory.FillRAM[0x2131] & 0x20);
 

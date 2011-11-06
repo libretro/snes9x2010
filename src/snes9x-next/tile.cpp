@@ -479,6 +479,34 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 // Functions to select which converter and renderer to use.
 
+void S9xSelectTileRenderers_SFXSpeedup()
+{
+	void	(**DT)		(uint32, uint32, uint32, uint32);
+	void	(**DCT)		(uint32, uint32, uint32, uint32, uint32, uint32);
+	void	(**DB)		(uint32, uint32, uint32);
+
+	DT     = Renderers_DrawTile16Normal1x1;
+	DCT    = Renderers_DrawClippedTile16Normal1x1;
+	DB     = Renderers_DrawBackdrop16Normal1x1;
+	GFX.LinesPerTile = 8;
+
+	GFX.DrawTileNomath        = DT[0];
+	GFX.DrawClippedTileNomath = DCT[0];
+	GFX.DrawBackdropNomath    = DB[0];
+
+	int	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
+	if (Memory.FillRAM[0x2131] & 0x40)
+	{
+		i++;
+		if (Memory.FillRAM[0x2130] & 2)
+			i++;
+	}
+
+	GFX.DrawTileMath        = DT[i];
+	GFX.DrawClippedTileMath = DCT[i];
+	GFX.DrawBackdropMath    = DB[i];
+}
+
 void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 {
 	void	(**DT)		(uint32, uint32, uint32, uint32);
@@ -573,6 +601,28 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	GFX.DrawBackdropMath    = DB[i];
 	GFX.DrawMode7BG1Math    = DM7BG1[i];
 	GFX.DrawMode7BG2Math    = DM7BG2[i];
+}
+
+void S9xSelectTileConverter_SFXDepth4()
+{
+	BG.ConvertTile = BG.ConvertTileFlip = ConvertTile4;
+	BG.Buffer      = BG.BufferFlip      = IPPU.TileCache[TILE_4BIT];
+	BG.Buffered    = BG.BufferedFlip    = IPPU.TileCached[TILE_4BIT];
+	BG.TileShift        = 5;
+	BG.PaletteShift     = 10 - 4;
+	BG.PaletteMask      = 7 << 4;
+	BG.DirectColourMode = FALSE;
+}
+
+void S9xSelectTileConverter_SFXDepth2()
+{
+	BG.ConvertTile = BG.ConvertTileFlip = ConvertTile2;
+	BG.Buffer      = BG.BufferFlip      = IPPU.TileCache[TILE_2BIT];
+	BG.Buffered    = BG.BufferedFlip    = IPPU.TileCached[TILE_2BIT];
+	BG.TileShift        = 4;
+	BG.PaletteShift     = 10 - 2;
+	BG.PaletteMask      = 7 << 2;
+	BG.DirectColourMode = FALSE;
 }
 
 void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
