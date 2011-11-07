@@ -67,10 +67,6 @@ const char * Input_PrintMappedButton(uint32_t mappedbutton)
 			return "Pause";
 		case BTN_FASTFORWARD:
 			return "Fast forward";
-		case BTN_INCREMENTTURBO:
-			return "Increment Fast-forward speed";
-		case BTN_DECREMENTTURBO:
-			return "Decrement Fast-forward speed";
 		case BTN_SWAPJOYPADS:
 			return "Swap Joypads";
 		case BTN_SRAM_WRITEPROTECT:
@@ -136,13 +132,9 @@ uint32_t Input_GetAdjacentButtonmap(uint32_t buttonmap, uint32_t next)
 		case BTN_INCREMENTSAVE:
 			return next ? BTN_FASTFORWARD : BTN_DECREMENTSAVE;
 		case BTN_FASTFORWARD:
-			return next ? BTN_DECREMENTTURBO : BTN_INCREMENTSAVE;
-		case BTN_DECREMENTTURBO:
-			return next ? BTN_INCREMENTTURBO : BTN_FASTFORWARD;
-		case BTN_INCREMENTTURBO:
-			return next ? BTN_RESET : BTN_DECREMENTTURBO;
+			return next ? BTN_RESET : BTN_INCREMENTSAVE;
 		case BTN_RESET:
-			return next ? BTN_SOFTRESET : BTN_INCREMENTTURBO;
+			return next ? BTN_SOFTRESET : BTN_FASTFORWARD;
 		case BTN_SOFTRESET:
 			return next ? BTN_PAUSE : BTN_RESET;
 		case BTN_PAUSE:

@@ -258,8 +258,6 @@ void snes_init()
    Settings.InitialInfoStringTimeout = 120;
    Settings.HDMATimingHack = 100;
    Settings.BlockInvalidVRAMAccessMaster = TRUE;
-   Settings.SkipFrames = AUTO_FRAMERATE;
-   Settings.TurboSkipFrames = 15;
    Settings.CartAName[0] = 0;
    Settings.CartBName[0] = 0;
    Settings.AutoSaveDelay = 1;

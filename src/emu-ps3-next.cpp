@@ -189,7 +189,8 @@ static void S9xAudioCallback()
 	S9xFinalizeSamples();
 	size_t avail = S9xGetSampleCount();
 	S9xMixSamples(audio_buf, avail);
-	audio_driver->write(audio_handle, audio_buf, avail);
+	if(Settings.Throttled)
+		audio_driver->write(audio_handle, audio_buf, avail);
 }
 
 #define audio_default_params() \
@@ -1088,8 +1089,6 @@ void emulator_switch_pal_60hz(bool pal60Hz)
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_FASTFORWARD), "ToggleEmuTurbo"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_RESET), "Reset"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_SOFTRESET), "SoftReset"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_INCREMENTTURBO), "IncEmuTurbo"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_DECREMENTTURBO), "DecEmuTurbo"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_SWAPJOYPADS), "SwapJoypads"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_SRAM_WRITEPROTECT), "SramWriteProtect"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_INGAME_MENU), "ExitToMenu");
@@ -1377,7 +1376,6 @@ void emulator_init_settings(void)
 	// Settings
 
 	init_setting_bool("Settings::BSXBootup", Settings.BSXBootup, false);
-	init_setting_bool("Settings::TurboMode", Settings.TurboMode, false);
 	init_setting_int("Settings::AutoSaveDelay", Settings.AutoSaveDelay, 0);
 
 	/*
@@ -1496,7 +1494,6 @@ void emulator_init_settings(void)
 	init_setting_int("PS3SNES9x::AccessoryAutoDetection", Settings.AccessoryAutoDetection, ACCESSORY_AUTODETECTION_CONFIRM);
 	init_setting_uint("PS3SNES9x::AccessoryType", Settings.AccessoryType, 0);
 	init_setting_uint("PS3SNES9x::SRAMWriteProtect", Settings.SRAMWriteProtect, 0);
-	init_setting_uint("Settings::TurboFrameSkip", Settings.TurboSkipFrames, 15);
 	init_setting_uint("Sound::Rate", Settings.SoundPlaybackRate, 48000);
 	init_setting_uint("Sound::InputRate", Settings.SoundInputRate, 31950);
 
@@ -1811,7 +1808,6 @@ void emulator_save_settings(uint64_t filetosave)
 			config_set_uint(currentconfig, "ROM::Patch", !Settings.NoPatch);
 			config_set_bool(currentconfig, "Display::MessagesInImage",Settings.AutoDisplayMessages);
 			config_set_bool(currentconfig, "Settings::BSXBootup",Settings.BSXBootup);
-			config_set_uint(currentconfig, "Settings::TurboFrameSkip",Settings.TurboSkipFrames);
 
 			config_file_write(currentconfig, filepath);
 			emulator_implementation_button_mapping_settings(MAP_BUTTONS_OPTION_SETTER);
@@ -2076,6 +2072,11 @@ void _makepath (char *path, const char *, const char *dir, const char *fname, co
    { \
       Graphics->set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1); \
    }
+
+void S9xDoThrottling(bool throttle)
+{
+	Graphics->set_vsync(throttle);
+}
 
 void S9xSyncSpeed() {}
 void S9xSetPalette() {}

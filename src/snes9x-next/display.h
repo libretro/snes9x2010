@@ -208,6 +208,7 @@ void S9xSetPalette (void);
 void S9xToggleSoundChannel (int);
 bool8 S9xOpenSnapshotFile (const char *, bool8, STREAM *);
 void S9xCloseSnapshotFile (STREAM);
+void S9xDoThrottling(bool);
 const char * S9xStringInput (const char *);
 const char * S9xGetDirectory (enum s9x_getdirtype);
 const char * S9xGetFilename (const char *, enum s9x_getdirtype);

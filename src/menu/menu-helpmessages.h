@@ -13,7 +13,6 @@ static void DisplayHelpMessage(int currentsetting)
 		case SETTING_SNES9X_FORCE_NTSC:
 		case SETTING_SNES9X_AUTO_APPLY_CHEATS:
 		case SETTING_SNES9X_AUTO_APPLY_PATCH:
-		case SETTING_SNES9X_RESET_BEFORE_RECORDING_MOVIE:
 		case SETTING_SNES9X_SRAM_WRITEPROTECT:
 		case SETTING_SNES9X_ACCESSORY_TYPE:
 			print_help_message_yesno(menu_emu_settings, currentsetting);
@@ -261,16 +260,12 @@ static void producelabelvalue(uint64_t switchvalue)
 #endif
 		case SETTING_SNES9X_FORCE_PAL:
 		case SETTING_SNES9X_FORCE_NTSC:
-		case SETTING_SNES9X_RESET_BEFORE_RECORDING_MOVIE:
 		case SETTING_SNES9X_SRAM_WRITEPROTECT:
 			cellDbgFontPuts(0.5f,  menu_emu_settings.items[switchvalue].text_ypos, Emulator_GetFontSize(), *(menu_emu_settings.items[switchvalue].setting_ptr) == 0 ? GREEN : ORANGE, *(menu_emu_settings.items[switchvalue].setting_ptr) ? "ON" : "OFF");
 			cellDbgFontDraw();
 			break;
 		case SETTING_SNES9X_PAL_TIMING:
 			cellDbgFontPrintf(0.5f, menu_emu_settings.items[switchvalue].text_ypos, Emulator_GetFontSize(), Settings.FrameTimePAL == 20000 ? GREEN : ORANGE, "%d", Settings.FrameTimePAL);
-			break;
-		case SETTING_SNES9X_TURBO_SKIP_FRAMES:
-			cellDbgFontPrintf	(0.5f,	menu_emu_settings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	Settings.TurboSkipFrames == 15 ? GREEN : ORANGE, "%d", Settings.TurboSkipFrames);
 			break;
 		case SETTING_SNES9X_ACCESSORY_AUTODETECTION:
 			cellDbgFontPrintf	(0.5f,	menu_emu_settings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM ? GREEN : ORANGE, "%s", Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED ? "ON" : Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM ? "Confirm" : "OFF");

@@ -526,24 +526,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		1
 	},
 	{
-		SETTING_SNES9X_RESET_BEFORE_RECORDING_MOVIE,
-		"Reset Before Recording Movie",
-		0.0f,
-		0.0f,
-		YELLOW,
-		WHITE,
-		"INFO - [Reset Before Recording Movie] is set to 'OFF'. The game will start\nfrom the current position in the game while recording a movie..",
-		LIGHTBLUE,
-		0.91f,
-		0.09f,
-		0.83f,
-		&Settings.ResetBeforeRecordingMovie,
-		"INFO - Reset Before Recording Movie is set to 'On'. The game will reset before\nbeginning to record a movie.",
-		"INFO - Reset Before Recording Movie is set to 'Off'. The game will start\nfrom the current position in the game while recording a movie.",
-		0,
-		1
-	},
-	{
 		SETTING_SNES9X_SRAM_WRITEPROTECT,
 		"Savestate SRAM Overwrite Protect",
 		0.0f,
@@ -560,22 +542,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		"INFO - [SRAM Overwrite Protect] is set to 'OFF'. Savestates that you\n load will immediately overwrite SRAM.",
 		0,
 		1
-	},
-	{
-		SETTING_SNES9X_TURBO_SKIP_FRAMES,
-		"Fast forwarding - frameskip",
-		0.0f,
-		0.0f,
-		YELLOW,
-		WHITE,
-		"INFO - Set the amount of frames to be skipped during 'Fast forward'.",
-		LIGHTBLUE,
-		0.91f,
-		0.09f,
-		0.83f,
-		NULL,
-		{0},
-		{0}
 	},
 	{
 		SETTING_SNES9X_ACCESSORY_AUTODETECTION,

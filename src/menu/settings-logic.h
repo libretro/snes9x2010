@@ -523,7 +523,6 @@ static void producesettingentry(uint64_t switchvalue)
 			break;
 		case SETTING_SNES9X_AUTO_APPLY_CHEATS:
 		case SETTING_SNES9X_AUTO_APPLY_PATCH:
-		case SETTING_SNES9X_RESET_BEFORE_RECORDING_MOVIE:
 		case SETTING_SNES9X_SRAM_WRITEPROTECT:
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state) || CTRL_CROSS(state))
 			{
@@ -534,31 +533,6 @@ static void producesettingentry(uint64_t switchvalue)
 			if(CTRL_START(state))
 				*(menu_emu_settings.items[switchvalue].setting_ptr) = menu_emu_settings.items[switchvalue].default_value;
 			break;
-#if 0
-		case SETTING_SNES9X_SKIP_FRAMES:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) )
-			{
-				if (Settings.SkipFrames <= 1)
-					Settings.SkipFrames = AUTO_FRAMERATE;
-				else if(Settings.SkipFrames != AUTO_FRAMERATE)
-					Settings.SkipFrames--;
-
-				sys_timer_usleep(FILEBROWSER_DELAY);
-			}
-			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
-			{
-				if (Settings.SkipFrames == AUTO_FRAMERATE)
-					Settings.SkipFrames = 1;
-				else if (Settings.SkipFrames < 10)
-					Settings.SkipFrames++;
-
-				sys_timer_usleep(FILEBROWSER_DELAY);
-			}
-
-			if(CTRL_START(state))
-				Settings.SkipFrames = AUTO_FRAMERATE;
-			break;
-#endif
 		case SETTING_SNES9X_FORCE_PAL:
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state) || CTRL_CROSS(state))
 			{
@@ -599,24 +573,6 @@ static void producesettingentry(uint64_t switchvalue)
 				Settings.FrameTimePAL = 20000;
 
 			break;
-		case SETTING_SNES9X_TURBO_SKIP_FRAMES:
-			if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state) )
-			{
-				if(Settings.TurboSkipFrames > 0)
-					Settings.TurboSkipFrames--;
-
-				sys_timer_usleep(FILEBROWSER_DELAY);
-			}
-			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) ||  CTRL_CROSS(state))
-			{
-				if(Settings.TurboSkipFrames < 100)
-					Settings.TurboSkipFrames++;
-				sys_timer_usleep(FILEBROWSER_DELAY);
-			}
-			if(CTRL_START(state))
-				Settings.TurboSkipFrames = 15;
-
-			break;
 		case SETTING_SNES9X_ACCESSORY_AUTODETECTION:
 			if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
 			{
@@ -646,16 +602,12 @@ static void producesettingentry(uint64_t switchvalue)
 		case SETTING_EMU_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_START(state) || CTRL_CROSS(state))
 			{
-				//Settings.DisplayFrameRate = false;
-				Settings.SkipFrames = AUTO_FRAMERATE;
-				//Settings.DisplayPressedKeys = 0;
 				Settings.ForceNTSC = 0;
 				Settings.ForcePAL = 0;
 				Settings.FrameTimePAL = 20000;
 				Settings.NoPatch = 0;
 				Settings.ApplyCheats = 1;
 				Settings.ResetBeforeRecordingMovie = 0;
-				Settings.TurboSkipFrames = 15;
 				Settings.AccessoryAutoDetection = ACCESSORY_AUTODETECTION_CONFIRM;
 				Settings.AccessoryType = 0;
 				Settings.SRAMWriteProtect = 0;

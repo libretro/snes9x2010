@@ -397,24 +397,18 @@ const char * emulator_input_cheat(void)
 static bool emulator_is_super_scope_compatible(void)
 {
 	if	(
-			Memory.match_na("BATTLE CLASH") ||			// Battle Clash (EU/US) (*)
-										// Space Bazooka (JP)
+			Memory.match_na("BATTLE CLASH") || // Battle Clash (EU/US) (*) / Space Bazooka (JP)
 
-			Memory.match_na("SPACE BAZOOKA") ||			// Space Bazooka (JP) (*)
-										// Battle Clash (EU/US)
-
+			Memory.match_na("SPACE BAZOOKA") || // Space Bazooka (JP) (*) / Battle Clash (EU/US)
 			//FIXME: TODO: Add The Hunt for Red October - used for bonus game
 			//FIXME: TODO: Add Lamborghini American Challenge - if needed
 			Memory.match_na("METAL COMBAT") ||			// Metal Combat: Falcon's Revenge
 			Memory.match_na("OPERATION THUNDERBOLT1") ||		// Operation Thunderbolt
 			Memory.match_na("SUPER SCOPE 6") ||			// Super Scope 6
 			//Memory.match_na("TERMINATOR2 THE MOVIE0") ||		// Terminator 2: The Arcade Game
-
 			Memory.match_na("TINSTAR") ||				// Tin Star
 			Memory.match_id("9N") ||
-
 			Memory.match_na("X ZONE") ||				// X-Zone
-
 			//FIXME: TODO: Add Yoshi no Road Hunting - CRC32: 52948F3C
 			Memory.match_na("YOSHI'S SAFARI")			// Yoshi's Safari
 			)
@@ -591,122 +585,72 @@ static bool emulator_is_mouse_compatible(void)
 static bool emulator_is_multitap_compatible(void)
 {
 	if 	(
-			Memory.match_nn("BARKLEY") ||				// Barkley Shut Up and Jam!
-			Memory.match_id("ABCJ") ||				// Battle Cross
-			Memory.match_na("Bill Walsh College FB1") ||		// Bill Walsh College Football
-			Memory.match_id("ANYE") ||				// College Slam
-			Memory.match_id("AC3J") ||				// Crystal Beans from Dungeon Explorer
-			Memory.match_nc("Bruce Lee") ||				// Dragon - Bruce Lee Story
-
-			Memory.match_id("AVS") ||				// Fever Pitch Soccer (EU) (*)
-										// Head-On Soccer (US) (*)
-
-			Memory.match_na("FURI-FURI GIRLS") ||			// Furi-Furi Girls
-
-			Memory.match_na("HAT TRICK HERO 2") ||			// Hat Trick Hero 2
-			Memory.match_na("HEBEREKE NO PUZZLE") ||		// Hebereke no Oishii Puzzle wa Irimasenka
-
-			Memory.match_id("AWJ") ||				// International Superstar Soccer Deluxe (EU/US) (*)
-										// Jikkyou World Soccer 2 - Fighting Eleven (JP) (*)
-
-			Memory.match_na("J-LEAGUE SUPER SOCCER0") ||		// J-League Super Soccer (JP)
-										// Virtual Soccer (EU)
-
-			Memory.match_na("JIGSAW PARTY") ||			// Jigsaw Party (US) (*)
-										// Pieces (JP)
-
-			Memory.match_na("JIMMY CONNORS TENNIS") ||		// Jimmy Connors Pro Tennis Tour
-
-			Memory.match_na("LAS VEGAS DREAM") ||			// Las Vegas Dream in Golden Paradise (JP) (*)
-										// Vegas Stakes (EU/US)
-
-			Memory.match_id("ALT") ||				// Looney Tunes B-Ball (US) (*)
-										// Looney Tunes Basketball (EU) (*)
-
-			Memory.match_id("AYHJ") ||				// Mizuki Shigeru no Youkai Hyakkiyakou
-			Memory.match_id("A3VJ") ||				// Multi Play Volleyball
-
-			Memory.match_na("MUSCLE BOMBER") ||			// Muscle Bomber: The Body Explosion (JP) (*)
-			// Saturday Night Slam Masters (US)
-
-			Memory.match_id("CHAMP WRESTLING") ||			// Natsume Championship Wrestling
-			Memory.match_id("ANJ") || 				// NBA Give 'n Go
-			Memory.match_id("AXG") || 				// NBA Hangtime
-			Memory.match_id("AJT") || 				// NBA Jam Tournament Edition (EU/US/JP)
-			Memory.match_na("NBA JAM")   || 			// NBA Jam
-			Memory.match_id("AFIE") ||				// NCAA Final Four Basketball
-			Memory.match_id("AFBE") ||				// NCAA Football
-			Memory.match_id("Q9") ||				// NFL Quarterback Club / NFL Quarterback Club '95
-			Memory.match_id("AQB") ||				// NFL Quarterback Club '96
-
+			Memory.match_nn("BARKLEY") ||	// Barkley Shut Up and Jam!
+			Memory.match_id("ABCJ") ||	// Battle Cross
+			Memory.match_na("Bill Walsh College FB1") || // Bill Walsh College Football
+			Memory.match_id("ANYE") || // College Slam
+			Memory.match_id("AC3J") || // Crystal Beans from Dungeon Explorer
+			Memory.match_nc("Bruce Lee") ||	// Dragon - Bruce Lee Story
+			Memory.match_id("AVS") || // Fever Pitch Soccer (EU) / Head-On Soccer (US) (*)
+			Memory.match_na("FURI-FURI GIRLS") || // Furi-Furi Girls
+			Memory.match_na("HAT TRICK HERO 2") || // Hat Trick Hero 2
+			Memory.match_na("HEBEREKE NO PUZZLE") || // Hebereke no Oishii Puzzle wa Irimasenka
+			Memory.match_id("AWJ") || // International Superstar Soccer Deluxe (EU/US) / Jikkyou World Soccer 2 - Fighting Eleven (JP) (*)
+			Memory.match_na("J-LEAGUE SUPER SOCCER0") || // J-League Super Soccer (JP) / Virtual Soccer (EU)
+			Memory.match_na("JIGSAW PARTY") || // Jigsaw Party (US) (*) / Pieces (JP)
+			Memory.match_na("JIMMY CONNORS TENNIS") || // Jimmy Connors Pro Tennis Tour
+			Memory.match_na("LAS VEGAS DREAM") || // Las Vegas Dream in Golden Paradise (JP) (*) / Vegas Stakes (EU/US)
+			Memory.match_id("ALT") || // Looney Tunes B-Ball (US) (*) / Looney Tunes Basketball (EU) (*)
+			Memory.match_id("AYHJ") || // Mizuki Shigeru no Youkai Hyakkiyakou
+			Memory.match_id("A3VJ") || // Multi Play Volleyball
+			Memory.match_na("MUSCLE BOMBER") || // Muscle Bomber: The Body Explosion (JP) (*) // Saturday Night Slam Masters (US)
+			Memory.match_id("CHAMP WRESTLING") || // Natsume Championship Wrestling
+			Memory.match_id("ANJ") || // NBA Give 'n Go
+			Memory.match_id("AXG") || // NBA Hangtime
+			Memory.match_id("AJT") || // NBA Jam Tournament Edition (EU/US/JP)
+			Memory.match_na("NBA JAM") || // NBA Jam
+			Memory.match_id("AFIE") || // NCAA Final Four Basketball
+			Memory.match_id("AFBE") || // NCAA Football
+			Memory.match_id("Q9") || // NFL Quarterback Club / NFL Quarterback Club '95
+			Memory.match_id("AQB") || // NFL Quarterback Club '96
 			Memory.match_na("PIECES") ||
-			Memory.match_id("Z5") ||				// Pieces (JP) (*)
-										// Jigsaw Party (US)
-
-			Memory.match_id("ARVE") ||				// Rap Jam - Volume One
-
-			Memory.match_na("RUSHING BEAT SYURA") ||		// Rushing Beat Shura (JP) (*)
-										// The Peace Keepers (US)
-
-			Memory.match_na("S.Night SLAM MASTERS") ||		// Saturday Night Slam Masters (US) (*)
-										// Muscle Bomber: The Body Explosion (JP)
-
-			Memory.match_na("Secret of MANA") ||			// Secret of Mana (EU/US) (*)
-										// Seiken Densetsu 2 (JP)
-
-			Memory.match_na("SeikenDensetsu 2") ||			// Seiken Densetsu 2 (JP) (*) / 
-										// Secret of Mana (EU/US)
-
-			Memory.match_nn("SeikenDensetsu3") ||			// Seiken Densetsu 3 (in case you use
-			// 3-player IPS patch)
-
-			Memory.match_na("SMASH TENNIS") ||			// Smash Tennis (EU) (*) / 
-										// Super Family Tennis (JP)
-
+			Memory.match_id("Z5") || // Pieces (JP) (*) / Jigsaw Party (US)
+			Memory.match_id("ARVE") || // Rap Jam - Volume One
+			Memory.match_na("RUSHING BEAT SYURA") || // Rushing Beat Shura (JP) (*) / The Peace Keepers (US)
+			Memory.match_na("S.Night SLAM MASTERS") || // Saturday Night Slam Masters (US) (*) / Muscle Bomber: The Body Explosion (JP)
+			Memory.match_na("Secret of MANA") || // Secret of Mana (EU/US) (*)
+			Memory.match_na("SeikenDensetsu 2") || // Seiken Densetsu 2 (JP) (*) / 
+			Memory.match_nn("SeikenDensetsu3") || // Seiken Densetsu 3 (in case you use 3-player IPS patch)
+			Memory.match_na("SMASH TENNIS") || // Smash Tennis (EU) (*) / / Super Family Tennis (JP)
 			//FIXME: TODO - Add CRC32 for Super Family Tennis - CRC32: 2BCBFF26
+			Memory.match_id("ASR") || // Street Racer
+			Memory.match_na("SUGOI HEBEREKE") || // Sugoi Hebereke
+			Memory.match_na("Sugoro Quest++") || // Sugoro Quest++: Dicenics
+			Memory.match_id("AO9") || // Summer Olympics
+			Memory.match_id("AS6") || // Super Bomberman 3
+			Memory.match_id("A4BJ") || // Super Bomberman 4
+			Memory.match_id("APBJ") || // Super Bomberman Panic Bomber W
+			Memory.match_id("AF5J") || // Super Fire Pro Wrestling X
+			Memory.match_id("AP4J") || // Super Fire Pro Wrestling Special
+			Memory.match_id("AQQJ") || // Super Fire Pro Wrestling - Queen's Special
+			Memory.match_id("A7PJ") || // Super Puyo Puyo Tsuu Remix
+			Memory.match_id("AT3J") || // Super Tetris 3
+			Memory.match_id("AFY") || // Syndicate
 
-			Memory.match_id("ASR") ||				// Street Racer
-			Memory.match_na("SUGOI HEBEREKE") ||			// Sugoi Hebereke
-			Memory.match_na("Sugoro Quest++") ||			// Sugoro Quest++: Dicenics
-			Memory.match_id("AO9") ||				// Summer Olympics
-			Memory.match_id("AS6") ||				// Super Bomberman 3
-			Memory.match_id("A4BJ") || 				// Super Bomberman 4
-			Memory.match_id("APBJ") ||				// Super Bomberman Panic Bomber W
-			Memory.match_id("AF5J") ||				// Super Fire Pro Wrestling X
-			Memory.match_id("AP4J") ||				// Super Fire Pro Wrestling Special
-			Memory.match_id("AQQJ") ||				// Super Fire Pro Wrestling - Queen's Special
-			Memory.match_id("A7PJ") ||				// Super Puyo Puyo Tsuu Remix
-			Memory.match_id("AT3J") ||				// Super Tetris 3
-			Memory.match_id("AFY") ||				// Syndicate
+			Memory.match_na("THE PEACE KEEPERS") ||	// The Peace Keepers (US) / Rushing Beat Shura (JP)
 
-			Memory.match_na("THE PEACE KEEPERS") ||			// The Peace Keepers (US) (*)
-										// Rushing Beat Shura (JP)
-
-			Memory.match_na("Tiny Toon Sports") ||			// Tiny Toon Adventures: Dotabata Daiundoukai (JP) (*)
-										// Tiny Toon Adventures: Wacky Sports Challenge (US) (*)
-										// Tiny Toon Adventures: Wild & Wacky Sports (EU) (*)
-
-			Memory.match_id("A3T") ||				// Top Gear 3000 (EU/US) (*)
-										// Planet's Champ TG 3000 (JP) (*)
-
-			Memory.match_na("VEGAS STAKES") ||			// Vegas Stakes (EU/US) (*)
-										// Las Vegas Dream in Golden Paradise (JP)
-
-			Memory.match_na("Virtual Soccer") ||			// Virtual Soccer (EU) (*)
-										// J-League Super Soccer (JP)
-
-			Memory.match_id("AWF") ||				// WWF RAW
-
+			Memory.match_na("Tiny Toon Sports") ||	// Tiny Toon Adventures: Dotabata Daiundoukai (JP) / Wacky Sports Challenge (US) (*) / Wild & Wacky Sports (EU) (*)
+			Memory.match_id("A3T") || // Top Gear 3000 (EU/US) / Planet's Champ TG 3000 (JP) (*)
+			Memory.match_na("VEGAS STAKES") || // Vegas Stakes (EU/US) (*) / Las Vegas Dream in Golden Paradise (JP)
+			Memory.match_na("Virtual Soccer") || // Virtual Soccer (EU) / J-League Super Soccer (JP)
+			Memory.match_id("AWF") || // WWF RAW
 			//Catch-alls
-			Memory.match_nc("SUPER BOMBERMAN") ||			// All Bomberman games (FIXME: remove
-										// individual two Bomberman entries if this works)
-
-			Memory.match_nc("FIFA") ||				// All FIFA games
-			Memory.match_nn("NHL") ||				// All NHL games
-			Memory.match_nc("MADDEN") ||				// All Madden games
-			Memory.match_nc("MICRO MACHINES") ||			// All Micro Machines games
-
-			Memory.match_id("Q4")					// ?
+			Memory.match_nc("SUPER BOMBERMAN") ||	// All Bomberman games (FIXME: remove
+			Memory.match_nc("FIFA") ||		// All FIFA games
+			Memory.match_nn("NHL") ||		// All NHL games
+			Memory.match_nc("MADDEN") ||		// All Madden games
+			Memory.match_nc("MICRO MACHINES") ||	// All Micro Machines games
+			Memory.match_id("Q4")			// ?
 			)
 			{
 				return true;

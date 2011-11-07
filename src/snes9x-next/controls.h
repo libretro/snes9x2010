@@ -334,11 +334,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2);
 bool S9xPollButton (uint32 id, bool *pressed);
 bool S9xPollPointer (uint32 id, int16 *x, int16 *y);
 
-// These are called when snes9x tries to apply a command with a S9x*Port type.
-// data1 and data2 are filled in like S9xApplyCommand.
-
-void S9xHandlePortCommand (s9xcommand_t cmd, int16 data1, int16 data2);
-
 // Called before already-read SNES joypad data is being used by the game if your port defines SNES_JOY_READ_CALLBACKS.
 
 #ifdef SNES_JOY_READ_CALLBACKS

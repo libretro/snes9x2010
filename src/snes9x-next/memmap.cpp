@@ -2505,15 +2505,9 @@ void CMemory::InitROM (void)
 		Settings.PAL = FALSE;
 
 	if (Settings.PAL)
-	{
-		Settings.FrameTime = Settings.FrameTimePAL;
 		ROMFramesPerSecond = 50;
-	}
 	else
-	{
-		Settings.FrameTime = Settings.FrameTimeNTSC;
 		ROMFramesPerSecond = 60;
-	}
 
 	// truncate cart name
 	ROMName[ROM_NAME_LEN - 1] = 0;

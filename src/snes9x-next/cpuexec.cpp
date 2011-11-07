@@ -183,6 +183,8 @@
 #include "fxemu.h"
 #include "snapshot.h"
 
+//static int counter;
+
 void S9xMainLoop (void)
 {
 	for (;;)
@@ -277,7 +279,7 @@ void S9xMainLoop (void)
 
 	if (CPU.Flags & SCAN_KEYS_FLAG)
 	{
-		S9xSyncSpeed();
+		//S9xSyncSpeed();
 		CPU.Flags &= ~SCAN_KEYS_FLAG;
 	}
 }
@@ -436,10 +438,9 @@ void S9xDoHEventProcessing (void)
 
 			}
 
-			if (CPU.V_Counter == PPU.ScreenHeight + 3)	// FIXME: not true
+			if ((CPU.V_Counter == PPU.ScreenHeight + 3) && (Memory.FillRAM[0x4200] & 1))	// FIXME: not true
 			{
-				if (Memory.FillRAM[0x4200] & 1)
-					S9xDoAutoJoypad();
+				S9xDoAutoJoypad();
 			}
 
 			if (CPU.V_Counter == FIRST_VISIBLE_LINE)	// V=1

@@ -312,40 +312,9 @@ static const char	*color_names[32] =
 
 // Note: these should be in asciibetical order!
 #define THE_COMMANDS \
-	S(DecEmuTurbo), \
-	S(DecFrameRate), \
-	S(DecFrameTime), \
-	S(EmuTurbo), \
 	S(ExitEmu), \
 	S(ExitToMenu), \
-	S(IncEmuTurbo), \
-	S(IncFrameRate), \
-	S(IncFrameTime), \
 	S(LoadFreezeFile), \
-	S(LoadOopsFile), \
-	S(Pause), \
-	S(QuickLoad000), \
-	S(QuickLoad001), \
-	S(QuickLoad002), \
-	S(QuickLoad003), \
-	S(QuickLoad004), \
-	S(QuickLoad005), \
-	S(QuickLoad006), \
-	S(QuickLoad007), \
-	S(QuickLoad008), \
-	S(QuickLoad009), \
-	S(QuickLoad010), \
-	S(QuickSave000), \
-	S(QuickSave001), \
-	S(QuickSave002), \
-	S(QuickSave003), \
-	S(QuickSave004), \
-	S(QuickSave005), \
-	S(QuickSave006), \
-	S(QuickSave007), \
-	S(QuickSave008), \
-	S(QuickSave009), \
-	S(QuickSave010), \
 	S(Reset), \
 	S(SaveFreezeFile), \
 	S(SoftReset), \
@@ -371,12 +340,6 @@ static const char	*command_names[LAST_COMMAND + 1] =
 
 #undef S
 #undef THE_COMMANDS
-
-static void DisplayStateChange (const char *str, bool8 on)
-{
-	snprintf(buf, sizeof(buf), "%s: %s", str, on ? "on":"off");
-	S9xSetInfoString(buf);
-}
 
 static void DoGunLatch (int x, int y)
 {
@@ -410,13 +373,9 @@ static int maptype (int t)
 		case S9xButtonSuperscope:
 		case S9xButtonJustifier:
 		case S9xButtonCommand:
-		case S9xButtonPseudopointer:
-		case S9xButtonPort:
 			return (MAP_BUTTON);
 		case S9xPointer:
-		case S9xPointerPort:
 			return (MAP_POINTER);
-
 		default:
 			return (MAP_UNKNOWN);
 	}
@@ -859,10 +818,6 @@ char * S9xGetCommandName (s9xcommand_t command)
 			if (command.pointer.aim_justifier1)	{ s += c; s += "Justifier2"; c = '+'; }
 
 			break;
-		case S9xButtonPort:
-		case S9xPointerPort:
-			return (strdup("BUG: Port should have handled this instead of calling S9xGetCommandName()"));
-
 		case S9xNoMapping:
 			return (strdup("None"));
 		default:
@@ -1257,22 +1212,7 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 			return;
 
 		case S9xButtonCommand:
-			if (((enum command_numbers) cmd.button.command) >= LAST_COMMAND)
-			{
-				fprintf(stderr, "Unknown command %04x\n", cmd.button.command);
-				return;
-			}
-
-			if (!data1)
-			{
-				switch (i = cmd.button.command)
-				{
-					case EmuTurbo:
-						Settings.TurboMode = FALSE;
-						break;
-				}
-			}
-			else
+			if (data1)
 			{
 				switch ((enum command_numbers) (i = cmd.button.command))
 				{
@@ -1289,80 +1229,9 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 					case SoftReset:
 						S9xSoftReset();
 						break;
-
-					case EmuTurbo:
-						Settings.TurboMode = TRUE;
-						break;
-
 					case ToggleEmuTurbo:
-						Settings.TurboMode = !Settings.TurboMode;
-						DisplayStateChange("Turbo mode", Settings.TurboMode);
-						break;
-					case IncFrameRate:
-						if (Settings.SkipFrames == AUTO_FRAMERATE)
-							Settings.SkipFrames = 1;
-						else
-						if (Settings.SkipFrames < 10)
-							Settings.SkipFrames++;
-
-						if (Settings.SkipFrames == AUTO_FRAMERATE)
-							S9xSetInfoString("Auto frame skip");
-						else
-						{
-							sprintf(buf, "Frame skip: %d", Settings.SkipFrames - 1);
-							S9xSetInfoString(buf);
-						}
-
-						break;
-
-					case DecFrameRate:
-						if (Settings.SkipFrames <= 1)
-							Settings.SkipFrames = AUTO_FRAMERATE;
-						else
-						if (Settings.SkipFrames != AUTO_FRAMERATE)
-							Settings.SkipFrames--;
-
-						if (Settings.SkipFrames == AUTO_FRAMERATE)
-							S9xSetInfoString("Auto frame skip");
-						else
-						{
-							sprintf(buf, "Frame skip: %d", Settings.SkipFrames - 1);
-							S9xSetInfoString(buf);
-						}
-
-						break;
-
-					case IncEmuTurbo:
-						if (Settings.TurboSkipFrames < 20)
-							Settings.TurboSkipFrames += 1;
-						else
-						if (Settings.TurboSkipFrames < 200)
-							Settings.TurboSkipFrames += 5;
-						sprintf(buf, "Turbo frame skip: %d", Settings.TurboSkipFrames);
-						S9xSetInfoString(buf);
-						break;
-
-					case DecEmuTurbo:
-						if (Settings.TurboSkipFrames > 20)
-							Settings.TurboSkipFrames -= 5;
-						else
-						if (Settings.TurboSkipFrames > 0)
-							Settings.TurboSkipFrames -= 1;
-						sprintf(buf, "Turbo frame skip: %d", Settings.TurboSkipFrames);
-						S9xSetInfoString(buf);
-						break;
-
-					case IncFrameTime: // Increase emulated frame time by 1ms
-						Settings.FrameTime += 1000;
-						sprintf(buf, "Emulated frame time: %dms", Settings.FrameTime / 1000);
-						S9xSetInfoString(buf);
-						break;
-
-					case DecFrameTime: // Decrease emulated frame time by 1ms
-						if (Settings.FrameTime >= 1000)
-							Settings.FrameTime -= 1000;
-						sprintf(buf, "Emulated frame time: %dms", Settings.FrameTime / 1000);
-						S9xSetInfoString(buf);
+						Settings.Throttled = !Settings.Throttled;
+						S9xDoThrottling(Settings.Throttled);
 						break;
 					case LoadFreezeFile:
 						S9xUnfreezeGame(S9xChooseFilename(TRUE));
@@ -1371,84 +1240,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 					case SaveFreezeFile:
 						S9xFreezeGame(S9xChooseFilename(FALSE));
 						break;
-
-					case LoadOopsFile:
-					{
-						char	filename[PATH_MAX + 1];
-						char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], def[_MAX_FNAME + 1], ext[_MAX_EXT + 1];
-
-						_splitpath(Memory.ROMFilename, drive, dir, def, ext);
-						snprintf(filename, PATH_MAX + 1, "%s%s%s.%.*s", S9xGetDirectory(SNAPSHOT_DIR), SLASH_STR, def, _MAX_EXT - 1, "oops");
-
-						if (S9xUnfreezeGame(filename))
-						{
-							sprintf(buf, "%s.%.*s loaded", def, _MAX_EXT - 1, "oops");
-							S9xSetInfoString (buf);
-						}
-						else
-							S9xMessage(S9X_ERROR, S9X_FREEZE_FILE_NOT_FOUND, "Oops file not found");
-
-						break;
-					}
-
-					case Pause:
-						Settings.Paused = !Settings.Paused;
-						DisplayStateChange("Pause", Settings.Paused);
-						break;
-
-					case QuickLoad000:
-					case QuickLoad001:
-					case QuickLoad002:
-					case QuickLoad003:
-					case QuickLoad004:
-					case QuickLoad005:
-					case QuickLoad006:
-					case QuickLoad007:
-					case QuickLoad008:
-					case QuickLoad009:
-					case QuickLoad010:
-					{
-						char	filename[PATH_MAX + 1];
-						char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], def[_MAX_FNAME + 1], ext[_MAX_EXT + 1];
-
-						_splitpath(Memory.ROMFilename, drive, dir, def, ext);
-						snprintf(filename, PATH_MAX + 1, "%s%s%s.%03d", S9xGetDirectory(SNAPSHOT_DIR), SLASH_STR, def, i - QuickLoad000);
-
-						if (S9xUnfreezeGame(filename))
-						{
-							sprintf(buf, "%s.%03d loaded", def, i - QuickLoad000);
-							S9xSetInfoString(buf);
-						}
-						else
-							S9xMessage(S9X_ERROR, S9X_FREEZE_FILE_NOT_FOUND, "Freeze file not found");
-
-						break;
-					}
-
-					case QuickSave000:
-					case QuickSave001:
-					case QuickSave002:
-					case QuickSave003:
-					case QuickSave004:
-					case QuickSave005:
-					case QuickSave006:
-					case QuickSave007:
-					case QuickSave008:
-					case QuickSave009:
-					case QuickSave010:
-					{
-						char	filename[PATH_MAX + 1];
-						char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], def[_MAX_FNAME + 1], ext[_MAX_EXT + 1];
-
-						_splitpath(Memory.ROMFilename, drive, dir, def, ext);
-						snprintf(filename, PATH_MAX + 1, "%s%s%s.%03d", S9xGetDirectory(SNAPSHOT_DIR), SLASH_STR, def, i - QuickSave000);
-
-						sprintf(buf, "%s.%03d saved", def, i - QuickSave000);
-						S9xSetInfoString(buf);
-
-						S9xFreezeGame(filename);
-						break;
-					}
 					case SwapJoypads:
 						if ((curcontrollers[0] != NONE && !(curcontrollers[0] >= JOYPAD0 && curcontrollers[0] <= JOYPAD7)))
 						{
@@ -1525,10 +1316,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 				justifier.y[1] = data2;
 			}
 
-			return;
-		case S9xButtonPort:
-		case S9xPointerPort:
-			S9xHandlePortCommand(cmd, data1, data2);
 			return;
 		default:
 			fprintf(stderr, "WARNING: Unknown command type %d\n", cmd.type);
@@ -2045,6 +1832,7 @@ void S9xSetControllerCrosshair (enum crosscontrols ctl, int8 idx, const char *fg
 	}
 }
 
+#if 0
 void S9xGetControllerCrosshair (enum crosscontrols ctl, int8 *idx, const char **fg, const char **bg)
 {
 	struct crosshair	*c;
@@ -2070,6 +1858,7 @@ void S9xGetControllerCrosshair (enum crosscontrols ctl, int8 *idx, const char **
 	if (bg)
 		*bg = color_names[c->bg];
 }
+#endif
 
 void S9xControlPreSaveState (struct SControlSnapshot *s)
 {

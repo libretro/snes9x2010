@@ -187,10 +187,6 @@ static uint8	region_map[6][6] =
 	{ 0,    0,    0,    0,    0, 0x10 }
 };
 
-static inline uint8 CalcWindowMask (int, uint8, uint8);
-static inline void StoreWindowRegions (uint8, struct ClipData *, int, int16 *, uint8 *, bool8, bool8 s = FALSE);
-
-
 static inline uint8 CalcWindowMask (int i, uint8 W1, uint8 W2)
 {
 	if (!PPU.ClipWindow1Enable[i])
@@ -394,11 +390,11 @@ void S9xComputeClipWindows (void)
 		if (Memory.FillRAM[0x212e] & (1 << j))
 			mask_a = W;
 		
-		StoreWindowRegions(mask_a, &IPPU.Clip[0][j], n_regions, windows, drawing_modes, 0);
+		StoreWindowRegions(mask_a, &IPPU.Clip[0][j], n_regions, windows, drawing_modes, 0, FALSE);
 
 		if (Memory.FillRAM[0x212f] & (1 << j))
 			mask_b = W;
 		
-		StoreWindowRegions(mask_b, &IPPU.Clip[1][j], n_regions, windows, drawing_modes, 1);
+		StoreWindowRegions(mask_b, &IPPU.Clip[1][j], n_regions, windows, drawing_modes, 1, FALSE);
 	}
 }

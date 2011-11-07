@@ -399,7 +399,6 @@ struct SSettings
 	bool	PAL;
 	uint32	FrameTimePAL;
 	uint32	FrameTimeNTSC;
-	uint32	FrameTime;
 
 	uint32	SoundPlaybackRate;
 	uint32	SoundInputRate;
@@ -421,10 +420,7 @@ struct SSettings
 
 	bool	Paused;
 
-	uint32	SkipFrames;
-	uint32	TurboSkipFrames;
-	uint32	AutoMaxSkipFrames;
-	bool	TurboMode;
+	uint32_t	Throttled;
 
 	int32	AutoSaveDelay;
 	#ifdef __CELLOS_LV2__
@@ -440,7 +436,6 @@ struct SSettings
 	uint32_t	ScreenshotsEnabled;
 	uint32_t	AccessoryType;
 	uint32_t	OddScreenHeightJumpFix;
-	uint32_t	Throttled;
 	uint32_t	TripleBuffering;
 	uint32_t	CurrentSaveStateSlot;
 	uint32_t	CurrentCheatPosition;
