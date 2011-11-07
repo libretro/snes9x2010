@@ -670,7 +670,6 @@ void S9xAutoSaveSRAM()
    return;
 }
 
-#ifndef __WIN32__
 // S9x weirdness.
 void _splitpath (const char *path, char *drive, char *dir, char *fname, char *ext)
 {
@@ -731,4 +730,3 @@ void _makepath (char *path, const char *, const char *dir, const char *fname, co
       strcat(path, ext);
    }
 }
-#endif // __WIN32__

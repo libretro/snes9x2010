@@ -277,7 +277,6 @@ typedef unsigned long long	uint64;
 #define START_EXTERN_C	extern "C" {
 #define END_EXTERN_C	}
 
-#ifndef __WIN32__
 #ifndef PATH_MAX
 #define PATH_MAX	1024
 #endif
@@ -286,22 +285,11 @@ typedef unsigned long long	uint64;
 #define _MAX_FNAME	PATH_MAX
 #define _MAX_EXT	PATH_MAX
 #define _MAX_PATH	PATH_MAX
-#else
-#ifndef PATH_MAX
-#define PATH_MAX	_MAX_PATH
-#endif
-#endif
 
 #define ZeroMemory(a, b)	memset((a), 0, (b))
 void _splitpath (const char *, char *, char *, char *, char *);
 void _makepath (char *, const char *, const char *, const char *, const char *);
 #define S9xDisplayString	DisplayStringFromBottom
-
-#ifdef __WIN32__
-#define snprintf _snprintf
-#define strcasecmp	stricmp
-#define strncasecmp	strnicmp
-#endif
 
 #ifdef __DJGPP
 #define SLASH_STR	"\\"

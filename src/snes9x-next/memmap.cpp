@@ -1360,15 +1360,11 @@ uint32 CMemory::FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	// ** Memory.ROMFilename
 
 	int32	totalSize = 0;
-    char	fname[PATH_MAX + 1];
-    char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], name[_MAX_FNAME + 1], exts[_MAX_EXT + 1];
+	char	fname[PATH_MAX + 1];
+	char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], name[_MAX_FNAME + 1], exts[_MAX_EXT + 1];
 	char	*ext;
 
-#if defined(__WIN32__) || defined(__MACOSX__)
-	ext = &exts[1];
-#else
 	ext = &exts[0];
-#endif
 
 	memset(NSRTHeader, 0, sizeof(NSRTHeader));
 	HeaderCount = 0;
