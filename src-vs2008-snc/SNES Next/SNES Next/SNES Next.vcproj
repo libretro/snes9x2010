@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-g -Xc-=rtti"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\utils\zlib&quot;"
-				PreprocessorDefinitions="SN_TARGET_PS3;_DEBUG;__SNC__;__CELL_ASSERT__;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;WORDS_BIGENDIAN;BLARGG_BIG_ENDIAN;NO_LOGGER;__POWERPC__;__ppc__;ZLIB;UNZIP_SUPPORT;JMA_SUPPORT;USE_FILE32API;unix"
+				PreprocessorDefinitions="SN_TARGET_PS3;_DEBUG;__SNC__;__CELL_ASSERT__;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;WORDS_BIGENDIAN;BLARGG_BIG_ENDIAN;NO_LOGGER;__POWERPC__;__ppc__;ZLIB;UNZIP_SUPPORT;JMA_SUPPORT;USE_FILE32API;SNES9X_NEXT;CLUNKY_FILE_ABSTRACTION"
 				ExceptionHandling="0"
 				ProgramDataBaseFileName=""
 				CompileAs="0"
@@ -58,7 +58,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="-oformat=fself"
-				AdditionalDependencies="libsn.a libdbgfont.a $(SCE_PS3_ROOT)\target\ppu\lib\PSGL\RSX\opt\libPSGL.a $(SCE_PS3_ROOT)\target\ppu\lib\PSGL\RSX\opt\libPSGLcgc.a libcgc.a libgcm_cmd.a libgcm_sys_stub.a libresc_stub.a libm.a libio_stub.a libfs_stub.a libsysutil_stub.a libsysutil_game_stub.a libpngdec_stub.a libjpgdec_stub.a libsysmodule_stub.a libaudio_stub.a libpthread.a libnet_stub.a"
+				AdditionalDependencies="libsn.a libdbgfont.a $(SCE_PS3_ROOT)\target\ppu\lib\PSGL\RSX\opt\libPSGL.a $(SCE_PS3_ROOT)\target\ppu\lib\PSGL\RSX\opt\libPSGLcgc.a libcgc.a libgcm_cmd.a libgcm_sys_stub.a libresc_stub.a libm.a libio_stub.a libfs_stub.a libsysutil_stub.a libsysutil_game_stub.a libsysutil_screenshot_stub.a libpngdec_stub.a libjpgdec_stub.a libsysmodule_stub.a libaudio_stub.a libpthread.a libnet_stub.a"
 				OutputFile="$(OutDir)/$(ProjectName).ppu.self"
 				AdditionalLibraryDirectories=""
 				ProgramDatabaseFile=""
@@ -111,7 +111,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-O2 -Xc-=rtti"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\utils\zlib&quot;"
-				PreprocessorDefinitions="SN_TARGET_PS3;NDEBUG;__SNC__;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;WORDS_BIGENDIAN;BLARGG_BIG_ENDIAN;NO_LOGGER;__POWERPC__;__ppc__;ZLIB;UNZIP_SUPPORT;JMA_SUPPORT;USE_FILE32API;unix"
+				PreprocessorDefinitions="SN_TARGET_PS3;NDEBUG;__SNC__;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;WORDS_BIGENDIAN;BLARGG_BIG_ENDIAN;NO_LOGGER;__POWERPC__;__ppc__;ZLIB;UNZIP_SUPPORT;JMA_SUPPORT;USE_FILE32API;unix;SNES9X_NEXT;CLUNKY_FILE_ABSTRACTION"
 				ExceptionHandling="0"
 				ProgramDataBaseFileName=""
 				CompileAs="0"
@@ -128,7 +128,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="-oformat=fself"
-				AdditionalDependencies="libsn.a libdbgfont.a $(SCE_PS3_ROOT)\target\ppu\lib\PSGL\RSX\opt\libPSGL.a $(SCE_PS3_ROOT)\target\ppu\lib\PSGL\RSX\opt\libPSGLcgc.a libcgc.a libgcm_cmd.a libgcm_sys_stub.a libresc_stub.a libm.a libio_stub.a libfs_stub.a libsysutil_stub.a libsysutil_game_stub.a libpngdec_stub.a libjpgdec_stub.a libsysmodule_stub.a libaudio_stub.a libpthread.a libnet_stub.a"
+				AdditionalDependencies="libsn.a libdbgfont.a $(SCE_PS3_ROOT)\target\ppu\lib\PSGL\RSX\opt\libPSGL.a $(SCE_PS3_ROOT)\target\ppu\lib\PSGL\RSX\opt\libPSGLcgc.a libcgc.a libgcm_cmd.a libgcm_sys_stub.a libresc_stub.a libm.a libio_stub.a libfs_stub.a libsysutil_stub.a libsysutil_game_stub.a libsysutil_screenshot_stub.a libpngdec_stub.a libjpgdec_stub.a libsysmodule_stub.a libaudio_stub.a libpthread.a libnet_stub.a"
 				OutputFile="$(OutDir)/$(ProjectName).ppu.self"
 				AdditionalLibraryDirectories=""
 				ProgramDatabaseFile=""
@@ -167,7 +167,7 @@
 				Name="cellemuframework"
 				>
 				<File
-					RelativePath="..\..\..\src\emu-ps3.cpp"
+					RelativePath="..\..\..\src\emu-ps3-next.cpp"
 					>
 				</File>
 				<File
@@ -435,218 +435,186 @@
 				Name="emu"
 				>
 				<File
-					RelativePath="..\..\..\src\snes9x\bsx.cpp"
+					RelativePath="..\..\..\src\snes9x-next\bsx.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\c4.cpp"
+					RelativePath="..\..\..\src\snes9x-next\c4.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\c4emu.cpp"
+					RelativePath="..\..\..\src\snes9x-next\c4emu.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\cheats.cpp"
+					RelativePath="..\..\..\src\snes9x-next\cheats.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\cheats2.cpp"
+					RelativePath="..\..\..\src\snes9x-next\cheats2.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\clip.cpp"
+					RelativePath="..\..\..\src\snes9x-next\clip.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\controls.cpp"
+					RelativePath="..\..\..\src\snes9x-next\controls.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\cpu.cpp"
+					RelativePath="..\..\..\src\snes9x-next\cpu.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\cpuexec.cpp"
+					RelativePath="..\..\..\src\snes9x-next\cpuexec.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\cpuops.cpp"
+					RelativePath="..\..\..\src\snes9x-next\cpuops.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\crosshairs.cpp"
+					RelativePath="..\..\..\src\snes9x-next\crosshairs.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\dma.cpp"
+					RelativePath="..\..\..\src\snes9x-next\dma.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\dsp.cpp"
+					RelativePath="..\..\..\src\snes9x-next\dsp.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\dsp1.cpp"
+					RelativePath="..\..\..\src\snes9x-next\dsp1.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\dsp2.cpp"
+					RelativePath="..\..\..\src\snes9x-next\dsp2.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\dsp3.cpp"
+					RelativePath="..\..\..\src\snes9x-next\dsp3.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\dsp4.cpp"
+					RelativePath="..\..\..\src\snes9x-next\dsp4.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\fxdbg.cpp"
+					RelativePath="..\..\..\src\snes9x-next\fxemu.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\fxemu.cpp"
+					RelativePath="..\..\..\src\snes9x-next\fxinst.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\fxinst.cpp"
+					RelativePath="..\..\..\src\snes9x-next\gfx.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\globals.cpp"
+					RelativePath="..\..\..\src\snes9x-next\globals.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\loadzip.cpp"
+					RelativePath="..\..\..\src\snes9x-next\loadzip.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\memmap.cpp"
+					RelativePath="..\..\..\src\snes9x-next\memmap.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\netplay.cpp"
+					RelativePath="..\..\..\src\snes9x-next\obc1.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\obc1.cpp"
+					RelativePath="..\..\..\src\snes9x-next\ppu.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\ppu.cpp"
+					RelativePath="..\..\..\src\snes9x-next\reader.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\reader.cpp"
+					RelativePath="..\..\..\src\snes9x-next\sa1.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\sa1.cpp"
+					RelativePath="..\..\..\src\snes9x-next\sa1cpu.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\sa1cpu.cpp"
+					RelativePath="..\..\..\src\snes9x-next\sdd1.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\sdd1.cpp"
+					RelativePath="..\..\..\src\snes9x-next\sdd1emu.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\sdd1emu.cpp"
+					RelativePath="..\..\..\src\snes9x-next\seta.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\server.cpp"
+					RelativePath="..\..\..\src\snes9x-next\seta010.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\seta.cpp"
+					RelativePath="..\..\..\src\snes9x-next\seta011.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\seta010.cpp"
+					RelativePath="..\..\..\src\snes9x-next\seta018.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\seta011.cpp"
+					RelativePath="..\..\..\src\snes9x-next\snapshot.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\seta018.cpp"
+					RelativePath="..\..\..\src\snes9x-next\snes9x.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\snapshot.cpp"
+					RelativePath="..\..\..\src\snes9x-next\spc7110.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\snes9x.cpp"
+					RelativePath="..\..\..\src\snes9x-next\spc7110dec.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\spc7110.cpp"
+					RelativePath="..\..\..\src\snes9x-next\srtc.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\srtc.cpp"
+					RelativePath="..\..\..\src\snes9x-next\tile.cpp"
 					>
 				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\tile.cpp"
-					>
-				</File>
-				<Filter
-					Name="jma"
-					>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\7zlzma.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\crc32-jma.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\iiostrm.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\inbyte.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\jma.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\lzma.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\lzmadec.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\s9x-jma.cpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\winout.cpp"
-						>
-					</File>
-				</Filter>
 				<Filter
 					Name="apu"
 					>
 					<File
-						RelativePath="..\..\..\src\snes9x\apu\apu.cpp"
+						RelativePath="..\..\..\src\snes9x-next\apu\apu.cpp"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\apu\SNES_SPC.cpp"
+						RelativePath="..\..\..\src\snes9x-next\apu\SNES_SPC.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\src\snes9x-next\apu\SNES_SPC_misc.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\src\snes9x-next\apu\SNES_SPC_state.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\..\..\src\snes9x-next\apu\SPC_DSP.cpp"
 						>
 					</File>
 				</Filter>
@@ -996,306 +964,194 @@
 				Name="emu"
 				>
 				<File
-					RelativePath="..\..\..\src\snes9x\65c816.h"
+					RelativePath="..\..\..\src\snes9x-next\65c816.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\bsx.h"
+					RelativePath="..\..\..\src\snes9x-next\bsx.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\c4.h"
+					RelativePath="..\..\..\src\snes9x-next\c4.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\cheats.h"
+					RelativePath="..\..\..\src\snes9x-next\cheats.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\clip.h"
+					RelativePath="..\..\..\src\snes9x-next\controls.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\conffile.h"
+					RelativePath="..\..\..\src\snes9x-next\cpuaddr.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\controls.h"
+					RelativePath="..\..\..\src\snes9x-next\cpuexec.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\cpuaddr.h"
+					RelativePath="..\..\..\src\snes9x-next\cpumacro.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\cpuexec.h"
+					RelativePath="..\..\..\src\snes9x-next\cpuops.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\cpumacro.h"
+					RelativePath="..\..\..\src\snes9x-next\crosshairs.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\cpuops.h"
+					RelativePath="..\..\..\src\snes9x-next\display.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\crosshairs.h"
+					RelativePath="..\..\..\src\snes9x-next\dma.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\debug.h"
+					RelativePath="..\..\..\src\snes9x-next\dsp.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\display.h"
+					RelativePath="..\..\..\src\snes9x-next\font.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\dma.h"
+					RelativePath="..\..\..\src\snes9x-next\fxemu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\dsp.h"
+					RelativePath="..\..\..\src\snes9x-next\fxinst.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\font.h"
+					RelativePath="..\..\..\src\snes9x-next\getset.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\fxemu.h"
+					RelativePath="..\..\..\src\snes9x-next\gfx.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\fxinst.h"
+					RelativePath="..\..\..\src\snes9x-next\language.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\getset.h"
+					RelativePath="..\..\..\src\snes9x-next\memmap.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\isel.h"
+					RelativePath="..\..\..\src\snes9x-next\messages.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\language.h"
+					RelativePath="..\..\..\src\snes9x-next\obc1.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\logger.h"
+					RelativePath="..\..\..\src\snes9x-next\pixform.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\memmap.h"
+					RelativePath="..\..\..\src\snes9x-next\port.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\messages.h"
+					RelativePath="..\..\..\src\snes9x-next\ppu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\missing.h"
+					RelativePath="..\..\..\src\snes9x-next\reader.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\movie2.h"
+					RelativePath="..\..\..\src\snes9x-next\sa1.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\netplay.h"
+					RelativePath="..\..\..\src\snes9x-next\sar.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\obc1.h"
+					RelativePath="..\..\..\src\snes9x-next\sdd1.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\pixform.h"
+					RelativePath="..\..\..\src\snes9x-next\sdd1emu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\port.h"
+					RelativePath="..\..\..\src\snes9x-next\seta.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\ppu.h"
+					RelativePath="..\..\..\src\snes9x-next\snapshot.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\reader.h"
+					RelativePath="..\..\..\src\snes9x-next\snes9x.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\sa1.h"
+					RelativePath="..\..\..\src\snes9x-next\spc7110.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\sar.h"
+					RelativePath="..\..\..\src\snes9x-next\spc7110dec.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\sdd1.h"
+					RelativePath="..\..\..\src\snes9x-next\spc7110emu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\sdd1emu.h"
+					RelativePath="..\..\..\src\snes9x-next\srtc.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\seta.h"
+					RelativePath="..\..\..\src\snes9x-next\srtcemu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x\shiftmul.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\snapshot.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\snes9x.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\spc7110.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\spc7110dec.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\spc7110emu.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\srtc.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\srtcemu.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\tile.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\zconf.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x\zlib.h"
+					RelativePath="..\..\..\src\snes9x-next\tile.h"
 					>
 				</File>
 				<Filter
 					Name="apu"
 					>
 					<File
-						RelativePath="..\..\..\src\snes9x\apu\apu.h"
+						RelativePath="..\..\..\src\snes9x-next\apu\apu.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\apu\blargg_common.h"
+						RelativePath="..\..\..\src\snes9x-next\apu\blargg_common.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\apu\blargg_config.h"
+						RelativePath="..\..\..\src\snes9x-next\apu\blargg_config.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\apu\blargg_endian.h"
+						RelativePath="..\..\..\src\snes9x-next\apu\blargg_endian.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\apu\blargg_source.h"
+						RelativePath="..\..\..\src\snes9x-next\apu\blargg_source.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\apu\SNES_SPC.h"
+						RelativePath="..\..\..\src\snes9x-next\apu\SNES_SPC.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\apu\SPC_CPU.h"
-						>
-					</File>
-				</Filter>
-				<Filter
-					Name="jma"
-					>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\7z.h"
+						RelativePath="..\..\..\src\snes9x-next\apu\SPC_CPU.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\jma\aribitcd.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\ariconst.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\ariprice.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\btreecd.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\crc32.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\iiostrm.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\inbyte.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\jma.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\lencoder.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\litcoder.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\lzma.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\lzmadec.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\portable.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\rcdefs.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\rngcoder.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\s9x-jma.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x\jma\winout.h"
+						RelativePath="..\..\..\src\snes9x-next\apu\SPC_DSP.h"
 						>
 					</File>
 				</Filter>
@@ -1303,35 +1159,35 @@
 					Name="unzip"
 					>
 					<File
-						RelativePath="..\..\..\src\snes9x\unzip\crypt.h"
+						RelativePath="..\..\..\src\snes9x-next\unzip\crypt.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\unzip\ioapi.h"
+						RelativePath="..\..\..\src\snes9x-next\unzip\ioapi.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\unzip\iowin32.h"
+						RelativePath="..\..\..\src\snes9x-next\unzip\iowin32.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\unzip\mztools.h"
+						RelativePath="..\..\..\src\snes9x-next\unzip\mztools.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\unzip\unzip.h"
+						RelativePath="..\..\..\src\snes9x-next\unzip\unzip.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\unzip\zconf.h"
+						RelativePath="..\..\..\src\snes9x-next\unzip\zconf.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\unzip\zip.h"
+						RelativePath="..\..\..\src\snes9x-next\unzip\zip.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x\unzip\zlib.h"
+						RelativePath="..\..\..\src\snes9x-next\unzip\zlib.h"
 						>
 					</File>
 				</Filter>
