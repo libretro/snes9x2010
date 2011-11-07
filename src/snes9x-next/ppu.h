@@ -368,6 +368,8 @@ struct SPPU
 
 	uint8	OpenBus1;
 	uint8	OpenBus2;
+
+	bool8	FullClipping;
 };
 
 extern uint16			SignExtend[2];

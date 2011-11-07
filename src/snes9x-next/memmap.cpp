@@ -1058,6 +1058,7 @@ bool8 CMemory::Init (void)
 	// don't render subscreen speed hack - disable this by default by turning the variable (RenderSub - opposite of
 	// don't render sub) on
 	PPU.RenderSub = true;
+	PPU.FullClipping = true;
 
 	if (!RAM || !SRAM || !VRAM || !ROM ||
 		!IPPU.TileCache[TILE_2BIT]       ||
@@ -3651,7 +3652,24 @@ void CMemory::ApplyROMFixes (void)
 		else
 			PPU.RenderSub = true;
 
+		#ifdef __LIBSNES__
 		fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
+		#endif
+
+		// Clipping hack - gains around 5-7 extra fps - only use it for specific
+		// games where nothing breaks with this hack on
+
+		if(
+			Memory.match_na("FINAL FANTASY 6")	// Final Fantasy VI (JP)
+			|| Memory.match_na("FINAL FANTASY 3")	// Final Fantasy III (US)
+		)
+			PPU.FullClipping = false;
+		else
+			PPU.FullClipping = true;
+
+		#ifdef __LIBSNES__
+		fprintf(stderr, "PPU.FullClipping = %d\n", PPU.FullClipping);
+		#endif
 	}
 
 

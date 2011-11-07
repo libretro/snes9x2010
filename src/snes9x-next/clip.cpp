@@ -236,6 +236,7 @@ static inline uint8 CalcWindowMask (int i, uint8 W1, uint8 W2)
 	return (0);
 }
 
+#if 0
 static inline void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_regions, int16 *windows, uint8 *drawing_modes, bool8 sub, bool8 StoreMode0)
 {
 	int	ct = 0;
@@ -265,6 +266,103 @@ static inline void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_
 
 	Clip->Count = ct;
 }
+#endif
+
+
+#define StoreWindowRegions_StoreMode1_Mask0(Clip, Clip2) \
+{ \
+	int	ct = 0; \
+	int	ct2 = 0; \
+	int	k = 0; \
+	do{ \
+		int	DrawMode = drawing_modes[k]; \
+		int	DrawMode2 = drawing_modes[k]; \
+		DrawMode2 |= 1; \
+		\
+		if (ct > 0 && Clip.Right[ct - 1] == windows[k] && Clip.DrawMode[ct - 1] == DrawMode) \
+			Clip.Right[ct - 1] = windows[k + 1]; /* This region borders with and has the same drawing mode as the previous region: merge them. */ \
+		else \
+		{ \
+			/* Add a new region to the BG */ \
+			Clip.Left[ct]     = windows[k]; \
+			Clip.Right[ct]    = windows[k + 1]; \
+			Clip.DrawMode[ct] = DrawMode; \
+			ct++; \
+		} \
+		\
+		if (ct2 > 0 && Clip2.Right[ct2 - 1] == windows[k] && Clip2.DrawMode[ct2 - 1] == DrawMode) \
+			Clip2.Right[ct2 - 1] = windows[k + 1]; /* This region borders with and has the same drawing mode as the previous region: merge them. */ \
+		else \
+		{ \
+			/* Add a new region to the BG */ \
+			Clip2.Left[ct2]     = windows[k]; \
+			Clip2.Right[ct2]    = windows[k + 1]; \
+			Clip2.DrawMode[ct2] = DrawMode2; \
+			ct2++; \
+		} \
+		k++; \
+	}while(k < n_regions); \
+	Clip.Count = ct; \
+	Clip2.Count = ct2; \
+}
+
+#define StoreWindowRegions_Sub0_StoreMode0(Mask, Clip) \
+{ \
+	int	ct = 0; \
+	int	k = 0; \
+	\
+	do{ \
+		int	DrawMode = drawing_modes[k]; \
+		if (Mask & (1 << k)) \
+			DrawMode = 0; \
+		if (DrawMode) \
+		{ \
+			if (ct > 0 && Clip.Right[ct - 1] == windows[k] && Clip.DrawMode[ct - 1] == DrawMode) \
+			Clip.Right[ct - 1] = windows[k + 1]; /* This region borders with and has the same drawing mode as the previous region: merge them. */ \
+			else \
+			{ \
+				/* Add a new region to the BG */ \
+				Clip.Left[ct]     = windows[k]; \
+				Clip.Right[ct]    = windows[k + 1]; \
+				Clip.DrawMode[ct] = DrawMode; \
+				ct++; \
+			} \
+		} \
+		k++; \
+	}while(k < n_regions); \
+	\
+	Clip.Count = ct; \
+}
+
+#define StoreWindowRegions_Sub1_StoreMode0(Mask, Clip) \
+{ \
+	int	ct = 0; \
+	int	k = 0; \
+	\
+	do \
+	{ \
+		int	DrawMode = drawing_modes[k]; \
+		DrawMode |= 1; \
+		if (Mask & (1 << k)) \
+			DrawMode = 0; \
+		\
+		if(DrawMode) \
+		{ \
+			if (ct > 0 && Clip.Right[ct - 1] == windows[k] && Clip.DrawMode[ct - 1] == DrawMode) \
+				Clip.Right[ct - 1] = windows[k + 1]; /* This region borders with and has the same drawing mode as the previous region: merge them. */ \
+			else \
+			{ \
+				/* Add a new region to the BG */ \
+					Clip.Left[ct]     = windows[k]; \
+					Clip.Right[ct]    = windows[k + 1]; \
+					Clip.DrawMode[ct] = DrawMode; \
+					ct++; \
+			} \
+		} \
+		k++; \
+	}while(k < n_regions); \
+	Clip.Count = ct; \
+}
 
 void S9xComputeClipWindows (void)
 {
@@ -280,14 +378,12 @@ void S9xComputeClipWindows (void)
 	{
 		if (PPU.Window1Left > 0)
 		{
-			windows[2] = 256;
 			windows[1] = PPU.Window1Left;
 			n_regions = 2;
 		}
 
 		if (PPU.Window1Right < 255)
 		{
-			windows[n_regions + 1] = 256;
 			windows[n_regions] = PPU.Window1Right + 1;
 			n_regions++;
 		}
@@ -376,8 +472,10 @@ void S9xComputeClipWindows (void)
 
 	// Store backdrop clip window (draw everywhere color window allows)
 
-	StoreWindowRegions(0, &IPPU.Clip[0][5], n_regions, windows, drawing_modes, FALSE, TRUE);
-	StoreWindowRegions(0, &IPPU.Clip[1][5], n_regions, windows, drawing_modes, TRUE,  TRUE);
+	if(PPU.FullClipping)
+	{
+		StoreWindowRegions_StoreMode1_Mask0(IPPU.Clip[0][5], IPPU.Clip[1][5]);
+	}
 
 	// Store per-BG and OBJ clip windows
 
@@ -389,12 +487,10 @@ void S9xComputeClipWindows (void)
 
 		if (Memory.FillRAM[0x212e] & (1 << j))
 			mask_a = W;
-		
-		StoreWindowRegions(mask_a, &IPPU.Clip[0][j], n_regions, windows, drawing_modes, 0, FALSE);
-
 		if (Memory.FillRAM[0x212f] & (1 << j))
 			mask_b = W;
 		
-		StoreWindowRegions(mask_b, &IPPU.Clip[1][j], n_regions, windows, drawing_modes, 1, FALSE);
+		StoreWindowRegions_Sub0_StoreMode0(mask_a, IPPU.Clip[0][j]);
+		StoreWindowRegions_Sub1_StoreMode0(mask_b, IPPU.Clip[1][j]);
 	}
 }
