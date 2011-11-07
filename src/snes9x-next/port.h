@@ -292,19 +292,15 @@ typedef unsigned long long	uint64;
 #endif
 #endif
 
-#ifndef __WIN32__
 #define ZeroMemory(a, b)	memset((a), 0, (b))
 void _splitpath (const char *, char *, char *, char *, char *);
 void _makepath (char *, const char *, const char *, const char *, const char *);
 #define S9xDisplayString	DisplayStringFromBottom
-#else
+
+#ifdef __WIN32__
 #define snprintf _snprintf
 #define strcasecmp	stricmp
 #define strncasecmp	strnicmp
-void WinDisplayStringFromBottom(const char *string, int linesFromBottom, int pixelsFromLeft, bool allowWrap);
-#define S9xDisplayString	WinDisplayStringFromBottom
-void SetInfoDlgColor(unsigned char, unsigned char, unsigned char);
-#define SET_UI_COLOR(r,g,b) SetInfoDlgColor(r,g,b)
 #endif
 
 #ifdef __DJGPP
