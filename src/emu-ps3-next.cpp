@@ -87,6 +87,7 @@ uint64_t ingame_menu_item = 0;
 bool need_load_settings = true;							// needs settings loaded
 static uint32_t controller_settings = NO_JOYSTICKS;					// controller mode to run emulator in
 bool audio_active = false;
+extern bool8 pad_read_last;
 
 //emulator-specific
 s9xcommand_t keymap[1024];
@@ -1006,55 +1007,57 @@ void emulator_switch_pal_60hz(bool pal60Hz)
 		old_state[i] = state; \
 	}
 
-#define EMULATOR_IMPLEMENTATION_INPUT_LOOP() \
-	static uint64_t old_state[MAX_PADS]; \
-	const uint32_t pads_connected = cell_pad_input_pads_connected(); \
-	for (uint32_t i = 0; i < pads_connected; ++i) \
-	{ \
-		const uint64_t state = cell_pad_input_poll_device(i); \
-		const uint64_t button_was_pressed = old_state[i] & (old_state[i] ^ state); \
-		const uint64_t button_was_held = old_state[i] & state; \
-		const uint64_t button_was_not_held = ~(old_state[i] & state); \
-		const uint64_t button_was_not_pressed = ~(state); \
-		const uint64_t pad = i + 1; \
-		\
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonCircle[i]), (CTRL_CIRCLE(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonCross[i]), (CTRL_CROSS(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonTriangle[i]), (CTRL_TRIANGLE(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonSquare[i]), (CTRL_SQUARE(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonSelect[i]), (CTRL_SELECT(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonStart[i]), (CTRL_START(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL1[i]), (CTRL_L1(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2[i]), (CTRL_L2(state) && CTRL_R2(button_was_not_pressed))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR1[i]), (CTRL_R1(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2[i]), (CTRL_R2(state) && CTRL_L2(button_was_not_pressed))); \
- 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Up[i]), (CTRL_UP(state) | CTRL_LSTICK_UP(state)) != 0); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Down[i]), (CTRL_DOWN(state) | CTRL_LSTICK_DOWN(state)) != 0); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Left[i]), (CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state)) != 0); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Right[i]), (CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state)) != 0); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_ButtonR3[i]), (CTRL_R2(state) && CTRL_R3(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR3[i]), (CTRL_L2(state) && CTRL_R3(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonL3[i]), (CTRL_L2(state) && CTRL_L3(state))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR2[i]), (CTRL_L2(button_was_held) && CTRL_R2(button_was_held))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL3[0]), (CTRL_L3(state) && CTRL_R3(button_was_not_held))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3[0]), (CTRL_R3(state) && CTRL_L3(button_was_not_held))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Right[i]), CTRL_RSTICK_RIGHT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held)); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Left[i]), CTRL_RSTICK_LEFT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held)); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Up[i]), CTRL_RSTICK_UP(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held)); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Down[i]), CTRL_RSTICK_DOWN(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held)); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Right[i]), (CTRL_L2(button_was_held) && CTRL_RSTICK_RIGHT(button_was_pressed))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Left[i]), (CTRL_L2(button_was_held) && CTRL_RSTICK_LEFT(button_was_pressed))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Up[i]), (CTRL_L2(state) && CTRL_RSTICK_UP(button_was_pressed))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Down[i]), (CTRL_L2(state) && CTRL_R2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Right[i]), (CTRL_L2(state) && CTRL_RSTICK_RIGHT(button_was_pressed))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Left[i]), (CTRL_R2(state) && CTRL_RSTICK_LEFT(button_was_pressed))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Right[i]), (CTRL_R2(state) && CTRL_RSTICK_RIGHT(button_was_pressed))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Up[i]), (CTRL_R2(state) && CTRL_RSTICK_UP(button_was_pressed))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed))); \
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(state) && CTRL_RSTICK_DOWN(button_was_pressed))); \
+static void emulator_implementation_input_loop()
+{
+	static uint64_t old_state[MAX_PADS];
+	const uint32_t pads_connected = cell_pad_input_pads_connected();
+	for (uint32_t i = 0; i < pads_connected; ++i)
+	{
+		const uint64_t state = cell_pad_input_poll_device(i);
+		const uint64_t button_was_pressed = old_state[i] & (old_state[i] ^ state);
+		const uint64_t button_was_held = old_state[i] & state;
+		const uint64_t button_was_not_held = ~(old_state[i] & state);
+		const uint64_t button_was_not_pressed = ~(state);
+		const uint64_t pad = i + 1;
+
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonCircle[i]), (CTRL_CIRCLE(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonCross[i]), (CTRL_CROSS(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonTriangle[i]), (CTRL_TRIANGLE(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonSquare[i]), (CTRL_SQUARE(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonSelect[i]), (CTRL_SELECT(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonStart[i]), (CTRL_START(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL1[i]), (CTRL_L1(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2[i]), (CTRL_L2(state) && CTRL_R2(button_was_not_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR1[i]), (CTRL_R1(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2[i]), (CTRL_R2(state) && CTRL_L2(button_was_not_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Up[i]), (CTRL_UP(state) | CTRL_LSTICK_UP(state)) != 0);
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Down[i]), (CTRL_DOWN(state) | CTRL_LSTICK_DOWN(state)) != 0);
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Left[i]), (CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state)) != 0);
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Right[i]), (CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state)) != 0);
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_ButtonR3[i]), (CTRL_R2(state) && CTRL_R3(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR3[i]), (CTRL_L2(state) && CTRL_R3(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonL3[i]), (CTRL_L2(state) && CTRL_L3(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR2[i]), (CTRL_L2(button_was_held) && CTRL_R2(button_was_held)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL3[0]), (CTRL_L3(state) && CTRL_R3(button_was_not_held)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3[0]), (CTRL_R3(state) && CTRL_L3(button_was_not_held)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Right[i]), CTRL_RSTICK_RIGHT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Left[i]), CTRL_RSTICK_LEFT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Up[i]), CTRL_RSTICK_UP(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Down[i]), CTRL_RSTICK_DOWN(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Right[i]), (CTRL_L2(button_was_held) && CTRL_RSTICK_RIGHT(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Left[i]), (CTRL_L2(button_was_held) && CTRL_RSTICK_LEFT(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Up[i]), (CTRL_L2(state) && CTRL_RSTICK_UP(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Down[i]), (CTRL_L2(state) && CTRL_R2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Right[i]), (CTRL_L2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Left[i]), (CTRL_R2(state) && CTRL_RSTICK_LEFT(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Right[i]), (CTRL_R2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Up[i]), (CTRL_R2(state) && CTRL_RSTICK_UP(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(state) && CTRL_RSTICK_DOWN(button_was_pressed)));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3_ButtonL3[i]), (CTRL_R3(state) && CTRL_L3(state))); \
-		old_state[i] = state; \
+			old_state[i] = state;
 	}
+}
 
 #define string_concat(padno, string) "Joypad"#padno" "#string""
 
@@ -2051,21 +2054,12 @@ void _makepath (char *path, const char *, const char *dir, const char *fname, co
 	}
 }
 
-#define emulator_s9x_mainloop_scope() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_MOUSE_SCOPE, S9xMainLoop);
 
 #define emulator_s9x_mainloop_mouse() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_MOUSE, S9xMainLoop);
 
 #define emulator_s9x_mainloop_analog() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_ANALOG, S9xMainLoop);
 
 #define emulator_s9x_mainloop() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP, S9xMainLoop);
-
-#define emulator_implementation_s9x_sa1_mainloop() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP, SA1S9xMainLoop);
-
-#define emulator_implementation_s9x_superfx_mainloop_analog() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_ANALOG, SuperFXS9xMainLoop);
-
-#define emulator_implementation_s9x_superfx_mainloop_mouse() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_MOUSE, SuperFXS9xMainLoop);
-
-#define emulator_implementation_s9x_superfx_mainloop() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP, SuperFXS9xMainLoop);
 
 #define calculate_aspect_ratio_before_load() \
    if (Graphics->calculate_aspect_ratio_before_game_load()) \
@@ -2136,7 +2130,13 @@ static void emulator_start(void)
 	audio_active = true;
 
 	//Game - standard controls
-	emulator_s9x_mainloop();
+	do{
+		S9xMainLoop();
+		if(pad_read_last)
+			emulator_implementation_input_loop();
+		cell_console_poll();
+		cellSysutilCheckCallback();
+	}while(is_running);
 
 	emulator_save_sram();
 }

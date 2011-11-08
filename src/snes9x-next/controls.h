@@ -334,12 +334,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2);
 bool S9xPollButton (uint32 id, bool *pressed);
 bool S9xPollPointer (uint32 id, int16 *x, int16 *y);
 
-// Called before already-read SNES joypad data is being used by the game if your port defines SNES_JOY_READ_CALLBACKS.
-
-#if 0
-void S9xOnSNESPadRead (void);
-#endif
-
 // These are for your use.
 
 s9xcommand_t S9xGetPortCommandT (const char *name);

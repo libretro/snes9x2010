@@ -1612,28 +1612,20 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 	Memory.FillRAM[Address] = Byte;
 }
 
+extern bool8 pad_read;
+
 uint8 S9xGetCPU (uint16 Address)
 {
 	if (Address < 0x4200)
 	{
-	#if 0
-		extern bool8 pad_read;
+		//JOYSER0 - JOYSER1
 		if (Address == 0x4016 || Address == 0x4017)
 		{
-			S9xOnSNESPadRead();
 			pad_read = TRUE;
+			return S9xReadJOYSERn(Address);
 		}
-	#endif
-
-		switch (Address)
-		{
-			case 0x4016: // JOYSER0
-			case 0x4017: // JOYSER1
-				return (S9xReadJOYSERn(Address));
-
-			default:
-				return (OpenBus);
-		}
+		else
+			return OpenBus;
 	}
 	else
 	if ((Address & 0xff80) == 0x4300)
@@ -1727,14 +1719,8 @@ uint8 S9xGetCPU (uint16 Address)
 			case 0x421d: // JOY3H
 			case 0x421e: // JOY4L
 			case 0x421f: // JOY4H
-			#if 0
-				extern bool8 pad_read;
 				if (Memory.FillRAM[0x4200] & 1)
-				{
-					S9xOnSNESPadRead();
 					pad_read = TRUE;
-				}
-			#endif
 				return (Memory.FillRAM[Address]);
 
 			default:

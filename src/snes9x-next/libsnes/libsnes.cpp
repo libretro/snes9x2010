@@ -369,76 +369,77 @@ static int16_t snes_scope_state[2] = {0};
 static int16_t snes_justifier_state[2][2] = {{0}, {0}};
 uint16_t joypad[8];
 s9xcommand_t keymap[1024];
+extern bool8 pad_read_last;
 
 static void report_buttons()
 {
-   int _x, _y;
-   for (int port = SNES_PORT_1; port <= SNES_PORT_2; port++)
-   {
-      switch (snes_devices[port])
-      {
-         case SNES_DEVICE_JOYPAD:
-            for (int i = BTN_FIRST; i <= BTN_LAST; i++)
-	    {
-		s9xcommand_t cmd = keymap[MAKE_BUTTON(port + 1, i)];
-	    	uint16 r = cmd.button.joypad.buttons;
-	    	bool pressed = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JOYPAD, 0, i);
+	int _x, _y;
+	for (int port = SNES_PORT_1; port <= SNES_PORT_2; port++)
+	{
+		switch (snes_devices[port])
+		{
+			case SNES_DEVICE_JOYPAD:
+				for (int i = BTN_FIRST; i <= BTN_LAST; i++)
+				{
+					s9xcommand_t cmd = keymap[MAKE_BUTTON(port + 1, i)];
+					uint16 r = cmd.button.joypad.buttons;
+					bool pressed = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JOYPAD, 0, i);
 
-		if (pressed)
-			joypad[cmd.button.joypad.idx] |= r;
-		else
-			joypad[cmd.button.joypad.idx] &= ~r;
-	    }
-            break;
-         case SNES_DEVICE_MULTITAP:
-            for (int j = 0; j < 4; j++)
-	    {
-		    for (int i = BTN_FIRST; i <= BTN_LAST; i++)
-		    {
-			    s9xcommand_t cmd = keymap[MAKE_BUTTON(j + 2, i)];
-			    uint16 r = cmd.button.joypad.buttons;
-			    bool pressed = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MULTITAP, j, i);
+					if (pressed)
+						joypad[cmd.button.joypad.idx] |= r;
+					else
+						joypad[cmd.button.joypad.idx] &= ~r;
+				}
+				break;
+			case SNES_DEVICE_MULTITAP:
+				for (int j = 0; j < 4; j++)
+				{
+					for (int i = BTN_FIRST; i <= BTN_LAST; i++)
+					{
+						s9xcommand_t cmd = keymap[MAKE_BUTTON(j + 2, i)];
+						uint16 r = cmd.button.joypad.buttons;
+						bool pressed = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MULTITAP, j, i);
 
-			    if (pressed)
-				    joypad[cmd.button.joypad.idx] |= r;
-			    else
-				    joypad[cmd.button.joypad.idx] &= ~r;
-		    }
-	    }
-            break;
+						if (pressed)
+							joypad[cmd.button.joypad.idx] |= r;
+						else
+							joypad[cmd.button.joypad.idx] &= ~r;
+					}
+				}
+				break;
 
-         case SNES_DEVICE_MOUSE:
-            _x = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MOUSE, 0, SNES_DEVICE_ID_MOUSE_X);
-            _y = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MOUSE, 0, SNES_DEVICE_ID_MOUSE_Y);
-            snes_mouse_state[port][0] += _x;
-            snes_mouse_state[port][1] += _y;
-            S9xReportPointer(BTN_POINTER + port, snes_mouse_state[port][0], snes_mouse_state[port][1]);
-            for (int i = MOUSE_LEFT; i <= MOUSE_LAST; i++)
-               S9xReportButton(MAKE_BUTTON(port + 1, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MOUSE, 0, i));
-            break;
+			case SNES_DEVICE_MOUSE:
+				_x = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MOUSE, 0, SNES_DEVICE_ID_MOUSE_X);
+				_y = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MOUSE, 0, SNES_DEVICE_ID_MOUSE_Y);
+				snes_mouse_state[port][0] += _x;
+				snes_mouse_state[port][1] += _y;
+				S9xReportPointer(BTN_POINTER + port, snes_mouse_state[port][0], snes_mouse_state[port][1]);
+				for (int i = MOUSE_LEFT; i <= MOUSE_LAST; i++)
+					S9xReportButton(MAKE_BUTTON(port + 1, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MOUSE, 0, i));
+				break;
 
-         case SNES_DEVICE_SUPER_SCOPE:
-            snes_scope_state[0] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_SUPER_SCOPE, 0, SNES_DEVICE_ID_SUPER_SCOPE_X);
-            snes_scope_state[1] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_SUPER_SCOPE, 0, SNES_DEVICE_ID_SUPER_SCOPE_Y);
-            S9xReportPointer(BTN_POINTER, snes_scope_state[0], snes_scope_state[1]);
-            for (int i = SCOPE_TRIGGER; i <= SCOPE_LAST; i++)
-               S9xReportButton(MAKE_BUTTON(port + 1, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_SUPER_SCOPE, 0, i));
-            break;
+			case SNES_DEVICE_SUPER_SCOPE:
+				snes_scope_state[0] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_SUPER_SCOPE, 0, SNES_DEVICE_ID_SUPER_SCOPE_X);
+				snes_scope_state[1] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_SUPER_SCOPE, 0, SNES_DEVICE_ID_SUPER_SCOPE_Y);
+				S9xReportPointer(BTN_POINTER, snes_scope_state[0], snes_scope_state[1]);
+				for (int i = SCOPE_TRIGGER; i <= SCOPE_LAST; i++)
+					S9xReportButton(MAKE_BUTTON(port + 1, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_SUPER_SCOPE, 0, i));
+				break;
 
-         case SNES_DEVICE_JUSTIFIER:
-         case SNES_DEVICE_JUSTIFIERS:
-            snes_justifier_state[0][0] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JUSTIFIER, 0, SNES_DEVICE_ID_JUSTIFIER_X);
-            snes_justifier_state[0][1] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JUSTIFIER, 0, SNES_DEVICE_ID_JUSTIFIER_Y);
-            S9xReportPointer(BTN_POINTER, snes_justifier_state[0][0], snes_justifier_state[0][1]);
-            for (int i = JUSTIFIER_TRIGGER; i <= JUSTIFIER_LAST; i++)
-               S9xReportButton(MAKE_BUTTON(port + 1, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JUSTIFIER, 0, i));
-            break;
-            
-         default:
-            fprintf(stderr, "[libsnes]: Unknown device...\n");
+			case SNES_DEVICE_JUSTIFIER:
+			case SNES_DEVICE_JUSTIFIERS:
+				snes_justifier_state[0][0] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JUSTIFIER, 0, SNES_DEVICE_ID_JUSTIFIER_X);
+				snes_justifier_state[0][1] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JUSTIFIER, 0, SNES_DEVICE_ID_JUSTIFIER_Y);
+				S9xReportPointer(BTN_POINTER, snes_justifier_state[0][0], snes_justifier_state[0][1]);
+				for (int i = JUSTIFIER_TRIGGER; i <= JUSTIFIER_LAST; i++)
+					S9xReportButton(MAKE_BUTTON(port + 1, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JUSTIFIER, 0, i));
+				break;
 
-      }
-   }
+			default:
+				fprintf(stderr, "[libsnes]: Unknown device...\n");
+
+		}
+	}
 }
 
 bool snes_load_cartridge_normal(const char *, const uint8_t *rom_data, unsigned rom_size)
@@ -458,9 +459,12 @@ bool snes_load_cartridge_normal(const char *, const uint8_t *rom_data, unsigned 
 
 void snes_run()
 {
-   s9x_poller_cb();
-   report_buttons();
    S9xMainLoop();
+   s9x_poller_cb();
+   if(pad_read_last)
+   {
+	   report_buttons();
+   }
 }
 
 void snes_term()

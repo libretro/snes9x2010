@@ -1660,74 +1660,77 @@ void S9xDoAutoJoypad (void)
 
 void S9xControlEOF (void)
 {
-	struct crosshair	*c;
-	int			i;
-
 	PPU.GunVLatch = 1000; // i.e., never latch
 	PPU.GunHLatch = 0;
 
-	for (int n = 0; n < 2; n++)
+	if(pad_read)
 	{
-		switch (i = curcontrollers[n])
+		struct crosshair	*c;
+		int			i;
+
+		for (int n = 0; n < 2; n++)
 		{
-			case MP5:
-			case JOYPAD0:
-			case JOYPAD1:
-			case JOYPAD2:
-			case JOYPAD3:
-			case JOYPAD4:
-			case JOYPAD5:
-			case JOYPAD6:
-			case JOYPAD7:
-				break;
-			case MOUSE0:
-			case MOUSE1:
-				c = &mouse[i - MOUSE0].crosshair;
-				S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, mouse[i - MOUSE0].cur_x, mouse[i - MOUSE0].cur_y);
-				break;
+			switch (i = curcontrollers[n])
+			{
+				case MP5:
+				case JOYPAD0:
+				case JOYPAD1:
+				case JOYPAD2:
+				case JOYPAD3:
+				case JOYPAD4:
+				case JOYPAD5:
+				case JOYPAD6:
+				case JOYPAD7:
+					break;
+				case MOUSE0:
+				case MOUSE1:
+					c = &mouse[i - MOUSE0].crosshair;
+					S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, mouse[i - MOUSE0].cur_x, mouse[i - MOUSE0].cur_y);
+					break;
 
-			case SUPERSCOPE:
-				if (n == 1 && !(superscope.phys_buttons & SUPERSCOPE_OFFSCREEN))
-				{
-					if (superscope.next_buttons & (SUPERSCOPE_FIRE | SUPERSCOPE_CURSOR))
-						DoGunLatch(superscope.x, superscope.y);
-
-					c = &superscope.crosshair;
-					S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, superscope.x, superscope.y);
-				}
-
-				break;
-
-			case TWO_JUSTIFIERS:
-				if (n == 1 && !justifier.offscreen[1])
-				{
-					c = &justifier.crosshair[1];
-					S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[1], justifier.y[1]);
-				}
-
-				i = (justifier.buttons & JUSTIFIER_SELECT) ?  1 : 0;
-				goto do_justifier;
-
-			case ONE_JUSTIFIER:
-				i = (justifier.buttons & JUSTIFIER_SELECT) ? -1 : 0;
-
-			do_justifier:
-				if (n == 1)
-				{
-					if (i >= 0 && !justifier.offscreen[i])
-						DoGunLatch(justifier.x[i], justifier.y[i]);
-
-					if (!justifier.offscreen[0])
+				case SUPERSCOPE:
+					if (n == 1 && !(superscope.phys_buttons & SUPERSCOPE_OFFSCREEN))
 					{
-						c = &justifier.crosshair[0];
-						S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[0], justifier.y[0]);
+						if (superscope.next_buttons & (SUPERSCOPE_FIRE | SUPERSCOPE_CURSOR))
+							DoGunLatch(superscope.x, superscope.y);
+
+						c = &superscope.crosshair;
+						S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, superscope.x, superscope.y);
 					}
-				}
 
-				break;
+					break;
 
-			default:
-				break;
+				case TWO_JUSTIFIERS:
+					if (n == 1 && !justifier.offscreen[1])
+					{
+						c = &justifier.crosshair[1];
+						S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[1], justifier.y[1]);
+					}
+
+					i = (justifier.buttons & JUSTIFIER_SELECT) ?  1 : 0;
+					goto do_justifier;
+
+				case ONE_JUSTIFIER:
+					i = (justifier.buttons & JUSTIFIER_SELECT) ? -1 : 0;
+
+do_justifier:
+					if (n == 1)
+					{
+						if (i >= 0 && !justifier.offscreen[i])
+							DoGunLatch(justifier.x[i], justifier.y[i]);
+
+						if (!justifier.offscreen[0])
+						{
+							c = &justifier.crosshair[0];
+							S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[0], justifier.y[0]);
+						}
+					}
+
+					break;
+
+				default:
+					break;
+			}
 		}
 	}
 

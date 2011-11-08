@@ -1007,20 +1007,28 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 	}
 }
 
-static inline void DrawBackdrop (void)
+static inline void DrawBackdrop_NoMath(void)
 {
 	uint32	Offset = GFX.StartY * GFX.PPL;
 
 	for (int clip = 0; clip < GFX.Clip[5].Count; clip++)
 	{
 		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1);
-
-		if (BG.EnableMath && (GFX.Clip[5].DrawMode[clip] & 2))
-			GFX.DrawBackdropMath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
-		else
-			GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
+		GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
 	}
 }
+
+#define DrawBackdrop() \
+	uint32	Offset = GFX.StartY * GFX.PPL; \
+	for (int clip = 0; clip < GFX.Clip[5].Count; clip++) \
+	{ \
+		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1); \
+		\
+		if (BG.EnableMath && (GFX.Clip[5].DrawMode[clip] & 2)) \
+			GFX.DrawBackdropMath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]); \
+		else \
+			GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]); \
+	}
 
 static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 {
@@ -1808,8 +1816,6 @@ static inline void RenderScreen_SFXSpeedupHack()
 	#undef DO_BG_DEPTH4
 
 	BG.EnableMath = (Memory.FillRAM[0x2131] & 0x20);
-
-	DrawBackdrop();
 }
 
 static inline void RenderScreen (bool8 sub)
@@ -2024,14 +2030,14 @@ void S9xUpdateScreen (void)
 				//fprintf(stderr, "RenderScreen_Sub1() #%d\n", counter++);
 				RenderScreen(TRUE);
 				if(PPU.RenderSub)
-					DrawBackdrop();
+					DrawBackdrop_NoMath();
 			}
 
 			RenderScreen(FALSE);
-			DrawBackdrop();
 		}
 		else
 			RenderScreen_SFXSpeedupHack();
+		DrawBackdrop();
 	}
 	else
 	{
