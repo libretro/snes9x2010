@@ -23,6 +23,8 @@ else
    TARGET := snes.dll
    CC = gcc
    CXX = g++
+   fpic := -fPIC
+   LD_FLAGS := -fPIC
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T
    CXXFLAGS += -D__WIN32__ -D__WIN32_LIBSNES__
 endif

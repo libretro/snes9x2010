@@ -336,7 +336,7 @@ bool S9xPollPointer (uint32 id, int16 *x, int16 *y);
 
 // Called before already-read SNES joypad data is being used by the game if your port defines SNES_JOY_READ_CALLBACKS.
 
-#ifdef SNES_JOY_READ_CALLBACKS
+#if 0
 void S9xOnSNESPadRead (void);
 #endif
 
