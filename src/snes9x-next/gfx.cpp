@@ -1885,36 +1885,57 @@ static inline void RenderScreen (bool8 sub)
 			DO_BG(1, 32, 2, FALSE, FALSE, 14, 10, 0);
 			DO_BG(2, 64, 2, FALSE, FALSE,  7,  3, 0);
 			DO_BG(3, 96, 2, FALSE, FALSE,  6,  2, 0);
+			#ifdef REPORT_MODES
+			fprintf(stderr, "MODE: #0\n");
+			#endif
 			break;
 
 		case 1:
 			DO_BG(0,  0, 4, FALSE, FALSE, 15, 11, 0);
 			DO_BG(1,  0, 4, FALSE, FALSE, 14, 10, 0);
 			DO_BG(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			#ifdef REPORT_MODES
+			fprintf(stderr, "MODE: #1\n");
+			#endif
 			break;
 
 		case 2:
 			DO_BG(0,  0, 4, FALSE, TRUE,  15,  7, 8);
 			DO_BG(1,  0, 4, FALSE, TRUE,  11,  3, 8);
+			#ifdef REPORT_MODES
+			fprintf(stderr, "MODE: #2\n");
+			#endif
 			break;
 
 		case 3:
 			DO_BG(0,  0, 8, FALSE, FALSE, 15,  7, 0);
 			DO_BG(1,  0, 4, FALSE, FALSE, 11,  3, 0);
+			#ifdef REPORT_MODES
+			fprintf(stderr, "MODE: #3\n");
+			#endif
 			break;
 
 		case 4:
 			DO_BG(0,  0, 8, FALSE, TRUE,  15,  7, 0);
 			DO_BG(1,  0, 2, FALSE, TRUE,  11,  3, 0);
+			#ifdef REPORT_MODES
+			fprintf(stderr, "MODE: #4\n");
+			#endif
 			break;
 
 		case 5:
 			DO_BG(0,  0, 4, TRUE,  FALSE, 15,  7, 0);
 			DO_BG(1,  0, 2, TRUE,  FALSE, 11,  3, 0);
+			#ifdef REPORT_MODES
+			fprintf(stderr, "MODE: #5\n");
+			#endif
 			break;
 
 		case 6:
 			DO_BG(0,  0, 4, TRUE,  TRUE,  15,  7, 8);
+			#ifdef REPORT_MODES
+			fprintf(stderr, "MODE: #6\n");
+			#endif
 			break;
 
 		case 7:
@@ -1929,7 +1950,9 @@ static inline void RenderScreen (bool8 sub)
 				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 2);
 				DrawBackgroundMode7(1, GFX.DrawMode7BG2Math, GFX.DrawMode7BG2Nomath, D);
 			}
-
+			#ifdef REPORT_MODES
+			fprintf(stderr, "MODE: #7\n");
+			#endif
 			break;
 	}
 
