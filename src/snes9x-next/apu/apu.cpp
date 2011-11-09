@@ -236,16 +236,17 @@ unsigned char * r_buffer;
 
 static inline float hermite (float mu1, float a, float b, float c, float d)
 {
-	float mu2 = mu1 + mu1;
-	float mu3 = mu1 + mu1 + mu1;
+   float mu2, mu3, m0, m1, a0, a1, a2, a3;
+   mu2 = mu1 * mu1;
 
-	float m0  = (c - a) * 0.5;
-	float m1 = (d - b) * 0.5;
+   mu3 = mu2 * mu1;
+   m0  = (c - a) * 0.5;
+   m1  = (d - b) * 0.5;
 
-	float a0 = +2 * mu3 - 3 * mu2 + 1;
-	float a1 =      mu3 - 2 * mu2 + mu1;
-	float a2 =      mu3 -     mu2;
-	float a3 = -2 * mu3 + 3 * mu2;
+   a0 = +2 * mu3 - 3 * mu2 + 1;
+   a1 =      mu3 - 2 * mu2 + mu1;
+   a2 =      mu3 -     mu2;
+   a3 = -2 * mu3 + 3 * mu2;
 
 	return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }
