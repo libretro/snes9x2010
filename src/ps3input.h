@@ -55,8 +55,7 @@ extern "C" {
 #define BTN_INGAME_MENU			43
 
 #define CONTROL_SCHEME_DEFAULT      0
-#define CONTROL_SCHEME_NEW          1
-#define CONTROL_SCHEME_CUSTOM       2
+#define CONTROL_SCHEME_CUSTOM       1
 
 #define MAX_PADS 7
 
