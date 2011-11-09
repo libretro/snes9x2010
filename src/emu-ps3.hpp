@@ -102,8 +102,6 @@ void Emulator_GraphicsInit(uint32_t resId);
 void emulator_save_settings(uint64_t filetosave = 0);
 void ingame_menu_enable( int enable);
 
-extern PS3Graphics* Graphics;
-
 extern char contentInfoPath[MAX_PATH_LENGTH];
 extern char usrDirPath[MAX_PATH_LENGTH];
 extern char DEFAULT_PRESET_FILE[MAX_PATH_LENGTH];
