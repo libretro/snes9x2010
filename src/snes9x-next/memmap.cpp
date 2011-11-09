@@ -3668,7 +3668,227 @@ void CMemory::ApplyROMFixes (void)
 		#endif
 	}
 
+	if (Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
+	{
+		//multitap
+		if(
+				Memory.match_nn("BARKLEY") ||				// Barkley Shut Up and Jam!
+				Memory.match_id("ABCJ") ||				// Battle Cross
+				Memory.match_na("Bill Walsh College FB1") ||		// Bill Walsh College Football
+				Memory.match_id("ANYE") ||				// College Slam
+				Memory.match_id("AC3J") ||				// Crystal Beans from Dungeon Explorer
+				Memory.match_nc("Bruce Lee") ||				// Dragon - Bruce Lee Story
+				Memory.match_id("AVS") ||				// Fever Pitch Soccer (EU) (*)
+				// Head-On Soccer (US) (*)
+				Memory.match_na("FURI-FURI GIRLS") ||			// Furi-Furi Girls
+				Memory.match_na("HAT TRICK HERO 2") ||			// Hat Trick Hero 2
+				Memory.match_na("HEBEREKE NO PUZZLE") ||		// Hebereke no Oishii Puzzle wa Irimasenka
+				Memory.match_id("AWJ") ||				// International Superstar Soccer Deluxe (EU/US) (*)
+				// Jikkyou World Soccer 2 - Fighting Eleven (JP) (*)
+				Memory.match_na("J-LEAGUE SUPER SOCCER0") ||		// J-League Super Soccer (JP)
+				// Virtual Soccer (EU)
+				Memory.match_na("JIGSAW PARTY") ||			// Jigsaw Party (US) (*)
+				// Pieces (JP)
+				Memory.match_na("JIMMY CONNORS TENNIS") ||		// Jimmy Connors Pro Tennis Tour
+				Memory.match_na("LAS VEGAS DREAM") ||			// Las Vegas Dream in Golden Paradise (JP) (*)
+				// Vegas Stakes (EU/US)
+				Memory.match_id("ALT") ||				// Looney Tunes B-Ball (US) (*)
+				// Looney Tunes Basketball (EU) (*)
+				Memory.match_id("AYHJ") ||				// Mizuki Shigeru no Youkai Hyakkiyakou
+				Memory.match_id("A3VJ") ||				// Multi Play Volleyball
+				Memory.match_na("MUSCLE BOMBER") ||			// Muscle Bomber: The Body Explosion (JP) (*)
+				// Saturday Night Slam Masters (US)
+				Memory.match_id("CHAMP WRESTLING") ||			// Natsume Championship Wrestling
+				Memory.match_id("ANJ") || 				// NBA Give 'n Go
+				Memory.match_id("AXG") || 				// NBA Hangtime
+				Memory.match_id("AJT") || 				// NBA Jam Tournament Edition (EU/US/JP)
+				Memory.match_na("NBA JAM")   || 			// NBA Jam
+				Memory.match_id("AFIE") ||				// NCAA Final Four Basketball
+				Memory.match_id("AFBE") ||				// NCAA Football
+				Memory.match_id("Q9") ||				// NFL Quarterback Club / NFL Quarterback Club '95
+				Memory.match_id("AQB") ||				// NFL Quarterback Club '96
+				Memory.match_na("PIECES") ||
+				Memory.match_id("Z5") ||				// Pieces (JP) (*)
+				// Jigsaw Party (US)
+				Memory.match_id("ARVE") ||				// Rap Jam - Volume One
+				Memory.match_na("RUSHING BEAT SYURA") ||		// Rushing Beat Shura (JP) (*)
+				// The Peace Keepers (US)
+				Memory.match_na("S.Night SLAM MASTERS") ||		// Saturday Night Slam Masters (US) (*)
+				// Muscle Bomber: The Body Explosion (JP)
+				Memory.match_na("Secret of MANA") ||			// Secret of Mana (EU/US) (*)
+				// Seiken Densetsu 2 (JP)
+				Memory.match_na("SeikenDensetsu 2") ||			// Seiken Densetsu 2 (JP) (*) / 
+				// Secret of Mana (EU/US)
+				Memory.match_nn("SeikenDensetsu3") ||			// Seiken Densetsu 3 (in case you use
+				// 3-player IPS patch)
+				Memory.match_na("SMASH TENNIS") ||			// Smash Tennis (EU) (*) / 
+				// Super Family Tennis (JP)
+				//FIXME: TODO - Add CRC32 for Super Family Tennis - CRC32: 2BCBFF26
+				Memory.match_id("ASR") ||				// Street Racer
+				Memory.match_na("SUGOI HEBEREKE") ||			// Sugoi Hebereke
+				Memory.match_na("Sugoro Quest++") ||			// Sugoro Quest++: Dicenics
+				Memory.match_id("AO9") ||				// Summer Olympics
+				Memory.match_id("AS6") ||				// Super Bomberman 3
+				Memory.match_id("A4BJ") || 				// Super Bomberman 4
+				Memory.match_id("APBJ") ||				// Super Bomberman Panic Bomber W
+				Memory.match_id("AF5J") ||				// Super Fire Pro Wrestling X
+				Memory.match_id("AP4J") ||				// Super Fire Pro Wrestling Special
+				Memory.match_id("AQQJ") ||				// Super Fire Pro Wrestling - Queen's Special
+				Memory.match_id("A7PJ") ||				// Super Puyo Puyo Tsuu Remix
+				Memory.match_id("AT3J") ||				// Super Tetris 3
+				Memory.match_id("AFY") ||				// Syndicate
+				Memory.match_na("THE PEACE KEEPERS") ||			// The Peace Keepers (US) (*)
+				// Rushing Beat Shura (JP)
+				Memory.match_na("Tiny Toon Sports") ||			// Tiny Toon Adventures: Dotabata Daiundoukai (JP) (*)
+				// Tiny Toon Adventures: Wacky Sports Challenge (US) (*)
+				// Tiny Toon Adventures: Wild & Wacky Sports (EU) (*)
+				Memory.match_id("A3T") ||				// Top Gear 3000 (EU/US) (*)
+				// Planet's Champ TG 3000 (JP) (*)
+				Memory.match_na("VEGAS STAKES") ||			// Vegas Stakes (EU/US) (*)
+				// Las Vegas Dream in Golden Paradise (JP)
+				Memory.match_na("Virtual Soccer") ||			// Virtual Soccer (EU) (*)
+				// J-League Super Soccer (JP)
+				Memory.match_id("AWF") ||				// WWF RAW
 
+				//Catch-alls
+				Memory.match_nc("SUPER BOMBERMAN") ||			// All Bomberman games (FIXME: remove
+				// individual two Bomberman entries if this works)
+				Memory.match_nc("FIFA") ||				// All FIFA games
+				Memory.match_nn("NHL") ||				// All NHL games
+				Memory.match_nc("MADDEN") ||				// All Madden games
+				Memory.match_nc("MICRO MACHINES") ||			// All Micro Machines games
+				Memory.match_id("Q4")					// ?
+				)
+				Settings.CurrentROMisMultitapCompatible = true;
+		else
+			Settings.CurrentROMisMultitapCompatible = false;
+
+		//mouse
+		if	(
+				Memory.match_nc("ACME ANIMATION FACTOR") ||	// ACME Animation Factory
+				Memory.match_id("ACM") ||
+				Memory.match_nc("ALICE PAINT") ||		// Alice no Paint Adventure
+				Memory.match_id("AALJ") ||
+				Memory.match_nc("ARKANOID DOH IT AGAIN0") ||	// Arkanoid: Doh It Again
+				Memory.match_id("A6") ||
+				Memory.match_na("SFC SAILORMOON S") ||	// Bishojou Senshi Sailor Moon S: Kondowa Puzzle de
+				// Oshiokiyo!
+				Memory.match_na("BRANDISH2 EXPERT") ||		// Brandish 2: Expert
+				Memory.match_id("AQIJ") ||				
+				Memory.match_na("BREAKTRHU!") ||		// BreakThru!
+				Memory.match_id("ABXE") ||
+				Memory.match_na("CIVILIZATION") ||		// Civilization
+				Memory.match_id("EQ") ||
+				Memory.match_na("CAMELTRY") ||			// Cameltry (JP) (*)
+				// On The Ball (EU/US)
+				Memory.match_na("CANNON FODDER") ||		// Cannon Fodder
+				Memory.match_id("ACNP") ||				
+				Memory.match_id("M Ve") ||			// Dai-3-ji Super Robot Taisen
+				Memory.match_id("AR4J") ||				// Dai-4-ji Super Robot Taisen
+				Memory.match_na("SUPER ROBOT WARS 4") ||
+				Memory.match_na("DOOM") ||			// Doom
+				Memory.match_id("AD8") ||				
+				Memory.match_id("A88J") ||			// Doukyuusei 2 (JP) (NP)
+				Memory.match_na("DRAGON KNIGHT 4") ||		// Dragon Knight 4
+				Memory.match_id("A87J") ||				
+				Memory.match_na("Eye of the Beholder") ||	// Eye of the Beholder
+				Memory.match_na("FARLANDSTORY2") ||		// Farland Story 2
+				Memory.match_id("A2FJ") ||
+				Memory.match_na("Fun 'N Games") ||		// Fun 'N Games (EU/US)
+				Memory.match_na("GALAXY ROBO") ||		// Galaxy Robo
+				Memory.match_na("HIOUDEN") ||			// Hiouden: Mamono-tachi tono Chikai
+				Memory.match_na("JIGSAW PARTY") ||		// Jigsaw Party (US) (*)
+				// Pieces (JP)
+				//Memory.match_na("JURASSIC PARK") ||		// Jurassic Park
+				Memory.match_na("King Arthurs World") ||	// King Arthur's World (EU/US) (*)
+				// Royal Conquest (JP)
+				Memory.match_na("KOUTETSU-NO KISHI") ||		// Koutetsu No Kishi
+				Memory.match_na("KOUTETSU-NO KISHI 2") ||	// Koutetsu No Kishi 2
+				Memory.match_na("KOUTETSU-NO KISHI 3") ||	// Koutetsu No Kishi 3
+				Memory.match_id("APZJ") ||
+				Memory.match_na("LAMBORGHINI AMERICAN") ||	// Lamborghini American Challenge (EU/US)
+				Memory.match_na("LAS VEGAS DREAM") ||		// Las Vegas Dream in Golden Paradise (JP) (*)
+				// Vegas Stakes (EU/US)
+				Memory.match_na("Lemmings 2,The Tribes") ||	// Lemmings 2: The Tribes
+				Memory.match_id("L2") ||
+				Memory.match_na("LORD MONARCH") ||		// Lord Monarch
+				Memory.match_na("Mario&Wario") ||		// Mario & Wario
+				Memory.match_na("SUPER PICROSS") ||		// Mario no Super Picross
+				Memory.match_id("ACXJ") ||
+				Memory.match_nc("MARIOPAINT") ||		// Mario Paint
+				Memory.match_na("MEY  Preschool Fun") ||	// Mario's Early Years: Preschool Fun
+				Memory.match_id("AMEE") ||
+				Memory.match_na("MEGA LO MANIA") ||		// Mega-Lo Mania
+				Memory.match_na("MIGHT  AND MAGIC III") ||	// Might And Magic III - Isles of Terra
+				Memory.match_na("WONDER KITCHEN") ||		// Motoko-chan no Wonder Kitchen
+				Memory.match_na("Nobunaga's Ambition") ||	// Nobunaga's Ambition (US) (*)
+				// Super Nobunaga no Yabou: Zenkokuban (JP)
+				Memory.match_na("ON THE BALL") ||		// On The Ball (EU/US) (*)
+				// Cameltry (JP)
+				Memory.match_na("OPERATION THUNDERBOLT1") ||	// Operation Thunderbolt
+				Memory.match_na("PIECES") ||
+				Memory.match_id("Z5") ||			// Pieces (JP) (*)
+				// Jigsaw Party (US)
+				Memory.match_nc("POPULOUS II") ||		// Populous II
+				Memory.match_na("POWERMONGER") ||		// Power Monger
+				Memory.match_na("Revolution X") ||		// Revolution X
+				Memory.match_id("AXR") ||
+				Memory.match_na("Royal Conquest") ||		// Royal Conquest (JP) (*)
+				// King Arthur's World (EU/US)
+				Memory.match_na("TENBU SPIRIT") ||		// San Goku Shi Seishi: Tenbu Spirits
+				Memory.match_na("SHIEN THE BLADE CHASE0") ||	// Shien The Blade Chaser (JP) (*)
+				Memory.match_na("SHIEN'S REVENGE") ||		// Shien's Revenge (*)
+				Memory.match_nc("SimAnt") ||			// SimAnt
+				Memory.match_na("SNOOPY CONCERT") ||		// Snoopy Concert
+				Memory.match_na("SUPER CAESARS PALACE") ||	// Super Caesar's Palace
+				Memory.match_na("SUPER CASTLES") ||		// Super Castles
+				Memory.match_id("AVIJ") ||
+				//FIXME: TODO: Super Noah's Ark 3D: - bad checksum - CRC32: A2315A14
+				Memory.match_na("SuperPachiSlotMahjong") ||	// Super Pachi Slot Mahjong
+				Memory.match_na("SUPER SOLITAIRE") ||		// Super Solitaire
+				Memory.match_na("SUPER ZENKOKUBAN") ||		// Super Nobunaga no Yabou: Zenkokuban (JP) (*)
+				// Nobunaga's Ambition (US)
+				Memory.match_na("TERMINATOR2 THE MOVIE0") ||	// Terminator 2: The Arcade Game
+				Memory.match_na("TINSTAR") ||			// Tin Star
+				Memory.match_id("9N") ||
+				Memory.match_na("TOKIMEKI MEMORIAL") ||		// Tokimeki Memorial
+				Memory.match_id("AM8J") ||
+				Memory.match_na("Troddlers") ||			// Troddlers
+				Memory.match_na("UTOPIA") ||			// Utopia
+				Memory.match_na("VEGAS STAKES") ||		// Vegas Stakes (EU/US) (*)
+				// Las Vegas Dream in Golden Paradise (JP)
+				Memory.match_nc("WOLFENSTEIN 3D") ||		// Wolfenstein 3D
+				Memory.match_na("WONDERPROJECT J") ||		// Wonder Project J
+				Memory.match_id("APJJ") ||				
+				Memory.match_na("ZAN2 SPIRITS") ||		// Zan 2: Spirits
+				Memory.match_na("ZAN3 SFC")			// Zan 3: Spirits
+				)
+				Settings.CurrentROMisMouseCompatible = true;
+		else
+			Settings.CurrentROMisMouseCompatible = false;
+
+		//super scope
+		if	(
+				Memory.match_na("BATTLE CLASH") ||		// Battle Clash (EU/US) (*)
+										// Space Bazooka (JP)
+				Memory.match_na("SPACE BAZOOKA") ||		// Space Bazooka (JP) (*)
+										// Battle Clash (EU/US)
+				//FIXME: TODO: Add The Hunt for Red October - used for bonus game
+				//FIXME: TODO: Add Lamborghini American Challenge - if needed
+				Memory.match_na("METAL COMBAT") ||		// Metal Combat: Falcon's Revenge
+				Memory.match_na("OPERATION THUNDERBOLT1") ||	// Operation Thunderbolt
+				Memory.match_na("SUPER SCOPE 6") ||		// Super Scope 6
+				//Memory.match_na("TERMINATOR2 THE MOVIE0") ||	// Terminator 2: The Arcade Game
+				Memory.match_na("TINSTAR") ||			// Tin Star
+				Memory.match_id("9N") ||
+				Memory.match_na("X ZONE") ||			// X-Zone
+				//FIXME: TODO: Add Yoshi no Road Hunting - CRC32: 52948F3C
+				Memory.match_na("YOSHI'S SAFARI")		// Yoshi's Safari
+			)
+			Settings.CurrentROMisSuperScopeCompatible = true;
+		else
+			Settings.CurrentROMisSuperScopeCompatible = false;
+	}
 
 	S9xAPUTimingSetSpeedup(Timings.APUSpeedup);
 	S9xAPUAllowTimeOverflow(Timings.APUAllowTimeOverflow);

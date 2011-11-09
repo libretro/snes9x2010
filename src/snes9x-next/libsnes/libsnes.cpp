@@ -132,73 +132,60 @@ void snes_reset()
 static unsigned snes_devices[2];
 void snes_set_controller_port_device(bool in_port, unsigned device)
 {
-   int port = in_port == SNES_PORT_1 ? 0 : 1;
-   switch (device)
-   {
-      case SNES_DEVICE_JOYPAD:
-         S9xSetController(port, CTL_JOYPAD, 0, 0, 0, 0);
-         snes_devices[port] = SNES_DEVICE_JOYPAD;
-         break;
-      case SNES_DEVICE_MULTITAP:
-         S9xSetController(port, CTL_MP5, 1, 2, 3, 4);
-         snes_devices[port] = SNES_DEVICE_MULTITAP;
-         break;
-      case SNES_DEVICE_MOUSE:
-         S9xSetController(port, CTL_MOUSE, 0, 0, 0, 0);
-         snes_devices[port] = SNES_DEVICE_MOUSE;
-         break;
-      case SNES_DEVICE_SUPER_SCOPE:
-         S9xSetController(port, CTL_SUPERSCOPE, 0, 0, 0, 0);
-         snes_devices[port] = SNES_DEVICE_SUPER_SCOPE;
-         break;
-      case SNES_DEVICE_JUSTIFIER:
-         S9xSetController(port, CTL_JUSTIFIER, 0, 0, 0, 0);
-         snes_devices[port] = SNES_DEVICE_JUSTIFIER;
-         break;
-      case SNES_DEVICE_JUSTIFIERS:
-         S9xSetController(port, CTL_JUSTIFIER, 1, 0, 0, 0);
-         snes_devices[port] = SNES_DEVICE_JUSTIFIERS;
-         break;
-      default:
-         fprintf(stderr, "[libsnes]: Invalid device!\n");
-   }
+	int port = in_port == SNES_PORT_1 ? 0 : 1;
+	switch (device)
+	{
+		case SNES_DEVICE_JOYPAD:
+			S9xSetController(port, CTL_JOYPAD, 0, 0, 0, 0);
+			snes_devices[port] = SNES_DEVICE_JOYPAD;
+			break;
+		case SNES_DEVICE_MULTITAP:
+			S9xSetController(port, CTL_MP5, 1, 2, 3, 4);
+			snes_devices[port] = SNES_DEVICE_MULTITAP;
+			break;
+		case SNES_DEVICE_MOUSE:
+			S9xSetController(port, CTL_MOUSE, 0, 0, 0, 0);
+			snes_devices[port] = SNES_DEVICE_MOUSE;
 
-   //mapping pointers here
+			//mapping pointers here
+			S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"), false);
+			S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"), false);
 
-   switch(device)
-   {
-   	case SNES_DEVICE_MOUSE:
-	case SNES_DEVICE_SUPER_SCOPE:
-		S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"), false);
-		S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"), false);
-		break;
-	default:
-		break;
-   }
+			//mapping extra buttons here
+			MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_SELECT), "Mouse1 L");
+			MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_START), "Mouse1 R");
+			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Mouse2 L");
+			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Mouse2 R");
+			break;
+		case SNES_DEVICE_SUPER_SCOPE:
+			S9xSetController(port, CTL_SUPERSCOPE, 0, 0, 0, 0);
+			snes_devices[port] = SNES_DEVICE_SUPER_SCOPE;
 
-   //mapping extra buttons here
+			//mapping pointers here
+			S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"), false);
+			S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"), false);
 
-   switch(device)
-   {
-   	case SNES_DEVICE_MOUSE:
-   		MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_SELECT), "Mouse1 L");
-   		MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_START), "Mouse1 R");
-   		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Mouse2 L");
-   		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Mouse2 R");
-		break;
-	case SNES_DEVICE_SUPER_SCOPE:
-		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Superscope Fire");
-		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Superscope Cursor");
-		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_UP), "Superscope ToggleTurbo");
-		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_DOWN), "Superscope Pause");
-		break;
-	case SNES_DEVICE_JUSTIFIER:
-		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Justifier1 Trigger");
-		MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Justifier1 Start");
-		break;
-	default:
-		break;
-   }
+			//mapping extra buttons here
+			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Superscope Fire");
+			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Superscope Cursor");
+			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_UP), "Superscope ToggleTurbo");
+			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_DOWN), "Superscope Pause");
+			break;
+		case SNES_DEVICE_JUSTIFIER:
+			S9xSetController(port, CTL_JUSTIFIER, 0, 0, 0, 0);
+			snes_devices[port] = SNES_DEVICE_JUSTIFIER;
+
+			//mapping extra buttons here
+			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Justifier1 Trigger");
+			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Justifier1 Start");
+			break;
+		case SNES_DEVICE_JUSTIFIERS:
+			S9xSetController(port, CTL_JUSTIFIER, 1, 0, 0, 0);
+			snes_devices[port] = SNES_DEVICE_JUSTIFIERS;
+			break;
+		default:
+			fprintf(stderr, "[libsnes]: Invalid device!\n");
+	}
 }
 
 void snes_cheat_reset()
@@ -239,58 +226,6 @@ bool snes_load_cartridge_super_game_boy(
 {
    return false;
 }
-
-static void map_buttons();
-
-
-void snes_init()
-{
-   memset(&Settings, 0, sizeof(Settings));
-   Settings.MouseMaster = TRUE;
-   Settings.SuperScopeMaster = TRUE;
-   Settings.JustifierMaster = TRUE;
-   Settings.MultiPlayer5Master = TRUE;
-   Settings.FrameTimePAL = 20000;
-   Settings.FrameTimeNTSC = 16667;
-   Settings.SoundPlaybackRate = 32000;
-   Settings.SoundInputRate = 32000;
-   Settings.AutoDisplayMessages = TRUE;
-   Settings.InitialInfoStringTimeout = 120;
-   Settings.HDMATimingHack = 100;
-   Settings.BlockInvalidVRAMAccessMaster = TRUE;
-   Settings.CartAName[0] = 0;
-   Settings.CartBName[0] = 0;
-   Settings.AutoSaveDelay = 1;
-
-   CPU.Flags = 0;
-
-   if (!Memory.Init() || !S9xInitAPU())
-   {
-      Memory.Deinit();
-      S9xDeinitAPU();
-      fprintf(stderr, "[libsnes]: Failed to init Memory or APU.\n");
-      exit(1);
-   }
-
-   S9xInitSound(16, 0);
-   S9xSetSamplesAvailableCallback(S9xAudioCallback);
-
-   S9xSetRenderPixelFormat(RGB555);
-   GFX.Pitch = 2048;
-   GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
-   S9xGraphicsInit();
-
-   S9xInitInputDevices();
-   for (int i = 0; i < 2; i++)
-   {
-      S9xSetController(i, CTL_JOYPAD, i, 0, 0, 0);
-      snes_devices[i] = SNES_DEVICE_JOYPAD;
-   }
-
-   S9xUnmapAllControls();
-   map_buttons();
-}
-
 
 static void map_buttons()
 {
@@ -359,6 +294,54 @@ static void map_buttons()
    MAP_BUTTON(MAKE_BUTTON(PAD_5, BTN_UP), "Joypad5 Up");
    MAP_BUTTON(MAKE_BUTTON(PAD_5, BTN_DOWN), "Joypad5 Down");
 
+}
+
+void snes_init()
+{
+   memset(&Settings, 0, sizeof(Settings));
+   Settings.MouseMaster = TRUE;
+   Settings.SuperScopeMaster = TRUE;
+   Settings.JustifierMaster = TRUE;
+   Settings.MultiPlayer5Master = TRUE;
+   Settings.FrameTimePAL = 20000;
+   Settings.FrameTimeNTSC = 16667;
+   Settings.SoundPlaybackRate = 32000;
+   Settings.SoundInputRate = 32000;
+   Settings.AutoDisplayMessages = TRUE;
+   Settings.InitialInfoStringTimeout = 120;
+   Settings.HDMATimingHack = 100;
+   Settings.BlockInvalidVRAMAccessMaster = TRUE;
+   Settings.CartAName[0] = 0;
+   Settings.CartBName[0] = 0;
+   Settings.AutoSaveDelay = 1;
+
+   CPU.Flags = 0;
+
+   if (!Memory.Init() || !S9xInitAPU())
+   {
+      Memory.Deinit();
+      S9xDeinitAPU();
+      fprintf(stderr, "[libsnes]: Failed to init Memory or APU.\n");
+      exit(1);
+   }
+
+   S9xInitSound(16, 0);
+   S9xSetSamplesAvailableCallback(S9xAudioCallback);
+
+   S9xSetRenderPixelFormat(RGB555);
+   GFX.Pitch = 2048;
+   GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
+   S9xGraphicsInit();
+
+   S9xInitInputDevices();
+   for (int i = 0; i < 2; i++)
+   {
+      S9xSetController(i, CTL_JOYPAD, i, 0, 0, 0);
+      snes_devices[i] = SNES_DEVICE_JOYPAD;
+   }
+
+   S9xUnmapAllControls();
+   map_buttons();
 }
 
 // libsnes uses relative values for analogue devices. 
@@ -628,7 +611,6 @@ void S9xDeinitUpdate(int width, int height)
 // Dummy functions that should probably be implemented correctly later.
 void S9xSyncSpeed() {}
 //void S9xPollPointer(int, short*, short*) {}
-const char* S9xStringInput(const char* in) { return in; }
 const char* S9xGetFilename(const char* in, s9x_getdirtype) { return in; }
 const char* S9xGetDirectory(s9x_getdirtype) { return NULL; }
 void S9xInitInputDevices() {}
@@ -647,30 +629,6 @@ bool S9xPollPointer(unsigned int, short*, short*) { return false; }
 void S9xOnSNESPadRead (void) {};
 void S9xDoThrottling (bool throttle) {}
 void S9xExitToMenu(void) {}
-
-bool8 S9xOpenSnapshotFile(const char* filepath, bool8 read_only, STREAM *file) 
-{ 
-   if(read_only)
-   {
-      if((*file = OPEN_STREAM(filepath, "rb")) != 0)
-      {
-         return (TRUE);
-      }
-   }
-   else
-   {
-      if((*file = OPEN_STREAM(filepath, "wb")) != 0)
-      {
-         return (TRUE);
-      }
-   }
-   return (FALSE);
-}
-
-void S9xCloseSnapshotFile(STREAM file) 
-{
-   CLOSE_STREAM(file);
-}
 
 void S9xAutoSaveSRAM() 
 {

@@ -279,7 +279,6 @@ enum controllers
 };
 
 void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2, int8 id3, int8 id4); // port=0-1
-void S9xReportControllers (void);
 
 // Call this when you're done with S9xSetController, or if you change any of the controller Settings.*Master flags. 
 // Returns true if something was disabled.
@@ -289,7 +288,6 @@ bool S9xVerifyControllers (void);
 // Functions for translation s9xcommand_t's into strings, and vice versa.
 // free() the returned string after you're done with it.
 
-char * S9xGetCommandName (s9xcommand_t command);
 s9xcommand_t S9xGetCommandT (const char *name);
 
 // Generic mapping functions

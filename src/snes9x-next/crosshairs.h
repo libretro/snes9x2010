@@ -215,7 +215,6 @@ enum crosscontrols
 };
 
 void S9xSetControllerCrosshair (enum crosscontrols ctl, int8 idx, const char *fg, const char *bg);
-//void S9xGetControllerCrosshair (enum crosscontrols ctl, int8 *idx, const char **fg, const char **bg);
 
 // In gfx.cpp, much like S9xDisplayChar() except it takes the parameters
 // listed and looks up GFX.Screen.

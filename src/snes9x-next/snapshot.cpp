@@ -1100,6 +1100,29 @@ static void UnfreezeStructFromCopy (void *, FreezeData *, int, uint8 *, int);
 static void FreezeBlock (STREAM, const char *, uint8 *, int);
 static void FreezeStruct (STREAM, const char *, void *, FreezeData *, int);
 
+static bool8 S9xOpenSnapshotFile(const char* filepath, bool8 read_only, STREAM *file)
+{
+	if(read_only)
+	{
+		if((*file = OPEN_STREAM(filepath, "rb")) != 0)
+		{
+			return (TRUE);
+		}
+	}
+	else
+	{
+		if((*file = OPEN_STREAM(filepath, "wb")) != 0)
+		{
+			return (TRUE);
+		}
+	}
+	return (FALSE);
+}
+
+static void S9xCloseSnapshotFile(STREAM file) 
+{
+	CLOSE_STREAM(file);
+}
 
 bool8 S9xFreezeGame (const char *filename)
 {

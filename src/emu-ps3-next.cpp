@@ -71,27 +71,28 @@ const struct cell_audio_driver *audio_driver = &cell_audio_audioport;
 oskutil_params oskutil_handle;
 PS3InputList PS3Input;
 
-uint64_t mode_switch = MODE_MENU;						// mode the main loop is in
+uint64_t mode_switch = MODE_MENU;			// mode the main loop is in
 
-static uint32_t is_running;							// is the ROM currently running in the emulator?
-static bool is_ingame_menu_running;						// is the ingame menu currently running?
-bool return_to_MM = false;							// launch multiMAN on exit if ROM is passed
-bool emulator_initialized = false;						// is the emulator loaded?
-bool need_load_rom = false;							// need to load the current rom
-char* current_rom = NULL;							// current filename of the ROM being emulated
-bool dialog_is_running;								// is a dialog screen currently running?
+static uint32_t is_running;				// is the ROM currently running in the emulator?
+static bool is_ingame_menu_running;			// is the ingame menu currently running?
+bool return_to_MM = false;				// launch multiMAN on exit if ROM is passed
+bool emulator_initialized = false;			// is the emulator loaded?
+bool need_load_rom = false;				// need to load the current rom
+char* current_rom = NULL;				// current filename of the ROM being emulated
+bool dialog_is_running = false;				// is a dialog screen currently running?
 char special_action_msg[256];				
 static uint32_t special_action_msg_expired;		// time at which the message no longer needs to be overlaid onscreen
 
 uint64_t ingame_menu_item = 0;
-bool need_load_settings = true;							// needs settings loaded
-static uint32_t controller_settings = NO_JOYSTICKS;					// controller mode to run emulator in
+bool need_load_settings = true;				// needs settings loaded
+static uint32_t controller_settings = NO_JOYSTICKS;	// controller mode to run emulator in
 bool audio_active = false;
 extern bool8 pad_read_last;
 
 //emulator-specific
 s9xcommand_t keymap[1024];
 uint16_t joypad[8];
+static unsigned snes_devices[2];
 
 /* PS3 frontend - save state/emulator SRAM related functions */
 
@@ -137,20 +138,6 @@ uint16_t joypad[8];
       joypad[keymap[id].button.joypad.idx] = ((joypad[keymap[id].button.joypad.idx] | keymap[id].button.joypad.buttons) & (((pressed) | -(pressed)) >> 31)) | ((joypad[keymap[id].button.joypad.idx] & ~keymap[id].button.joypad.buttons) & ~(((pressed) | -(pressed)) >> 31)); \
       /* else if(keymap[id].type == S9xButtonMouse || pressed) */ \
          /* S9xApplyCommand_Button(keymap[id], pressed); */
-
-#define create_msg_dialog(text, callback) \
-	dialog_is_running = true; \
-	cellMsgDialogOpen2(CELL_MSGDIALOG_DIALOG_TYPE_NORMAL|CELL_MSGDIALOG_TYPE_BG_VISIBLE|\
-	CELL_MSGDIALOG_TYPE_BUTTON_TYPE_YESNO|CELL_MSGDIALOG_TYPE_DISABLE_CANCEL_OFF|\
-	CELL_MSGDIALOG_TYPE_DEFAULT_CURSOR_YES,\
-	""#text, callback,NULL,NULL);
-
-#define create_error_dialog(text, callback) \
-	dialog_is_running = true; \
-	cellMsgDialogOpen2(CELL_MSGDIALOG_TYPE_SE_TYPE_ERROR|CELL_MSGDIALOG_TYPE_BG_VISIBLE|\
-	CELL_MSGDIALOG_TYPE_BUTTON_TYPE_NONE|CELL_MSGDIALOG_TYPE_DISABLE_CANCEL_OFF|\
-	CELL_MSGDIALOG_TYPE_DEFAULT_CURSOR_OK,\
-	""#text, callback,NULL,NULL);
 
 void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 {
@@ -203,6 +190,26 @@ static void S9xAudioCallback()
    params.sample_cb = NULL; \
    params.userdata = NULL;
 
+
+#ifdef CELL_DEBUG_CONSOLE
+#define create_osk_loop() \
+	while(OSK_IS_RUNNING(oskutil_handle) && is_running) \
+	{ \
+		/* OSK Util gets updated */ \
+		S9xMainLoop(); \
+		cellConsolePoll(); \
+		cellSysutilCheckCallback(); \
+	}
+#else
+#define create_osk_loop() \
+	while(OSK_IS_RUNNING(oskutil_handle) && is_running) \
+	{ \
+		/* OSK Util gets updated */ \
+		S9xMainLoop(); \
+		cellSysutilCheckCallback(); \
+	}
+#endif
+
 static void callback_rsound_dialog_ok(int button_type, void *userdata)
 {
 	switch(button_type)
@@ -217,81 +224,65 @@ static void callback_rsound_dialog_ok(int button_type, void *userdata)
 	}
 }
 
-#define create_callback(setting, mute_sound) \
-	switch(button_type) \
-	{ \
-		case CELL_MSGDIALOG_BUTTON_YES: \
-		   setting = true; \
-		   break; \
-		case CELL_MSGDIALOG_BUTTON_ESCAPE: \
-		case CELL_MSGDIALOG_BUTTON_NO: \
-		   setting = false; \
-		   break; \
-	} \
-   dialog_is_running = false; \
-   cellMsgDialogClose(0.0f);
-
-
-#define create_callback_loop(mute_sound) \
-   do \
-   { \
-      glClear(GL_COLOR_BUFFER_BIT); \
-      psglSwap(); \
-      cellSysutilCheckCallback(); \
-   }while(dialog_is_running & is_running);
-
-#ifdef CELL_DEBUG_CONSOLE
-#define create_osk_loop() \
-	while(OSK_IS_RUNNING(oskutil_handle) & is_running) \
-	{ \
-		/* OSK Util gets updated */ \
-		S9xMainLoop(); \
-		cellConsolePoll(); \
-		cellSysutilCheckCallback(); \
-	}
-#else
-#define create_osk_loop() \
-	while(OSK_IS_RUNNING(oskutil_handle) & is_running) \
-	{ \
-		/* OSK Util gets updated */ \
-		S9xMainLoop(); \
-		cellSysutilCheckCallback(); \
-	}
-#endif
-
-#define create_emulator_loop(input_loop, main_loop) \
-   do{ \
-      main_loop(); \
-      input_loop(); \
-      cell_console_poll(); \
-	   cellSysutilCheckCallback(); \
-	}while(is_running);
-
-#if 0
 static void callback_multitap_compatible(int button_type, void *userdata)
 {
-	create_callback(Settings.CurrentROMisMultitapCompatible, 1);
+	switch(button_type)
+	{
+		case CELL_MSGDIALOG_BUTTON_YES:
+			Emulator_SetControllerMode(MULTITAP);
+			dialog_is_running = false;
+			break;
+		case CELL_MSGDIALOG_BUTTON_ESCAPE:
+		case CELL_MSGDIALOG_BUTTON_NO:
+			dialog_is_running = false;
+			break;
+	}
 }
 
 static void callback_mouse_compatible(int button_type, void *userdata)
 {
-	create_callback(Settings.CurrentROMisMouseCompatible, 1);
+	switch(button_type)
+	{
+		case CELL_MSGDIALOG_BUTTON_YES:
+			Emulator_SetControllerMode(MOUSE);
+			dialog_is_running = false;
+			break;
+		case CELL_MSGDIALOG_BUTTON_ESCAPE:
+		case CELL_MSGDIALOG_BUTTON_NO:
+			dialog_is_running = false;
+			break;
+	}
 }
 
 static void callback_superscope_compatible(int button_type, void *userdata)
 {
-	create_callback(Settings.CurrentROMisSuperScopeCompatible, 1);
+	switch(button_type)
+	{
+		case CELL_MSGDIALOG_BUTTON_YES:
+			Emulator_SetControllerMode(SUPERSCOPE);
+			dialog_is_running = false;
+			break;
+		case CELL_MSGDIALOG_BUTTON_ESCAPE:
+		case CELL_MSGDIALOG_BUTTON_NO:
+			dialog_is_running = false;
+			break;
+	}
 }
-
-static void callback_justifier_compatible(int button_type, void *userdata)
-{
-	create_callback(Settings.CurrentROMisJustifierCompatible, 1);
-}
-#endif
 
 static void callback_save_custom_controls(int button_type, void *userdata)
 {
-	create_callback(Settings.SaveCustomControlScheme, 0);
+	switch(button_type)
+	{
+		case CELL_MSGDIALOG_BUTTON_YES:
+			Settings.SaveCustomControlScheme = true;
+			dialog_is_running = false;
+			break;
+		case CELL_MSGDIALOG_BUTTON_ESCAPE:
+		case CELL_MSGDIALOG_BUTTON_NO:
+			Settings.SaveCustomControlScheme = false;
+			dialog_is_running = false;
+			break;
+	}
 }
 
 void emulator_stop_rom_running(void)
@@ -397,329 +388,6 @@ const char * emulator_input_cheat(void)
 	return "";
 }
 
-#if 0
-static bool emulator_is_super_scope_compatible(void)
-{
-	if	(
-			Memory.match_na("BATTLE CLASH") ||			// Battle Clash (EU/US) (*)
-										// Space Bazooka (JP)
-
-			Memory.match_na("SPACE BAZOOKA") ||			// Space Bazooka (JP) (*)
-										// Battle Clash (EU/US)
-
-			//FIXME: TODO: Add The Hunt for Red October - used for bonus game
-			//FIXME: TODO: Add Lamborghini American Challenge - if needed
-			Memory.match_na("METAL COMBAT") ||			// Metal Combat: Falcon's Revenge
-			Memory.match_na("OPERATION THUNDERBOLT1") ||		// Operation Thunderbolt
-			Memory.match_na("SUPER SCOPE 6") ||			// Super Scope 6
-			//Memory.match_na("TERMINATOR2 THE MOVIE0") ||		// Terminator 2: The Arcade Game
-
-			Memory.match_na("TINSTAR") ||				// Tin Star
-			Memory.match_id("9N") ||
-
-			Memory.match_na("X ZONE") ||				// X-Zone
-
-			//FIXME: TODO: Add Yoshi no Road Hunting - CRC32: 52948F3C
-			Memory.match_na("YOSHI'S SAFARI")			// Yoshi's Safari
-			)
-			{
-				return true;
-			}
-	else
-		return false;
-
-}
-
-static bool emulator_implementation_is_justifier_compatible(void)
-{
-	if(Memory.match_nc("LETHAL ENFORCERS"))			// Lethal Enforcers
-		return true;
-	else
-		return false;
-}
-
-static bool emulator_is_mouse_compatible(void)
-{
-	if	(
-			Memory.match_nc("ACME ANIMATION FACTOR") ||		// ACME Animation Factory
-			Memory.match_id("ACM") ||
-			Memory.match_nc("ALICE PAINT") ||			// Alice no Paint Adventure
-			Memory.match_id("AALJ") ||
-			Memory.match_nc("ARKANOID DOH IT AGAIN0") ||		// Arkanoid: Doh It Again
-			Memory.match_id("A6") ||
-			Memory.match_na("SFC SAILORMOON S") ||			// Bishojou Senshi Sailor Moon S: Kondowa Puzzle de
-										// Oshiokiyo!
-
-			Memory.match_na("BRANDISH2 EXPERT") ||			// Brandish 2: Expert
-			Memory.match_id("AQIJ") ||				
-
-			Memory.match_na("BREAKTRHU!") ||			// BreakThru!
-			Memory.match_id("ABXE") ||
-
-			Memory.match_na("CIVILIZATION") ||			// Civilization
-			Memory.match_id("EQ") ||
-
-			Memory.match_na("CAMELTRY") ||				// Cameltry (JP) (*)
-										// On The Ball (EU/US)
-
-			Memory.match_na("CANNON FODDER") ||			// Cannon Fodder
-			Memory.match_id("ACNP") ||				
-
-			Memory.match_id("M Ve") ||				// Dai-3-ji Super Robot Taisen
-
-			Memory.match_id("AR4J") ||				// Dai-4-ji Super Robot Taisen
-			Memory.match_na("SUPER ROBOT WARS 4") ||
-
-			Memory.match_na("DOOM") ||				// Doom
-			Memory.match_id("AD8") ||				
-
-			Memory.match_id("A88J") ||				// Doukyuusei 2 (JP) (NP)
-
-			Memory.match_na("DRAGON KNIGHT 4") ||			// Dragon Knight 4
-			Memory.match_id("A87J") ||				
-
-			Memory.match_na("Eye of the Beholder") ||		// Eye of the Beholder
-
-			Memory.match_na("FARLANDSTORY2") ||			// Farland Story 2
-			Memory.match_id("A2FJ") ||
-
-			Memory.match_na("Fun 'N Games") ||			// Fun 'N Games (EU/US)
-			Memory.match_na("GALAXY ROBO") ||			// Galaxy Robo
-			Memory.match_na("HIOUDEN") ||				// Hiouden: Mamono-tachi tono Chikai
-
-			Memory.match_na("JIGSAW PARTY") ||			// Jigsaw Party (US) (*)
-										// Pieces (JP)
-
-			//Memory.match_na("JURASSIC PARK") ||			// Jurassic Park
-
-			Memory.match_na("King Arthurs World") ||		// King Arthur's World (EU/US) (*)
-										// Royal Conquest (JP)
-			Memory.match_na("KOUTETSU-NO KISHI") ||			// Koutetsu No Kishi
-			Memory.match_na("KOUTETSU-NO KISHI 2") ||		// Koutetsu No Kishi 2
-
-			Memory.match_na("KOUTETSU-NO KISHI 3") ||		// Koutetsu No Kishi 3
-			Memory.match_id("APZJ") ||
-
-			Memory.match_na("LAMBORGHINI AMERICAN") ||		// Lamborghini American Challenge (EU/US)
-
-			Memory.match_na("LAS VEGAS DREAM") ||			// Las Vegas Dream in Golden Paradise (JP) (*)
-										// Vegas Stakes (EU/US)
-
-			Memory.match_na("Lemmings 2,The Tribes") ||		// Lemmings 2: The Tribes
-			Memory.match_id("L2") ||
-
-			Memory.match_na("LORD MONARCH") ||			// Lord Monarch
-			Memory.match_na("Mario&Wario") ||			// Mario & Wario
-
-			Memory.match_na("SUPER PICROSS") ||			// Mario no Super Picross
-			Memory.match_id("ACXJ") ||
-
-			Memory.match_nc("MARIOPAINT") ||			// Mario Paint
-
-			Memory.match_na("MEY  Preschool Fun") ||		// Mario's Early Years: Preschool Fun
-			Memory.match_id("AMEE") ||
-
-			Memory.match_na("MEGA LO MANIA") ||			// Mega-Lo Mania
-			Memory.match_na("MIGHT  AND MAGIC III") ||		// Might And Magic III - Isles of Terra
-
-			Memory.match_na("WONDER KITCHEN") ||			// Motoko-chan no Wonder Kitchen
-
-			Memory.match_na("Nobunaga's Ambition") ||		// Nobunaga's Ambition (US) (*)
-										// Super Nobunaga no Yabou: Zenkokuban (JP)
-
-			Memory.match_na("ON THE BALL") ||			// On The Ball (EU/US) (*)
-										// Cameltry (JP)
-
-			Memory.match_na("OPERATION THUNDERBOLT1") ||		// Operation Thunderbolt
-
-			Memory.match_na("PIECES") ||
-			Memory.match_id("Z5") ||				// Pieces (JP) (*)
-										// Jigsaw Party (US)
-
-			Memory.match_nc("POPULOUS II") ||			// Populous II
-			Memory.match_na("POWERMONGER") ||			// Power Monger
-
-			Memory.match_na("Revolution X") ||			// Revolution X
-			Memory.match_id("AXR") ||
-
-			Memory.match_na("Royal Conquest") ||			// Royal Conquest (JP) (*)
-										// King Arthur's World (EU/US)
-
-			Memory.match_na("TENBU SPIRIT") ||			// San Goku Shi Seishi: Tenbu Spirits
-
-			Memory.match_na("SHIEN THE BLADE CHASE0") ||		// Shien The Blade Chaser (JP) (*)
-			Memory.match_na("SHIEN'S REVENGE") ||			// Shien's Revenge (*)
-
-			Memory.match_nc("SimAnt") ||				// SimAnt
-			Memory.match_na("SNOOPY CONCERT") ||			// Snoopy Concert
-			Memory.match_na("SUPER CAESARS PALACE") ||		// Super Caesar's Palace
-
-			Memory.match_na("SUPER CASTLES") ||			// Super Castles
-			Memory.match_id("AVIJ") ||
-
-			//FIXME: TODO: Super Noah's Ark 3D: - bad checksum - CRC32: A2315A14
-
-			Memory.match_na("SuperPachiSlotMahjong") ||		// Super Pachi Slot Mahjong
-			Memory.match_na("SUPER SOLITAIRE") ||			// Super Solitaire
-
-			Memory.match_na("SUPER ZENKOKUBAN") ||			// Super Nobunaga no Yabou: Zenkokuban (JP) (*)
-										// Nobunaga's Ambition (US)
-			Memory.match_na("TERMINATOR2 THE MOVIE0") ||		// Terminator 2: The Arcade Game
-
-			Memory.match_na("TINSTAR") ||				// Tin Star
-			Memory.match_id("9N") ||
-
-			Memory.match_na("TOKIMEKI MEMORIAL") ||			// Tokimeki Memorial
-			Memory.match_id("AM8J") ||
-
-			Memory.match_na("Troddlers") ||				// Troddlers
-			Memory.match_na("UTOPIA") ||				// Utopia
-
-			Memory.match_na("VEGAS STAKES") ||			// Vegas Stakes (EU/US) (*)
-										// Las Vegas Dream in Golden Paradise (JP)
-			Memory.match_nc("WOLFENSTEIN 3D") ||			// Wolfenstein 3D
-
-			Memory.match_na("WONDERPROJECT J") ||			// Wonder Project J
-			Memory.match_id("APJJ") ||				
-
-			Memory.match_na("ZAN2 SPIRITS") ||			// Zan 2: Spirits
-			Memory.match_na("ZAN3 SFC")				// Zan 3: Spirits
-			)
-			{
-				return true;
-			}
-	else
-		return false;
-}
-
-static bool emulator_is_multitap_compatible(void)
-{
-	if 	(
-			Memory.match_nn("BARKLEY") ||				// Barkley Shut Up and Jam!
-			Memory.match_id("ABCJ") ||				// Battle Cross
-			Memory.match_na("Bill Walsh College FB1") ||		// Bill Walsh College Football
-			Memory.match_id("ANYE") ||				// College Slam
-			Memory.match_id("AC3J") ||				// Crystal Beans from Dungeon Explorer
-			Memory.match_nc("Bruce Lee") ||				// Dragon - Bruce Lee Story
-
-			Memory.match_id("AVS") ||				// Fever Pitch Soccer (EU) (*)
-										// Head-On Soccer (US) (*)
-
-			Memory.match_na("FURI-FURI GIRLS") ||			// Furi-Furi Girls
-
-			Memory.match_na("HAT TRICK HERO 2") ||			// Hat Trick Hero 2
-			Memory.match_na("HEBEREKE NO PUZZLE") ||		// Hebereke no Oishii Puzzle wa Irimasenka
-
-			Memory.match_id("AWJ") ||				// International Superstar Soccer Deluxe (EU/US) (*)
-										// Jikkyou World Soccer 2 - Fighting Eleven (JP) (*)
-
-			Memory.match_na("J-LEAGUE SUPER SOCCER0") ||		// J-League Super Soccer (JP)
-										// Virtual Soccer (EU)
-
-			Memory.match_na("JIGSAW PARTY") ||			// Jigsaw Party (US) (*)
-										// Pieces (JP)
-
-			Memory.match_na("JIMMY CONNORS TENNIS") ||		// Jimmy Connors Pro Tennis Tour
-
-			Memory.match_na("LAS VEGAS DREAM") ||			// Las Vegas Dream in Golden Paradise (JP) (*)
-										// Vegas Stakes (EU/US)
-
-			Memory.match_id("ALT") ||				// Looney Tunes B-Ball (US) (*)
-										// Looney Tunes Basketball (EU) (*)
-
-			Memory.match_id("AYHJ") ||				// Mizuki Shigeru no Youkai Hyakkiyakou
-			Memory.match_id("A3VJ") ||				// Multi Play Volleyball
-
-			Memory.match_na("MUSCLE BOMBER") ||			// Muscle Bomber: The Body Explosion (JP) (*)
-			// Saturday Night Slam Masters (US)
-
-			Memory.match_id("CHAMP WRESTLING") ||			// Natsume Championship Wrestling
-			Memory.match_id("ANJ") || 				// NBA Give 'n Go
-			Memory.match_id("AXG") || 				// NBA Hangtime
-			Memory.match_id("AJT") || 				// NBA Jam Tournament Edition (EU/US/JP)
-			Memory.match_na("NBA JAM")   || 			// NBA Jam
-			Memory.match_id("AFIE") ||				// NCAA Final Four Basketball
-			Memory.match_id("AFBE") ||				// NCAA Football
-			Memory.match_id("Q9") ||				// NFL Quarterback Club / NFL Quarterback Club '95
-			Memory.match_id("AQB") ||				// NFL Quarterback Club '96
-
-			Memory.match_na("PIECES") ||
-			Memory.match_id("Z5") ||				// Pieces (JP) (*)
-										// Jigsaw Party (US)
-
-			Memory.match_id("ARVE") ||				// Rap Jam - Volume One
-
-			Memory.match_na("RUSHING BEAT SYURA") ||		// Rushing Beat Shura (JP) (*)
-										// The Peace Keepers (US)
-
-			Memory.match_na("S.Night SLAM MASTERS") ||		// Saturday Night Slam Masters (US) (*)
-										// Muscle Bomber: The Body Explosion (JP)
-
-			Memory.match_na("Secret of MANA") ||			// Secret of Mana (EU/US) (*)
-										// Seiken Densetsu 2 (JP)
-
-			Memory.match_na("SeikenDensetsu 2") ||			// Seiken Densetsu 2 (JP) (*) / 
-										// Secret of Mana (EU/US)
-
-			Memory.match_nn("SeikenDensetsu3") ||			// Seiken Densetsu 3 (in case you use
-			// 3-player IPS patch)
-
-			Memory.match_na("SMASH TENNIS") ||			// Smash Tennis (EU) (*) / 
-										// Super Family Tennis (JP)
-
-			//FIXME: TODO - Add CRC32 for Super Family Tennis - CRC32: 2BCBFF26
-
-			Memory.match_id("ASR") ||				// Street Racer
-			Memory.match_na("SUGOI HEBEREKE") ||			// Sugoi Hebereke
-			Memory.match_na("Sugoro Quest++") ||			// Sugoro Quest++: Dicenics
-			Memory.match_id("AO9") ||				// Summer Olympics
-			Memory.match_id("AS6") ||				// Super Bomberman 3
-			Memory.match_id("A4BJ") || 				// Super Bomberman 4
-			Memory.match_id("APBJ") ||				// Super Bomberman Panic Bomber W
-			Memory.match_id("AF5J") ||				// Super Fire Pro Wrestling X
-			Memory.match_id("AP4J") ||				// Super Fire Pro Wrestling Special
-			Memory.match_id("AQQJ") ||				// Super Fire Pro Wrestling - Queen's Special
-			Memory.match_id("A7PJ") ||				// Super Puyo Puyo Tsuu Remix
-			Memory.match_id("AT3J") ||				// Super Tetris 3
-			Memory.match_id("AFY") ||				// Syndicate
-
-			Memory.match_na("THE PEACE KEEPERS") ||			// The Peace Keepers (US) (*)
-										// Rushing Beat Shura (JP)
-
-			Memory.match_na("Tiny Toon Sports") ||			// Tiny Toon Adventures: Dotabata Daiundoukai (JP) (*)
-										// Tiny Toon Adventures: Wacky Sports Challenge (US) (*)
-										// Tiny Toon Adventures: Wild & Wacky Sports (EU) (*)
-
-			Memory.match_id("A3T") ||				// Top Gear 3000 (EU/US) (*)
-										// Planet's Champ TG 3000 (JP) (*)
-
-			Memory.match_na("VEGAS STAKES") ||			// Vegas Stakes (EU/US) (*)
-										// Las Vegas Dream in Golden Paradise (JP)
-
-			Memory.match_na("Virtual Soccer") ||			// Virtual Soccer (EU) (*)
-										// J-League Super Soccer (JP)
-
-			Memory.match_id("AWF") ||				// WWF RAW
-
-			//Catch-alls
-			Memory.match_nc("SUPER BOMBERMAN") ||			// All Bomberman games (FIXME: remove
-										// individual two Bomberman entries if this works)
-
-			Memory.match_nc("FIFA") ||				// All FIFA games
-			Memory.match_nn("NHL") ||				// All NHL games
-			Memory.match_nc("MADDEN") ||				// All Madden games
-			Memory.match_nc("MICRO MACHINES") ||			// All Micro Machines games
-
-			Memory.match_id("Q4")					// ?
-			)
-			{
-				return true;
-			}
-	else
-		return false;
-}
-#endif
-
 void emulator_toggle_sound(uint64_t soundmode)
 {
 	audio_default_params();
@@ -750,8 +418,19 @@ void emulator_toggle_sound(uint64_t soundmode)
 		audio_handle =  audio_driver->init(&params);
 		if(!audio_handle || !(strlen(Settings.RSoundServerIPAddress) > 0))
 		{
-			create_error_dialog("Couldn't connect to RSound server at specified IP address. Falling back to regular audio.",callback_rsound_dialog_ok);
-			create_callback_loop(0);
+			dialog_is_running = true;
+			cellMsgDialogOpen2(CELL_MSGDIALOG_TYPE_SE_TYPE_ERROR|CELL_MSGDIALOG_TYPE_BG_VISIBLE| \
+			CELL_MSGDIALOG_TYPE_BUTTON_TYPE_NONE|CELL_MSGDIALOG_TYPE_DISABLE_CANCEL_OFF| \
+			CELL_MSGDIALOG_TYPE_DEFAULT_CURSOR_OK, \
+			"Couldn't connect to RSound server at specified IP address. Falling back to regular audio.", callback_rsound_dialog_ok,NULL,NULL);
+			do
+			{
+				glClear(GL_COLOR_BUFFER_BIT);
+				psglSwap();
+				cellSysutilCheckCallback();
+			}while(dialog_is_running && is_running);
+
+			cellMsgDialogClose(0.0f);
 		}
 	}
 	else
@@ -869,7 +548,6 @@ void emulator_switch_pal_60hz(bool pal60Hz)
    static int mouse_old_y; \
    static uint8_t old_mouse_buttons; \
    uint32_t pads_connected = cell_pad_input_pads_connected(); \
-   const CellMouseData mouse_state = cell_mouse_input_poll_device(0); \
    const uint64_t state = cell_pad_input_poll_device(0); \
    const uint64_t button_was_pressed = old_state & (old_state ^ state); \
    const uint64_t button_was_held = old_state & state; \
@@ -1002,15 +680,164 @@ void emulator_switch_pal_60hz(bool pal60Hz)
 		S9xReportButton_Mouse(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed))); \
 		S9xReportButton_Mouse(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(state) && CTRL_RSTICK_DOWN(button_was_pressed))); \
 		S9xReportButton_Mouse(MAKE_BUTTON(pad, PS3Input.ButtonR3_ButtonL3[i]), (CTRL_R3(state) && CTRL_L3(state))); \
-		S9xReportPointer(BTN_POINTER1, CTRL_AXIS_LSTICK_X(state), CTRL_AXIS_LSTICK_Y(state), 1, keymap); \
-		S9xReportPointer(BTN_SCOPE_POINTER, CTRL_AXIS_LSTICK_X(state), CTRL_AXIS_LSTICK_Y(state), 0, keymap); \
 		old_state[i] = state; \
 	}
+
+static void emulator_implementation_input_loop_mouse(int snes_device)
+{
+	static uint64_t old_state;
+	const uint32_t pads_connected = cell_pad_input_pads_connected();
+
+	const uint64_t state = cell_pad_input_poll_device(0);
+	const uint64_t button_was_pressed = old_state & (old_state ^ state);
+	const uint64_t button_was_held = old_state & state;
+	const uint64_t button_was_not_held = ~(old_state & state);
+	const uint64_t button_was_not_pressed = ~(state);
+	const uint64_t pad = 1;
+	uint64_t special_action_to_execute = 0;
+	static uint8_t old_mouse_buttons;
+	static int mouse_old_x;
+	static int mouse_old_y;
+
+	static bool first = true;
+	static int _x = 128;
+	static int _y = 128;
+
+	//USB/Bluetooth mouse
+	if(Settings.AccessoryType)
+	{
+		const CellMouseData mouse_state = cell_mouse_input_poll_device(0);
+		const uint64_t new_state_mouse_button_1 = (mouse_state.buttons & CELL_MOUSE_BUTTON_1);
+		const uint64_t new_state_mouse_button_2 = (mouse_state.buttons & CELL_MOUSE_BUTTON_2);
+		const uint64_t new_state_mouse_button_3 = (mouse_state.buttons & CELL_MOUSE_BUTTON_3);
+		const uint64_t new_state_mouse_button_4 = (mouse_state.buttons & CELL_MOUSE_BUTTON_4);
+		const uint64_t new_state_mouse_button_5 = (mouse_state.buttons & CELL_MOUSE_BUTTON_5);
+		uint64_t used_mouse_button_1;
+		uint64_t used_mouse_button_2;
+		uint64_t used_mouse_button_3;
+		uint64_t used_mouse_button_4;
+		uint64_t used_mouse_button_5;
+
+		//five mouse buttons hooked up - report them
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, PS3Input.ButtonSquare[0])], (used_mouse_button_1), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, PS3Input.ButtonTriangle[0])], (used_mouse_button_2), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, PS3Input.ButtonCircle[0])], (used_mouse_button_3), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, PS3Input.ButtonCross[0])], (used_mouse_button_4), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, PS3Input.ButtonStart[0])], (used_mouse_button_5), 0);
+
+		if(mouse_state.update == CELL_MOUSE_DATA_UPDATE)
+		{
+			used_mouse_button_1 = new_state_mouse_button_1;
+			used_mouse_button_2 = new_state_mouse_button_2;
+			used_mouse_button_3 = new_state_mouse_button_3;
+			used_mouse_button_4 = new_state_mouse_button_4;
+			used_mouse_button_5 = new_state_mouse_button_5;
+			old_mouse_buttons = mouse_state.buttons;
+
+			if(snes_device == CTL_SUPERSCOPE)
+			{
+				mouse_old_x += mouse_state.x_axis;
+				mouse_old_y += mouse_state.y_axis;
+
+				if(mouse_old_x > 258)
+					mouse_old_x = 258;
+
+				if(mouse_old_x < -3)
+					mouse_old_x = -3;
+
+				if(mouse_old_y > 239)
+					mouse_old_y = 239;
+
+				if(mouse_old_y < -3)
+					mouse_old_y = -3;
+			}
+			else
+			{
+				mouse_old_x += mouse_state.x_axis;
+				mouse_old_y += mouse_state.y_axis;
+			}
+		}
+		else
+		{
+			used_mouse_button_1 = old_mouse_buttons & CELL_MOUSE_BUTTON_1;
+			used_mouse_button_2 = old_mouse_buttons & CELL_MOUSE_BUTTON_2;
+			used_mouse_button_3 = old_mouse_buttons & CELL_MOUSE_BUTTON_3;
+			used_mouse_button_4 = old_mouse_buttons & CELL_MOUSE_BUTTON_4;
+			used_mouse_button_5 = old_mouse_buttons & CELL_MOUSE_BUTTON_5;
+		}
+
+		S9xApplyCommand(keymap[BTN_POINTER1], mouse_old_x, mouse_old_y);
+		S9xApplyCommand(keymap[BTN_SCOPE_POINTER], mouse_old_x, mouse_old_y);
+	}
+	else
+	{
+		int16 x = CTRL_AXIS_LSTICK_X(state);
+		int16 y = CTRL_AXIS_LSTICK_Y(state);
+
+
+		if(first)
+		{
+			if(snes_device == CTL_MOUSE)
+			{
+				//Mouse
+				x = 128;
+				y = 128;
+				first = false;
+			}
+			else
+			{
+				//Super Scope
+
+				_x += (x - 128) / 15;
+				_y += (y - 128) / 15;
+				x = _x;
+				y = _y;
+			}
+		}
+		else
+		{
+			if(snes_device == CTL_MOUSE)
+			{
+				//Mouse
+				x = 128;
+				y = 128;
+				first = false;
+			}
+			else
+			{
+				//Super Scope
+
+				_x += (x - 128) / 15;
+				_y += (y - 128) / 15;
+
+				if(_x > 277)
+					_x = 255;
+				else if(_x < -16)
+					_x = 0;
+
+				if(_y > 256)
+					_y = 255;
+				else if(_y < -16)
+					_y = 0;
+
+				x = _x;
+				y = _y;
+			}
+		}
+		S9xApplyCommand(keymap[BTN_POINTER1], x, y);
+		S9xApplyCommand(keymap[BTN_SCOPE_POINTER], x, y);
+	}
+
+	if(special_action_to_execute)
+		S9xApplyCommand(keymap[special_action_to_execute], 1, 0);
+	old_state = state;
+}
 
 static void emulator_implementation_input_loop()
 {
 	static uint64_t old_state[MAX_PADS];
 	const uint32_t pads_connected = cell_pad_input_pads_connected();
+
 	for (uint32_t i = 0; i < pads_connected; ++i)
 	{
 		const uint64_t state = cell_pad_input_poll_device(i);
@@ -1039,8 +866,8 @@ static void emulator_implementation_input_loop()
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR3[i]), (CTRL_L2(state) && CTRL_R3(state)));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonL3[i]), (CTRL_L2(state) && CTRL_L3(state)));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR2[i]), (CTRL_L2(button_was_held) && CTRL_R2(button_was_held)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL3[0]), (CTRL_L3(state) && CTRL_R3(button_was_not_held)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3[0]), (CTRL_R3(state) && CTRL_L3(button_was_not_held)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL3[i]), (CTRL_L3(state) && CTRL_R3(button_was_not_held)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3[i]), (CTRL_R3(state) && CTRL_L3(button_was_not_held)));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Right[i]), CTRL_RSTICK_RIGHT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Left[i]), CTRL_RSTICK_LEFT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Up[i]), CTRL_RSTICK_UP(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
@@ -1056,6 +883,7 @@ static void emulator_implementation_input_loop()
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(state) && CTRL_RSTICK_DOWN(button_was_pressed)));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3_ButtonL3[i]), (CTRL_R3(state) && CTRL_L3(state)));
+
 		if(special_action_to_execute)
 			S9xApplyCommand(keymap[special_action_to_execute], 1, 0);
 		old_state[i] = state;
@@ -1133,71 +961,77 @@ static bool emulator_init_system(void)
 	if (!Memory.LoadROM(current_rom))
 		return false; //Load ROM failed
 
-	#if 0
-	if(emulator_is_multitap_compatible())
+	if(Settings.CurrentROMisMultitapCompatible)
 	{
 		if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
 		{
-			create_msg_dialog("This game supports the [Multitap] accessory. Do you want to enable [Multitap] support?", callback_multitap_compatible);
-			create_callback_loop(1);
+			dialog_is_running = true;
+			cellMsgDialogOpen2(CELL_MSGDIALOG_DIALOG_TYPE_NORMAL|CELL_MSGDIALOG_TYPE_BG_VISIBLE | CELL_MSGDIALOG_TYPE_BUTTON_TYPE_YESNO|CELL_MSGDIALOG_TYPE_DISABLE_CANCEL_OFF | CELL_MSGDIALOG_TYPE_DEFAULT_CURSOR_YES, "This game supports the [Multitap] accessory. Do you want to enable [Multitap] support?", callback_multitap_compatible ,NULL,NULL);
+
+			do
+			{
+				glClear(GL_COLOR_BUFFER_BIT);
+				psglSwap();
+				cellSysutilCheckCallback();
+			}while(dialog_is_running && is_running);
+
+			cellMsgDialogClose(0.0f);
 		}
 		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED)
-			Settings.CurrentROMisMultitapCompatible = true;
-		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_NONE)
-			Settings.CurrentROMisMultitapCompatible = false;
-
-		if(Settings.CurrentROMisMultitapCompatible)
 			Emulator_SetControllerMode(MULTITAP);
 	}
-	else if(emulator_is_mouse_compatible())
+
+	if(Settings.CurrentROMisMouseCompatible)
 	{
 		if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
 		{
-			create_msg_dialog(Settings.AccessoryType ? "This game supports the [SNES Mouse] accessory. Do you want to enable [SNES Mouse] support? (NOTE: [SNES Mouse] will be mapped to the USB/Bluetooth mouse)" : "This game supports the [SNES Mouse] accessory. Do you want to enable [SNES Mouse] support? (NOTE: [SNES Mouse] will be mapped to the left analog stick)",callback_mouse_compatible);
-			create_callback_loop(1);
+			char text[256];
+			if(Settings.AccessoryType)
+				strncpy(text, "This game supports the [SNES Mouse] accessory. Do you want to enable [SNES Mouse] support? (NOTE: [SNES Mouse] will be mapped to the USB/Bluetooth mouse)", sizeof(text));
+			else
+				strncpy(text, "This game supports the [SNES Mouse] accessory. Do you want to enable [SNES Mouse] support? (NOTE: [SNES Mouse] will be mapped to the left analog stick)", sizeof(text));
+
+			dialog_is_running = true;
+
+			cellMsgDialogOpen2(CELL_MSGDIALOG_DIALOG_TYPE_NORMAL|CELL_MSGDIALOG_TYPE_BG_VISIBLE | CELL_MSGDIALOG_TYPE_BUTTON_TYPE_YESNO|CELL_MSGDIALOG_TYPE_DISABLE_CANCEL_OFF | CELL_MSGDIALOG_TYPE_DEFAULT_CURSOR_YES, text, callback_mouse_compatible ,NULL,NULL);
+			do
+			{
+				glClear(GL_COLOR_BUFFER_BIT);
+				psglSwap();
+				cellSysutilCheckCallback();
+			}while(dialog_is_running && is_running);
+
+			cellMsgDialogClose(0.0f);
 		}
 		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED)
-			Settings.CurrentROMisMouseCompatible = true;
-		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_NONE)
-			Settings.CurrentROMisMouseCompatible = false;
-
-		if(Settings.CurrentROMisMouseCompatible)
 			Emulator_SetControllerMode(MOUSE);
 	}
-	else if(emulator_is_super_scope_compatible())
+
+	if(Settings.CurrentROMisSuperScopeCompatible)
 	{
 		if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
 		{
-			create_msg_dialog(Settings.AccessoryType ? "This game supports the [Super Scope] accessory. Do you want to enable [Super Scope] support? (NOTE: [Super Scope] will be mapped to the USB/Bluetooth mouse)" : "This game supports the [Super Scope] accessory. Do you want to enable [Super Scope] support? (NOTE: [Super Scope] will be mapped to the left analog stick)",callback_superscope_compatible);
-			create_callback_loop(1);
+			char text[256];
+			if(Settings.AccessoryType)
+				strncpy(text, "This game supports the [Super Scope] accessory. Do you want to enable [Super Scope] support? (NOTE: [Super Scope] will be mapped to the USB/Bluetooth mouse)", sizeof(text));
+			else
+				strncpy(text, "This game supports the [Super Scope] accessory. Do you want to enable [Super Scope] support? (NOTE: [Super Scope] will be mapped to the left analog stick)", sizeof(text));
+
+			dialog_is_running = true;
+		
+			cellMsgDialogOpen2(CELL_MSGDIALOG_DIALOG_TYPE_NORMAL|CELL_MSGDIALOG_TYPE_BG_VISIBLE | CELL_MSGDIALOG_TYPE_BUTTON_TYPE_YESNO|CELL_MSGDIALOG_TYPE_DISABLE_CANCEL_OFF | CELL_MSGDIALOG_TYPE_DEFAULT_CURSOR_YES, text, callback_superscope_compatible ,NULL,NULL);
+			do
+			{
+				glClear(GL_COLOR_BUFFER_BIT);
+				psglSwap();
+				cellSysutilCheckCallback();
+			}while(dialog_is_running && is_running);
+
+			cellMsgDialogClose(0.0f);
 		}
 		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED)
-			Settings.CurrentROMisSuperScopeCompatible = true;
-		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_NONE)
-			Settings.CurrentROMisSuperScopeCompatible = false;
-
-		if(Settings.CurrentROMisSuperScopeCompatible)
 			Emulator_SetControllerMode(SUPERSCOPE);
 	}
-	else if(emulator_implementation_is_justifier_compatible())
-	{
-		if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
-		{
-			create_msg_dialog(Settings.AccessoryType ? "This game supports the [Justifier] accessory. Do you want to enable [Justifier] support? (NOTE: [Justifier] will be mapped to the USB/Bluetooth mouse)" : "This game supports the [Justifier] accessory. Do you want to enable [Justifier] support? (NOTE: [Justifier] will be mapped to the left analog stick)",callback_justifier_compatible);
-			create_callback_loop(1);
-		}
-		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED)
-			Settings.CurrentROMisJustifierCompatible = true;
-		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_NONE)
-			Settings.CurrentROMisJustifierCompatible = false;
-
-		if(Settings.CurrentROMisJustifierCompatible)
-			Emulator_SetControllerMode(TWO_JUSTIFIERS);
-	}
-	#endif
-	//this last rule is in case Multitap has been set manually by the user by pressing TRIANGLE on a ROM
-	else if (controller_settings != MULTITAP)
-		Emulator_SetControllerMode(TWO_JOYSTICKS);
 
 	Memory.LoadSRAM(S9xGetFilename(".srm", SRAM_DIR));
 
@@ -1221,26 +1055,39 @@ static bool emulator_init_system(void)
 		case TWO_JOYSTICKS:
 			S9xSetController(0, CTL_JOYPAD,		0,	0,	0,	0);
 			S9xSetController(1, CTL_JOYPAD,		1,	0,	0,	0);
+
+			snes_devices[0] = CTL_JOYPAD;
+			snes_devices[1] = CTL_JOYPAD;
 			break;
 		case MULTITAP:
 			S9xSetController(0, CTL_JOYPAD,		0,	0,	0,	0);
 			S9xSetController(1, CTL_MP5,		1,	2,	3,	4);
+
+			snes_devices[0] = CTL_JOYPAD;
+			snes_devices[1] = CTL_MP5;
 			break;
 		case MOUSE:
 			S9xSetController(0, CTL_MOUSE,		0,	0,	0,	0);
 			S9xSetController(1, CTL_JOYPAD,		1,	0,	0,	0);
+
+			snes_devices[0] = CTL_JOYPAD;
+			snes_devices[1] = CTL_MP5;
 			break;
 		case SUPERSCOPE:
 			S9xSetController(0, CTL_JOYPAD,		0,	0,	0,	0);
 			S9xSetController(1, CTL_SUPERSCOPE,	0,	0,	0,	0);
+
+			snes_devices[0] = CTL_JOYPAD;
+			snes_devices[1] = CTL_SUPERSCOPE;
 			break;
 		case JUSTIFIER:
 			S9xSetController(0, CTL_JOYPAD,		0,	0,	0,	0);
 			S9xSetController(1, CTL_JUSTIFIER,	0,	0,	0,	0);
+
+			snes_devices[0] = CTL_JOYPAD;
+			snes_devices[1] = CTL_JUSTIFIER;
 			break;
 		case TWO_JUSTIFIERS:
-			S9xSetController(0, CTL_JOYPAD,		0,	0,	0,	0);
-			S9xSetController(1, CTL_JUSTIFIER,	1,	0,	0,	0);	
 			break;
 		default:
 			break;
@@ -1250,13 +1097,7 @@ static bool emulator_init_system(void)
 
 	switch(controller_settings)
 	{
-		case TWO_JOYSTICKS:
-			map_snes9x_standard_controls(PAD_1);      // Player 1
-			map_snes9x_standard_controls(PAD_2);      // Player 2
-			break;
 		case MULTITAP:
-			map_snes9x_standard_controls(PAD_1);      // Player 1
-			map_snes9x_standard_controls(PAD_2);      // Player 2
 			map_snes9x_standard_controls(PAD_3);      // Player 3
 			map_snes9x_standard_controls(PAD_4);      // Player 4
 			map_snes9x_standard_controls(PAD_5);      // Player 5
@@ -1264,6 +1105,10 @@ static bool emulator_init_system(void)
 			map_snes9x_special_controls(PAD_3);       
 			map_snes9x_special_controls(PAD_4);
 			map_snes9x_special_controls(PAD_5);
+			//fall-through
+		case TWO_JOYSTICKS:
+			map_snes9x_standard_controls(PAD_1);      // Player 1
+			map_snes9x_standard_controls(PAD_2);      // Player 2
 			break;
 		case MOUSE:
 			MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_X), "Mouse1 R");
@@ -1404,36 +1249,6 @@ void emulator_init_settings(void)
 	init_setting_bool("Controls::SuperscopeMaster", Settings.SuperScopeMaster, true);
 	init_setting_bool("Controls::JustifierMaster", Settings.JustifierMaster, true);
 	init_setting_bool("Controls::MP5Master", Settings.MultiPlayer5Master, true);
-
-#if 0
-	if (conf.Exists("Controls::Port1"))
-	{
-		parse_controller_spec(0, conf.GetString("Controls::Port1"));
-	}
-	if (conf.Exists("Controls::Port2"))
-		parse_controller_spec(1, conf.GetString("Controls::Port2"));
-
-	if (conf.Exists("Controls::Mouse1Crosshair"))
-	{
-		parse_crosshair_spec(X_MOUSE1,     conf.GetString("Controls::Mouse1Crosshair"));
-	}
-	if (conf.Exists("Controls::Mouse2Crosshair"))
-	{
-		parse_crosshair_spec(X_MOUSE2,     conf.GetString("Controls::Mouse2Crosshair"));
-	}
-	if (conf.Exists("Controls::SuperscopeCrosshair"))
-	{
-		parse_crosshair_spec(X_SUPERSCOPE, conf.GetString("Controls::SuperscopeCrosshair"));
-	}
-	if (conf.Exists("Controls::Justifier1Crosshair"))
-	{
-		parse_crosshair_spec(X_JUSTIFIER1, conf.GetString("Controls::Justifier1Crosshair"));
-	}
-	if (conf.Exists("Controls::Justifier2Crosshair"))
-	{
-		parse_crosshair_spec(X_JUSTIFIER2, conf.GetString("Controls::Justifier2Crosshair"));
-	}
-#endif
 
 	// Hack
 
@@ -1747,8 +1562,19 @@ void emulator_implementation_save_custom_controls(bool showdialog)
 	{
 		if(showdialog)
 		{
-			create_msg_dialog("Do you want to save the custom controller settings?",callback_save_custom_controls);
-			create_callback_loop(0);
+			dialog_is_running = true;
+			cellMsgDialogOpen2(CELL_MSGDIALOG_DIALOG_TYPE_NORMAL|CELL_MSGDIALOG_TYPE_BG_VISIBLE|
+			CELL_MSGDIALOG_TYPE_BUTTON_TYPE_YESNO|CELL_MSGDIALOG_TYPE_DISABLE_CANCEL_OFF|
+			CELL_MSGDIALOG_TYPE_DEFAULT_CURSOR_YES,
+			"Do you want to save the custom controller settings?", callback_save_custom_controls,NULL,NULL);
+			do
+			{
+				glClear(GL_COLOR_BUFFER_BIT);
+				psglSwap();
+				cellSysutilCheckCallback();
+			}while(dialog_is_running && is_running);
+
+			cellMsgDialogClose(0.0f);
 		}
 		if(!showdialog || Settings.SaveCustomControlScheme)
 			emulator_implementation_button_mapping_settings(MAP_BUTTONS_OPTION_SETTER);
@@ -1857,38 +1683,6 @@ void emulator_implementation_switch_control_scheme(void)
 			emulator_implementation_button_mapping_settings(MAP_BUTTONS_OPTION_GETTER);
 			break;
 	}
-}
-
-const char *S9xStringInput (const char *message)
-{
-	static char	buffer[256];
-	
-	fflush(stdout);
-
-	if (fgets(buffer, sizeof(buffer) - 2, stdin))
-		return (buffer);
-
-	return (NULL);
-}
-
-bool8 S9xOpenSnapshotFile (const char *filepath, bool8 read_only, STREAM *file)
-{
-	if(read_only)
-	{
-		if((*file = OPEN_STREAM(filepath, "rb")) != 0)
-			return (TRUE);
-	}
-	else
-	{
-		if((*file = OPEN_STREAM(filepath, "wb")) != 0)
-			return (TRUE);
-	}
-	return (FALSE);
-}
-
-void S9xCloseSnapshotFile (STREAM file)
-{
-	CLOSE_STREAM (file);
 }
 
 void S9xExit (void)
@@ -2057,13 +1851,6 @@ void _makepath (char *path, const char *, const char *dir, const char *fname, co
 	}
 }
 
-
-#define emulator_s9x_mainloop_mouse() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_MOUSE, S9xMainLoop);
-
-#define emulator_s9x_mainloop_analog() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP_ANALOG, S9xMainLoop);
-
-#define emulator_s9x_mainloop() create_emulator_loop(EMULATOR_IMPLEMENTATION_INPUT_LOOP, S9xMainLoop);
-
 #define calculate_aspect_ratio_before_load() \
    if (Graphics->calculate_aspect_ratio_before_game_load()) \
    { \
@@ -2132,11 +1919,14 @@ static void emulator_start(void)
 
 	audio_active = true;
 
-	//Game - standard controls
 	do{
 		S9xMainLoop();
 		if(pad_read_last)
+		{
 			emulator_implementation_input_loop();
+			if( (snes_devices[1] == CTL_MOUSE) || (snes_devices[1] == CTL_SUPERSCOPE) )
+				emulator_implementation_input_loop_mouse(snes_devices[1]);
+		}
 		cell_console_poll();
 		cellSysutilCheckCallback();
 	}while(is_running);

@@ -80,10 +80,6 @@ enum {
 #define PAD_4           4
 #define PAD_5           5
 
-#define ACCESSORY_AUTODETECTION_CONFIRM   0
-#define ACCESSORY_AUTODETECTION_ENABLED   1
-#define ACCESSORY_AUTODETECTION_NONE      2
-
 void enable_apply_border(bool enable);
 void emulator_implementation_set_texture (const char * fname);
 void emulator_init_settings(void);

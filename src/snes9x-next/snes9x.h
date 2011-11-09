@@ -186,6 +186,10 @@
 #include "65c816.h"
 #include "messages.h"
 
+#define ACCESSORY_AUTODETECTION_CONFIRM   0
+#define ACCESSORY_AUTODETECTION_ENABLED   1
+#define ACCESSORY_AUTODETECTION_NONE      2
+
 #define S9X_ACCURACY_LEVEL		3
 
 #ifdef CLUNKY_FILE_ABSTRACTION
@@ -434,7 +438,6 @@ struct SSettings
 	uint32_t	PS3PALTemporalMode60Hz;
 	uint32_t	PS3FontSize;
 	uint32_t	ScreenshotsEnabled;
-	uint32_t	AccessoryType;
 	uint32_t	OddScreenHeightJumpFix;
 	uint32_t	TripleBuffering;
 	uint32_t	CurrentSaveStateSlot;
@@ -462,9 +465,14 @@ struct SSettings
 	bool		SaveCustomControlScheme;
 	int32_t		PS3OverscanAmount;
 	int32_t		ControlScheme;
-	int32_t		AccessoryAutoDetection;
 	#endif
+	uint32_t	AccessoryType;
+	int32_t		AccessoryAutoDetection;
 	bool		ChronoTriggerFrameHack;
+	bool		CurrentROMisMultitapCompatible;
+	bool		CurrentROMisMouseCompatible;
+	bool		CurrentROMisSuperScopeCompatible;
+	bool		CurrentROMisJustifierCompatible;
 };
 
 struct SSNESGameFixes
