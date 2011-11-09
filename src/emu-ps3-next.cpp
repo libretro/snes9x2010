@@ -130,7 +130,7 @@ uint16_t joypad[8];
       if(keymap[id].type == S9xButtonJoypad) \
       joypad[keymap[id].button.joypad.idx] = ((joypad[keymap[id].button.joypad.idx] | keymap[id].button.joypad.buttons) & (((pressed) | -(pressed)) >> 31)) | ((joypad[keymap[id].button.joypad.idx] & ~keymap[id].button.joypad.buttons) & ~(((pressed) | -(pressed)) >> 31)); \
       else if(pressed) \
-         S9xApplyCommand(keymap[id], pressed, 0);
+         special_action_to_execute = id;
 
 #define S9xReportButton_Mouse(id, pressed) \
       if(keymap[id].type == S9xButtonJoypad) \
@@ -1019,6 +1019,7 @@ static void emulator_implementation_input_loop()
 		const uint64_t button_was_not_held = ~(old_state[i] & state);
 		const uint64_t button_was_not_pressed = ~(state);
 		const uint64_t pad = i + 1;
+		uint64_t special_action_to_execute = 0;
 
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonCircle[i]), (CTRL_CIRCLE(state)));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonCross[i]), (CTRL_CROSS(state)));
@@ -1054,8 +1055,10 @@ static void emulator_implementation_input_loop()
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Up[i]), (CTRL_R2(state) && CTRL_RSTICK_UP(button_was_pressed)));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
 		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(state) && CTRL_RSTICK_DOWN(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3_ButtonL3[i]), (CTRL_R3(state) && CTRL_L3(state))); \
-			old_state[i] = state;
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3_ButtonL3[i]), (CTRL_R3(state) && CTRL_L3(state)));
+		if(special_action_to_execute)
+			S9xApplyCommand(keymap[special_action_to_execute], 1, 0);
+		old_state[i] = state;
 	}
 }
 
