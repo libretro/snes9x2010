@@ -626,7 +626,6 @@ static void producesettingentry(uint64_t switchvalue)
 				menuStack[menuStackindex] = menu_filebrowser;
 				menuStack[menuStackindex].enum_id = PATH_DEFAULT_ROM_DIR_CHOICE;
 				set_initial_dir_tmpbrowser = true;
-				sys_timer_usleep(FILEBROWSER_DELAY);
 			}
 
 			if(CTRL_START(state))
@@ -640,7 +639,6 @@ static void producesettingentry(uint64_t switchvalue)
 				menuStack[menuStackindex] = menu_filebrowser;
 				menuStack[menuStackindex].enum_id = PATH_SAVESTATES_DIR_CHOICE;
 				set_initial_dir_tmpbrowser = true;
-				sys_timer_usleep(FILEBROWSER_DELAY);
 			}
 
 			if(CTRL_START(state))
@@ -654,7 +652,6 @@ static void producesettingentry(uint64_t switchvalue)
 				menuStack[menuStackindex] = menu_filebrowser;
 				menuStack[menuStackindex].enum_id = PATH_SRAM_DIR_CHOICE;
 				set_initial_dir_tmpbrowser = true;
-				sys_timer_usleep(FILEBROWSER_DELAY);
 			}
 
 			if(CTRL_START(state))
@@ -668,7 +665,6 @@ static void producesettingentry(uint64_t switchvalue)
 				menuStack[menuStackindex] = menu_filebrowser;
 				menuStack[menuStackindex].enum_id = PATH_CHEATS_DIR_CHOICE;
 				set_initial_dir_tmpbrowser = true;
-				sys_timer_usleep(FILEBROWSER_DELAY);
 			}
 
 			if(CTRL_START(state))

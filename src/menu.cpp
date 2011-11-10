@@ -121,7 +121,7 @@ void UpdateBrowser(filebrowser_t * b)
 	old_state = state;
 }
 
-void RenderBrowser(filebrowser_t * b)
+static void RenderBrowser(filebrowser_t * b)
 {
 	uint32_t file_count = b->dir[b->directory_stack_size].file_count;
 	int current_index = b->currently_selected;
@@ -783,34 +783,12 @@ static void do_ROMMenu(void)
 		}
 		else if (filebrowser_is_current_a_file(browser))
 		{
-			// load game (standard controls), go back to main loop
 			snprintf(rom_path, sizeof(rom_path), "%s/%s", filebrowser_get_current_directory_name(browser), filebrowser_get_current_filename(browser));
 
 			menu_is_running = 0;
 
 			// switch emulator to emulate mode
 			Emulator_StartROMRunning();
-			Emulator_SetControllerMode(TWO_JOYSTICKS);
-
-			Emulator_RequestLoadROM(rom_path);
-
-			old_state = state;
-			return;
-		}
-	}
-
-	if (CTRL_TRIANGLE(button_was_pressed))
-	{
-		if (filebrowser_is_current_a_file(browser))
-		{
-			// load game (standard controls), go back to main loop
-			snprintf(rom_path, sizeof(rom_path), "%s/%s", filebrowser_get_current_directory_name(browser), filebrowser_get_current_filename(browser));
-
-			menu_is_running = 0;
-
-			// switch emulator to emulate mode
-			Emulator_StartROMRunning();
-			Emulator_SetControllerMode(MULTITAP);
 
 			Emulator_RequestLoadROM(rom_path);
 

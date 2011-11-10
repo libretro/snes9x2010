@@ -979,8 +979,7 @@ static bool emulator_init_system(void)
 		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED)
 			Emulator_SetControllerMode(MULTITAP);
 	}
-
-	if(Settings.CurrentROMisMouseCompatible)
+	else if(Settings.CurrentROMisMouseCompatible)
 	{
 		if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
 		{
@@ -1005,8 +1004,7 @@ static bool emulator_init_system(void)
 		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED)
 			Emulator_SetControllerMode(MOUSE);
 	}
-
-	if(Settings.CurrentROMisSuperScopeCompatible)
+	else if(Settings.CurrentROMisSuperScopeCompatible)
 	{
 		if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
 		{
@@ -1031,6 +1029,8 @@ static bool emulator_init_system(void)
 		else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED)
 			Emulator_SetControllerMode(SUPERSCOPE);
 	}
+	else
+		Emulator_SetControllerMode(TWO_JOYSTICKS);
 
 	Memory.LoadSRAM(S9xGetFilename(".srm", SRAM_DIR));
 

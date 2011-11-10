@@ -47,16 +47,17 @@ typedef struct
 #define GENERAL_AUDIO_MENU		2
 #define EMU_GENERAL_MENU		3
 #define EMU_AUDIO_MENU			4
-#define PATH_MENU			5
-#define CONTROLS_MENU			6
-#define GAME_AWARE_SHADER_CHOICE	7
-#define SHADER_CHOICE			8
-#define PRESET_CHOICE			9
-#define BORDER_CHOICE			10
-#define PATH_SAVESTATES_DIR_CHOICE	11
-#define PATH_DEFAULT_ROM_DIR_CHOICE	12
-#define PATH_CHEATS_DIR_CHOICE		13
-#define PATH_SRAM_DIR_CHOICE		14
+#define EMU_VIDEO_MENU			5
+#define PATH_MENU			6
+#define CONTROLS_MENU			7
+#define GAME_AWARE_SHADER_CHOICE	8
+#define SHADER_CHOICE			9
+#define PRESET_CHOICE			10
+#define BORDER_CHOICE			11
+#define PATH_SAVESTATES_DIR_CHOICE	12
+#define PATH_DEFAULT_ROM_DIR_CHOICE	13
+#define PATH_CHEATS_DIR_CHOICE		14
+#define PATH_SRAM_DIR_CHOICE		15
 
 enum
 {
@@ -156,7 +157,7 @@ enum
 
 void MenuInit(void);
 void MenuMainLoop(void);
-void SetShaderPreset(int setshaderpreset);
+
 extern uint32_t menu_is_running;
 
 #endif /* MENU_H_ */
