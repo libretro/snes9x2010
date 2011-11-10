@@ -41,7 +41,7 @@ filebrowser_t tmpBrowser;			// tmp file browser->for everything else
 
 #define ROM_EXTENSIONS "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|jma|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP|JMA"
 
-void UpdateBrowser(filebrowser_t * b)
+static void UpdateBrowser(filebrowser_t * b)
 {
 	static uint64_t old_state = 0;
 	uint64_t state = cell_pad_input_poll_device(0);
