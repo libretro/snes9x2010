@@ -53,7 +53,10 @@ typedef struct
 #define SHADER_CHOICE			8
 #define PRESET_CHOICE			9
 #define BORDER_CHOICE			10
-#define PATH_CHOICE			11
+#define PATH_SAVESTATES_DIR_CHOICE	11
+#define PATH_DEFAULT_ROM_DIR_CHOICE	12
+#define PATH_CHEATS_DIR_CHOICE		13
+#define PATH_SRAM_DIR_CHOICE		14
 
 enum
 {
@@ -151,6 +154,7 @@ enum
 #define MAX_NO_OF_PATH_SETTINGS				SETTING_PATH_DEFAULT_ALL+1
 #define MAX_NO_OF_CONTROLS_SETTINGS			SETTING_CONTROLS_DEFAULT_ALL+1
 
+void MenuInit(void);
 void MenuMainLoop(void);
 void SetShaderPreset(int setshaderpreset);
 extern uint32_t menu_is_running;

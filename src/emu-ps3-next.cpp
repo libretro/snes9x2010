@@ -2517,6 +2517,8 @@ int main(int argc, char **argv)
 	cellSysutilEnableBgmPlayback();
 #endif
 
+	MenuInit();
+
 	do{
 		switch(mode_switch)
 		{
