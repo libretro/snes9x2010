@@ -330,7 +330,7 @@ static int32_t ps3graphics_psgl_init(uint32_t scaleEnable, uint32_t scaleFactor)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
-	ps3graphics_set_smooth(m_smooth);
+	ps3graphics_set_smooth(m_smooth, 0);
 	ps3graphics_set_smooth(m_smooth2, 1);
 
 	// PSGL doesn't clear the screen on startup, so let's do that here.
@@ -538,12 +538,6 @@ void ps3graphics_set_fbo_scale(uint32_t enable, unsigned scale)
 		glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
 	}
 }
-
-
-
-
-
-
 
 /******************************************************************************* 
 	libdbgfont macros
