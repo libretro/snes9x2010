@@ -626,7 +626,7 @@ bool S9xPollAxis(unsigned int, short*) { return FALSE; }
 void S9xSetPalette() {}
 void S9xExit() {}
 bool S9xPollPointer(unsigned int, short*, short*) { return false; }
-void S9xOnSNESPadRead (void) {};
+void S9xOnSNESPadRead (void) {}
 void S9xDoThrottling (bool throttle) {}
 void S9xExitToMenu(void) {}
 
