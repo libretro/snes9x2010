@@ -479,10 +479,6 @@ static void producesettingentry(uint64_t switchvalue)
 
 				Settings.ScreenshotsEnabled = false;
 				emulator_implementation_set_texture(DEFAULT_BORDER_FILE);
-#if(CELL_SDK_VERSION > 0x340000)
-				cellScreenShotDisable();
-				cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-#endif
 				Settings.ApplyShaderPresetOnStartup = 0;
 				update_item_colors = 1;
 			}
