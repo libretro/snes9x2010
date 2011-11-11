@@ -120,9 +120,8 @@ static void producesettingentry(uint64_t switchvalue)
 			}
 			if(CTRL_START(state) && Settings.ScaleEnabled)
 			{
-				strcpy(Settings.ShaderPresetPath, DEFAULT_PRESET_FILE);
-				strcpy(Settings.ShaderPresetTitle, "Stock");
-				emulator_implementation_set_shader_preset(Settings.ShaderPresetPath);
+				strcpy(Settings.ShaderPresetPath, "");
+				strcpy(Settings.ShaderPresetTitle, "None");
 			}
 			break;
 		case SETTING_BORDER:
@@ -355,10 +354,12 @@ static void producesettingentry(uint64_t switchvalue)
 					glClear(GL_COLOR_BUFFER_BIT);
 					ps3graphics_draw_menu(1920, 1080);
 					psglSwap(); 
-					cellSysutilCheckCallback();
 					cell_console_poll();
+					cellSysutilCheckCallback();
 				}
-				strcpy(Settings.RSoundServerIPAddress, OUTPUT_TEXT_STRING(oskutil_handle));
+
+				if(oskutil_handle.text_can_be_fetched)
+					strcpy(Settings.RSoundServerIPAddress, OUTPUT_TEXT_STRING(oskutil_handle));
 			}
 			if(CTRL_START(state))
 				strcpy(Settings.RSoundServerIPAddress, "0.0.0.0");
@@ -426,9 +427,9 @@ static void producesettingentry(uint64_t switchvalue)
 			}
 			break;
 		case SETTING_SAVE_SHADER_PRESET:
-			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state)  || CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state) || CTRL_START(state) || CTRL_CROSS(state))
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state)  || CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
-				emulator_save_settings(1);
+				emulator_save_settings(SHADER_PRESET_FILE);
 			}
 			break;
 		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
@@ -443,30 +444,39 @@ static void producesettingentry(uint64_t switchvalue)
 		case SETTING_DEFAULT_VIDEO_ALL:
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state)  || CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state) || CTRL_START(state) || CTRL_CROSS(state))
 			{
-				strcpy(Settings.ShaderPresetPath, DEFAULT_PRESET_FILE);
+				Settings.PS3FontSize = 100;
+				strcpy(Settings.ShaderPresetPath, "");
+				strcpy(Settings.ShaderPresetTitle, "None");
+
 				Settings.PS3KeepAspect = 0;
+				ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, SCREEN_RENDER_TEXTURE_WIDTH, SCREEN_RENDER_TEXTURE_HEIGHT, 1);
+
 				Settings.PS3Smooth = 1;
 				Settings.PS3Smooth2 = 1;
-				Settings.PS3OverscanEnabled = 0;
-				Settings.PS3OverscanAmount = 0;
-				Settings.PS3FontSize = 100;
-				ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, SCREEN_RENDER_TEXTURE_WIDTH, SCREEN_RENDER_TEXTURE_HEIGHT, 1);
 				ps3graphics_set_smooth(Settings.PS3Smooth, 0);
 				ps3graphics_set_smooth(Settings.PS3Smooth2, 1);
+
+				Settings.PS3OverscanEnabled = 0;
+				Settings.PS3OverscanAmount = 0;
 				ps3graphics_set_overscan(Settings.PS3OverscanEnabled, (float)Settings.PS3OverscanAmount/100, 1);
+
 				Settings.PS3PALTemporalMode60Hz = 0;
 				ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
-				Settings.Throttled = 1;
+
 				if(!Settings.TripleBuffering)
 				{
 					Settings.TripleBuffering = 1;
 					ps3graphics_set_triple_buffering(Settings.TripleBuffering);
+
 					ps3graphics_switch_resolution(ps3graphics_get_current_resolution(), Settings.PS3PALTemporalMode60Hz, Settings.TripleBuffering, Settings.ScaleEnabled, Settings.ScaleFactor);
+
 					Settings.ScaleEnabled = 0;
 					Settings.ScaleFactor = 2;
-					ps3graphics_set_fbo_scale(0, 2);
+					ps3graphics_set_fbo_scale(Settings.ScaleEnabled, Settings.ScaleFactor);
 				}
+				Settings.Throttled = 1;
 				ps3graphics_set_vsync(Settings.Throttled);
+
 				Settings.ScreenshotsEnabled = false;
 				emulator_implementation_set_texture(DEFAULT_BORDER_FILE);
 #if(CELL_SDK_VERSION > 0x340000)

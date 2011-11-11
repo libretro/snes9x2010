@@ -154,14 +154,14 @@ void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 			break;
 		case CELL_SYSUTIL_DRAWING_BEGIN:
 		case CELL_SYSUTIL_DRAWING_END:
-			break;
 		case CELL_SYSUTIL_OSKDIALOG_LOADED:
 			break;
 		case CELL_SYSUTIL_OSKDIALOG_FINISHED:
-			oskutil_stop(&oskutil_handle);
+			oskutil_close(&oskutil_handle);
+			oskutil_finished(&oskutil_handle);
 			break;
 		case CELL_SYSUTIL_OSKDIALOG_UNLOADED:
-			oskutil_close(&oskutil_handle);
+			oskutil_unload(&oskutil_handle);
 			break;
 		default:
 			break;
@@ -188,26 +188,6 @@ static void S9xAudioCallback()
    params.buffer_size=8192; \
    params.sample_cb = NULL; \
    params.userdata = NULL;
-
-
-#ifdef CELL_DEBUG_CONSOLE
-#define create_osk_loop() \
-	while(OSK_IS_RUNNING(oskutil_handle) && is_running) \
-	{ \
-		/* OSK Util gets updated */ \
-		S9xMainLoop(); \
-		cellConsolePoll(); \
-		cellSysutilCheckCallback(); \
-	}
-#else
-#define create_osk_loop() \
-	while(OSK_IS_RUNNING(oskutil_handle) && is_running) \
-	{ \
-		/* OSK Util gets updated */ \
-		S9xMainLoop(); \
-		cellSysutilCheckCallback(); \
-	}
-#endif
 
 static void callback_rsound_dialog_ok(int button_type, void *userdata)
 {
@@ -311,17 +291,23 @@ const char * emulator_input_cheatlabel(void)
 	oskutil_write_message(&oskutil_handle, L"Enter cheat label");
 	oskutil_start(&oskutil_handle);
 
-	create_osk_loop();
+	while(OSK_IS_RUNNING(oskutil_handle) && is_running)
+	{
+		/* OSK Util gets updated */
+		S9xMainLoop();
+		cell_console_poll();
+		cellSysutilCheckCallback();
+	}
 
-	newlabel = strdup(OUTPUT_TEXT_STRING(oskutil_handle));
+	if(oskutil_handle.text_can_be_fetched)
+		newlabel = strdup(OUTPUT_TEXT_STRING(oskutil_handle));
+	else
+		newlabel = "";
 
 	// (2) add cheat label
 	emulator_change_cheat_description(Settings.CurrentCheatPosition, newlabel);
 
-	// (3) Close OSKUtil
-	oskutil_close(&oskutil_handle);
-
-	// (4) Return message text string
+	// (3) Return message text string
 	return "Cheat label added.";	
 }
 
@@ -332,59 +318,66 @@ const char * emulator_input_cheat(void)
 	oskutil_write_message(&oskutil_handle, L"Enter cheat code (Game Genie/Action Replay/GoldFinger Pro format)");
 	oskutil_start(&oskutil_handle);
 
-	create_osk_loop();
+	while(OSK_IS_RUNNING(oskutil_handle) && is_running)
+	{
+		/* OSK Util gets updated */
+		S9xMainLoop();
+		cell_console_poll();
+		cellSysutilCheckCallback();
+	}
 
 	// (2) Save the code to a char variable
 	const char * newcode = new char[128];
-	newcode = strdup(OUTPUT_TEXT_STRING(oskutil_handle));
 
-	// Close OSKUtil
-	oskutil_close(&oskutil_handle);
-
-	// (3) Check the cheat format of the cheat code
-	uint32 address;
-	uint8 byte;
-	uint8 bytes [3];
-	bool8 sram;
-	uint8 num_bytes;
-
-	int cheatformat = 0;
-
-	if (!S9xGameGenieToRaw (newcode, address, byte))
+	if(oskutil_handle.text_can_be_fetched)
 	{
-		// (4) add Game Genie cheat code
-		emulator_implementation_add_cheat(address, byte, newcode);
-		cheatformat = 1;
-	}
-	else if (!S9xProActionReplayToRaw(newcode, address, byte))
-	{
-		// (4) add Pro Action Replay cheat code
-		emulator_implementation_add_cheat(address, byte, newcode);
-		cheatformat = 2;
-	}
-	else if (!S9xGoldFingerToRaw(newcode, address, sram, num_bytes, bytes))
-	{
-		// (4) add Gold Finger cheat code
-		for (int c = 0; c < num_bytes; c++)
-			emulator_implementation_add_cheat(address + c, bytes[c], newcode);
-		cheatformat = 3;
+		newcode = strdup(OUTPUT_TEXT_STRING(oskutil_handle));
+		// (3) Check the cheat format of the cheat code
+		uint32 address;
+		uint8 byte;
+		uint8 bytes [3];
+		bool8 sram;
+		uint8 num_bytes;
+
+		int cheatformat = 0;
+
+		if (!S9xGameGenieToRaw (newcode, address, byte))
+		{
+			// (4) add Game Genie cheat code
+			emulator_implementation_add_cheat(address, byte, newcode);
+			cheatformat = 1;
+		}
+		else if (!S9xProActionReplayToRaw(newcode, address, byte))
+		{
+			// (4) add Pro Action Replay cheat code
+			emulator_implementation_add_cheat(address, byte, newcode);
+			cheatformat = 2;
+		}
+		else if (!S9xGoldFingerToRaw(newcode, address, sram, num_bytes, bytes))
+		{
+			// (4) add Gold Finger cheat code
+			for (int c = 0; c < num_bytes; c++)
+				emulator_implementation_add_cheat(address + c, bytes[c], newcode);
+			cheatformat = 3;
+		}
+		else
+			cheatformat = 4;
+
+		// (5) Return message text string
+		switch(cheatformat)
+		{
+			case 1:  //Game Genie
+				return "Game Genie code added.";	
+			case 2:  //Action Replay
+				return "Pro Action Replay code added.";	
+			case 3:  //Gold Finger
+				return "Gold Finger code added.";	
+			case 4:  //else
+				return "ERROR: Code entered was incorrect.";
+		}
 	}
 	else
-		cheatformat = 4;
-
-	// (5) Return message text string
-	switch(cheatformat)
-	{
-		case 1:  //Game Genie
-			return "Game Genie code added.";	
-		case 2:  //Action Replay
-			return "Pro Action Replay code added.";	
-		case 3:  //Gold Finger
-			return "Gold Finger code added.";	
-		case 4:  //else
-			return "ERROR: Code entered was incorrect.";
-	}
-	return "";
+		return "ERROR: Code input canceled.";
 }
 
 void emulator_toggle_sound(uint64_t soundmode)
@@ -1274,8 +1267,8 @@ void emulator_init_settings(void)
 	init_setting_char("PS3General::PS3CurrentShader2", Settings.PS3CurrentShader2, DEFAULT_SHADER_FILE);
 	init_setting_char("PS3General::Border", Settings.PS3CurrentBorder, DEFAULT_BORDER_FILE);
 	init_setting_uint("PS3General::PS3TripleBuffering",Settings.TripleBuffering, 1);
-	init_setting_char("PS3General::ShaderPresetPath", Settings.ShaderPresetPath, DEFAULT_PRESET_FILE);
-	init_setting_char("PS3General::ShaderPresetTitle", Settings.ShaderPresetTitle, "Custom");
+	init_setting_char("PS3General::ShaderPresetPath", Settings.ShaderPresetPath, "");
+	init_setting_char("PS3General::ShaderPresetTitle", Settings.ShaderPresetTitle, "None");
 	init_setting_uint("PS3General::ScaleFactor", Settings.ScaleFactor, 2);
 	init_setting_uint("PS3General::ViewportX", Settings.ViewportX, 0);
 	init_setting_uint("PS3General::ViewportY", Settings.ViewportY, 0);
@@ -1336,31 +1329,12 @@ void emulator_implementation_set_shader_preset(const char * fname)
 	init_setting_uint("Smooth", Settings.PS3Smooth, Settings.PS3Smooth);
 	init_setting_uint("Smooth2", Settings.PS3Smooth2, Settings.PS3Smooth2);
 	init_setting_uint("ScaleEnabled", Settings.ScaleEnabled, Settings.ScaleEnabled);
-	if(config_string_exists(currentconfig, "PS3CurrentShader", Settings.PS3CurrentShader))
-	{
-		char shadertemp[MAX_PATH_LENGTH];
-		init_setting_char("PS3CurrentShader", shadertemp, DEFAULT_SHADER_FILE);
-		snprintf(Settings.PS3CurrentShader, sizeof(Settings.PS3CurrentShader), "%s/%s", SHADERS_DIR_PATH, shadertemp);
-	}
-	if(config_string_exists(currentconfig, "PS3CurrentShader2", Settings.PS3CurrentShader2))
-	{
-		char shadertemp2[MAX_PATH_LENGTH];
-		init_setting_char("PS3CurrentShader2", shadertemp2, DEFAULT_SHADER_FILE);
-		snprintf(Settings.PS3CurrentShader2, sizeof(Settings.PS3CurrentShader2), "%s/%s", SHADERS_DIR_PATH, shadertemp2);
-	}
+	init_setting_char("PS3CurrentShader", Settings.PS3CurrentShader, DEFAULT_SHADER_FILE);
+	init_setting_char("PS3CurrentShader2", Settings.PS3CurrentShader2, DEFAULT_SHADER_FILE);
+	init_setting_char("Border", Settings.PS3CurrentBorder, DEFAULT_BORDER_FILE);
 
 	strncpy(Settings.ShaderPresetPath, fname, sizeof(Settings.ShaderPresetPath));
-
-	init_setting_char("ShaderPresetTitle", Settings.ShaderPresetTitle, "Custom/None");
-
-	//FIXME: This does not yet work
-#if 0
-	if (currentconfig.Exists("PS3General::Border"))
-	{
-		Settings.PS3CurrentBorder = currentconfig.GetString("PS3General::Border");
-		//need_border_reload_hack = true;
-	}
-#endif
+	init_setting_char("ShaderPresetTitle", Settings.ShaderPresetTitle, "None");
 	init_setting_uint("KeepAspect", Settings.PS3KeepAspect, Settings.PS3KeepAspect);
 	init_setting_uint("OverscanEnabled", Settings.PS3OverscanEnabled, Settings.PS3OverscanEnabled);
 	init_setting_int("OverscanAmount", Settings.PS3OverscanAmount, Settings.PS3OverscanAmount);
@@ -1637,27 +1611,78 @@ void emulator_save_settings(uint64_t filetosave)
 			emulator_implementation_button_mapping_settings(MAP_BUTTONS_OPTION_SETTER);
 			break;
 		case SHADER_PRESET_FILE:
-			snprintf(filepath, sizeof(filepath), "%s/test.conf", usrDirPath);
-			currentconfig = config_file_new(filepath);
+			{
+				bool filename_entered = false;
+				char filename_tmp[256], filetitle_tmp[256];
+				oskutil_write_initial_message(&oskutil_handle, L"example");
+				oskutil_write_message(&oskutil_handle, L"Enter filename for preset (with no file extension)");
+				oskutil_start(&oskutil_handle);
 
-			config_set_string(currentconfig, "PS3General::PS3CurrentShader", ps3graphics_get_fragment_shader_path(0));
-			config_set_string(currentconfig, "PS3General::PS3CurrentShader2", ps3graphics_get_fragment_shader_path(1));
-			config_set_string(currentconfig, "PS3General::Border", Settings.PS3CurrentBorder);
-			config_set_uint(currentconfig, "PS3General::Smooth", Settings.PS3Smooth);
-			config_set_uint(currentconfig, "PS3General::Smooth2", Settings.PS3Smooth2);
-			char tmp[10] = "Test";
-			config_set_string(currentconfig, "PS3General::ShaderPresetTitle", tmp);
-			config_set_uint(currentconfig, "PS3General::ViewportX", ps3graphics_get_viewport_x());
-			config_set_uint(currentconfig, "PS3General::ViewportY", ps3graphics_get_viewport_y());
-			config_set_uint(currentconfig, "PS3General::ViewportWidth", ps3graphics_get_viewport_width());
-			config_set_uint(currentconfig, "PS3General::ViewportHeight", ps3graphics_get_viewport_height());
-			config_set_uint(currentconfig, "PS3General::ScaleFactor", Settings.ScaleFactor);
-			config_set_uint(currentconfig, "PS3General::ScaleEnabled", Settings.ScaleEnabled);
-			config_set_uint(currentconfig, "PS3General::OverscanEnabled", Settings.PS3OverscanEnabled);
-			config_set_uint(currentconfig, "PS3General::OverscanAmount", Settings.PS3OverscanAmount);
+				while(OSK_IS_RUNNING(oskutil_handle))
+				{
+					/* OSK Util gets updated */
+					glClear(GL_COLOR_BUFFER_BIT);
+					ps3graphics_draw_menu(1920, 1080);
+					psglSwap();
+					cell_console_poll();
+					cellSysutilCheckCallback();
+				}
 
-			config_file_write(currentconfig, filepath);
-			break;
+				if(oskutil_handle.text_can_be_fetched)
+				{
+					strncpy(filename_tmp, OUTPUT_TEXT_STRING(oskutil_handle), sizeof(filename_tmp));
+					snprintf(filepath, sizeof(filepath), "%s/%s.conf", PRESETS_DIR_PATH, filename_tmp);
+					filename_entered = true;
+				}
+
+				if(filename_entered)
+				{
+
+					oskutil_write_initial_message(&oskutil_handle, L"Example file title");
+					oskutil_write_message(&oskutil_handle, L"Enter title for preset");
+					oskutil_start(&oskutil_handle);
+
+					while(OSK_IS_RUNNING(oskutil_handle))
+					{
+						/* OSK Util gets updated */
+						glClear(GL_COLOR_BUFFER_BIT);
+						ps3graphics_draw_menu(1920, 1080);
+						psglSwap();
+						cell_console_poll();
+						cellSysutilCheckCallback();
+					}
+
+					if(oskutil_handle.text_can_be_fetched)
+						snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", OUTPUT_TEXT_STRING(oskutil_handle));
+					else
+						snprintf(filetitle_tmp, sizeof(filetitle_tmp), "%s", filename_tmp);
+
+					if(!file_exists(filepath))
+					{
+						FILE * f = fopen(filepath, "w");
+						fclose(f);
+					}
+
+					currentconfig = config_file_new(filepath);
+
+					config_set_string(currentconfig, "PS3CurrentShader", Settings.PS3CurrentShader);
+					config_set_string(currentconfig, "PS3CurrentShader2", Settings.PS3CurrentShader2);
+					config_set_string(currentconfig, "Border", Settings.PS3CurrentBorder);
+					config_set_uint(currentconfig, "Smooth", Settings.PS3Smooth);
+					config_set_uint(currentconfig, "Smooth2", Settings.PS3Smooth2);
+					config_set_string(currentconfig, "ShaderPresetTitle", filetitle_tmp);
+					config_set_uint(currentconfig, "ViewportX", ps3graphics_get_viewport_x());
+					config_set_uint(currentconfig, "ViewportY", ps3graphics_get_viewport_y());
+					config_set_uint(currentconfig, "ViewportWidth", ps3graphics_get_viewport_width());
+					config_set_uint(currentconfig, "ViewportHeight", ps3graphics_get_viewport_height());
+					config_set_uint(currentconfig, "ScaleFactor", Settings.ScaleFactor);
+					config_set_uint(currentconfig, "ScaleEnabled", Settings.ScaleEnabled);
+					config_set_uint(currentconfig, "OverscanEnabled", Settings.PS3OverscanEnabled);
+					config_set_uint(currentconfig, "OverscanAmount", Settings.PS3OverscanAmount);
+					config_file_write(currentconfig, filepath);
+				}
+			}
+				break;
 	}
 }
 

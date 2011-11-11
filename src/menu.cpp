@@ -884,9 +884,7 @@ void MenuMainLoop(void)
 		MenuGoTo();
 
 		psglSwap();
+		cell_console_poll();
 		cellSysutilCheckCallback();
-	#ifdef CELL_DEBUG_CONSOLE
-		cellConsolePoll();
-	#endif
 	}while (menu_is_running);
 }

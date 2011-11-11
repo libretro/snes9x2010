@@ -37,17 +37,6 @@
 
 /* PS3 frontend - file I/O */
 
-#define extract_extension_from_filename(fname) \
-	/* we extract the extension from the filename(fname) */ \
-	const char * fname_extension = strrchr(fname, '.'); \
-	uint32_t offset = strlen(fname) - strlen(fname_extension); \
-	char extension_from_fname[MAX_PATH_LENGTH]; \
-	int fname_length = strlen(fname); \
-	for(int i = offset+1, no = 0; i < fname_length; i++, no++) \
-	{ \
-		extension_from_fname[no] = fname[i]; \
-		extension_from_fname[no+1] = '\0'; \
-	}
 
 #define extract_filename_only_without_extension(fname) \
 	/* we get the filename path without a extension */ \
@@ -69,11 +58,44 @@
 		fname_without_path_extension[no+1] = '\0'; \
 	}
 
-#define make_new_filepath(fname, extension, basedir, output) \
+#define create_extension(fname, output) \
 { \
-	extract_filename_only_without_extension(fname); \
-	/* Create output file name with specified extension */ \
-	snprintf (output, sizeof(output), "%s/%s%s", basedir, fname_without_path_extension, extension); \
+	/* we extract the extension from the filename(fname) */ \
+	const char * fname_extension = strrchr(fname, '.'); \
+	uint32_t offset = strlen(fname) - strlen(fname_extension); \
+	int fname_length = strlen(fname); \
+	for(int i = offset+1, no = 0; i < fname_length; i++, no++) \
+	{ \
+		output[no] = fname[i]; \
+		output[no+1] = '\0'; \
+	} \
+}
+
+#define create_filename_only_without_extension(fname, output) \
+{ \
+	const char * fname_extension = strrchr(fname, '.'); \
+	char * fname_without_filepath_and_extension = strrchr(fname, '/'); \
+	uint32_t offset = strlen(fname_without_filepath_and_extension) - strlen(fname_extension); \
+	uint32_t length = strlen(fname_without_filepath_and_extension) + strlen(fname_extension); \
+	for(int i = offset+1; i < length; i++) \
+		fname_without_filepath_and_extension[i] = '\0'; \
+	snprintf(output, sizeof(output), "%s", fname_without_filepath_and_extension); \
+}
+
+#define create_filename_only(fname, output) \
+{ \
+	char * fname_without_filepath = strrchr(fname, '/'); \
+	memmove(fname_without_filepath, fname_without_filepath+1, strlen(fname_without_filepath)); \
+	snprintf(output, sizeof(output), "%s", fname_without_filepath); \
+}
+
+#define create_basedir(fname, output) \
+{ \
+	char * split = strrchr(fname, '/'); \
+	if(!split) split = strrchr(fname, '\\'); \
+	uint32_t length_filename = strlen(fname); \
+	uint32_t length_split = strlen(split); \
+	snprintf(output, sizeof(output), "%.*s", length_filename-length_split, fname); \
 }
 
 #endif

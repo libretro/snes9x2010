@@ -8,8 +8,6 @@
 void oskutil_init(oskutil_params *params, unsigned int containersize)
 {
 	params->flags = 0;
-	memset(params->osk_text_buffer, 0, sizeof(*params->osk_text_buffer));
-	memset(params->osk_text_buffer_char, 0, 256);
 	params->is_running = false;
 	if(containersize)
 		params->osk_memorycontainer =  containersize; 
@@ -34,8 +32,7 @@ static void oskutil_create_activation_parameters(oskutil_params *params)
 	params->dialogParam.controlPoint.y = 0.0;
 
 	// Set standard position
-	int32_t LayoutMode = CELL_OSKDIALOG_LAYOUTMODE_X_ALIGN_CENTER | \ 
-		CELL_OSKDIALOG_LAYOUTMODE_Y_ALIGN_TOP;
+	int32_t LayoutMode = CELL_OSKDIALOG_LAYOUTMODE_X_ALIGN_CENTER | CELL_OSKDIALOG_LAYOUTMODE_Y_ALIGN_TOP;
 	cellOskDialogSetLayoutMode(LayoutMode);
 
 	//Select panels to be used using flags
@@ -65,40 +62,21 @@ void oskutil_write_initial_message(oskutil_params *params, const wchar_t* msg)
 	params->inputFieldInfo.init_text = (uint16_t*)msg;
 }
 
-bool oskutil_abort(oskutil_params *params)
-{
-	if ((params->flags & OSK_IN_USE) == 0)
-		return (false);
-
-	int ret = cellOskDialogAbort();
-
-	if (ret < 0)
-		return (false);
-	else
-		return (true);
-}
-
-void oskutil_close(oskutil_params *params)
-{
-	params->is_running = false;
-	sys_memory_container_destroy(params->containerid);
-}
-
 bool oskutil_start(oskutil_params *params) 
 {
-	params->is_running = true;
+	memset(params->osk_text_buffer, 0, sizeof(*params->osk_text_buffer));
+	memset(params->osk_text_buffer_char, 0, 256);
+	//reset text output state before beginning new session
+	params->text_can_be_fetched = false;
+
 	if (params->flags & OSK_IN_USE)
-	{
 		return (true);
-	}
 
 	int ret = sys_memory_container_create(&params->containerid, params->osk_memorycontainer);
 	// NOTE: Returns EAGAIN (0x80010001) (Kernel memory shortage) after spamming 
 	// the OSK Util
 	if(ret < 0)
-	{
 		return (false);
-	}
 
 	//Length limitation for input text
 	params->inputFieldInfo.limit_length = CELL_OSKDIALOG_STRING_SIZE;	
@@ -106,9 +84,7 @@ bool oskutil_start(oskutil_params *params)
 	oskutil_create_activation_parameters(params);
 
 	if(!oskutil_enable_key_layout())
-	{
 		return (false);
-	}
 
 	//NOTE
 	//For future reference -
@@ -122,25 +98,24 @@ bool oskutil_start(oskutil_params *params)
 	//but 100000 was too fast and still produced the error.
 	ret = cellOskDialogLoadAsync(params->containerid, &params->dialogParam, &params->inputFieldInfo);
 	if(ret < 0)
-	{
 		return (false);
-	}
+
 	params->flags |= OSK_IN_USE;
+	params->is_running = true;
+
 	return (true);
 }
 
-void oskutil_stop(oskutil_params *params)
+void oskutil_close(oskutil_params *params)
 {
-	params->is_running = false;
+	cellOskDialogAbort();
+}
 
-	// Result onscreen keyboard dialog termination
-	params->outputInfo.result = CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK;
-
-	// Specify number of characters for returned text
-	params->outputInfo.numCharsResultString = 16;
-
-	// Buffer storing returned text
-	params->outputInfo.pResultString = (uint16_t *)params->osk_text_buffer;	
+void oskutil_finished(oskutil_params *params)
+{
+	params->outputInfo.result = CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK; 	// Result onscreen keyboard dialog termination
+	params->outputInfo.numCharsResultString = 256;			  	// Specify number of characters for returned text
+	params->outputInfo.pResultString = (uint16_t *)params->osk_text_buffer;	// Buffer storing returned text
 
 	cellOskDialogUnloadAsync(&params->outputInfo);
 
@@ -149,16 +124,24 @@ void oskutil_stop(oskutil_params *params)
 	{
 		case CELL_OSKDIALOG_INPUT_FIELD_RESULT_OK:
 			//The text we get from the outputInfo is Unicode, needs to be converted
-			num=wcstombs(params->osk_text_buffer_char, params->osk_text_buffer, 256);
+			num = wcstombs(params->osk_text_buffer_char, params->osk_text_buffer, 256);
 			params->osk_text_buffer_char[num]=0;
+			params->text_can_be_fetched = true;
 			break;
 		case CELL_OSKDIALOG_INPUT_FIELD_RESULT_CANCELED:
 		case CELL_OSKDIALOG_INPUT_FIELD_RESULT_ABORT:
 		case CELL_OSKDIALOG_INPUT_FIELD_RESULT_NO_INPUT_TEXT:
 		default:
 			params->osk_text_buffer_char[0]=0;
+			params->text_can_be_fetched = false;
 			break;
 	}
 
 	params->flags &= ~OSK_IN_USE;
+}
+
+void oskutil_unload(oskutil_params *params)
+{
+	sys_memory_container_destroy(params->containerid);
+	params->is_running = false;
 }

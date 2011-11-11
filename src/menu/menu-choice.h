@@ -74,6 +74,7 @@ static void do_select_file(uint32_t menu_id)
 		else if (filebrowser_is_current_a_file(tmpBrowser))
 		{
 			snprintf(path, sizeof(path), "%s/%s", filebrowser_get_current_directory_name(tmpBrowser), filebrowser_get_current_filename(tmpBrowser));
+			printf("path: %s\n", path);
 
 			switch(menu_id)
 			{
@@ -82,6 +83,10 @@ static void do_select_file(uint32_t menu_id)
 					strncpy(Settings.GameAwareShaderPath, path, sizeof(Settings.GameAwareShaderPath));
 					break;
 				case SHADER_CHOICE:
+					if(set_shader)
+						strncpy(Settings.PS3CurrentShader2, path, sizeof(Settings.PS3CurrentShader2));
+					else
+						strncpy(Settings.PS3CurrentShader, path, sizeof(Settings.PS3CurrentShader));
 					ps3graphics_load_fragment_shader(path, set_shader);
 					break;
 				case PRESET_CHOICE:
