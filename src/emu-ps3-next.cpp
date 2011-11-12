@@ -2273,10 +2273,10 @@ static void ingame_menu(void)
 			case MENU_ITEM_RETURN_TO_MENU:
 				if(CTRL_CROSS(button_was_pressed))
 				{
-					is_running = 1;
+					is_running = 0;
 					ingame_menu_item = 0;
 					is_ingame_menu_running = 0;
-					mode_switch = MODE_EMULATION;
+					mode_switch = MODE_MENU;
 				}
 
 				ingame_menu_reset_entry_colors (ingame_menu_item);
