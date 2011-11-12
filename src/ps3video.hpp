@@ -108,10 +108,6 @@ void ps3graphics_previous_resolution();
 
 int ps3graphics_calculate_aspect_ratio_before_game_load();
 
-void ps3graphics_update_state_uniforms(unsigned index);
-void ps3graphics_load_textures(config_file_t *conf, char *attr);
-void ps3graphics_load_imports(config_file_t *conf, char *attr);
-
 /* get functions */
 const char * ps3graphics_get_resolution_label(uint32_t resolution);
 int ps3graphics_check_resolution(uint32_t resId);
@@ -149,6 +145,5 @@ extern snes_tracker_t *tracker; // State tracker
 
 extern char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 extern char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
-extern int m_calculate_aspect_ratio_before_game_load;
 
 #endif
