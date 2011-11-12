@@ -84,8 +84,7 @@ static void DisplayHelpMessage(int currentsetting)
 			   break;
 			 */
 		case SETTING_CONTROLS_SCHEME:
-			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE,
-					Settings.ControlScheme == CONTROL_SCHEME_DEFAULT ? "INFO - Control scheme [Default] is selected.\nNOTE: You can't customize the controls with this scheme." : "INFO - Control scheme [Custom] is selected.\nNOTE: You can customize the controls with this scheme.");
+			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - Input Control scheme preset [%s] is selected.\n", Settings.PS3CurrentInputPresetTitle);
 			break;
 		case SETTING_CONTROLS_DPAD_UP:
 			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - [D-Pad Up] on the PS3 controller is mapped to action:\n[%s].", Input_PrintMappedButton(PS3Input.DPad_Up[currently_selected_controller_menu]));

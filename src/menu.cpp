@@ -281,7 +281,10 @@ static void do_controls_settings(void)
 				set_initial_dir_tmpbrowser = true;
 			}
 			if(CTRL_START(state))
+			{
+				snprintf(Settings.PS3CurrentInputPresetTitle, sizeof(Settings.PS3CurrentInputPresetTitle), "%s", "Default");
 				emulator_set_controls("", SET_ALL_CONTROLS_TO_DEFAULT, "Default");
+			}
 			break;
 		case SETTING_CONTROLS_NUMBER:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(button_was_pressed))
