@@ -30,10 +30,9 @@
 #define SOUND_MODE_HEADSET 2
 #define SOUND_MODE_RSOUND  3
 
-#define MAP_BUTTONS_OPTION_SETTER   0
-#define MAP_BUTTONS_OPTION_GETTER   1
-#define MAP_BUTTONS_OPTION_DEFAULT  2
-#define MAP_BUTTONS_OPTION_NEW      3
+#define WRITE_CONTROLS			0
+#define READ_CONTROLS			1
+#define SET_ALL_CONTROLS_TO_DEFAULT	2
 
 enum {
    MENU_ITEM_LOAD_STATE = 0,
@@ -85,10 +84,8 @@ void emulator_implementation_set_texture (const char * fname);
 void emulator_init_settings(void);
 const char * emulator_input_cheat(void);
 const char * emulator_input_cheatlabel(void);
-void emulator_implementation_button_mapping_settings(int map_button_option_enum);
+void emulator_set_controls(const char * config_file, int mapping_enum, const char * title);
 void emulator_stop_rom_running(void);
-void emulator_implementation_save_custom_controls(bool showdialog);
-void emulator_implementation_switch_control_scheme(void);
 void emulator_toggle_sound(uint64_t soundmode);
 void emulator_implementation_set_shader_preset(const char * fname);
 void emulator_implementation_set_gameaware(const char * fname);
@@ -108,6 +105,7 @@ extern char DEFAULT_PRESET_FILE[MAX_PATH_LENGTH];
 extern char DEFAULT_BORDER_FILE[MAX_PATH_LENGTH];
 extern char DEFAULT_MENU_BORDER_FILE[MAX_PATH_LENGTH];
 extern char GAME_AWARE_SHADER_DIR_PATH[MAX_PATH_LENGTH];
+extern char INPUT_PRESETS_DIR_PATH[MAX_PATH_LENGTH];
 extern char PRESETS_DIR_PATH[MAX_PATH_LENGTH];
 extern char BORDERS_DIR_PATH[MAX_PATH_LENGTH];
 extern char SHADERS_DIR_PATH[MAX_PATH_LENGTH];

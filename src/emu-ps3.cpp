@@ -55,6 +55,7 @@ char DEFAULT_BORDER_FILE[MAX_PATH_LENGTH];
 char DEFAULT_MENU_BORDER_FILE[MAX_PATH_LENGTH];
 char GAME_AWARE_SHADER_DIR_PATH[MAX_PATH_LENGTH];
 char PRESETS_DIR_PATH[MAX_PATH_LENGTH];
+char INPUT_PRESETS_DIR_PATH[MAX_PATH_LENGTH];
 char BORDERS_DIR_PATH[MAX_PATH_LENGTH];
 char SHADERS_DIR_PATH[MAX_PATH_LENGTH];
 char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
@@ -2653,6 +2654,7 @@ void get_path_settings(bool multiman_support)
 		snprintf(DEFAULT_MENU_BORDER_FILE, sizeof(DEFAULT_MENU_BORDER_FILE), "%s/borders/Menu/main-menu.jpg", usrDirPath);
 		snprintf(GAME_AWARE_SHADER_DIR_PATH, sizeof(GAME_AWARE_SHADER_DIR_PATH), "%s/gameaware", usrDirPath);
 		snprintf(PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/presets", usrDirPath); 
+		snprintf(INPUT_PRESETS_DIR_PATH, sizeof(PRESETS_DIR_PATH), "%s/input-presets", usrDirPath); 
 		snprintf(BORDERS_DIR_PATH, sizeof(BORDERS_DIR_PATH), "%s/borders", usrDirPath); 
 		snprintf(SHADERS_DIR_PATH, sizeof(SHADERS_DIR_PATH), "%s/shaders", usrDirPath);
 		snprintf(DEFAULT_SHADER_FILE, sizeof(DEFAULT_SHADER_FILE), "%s/shaders/stock.cg", usrDirPath);

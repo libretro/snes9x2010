@@ -45,10 +45,6 @@ const char * Input_PrintMappedButton(uint32_t mappedbutton)
 			return "Increment cheat position";
 		case BTN_DECREMENTCHEAT:
 			return "Decrement cheat position";
-		case BTN_CHEATENABLE:
-			return "Enable selected cheat";
-		case BTN_CHEATDISABLE:
-			return "Disable selected cheat";
 		case BTN_CHEATTOGGLE:
 			return "Toggle selected cheat";
 		case BTN_CHEATINPUT:
@@ -116,13 +112,9 @@ uint32_t Input_GetAdjacentButtonmap(uint32_t buttonmap, uint32_t next)
 		case BTN_DECREMENTCHEAT:
 			return next ? BTN_EXITTOMENU : BTN_INCREMENTCHEAT;
 		case BTN_EXITTOMENU:
-			return next ? BTN_CHEATENABLE : BTN_DECREMENTCHEAT;
-		case BTN_CHEATENABLE:
-			return next ? BTN_CHEATDISABLE : BTN_EXITTOMENU;
-		case BTN_CHEATDISABLE:
-			return next ? BTN_CHEATTOGGLE : BTN_CHEATENABLE;
+			return next ? BTN_CHEATTOGGLE : BTN_DECREMENTCHEAT;
 		case BTN_CHEATTOGGLE:
-			return next ? BTN_CHEATINPUT : BTN_CHEATDISABLE;
+			return next ? BTN_CHEATINPUT : BTN_EXITTOMENU;
 		case BTN_CHEATINPUT:
 			return next ? BTN_CHEATINPUTLABEL : BTN_CHEATTOGGLE;
 		case BTN_CHEATINPUTLABEL:

@@ -138,9 +138,6 @@ static void DisplayHelpMessage(int currentsetting)
 		case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
 			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - Button combo [L2 + L3] on the PS3 controller is mapped to action:\n[%s].", Input_PrintMappedButton(PS3Input.ButtonL2_ButtonL3[currently_selected_controller_menu]));
 			break;
-		case SETTING_CONTROLS_BUTTON_L2_BUTTON_R2:
-			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - Button combo [L2 + R2] on the PS3 controller is mapped to action:\n[%s].", Input_PrintMappedButton(PS3Input.ButtonL2_ButtonR2[currently_selected_controller_menu]));
-			break;
 		case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
 			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - Button combo [L2 + R3] on the PS3 controller is mapped to action:\n[%s].", Input_PrintMappedButton(PS3Input.ButtonL2_ButtonR3[currently_selected_controller_menu]));
 			break;

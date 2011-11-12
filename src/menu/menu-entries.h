@@ -733,7 +733,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 	},
 	{
 		SETTING_CONTROLS_SCHEME,
-		"Control Scheme",
+		"Control Scheme Preset",
 		0.0f,
 		0.0f,
 		YELLOW,
@@ -1033,29 +1033,12 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		BTN_INGAME_MENU
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_BUTTON_L3,
 		"Button combo: L2 & L3",
 		0.0f,
-		0.0f,
-		YELLOW,
-		WHITE,
-		{0},
-		LIGHTBLUE,
-		0.91f,
-		0.09f,
-		0.83f,
-		NULL, //setting ptr
-		{0},
-		{0},
-		BTN_NONE
-	},
-	{
-		SETTING_CONTROLS_BUTTON_L2_BUTTON_R2,
-		"Button combo: L2 & R2",
-		0.0f,	
 		0.0f,
 		YELLOW,
 		WHITE,
@@ -1084,7 +1067,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_QUICKLOAD
+		BTN_NONE
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT,
@@ -1135,7 +1118,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		BTN_CHEATTOGGLE
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN,
@@ -1152,7 +1135,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		BTN_CHEATINPUT
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT,
@@ -1169,7 +1152,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		BTN_INCREMENTSAVE
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT,
@@ -1186,7 +1169,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		BTN_DECREMENTSAVE
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP,
@@ -1203,7 +1186,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		BTN_QUICKLOAD
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN,
@@ -1220,7 +1203,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_NONE
+		BTN_QUICKSAVE
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_BUTTON_R3,
@@ -1237,7 +1220,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_QUICKSAVE
+		BTN_SRAM_WRITEPROTECT
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R3_BUTTON_L3,
@@ -1257,23 +1240,6 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		BTN_EXITTOMENU
 	},
 	{
-		SETTING_CONTROLS_BUTTON_L2_BUTTON_R2_ANALOG_R_DOWN,
-		"Button combo: R2 & L2 & RS Down",
-		0.0f,
-		0.0f,
-		YELLOW,
-		WHITE,
-		{0},
-		LIGHTBLUE,
-		0.91f,
-		0.09f,
-		0.83f,
-		NULL, //setting ptr
-		{0},
-		{0},
-		BTN_NONE
-	},
-	{
 		SETTING_CONTROLS_ANALOG_R_UP,
 		"Right Stick - Up",
 		0.0f,
@@ -1288,7 +1254,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_CHEATENABLE
+		BTN_NONE
 	},
 	{
 		SETTING_CONTROLS_ANALOG_R_DOWN,
@@ -1305,7 +1271,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_CHEATDISABLE
+		BTN_FASTFORWARD
 	},
 	{
 		SETTING_CONTROLS_ANALOG_R_LEFT,
@@ -1322,7 +1288,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_DECREMENTSAVE,
+		BTN_NONE,
 		1
 	},
 	{
@@ -1340,7 +1306,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
-		BTN_INCREMENTSAVE,
+		BTN_NONE,
 		1
 	},
 	{

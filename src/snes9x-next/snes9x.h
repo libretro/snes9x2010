@@ -457,6 +457,7 @@ struct SSettings
 	char		PS3CurrentShader[PATH_MAX];
 	char		PS3CurrentShader2[PATH_MAX];
 	char		PS3CurrentBorder[PATH_MAX];
+	char		PS3CurrentInputPresetTitle[PATH_MAX];
 	char		PS3PathROMDirectory[PATH_MAX];
 	char		RSoundServerIPAddress[PATH_MAX];
 	char		GameAwareShaderPath[PATH_MAX];

@@ -29,19 +29,12 @@ extern "C" {
 #define BTN_INCREMENTCHEAT		17
 #define BTN_DECREMENTCHEAT		18
 #define BTN_EXITTOMENU			19
-#define BTN_CHEATENABLE			20
-#define BTN_CHEATDISABLE		21
 #define BTN_CHEATTOGGLE			22
 #define BTN_LOAD_MOVIE			23
 #define BTN_SOFTRESET			24
 #define BTN_RESET			25
 #define BTN_PAUSE			26
-#define BTN_BEGIN_RECORDING_MOVIE	27
-#define BTN_END_RECORDING_MOVIE		28
-#define BTN_TOGGLE_RECORDING_MOVIE	29
 #define BTN_FASTFORWARD			30
-#define BTN_INCREMENTTURBO		31
-#define BTN_DECREMENTTURBO		32
 #define BTN_SWAPJOYPADS			33
 #define BTN_SRAM_WRITEPROTECT		34
 #define BTN_POINTER1			35
@@ -77,7 +70,6 @@ typedef struct{
 	uint32_t		ButtonL3[MAX_PADS];
 	uint32_t		ButtonR3[MAX_PADS];
 	uint32_t		ButtonL2_ButtonL3[MAX_PADS];
-	uint32_t		ButtonL2_ButtonR2[MAX_PADS];
 	uint32_t		ButtonL2_ButtonR3[MAX_PADS];
 	uint32_t		ButtonL2_AnalogR_Right[MAX_PADS];
 	uint32_t		ButtonL2_AnalogR_Left[MAX_PADS];
@@ -89,7 +81,6 @@ typedef struct{
 	uint32_t		ButtonR2_AnalogR_Down[MAX_PADS];
 	uint32_t		ButtonR2_ButtonR3[MAX_PADS];
 	uint32_t		ButtonR3_ButtonL3[MAX_PADS];
-	uint32_t		ButtonL2_ButtonR2_AnalogR_Down[MAX_PADS];
 	uint32_t		AnalogR_Up[MAX_PADS];
 	uint32_t		AnalogR_Down[MAX_PADS];
 	uint32_t		AnalogR_Left[MAX_PADS];
