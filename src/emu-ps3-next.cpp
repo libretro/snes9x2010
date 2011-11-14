@@ -1139,6 +1139,7 @@ static bool file_exists(const char * filename)
 
 void emulator_init_settings(void)
 {
+	bool config_file_newly_created = false;
 	memset(&Settings, 0, sizeof(Settings));
 
 	if(!file_exists(SYS_CONFIG_FILE))
@@ -1146,6 +1147,7 @@ void emulator_init_settings(void)
 		FILE * f;
 		f = fopen(SYS_CONFIG_FILE, "w");
 		fclose(f);
+		config_file_newly_created = true;
 	}
 
 	config_file_t * currentconfig = config_file_new(SYS_CONFIG_FILE);
@@ -1285,7 +1287,10 @@ void emulator_init_settings(void)
 	init_setting_uint("Sound::Rate", Settings.SoundPlaybackRate, 48000);
 	init_setting_uint("Sound::InputRate", Settings.SoundInputRate, 31950);
 
-	emulator_set_controls(SYS_CONFIG_FILE, READ_CONTROLS, "Default");
+	if(config_file_newly_created)
+		emulator_set_controls(SYS_CONFIG_FILE, SET_ALL_CONTROLS_TO_DEFAULT, "Default");
+	else
+		emulator_set_controls(SYS_CONFIG_FILE, READ_CONTROLS, "Default");
 }
 
 void emulator_implementation_set_texture(const char * fname)
