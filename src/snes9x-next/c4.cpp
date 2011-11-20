@@ -330,12 +330,12 @@ uint8 * S9xGetMemPointerC4 (uint16 Address)
 }
 
 #ifdef ZSNES_C4
-START_EXTERN_C
+extern "C" {
 
 void C4LoaDMem (char *C4RAM)
 {
 	memmove(C4RAM + (READ_WORD(C4RAM + 0x1f45) & 0x1fff), C4GetMemPointer(READ_3WORD(C4RAM + 0x1f40)), READ_WORD(C4RAM + 0x1f43));
 }
 
-END_EXTERN_C
+}
 #endif

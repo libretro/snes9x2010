@@ -467,15 +467,9 @@ void S9xDeinitAPU (void)
 	}
 }
 
-static inline int S9xAPUGetClock (int32 cpucycles)
-{
-	return (ratio_numerator * (cpucycles - reference_time) + spc_remainder) / ratio_denominator;
-}
+#define S9xAPUGetClock(cpucycles) ((ratio_numerator * (cpucycles - reference_time) + spc_remainder) / ratio_denominator);
 
-static inline int S9xAPUGetClockRemainder (int32 cpucycles)
-{
-	return (ratio_numerator * (cpucycles - reference_time) + spc_remainder) % ratio_denominator;
-}
+#define S9xAPUGetClockRemainder(cpucycles) (ratio_numerator * (cpucycles - reference_time) + spc_remainder) % ratio_denominator;
 
 uint8 S9xAPUReadPort (int port)
 {
@@ -484,7 +478,8 @@ uint8 S9xAPUReadPort (int port)
 
 void S9xAPUWritePort (int port, uint8 byte)
 {
-	spc_core->write_port(S9xAPUGetClock(CPU.Cycles), port, byte);
+	int var = S9xAPUGetClock(CPU.Cycles);
+	spc_core->write_port(var, port, byte);
 }
 
 void S9xAPUSetReferenceTime (int32 cpucycles)
@@ -495,7 +490,8 @@ void S9xAPUSetReferenceTime (int32 cpucycles)
 void S9xAPUExecute (void)
 {
 	/* Accumulate partial APU cycles */
-	spc_core->end_frame(S9xAPUGetClock(CPU.Cycles));
+	int var = S9xAPUGetClock(CPU.Cycles);
+	spc_core->end_frame(var);
 
 	spc_remainder = S9xAPUGetClockRemainder(CPU.Cycles);
 

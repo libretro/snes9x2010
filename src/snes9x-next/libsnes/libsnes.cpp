@@ -353,7 +353,6 @@ void snes_init()
 	GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
 	S9xGraphicsInit();
 
-	S9xInitInputDevices();
 	for (int i = 0; i < 2; i++)
 	{
 		S9xSetController(i, CTL_JOYPAD, i, 0, 0, 0);
@@ -661,16 +660,12 @@ void S9xDeinitUpdate(int width, int height)
 }
 
 // Dummy functions that should probably be implemented correctly later.
-void S9xSyncSpeed() {}
 //void S9xPollPointer(int, short*, short*) {}
 const char* S9xGetFilename(const char* in, s9x_getdirtype) { return in; }
 const char* S9xGetDirectory(s9x_getdirtype) { return NULL; }
-void S9xInitInputDevices() {}
 const char* S9xChooseFilename(unsigned char) { return NULL; }
 void S9xHandlePortCommand(s9xcommand_t, short, short) {}
 bool S9xPollButton(unsigned int, bool*) { return false; }
-void S9xToggleSoundChannel(int) {}
-const char* S9xGetFilenameInc(const char* in, s9x_getdirtype) { return NULL; }
 const char* S9xBasename(const char* in) { return in; }
 bool8 S9xOpenSoundDevice() { return TRUE; }
 void S9xMessage(int, int, const char*) {}

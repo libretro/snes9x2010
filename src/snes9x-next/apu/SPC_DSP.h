@@ -97,7 +97,6 @@ public:
 	enum { extra_size = 16 };
 	sample_t* extra()               { return m.extra; }
 	sample_t const* out_pos() const { return m.out; }
-	void disable_surround( bool ) { } // not supported
 public:
 	BLARGG_DISABLE_NOTHROW
 	

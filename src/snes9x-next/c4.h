@@ -179,7 +179,7 @@
 #define _C4_H_
 
 #ifdef ZSNES_C4
-START_EXTERN_C
+extern "C" {
 #endif
 
 extern int16	C4WFXVal;
@@ -210,7 +210,7 @@ void S9xSetC4 (uint8, uint16);
 uint8 S9xGetC4 (uint16);
 
 #ifdef ZSNES_C4
-END_EXTERN_C
+}
 #endif
 
 uint8 * S9xGetBasePointerC4 (uint16);

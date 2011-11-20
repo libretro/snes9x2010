@@ -274,9 +274,6 @@ typedef unsigned long long	uint64;
 #define FALSE	0
 #endif
 
-#define START_EXTERN_C	extern "C" {
-#define END_EXTERN_C	}
-
 #ifndef PATH_MAX
 #define PATH_MAX	1024
 #endif
@@ -297,19 +294,6 @@ void _makepath (char *, const char *, const char *, const char *, const char *);
 #else
 #define SLASH_STR	"/"
 #define SLASH_CHAR	'/'
-#endif
-
-#ifndef SIG_PF
-#define SIG_PF	void (*) (int)
-#endif
-
-#ifdef __linux
-#define TITLE "Snes9x: Linux"
-#define SYS_CONFIG_FILE "/etc/snes9x/snes9x.conf"
-#endif
-
-#ifndef TITLE
-#define TITLE "Snes9x"
 #endif
 
 #if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || defined(__x86_64__) || defined(__alpha__) || defined(__MIPSEL__) || defined(_M_IX86) || defined(_M_X64)

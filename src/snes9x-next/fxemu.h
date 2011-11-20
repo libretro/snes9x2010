@@ -210,7 +210,7 @@ uint32 fx_run (uint32);
 #define	S9xSetSuperFX	S9xSuperFXWriteReg
 #define	S9xGetSuperFX	S9xSuperFXReadReg
 
-START_EXTERN_C
+extern "C" {
 extern uint8	*SFXPlotTable;
 
 void S9xSuperFXWriteReg (uint8, uint32);
@@ -218,19 +218,19 @@ uint8 S9xSuperFXReadReg (uint32);
 void S9xSuperFXPreSaveState (void);
 void S9xSuperFXPostSaveState (void);
 void S9xSuperFXPostLoadState (void);
-END_EXTERN_C
+}
 
 #endif
 
 #ifdef ZSNES_FX
-START_EXTERN_C
+extern "C" {
 #endif
 
 void S9xResetSuperFX (void);
 void S9xSuperFXExec (void);
 
 #ifdef ZSNES_FX
-END_EXTERN_C
+}
 #endif
 
 #endif

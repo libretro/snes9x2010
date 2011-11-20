@@ -334,10 +334,7 @@ static void fx_updateRamBank (uint8 byte)
 }
 
 // SCBR write seen. We need to update our cached screen pointers
-static void fx_dirtySCBR (void)
-{
-	GSU.vSCBRDirty = TRUE;
-}
+#define fx_dirtySCBR() GSU.vSCBRDirty = TRUE;
 
 // Write access to the cache
 static void FxCacheWriteAccess (uint16 vAddress)
@@ -520,8 +517,6 @@ static void fx_writeRegisterSpace (void)
 	p[GSU_RAMBR]   = (uint8)  GSU.vRamBankReg;
 	p[GSU_CBR]     = (uint8)  GSU.vCacheBaseReg;
 	p[GSU_CBR + 1] = (uint8) (GSU.vCacheBaseReg >> 8);
-
-	//fx_restoreCache();
 }
 
 // Execute until the next stop instruction
@@ -708,11 +703,8 @@ void fx_computeScreenPointers (void)
 	}
 }
 
-
-
 void fx_flushCache (void)
 {
-	//fx_restoreCache();
 	GSU.vCacheFlags = 0;
 	GSU.bCacheActive = FALSE;
 }

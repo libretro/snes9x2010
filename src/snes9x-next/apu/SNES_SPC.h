@@ -58,10 +58,6 @@ public:
 	// Reduces emulation accuracy.
 	enum { voice_count = 8 };
 	
-	// If true, prevents channels and global volumes from being phase-negated.
-	// Only supported by fast DSP.
-	void disable_surround( bool disable = true );
-	
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	enum { tempo_unit = 0x100 };
 	void set_tempo( int );
@@ -71,7 +67,6 @@ public:
 	// Loads SPC data into emulator
 	enum { spc_min_file_size = 0x10180 };
 	enum { spc_file_size     = 0x10200 };
-	blargg_err_t load_spc( void const* in, long size );
 	
 	// Clears echo region. Useful after loading an SPC as many have garbage in echo.
 	void clear_echo();
@@ -262,8 +257,6 @@ inline void SNES_SPC::write_port( time_t t, int port, int data )
 	run_until_( t ) [0x10 + port] = data;
 	m.ram.ram [0xF4 + port] = data;
 }
-
-inline void SNES_SPC::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
 
 #if !SPC_NO_COPY_STATE_FUNCS
 inline bool SNES_SPC::check_kon() { return dsp.check_kon(); }

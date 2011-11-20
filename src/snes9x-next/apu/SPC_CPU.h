@@ -13,8 +13,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 //// Memory access
 //#define SUSPICIOUS_OPCODE( name ) dprintf( "SPC: suspicious opcode: " name "\n" )
-
-#define SUSPICIOUS_OPCODE( name )
+//#define SUSPICIOUS_OPCODE( name )
 
 #define CPU_READ( time, offset, addr )\
 	cpu_read( addr, time + offset )
@@ -831,7 +830,7 @@ loop:
 // 11. DECIMAL COMPENSATION COMMANDS
 	
 	case 0xDF: // DAA
-		SUSPICIOUS_OPCODE( "DAA" );
+		//SUSPICIOUS_OPCODE( "DAA" );
 		if ( a > 0x99 || c & 0x100 )
 		{
 			a += 0x60;
@@ -846,7 +845,7 @@ loop:
 		goto loop;
 	
 	case 0xBE: // DAS
-		SUSPICIOUS_OPCODE( "DAS" );
+		//SUSPICIOUS_OPCODE( "DAS" );
 		if ( a > 0x99 || !(c & 0x100) )
 		{
 			a -= 0x60;
@@ -945,7 +944,7 @@ loop:
 	case 0x0F:{// BRK
 		int temp;
 		int ret_addr = GET_PC();
-		SUSPICIOUS_OPCODE( "BRK" );
+		//SUSPICIOUS_OPCODE( "BRK" );
 		SET_PC( READ_PROG16( 0xFFDE ) ); // vector address verified
 		PUSH16( ret_addr );
 		GET_PSW( temp );
@@ -1149,12 +1148,12 @@ loop:
 		goto loop;
 	
 	case 0xA0: // EI
-		SUSPICIOUS_OPCODE( "EI" );
+		//SUSPICIOUS_OPCODE( "EI" );
 		psw |= i04;
 		goto loop;
 	
 	case 0xC0: // DI
-		SUSPICIOUS_OPCODE( "DI" );
+		//SUSPICIOUS_OPCODE( "DI" );
 		psw &= ~i04;
 		goto loop;
 	
@@ -1176,7 +1175,7 @@ loop:
 	}
 	// fall through
 	case 0xEF: // SLEEP
-		SUSPICIOUS_OPCODE( "STOP/SLEEP" );
+		//SUSPICIOUS_OPCODE( "STOP/SLEEP" );
 		--pc;
 		rel_time = 0;
 		m.cpu_error = "SPC emulation error";
