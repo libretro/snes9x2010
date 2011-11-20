@@ -120,6 +120,33 @@ extern "C" {
 #define SNES_MEMORY_OAM     103
 #define SNES_MEMORY_CGRAM   104
 
+// SSNES extension. Not required to be implemented for a working implementation.
+#define SNES_ENVIRONMENT_GET_FULLPATH 0	// const char ** -- Full path of game loaded.
+#define SNES_ENVIRONMENT_SET_GEOMETRY 1	// const struct snes_geometry * -- Window geometry information for the system/game.
+#define SNES_ENVIRONMENT_SET_PITCH 2	// const unsigned * -- Pitch of game image.
+#define SNES_ENVIRONMENT_GET_OVERSCAN 3	// bool * -- Boolean value whether or not the implementation should use overscan.
+#define SNES_ENVIRONMENT_SET_TIMING 4	// const struct snes_system_timing * -- Set exact timings of the system.
+					// Used primarily for video recording.
+
+struct snes_geometry
+{
+	unsigned base_width;	// Nominal video width of system
+	unsigned base_height;	// Nominal video height of system.
+	unsigned max_width;	// Maximum possible width of system.
+	unsigned max_height;	// Maximum possible height of system.
+};
+
+struct snes_system_timing
+{
+	double fps;
+	double sample_rate;
+};
+
+typedef bool (*snes_environment_t)(unsigned cmd, void *data);
+
+// Must be called before calling snes_init().
+void snes_set_environment(snes_environment_t);
+
 ////////////////////////////////////////////////////////////////////////////}}}
 
 ///////////////////////////////////////////////////////////////////////////////

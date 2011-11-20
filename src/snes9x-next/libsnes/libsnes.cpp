@@ -43,6 +43,13 @@ void snes_set_input_state(snes_input_state_t cb)
    s9x_input_state_cb = cb;
 }
 
+static snes_environment_t environ_cb;
+static bool use_overscan;
+void snes_set_environment(snes_environment_t cb)
+{
+	environ_cb = cb;
+}
+
 static void S9xAudioCallback()
 {
    // Just pick a big buffer. We won't use it all.
@@ -298,50 +305,63 @@ static void map_buttons()
 
 void snes_init()
 {
-   memset(&Settings, 0, sizeof(Settings));
-   Settings.MouseMaster = TRUE;
-   Settings.SuperScopeMaster = TRUE;
-   Settings.JustifierMaster = TRUE;
-   Settings.MultiPlayer5Master = TRUE;
-   Settings.FrameTimePAL = 20000;
-   Settings.FrameTimeNTSC = 16667;
-   Settings.SoundPlaybackRate = 32000;
-   Settings.SoundInputRate = 32000;
-   Settings.AutoDisplayMessages = TRUE;
-   Settings.InitialInfoStringTimeout = 120;
-   Settings.HDMATimingHack = 100;
-   Settings.BlockInvalidVRAMAccessMaster = TRUE;
-   Settings.CartAName[0] = 0;
-   Settings.CartBName[0] = 0;
-   Settings.AutoSaveDelay = 1;
+	if(environ_cb)
+	{
+		if (!environ_cb(SNES_ENVIRONMENT_GET_OVERSCAN, &use_overscan))
+			use_overscan = false;
 
-   CPU.Flags = 0;
+		if (use_overscan)
+		{
+			snes_geometry geom = {256, 239, 512, 512};
+			environ_cb(SNES_ENVIRONMENT_SET_GEOMETRY, &geom);
+			unsigned pitch = 1024;
+			environ_cb(SNES_ENVIRONMENT_SET_PITCH, &pitch);
+		}
+	}
+	memset(&Settings, 0, sizeof(Settings));
+	Settings.MouseMaster = TRUE;
+	Settings.SuperScopeMaster = TRUE;
+	Settings.JustifierMaster = TRUE;
+	Settings.MultiPlayer5Master = TRUE;
+	Settings.FrameTimePAL = 20000;
+	Settings.FrameTimeNTSC = 16667;
+	Settings.SoundPlaybackRate = 32000;
+	Settings.SoundInputRate = 32000;
+	Settings.AutoDisplayMessages = TRUE;
+	Settings.InitialInfoStringTimeout = 120;
+	Settings.HDMATimingHack = 100;
+	Settings.BlockInvalidVRAMAccessMaster = TRUE;
+	Settings.CartAName[0] = 0;
+	Settings.CartBName[0] = 0;
+	Settings.AutoSaveDelay = 1;
 
-   if (!Memory.Init() || !S9xInitAPU())
-   {
-      Memory.Deinit();
-      S9xDeinitAPU();
-      fprintf(stderr, "[libsnes]: Failed to init Memory or APU.\n");
-      exit(1);
-   }
+	CPU.Flags = 0;
 
-   S9xInitSound(16, 0);
-   S9xSetSamplesAvailableCallback(S9xAudioCallback);
+	if (!Memory.Init() || !S9xInitAPU())
+	{
+		Memory.Deinit();
+		S9xDeinitAPU();
+		fprintf(stderr, "[libsnes]: Failed to init Memory or APU.\n");
+		exit(1);
+	}
 
-   S9xSetRenderPixelFormat(RGB555);
-   GFX.Pitch = 2048;
-   GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
-   S9xGraphicsInit();
+	S9xInitSound(16, 0);
+	S9xSetSamplesAvailableCallback(S9xAudioCallback);
 
-   S9xInitInputDevices();
-   for (int i = 0; i < 2; i++)
-   {
-      S9xSetController(i, CTL_JOYPAD, i, 0, 0, 0);
-      snes_devices[i] = SNES_DEVICE_JOYPAD;
-   }
+	S9xSetRenderPixelFormat(RGB555);
+	GFX.Pitch = use_overscan ? 1024 : 2048;
+	GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
+	S9xGraphicsInit();
 
-   S9xUnmapAllControls();
-   map_buttons();
+	S9xInitInputDevices();
+	for (int i = 0; i < 2; i++)
+	{
+		S9xSetController(i, CTL_JOYPAD, i, 0, 0, 0);
+		snes_devices[i] = SNES_DEVICE_JOYPAD;
+	}
+
+	S9xUnmapAllControls();
+	map_buttons();
 }
 
 // libsnes uses relative values for analogue devices. 
@@ -435,6 +455,18 @@ bool snes_load_cartridge_normal(const char *, const uint8_t *rom_data, unsigned 
    {
       fprintf(stderr, "[libsnes]: Rom loading failed...\n");
       return false;
+   }
+
+   if (environ_cb)
+   {
+	   snes_system_timing timing;
+	   timing.sample_rate = 32040.5;
+	   if (!Settings.PAL)
+		   timing.fps = 21477272.0 / 357366.0;
+	   else
+		   timing.fps = 21281370.0 / 425568.0;
+
+	   environ_cb(SNES_ENVIRONMENT_SET_TIMING, &timing);
    }
    
    return true;
@@ -592,20 +624,40 @@ static void stretch_frame(uint16_t *frame, int width, int height)
 
 void S9xDeinitUpdate(int width, int height)
 {
-   if (height == 448 || height == 478)
-   {
-      if (GFX.Pitch == 2048)
-         pack_frame(GFX.Screen, width, height);
-      GFX.Pitch = 1024;
-   }
-   else
-   {
-      if (GFX.Pitch == 1024)
-         stretch_frame(GFX.Screen, width, height);
-      GFX.Pitch = 2048;
-   }
+	if (use_overscan)
+	{
+		if (height == 224)
+		{
+			memmove(GFX.Screen + (GFX.Pitch / 2) * 7, GFX.Screen, GFX.Pitch * height);
+			memset(GFX.Screen, 0x00, GFX.Pitch * 7);
+			memset(GFX.Screen + (GFX.Pitch / 2) * (7 + 224), 0, GFX.Pitch * 8);
+			height = 239;
+		}
+		else if (height == 448)
+		{
+			memmove(GFX.Screen + (GFX.Pitch / 2) * 15, GFX.Screen, GFX.Pitch * height);
+			memset(GFX.Screen, 0x00, GFX.Pitch * 15);
+			memset(GFX.Screen + (GFX.Pitch / 2) * (15 + 224), 0x00, GFX.Pitch * 17);
+			height = 478;
+		}
+	}
+	else // libsnes classic behavior
+	{
+		if (height == 448 || height == 478)
+		{
+			if (GFX.Pitch == 2048)
+				pack_frame(GFX.Screen, width, height);
+			GFX.Pitch = 1024;
+		}
+		else
+		{
+			if (GFX.Pitch == 1024)
+				stretch_frame(GFX.Screen, width, height);
+			GFX.Pitch = 2048;
+		}
+	}
 
-   s9x_video_cb(GFX.Screen, width, height);
+	s9x_video_cb(GFX.Screen, width, height);
 }
 
 // Dummy functions that should probably be implemented correctly later.
