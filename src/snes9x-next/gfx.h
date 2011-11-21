@@ -242,7 +242,6 @@ struct SGFX
 
 	const char	*InfoString;
 	uint32	InfoStringTimeout;
-	char	FrameDisplayString[256];
 };
 
 struct SBG

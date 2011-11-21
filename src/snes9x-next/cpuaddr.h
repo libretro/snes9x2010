@@ -336,6 +336,9 @@ static inline uint32 AbsoluteIndirect (AccessMode a)					// (a)
 	return (addr2);
 }
 
+#define ABSOLUTESLOW_MACRO(a) (ICPU.ShiftedDB | Immediate16Slow(a))
+#define ABSOLUTE_MACRO(a) (ICPU.ShiftedDB | Immediate16(a))
+
 static inline uint32 AbsoluteSlow (AccessMode a)						// a
 {
 	return (ICPU.ShiftedDB | Immediate16Slow(a));
@@ -587,7 +590,7 @@ static inline uint32 DirectIndexedIndirectE1 (AccessMode a)				// (d,X)
 
 static inline uint32 AbsoluteIndexedXSlow (AccessMode a)				// a,X
 {
-	uint32	addr = AbsoluteSlow(a);
+	uint32	addr = ABSOLUTESLOW_MACRO(a);
 	if (a & WRITE || !CheckIndex() || (addr & 0xff) + Registers.XL >= 0x100)
 		AddCycles(ONE_CYCLE);
 
@@ -596,7 +599,7 @@ static inline uint32 AbsoluteIndexedXSlow (AccessMode a)				// a,X
 
 static inline uint32 AbsoluteIndexedXX0 (AccessMode a)					// a,X
 {
-	uint32	addr = Absolute(a);
+	uint32	addr = ABSOLUTE_MACRO(a);
 	AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.X.W);
@@ -604,7 +607,7 @@ static inline uint32 AbsoluteIndexedXX0 (AccessMode a)					// a,X
 
 static inline uint32 AbsoluteIndexedXX1 (AccessMode a)					// a,X
 {
-	uint32	addr = Absolute(a);
+	uint32	addr = ABSOLUTE_MACRO(a);
 	if (a & WRITE || (addr & 0xff) + Registers.XL >= 0x100)
 		AddCycles(ONE_CYCLE);
 
@@ -613,7 +616,7 @@ static inline uint32 AbsoluteIndexedXX1 (AccessMode a)					// a,X
 
 static inline uint32 AbsoluteIndexedYSlow (AccessMode a)				// a,Y
 {
-	uint32	addr = AbsoluteSlow(a);
+	uint32	addr = ABSOLUTESLOW_MACRO(a);
 	if (a & WRITE || !CheckIndex() || (addr & 0xff) + Registers.YL >= 0x100)
 		AddCycles(ONE_CYCLE);
 
@@ -622,7 +625,7 @@ static inline uint32 AbsoluteIndexedYSlow (AccessMode a)				// a,Y
 
 static inline uint32 AbsoluteIndexedYX0 (AccessMode a)					// a,Y
 {
-	uint32	addr = Absolute(a);
+	uint32	addr = ABSOLUTE_MACRO(a);
 	AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.Y.W);
@@ -630,7 +633,7 @@ static inline uint32 AbsoluteIndexedYX0 (AccessMode a)					// a,Y
 
 static inline uint32 AbsoluteIndexedYX1 (AccessMode a)					// a,Y
 {
-	uint32	addr = Absolute(a);
+	uint32	addr = ABSOLUTE_MACRO(a);
 	if (a & WRITE || (addr & 0xff) + Registers.YL >= 0x100)
 		AddCycles(ONE_CYCLE);
 

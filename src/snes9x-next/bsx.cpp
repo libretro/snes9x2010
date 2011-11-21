@@ -1171,14 +1171,10 @@ void S9xBSXPostLoadState (void)
 
 static bool valid_normal_bank (unsigned char bankbyte)
 {
-	switch (bankbyte)
-	{
-		case 32: case 33: case 48: case 49:
-			return (true);
-			break;
-	}
-
-	return (false);
+	if(bankbyte == 32 || bankbyte == 33 || bankbyte == 48 || bankbyte == 49)
+		return (true);
+	else
+		return (false);
 }
 
 static int is_bsx (unsigned char *p)

@@ -1786,7 +1786,7 @@ static void OpEA (void)
 // PEA
 static void OpF4E0 (void)
 {
-	uint16	val = (uint16) Absolute(NONE);
+	uint16	val = (uint16) ABSOLUTE_MACRO(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 }
@@ -1795,7 +1795,7 @@ static void OpF4E1 (void)
 {
 	// Note: PEA is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
-	uint16	val = (uint16) Absolute(NONE);
+	uint16	val = (uint16) ABSOLUTE_MACRO(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 	Registers.SH = 1;
@@ -1803,7 +1803,7 @@ static void OpF4E1 (void)
 
 static void OpF4Slow (void)
 {
-	uint16	val = (uint16) AbsoluteSlow(NONE);
+	uint16	val = (uint16) ABSOLUTESLOW_MACRO(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 	if (CheckEmulation())
@@ -2930,12 +2930,12 @@ static void Op5CSlow (void)
 
 static void Op4C (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) Absolute(JUMP)));
+	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) ABSOLUTE_MACRO(JUMP)));
 }
 
 static void Op4CSlow (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteSlow(JUMP)));
+	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) ABSOLUTESLOW_MACRO(JUMP)));
 }
 
 static void Op6C (void)
@@ -3025,7 +3025,7 @@ static void Op6BSlow (void)
 
 static void Op20E1 (void)
 {
-	uint16	addr = Absolute(JSR);
+	uint16	addr = ABSOLUTE_MACRO(JSR);
 	AddCycles(ONE_CYCLE);
 	PushWE(Registers.PCw - 1);
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
@@ -3033,7 +3033,7 @@ static void Op20E1 (void)
 
 static void Op20E0 (void)
 {
-	uint16	addr = Absolute(JSR);
+	uint16	addr = ABSOLUTE_MACRO(JSR);
 	AddCycles(ONE_CYCLE);
 	PushW(Registers.PCw - 1);
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
@@ -3041,7 +3041,7 @@ static void Op20E0 (void)
 
 static void Op20Slow (void)
 {
-	uint16	addr = AbsoluteSlow(JSR);
+	uint16	addr = ABSOLUTESLOW_MACRO(JSR);
 
 	AddCycles(ONE_CYCLE);
 
