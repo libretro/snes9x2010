@@ -1178,7 +1178,6 @@ loop:
 		//SUSPICIOUS_OPCODE( "STOP/SLEEP" );
 		--pc;
 		rel_time = 0;
-		m.cpu_error = "SPC emulation error";
 		goto stop;
 	} // switch
 }   

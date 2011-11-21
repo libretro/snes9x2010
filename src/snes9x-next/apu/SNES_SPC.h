@@ -71,12 +71,8 @@ public:
 	// Clears echo region. Useful after loading an SPC as many have garbage in echo.
 	void clear_echo();
 
-	// Plays for count samples and write samples to out. Discards samples if out
-	// is NULL. Count must be a multiple of 2 since output is stereo.
-	blargg_err_t play( int count, sample_t* out );
-	
 	// Skips count samples. Several times faster than play() when using fast DSP.
-	blargg_err_t skip( int count );
+	void skip( int count );
 	
 // State save/load (only available with accurate DSP)
 
@@ -153,7 +149,6 @@ private:
 		int         tempo;
 		int         skipped_kon;
 		int         skipped_koff;
-		const char* cpu_error;
 		
 		int         extra_clocks;
 		sample_t*   buf_begin;

@@ -473,7 +473,8 @@ void S9xDeinitAPU (void)
 
 uint8 S9xAPUReadPort (int port)
 {
-	return ((uint8) spc_core->read_port(S9xAPUGetClock(CPU.Cycles), port));
+	int var = S9xAPUGetClock(CPU.Cycles);
+	return ((uint8) spc_core->read_port(var, port));
 }
 
 void S9xAPUWritePort (int port, uint8 byte)

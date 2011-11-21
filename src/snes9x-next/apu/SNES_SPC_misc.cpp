@@ -147,7 +147,6 @@ void SNES_SPC::regs_loaded()
 
 void SNES_SPC::reset_time_regs()
 {
-	m.cpu_error     = 0;
 	m.echo_accessed = 0;
 	m.spc_time      = 0;
 	m.dsp_time = clocks_per_sample + 1;
@@ -290,20 +289,7 @@ void SNES_SPC::save_extra()
 	m.extra_pos = out;
 }
 
-blargg_err_t SNES_SPC::play( int count, sample_t* out )
-{
-	if ( count )
-	{
-		set_output( out, count );
-		end_frame( count * (clocks_per_sample / 2) );
-	}
-	
-	const char* err = m.cpu_error;
-	m.cpu_error = 0;
-	return err;
-}
-
-blargg_err_t SNES_SPC::skip( int count )
+void SNES_SPC::skip( int count )
 {
 	if ( count > 2 * sample_rate * 2 )
 	{
@@ -329,7 +315,11 @@ blargg_err_t SNES_SPC::skip( int count )
 		clear_echo();
 	}
 	
-	return play( count, 0 );
+	if(count)
+	{
+		set_output( 0, count);
+		end_frame(count * (clocks_per_sample / 2) );
+	}
 }
 
 //// Snes9x Accessor
