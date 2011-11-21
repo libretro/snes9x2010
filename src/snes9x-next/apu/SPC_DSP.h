@@ -205,8 +205,6 @@ private:
 
 	void echo_22();
 	void echo_23();
-	void echo_24();
-	void echo_25();
 	void echo_26();
 	void echo_27();
 	void echo_29();

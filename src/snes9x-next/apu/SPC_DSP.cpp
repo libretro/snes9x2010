@@ -615,31 +615,27 @@ ECHO_CLOCK( 23 )
 	
 	SPC_DSP_ECHO_READ( 1 );
 }
-ECHO_CLOCK( 24 )
-{
-	int l = CALC_FIR( 3, 0 ) + CALC_FIR( 4, 0 ) + CALC_FIR( 5, 0 );
-	int r = CALC_FIR( 3, 1 ) + CALC_FIR( 4, 1 ) + CALC_FIR( 5, 1 );
-	
-	m.t_echo_in [0] += l;
-	m.t_echo_in [1] += r;
+
+#define echo_24() \
+{ \
+	int l = CALC_FIR( 3, 0 ) + CALC_FIR( 4, 0 ) + CALC_FIR( 5, 0 ); \
+	int r = CALC_FIR( 3, 1 ) + CALC_FIR( 4, 1 ) + CALC_FIR( 5, 1 ); \
+	m.t_echo_in [0] += l; \
+	m.t_echo_in [1] += r; \
 }
-ECHO_CLOCK( 25 )
-{
-	int l = m.t_echo_in [0] + CALC_FIR( 6, 0 );
-	int r = m.t_echo_in [1] + CALC_FIR( 6, 1 );
-	
-	l = (int16_t) l;
-	r = (int16_t) r;
-	
-	l += (int16_t) CALC_FIR( 7, 0 );
-	r += (int16_t) CALC_FIR( 7, 1 );
-	
-	CLAMP16( l );
-	CLAMP16( r );
-	
-	m.t_echo_in [0] = l & ~1;
-	m.t_echo_in [1] = r & ~1;
+
+#define echo_25() \
+{ \
+	int l = (int16_t)(m.t_echo_in [0] + CALC_FIR( 6, 0 )); \
+	int r = (int16_t)(m.t_echo_in [1] + CALC_FIR( 6, 1 )); \
+	l += (int16_t) CALC_FIR( 7, 0 ); \
+	r += (int16_t) CALC_FIR( 7, 1 ); \
+	CLAMP16( l ); \
+	CLAMP16( r ); \
+	m.t_echo_in [0] = l & ~1; \
+	m.t_echo_in [1] = r & ~1; \
 }
+
 #define echo_output(ch) \
 	int output_tmp = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(R_MVOLL + ch * 0x10)) >> 7) + \
 			(int16_t) ((m.t_echo_in [ch] * (int8_t) REG(R_EVOLL + ch * 0x10)) >> 7); \
@@ -734,39 +730,6 @@ V(V8_V5_V2,2) -> V(V8,2) V(V5,3) V(V2,4)
 V(V9_V6_V3,2) -> V(V9,2) V(V6,3) V(V3,4) */
 
 // Voice      0      1      2      3      4      5      6      7
-#define GEN_DSP_TIMING \
-PHASE( 0)  V(V5,0)V(V2,1)\
-PHASE( 1)  V(V6,0)V(V3,1)\
-PHASE( 2)  V(V7_V4_V1,0)\
-PHASE( 3)  V(V8_V5_V2,0)\
-PHASE( 4)  V(V9_V6_V3,0)\
-PHASE( 5)         V(V7_V4_V1,1)\
-PHASE( 6)         V(V8_V5_V2,1)\
-PHASE( 7)         V(V9_V6_V3,1)\
-PHASE( 8)                V(V7_V4_V1,2)\
-PHASE( 9)                V(V8_V5_V2,2)\
-PHASE(10)                V(V9_V6_V3,2)\
-PHASE(11)                       V(V7_V4_V1,3)\
-PHASE(12)                       V(V8_V5_V2,3)\
-PHASE(13)                       V(V9_V6_V3,3)\
-PHASE(14)                              V(V7_V4_V1,4)\
-PHASE(15)                              V(V8_V5_V2,4)\
-PHASE(16)                              V(V9_V6_V3,4)\
-PHASE(17)  V(V1,0)                            V(V7,5)V(V4,6)\
-PHASE(18)                                     V(V8_V5_V2,5)\
-PHASE(19)                                     V(V9_V6_V3,5)\
-PHASE(20)         V(V1,1)                            V(V7,6)V(V4,7)\
-PHASE(21)                                            V(V8,6)V(V5,7)  V(V2,0)  /* t_brr_next_addr order dependency */\
-PHASE(22)  V(V3a,0)                                  V(V9,6)V(V6,7)  echo_22();\
-PHASE(23)                                                   V(V7,7)  echo_23();\
-PHASE(24)                                                   V(V8,7)  echo_24();\
-PHASE(25)  V(V3b,0)                                         V(V9,7)  echo_25();\
-PHASE(26)                                                            echo_26();\
-PHASE(27) misc_27();                                                 echo_27();\
-PHASE(28) misc_28();                                                 echo_28();\
-PHASE(29) misc_29();                                                 echo_29();\
-PHASE(30) misc_30();V(V3c,0)                                         echo_30();\
-PHASE(31)  V(V4,0)       V(V1,2)\
 
 #if !SPC_DSP_CUSTOM_RUN
 
@@ -776,14 +739,156 @@ void SPC_DSP::run( int clocks_remain )
 	m.phase = (phase + clocks_remain) & 31;
 	switch ( phase )
 	{
-	loop:
-	
-		#define PHASE( n ) if ( n && !--clocks_remain ) break; case n:
-		GEN_DSP_TIMING
-		#undef PHASE
-	
-		if ( --clocks_remain )
-			goto loop;
+loop:
+		case 0:
+			voice_V5(&m.voices[0]);
+			voice_V2(&m.voices[1]);
+			if ( 1 && !--clocks_remain)
+				break;
+		case 1:
+			voice_V6(&m.voices[0]);
+			voice_V3(&m.voices[1]);
+			if ( 2 && !--clocks_remain)
+				break;
+		case 2:
+			voice_V7_V4_V1(&m.voices[0]);
+			if ( 3 && !--clocks_remain)
+				break;
+		case 3:
+			voice_V8_V5_V2(&m.voices[0]);
+			if ( 4 && !--clocks_remain)
+				break;
+		case 4:
+			voice_V9_V6_V3(&m.voices[0]);
+			if ( 5 && !--clocks_remain)
+				break;
+		case 5:
+			voice_V7_V4_V1(&m.voices[1]);
+			if ( 6 && !--clocks_remain)
+				break;
+		case 6:
+			voice_V8_V5_V2(&m.voices[1]);
+			if ( 7 && !--clocks_remain)
+				break;
+		case 7:
+			voice_V9_V6_V3(&m.voices[1]);
+			if ( 8 && !--clocks_remain)
+				break;
+		case 8:
+			voice_V7_V4_V1(&m.voices[2]);
+			if ( 9 && !--clocks_remain)
+				break;
+		case 9:
+			voice_V8_V5_V2(&m.voices[2]);
+			if ( 10 && !--clocks_remain)
+				break;
+		case 10:
+			voice_V9_V6_V3(&m.voices[2]);
+			if ( 11 && !--clocks_remain)
+				break;
+		case 11:
+			voice_V7_V4_V1(&m.voices[3]);
+			if ( 12 && !--clocks_remain)
+				break;
+		case 12:
+			voice_V8_V5_V2(&m.voices[3]);
+			if ( 13 && !--clocks_remain)
+				break;
+		case 13:
+			voice_V9_V6_V3(&m.voices[3]);
+			if ( 14 && !--clocks_remain)
+				break;
+		case 14:
+			voice_V7_V4_V1(&m.voices[4]);
+			if ( 15 && !--clocks_remain)
+				break;
+		case 15:
+			voice_V8_V5_V2(&m.voices[4]);
+			if ( 16 && !--clocks_remain)
+				break;
+		case 16:
+			voice_V9_V6_V3(&m.voices[4]);
+			if ( 17 && !--clocks_remain)
+				break;
+		case 17:
+			voice_V1(&m.voices[0]);
+			voice_V7(&m.voices[5]);
+			voice_V4(&m.voices[6]);
+			if ( 18 && !--clocks_remain)
+				break;
+		case 18:
+			voice_V8_V5_V2(&m.voices[5]);
+			if ( 19 && !--clocks_remain)
+				break;
+		case 19:
+			voice_V9_V6_V3(&m.voices[5]);
+			if ( 20 && !--clocks_remain)
+				break;
+		case 20:
+			voice_V1(&m.voices[1]);
+			voice_V7(&m.voices[6]);
+			voice_V4(&m.voices[7]);
+			if ( 21 && !--clocks_remain)
+				break;
+		case 21:
+			voice_V8(&m.voices[6]);
+			voice_V5(&m.voices[7]);
+			voice_V2(&m.voices[0]);  /* t_brr_next_addr order dependency */
+			if ( 22 && !--clocks_remain)
+				break;
+		case 22:
+			voice_V3a(&m.voices[0]);
+			voice_V9(&m.voices[6]);
+			voice_V6(&m.voices[7]);
+			echo_22();
+			if ( 23 && !--clocks_remain)
+				break;
+		case 23:
+			voice_V7(&m.voices[7]);
+			echo_23();
+			if ( 24 && !--clocks_remain)
+				break;
+		case 24:
+			voice_V8(&m.voices[7]);
+			echo_24();
+			if ( 25 && !--clocks_remain)
+				break;
+		case 25:
+			voice_V3b(&m.voices[0]);
+			voice_V9(&m.voices[7]);
+			echo_25();
+			if ( 26 && !--clocks_remain)
+				break;
+		case 26:
+			echo_26();
+			if ( 27 && !--clocks_remain)
+				break;
+		case 27:
+			misc_27();
+			echo_27();
+			if ( 28 && !--clocks_remain)
+				break;
+		case 28:
+			misc_28();
+			echo_28();
+			if ( 29 && !--clocks_remain)
+				break;
+		case 29:
+			misc_29();
+			echo_29();
+			if ( 30  && !--clocks_remain)
+				break;
+		case 30:
+			misc_30();
+			voice_V3c(&m.voices[0]);
+			echo_30();
+			if ( 31 && !--clocks_remain)
+				break;
+		case 31:
+			voice_V4(&m.voices[0]);
+			voice_V1(&m.voices[2]);
+			if ( --clocks_remain )
+				goto loop;
 	}
 }
 
