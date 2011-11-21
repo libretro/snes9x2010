@@ -64,7 +64,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define READ_PC16( pc ) GET_LE16( pc )
 
 // TODO: remove non-wrapping versions?
-#define SPC_NO_SP_WRAPAROUND 0
+#define SPC_NO_SP_WRAPAROUND 1
 
 #define SET_SP( v )     (sp = ram + 0x101 + (v))
 #define GET_SP()        (sp - 0x101 - ram)
