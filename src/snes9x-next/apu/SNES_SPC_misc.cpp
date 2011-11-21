@@ -146,7 +146,6 @@ void SNES_SPC::regs_loaded()
 
 void SNES_SPC::reset_time_regs()
 {
-	m.echo_accessed = 0;
 	m.spc_time      = 0;
 	m.dsp_time = clocks_per_sample + 1;
 	
@@ -175,7 +174,7 @@ void SNES_SPC::reset_common( int timer_counter_init )
 	
 	REGS [r_test   ] = 0x0A;
 	REGS [r_control] = 0xB0; // ROM enabled, clear ports
-	for ( i = 0; i < port_count; i++ )
+	for ( i = 0; i < PORT_COUNT; i++ )
 		REGS_IN [r_cpuio0 + i] = 0;
 	
 	reset_time_regs();

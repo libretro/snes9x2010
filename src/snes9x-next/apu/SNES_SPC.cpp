@@ -252,7 +252,7 @@ void SNES_SPC::cpu_write( int data, int addr, rel_time_t time )
 			
 			// Ports
 			#ifdef SPC_PORT_WRITE_HOOK
-				if ( (unsigned) (reg - r_cpuio0) < port_count )
+				if ( (unsigned) (reg - r_cpuio0) < PORT_COUNT )
 					SPC_PORT_WRITE_HOOK( m.spc_time + time, (reg - r_cpuio0),
 							(uint8_t) data, &REGS [r_cpuio0] );
 			#endif

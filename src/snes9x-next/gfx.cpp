@@ -357,6 +357,26 @@ void S9xStartScreenRefresh (void)
 		GFX.InfoString = NULL;
 }
 
+static void S9xDisplayChar (uint16 *s, uint8 c)
+{
+	int	line   = ((c - 32) >> 4) * font_height;
+	int	offset = ((c - 32) & 15) * font_width;
+
+	for (int h = 0; h < font_height; h++, line++, s += GFX.RealPPL - font_width)
+	{
+		for (int w = 0; w < font_width; w++, s++)
+		{
+			char	p = font[line][offset + w];
+
+			if (p == '#')
+				*s = Settings.DisplayColor;
+			else
+			if (p == '.')
+				*s = 0;
+		}
+	}
+}
+
 static void DisplayStringFromBottom (const char *string, int linesFromBottom, int pixelsFromLeft, bool allowWrap)
 {
 	if (linesFromBottom <= 0)
@@ -390,12 +410,6 @@ static void DisplayStringFromBottom (const char *string, int linesFromBottom, in
 	}
 }
 
-static void S9xDisplayMessages (uint16 *screen, int ppl, int width, int height, int scale)
-{
-	if (GFX.InfoString && *GFX.InfoString)
-		S9xDisplayString(GFX.InfoString, 5, 1, true);
-}
-
 void S9xEndScreenRefresh (void)
 {
 	FLUSH_REDRAW();
@@ -417,7 +431,10 @@ void S9xEndScreenRefresh (void)
 		S9xControlEOF();
 
 		if (Settings.AutoDisplayMessages)
-			S9xDisplayMessages(GFX.Screen, GFX.RealPPL, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
+		{
+			if (GFX.InfoString && *GFX.InfoString)
+				DisplayStringFromBottom(GFX.InfoString, 5, 1, true);
+		}
 
 		//Chrono Trigger mid-frame overscan hack - field to battle transition
 		if (Settings.ChronoTriggerFrameHack & (IPPU.RenderedScreenHeight == 239))
@@ -2177,25 +2194,6 @@ void S9xSetInfoString (const char *string)
 	}
 }
 
-void S9xDisplayChar (uint16 *s, uint8 c)
-{
-	int	line   = ((c - 32) >> 4) * font_height;
-	int	offset = ((c - 32) & 15) * font_width;
-
-	for (int h = 0; h < font_height; h++, line++, s += GFX.RealPPL - font_width)
-	{
-		for (int w = 0; w < font_width; w++, s++)
-		{
-			char	p = font[line][offset + w];
-
-			if (p == '#')
-				*s = Settings.DisplayColor;
-			else
-			if (p == '.')
-				*s = 0;
-		}
-	}
-}
 
 
 

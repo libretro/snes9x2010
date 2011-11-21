@@ -372,7 +372,6 @@ struct SPPU
 	bool8	FullClipping;
 };
 
-extern uint16			SignExtend[2];
 extern struct SPPU		PPU;
 extern struct InternalPPU	IPPU;
 
@@ -402,6 +401,7 @@ void S9xDoAutoJoypad (void);
 
 static inline void REGISTER_2104 (uint8 Byte)
 {
+	uint16 SignExtend[2] = {0x0000,0xff00};
 	if (PPU.OAMAddr & 0x100)
 	{
 		int addr = ((PPU.OAMAddr & 0x10f) << 1) + (PPU.OAMFlip & 1);
@@ -441,56 +441,56 @@ static inline void REGISTER_2104 (uint8 Byte)
 		}
 	}
 	else
-	if (!(PPU.OAMFlip & 1))
-	{
-		PPU.OAMWriteRegister &= 0xff00;
-		PPU.OAMWriteRegister |= Byte;
-		PPU.OAMFlip |= 1;
-		if (PPU.OAMPriorityRotation && (PPU.OAMAddr & 1))
-			IPPU.OBJChanged = TRUE;
-	}
-	else
-	{
-		PPU.OAMWriteRegister &= 0x00ff;
-		uint8 lowbyte = (uint8) (PPU.OAMWriteRegister);
-		uint8 highbyte = Byte;
-		PPU.OAMWriteRegister |= Byte << 8;
-
-		int addr = (PPU.OAMAddr << 1);
-		if (lowbyte != PPU.OAMData[addr] || highbyte != PPU.OAMData[addr + 1])
+		if (!(PPU.OAMFlip & 1))
 		{
-			FLUSH_REDRAW();
-			PPU.OAMData[addr] = lowbyte;
-			PPU.OAMData[addr + 1] = highbyte;
-			IPPU.OBJChanged = TRUE;
-			if (addr & 2)
+			PPU.OAMWriteRegister &= 0xff00;
+			PPU.OAMWriteRegister |= Byte;
+			PPU.OAMFlip |= 1;
+			if (PPU.OAMPriorityRotation && (PPU.OAMAddr & 1))
+				IPPU.OBJChanged = TRUE;
+		}
+		else
+		{
+			PPU.OAMWriteRegister &= 0x00ff;
+			uint8 lowbyte = (uint8) (PPU.OAMWriteRegister);
+			uint8 highbyte = Byte;
+			PPU.OAMWriteRegister |= Byte << 8;
+
+			int addr = (PPU.OAMAddr << 1);
+			if (lowbyte != PPU.OAMData[addr] || highbyte != PPU.OAMData[addr + 1])
 			{
-				// Tile
-				PPU.OBJ[addr = PPU.OAMAddr >> 1].Name = PPU.OAMWriteRegister & 0x1ff;
-				// priority, h and v flip.
-				PPU.OBJ[addr].Palette  = (highbyte >> 1) & 7;
-				PPU.OBJ[addr].Priority = (highbyte >> 4) & 3;
-				PPU.OBJ[addr].HFlip    = (highbyte >> 6) & 1;
-				PPU.OBJ[addr].VFlip    = (highbyte >> 7) & 1;
+				FLUSH_REDRAW();
+				PPU.OAMData[addr] = lowbyte;
+				PPU.OAMData[addr + 1] = highbyte;
+				IPPU.OBJChanged = TRUE;
+				if (addr & 2)
+				{
+					// Tile
+					PPU.OBJ[addr = PPU.OAMAddr >> 1].Name = PPU.OAMWriteRegister & 0x1ff;
+					// priority, h and v flip.
+					PPU.OBJ[addr].Palette  = (highbyte >> 1) & 7;
+					PPU.OBJ[addr].Priority = (highbyte >> 4) & 3;
+					PPU.OBJ[addr].HFlip    = (highbyte >> 6) & 1;
+					PPU.OBJ[addr].VFlip    = (highbyte >> 7) & 1;
+				}
+				else
+				{
+					// X position (low)
+					PPU.OBJ[addr = PPU.OAMAddr >> 1].HPos &= 0xff00;
+					PPU.OBJ[addr].HPos |= lowbyte;
+					// Sprite Y position
+					PPU.OBJ[addr].VPos = highbyte;
+				}
 			}
-			else
+
+			PPU.OAMFlip &= ~1;
+			++PPU.OAMAddr;
+			if (PPU.OAMPriorityRotation && PPU.FirstSprite != (PPU.OAMAddr >> 1))
 			{
-				// X position (low)
-				PPU.OBJ[addr = PPU.OAMAddr >> 1].HPos &= 0xff00;
-				PPU.OBJ[addr].HPos |= lowbyte;
-				// Sprite Y position
-				PPU.OBJ[addr].VPos = highbyte;
+				PPU.FirstSprite = (PPU.OAMAddr & 0xfe) >> 1;
+				IPPU.OBJChanged = TRUE;
 			}
 		}
-
-		PPU.OAMFlip &= ~1;
-		++PPU.OAMAddr;
-		if (PPU.OAMPriorityRotation && PPU.FirstSprite != (PPU.OAMAddr >> 1))
-		{
-			PPU.FirstSprite = (PPU.OAMAddr & 0xfe) >> 1;
-			IPPU.OBJChanged = TRUE;
-		}
-	}
 }
 
 // This code is correct, however due to Snes9x's inaccurate timings, some games might be broken by this chage. :(

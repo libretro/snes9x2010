@@ -7,6 +7,8 @@
 #include "SPC_DSP.h"
 #include "blargg_endian.h"
 
+#define PORT_COUNT 4
+
 struct SNES_SPC {
 public:
 	typedef BOOST::uint8_t uint8_t;
@@ -41,11 +43,9 @@ public:
 
 	// 1024000 SPC clocks per second, sample pair every 32 clocks
 	typedef int time_t;
-	enum { clock_rate = 1024000 };
 	enum { clocks_per_sample = 32 };
 	
 	// Emulated port read/write at specified time
-	enum { port_count = 4 };
 	void write_port(int port, int data );
 
 	// Runs SPC to end_time and starts a new time frame at 0
@@ -57,12 +57,6 @@ public:
 	enum { tempo_unit = 0x100 };
 	void set_tempo( int );
 
-// SPC music files
-
-	// Loads SPC data into emulator
-	enum { spc_min_file_size = 0x10180 };
-	enum { spc_file_size     = 0x10200 };
-	
 // State save/load (only available with accurate DSP)
 
 #if !SPC_NO_COPY_STATE_FUNCS
@@ -125,7 +119,6 @@ private:
 		
 		rel_time_t  dsp_time;
 		time_t      spc_time;
-		bool        echo_accessed;
 		
 		int         tempo;
 		
@@ -155,8 +148,6 @@ private:
 	state_t m;
 	
 	enum { rom_addr = 0xFFC0 };
-	
-	enum { skipping_time = 127 };
 	
 	// Value that padding should be filled with
 	enum { cpu_pad_fill = 0xFF };
@@ -191,9 +182,6 @@ private:
 	int cpu_read_smp_reg   ( int i, rel_time_t );
 	int cpu_read           ( int addr, rel_time_t );
 	unsigned CPU_mem_bit   ( uint8_t const* pc, rel_time_t );
-	
-	bool check_echo_access ( int addr );
-	
 // Snes9x timing hack
 	bool allow_time_overflow;
 };

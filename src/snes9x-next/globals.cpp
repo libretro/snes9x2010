@@ -261,17 +261,6 @@ uint32	TWO_LOW_BITS_MASK          = 0;
 uint32	HIGH_BITS_SHIFTED_TWO_MASK = 0;
 #endif
 
-uint16 SignExtend[2] =
-{
-	0x0000,
-	0xff00
-};
-
-int HDMA_ModeByteCounts[8] =
-{
-	1, 2, 2, 4, 4, 4, 2, 4
-};
-
 uint8 mul_brightness[16][32] =
 {
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

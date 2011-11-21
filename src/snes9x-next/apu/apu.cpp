@@ -219,14 +219,14 @@ static int		timing_hack_denominator = SNES_SPC::tempo_unit;
 static uint32		ratio_numerator = APU_NUMERATOR_NTSC;
 static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 
-bool resampler = false;
-double r_step;
-float r_frac;
-int r_chandata[2][4];
-int r_size;
-int r_buffer_size;
-int r_start;
-unsigned char * r_buffer;
+static bool resampler = false;
+static double r_step;
+static float r_frac;
+static int r_chandata[2][4];
+static int r_size;
+static int r_buffer_size;
+static int r_start;
+static unsigned char * r_buffer;
 
 #undef CLAMP
 #undef SHORT_CLAMP
@@ -236,17 +236,17 @@ unsigned char * r_buffer;
 
 static inline float hermite (float mu1, float a, float b, float c, float d)
 {
-   float mu2, mu3, m0, m1, a0, a1, a2, a3;
-   mu2 = mu1 * mu1;
+	float mu2, mu3, m0, m1, a0, a1, a2, a3;
+	mu2 = mu1 * mu1;
 
-   mu3 = mu2 * mu1;
-   m0  = (c - a) * 0.5;
-   m1  = (d - b) * 0.5;
+	mu3 = mu2 * mu1;
+	m0  = (c - a) * 0.5;
+	m1  = (d - b) * 0.5;
 
-   a0 = +2 * mu3 - 3 * mu2 + 1;
-   a1 =      mu3 - 2 * mu2 + mu1;
-   a2 =      mu3 -     mu2;
-   a3 = -2 * mu3 + 3 * mu2;
+	a0 = +2 * mu3 - 3 * mu2 + 1;
+	a1 =      mu3 - 2 * mu2 + mu1;
+	a2 =      mu3 -     mu2;
+	a3 = -2 * mu3 + 3 * mu2;
 
 	return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }

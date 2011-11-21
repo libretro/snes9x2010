@@ -12,6 +12,8 @@ extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, s
 // Reduces emulation accuracy.
 #define VOICE_COUNT 8
 
+#define BRR_BLOCK_SIZE 9
+
 // Global DSP registers
 enum {
     R_MVOLL = 0x0C, R_MVOLR = 0x1C,
@@ -113,7 +115,6 @@ public:
 		uint8_t t_envx_out;
 	};
 private:
-	enum { brr_block_size = 9 };
 	
 	struct state_t
 	{

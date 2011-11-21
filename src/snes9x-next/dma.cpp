@@ -185,7 +185,10 @@
 #define ADD_CYCLES(n)	CPU.Cycles += (n)
 
 extern uint8	*HDMAMemPointers[8];
-extern int	HDMA_ModeByteCounts[8];
+static int HDMA_ModeByteCounts[8] =
+{
+	1, 2, 2, 4, 4, 4, 2, 4
+};
 extern SPC7110	s7emu;
 
 static uint8	sdd1_decode_buffer[0x10000];

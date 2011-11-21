@@ -486,10 +486,10 @@ void SPC_DSP::voice_V4( voice_t* const v )
 	{
 		decode_brr( v );
 		
-		if ( (v->brr_offset += 2) >= brr_block_size )
+		if ( (v->brr_offset += 2) >= BRR_BLOCK_SIZE )
 		{
 			// Start decoding next BRR block
-			v->brr_addr = (v->brr_addr + brr_block_size) & 0xFFFF;
+			v->brr_addr = (v->brr_addr + BRR_BLOCK_SIZE) & 0xFFFF;
 			if ( m.t_brr_header & 1 )
 			{
 				v->brr_addr = m.t_brr_next_addr;

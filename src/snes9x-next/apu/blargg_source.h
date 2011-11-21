@@ -24,11 +24,6 @@ DEF_MIN_MAX( double )
 
 #undef DEF_MIN_MAX
 
-// TODO: good idea? bad idea?
-#undef byte
-#define byte byte_
-typedef unsigned char byte;
-
 // BLARGG_SOURCE_BEGIN: If defined, #included, allowing redefition of dprintf and check
 #ifdef BLARGG_SOURCE_BEGIN
 	#include BLARGG_SOURCE_BEGIN
