@@ -187,24 +187,15 @@ private:
 	void misc_30();
 
 	void voice_output( voice_t const* v, int ch );
-	void voice_V1( voice_t* const );
 	void voice_V2( voice_t* const );
-	void voice_V3( voice_t* const );
-	void voice_V3a( voice_t* const );
-	void voice_V3b( voice_t* const );
 	void voice_V3c( voice_t* const );
 	void voice_V4( voice_t* const );
 	void voice_V5( voice_t* const );
-	void voice_V6( voice_t* const );
-	void voice_V7( voice_t* const );
-	void voice_V8( voice_t* const );
-	void voice_V9( voice_t* const );
 	void voice_V7_V4_V1( voice_t* const );
 	void voice_V8_V5_V2( voice_t* const );
 	void voice_V9_V6_V3( voice_t* const );
 
 	void echo_22();
-	void echo_23();
 	void echo_26();
 	void echo_27();
 	void echo_29();

@@ -336,8 +336,6 @@ inline void SPC_DSP::decode_brr( voice_t* v )
 
 //// Misc
 
-#define MISC_CLOCK( n ) inline void SPC_DSP::misc_##n()
-
 // voice 0 doesn't support PMON
 #define misc_27() m.t_pmon = REG(R_PMON) & 0xFE; 
 
@@ -350,7 +348,7 @@ inline void SPC_DSP::decode_brr( voice_t* v )
 	if ( (m.every_other_sample ^= 1) != 0 ) \
 		m.new_kon &= ~m.kon; // clears KON 63 clocks after it was last read
 
-MISC_CLOCK( 30 )
+inline void SPC_DSP::misc_30()
 {
 	if ( m.every_other_sample )
 	{
@@ -371,14 +369,11 @@ MISC_CLOCK( 30 )
 
 //// Voices
 
-#define VOICE_CLOCK( n ) void SPC_DSP::voice_##n( voice_t* const v )
-
-inline VOICE_CLOCK( V1 )
-{
-	m.t_dir_addr = m.t_dir * 0x100 + m.t_srcn * 4;
+#define voice_V1(v) \
+	m.t_dir_addr = m.t_dir * 0x100 + m.t_srcn * 4; \
 	m.t_srcn = VREG(v->regs,srcn);
-}
-inline VOICE_CLOCK( V2 )
+
+inline void SPC_DSP::voice_V2( voice_t* const v )
 {
 	// Read sample pointer (ignored if not needed)
 	uint8_t const* entry = &m.ram [m.t_dir_addr];
@@ -391,17 +386,15 @@ inline VOICE_CLOCK( V2 )
 	// Read pitch, spread over two clocks
 	m.t_pitch = VREG(v->regs,pitchl);
 }
-inline VOICE_CLOCK( V3a )
-{
-	m.t_pitch += (VREG(v->regs,pitchh) & 0x3F) << 8;
-}
-inline VOICE_CLOCK( V3b )
-{
-	// Read BRR header and byte
-	m.t_brr_byte   = m.ram [(v->brr_addr + v->brr_offset) & 0xFFFF];
-	m.t_brr_header = m.ram [v->brr_addr]; // brr_addr doesn't need masking
-}
-VOICE_CLOCK( V3c )
+
+#define voice_V3a(v) m.t_pitch += (VREG(v->regs,pitchh) & 0x3F) << 8;
+
+#define voice_V3b(v) \
+	/* Read BRR header and byte */ \
+	m.t_brr_byte   = m.ram [(v->brr_addr + v->brr_offset) & 0xFFFF]; \
+	m.t_brr_header = m.ram [v->brr_addr]; /* brr_addr doesn't need masking */
+
+void SPC_DSP::voice_V3c( voice_t* const v )
 {
 	// Pitch modulation using previous voice's output
 	if ( m.t_pmon & v->vbit )
@@ -485,7 +478,7 @@ VOICE_CLOCK( V3c )
 		CLAMP16( m.t_echo_out [ch]); \
 	}
 
-VOICE_CLOCK( V4 )
+void SPC_DSP::voice_V4( voice_t* const v )
 {
 	// Decode BRR
 	m.t_looped = 0;
@@ -516,7 +509,8 @@ VOICE_CLOCK( V4 )
 	// Output left
 	SPC_DSP_VOICE_OUTPUT( v, 0 );
 }
-inline VOICE_CLOCK( V5 )
+
+inline void SPC_DSP::voice_V5( voice_t* const v )
 {
 	// Output right
 	SPC_DSP_VOICE_OUTPUT( v, 1 );
@@ -529,42 +523,49 @@ inline VOICE_CLOCK( V5 )
 		endx_buf &= ~v->vbit;
 	m.endx_buf = (uint8_t) endx_buf;
 }
-inline VOICE_CLOCK( V6 )
-{
-	(void) v; // avoid compiler warning about unused v
-	m.outx_buf = (uint8_t) (m.t_output >> 8);
-}
-inline VOICE_CLOCK( V7 )
-{
-	// Update ENDX
-	REG(R_ENDX) = m.endx_buf;
-	
+
+#define voice_V6() m.outx_buf = (uint8_t) (m.t_output >> 8);
+
+#define voice_V7(v) \
+	REG(R_ENDX) = m.endx_buf; /* Update ENDX */ \
 	m.envx_buf = v->t_envx_out;
-}
-inline VOICE_CLOCK( V8 )
-{
-	// Update OUTX
-	VREG(v->regs,outx) = m.outx_buf;
-}
-inline VOICE_CLOCK( V9 )
-{
-	// Update ENVX
-	VREG(v->regs,envx) = m.envx_buf;
-}
+
+#define voice_V8(v) VREG(v->regs,outx) = m.outx_buf; // Update OUTX
+
+#define voice_V9(v) VREG(v->regs,envx) = m.envx_buf; // Update ENVX
 
 // Most voices do all these in one clock, so make a handy composite
-inline VOICE_CLOCK( V3 )
-{
-	voice_V3a( v );
-	voice_V3b( v );
-	voice_V3c( v );
-}
+
+#define voice_V3(v, v_mod) \
+	voice_V3a(v); \
+	voice_V3b(v); \
+	voice_V3c(v_mod);
 
 // Common combinations of voice steps on different voices. This greatly reduces
 // code size and allows everything to be inlined in these functions.
-VOICE_CLOCK(V7_V4_V1) { voice_V7(v); voice_V1(v+3); voice_V4(v+1); }
-VOICE_CLOCK(V8_V5_V2) { voice_V8(v); voice_V5(v+1); voice_V2(v+2); }
-VOICE_CLOCK(V9_V6_V3) { voice_V9(v); voice_V6(v+1); voice_V3(v+2); }
+void SPC_DSP::voice_V7_V4_V1( voice_t* const v)
+{
+	const voice_t * v1 = v+3;
+	voice_V7(v);
+	voice_V1(v1);
+	voice_V4(v+1);
+}
+
+void SPC_DSP::voice_V8_V5_V2( voice_t* const v)
+{
+	voice_V8(v);
+	voice_V5(v+1);
+	voice_V2(v+2);
+}
+
+void SPC_DSP::voice_V9_V6_V3( voice_t* const v)
+{
+	const voice_t * v3 =  v+2;
+	voice_t * v3_mod = v+2;
+	voice_V9(v);
+	voice_V6();
+	voice_V3(v3, v3_mod);
+}
 
 
 //// Echo
@@ -578,8 +579,6 @@ VOICE_CLOCK(V9_V6_V3) { voice_V9(v); voice_V6(v+1); voice_V3(v+2); }
 // Calculate FIR point for left/right channel
 #define CALC_FIR( i, ch )   ((ECHO_FIR( i + 1 ) [ch] * (int8_t) REG(R_FIR + i * 0x10)) >> 6)
 
-#define ECHO_CLOCK( n ) inline void SPC_DSP::echo_##n()
-
 #define SPC_DSP_ECHO_READ(ch) \
 	int s; \
 	if (m.t_echo_ptr >= 0xffc0 && rom_enabled) \
@@ -589,7 +588,7 @@ VOICE_CLOCK(V9_V6_V3) { voice_V9(v); voice_V6(v+1); voice_V3(v+2); }
 	/* second copy simplifies wrap-around handling */ \
 	ECHO_FIR( 0 ) [ch] = ECHO_FIR( 8 ) [ch] = s >> 1;
 
-ECHO_CLOCK( 22 )
+inline void SPC_DSP::echo_22()
 {
 	// History
 	if ( ++m.echo_hist_pos >= &m.echo_hist [echo_hist_size] )
@@ -605,15 +604,14 @@ ECHO_CLOCK( 22 )
 	m.t_echo_in [0] = l;
 	m.t_echo_in [1] = r;
 }
-ECHO_CLOCK( 23 )
-{
-	int l = CALC_FIR( 1, 0 ) + CALC_FIR( 2, 0 );
-	int r = CALC_FIR( 1, 1 ) + CALC_FIR( 2, 1 );
-	
-	m.t_echo_in [0] += l;
-	m.t_echo_in [1] += r;
-	
-	SPC_DSP_ECHO_READ( 1 );
+
+#define echo_23() \
+{ \
+	int l = CALC_FIR( 1, 0 ) + CALC_FIR( 2, 0 ); \
+	int r = CALC_FIR( 1, 1 ) + CALC_FIR( 2, 1 ); \
+	m.t_echo_in [0] += l; \
+	m.t_echo_in [1] += r; \
+	SPC_DSP_ECHO_READ( 1 ); \
 }
 
 #define echo_24() \
@@ -641,7 +639,7 @@ ECHO_CLOCK( 23 )
 			(int16_t) ((m.t_echo_in [ch] * (int8_t) REG(R_EVOLL + ch * 0x10)) >> 7); \
 	CLAMP16( output_tmp );
 
-ECHO_CLOCK( 26 )
+inline void SPC_DSP::echo_26()
 {
 	// Left output volumes
 	// (save sample for next clock so we can output both together)
@@ -658,7 +656,8 @@ ECHO_CLOCK( 26 )
 	m.t_echo_out [0] = l & ~1;
 	m.t_echo_out [1] = r & ~1;
 }
-ECHO_CLOCK( 27 )
+
+inline void SPC_DSP::echo_27()
 {
 	// Output
 	int l = m.t_main_out [0];
@@ -697,7 +696,7 @@ ECHO_CLOCK( 27 )
 	} \
 	m.t_echo_out [ch] = 0;
 
-ECHO_CLOCK( 29 )
+inline void SPC_DSP::echo_29()
 {
 	m.t_esa = REG(R_ESA);
 	
@@ -712,8 +711,7 @@ ECHO_CLOCK( 29 )
 	SPC_DSP_ECHO_WRITE( 0 );
 	
 	m.t_echo_enabled = REG(R_FLG);
-}
-
+} 
 #define echo_30() SPC_DSP_ECHO_WRITE( 1 ); /* Write right echo */
 
 //// Timing
@@ -746,10 +744,14 @@ loop:
 			if ( 1 && !--clocks_remain)
 				break;
 		case 1:
-			voice_V6(&m.voices[0]);
-			voice_V3(&m.voices[1]);
-			if ( 2 && !--clocks_remain)
-				break;
+			{
+				const voice_t * v3 = &m.voices[1];
+				voice_t * v3_mod = &m.voices[1];
+				voice_V6();
+				voice_V3(v3, v3_mod);
+				if ( 2 && !--clocks_remain)
+					break;
+			}
 		case 2:
 			voice_V7_V4_V1(&m.voices[0]);
 			if ( 3 && !--clocks_remain)
@@ -811,11 +813,15 @@ loop:
 			if ( 17 && !--clocks_remain)
 				break;
 		case 17:
-			voice_V1(&m.voices[0]);
-			voice_V7(&m.voices[5]);
-			voice_V4(&m.voices[6]);
-			if ( 18 && !--clocks_remain)
-				break;
+			{
+				const voice_t * v1 = &m.voices[0];
+				const voice_t * v7 = &m.voices[5];
+				voice_V1(v1);
+				voice_V7(v7);
+				voice_V4(&m.voices[6]);
+				if ( 18 && !--clocks_remain)
+					break;
+			}
 		case 18:
 			voice_V8_V5_V2(&m.voices[5]);
 			if ( 19 && !--clocks_remain)
@@ -825,40 +831,61 @@ loop:
 			if ( 20 && !--clocks_remain)
 				break;
 		case 20:
-			voice_V1(&m.voices[1]);
-			voice_V7(&m.voices[6]);
-			voice_V4(&m.voices[7]);
-			if ( 21 && !--clocks_remain)
-				break;
+			{
+				const voice_t * v1 = &m.voices[1];
+				const voice_t * v7 = &m.voices[6];
+				voice_V1(v1);
+				voice_V7(v7);
+				voice_V4(&m.voices[7]);
+				if ( 21 && !--clocks_remain)
+					break;
+			}
 		case 21:
-			voice_V8(&m.voices[6]);
-			voice_V5(&m.voices[7]);
-			voice_V2(&m.voices[0]);  /* t_brr_next_addr order dependency */
-			if ( 22 && !--clocks_remain)
-				break;
+			{
+				const voice_t * v8 = &m.voices[6];
+				voice_V8(v8);
+				voice_V5(&m.voices[7]);
+				voice_V2(&m.voices[0]);  /* t_brr_next_addr order dependency */
+				if ( 22 && !--clocks_remain)
+					break;
+			}
 		case 22:
-			voice_V3a(&m.voices[0]);
-			voice_V9(&m.voices[6]);
-			voice_V6(&m.voices[7]);
-			echo_22();
-			if ( 23 && !--clocks_remain)
-				break;
+			{
+				const voice_t * v3a = &m.voices[0];
+				const voice_t * v9 = &m.voices[6];
+				voice_V3a(v3a);
+				voice_V9(v9);
+				voice_V6();
+				echo_22();
+				if ( 23 && !--clocks_remain)
+					break;
+			}
 		case 23:
-			voice_V7(&m.voices[7]);
-			echo_23();
-			if ( 24 && !--clocks_remain)
-				break;
+			{
+				const voice_t * v7 = &m.voices[7];
+				voice_V7(v7);
+				echo_23();
+				if ( 24 && !--clocks_remain)
+					break;
+			}
 		case 24:
-			voice_V8(&m.voices[7]);
-			echo_24();
-			if ( 25 && !--clocks_remain)
-				break;
+			{
+				const voice_t * v8 = &m.voices[7];
+				voice_V8(v8);
+				echo_24();
+				if ( 25 && !--clocks_remain)
+					break;
+			}
 		case 25:
-			voice_V3b(&m.voices[0]);
-			voice_V9(&m.voices[7]);
-			echo_25();
-			if ( 26 && !--clocks_remain)
-				break;
+			{
+				const voice_t * v3b = &m.voices[0];
+				const voice_t * v9 = &m.voices[7];
+				voice_V3b(v3b);
+				voice_V9(v9);
+				echo_25();
+				if ( 26 && !--clocks_remain)
+					break;
+			}
 		case 26:
 			echo_26();
 			if ( 27 && !--clocks_remain)
@@ -885,10 +912,13 @@ loop:
 			if ( 31 && !--clocks_remain)
 				break;
 		case 31:
-			voice_V4(&m.voices[0]);
-			voice_V1(&m.voices[2]);
-			if ( --clocks_remain )
-				goto loop;
+			{
+				voice_V4(&m.voices[0]);
+				const voice_t * v1 = &m.voices[2];
+				voice_V1(v1);
+				if ( --clocks_remain )
+					goto loop;
+			}
 	}
 }
 
