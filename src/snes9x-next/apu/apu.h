@@ -191,7 +191,6 @@ void S9xResetAPU (void);
 void S9xSoftResetAPU (void);
 uint8 S9xAPUReadPort (int);
 void S9xAPUWritePort (int, uint8);
-void S9xAPUExecute (void);
 void S9xAPUEndScanline (void);
 void S9xAPUSetReferenceTime (int32);
 void S9xAPUTimingSetSpeedup (int);
@@ -204,7 +203,6 @@ bool8 S9xOpenSoundDevice (void);
 
 int S9xGetSampleCount (void);
 void S9xFinalizeSamples (void);
-void S9xClearSamples (void);
 void S9xMixSamples (short *, int);
 void S9xSetSamplesAvailableCallback (apu_callback);
 

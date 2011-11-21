@@ -46,8 +46,7 @@ public:
 	
 	// Emulated port read/write at specified time
 	enum { port_count = 4 };
-	int  read_port ( time_t, int port );
-	void write_port( time_t, int port, int data );
+	void write_port(int port, int data );
 
 	// Runs SPC to end_time and starts a new time frame at 0
 	void end_frame( time_t end_time );
@@ -90,8 +89,6 @@ public:
 //// Snes9x Accessor
 
 	void	spc_allow_time_overflow( bool );
-
-	uint8_t dsp_reg_value( int, int );
 public:
 	BLARGG_DISABLE_NOTHROW
 	
@@ -119,7 +116,7 @@ public:
 
 	// Support SNES_MEMORY_APURAM
 	uint8_t *apuram();
-	
+	uint8_t* run_until_( time_t end_time );
 private:
 	SPC_DSP dsp;
 	
@@ -214,7 +211,6 @@ private:
 	unsigned CPU_mem_bit   ( uint8_t const* pc, rel_time_t );
 	
 	bool check_echo_access ( int addr );
-	uint8_t* run_until_( time_t end_time );
 	
 	struct spc_file_t
 	{
@@ -241,17 +237,7 @@ private:
 };
 
 inline int SNES_SPC::sample_count() const { return (m.extra_clocks >> 5) * 2; }
-
-inline int SNES_SPC::read_port( time_t t, int port )
-{
-	return run_until_( t ) [port];
-}
-
-inline void SNES_SPC::write_port( time_t t, int port, int data )
-{
-	run_until_( t ) [0x10 + port] = data;
-	m.ram.ram [0xF4 + port] = data;
-}
+inline void SNES_SPC::write_port(int port, int data ) { m.ram.ram [0xF4 + port] = data; }
 
 #if !SPC_NO_COPY_STATE_FUNCS
 inline bool SNES_SPC::check_kon() { return dsp.check_kon(); }

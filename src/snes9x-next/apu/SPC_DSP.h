@@ -65,7 +65,6 @@ public:
 	bool check_kon();
 
 // Snes9x Accessor
-	uint8_t reg_value( int, int );
 	int rom_enabled; // mirror
 	uint8_t *rom, *hi_ram; // mirror
 

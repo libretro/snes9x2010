@@ -998,11 +998,3 @@ void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
 	copier.extra();
 }
 #endif
-
-
-//// Snes9x Accessor
-
-SPC_DSP::uint8_t SPC_DSP::reg_value( int ch, int addr )
-{
-	return m.voices[ch].regs[addr];
-}

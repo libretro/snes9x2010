@@ -293,7 +293,10 @@ void SNES_SPC::skip( int count )
 {
 	if ( count > 2 * sample_rate * 2 )
 	{
-		set_output( 0, 0 );
+		//set output with parameters 0 and 0
+		m.extra_clocks &= clocks_per_sample - 1;
+		reset_buf();
+		//end
 		
 		// Skip a multiple of 4 samples
 		time_t end = count;
@@ -317,14 +320,11 @@ void SNES_SPC::skip( int count )
 	
 	if(count)
 	{
-		set_output( 0, count);
+		//set set_output with parameters 0 and count
+		m.extra_clocks &= clocks_per_sample - 1;
+		reset_buf();
+		//end
+
 		end_frame(count * (clocks_per_sample / 2) );
 	}
-}
-
-//// Snes9x Accessor
-
-SNES_SPC::uint8_t SNES_SPC::dsp_reg_value( int ch, int addr )
-{
-	return dsp.reg_value( ch, addr );
 }

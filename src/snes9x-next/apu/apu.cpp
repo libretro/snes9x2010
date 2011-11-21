@@ -342,7 +342,7 @@ static void resampler_clear (void)
 	r_chandata[1][0] = r_chandata[1][1] = r_chandata[1][2] = r_chandata[1][3] = 0;
 }
 
-void S9xClearSamples (void)
+static void S9xClearSamples (void)
 {
 	resampler_clear();
 }
@@ -474,13 +474,14 @@ void S9xDeinitAPU (void)
 uint8 S9xAPUReadPort (int port)
 {
 	int var = S9xAPUGetClock(CPU.Cycles);
-	return ((uint8) spc_core->read_port(var, port));
+	return ((uint8) spc_core->run_until_(var)[port]);
 }
 
 void S9xAPUWritePort (int port, uint8 byte)
 {
 	int var = S9xAPUGetClock(CPU.Cycles);
-	spc_core->write_port(var, port, byte);
+	spc_core->run_until_(var)[0x10 + port] = byte;
+	spc_core->write_port(port, byte);
 }
 
 void S9xAPUSetReferenceTime (int32 cpucycles)
@@ -488,7 +489,7 @@ void S9xAPUSetReferenceTime (int32 cpucycles)
 	reference_time = cpucycles;
 }
 
-void S9xAPUExecute (void)
+static void S9xAPUExecute (void)
 {
 	/* Accumulate partial APU cycles */
 	int var = S9xAPUGetClock(CPU.Cycles);
