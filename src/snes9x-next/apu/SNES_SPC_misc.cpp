@@ -29,7 +29,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 //// Init
 
-blargg_err_t SNES_SPC::init()
+void SNES_SPC::init()
 {
 	memset( &m, 0, sizeof m );
 	dsp.init( RAM );
@@ -77,7 +77,6 @@ blargg_err_t SNES_SPC::init()
 	memcpy( reg_times, reg_times_, sizeof reg_times );
 	
 	reset();
-	return 0;
 }
 
 void SNES_SPC::init_rom( uint8_t const in [rom_size] )
@@ -202,22 +201,6 @@ void SNES_SPC::reset()
 	dsp.reset();
 }
 
-char const SNES_SPC::signature [signature_size + 1] =
-		"SNES-SPC700 Sound File Data v0.30\x1A\x1A";
-
-void SNES_SPC::clear_echo()
-{
-	if ( !(dsp.read( SPC_DSP::r_flg ) & 0x20) )
-	{
-		int addr = 0x100 * dsp.read( SPC_DSP::r_esa );
-		int end  = addr + 0x800 * (dsp.read( SPC_DSP::r_edl ) & 0x0F);
-		if ( end > 0x10000 )
-			end = 0x10000;
-		memset( &RAM [addr], 0xFF, end - addr );
-	}
-}
-
-
 //// Sample output
 
 void SNES_SPC::reset_buf()
@@ -287,44 +270,4 @@ void SNES_SPC::save_extra()
 		*out++ = *in;
 	
 	m.extra_pos = out;
-}
-
-void SNES_SPC::skip( int count )
-{
-	if ( count > 2 * sample_rate * 2 )
-	{
-		//set output with parameters 0 and 0
-		m.extra_clocks &= clocks_per_sample - 1;
-		reset_buf();
-		//end
-		
-		// Skip a multiple of 4 samples
-		time_t end = count;
-		count = (count & 3) + 1 * sample_rate * 2;
-		end = (end - count) * (clocks_per_sample / 2);
-		
-		m.skipped_kon  = 0;
-		m.skipped_koff = 0;
-		
-		// Preserve DSP and timer synchronization
-		// TODO: verify that this really preserves it
-		int old_dsp_time = m.dsp_time + m.spc_time;
-		m.dsp_time = end - m.spc_time + skipping_time;
-		end_frame( end );
-		m.dsp_time = m.dsp_time - skipping_time + old_dsp_time;
-		
-		dsp.write( SPC_DSP::r_koff, m.skipped_koff & ~m.skipped_kon );
-		dsp.write( SPC_DSP::r_kon , m.skipped_kon );
-		clear_echo();
-	}
-	
-	if(count)
-	{
-		//set set_output with parameters 0 and count
-		m.extra_clocks &= clocks_per_sample - 1;
-		reset_buf();
-		//end
-
-		end_frame(count * (clocks_per_sample / 2) );
-	}
 }

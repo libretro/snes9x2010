@@ -12,7 +12,7 @@ public:
 	typedef BOOST::uint8_t uint8_t;
 	
 	// Must be called once before using
-	blargg_err_t init();
+	void init();
 	
 	// Sample pairs generated per second
 	enum { sample_rate = 32000 };
@@ -53,10 +53,6 @@ public:
 	
 // Sound control
 	
-	// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
-	// Reduces emulation accuracy.
-	enum { voice_count = 8 };
-	
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	enum { tempo_unit = 0x100 };
 	void set_tempo( int );
@@ -66,12 +62,6 @@ public:
 	// Loads SPC data into emulator
 	enum { spc_min_file_size = 0x10180 };
 	enum { spc_file_size     = 0x10200 };
-	
-	// Clears echo region. Useful after loading an SPC as many have garbage in echo.
-	void clear_echo();
-
-	// Skips count samples. Several times faster than play() when using fast DSP.
-	void skip( int count );
 	
 // State save/load (only available with accurate DSP)
 
@@ -112,8 +102,6 @@ public:
 	enum { timer_count = 3 };
 	enum { extra_size = SPC_DSP::extra_size };
 	
-	enum { signature_size = 35 };
-
 	// Support SNES_MEMORY_APURAM
 	uint8_t *apuram();
 	uint8_t* run_until_( time_t end_time );
@@ -211,26 +199,6 @@ private:
 	unsigned CPU_mem_bit   ( uint8_t const* pc, rel_time_t );
 	
 	bool check_echo_access ( int addr );
-	
-	struct spc_file_t
-	{
-		char    signature [signature_size];
-		uint8_t has_id666;
-		uint8_t version;
-		uint8_t pcl, pch;
-		uint8_t a;
-		uint8_t x;
-		uint8_t y;
-		uint8_t psw;
-		uint8_t sp;
-		char    text [212];
-		uint8_t ram [0x10000];
-		uint8_t dsp [128];
-		uint8_t unused [0x40];
-		uint8_t ipl_rom [0x40];
-	};
-
-	static char const signature [signature_size + 1];
 	
 // Snes9x timing hack
 	bool allow_time_overflow;

@@ -133,10 +133,10 @@ inline void SNES_SPC::dsp_write( int data, rel_time_t time )
 		else if ( m.dsp_time == skipping_time )
 		{
 			int r = REGS [r_dspaddr];
-			if ( r == SPC_DSP::r_kon )
-				m.skipped_kon |= data & ~dsp.read( SPC_DSP::r_koff );
+			if ( r == R_KON )
+				m.skipped_kon |= data & ~dsp.read( R_KOFF );
 
-			if ( r == SPC_DSP::r_koff )
+			if ( r == R_KOFF )
 			{
 				m.skipped_koff |= data;
 				m.skipped_kon &= ~data;
@@ -373,8 +373,6 @@ BOOST::uint8_t* SNES_SPC::run_until_( time_t end_time )\
 	m.timers [2].next_time -= rel_time;\
 	return &REGS [r_cpuio0];\
 }
-
-int const cpu_lag_max = 12 - 1; // DIV YA,X takes 12 clocks
 
 void SNES_SPC::end_frame( time_t end_time )
 {

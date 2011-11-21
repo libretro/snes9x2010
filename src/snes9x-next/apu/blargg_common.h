@@ -27,11 +27,6 @@
 	#define STATIC_CAST(T,expr) ((T) (expr))
 #endif
 
-// blargg_err_t (0 on success, otherwise error string)
-#ifndef blargg_err_t
-	typedef const char* blargg_err_t;
-#endif
-
 #ifndef BLARGG_DISABLE_NOTHROW
 	// throw spec mandatory in ISO C++ if operator new can return NULL
 	#if __cplusplus >= 199711 || defined (__GNUC__)

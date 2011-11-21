@@ -7,24 +7,6 @@ all other #include lines. */
 #ifndef BLARGG_SOURCE_H
 #define BLARGG_SOURCE_H
 
-// Like printf() except output goes to debug log file. Might be defined to do
-// nothing (not even evaluate its arguments).
-// void dprintf( const char* format, ... );
-static inline void blargg_dprintf_( const char*, ... ) { }
-#undef dprintf
-#define dprintf (1) ? (void) 0 : blargg_dprintf_
-
-// If expr yields error string, return it from current function, otherwise continue.
-#undef RETURN_ERR
-#define RETURN_ERR( expr ) do {                         \
-		blargg_err_t blargg_return_err_ = (expr);               \
-		if ( blargg_return_err_ ) return blargg_return_err_;    \
-	} while ( 0 )
-
-// If ptr is 0, return out of memory error string.
-#undef CHECK_ALLOC
-#define CHECK_ALLOC( ptr ) do { if ( (ptr) == 0 ) return "Out of memory"; } while ( 0 )
-
 // Avoid any macros which evaluate their arguments multiple times
 #undef min
 #undef max
@@ -46,10 +28,6 @@ DEF_MIN_MAX( double )
 #undef byte
 #define byte byte_
 typedef unsigned char byte;
-
-// deprecated
-#define BLARGG_CHECK_ALLOC CHECK_ALLOC
-#define BLARGG_RETURN_ERR RETURN_ERR
 
 // BLARGG_SOURCE_BEGIN: If defined, #included, allowing redefition of dprintf and check
 #ifdef BLARGG_SOURCE_BEGIN

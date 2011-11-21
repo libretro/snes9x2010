@@ -52,7 +52,7 @@ static BOOST::uint8_t const initial_regs [SPC_DSP::register_count] =
 }
 
 // Access global DSP register
-#define REG(n)      m.regs [r_##n]
+#define REG(n)      m.regs[n]
 
 // Access voice DSP register
 #define VREG(r,n)   r [v_##n]
@@ -340,14 +340,14 @@ inline void SPC_DSP::decode_brr( voice_t* v )
 
 MISC_CLOCK( 27 )
 {
-	m.t_pmon = REG(pmon) & 0xFE; // voice 0 doesn't support PMON
+	m.t_pmon = REG(R_PMON) & 0xFE; // voice 0 doesn't support PMON
 }
 
 MISC_CLOCK( 28 )
 {
-	m.t_non = REG(non);
-	m.t_eon = REG(eon);
-	m.t_dir = REG(dir);
+	m.t_non = REG(R_NON);
+	m.t_eon = REG(R_EON);
+	m.t_dir = REG(R_DIR);
 }
 
 MISC_CLOCK( 29 )
@@ -361,13 +361,13 @@ MISC_CLOCK( 30 )
 	if ( m.every_other_sample )
 	{
 		m.kon    = m.new_kon;
-		m.t_koff = REG(koff); 
+		m.t_koff = REG(R_KOFF); 
 	}
 	
 	SPC_DSP_RUN_COUNTERS();
 	
 	// Noise
-	if ( !read_counter( REG(flg) & 0x1F ) )
+	if ( !read_counter( REG(R_FLG) & 0x1F ) )
 	{
 		int feedback = (m.noise << 13) ^ (m.noise << 14);
 		m.noise = (feedback & 0x4000) ^ (m.noise >> 1);
@@ -452,7 +452,7 @@ VOICE_CLOCK( V3c )
 	}
 	
 	// Immediate silence due to end of sample or soft reset
-	if ( REG(flg) & 0x80 || (m.t_brr_header & 3) == 1 )
+	if ( REG(R_FLG) & 0x80 || (m.t_brr_header & 3) == 1 )
 	{
 		v->env_mode = env_release;
 		v->env      = 0;
@@ -529,7 +529,7 @@ inline VOICE_CLOCK( V5 )
 	SPC_DSP_VOICE_OUTPUT( v, 1 );
 	
 	// ENDX, OUTX, and ENVX won't update if you wrote to them 1-2 clocks earlier
-	int endx_buf = REG(endx) | m.t_looped;
+	int endx_buf = REG(R_ENDX) | m.t_looped;
 	
 	// Clear bit in ENDX if KON just began
 	if ( v->kon_delay == 5 )
@@ -544,7 +544,7 @@ inline VOICE_CLOCK( V6 )
 inline VOICE_CLOCK( V7 )
 {
 	// Update ENDX
-	REG(endx) = m.endx_buf;
+	REG(R_ENDX) = m.endx_buf;
 	
 	m.envx_buf = v->t_envx_out;
 }
@@ -583,7 +583,7 @@ VOICE_CLOCK(V9_V6_V3) { voice_V9(v); voice_V6(v+1); voice_V3(v+2); }
 #define ECHO_FIR( i )       (m.echo_hist_pos [i])
 
 // Calculate FIR point for left/right channel
-#define CALC_FIR( i, ch )   ((ECHO_FIR( i + 1 ) [ch] * (int8_t) REG(fir + i * 0x10)) >> 6)
+#define CALC_FIR( i, ch )   ((ECHO_FIR( i + 1 ) [ch] * (int8_t) REG(R_FIR + i * 0x10)) >> 6)
 
 #define ECHO_CLOCK( n ) inline void SPC_DSP::echo_##n()
 
@@ -649,8 +649,8 @@ ECHO_CLOCK( 25 )
 }
 inline int SPC_DSP::echo_output( int ch )
 {
-	int out = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(mvoll + ch * 0x10)) >> 7) +
-			(int16_t) ((m.t_echo_in [ch] * (int8_t) REG(evoll + ch * 0x10)) >> 7);
+	int out = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(R_MVOLL + ch * 0x10)) >> 7) +
+			(int16_t) ((m.t_echo_in [ch] * (int8_t) REG(R_EVOLL + ch * 0x10)) >> 7);
 	CLAMP16( out );
 	return out;
 }
@@ -661,8 +661,8 @@ ECHO_CLOCK( 26 )
 	m.t_main_out [0] = echo_output( 0 );
 	
 	// Echo feedback
-	int l = m.t_echo_out [0] + (int16_t) ((m.t_echo_in [0] * (int8_t) REG(efb)) >> 7);
-	int r = m.t_echo_out [1] + (int16_t) ((m.t_echo_in [1] * (int8_t) REG(efb)) >> 7);
+	int l = m.t_echo_out [0] + (int16_t) ((m.t_echo_in [0] * (int8_t) REG(R_EFB)) >> 7);
+	int r = m.t_echo_out [1] + (int16_t) ((m.t_echo_in [1] * (int8_t) REG(R_EFB)) >> 7);
 	
 	CLAMP16( l );
 	CLAMP16( r );
@@ -680,7 +680,7 @@ ECHO_CLOCK( 27 )
 	
 	// TODO: global muting isn't this simple (turns DAC on and off
 	// or something, causing small ~37-sample pulse when first muted)
-	if ( REG(flg) & 0x40 )
+	if ( REG(R_FLG) & 0x40 )
 	{
 		l = 0;
 		r = 0;
@@ -697,7 +697,7 @@ ECHO_CLOCK( 27 )
 }
 ECHO_CLOCK( 28 )
 {
-	m.t_echo_enabled = REG(flg);
+	m.t_echo_enabled = REG(R_FLG);
 }
 
 #define SPC_DSP_ECHO_WRITE(ch) \
@@ -712,10 +712,10 @@ ECHO_CLOCK( 28 )
 
 ECHO_CLOCK( 29 )
 {
-	m.t_esa = REG(esa);
+	m.t_esa = REG(R_ESA);
 	
 	if ( !m.echo_offset )
-		m.echo_length = (REG(edl) & 0x0F) * 0x800;
+		m.echo_length = (REG(R_EDL) & 0x0F) * 0x800;
 	
 	m.echo_offset += 4;
 	if ( m.echo_offset >= m.echo_length )
@@ -724,7 +724,7 @@ ECHO_CLOCK( 29 )
 	// Write left echo
 	SPC_DSP_ECHO_WRITE( 0 );
 	
-	m.t_echo_enabled = REG(flg);
+	m.t_echo_enabled = REG(R_FLG);
 }
 ECHO_CLOCK( 30 )
 {
@@ -821,14 +821,11 @@ void SPC_DSP::soft_reset_common()
 	m.phase              = 0;
 	
 	SPC_DSP_INIT_COUNTER();
-
-	for (int i = 0; i < voice_count; i++)
-		m.voices[i].voice_number = i;
 }
 
 void SPC_DSP::soft_reset()
 {
-	REG(flg) = 0xE0;
+	REG(R_FLG) = 0xE0;
 	soft_reset_common();
 }
 
@@ -838,16 +835,16 @@ void SPC_DSP::load( uint8_t const regs [register_count] )
 	memset( &m.regs [register_count], 0, offsetof (state_t,ram) - register_count );
 	
 	// Internal state
-	for ( int i = voice_count; --i >= 0; )
+	for ( int i = VOICE_COUNT; --i >= 0; )
 	{
 		voice_t* v = &m.voices [i];
 		v->brr_offset = 1;
 		v->vbit       = 1 << i;
 		v->regs       = &m.regs [i * 0x10];
 	}
-	m.new_kon = REG(kon);
-	m.t_dir   = REG(dir);
-	m.t_esa   = REG(esa);
+	m.new_kon = REG(R_KON);
+	m.t_dir   = REG(R_DIR);
+	m.t_esa   = REG(R_ESA);
 	
 	soft_reset_common();
 }
@@ -908,8 +905,7 @@ void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
 	// Internal state
 	
 	// Voices
-	int i;
-	for ( i = 0; i < voice_count; i++ )
+	for (int i = 0; i < VOICE_COUNT; i++ )
 	{
 		voice_t* v = &m.voices [i];
 		
@@ -940,10 +936,9 @@ void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
 	}
 	
 	// Echo history
-	for ( i = 0; i < echo_hist_size; i++ )
+	for (int i = 0; i < echo_hist_size; i++ )
 	{
-		int j;
-		for ( j = 0; j < 2; j++ )
+		for (int j = 0; j < 2; j++ )
 		{
 			int s = m.echo_hist_pos [i] [j];
 			SPC_COPY( int16_t, s );

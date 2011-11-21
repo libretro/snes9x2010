@@ -1169,7 +1169,7 @@ loop:
 		{
 			addr &= 0xFFFF;
 			SET_PC( addr );
-			dprintf( "SPC: PC wrapped around\n" );
+			//dprintf( "SPC: PC wrapped around\n" );
 			goto loop;
 		}
 	}
@@ -1186,8 +1186,10 @@ out_of_time:
 stop:
 	
 	// Uncache registers
+	#if 0
 	if ( GET_PC() >= 0x10000 )
 		dprintf( "SPC: PC wrapped around\n" );
+	#endif
 	m.cpu_regs.pc = (uint16_t) GET_PC();
 	m.cpu_regs.sp = ( uint8_t) GET_SP();
 	m.cpu_regs.a  = ( uint8_t) a;
