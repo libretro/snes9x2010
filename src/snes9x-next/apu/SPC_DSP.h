@@ -184,9 +184,6 @@ private:
 	void run_envelope( voice_t* const v );
 	void decode_brr( voice_t* v );
 
-	void misc_27();
-	void misc_28();
-	void misc_29();
 	void misc_30();
 
 	void voice_output( voice_t const* v, int ch );
@@ -206,16 +203,13 @@ private:
 	void voice_V8_V5_V2( voice_t* const );
 	void voice_V9_V6_V3( voice_t* const );
 
-	int  echo_output( int ch );
 	void echo_22();
 	void echo_23();
 	void echo_24();
 	void echo_25();
 	void echo_26();
 	void echo_27();
-	void echo_28();
 	void echo_29();
-	void echo_30();
 	
 	void soft_reset_common();
 };

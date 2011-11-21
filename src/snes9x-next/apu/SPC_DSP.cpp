@@ -338,23 +338,17 @@ inline void SPC_DSP::decode_brr( voice_t* v )
 
 #define MISC_CLOCK( n ) inline void SPC_DSP::misc_##n()
 
-MISC_CLOCK( 27 )
-{
-	m.t_pmon = REG(R_PMON) & 0xFE; // voice 0 doesn't support PMON
-}
+// voice 0 doesn't support PMON
+#define misc_27() m.t_pmon = REG(R_PMON) & 0xFE; 
 
-MISC_CLOCK( 28 )
-{
-	m.t_non = REG(R_NON);
-	m.t_eon = REG(R_EON);
+#define misc_28() \
+	m.t_non = REG(R_NON); \
+	m.t_eon = REG(R_EON); \
 	m.t_dir = REG(R_DIR);
-}
 
-MISC_CLOCK( 29 )
-{
-	if ( (m.every_other_sample ^= 1) != 0 )
+#define misc_29() \
+	if ( (m.every_other_sample ^= 1) != 0 ) \
 		m.new_kon &= ~m.kon; // clears KON 63 clocks after it was last read
-}
 
 MISC_CLOCK( 30 )
 {
@@ -646,18 +640,17 @@ ECHO_CLOCK( 25 )
 	m.t_echo_in [0] = l & ~1;
 	m.t_echo_in [1] = r & ~1;
 }
-inline int SPC_DSP::echo_output( int ch )
-{
-	int out = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(R_MVOLL + ch * 0x10)) >> 7) +
-			(int16_t) ((m.t_echo_in [ch] * (int8_t) REG(R_EVOLL + ch * 0x10)) >> 7);
-	CLAMP16( out );
-	return out;
-}
+#define echo_output(ch) \
+	int output_tmp = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(R_MVOLL + ch * 0x10)) >> 7) + \
+			(int16_t) ((m.t_echo_in [ch] * (int8_t) REG(R_EVOLL + ch * 0x10)) >> 7); \
+	CLAMP16( output_tmp );
+
 ECHO_CLOCK( 26 )
 {
 	// Left output volumes
 	// (save sample for next clock so we can output both together)
-	m.t_main_out [0] = echo_output( 0 );
+	echo_output(0);
+	m.t_main_out [0] = output_tmp;
 	
 	// Echo feedback
 	int l = m.t_echo_out [0] + (int16_t) ((m.t_echo_in [0] * (int8_t) REG(R_EFB)) >> 7);
@@ -673,7 +666,8 @@ ECHO_CLOCK( 27 )
 {
 	// Output
 	int l = m.t_main_out [0];
-	int r = echo_output( 1 );
+	echo_output( 1 );
+	int r = output_tmp;
 	m.t_main_out [0] = 0;
 	m.t_main_out [1] = 0;
 	
@@ -694,10 +688,8 @@ ECHO_CLOCK( 27 )
 		m.out = out;
 	#endif
 }
-ECHO_CLOCK( 28 )
-{
-	m.t_echo_enabled = REG(R_FLG);
-}
+
+#define echo_28() m.t_echo_enabled = REG(R_FLG);
 
 #define SPC_DSP_ECHO_WRITE(ch) \
 	if ( !(m.t_echo_enabled & 0x20) ) \
@@ -725,12 +717,8 @@ ECHO_CLOCK( 29 )
 	
 	m.t_echo_enabled = REG(R_FLG);
 }
-ECHO_CLOCK( 30 )
-{
-	// Write right echo
-	SPC_DSP_ECHO_WRITE( 1 );
-}
 
+#define echo_30() SPC_DSP_ECHO_WRITE( 1 ); /* Write right echo */
 
 //// Timing
 
@@ -937,12 +925,14 @@ void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
 	// Echo history
 	for (int i = 0; i < echo_hist_size; i++ )
 	{
-		for (int j = 0; j < 2; j++ )
-		{
-			int s = m.echo_hist_pos [i] [j];
-			SPC_COPY( int16_t, s );
-			m.echo_hist [i] [j] = s; // write back at offset 0
-		}
+		int s = m.echo_hist_pos [i] [0];
+		int s2 = m.echo_hist_pos [i] [1];
+
+		SPC_COPY( int16_t, s );
+		m.echo_hist [i] [0] = s; // write back at offset 0
+
+		SPC_COPY( int16_t, s2 );
+		m.echo_hist [i] [1] = s2; // write back at offset 0
 	}
 	m.echo_hist_pos = m.echo_hist;
 	memcpy( &m.echo_hist [echo_hist_size], m.echo_hist, echo_hist_size * sizeof m.echo_hist [0] );
