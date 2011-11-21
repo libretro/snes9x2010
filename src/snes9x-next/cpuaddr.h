@@ -299,7 +299,7 @@ static inline uint32 AbsoluteIndirectLongSlow (AccessMode a)			// [a]
 	uint16	addr = Immediate16Slow(READ);
 
 	// No info on wrapping, but it doesn't matter anyway due to mirroring
-	uint32	addr2 = S9xGetWord(addr);
+	uint32	addr2 = S9xGetWord(addr, WRAP_NONE);
 	OpenBus = addr2 >> 8;
 	addr2 |= (OpenBus = S9xGetByte(addr + 2)) << 16;
 
@@ -311,7 +311,7 @@ static inline uint32 AbsoluteIndirectLong (AccessMode a)				// [a]
 	uint16	addr = Immediate16(READ);
 
 	// No info on wrapping, but it doesn't matter anyway due to mirroring
-	uint32	addr2 = S9xGetWord(addr);
+	uint32	addr2 = S9xGetWord(addr, WRAP_NONE);
 	OpenBus = addr2 >> 8;
 	addr2 |= (OpenBus = S9xGetByte(addr + 2)) << 16;
 
@@ -321,7 +321,7 @@ static inline uint32 AbsoluteIndirectLong (AccessMode a)				// [a]
 static inline uint32 AbsoluteIndirectSlow (AccessMode a)				// (a)
 {
 	// No info on wrapping, but it doesn't matter anyway due to mirroring
-	uint16	addr2 = S9xGetWord(Immediate16Slow(READ));
+	uint16	addr2 = S9xGetWord(Immediate16Slow(READ), WRAP_NONE);
 	OpenBus = addr2 >> 8;
 
 	return (addr2);
@@ -330,7 +330,7 @@ static inline uint32 AbsoluteIndirectSlow (AccessMode a)				// (a)
 static inline uint32 AbsoluteIndirect (AccessMode a)					// (a)
 {
 	// No info on wrapping, but it doesn't matter anyway due to mirroring
-	uint16	addr2 = S9xGetWord(Immediate16(READ));
+	uint16	addr2 = S9xGetWord(Immediate16(READ), WRAP_NONE);
 	OpenBus = addr2 >> 8;
 
 	return (addr2);
@@ -401,7 +401,7 @@ static inline uint32 DirectIndirectSlow (AccessMode a)					// (d)
 
 static inline uint32 DirectIndirectE0 (AccessMode a)					// (d)
 {
-	uint32	addr = S9xGetWord(Direct(READ));
+	uint32	addr = S9xGetWord(Direct(READ), WRAP_NONE);
 	if (a & READ)
 		OpenBus = (uint8) (addr >> 8);
 	addr |= ICPU.ShiftedDB;
@@ -457,7 +457,7 @@ static inline uint32 DirectIndirectIndexedE1 (AccessMode a)				// (d),Y
 static inline uint32 DirectIndirectLongSlow (AccessMode a)				// [d]
 {
 	uint16	addr = DirectSlow(READ);
-	uint32	addr2 = S9xGetWord(addr);
+	uint32	addr2 = S9xGetWord(addr, WRAP_NONE);
 	OpenBus = addr2 >> 8;
 	addr2 |= (OpenBus = S9xGetByte(addr + 2)) << 16;
 
@@ -467,7 +467,7 @@ static inline uint32 DirectIndirectLongSlow (AccessMode a)				// [d]
 static inline uint32 DirectIndirectLong (AccessMode a)					// [d]
 {
 	uint16	addr = Direct(READ);
-	uint32	addr2 = S9xGetWord(addr);
+	uint32	addr2 = S9xGetWord(addr, WRAP_NONE);
 	OpenBus = addr2 >> 8;
 	addr2 |= (OpenBus = S9xGetByte(addr + 2)) << 16;
 
@@ -569,7 +569,7 @@ static inline uint32 DirectIndexedIndirectSlow (AccessMode a)			// (d,X)
 
 static inline uint32 DirectIndexedIndirectE0 (AccessMode a)				// (d,X)
 {
-	uint32	addr = S9xGetWord(DirectIndexedXE0(READ));
+	uint32	addr = S9xGetWord(DirectIndexedXE0(READ), WRAP_NONE);
 	if (a & READ)
 		OpenBus = (uint8) (addr >> 8);
 
@@ -669,7 +669,7 @@ static inline uint32 StackRelativeIndirectIndexedSlow (AccessMode a)	// (d,S),Y
 	uint16	addr_stack_relative_slow = Immediate8Slow(READ) + Registers.S.W;
 	AddCycles(ONE_CYCLE);
 	//end of StackRelativeSlow
-	uint32	addr = S9xGetWord(addr_stack_relative_slow);
+	uint32	addr = S9xGetWord(addr_stack_relative_slow, WRAP_NONE);
 	if (a & READ)
 		OpenBus = (uint8) (addr >> 8);
 	addr = (addr + Registers.Y.W + ICPU.ShiftedDB) & 0xffffff;
@@ -683,7 +683,7 @@ static inline uint32 StackRelativeIndirectIndexed (AccessMode a)		// (d,S),Y
 	//StackRelative
 	uint16 addr_stack_relative = Immediate8Slow(READ) + Registers.S.W;
 	AddCycles(ONE_CYCLE);
-	uint32	addr = S9xGetWord(addr_stack_relative);
+	uint32	addr = S9xGetWord(addr_stack_relative, WRAP_NONE);
 	//End of StackRelative
 	if (a & READ)
 		OpenBus = (uint8) (addr >> 8);

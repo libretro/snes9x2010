@@ -235,22 +235,22 @@ struct SSA1
 #define SA1CheckFlag(f)		(SA1Registers.PL & (f))
 
 extern struct SSA1Registers	SA1Registers;
-extern struct SSA1			SA1;
-extern uint8				SA1OpenBus;
+extern struct SSA1		SA1;
+extern uint8			SA1OpenBus;
 extern struct SOpcodes		S9xSA1OpcodesM1X1[256];
 extern struct SOpcodes		S9xSA1OpcodesM1X0[256];
 extern struct SOpcodes		S9xSA1OpcodesM0X1[256];
 extern struct SOpcodes		S9xSA1OpcodesM0X0[256];
-extern uint8				S9xOpLengthsM1X1[256];
-extern uint8				S9xOpLengthsM1X0[256];
-extern uint8				S9xOpLengthsM0X1[256];
-extern uint8				S9xOpLengthsM0X0[256];
+extern uint8			S9xOpLengthsM1X1[256];
+extern uint8			S9xOpLengthsM1X0[256];
+extern uint8			S9xOpLengthsM0X1[256];
+extern uint8			S9xOpLengthsM0X0[256];
 
 uint8 S9xSA1GetByte (uint32);
 void S9xSA1SetByte (uint8, uint32);
-uint16 S9xSA1GetWord (uint32, enum s9xwrap_t w = WRAP_NONE);
-void S9xSA1SetWord_Write0(uint16, uint32, enum s9xwrap_t w = WRAP_NONE);
-void S9xSA1SetWord_Write1(uint16, uint32, enum s9xwrap_t w = WRAP_NONE);
+uint16 S9xSA1GetWord (uint32, enum s9xwrap_t w);
+void S9xSA1SetWord_Write0(uint16, uint32, enum s9xwrap_t w);
+void S9xSA1SetWord_Write1(uint16, uint32, enum s9xwrap_t w);
 void S9xSA1SetPCBase (uint32);
 uint8 S9xGetSA1 (uint32);
 void S9xSetSA1 (uint8, uint32);

@@ -211,7 +211,7 @@ static void S9xSoftResetCPU (void)
 
 	Registers.PBPC = 0;
 	Registers.PB = 0;
-	Registers.PCw = S9xGetWord(0xfffc);
+	Registers.PCw = S9xGetWord(0xfffc, WRAP_NONE);
 	OpenBus = Registers.PCh;
 	Registers.D.W = 0;
 	Registers.DB = 0;

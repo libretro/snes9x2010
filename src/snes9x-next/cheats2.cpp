@@ -264,7 +264,7 @@ void S9xRemoveCheat (uint32 which1)
 		int		block = (address & 0xffffff) >> MEMMAP_SHIFT;
 		uint8	*ptr = Memory.Map[block];
 
-		if (ptr >= (uint8 *) CMemory::MAP_LAST)
+		if (ptr >= (uint8 *) MAP_LAST)
 			*(ptr + (address & 0xffff)) = Cheat.c[which1].saved_byte;
 		else
 			S9xSetByteFree(Cheat.c[which1].saved_byte, address);
@@ -309,7 +309,7 @@ void S9xApplyCheat (uint32 which1)
 	int		block = (address & 0xffffff) >> MEMMAP_SHIFT;
 	uint8	*ptr = Memory.Map[block];
 
-	if (ptr >= (uint8 *) CMemory::MAP_LAST)
+	if (ptr >= (uint8 *) MAP_LAST)
 		*(ptr + (address & 0xffff)) = Cheat.c[which1].byte;
 	else
 		S9xSetByteFree(Cheat.c[which1].byte, address);

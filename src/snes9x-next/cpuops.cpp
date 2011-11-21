@@ -2715,7 +2715,7 @@ static void Op00 (void)
 		ClearDecimal();
 		SetIRQ();
 
-		addr = S9xGetWord(0xFFE6);
+		addr = S9xGetWord(0xFFE6, WRAP_NONE);
 	}
 	else
 	{
@@ -2726,7 +2726,7 @@ static void Op00 (void)
 		ClearDecimal();
 		SetIRQ();
 
-		addr = S9xGetWord(0xFFFE);
+		addr = S9xGetWord(0xFFFE, WRAP_NONE);
 	}
 
 	S9xSetPCBase(addr);
@@ -2764,7 +2764,7 @@ void S9xOpcode_IRQ (void)
 		}
 		else
 		{
-			uint16	addr = S9xGetWord(0xFFEE);
+			uint16	addr = S9xGetWord(0xFFEE, WRAP_NONE);
 			OpenBus = addr >> 8;
 			S9xSetPCBase(addr);
 		}
@@ -2792,7 +2792,7 @@ void S9xOpcode_IRQ (void)
 		}
 		else
 		{
-			uint16	addr = S9xGetWord(0xFFFE);
+			uint16	addr = S9xGetWord(0xFFFE, WRAP_NONE);
 			OpenBus = addr >> 8;
 			S9xSetPCBase(addr);
 		}
@@ -2831,7 +2831,7 @@ void S9xOpcode_NMI (void)
 		}
 		else
 		{
-			uint16	addr = S9xGetWord(0xFFEA);
+			uint16	addr = S9xGetWord(0xFFEA, WRAP_NONE);
 			OpenBus = addr >> 8;
 			S9xSetPCBase(addr);
 		}
@@ -2859,7 +2859,7 @@ void S9xOpcode_NMI (void)
 		}
 		else
 		{
-			uint16	addr = S9xGetWord(0xFFFA);
+			uint16	addr = S9xGetWord(0xFFFA, WRAP_NONE);
 			OpenBus = addr >> 8;
 			S9xSetPCBase(addr);
 		}
@@ -2886,7 +2886,7 @@ static void Op02 (void)
 		ClearDecimal();
 		SetIRQ();
 
-		addr = S9xGetWord(0xFFE4);
+		addr = S9xGetWord(0xFFE4, WRAP_NONE);
 	}
 	else
 	{
@@ -2897,7 +2897,7 @@ static void Op02 (void)
 		ClearDecimal();
 		SetIRQ();
 
-		addr = S9xGetWord(0xFFF4);
+		addr = S9xGetWord(0xFFF4, WRAP_NONE);
 	}
 
 	S9xSetPCBase(addr);
@@ -3436,7 +3436,7 @@ static void OpDB (void)
 
 static void Op42 (void)
 {
-	S9xGetWord(Registers.PBPC);
+	S9xGetWord(Registers.PBPC, WRAP_NONE);
 	Registers.PCw++;
 
 }

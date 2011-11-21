@@ -181,12 +181,36 @@
 #define MEMMAP_BLOCK_SIZE	(0x1000)
 #define MEMMAP_NUM_BLOCKS	(0x1000000 / MEMMAP_BLOCK_SIZE)
 #define MEMMAP_SHIFT		(12)
-#define MEMMAP_MASK			(MEMMAP_BLOCK_SIZE - 1)
+#define MEMMAP_MASK		(MEMMAP_BLOCK_SIZE - 1)
+
+ enum
+{
+	MAP_CPU,
+	MAP_PPU,
+	MAP_LOROM_SRAM,
+	MAP_LOROM_SRAM_B,
+	MAP_HIROM_SRAM,
+	MAP_DSP,
+	MAP_SA1RAM,
+	MAP_BWRAM,
+	MAP_BWRAM_BITMAP,
+	MAP_BWRAM_BITMAP2,
+	MAP_SPC7110_ROM,
+	MAP_SPC7110_DRAM,
+	MAP_RONLY_SRAM,
+	MAP_C4,
+	MAP_OBC_RAM,
+	MAP_SETA_DSP,
+	MAP_SETA_RISC,
+	MAP_BSX,
+	MAP_NONE,
+	MAP_LAST
+};
+
+#define MAX_ROM_SIZE 0x800000
 
 struct CMemory
 {
-	enum
-	{ MAX_ROM_SIZE = 0x800000 };
 
 	enum file_formats
 	{ FILE_ZIP, FILE_DEFAULT };
@@ -197,29 +221,6 @@ struct CMemory
 	enum
 	{ MAP_TYPE_I_O, MAP_TYPE_ROM, MAP_TYPE_RAM };
 
-	enum
-	{
-		MAP_CPU,
-		MAP_PPU,
-		MAP_LOROM_SRAM,
-		MAP_LOROM_SRAM_B,
-		MAP_HIROM_SRAM,
-		MAP_DSP,
-		MAP_SA1RAM,
-		MAP_BWRAM,
-		MAP_BWRAM_BITMAP,
-		MAP_BWRAM_BITMAP2,
-		MAP_SPC7110_ROM,
-		MAP_SPC7110_DRAM,
-		MAP_RONLY_SRAM,
-		MAP_C4,
-		MAP_OBC_RAM,
-		MAP_SETA_DSP,
-		MAP_SETA_RISC,
-		MAP_BSX,
-		MAP_NONE,
-		MAP_LAST
-	};
 
 	uint8	NSRTHeader[32];
 	int32	HeaderCount;
@@ -268,8 +269,8 @@ struct CMemory
 	bool8	Init (void);
 	void	Deinit (void);
 
-	int		ScoreHiROM (bool8, int32 romoff = 0);
-	int		ScoreLoROM (bool8, int32 romoff = 0);
+	int	ScoreHiROM (bool8, int32 romoff);
+	int	ScoreLoROM (bool8, int32 romoff);
 	uint32	HeaderRemove (uint32, int32 &, uint8 *);
 	uint32	FileLoader (uint8 *, const char *, int32);
 	bool8	LoadROM (const char *);
@@ -278,7 +279,7 @@ struct CMemory
 	bool8	LoadSameGame (const char *, const char *);
 	bool8	LoadSRAM (const char *);
 	bool8	SaveSRAM (const char *);
-	void	ClearSRAM (bool8 onlyNonSavedSRAM = 0);
+	void	ClearSRAM (void);
 	bool8	LoadSRTC (void);
 	bool8	SaveSRTC (void);
 
@@ -322,7 +323,7 @@ struct CMemory
 	void	Map_SPC7110HiROMMap (void);
 
 	uint16	checksum_calc_sum (uint8 *, uint32);
-	uint16	checksum_mirror_sum (uint8 *, uint32 &, uint32 mask = 0x800000);
+	uint16	checksum_mirror_sum (uint8 *, uint32 &, uint32 mask);
 	void	Checksum_Calculate (void);
 
 	bool8	match_na (const char *);

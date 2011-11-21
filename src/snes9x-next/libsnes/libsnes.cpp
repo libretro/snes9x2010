@@ -660,19 +660,16 @@ void S9xDeinitUpdate(int width, int height)
 }
 
 // Dummy functions that should probably be implemented correctly later.
-//void S9xPollPointer(int, short*, short*) {}
 const char* S9xGetFilename(const char* in, s9x_getdirtype) { return in; }
 const char* S9xGetDirectory(s9x_getdirtype) { return NULL; }
 const char* S9xChooseFilename(unsigned char) { return NULL; }
 void S9xHandlePortCommand(s9xcommand_t, short, short) {}
-bool S9xPollButton(unsigned int, bool*) { return false; }
 const char* S9xBasename(const char* in) { return in; }
 bool8 S9xOpenSoundDevice() { return TRUE; }
 void S9xMessage(int, int, const char*) {}
 bool S9xPollAxis(unsigned int, short*) { return FALSE; }
 void S9xSetPalette() {}
 void S9xExit() {}
-bool S9xPollPointer(unsigned int, short*, short*) { return false; }
 void S9xOnSNESPadRead (void) {}
 void S9xDoThrottling (bool throttle) {}
 void S9xExitToMenu(void) {}

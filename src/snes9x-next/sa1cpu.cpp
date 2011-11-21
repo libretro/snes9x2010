@@ -196,7 +196,9 @@
 #define S9xOpcodesSlow					S9xSA1OpcodesSlow
 #define S9xOpcode_IRQ					S9xSA1Opcode_IRQ
 #define S9xOpcode_NMI					S9xSA1Opcode_NMI
+#undef S9xUnpackStatus
 #define S9xUnpackStatus					S9xSA1UnpackStatus
+#undef S9xPackStatus
 #define S9xPackStatus					S9xSA1PackStatus
 #define S9xFixCycles					S9xSA1FixCycles
 #define Immediate8						SA1Immediate8

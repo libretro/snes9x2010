@@ -196,10 +196,6 @@
 #define SRAM		Memory.SRAM
 #define PSRAM		Memory.BSRAM
 #define BIOSROM		Memory.BIOSROM
-#define MAP_BSX		Memory.MAP_BSX
-#define MAP_CPU		Memory.MAP_CPU
-#define MAP_PPU		Memory.MAP_PPU
-#define MAP_NONE	Memory.MAP_NONE
 
 #define BSXPPUBASE	0x2180
 

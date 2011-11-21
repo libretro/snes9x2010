@@ -202,7 +202,7 @@ void fx_flushCache (void);
 void fx_computeScreenPointers (void);
 uint32 fx_run (uint32);
 
-#define FX_BREAKPOINT				(-1)
+#define FX_BREAKPOINT			(-1)
 #define FX_ERROR_ILLEGAL_ADDRESS	(-2)
 
 #else

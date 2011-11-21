@@ -184,9 +184,8 @@
 #define S9xButtonSuperscope		3
 #define S9xButtonJustifier		4
 #define S9xButtonCommand		5
-#define S9xPointer				8
-
-#define S9xButtonPseudopointer	254
+#define S9xPointer			8
+#define S9xButtonPseudopointer		254
 
 // These are automatically kicked out to the S9xHandlePortCommand function.
 // If your port wants to define port-specific commands or whatever, use these values for the s9xcommand_t type field.
@@ -322,22 +321,6 @@ void S9xReportPointer (uint32 id, int16 x, int16 y);
 // If cmd.type is a pointer, data1 and data2 are the positions of the pointer.
 
 void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2);
-
-//////////
-// These functions are called by snes9x into your port, so each port should implement them.
-
-// If something was mapped with poll=TRUE, these functions will be called when snes9x needs the button/axis/pointer state.
-// Fill in the reference options as appropriate.
-
-bool S9xPollButton (uint32 id, bool *pressed);
-bool S9xPollPointer (uint32 id, int16 *x, int16 *y);
-
-// These are for your use.
-
-s9xcommand_t S9xGetPortCommandT (const char *name);
-char * S9xGetPortCommandName (s9xcommand_t command);
-void S9xSetupDefaultKeymap (void);
-bool8 S9xMapInput (const char *name, s9xcommand_t *cmd);
 
 //////////
 // These functions are called from snes9x into this subsystem. No need to use them from a port.

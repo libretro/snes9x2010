@@ -1484,19 +1484,19 @@ again:
 
 	int	hi_score, lo_score;
 
-	hi_score = ScoreHiROM(FALSE);
-	lo_score = ScoreLoROM(FALSE);
+	hi_score = ScoreHiROM(FALSE, 0);
+	lo_score = ScoreLoROM(FALSE, 0);
 
 	if (HeaderCount == 0 && !Settings.ForceNoHeader &&
-		((hi_score >  lo_score && ScoreHiROM(TRUE) > hi_score) ||
-		 (hi_score <= lo_score && ScoreLoROM(TRUE) > lo_score)))
+		((hi_score >  lo_score && ScoreHiROM(TRUE, 0) > hi_score) ||
+		 (hi_score <= lo_score && ScoreLoROM(TRUE, 0) > lo_score)))
 	{
 		memmove(ROM, ROM + 512, totalFileSize - 512);
 		totalFileSize -= 512;
 		S9xMessage(S9X_INFO, S9X_HEADER_WARNING, "Try 'force no-header' option if the game doesn't work");
 		// modifying ROM, so we need to rescore
-		hi_score = ScoreHiROM(FALSE);
-		lo_score = ScoreLoROM(FALSE);
+		hi_score = ScoreHiROM(FALSE, 0);
+		lo_score = ScoreLoROM(FALSE, 0);
 	}
 
 	CalculatedSize = (totalFileSize / 0x2000) * 0x2000;
@@ -1518,8 +1518,8 @@ again:
 	}
 
 	// CalculatedSize is now set, so rescore
-	hi_score = ScoreHiROM(FALSE);
-	lo_score = ScoreLoROM(FALSE);
+	hi_score = ScoreHiROM(FALSE, 0);
+	lo_score = ScoreLoROM(FALSE, 0);
 
 	uint8	*RomHeader = ROM;
 
@@ -1636,8 +1636,8 @@ again:
 			S9xDeinterleaveType1(CalculatedSize, ROM);
 		}
 
-		hi_score = ScoreHiROM(FALSE);
-		lo_score = ScoreLoROM(FALSE);
+		hi_score = ScoreHiROM(FALSE, 0);
+		lo_score = ScoreLoROM(FALSE, 0);
 
 		if ((HiROM && (lo_score >= hi_score || hi_score < 0)) ||
 			(LoROM && (hi_score >  lo_score || lo_score < 0)))
@@ -1908,12 +1908,8 @@ bool8 CMemory::SaveSRTC (void)
 	return (TRUE);
 }
 
-void CMemory::ClearSRAM (bool8 onlyNonSavedSRAM)
+void CMemory::ClearSRAM (void)
 {
-	if (onlyNonSavedSRAM)
-		if (!(Settings.SuperFX && ROMType < 0x15) && !(Settings.SA1 && ROMType == 0x34)) // can have SRAM
-			return;
-
 	memset(SRAM, SNESGameFixes.SRAMInitialValue, 0x20000);
 }
 
@@ -3231,7 +3227,7 @@ void CMemory::Checksum_Calculate (void)
 		else
 		{
 			uint32	length = CalculatedSize;
-			sum = checksum_mirror_sum(ROM, length);
+			sum = checksum_mirror_sum(ROM, length, 0x800000);
 		}
 	}
 
@@ -4045,7 +4041,7 @@ static bool8 ReadUPSPatch (Reader *r, long, int32 &rom_size)
 	uint32 px_size = ReadUPSPointer(data, addr, size);
 	uint32 py_size = ReadUPSPointer(data, addr, size);
 	uint32 out_size = ((uint32) rom_size == px_size) ? py_size : px_size;
-	if(out_size > CMemory::MAX_ROM_SIZE) { delete[] data; return false; }  //applying this patch will overflow Memory.ROM buffer
+	if(out_size > MAX_ROM_SIZE) { delete[] data; return false; }  //applying this patch will overflow Memory.ROM buffer
 
 	//fill expanded area with 0x00s; so that XORing works as expected below.
 	//note that this is needed (and works) whether output ROM is larger or smaller than pre-patched ROM
@@ -4140,7 +4136,7 @@ static bool8 ReadIPSPatch (Reader *r, long offset, int32 &rom_size)
 
 		if (len)
 		{
-			if (ofs + len > CMemory::MAX_ROM_SIZE)
+			if (ofs + len > MAX_ROM_SIZE)
 				return (0);
 
 			while (len--)
@@ -4164,7 +4160,7 @@ static bool8 ReadIPSPatch (Reader *r, long offset, int32 &rom_size)
 			if (rchar == EOF)
 				return (0);
 
-			if (ofs + rlen > CMemory::MAX_ROM_SIZE)
+			if (ofs + rlen > MAX_ROM_SIZE)
 				return (0);
 
 			while (rlen--)

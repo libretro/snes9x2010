@@ -180,9 +180,9 @@
 
 #define FIRST_VISIBLE_LINE	1
 
-#define TILE_2BIT			0
-#define TILE_4BIT			1
-#define TILE_8BIT			2
+#define TILE_2BIT		0
+#define TILE_4BIT		1
+#define TILE_8BIT		2
 #define TILE_2BIT_EVEN		3
 #define TILE_2BIT_ODD		4
 #define TILE_4BIT_EVEN		5
@@ -192,10 +192,10 @@
 #define MAX_4BIT_TILES		2048
 #define MAX_8BIT_TILES		1024
 
-#define CLIP_OR				0
-#define CLIP_AND			1
-#define CLIP_XOR			2
-#define CLIP_XNOR			3
+#define CLIP_OR			0
+#define CLIP_AND		1
+#define CLIP_XOR		2
+#define CLIP_XNOR		3
 
 #define PPU_IRQ_SOURCE		(1 << 1)
 #define GSU_IRQ_SOURCE		(1 << 2)

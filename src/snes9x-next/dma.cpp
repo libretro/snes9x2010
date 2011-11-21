@@ -355,7 +355,7 @@ bool8 S9xDoDMA (uint8 Channel)
 
 			base += addr;
 
-			uint8	*buffer = &Memory.ROM[CMemory::MAX_ROM_SIZE - 0x10000];
+			uint8	*buffer = &Memory.ROM[MAX_ROM_SIZE - 0x10000];
 			uint8	*p = buffer;
 			uint32	inc_sa1 = char_line_bytes - (d->AAddress % char_line_bytes);
 			uint32	char_count = inc_sa1 / bytes_per_char;
@@ -480,7 +480,7 @@ bool8 S9xDoDMA (uint8 Channel)
 		// Settings for custom chip DMA
 		if (in_sa1_dma)
 		{
-			base = &Memory.ROM[CMemory::MAX_ROM_SIZE - 0x10000];
+			base = &Memory.ROM[MAX_ROM_SIZE - 0x10000];
 			p = 0;
 			count = rem;
 		}
@@ -1257,7 +1257,7 @@ static inline bool8 HDMAReadLineCount (int d)
 			else
 				ADD_CYCLES(SLOW_ONE_CYCLE);
 
-			DMA[d].IndirectAddress = S9xGetWord((DMA[d].ABank << 16) + DMA[d].Address);
+			DMA[d].IndirectAddress = S9xGetWord((DMA[d].ABank << 16) + DMA[d].Address, WRAP_NONE);
 			DMA[d].Address++;
 		}
 
@@ -1284,7 +1284,7 @@ static inline bool8 HDMAReadLineCount (int d)
 	if (DMA[d].HDMAIndirectAddressing)
 	{
 		ADD_CYCLES(SLOW_ONE_CYCLE << 1);
-		DMA[d].IndirectAddress = S9xGetWord((DMA[d].ABank << 16) + DMA[d].Address);
+		DMA[d].IndirectAddress = S9xGetWord((DMA[d].ABank << 16) + DMA[d].Address, WRAP_NONE);
 		DMA[d].Address += 2;
 		HDMAMemPointers[d] = S9xGetMemPointer((DMA[d].IndirectBank << 16) + DMA[d].IndirectAddress);
 	}

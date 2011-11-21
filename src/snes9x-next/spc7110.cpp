@@ -229,17 +229,17 @@ static void SetSPC7110SRAMMap (uint8 newstate)
 {
 	if (newstate & 0x80)
 	{
-		Memory.Map[0x006] = (uint8 *) Memory.MAP_HIROM_SRAM;
-		Memory.Map[0x007] = (uint8 *) Memory.MAP_HIROM_SRAM;
-		Memory.Map[0x306] = (uint8 *) Memory.MAP_HIROM_SRAM;
-		Memory.Map[0x307] = (uint8 *) Memory.MAP_HIROM_SRAM;
+		Memory.Map[0x006] = (uint8 *) MAP_HIROM_SRAM;
+		Memory.Map[0x007] = (uint8 *) MAP_HIROM_SRAM;
+		Memory.Map[0x306] = (uint8 *) MAP_HIROM_SRAM;
+		Memory.Map[0x307] = (uint8 *) MAP_HIROM_SRAM;
 	}
 	else
 	{
-		Memory.Map[0x006] = (uint8 *) Memory.MAP_RONLY_SRAM;
-		Memory.Map[0x007] = (uint8 *) Memory.MAP_RONLY_SRAM;
-		Memory.Map[0x306] = (uint8 *) Memory.MAP_RONLY_SRAM;
-		Memory.Map[0x307] = (uint8 *) Memory.MAP_RONLY_SRAM;
+		Memory.Map[0x006] = (uint8 *) MAP_RONLY_SRAM;
+		Memory.Map[0x007] = (uint8 *) MAP_RONLY_SRAM;
+		Memory.Map[0x306] = (uint8 *) MAP_RONLY_SRAM;
+		Memory.Map[0x307] = (uint8 *) MAP_RONLY_SRAM;
 	}
 }
 
