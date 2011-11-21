@@ -381,10 +381,6 @@ void S9xSetPPU (uint8, uint16);
 uint8 S9xGetPPU (uint16);
 void S9xSetCPU (uint8, uint16);
 uint8 S9xGetCPU (uint16);
-void S9xUpdateHVTimerPosition (void);
-void S9xCheckMissingHTimerPosition (int32);
-void S9xCheckMissingHTimerRange (int32, int32);
-void S9xCheckMissingHTimerHalt (int32, int32);
 void S9xFixColourBrightness (void);
 void S9xDoAutoJoypad (void);
 

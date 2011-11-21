@@ -307,6 +307,30 @@ void S9xClearIRQ (uint32 source)
 
 }
 
+static void S9xCheckMissingHTimerPosition (int32 hc)
+{
+	if (PPU.HTimerPosition == hc)
+	{
+		if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
+			S9xSetIRQ(PPU_IRQ_SOURCE);
+		else
+		if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
+			S9xSetIRQ(PPU_IRQ_SOURCE);
+	}
+}
+
+static void S9xCheckMissingHTimerHalt (int32 hc_from, int32 range)
+{
+	if ((PPU.HTimerPosition >= hc_from) && (PPU.HTimerPosition < (hc_from + range)))
+	{
+		if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
+			CPU.IRQPending = 1;
+		else
+		if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
+			CPU.IRQPending = 1;
+	}
+}
+
 void S9xDoHEventProcessing (void)
 {
 	switch (CPU.WhichEvent)
