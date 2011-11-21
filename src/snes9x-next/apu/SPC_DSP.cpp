@@ -422,7 +422,6 @@ VOICE_CLOCK( V3c )
 			v->brr_offset  = 1;
 			v->buf_pos     = 0;
 			m.t_brr_header = 0; // header is ignored on this sample
-			m.kon_check    = true;
 		}
 		
 		// Envelope is never run during KON

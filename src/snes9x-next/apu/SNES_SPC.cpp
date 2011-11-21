@@ -130,18 +130,6 @@ int SNES_SPC::dsp_read( rel_time_t time )
 inline void SNES_SPC::dsp_write( int data, rel_time_t time )
 {
 	RUN_DSP( time, reg_times [REGS [r_dspaddr]] )
-		else if ( m.dsp_time == skipping_time )
-		{
-			int r = REGS [r_dspaddr];
-			if ( r == R_KON )
-				m.skipped_kon |= data & ~dsp.read( R_KOFF );
-
-			if ( r == R_KOFF )
-			{
-				m.skipped_koff |= data;
-				m.skipped_kon &= ~data;
-			}
-		}
 	
 	#ifdef SPC_DSP_WRITE_HOOK
 		SPC_DSP_WRITE_HOOK( m.spc_time + time, REGS [r_dspaddr], (uint8_t) data );
@@ -150,10 +138,6 @@ inline void SNES_SPC::dsp_write( int data, rel_time_t time )
 	if ( REGS [r_dspaddr] <= 0x7F )
 		dsp.write( REGS [r_dspaddr], data );
 }
-
-
-//// Memory access extras
-#define MEM_ACCESS( time, addr )
 
 //// CPU write
 
@@ -256,8 +240,6 @@ int const bits_in_int = CHAR_BIT * sizeof (int);
 
 void SNES_SPC::cpu_write( int data, int addr, rel_time_t time )
 {
-	MEM_ACCESS( time, addr )
-	
 	// RAM
 	RAM [addr] = (uint8_t) data;
 	int reg = addr - 0xF0;
@@ -315,8 +297,6 @@ inline int SNES_SPC::cpu_read_smp_reg( int reg, rel_time_t time )
 
 int SNES_SPC::cpu_read( int addr, rel_time_t time )
 {
-	MEM_ACCESS( time, addr )
-	
 	// RAM
 	int result = RAM [addr];
 	int reg = addr - 0xF0;

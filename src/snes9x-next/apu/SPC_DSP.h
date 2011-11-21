@@ -67,9 +67,6 @@ public:
 	typedef dsp_copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
 
-	// Returns non-zero if new key-on events occurred since last call
-	bool check_kon();
-
 // Snes9x Accessor
 	int rom_enabled; // mirror
 	uint8_t *rom, *hi_ram; // mirror
@@ -133,7 +130,6 @@ private:
 		int echo_offset;        // offset from ESA in echo buffer
 		int echo_length;        // number of bytes that echo_offset will stop at
 		int phase;              // next clock cycle to run (0-31)
-		bool kon_check;         // set when a new KON occurs
 		
 		// Hidden registers also written to when main register is written to
 		int new_kon;
@@ -253,13 +249,6 @@ inline void SPC_DSP::write( int addr, int data )
 		}
 		break;
 	}
-}
-
-inline bool SPC_DSP::check_kon()
-{
-	bool old = m.kon_check;
-	m.kon_check = 0;
-	return old;
 }
 
 #if !SPC_NO_COPY_STATE_FUNCS

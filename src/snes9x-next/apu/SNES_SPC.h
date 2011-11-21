@@ -70,10 +70,6 @@ public:
 	enum { state_size = 68 * 1024L }; // maximum space needed when saving
 	typedef SPC_DSP::copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
-	
-	// Returns true if new key-on events occurred since last check. Useful for
-	// trimming silence while saving an SPC.
-	bool check_kon();
 #endif
 
 //// Snes9x Accessor
@@ -132,8 +128,6 @@ private:
 		bool        echo_accessed;
 		
 		int         tempo;
-		int         skipped_kon;
-		int         skipped_koff;
 		
 		int         extra_clocks;
 		sample_t*   buf_begin;
@@ -206,10 +200,6 @@ private:
 
 inline int SNES_SPC::sample_count() const { return (m.extra_clocks >> 5) * 2; }
 inline void SNES_SPC::write_port(int port, int data ) { m.ram.ram [0xF4 + port] = data; }
-
-#if !SPC_NO_COPY_STATE_FUNCS
-inline bool SNES_SPC::check_kon() { return dsp.check_kon(); }
-#endif
 
 inline void SNES_SPC::spc_allow_time_overflow( bool allow ) { allow_time_overflow = allow; }
 
