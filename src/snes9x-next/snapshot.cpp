@@ -1100,38 +1100,22 @@ static void UnfreezeStructFromCopy (void *, FreezeData *, int, uint8 *, int);
 static void FreezeBlock (STREAM, const char *, uint8 *, int);
 static void FreezeStruct (STREAM, const char *, void *, FreezeData *, int);
 
-static bool8 S9xOpenSnapshotFile(const char* filepath, bool8 read_only, STREAM *file)
+static bool8 S9xOpenSnapshotFile(const char* filepath, const char * file_mode, STREAM *file)
 {
-	if(read_only)
-	{
-		if((*file = OPEN_STREAM(filepath, "rb")) != 0)
-		{
-			return (TRUE);
-		}
-	}
+	if((*file = OPEN_STREAM(filepath, file_mode)) != 0)
+		return (TRUE);
 	else
-	{
-		if((*file = OPEN_STREAM(filepath, "wb")) != 0)
-		{
-			return (TRUE);
-		}
-	}
-	return (FALSE);
-}
-
-static void S9xCloseSnapshotFile(STREAM file) 
-{
-	CLOSE_STREAM(file);
+		return (FALSE);
 }
 
 bool8 S9xFreezeGame (const char *filename)
 {
 	STREAM	stream = NULL;
 
-	if (S9xOpenSnapshotFile(filename, FALSE, &stream))
+	if (S9xOpenSnapshotFile(filename, "wb", &stream))
 	{
 		S9xFreezeToStream(stream);
-		S9xCloseSnapshotFile(stream);
+		CLOSE_STREAM(stream);
 
 		return (TRUE);
 	}
@@ -1146,17 +1130,13 @@ bool8 S9xUnfreezeGame (const char *filename)
 
 	_splitpath(filename, drive, dir, def, ext);
 
-	if (S9xOpenSnapshotFile(filename, TRUE, &stream))
+	if (S9xOpenSnapshotFile(filename, "rb", &stream))
 	{
-		int	result;
+		int result = S9xUnfreezeFromStream(stream);
+		CLOSE_STREAM(stream);
 
-		result = S9xUnfreezeFromStream(stream);
-		S9xCloseSnapshotFile(stream);
-
-		if (result != SUCCESS)
-			return (FALSE);
-
-		return (TRUE);
+		if (result == SUCCESS)
+			return (TRUE);
 	}
 
 	return (FALSE);
