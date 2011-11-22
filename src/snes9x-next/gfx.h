@@ -285,7 +285,6 @@ struct SLineMatrixData
 	short	M7VOFS;
 };
 
-extern uint16		BlackColourMap[256];
 extern uint16		DirectColourMaps[8][256];
 extern uint8		mul_brightness[16][32];
 extern struct SBG	BG;
@@ -309,28 +308,6 @@ extern struct SGFX	GFX;
 #define COLOR_SUB1_2(C1, C2) \
 	GFX.ZERO[(((C1) | RGB_HI_BITS_MASKx2) - \
 	((C2) & RGB_REMOVE_LOW_BITS_MASK)) >> 1]
-
-inline uint16 COLOR_SUB (uint16 C1, uint16 C2)
-{
-	uint16	mC1, mC2, v = ALPHA_BITS_MASK;
-
-	mC1 = C1 & FIRST_COLOR_MASK;
-	mC2 = C2 & FIRST_COLOR_MASK;
-	if (mC1 > mC2)
-		v += (mC1 - mC2);
-
-	mC1 = C1 & SECOND_COLOR_MASK;
-	mC2 = C2 & SECOND_COLOR_MASK;
-	if (mC1 > mC2)
-		v += (mC1 - mC2);
-
-	mC1 = C1 & THIRD_COLOR_MASK;
-	mC2 = C2 & THIRD_COLOR_MASK;
-	if (mC1 > mC2)
-		v += (mC1 - mC2);
-
-	return (v);
-}
 
 void S9xStartScreenRefresh (void);
 void S9xEndScreenRefresh (void);

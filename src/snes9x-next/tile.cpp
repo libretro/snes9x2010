@@ -188,6 +188,29 @@
 #include "ppu.h"
 #include "tile.h"
 
+static inline uint16 COLOR_SUB (uint16 C1, uint16 C2)
+{
+	uint16	mC1, mC2, v = ALPHA_BITS_MASK;
+
+	mC1 = C1 & FIRST_COLOR_MASK;
+	mC2 = C2 & FIRST_COLOR_MASK;
+	if (mC1 > mC2)
+		v += (mC1 - mC2);
+
+	mC1 = C1 & SECOND_COLOR_MASK;
+	mC2 = C2 & SECOND_COLOR_MASK;
+	if (mC1 > mC2)
+		v += (mC1 - mC2);
+
+	mC1 = C1 & THIRD_COLOR_MASK;
+	mC2 = C2 & THIRD_COLOR_MASK;
+	if (mC1 > mC2)
+		v += (mC1 - mC2);
+
+	return (v);
+}
+
+static uint16 BlackColourMap[256] = {0};
 static uint32	pixbit[8][16];
 static uint8	hrbit_odd[256];
 static uint8	hrbit_even[256];

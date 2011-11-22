@@ -200,7 +200,6 @@ static int counter = 0;
 bool8 S9xGraphicsInit (void)
 {
 	S9xInitTileRenderer();
-	ZeroMemory(BlackColourMap, 256 * sizeof(uint16));
 
 	GFX.DoInterlace = 0;
 	GFX.InterlaceFrame = 0;
@@ -224,7 +223,7 @@ bool8 S9xGraphicsInit (void)
 		return (FALSE);
 	}
 
-    // Lookup table for color addition
+	// Lookup table for color addition
 	ZeroMemory(GFX.X2, 0x10000 * sizeof(uint16));
 	for (uint32 r = 0; r <= MAX_RED; r++)
 	{

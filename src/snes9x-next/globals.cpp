@@ -224,7 +224,6 @@ CMemory				Memory;
 char	String[513];
 uint8	OpenBus = 0;
 uint8	*HDMAMemPointers[8];
-uint16	BlackColourMap[256];
 uint16	DirectColourMaps[8][256];
 
 #if defined(ZSNES_FX) || defined(ZSNES_C4)
