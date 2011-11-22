@@ -232,9 +232,6 @@ struct SGFX
 	void	(*DrawMode7BG1Nomath) (uint32, uint32, int);
 	void	(*DrawMode7BG2Math) (uint32, uint32, int);
 	void	(*DrawMode7BG2Nomath) (uint32, uint32, int);
-
-	const char	*InfoString;
-	uint32	InfoStringTimeout;
 };
 
 struct SBG

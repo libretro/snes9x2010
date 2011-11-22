@@ -405,8 +405,6 @@ struct SSettings
 
 	uint8	BG_Forced;
 
-	bool	AutoDisplayMessages;
-	uint32	InitialInfoStringTimeout;
 	uint16	DisplayColor;
 
 	bool	Multi;

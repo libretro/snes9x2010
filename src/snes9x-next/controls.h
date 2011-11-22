@@ -199,8 +199,6 @@
 typedef struct
 {
 	uint8	type;
-	uint8	multi_press:2;
-	uint8	button_norpt:1;
 
 	union
 	{
@@ -230,25 +228,24 @@ typedef struct
 
 			struct
 			{
-				uint8	idx:3;				// Pseudo-pointer number 0-7
+				uint8	idx:3;			// Pseudo-pointer number 0-7
 				uint8	speed_type:2;		// 0=variable, 1=slow, 2=med, 3=fast
-				int8	UD:2;				// -1=up, 1=down, 0=no vertical motion
-				int8	LR:2;				// -1=left, 1=right, 0=no horizontal motion
+				int8	UD:2;			// -1=up, 1=down, 0=no vertical motion
+				int8	LR:2;			// -1=left, 1=right, 0=no horizontal motion
 			}	pointer;
 
 			struct
 			{
-				uint8	idx:1;				// Justifier number 0-1
-				uint8	trigger:1;			// buttons
+				uint8	idx:1;			// Justifier number 0-1
+				uint8	trigger:1;		// buttons
 				uint8	start:1;
 				uint8	aim_offscreen:1;	// Pretend we're pointing the gun offscreen (ignore the pointer)
 			}	justifier;
 
-			int32	multi_idx;
 			uint16	command;
 		}	button;
 
-		struct								// Which SNES-pointers to control with this pointer
+		struct						// Which SNES-pointers to control with this pointer
 		{
 			uint16	aim_mouse0:1;
 			uint16	aim_mouse1:1;
@@ -290,9 +287,6 @@ bool S9xVerifyControllers (void);
 s9xcommand_t S9xGetCommandT (const char *name);
 
 // Generic mapping functions
-
-s9xcommand_t S9xGetMapping (uint32 id);
-void S9xUnmapID (uint32 id);
 
 // Button mapping functions.
 // If a button is mapped with poll=TRUE, then S9xPollButton will be called whenever snes9x feels a need for that mapping.

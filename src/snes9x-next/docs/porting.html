@@ -33,7 +33,7 @@
 			A 16-bit color (two bytes per pixel) or deeper display, at least 512*478 pixels in resolution. Pixel format conversion may be required before you place the rendered SNES screen on to the display.
 		</p>
 		<p>
-			Sound output requires spooling 8-bit or 16-bit, mono or stereo digital sound data to the host sound system. Some ports can use interrupts or callbacks from the sound system to know when more sound data is required, most other ports have to periodically poll the host sound system to see if more data is required; if it is then the sound mixing code is called to fill the sound buffer with SNES sound data, which then can be passed on to the host sound system. Sound data is generated as an array of bytes (<code>uint8</code>) for 8-bit sound or shorts (<code>int16</code>) for 16-bit data. Stereo sound data generates twice as many samples, with each channel's samples interleaved, first left's then right's.
+			Sound output requires spooling 16-bit stereo digital sound data to the host sound system. Some ports can use interrupts or callbacks from the sound system to know when more sound data is required, most other ports have to periodically poll the host sound system to see if more data is required; if it is then the sound mixing code is called to fill the sound buffer with SNES sound data, which then can be passed on to the host sound system. Sound data is generated as an array of bytes (<code>uint8</code>) for 8-bit sound or shorts (<code>int16</code>) for 16-bit data. Stereo sound data generates twice as many samples, with each channel's samples interleaved, first left's then right's.
 		</p>
 		<p>
 			For the user to be able to control and play SNES games, some form of input device is required, a joypad or keyboard, for example. The real SNES can have 2 eight-button digital joypads connected to it or 5 joypads when an optional multi-player adaptor is connected, although most games only require a single joypad. Access to all eight buttons and the direction pad, of course, are usually required by most games. Snes9x does emulate the multi-player adaptor hardware, if you were wondering, but its still up to you to provide the emulation of the individual joypads.
@@ -182,7 +182,7 @@
 		</p>
 		<h3><code>bool8 S9xInitSound (int buffer_ms, int lag_ms)</code></h3>
 		<p>
-			Allocates memory for mixing and queueing SNES sound data and does more sound code initialization. Before calling this function you must set up <code>Settings.SoundSync</code>, <code>Settings.SoundPlaybackRate</code>, <code>Settings.SoundInputRate</code> (see section below) and <code>Settings.Stereo</code>.<br>
+			Allocates memory for mixing and queueing SNES sound data and does more sound code initialization. Before calling this function you must set up <code>Settings.SoundPlaybackRate</code>, and <code>Settings.SoundInputRate</code> (see section below).<br>
 			<code>buffer_ms</code>, given in milliseconds, is the memory buffer size for queueing sound data. <code>lag_ms</code> is allowable latency between when a sample is queued and when it is pulled in <code>S9xMixSamples</code>. Set <code>lag_ms</code> to zero if you have your own latency handling code in your port.
 		</p>
 		<h3><code>void S9xReset (void)</code></h3>
@@ -228,10 +228,6 @@
 			Call this function to set up a callback that is run when sound samples are made available. <code>samples_available</code> is a function you provide that returns <code>void</code> and takes a pointer as an argument. <code>data</code> is a pointer that you may wish to pass to your callback or can be <code>NULL</code>. If you choose to provide a callback, you must call the provided <code>S9xFinalizeSamples</code> function inside it to actually buffer the samples. If you are using a callback-oriented sound API, it is recommended to set up a function that locks a common mutex during the calls to <code>S9xFinalizeSamples</code> and <code>S9xMixSamples</code> to prevent them from running at the same time and corrupting the sound buffer.<br>
 			If you wish to disable a callback you have set up or need to temporarily shut down your sound system, you may pass <code>NULL</code> for both arguments to revert to the built-in version.
 		</p>
-		<h3><code>bool8 S9xSetSoundMute (bool8 mute)</code></h3>
-		<p>
-			Call with a <code>true</code> parameter to prevent <code>S9xMixSamples</code> function from processing SNES sample data and instead just filling the return buffer with silent sound data. Useful if your sound system is interrupt or callback driven and the game has been paused either directly or indirectly because the user interacting with the emulator's user interface in some way.
-		</p>
 		<h3><code>bool8 S9xFreezeGame (const char *filepath)</code></h3>
 		<p>
 			Call this function to record the current SNES hardware state into a file, the file can be loaded back using <code>S9xUnfreezeGame</code> function at a later date effectively restoring the current game to exact same spot. Call this function while you're processing any pending system events when <code>S9xMainLoop</code> function has returned control to you in your main loop.
@@ -240,10 +236,6 @@
 		<p>
 			Restore the SNES hardware back to the exactly the state it was in when <code>S9xFreezeGame</code> function was used to generate the file specified. You have to arrange the correct ROM is already loaded using <code>Memory.LoadROM</code> function, an easy way to arrange this is to base freeze-game filenames on the ROM image name. The UNIX/Linux ports load freeze-game files when the user presses a function key, with the names romfilename.000 for F1, romfilename.001 for F2, etc. Games are frozen in the first place when the user presses Shift-function key. You could choose some other scheme.
 		</p>
-		<h3><code>void S9xSetInfoString (const char *string)</code></h3>
-		<p>
-			Call this function if you want to show a message onto the SNES screen.
-		</p>
 		<h3>Other Available Functions</h3>
 		<p>
 			See <code>cheats.h</code>, <code>cheats.cpp</code> and <code>cheats2.cpp</code> to support the cheat feature.
@@ -251,7 +243,7 @@
 		<h2>Interface Functions You Need to Implement</h2>
 		<h3><code>void S9xExit (void)</code></h3>
 		<p>
-			Called when some fatal error situation arises or when the &ldquo;q&rdquo; debugger command is used.
+			Called when some fatal error situation arises.
 		</p>
 		<h3><code>bool8 S9xDeinitUpdate (int width, int height)</code></h3>
 		<p>
@@ -267,10 +259,6 @@
 		<p>
 			When Snes9x needs to know the name of the cheat/IPS file and so on, this function is called. Check <code>extension</code> and <code>dirtype</code>, and return the appropriate filename. The current ports return the ROM file path with the given extension.
 		</p>
-		<h3><code>const char *S9xGetFilenameInc (const char *extension, enum s9x_getdirtype dirtype)</code></h3>
-		<p>
-			Almost the same as <code>S9xGetFilename</code> function, but used for saving SPC files etc. So you have to take care not to delete the previously saved file, by increasing the number of the filename; romname.000.spc, romname.001.spc, ...
-		</p>
 		<h3><code>const char *S9xGetDirectory (enum s9x_getdirtype dirtype)</code></h3>
 		<p>
 			Called when Snes9x wants to know the directory <code>dirtype</code>.
@@ -278,10 +266,6 @@
 		<h3><code>const char *S9xChooseFilename (bool8 read_only)</code></h3>
 		<p>
 			If your port can match Snes9x's built-in <code>LoadFreezeFile</code>/<code>SaveFreezeFile</code> command (see <code>controls.cpp</code>), you may choose to use this function. Otherwise return <code>NULL</code>.
-		</p>
-		<h3><code>const char *S9xBasename (const char *path)</code></h3>
-		<p>
-			Called when Snes9x wants to know the name of the ROM image. Typically, extract the filename from <code>path</code> and return it.
 		</p>
 		<h3><code>void S9xAutoSaveSRAM (void)</code></h3>
 		<p>
@@ -303,21 +287,18 @@
 			memset(&amp;Settings, 0, sizeof(Settings));<br>
 			Settings.FrameTimePAL = 20000;<br>
 			Settings.FrameTimeNTSC = 16667;<br>
-			Settings.Stereo = true;<br>
 			Settings.SoundPlaybackRate = 32000;<br>
 			Settings.SoundInputRate = 32000;<br>
-			Settings.AutoDisplayMessages = true;<br>
-			Settings.InitialInfoStringTimeout = 120;<br>
 			Settings.HDMATimingHack = 100;<br>
 			Settings.BlockInvalidVRAMAccessMaster = true;
 		</code></p>
 		<h3><code>Settings.SoundInputRate</code></h3>
 		<p>
 			Adjusts the sound rate through resampling. For every <code>Settings.SoundInputRate</code> samples generated by the SNES, <code>Settings.SoundPlaybackRate</code> samples will be produced.<br>
-			The sound generation rate on a SNES is directly proportional to the video output rate. Displays that synchronize with the vertical refresh but have a slightly lower refresh-rate than the emulated system can experience sound drop-outs. It may be beneficial to provide an option for users to configure <code>Settings.SoundInputRate</code> to suit their own systems. Setting <code>Settings.SoundInputRate</code> to a value that matches the actual output rate (i.e. 31977hz for 59.96hz) or lower will allow the users to eliminate crackling. A range of 31000hz to 33000hz should be inclusive enough for all displays. Use of this setting paired with the <code>S9xSyncSound</code> function can eliminate sound discontinuity.
+			The sound generation rate on a SNES is directly proportional to the video output rate. Displays that synchronize with the vertical refresh but have a slightly lower refresh-rate than the emulated system can experience sound drop-outs. It may be beneficial to provide an option for users to configure <code>Settings.SoundInputRate</code> to suit their own systems. Setting <code>Settings.SoundInputRate</code> to a value that matches the actual output rate (i.e. 31977hz for 59.96hz) or lower will allow the users to eliminate crackling. A range of 31000hz to 33000hz should be inclusive enough for all displays. Use of this setting can eliminate sound discontinuity.
 		</p>
 		<div style="text-align:right; margin-top:3em">
-			Updated most recently by: 2009/12/20 zones
+			Updated most recently by: 2011/11/22 Squarepusher2
 		</div>
 	</body>
 </html>

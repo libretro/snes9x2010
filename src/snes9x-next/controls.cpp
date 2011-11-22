@@ -270,7 +270,7 @@ static bool8				FLAG_LATCH = FALSE;
 static int32				curcontrollers[2] = { NONE,    NONE };
 static int32				newcontrollers[2] = { JOYPAD0, NONE };
 static char				buf[256];
-extern uint16_t joypad[8];
+uint16_t joypad[8];
 
 // Note: these should be in asciibetical order!
 #define THE_COMMANDS \
@@ -280,7 +280,6 @@ extern uint16_t joypad[8];
 	S(Reset), \
 	S(SaveFreezeFile), \
 	S(SoftReset), \
-	S(SwapJoypads), \
 	S(ToggleEmuTurbo) \
 
 #define S(x)	x
@@ -327,9 +326,6 @@ static int maptype (int t)
 {
 	switch (t)
 	{
-		case S9xNoMapping:
-			return (MAP_NONE);
-
 		case S9xButtonJoypad:
 		case S9xButtonMouse:
 		case S9xButtonSuperscope:
@@ -410,9 +406,6 @@ void S9xUnmapAllControls (void)
 
 void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2, int8 id3, int8 id4)
 {
-	if (port < 0 || port > 1)
-		return;
-
 	switch (controller)
 	{
 		case CTL_NONE:
@@ -587,12 +580,7 @@ s9xcommand_t S9xGetCommandT (const char *name)
 
 	ZeroMemory(&cmd, sizeof(cmd));
 	cmd.type         = S9xBadMapping;
-	cmd.multi_press  = 0;
-	cmd.button_norpt = 0;
 
-	if (!strcmp(name, "None"))
-		cmd.type = S9xNoMapping;
-	else
 	if (!strncmp(name, "Joypad", 6))
 	{
 		if (name[6] < '1' || name[6] > '8' || name[7] != ' ')
@@ -717,11 +705,6 @@ s9xcommand_t S9xGetCommandT (const char *name)
 	return (cmd);
 }
 
-s9xcommand_t S9xGetMapping (uint32 id)
-{
-	return (keymap[id]);
-}
-
 static const char * maptypename (int t)
 {
 	switch (t)
@@ -733,7 +716,7 @@ static const char * maptypename (int t)
 	}
 }
 
-void S9xUnmapID (uint32 id)
+static void S9xUnmapID (uint32 id)
 {
 	if (mouse[0].ID     == id)	mouse[0].ID     = InvalidControlID;
 	if (mouse[1].ID     == id)	mouse[1].ID     = InvalidControlID;
@@ -744,31 +727,10 @@ void S9xUnmapID (uint32 id)
 
 bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll)
 {
-	int	t;
-
-	if (id == InvalidControlID)
-	{
-		fprintf(stderr, "Cannot map InvalidControlID\n");
-		return (false);
-	}
-
-	t = maptype(mapping.type);
-
-	if (t == MAP_NONE)
-	{
-		S9xUnmapID(id);
-		return (true);
-	}
+	int	t = maptype(mapping.type);
 
 	if (t != MAP_BUTTON)
 		return (false);
-
-	t = maptype(S9xGetMapping(id).type);
-
-	if (t != MAP_NONE && t != MAP_BUTTON)
-		fprintf(stderr, "WARNING: Remapping ID 0x%08x from %s to button\n", id, maptypename(t));
-
-	t = -1;
 
 	S9xUnmapID(id);
 
@@ -779,45 +741,21 @@ bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll)
 
 void S9xReportButton (uint32 id, bool pressed)
 {
-	if (keymap[id].type == S9xNoMapping)
-		return;
-
 	if (maptype(keymap[id].type) != MAP_BUTTON)
 	{
-		//fprintf(stderr, "ERROR: S9xReportButton called on %s ID 0x%08x\n", maptypename(maptype(keymap[id].type)), id);
+		fprintf(stderr, "ERROR: S9xReportButton called on %s ID 0x%08x\n", maptypename(maptype(keymap[id].type)), id);
 		return;
 	}
-
-	keymap[id].button_norpt = pressed;
 
 	S9xApplyCommand(keymap[id], pressed, 0);
 }
 
 bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll)
 {
-	int	t;
-
-	if (id == InvalidControlID)
-	{
-		fprintf(stderr, "Cannot map InvalidControlID\n");
-		return (false);
-	}
-
-	t = maptype(mapping.type);
-
-	if (t == MAP_NONE)
-	{
-		S9xUnmapID(id);
-		return (true);
-	}
+	int	t = maptype(mapping.type);
 
 	if (t != MAP_POINTER)
 		return (false);
-
-	t = maptype(S9xGetMapping(id).type);
-
-	if (t != MAP_NONE && t != MAP_POINTER)
-		fprintf(stderr, "WARNING: Remapping ID 0x%08x from %s to pointer\n", id, maptypename(t));
 
 	if (mapping.type == S9xPointer)
 	{
@@ -867,9 +805,6 @@ bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll)
 
 void S9xReportPointer (uint32 id, int16 x, int16 y)
 {
-	if (keymap[id].type == S9xNoMapping)
-		return;
-
 	if (maptype(keymap[id].type) != MAP_POINTER)
 	{
 		fprintf(stderr, "ERROR: S9xReportPointer called on %s ID 0x%08x\n", maptypename(maptype(keymap[id].type)), id);
@@ -881,14 +816,11 @@ void S9xReportPointer (uint32 id, int16 x, int16 y)
 
 void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 {
-	int	i;
+	int i = 0;
 
 	switch (cmd.type)
 	{
-		case S9xNoMapping:
-			return;
 		case S9xButtonMouse:
-			i = 0;
 			if (cmd.button.mouse.left )	i |= 0x40;
 			if (cmd.button.mouse.right)	i |= 0x80;
 
@@ -900,7 +832,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 			return;
 
 		case S9xButtonSuperscope:
-			i = 0;
 			if (cmd.button.scope.fire         )	i |= SUPERSCOPE_FIRE;
 			if (cmd.button.scope.cursor       )	i |= SUPERSCOPE_CURSOR;
 			if (cmd.button.scope.pause        )	i |= SUPERSCOPE_PAUSE;
@@ -934,7 +865,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 			return;
 
 		case S9xButtonJustifier:
-			i = 0;
 			if (cmd.button.justifier.trigger)	i |= JUSTIFIER_TRIGGER;
 			if (cmd.button.justifier.start  )	i |= JUSTIFIER_START;
 			if (cmd.button.justifier.aim_offscreen)	justifier.offscreen[cmd.button.justifier.idx] = data1 ? 1 : 0;
@@ -975,44 +905,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 					case SaveFreezeFile:
 						S9xFreezeGame(S9xChooseFilename(FALSE));
-						break;
-					case SwapJoypads:
-						if ((curcontrollers[0] != NONE && !(curcontrollers[0] >= JOYPAD0 && curcontrollers[0] <= JOYPAD7)))
-						{
-							S9xSetInfoString("Cannot swap pads: port 1 is not a joypad");
-							break;
-						}
-
-						if ((curcontrollers[1] != NONE && !(curcontrollers[1] >= JOYPAD0 && curcontrollers[1] <= JOYPAD7)))
-						{
-							S9xSetInfoString("Cannot swap pads: port 2 is not a joypad");
-							break;
-						}
-
-						newcontrollers[1] = curcontrollers[0];
-						newcontrollers[0] = curcontrollers[1];
-
-						strcpy(buf, "Swap pads: P1=");
-						i = 14;
-						if (newcontrollers[0] == NONE)
-						{
-							strcpy(buf + i, "<none>");
-							i += 6;
-						}
-						else
-						{
-							sprintf(buf + i, "Joypad%d", newcontrollers[0] - JOYPAD0 + 1);
-							i += 7;
-						}
-
-						strcpy(buf + i, " P2=");
-						i += 4;
-						if (newcontrollers[1] == NONE)
-							strcpy(buf + i, "<none>");
-						else
-							sprintf(buf + i, "Joypad%d", newcontrollers[1] - JOYPAD0 + 1);
-
-						S9xSetInfoString(buf);
 						break;
 					case LAST_COMMAND:
 						break;
@@ -1061,9 +953,7 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 static void UpdatePolledMouse (int i)
 {
-	int16	j;
-
-	j = mouse[i - MOUSE0].cur_x - mouse[i - MOUSE0].old_x;
+	int16	j = mouse[i - MOUSE0].cur_x - mouse[i - MOUSE0].old_x;
 
 	if (j < -127)
 	{

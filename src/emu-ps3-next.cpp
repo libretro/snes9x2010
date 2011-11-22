@@ -91,7 +91,7 @@ extern bool8 pad_read_last;
 
 //emulator-specific
 s9xcommand_t keymap[1024];
-uint16_t joypad[8];
+extern uint16_t joypad[8];
 static unsigned snes_devices[2];
 
 /* PS3 frontend - save state/emulator SRAM related functions */
@@ -959,11 +959,6 @@ void emulator_init_settings(void)
 	init_setting_bool("ROM::Interleaved", Settings.ForceInterleaved, false);
 	Settings.ForceNotInterleaved = !Settings.ForceInterleaved;
 
-	// Display
-
-	init_setting_bool("Display::MessagesInImage", Settings.AutoDisplayMessages, true);
-	init_setting_uint("Display::MessageDisplayTime", Settings.InitialInfoStringTimeout, 120);
-
 	// Settings
 
 	init_setting_bool("Settings::BSXBootup", Settings.BSXBootup, false);
@@ -988,8 +983,6 @@ void emulator_init_settings(void)
 	init_setting_bool("Hack::DisableGameSpecificHacks", Settings.DisableGameSpecificHacks, false);
 	init_setting_bool("Hack::BlockInvalidVRAMAccess", Settings.BlockInvalidVRAMAccessMaster, true)
 	init_setting_int("Hack::HDMATiming", Settings.HDMATimingHack, 100);
-
-	S9xVerifyControllers();
 
 	int tmp_int;
 	double tmp_double;
@@ -1319,7 +1312,6 @@ void emulator_save_settings(uint64_t filetosave)
 			config_set_uint(currentconfig, "ROM::NTSC",Settings.ForceNTSC);
 			config_set_uint(currentconfig, "ROM::Cheat",Settings.ApplyCheats);
 			config_set_uint(currentconfig, "ROM::Patch", !Settings.NoPatch);
-			config_set_bool(currentconfig, "Display::MessagesInImage",Settings.AutoDisplayMessages);
 			config_set_bool(currentconfig, "Settings::BSXBootup",Settings.BSXBootup);
 
 			config_file_write(currentconfig, filepath);
@@ -1474,7 +1466,8 @@ void S9xExitToMenu(void)
 
 void S9xMessage (int type, int number, char const *message)
 {
-	S9xSetInfoString(message);
+	snprintf(special_action_msg, sizeof(special_action_msg), message);
+	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
 }
 
 const char * S9xGetFilename (const char *ex, enum s9x_getdirtype dirtype)
@@ -1489,16 +1482,6 @@ const char * S9xGetFilename (const char *ex, enum s9x_getdirtype dirtype)
 	snprintf(s, PATH_MAX + 1, "%s%s%s%s", S9xGetDirectory(dirtype), SLASH_STR, fname, ex);
 
 	return (s);
-}
-
-const char * S9xBasename (const char *f)
-{
-	const char	*p;
-
-	if ((p = strrchr(f, '/')) != NULL || (p = strrchr(f, '\\')) != NULL)
-		return (p + 1);
-
-	return (f);
 }
 
 const char * S9xGetDirectory (enum s9x_getdirtype dirtype)
@@ -1611,13 +1594,19 @@ void S9xDoThrottling(bool throttle)
 	ps3graphics_set_vsync(throttle);
 }
 
-//void S9xSetPalette() {}
-void S9xHandlePortCommand(s9xcommand_t, short, short) {}
 void S9xAutoSaveSRAM() { }
 
 void S9xDeinitUpdate(int width, int height)
 {
 	ps3graphics_draw(width, height, GFX.Screen);
+	if(frame_count < special_action_msg_expired)
+	{
+		cellDbgFontPrintf (0.09f, 0.90f, 1.51f, BLUE,	special_action_msg);
+		cellDbgFontPrintf (0.09f, 0.90f, 1.50f, WHITE,	special_action_msg);
+		cellDbgFontDraw();
+	}
+	else
+		special_action_msg_expired = 0;
 	psglSwap();
 }
 

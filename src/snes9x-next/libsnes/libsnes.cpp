@@ -323,8 +323,6 @@ void snes_init()
 	Settings.FrameTimeNTSC = 16667;
 	Settings.SoundPlaybackRate = 32000;
 	Settings.SoundInputRate = 32000;
-	Settings.AutoDisplayMessages = TRUE;
-	Settings.InitialInfoStringTimeout = 120;
 	Settings.HDMATimingHack = 100;
 	Settings.BlockInvalidVRAMAccessMaster = TRUE;
 	Settings.CartAName[0] = 0;
@@ -364,7 +362,7 @@ void snes_init()
 static int16_t snes_mouse_state[2][2] = {{0}, {0}};
 static int16_t snes_scope_state[2] = {0};
 static int16_t snes_justifier_state[2][2] = {{0}, {0}};
-uint16_t joypad[8];
+extern uint16_t joypad[8];
 s9xcommand_t keymap[1024];
 extern bool8 pad_read_last;
 
@@ -658,8 +656,6 @@ void S9xDeinitUpdate(int width, int height)
 const char* S9xGetFilename(const char* in, s9x_getdirtype) { return in; }
 const char* S9xGetDirectory(s9x_getdirtype) { return NULL; }
 const char* S9xChooseFilename(unsigned char) { return NULL; }
-void S9xHandlePortCommand(s9xcommand_t, short, short) {}
-const char* S9xBasename(const char* in) { return in; }
 
 void S9xMessage(int, int, const char* msg)
 {

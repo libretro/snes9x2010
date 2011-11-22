@@ -190,7 +190,6 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 void S9xComputeClipWindows (void);
 
-static int	font_width = 8, font_height = 9;
 #ifdef REPORT_MODES
 static int counter = 0;
 #endif
@@ -348,62 +347,6 @@ void S9xStartScreenRefresh (void)
 
 	ZeroMemory(GFX.ZBuffer, GFX.ScreenSize);
 	ZeroMemory(GFX.SubZBuffer, GFX.ScreenSize);
-
-	if (GFX.InfoStringTimeout > 0 && --GFX.InfoStringTimeout == 0)
-		GFX.InfoString = NULL;
-}
-
-static void S9xDisplayChar (uint16 *s, uint8 c)
-{
-	int	line   = ((c - 32) >> 4) * font_height;
-	int	offset = ((c - 32) & 15) * font_width;
-
-	for (int h = 0; h < font_height; h++, line++, s += GFX.RealPPL - font_width)
-	{
-		for (int w = 0; w < font_width; w++, s++)
-		{
-			char	p = font[line][offset + w];
-
-			if (p == '#')
-				*s = Settings.DisplayColor;
-			else
-			if (p == '.')
-				*s = 0;
-		}
-	}
-}
-
-static void DisplayStringFromBottom (const char *string, int linesFromBottom, int pixelsFromLeft, bool allowWrap)
-{
-	if (linesFromBottom <= 0)
-		linesFromBottom = 1;
-
-	uint16	*dst = GFX.Screen + (IPPU.RenderedScreenHeight - font_height * linesFromBottom) * GFX.RealPPL + pixelsFromLeft;
-
-	int	len = strlen(string);
-	int	max_chars = IPPU.RenderedScreenWidth / (font_width - 1);
-	int	char_count = 0;
-
-	for (int i = 0 ; i < len ; i++, char_count++)
-	{
-		if (char_count >= max_chars || (uint8) string[i] < 32)
-		{
-			if (!allowWrap)
-				break;
-
-			dst += font_height * GFX.RealPPL - (font_width - 1) * max_chars;
-			if (dst >= GFX.Screen + IPPU.RenderedScreenHeight * GFX.RealPPL)
-				break;
-
-			char_count -= max_chars;
-		}
-
-		if ((uint8) string[i] < 32)
-			continue;
-
-		S9xDisplayChar(dst, string[i]);
-		dst += font_width - 1;
-	}
 }
 
 void S9xEndScreenRefresh (void)
@@ -424,12 +367,6 @@ void S9xEndScreenRefresh (void)
 		}
 
 		S9xControlEOF();
-
-		if (Settings.AutoDisplayMessages)
-		{
-			if (GFX.InfoString && *GFX.InfoString)
-				DisplayStringFromBottom(GFX.InfoString, 5, 1, true);
-		}
 
 		//Chrono Trigger mid-frame overscan hack - field to battle transition
 		if (Settings.ChronoTriggerFrameHack & (IPPU.RenderedScreenHeight == 239))
@@ -2184,18 +2121,6 @@ void S9xUpdateScreen (void)
 
 	IPPU.PreviousLine = IPPU.CurrentLine;
 }
-
-void S9xSetInfoString (const char *string)
-{
-	if (Settings.InitialInfoStringTimeout > 0)
-	{
-		GFX.InfoString = string;
-		GFX.InfoStringTimeout = Settings.InitialInfoStringTimeout;
-	}
-}
-
-
-
 
 static uint16 get_crosshair_color (uint8 color)
 {

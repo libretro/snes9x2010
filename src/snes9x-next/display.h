@@ -195,14 +195,11 @@ enum s9x_getdirtype
 	LAST_DIR
 };
 
-void S9xSetInfoString (const char *);
-
 // Routines the port has to implement even if it doesn't use them
 
 void S9xDoThrottling(bool);
 const char * S9xGetDirectory (enum s9x_getdirtype);
 const char * S9xGetFilename (const char *, enum s9x_getdirtype);
 const char * S9xChooseFilename (bool8);
-const char * S9xBasename (const char *);
 
 #endif

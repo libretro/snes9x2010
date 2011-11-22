@@ -1132,8 +1132,6 @@ bool8 CMemory::Init (void)
 	SuperFX.pvRom       = (uint8 *) ROM;
 #endif
 
-	PostRomInitFunc = NULL;
-
 	return (TRUE);
 }
 
@@ -2558,9 +2556,15 @@ void CMemory::InitROM (void)
 	sprintf(ROMName, "%s", Safe(ROMName));
 	sprintf(ROMId, "%s", Safe(ROMId));
 
+	#ifndef __LIBSNES__
+	sprintf(String, "\"%s\" [%s] ID:%s",
+		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
+		ROMId);
+	#else
 	sprintf(String, "\"%s\" [%s] %s, %s, %s, %s, SRAM:%s, ID:%s, CRC32:%08X",
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
 		MapType(), Size(), KartContents(), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), ROMId, ROMCRC32);
+	#endif
 	S9xMessage(S9X_INFO, S9X_ROM_INFO, String);
 
 	Settings.ForceLoROM = FALSE;
@@ -2574,10 +2578,7 @@ void CMemory::InitROM (void)
 	Settings.ForcePAL = FALSE;
 	Settings.ForceNTSC = FALSE;
 
-	if (PostRomInitFunc)
-		PostRomInitFunc();
-
-    S9xVerifyControllers();
+	S9xVerifyControllers();
 }
 
 // memory map

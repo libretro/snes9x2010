@@ -263,9 +263,6 @@ struct CMemory
 	uint32	CalculatedSize;
 	uint32	CalculatedChecksum;
 
-	// ports can assign this to perform some custom action upon loading a ROM (such as adjusting controls)
-	void	(*PostRomInitFunc) (void);
-
 	bool8	Init (void);
 	void	Deinit (void);
 
