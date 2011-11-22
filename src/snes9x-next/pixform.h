@@ -178,39 +178,6 @@
 #ifndef _PIXFORM_H_
 #define _PIXFORM_H_
 
-#ifdef GFX_MULTI_FORMAT
-
-enum { RGB565, RGB555, BGR565, BGR555, GBR565, GBR555, RGB5551 };
-
-#define BUILD_PIXEL(R, G, B)				((*GFX.BuildPixel) (R, G, B))
-#define BUILD_PIXEL2(R, G, B)				((*GFX.BuildPixel2) (R, G, B))
-#define DECOMPOSE_PIXEL(PIX, R, G, B)			((*GFX.DecomposePixel) (PIX, R, G, B))
-
-extern uint32	MAX_RED;
-extern uint32	MAX_GREEN;
-extern uint32	MAX_BLUE;
-extern uint32	RED_LOW_BIT_MASK;
-extern uint32	GREEN_LOW_BIT_MASK;
-extern uint32	BLUE_LOW_BIT_MASK;
-extern uint32	RED_HI_BIT_MASK;
-extern uint32	GREEN_HI_BIT_MASK;
-extern uint32	BLUE_HI_BIT_MASK;
-extern uint32	FIRST_COLOR_MASK;
-extern uint32	SECOND_COLOR_MASK;
-extern uint32	THIRD_COLOR_MASK;
-extern uint32	ALPHA_BITS_MASK;
-extern uint32	GREEN_HI_BIT;
-extern uint32	RGB_LOW_BITS_MASK;
-extern uint32	RGB_HI_BITS_MASK;
-extern uint32	RGB_HI_BITS_MASKx2;
-extern uint32	RGB_REMOVE_LOW_BITS_MASK;
-extern uint32	FIRST_THIRD_COLOR_MASK;
-extern uint32	TWO_LOW_BITS_MASK;
-extern uint32	HIGH_BITS_SHIFTED_TWO_MASK;
-extern uint32	SPARE_RGB_BIT_MASK;
-
-#endif
-
 /* RGB565 format */
 #define BUILD_PIXEL_RGB565(R, G, B)			(((int) (R) << 11) | ((int) (G) << 6) | (int) (B))
 #define BUILD_PIXEL2_RGB565(R, G, B)			(((int) (R) << 11) | ((int) (G) << 5) | (int) (B))
@@ -351,8 +318,6 @@ extern uint32	SPARE_RGB_BIT_MASK;
 #define THIRD_COLOR_MASK_RGB5551	0x003e
 #define ALPHA_BITS_MASK_RGB5551		0x0001
 
-#ifndef GFX_MULTI_FORMAT
-
 #define CONCAT(X, Y)	X##Y
 
 // C pre-processor needs a two stage macro define to enable it to concat
@@ -401,7 +366,5 @@ extern uint32	SPARE_RGB_BIT_MASK;
 #define FIRST_THIRD_COLOR_MASK			(FIRST_COLOR_MASK | THIRD_COLOR_MASK)
 #define TWO_LOW_BITS_MASK			(RGB_LOW_BITS_MASK | (RGB_LOW_BITS_MASK << 1))
 #define HIGH_BITS_SHIFTED_TWO_MASK		(((FIRST_COLOR_MASK | SECOND_COLOR_MASK | THIRD_COLOR_MASK) & ~TWO_LOW_BITS_MASK ) >> 2)
-
-#endif
 
 #endif

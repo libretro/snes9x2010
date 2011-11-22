@@ -220,13 +220,6 @@ struct SGFX
 		}	OBJ[32];
 	}	OBJLines[SNES_HEIGHT_EXTENDED];
 
-#ifdef GFX_MULTI_FORMAT
-	uint32	PixelFormat;
-	uint32	(*BuildPixel) (uint32, uint32, uint32);
-	uint32	(*BuildPixel2) (uint32, uint32, uint32);
-	void	(*DecomposePixel) (uint32, uint32 &, uint32 &, uint32 &);
-#endif
-
 	void	(*DrawBackdropMath) (uint32, uint32, uint32);
 	void	(*DrawBackdropNomath) (uint32, uint32, uint32);
 	void	(*DrawTileMath) (uint32, uint32, uint32, uint32);
@@ -345,9 +338,6 @@ void S9xUpdateScreen (void);
 void S9xBuildDirectColourMaps (void);
 void RenderLine (uint8);
 void S9xComputeClipWindows (void);
-#ifdef GFX_MULTI_FORMAT
-bool8 S9xSetRenderPixelFormat (int);
-#endif
 
 // external port interface which must be implemented or initialised for each port
 bool8 S9xGraphicsInit (void);

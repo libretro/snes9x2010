@@ -348,7 +348,6 @@ void snes_init()
 	S9xInitSound(16, 0);
 	S9xSetSamplesAvailableCallback(S9xAudioCallback);
 
-	S9xSetRenderPixelFormat(RGB555);
 	GFX.Pitch = use_overscan ? 1024 : 2048;
 	GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
 	S9xGraphicsInit();
@@ -665,10 +664,8 @@ const char* S9xGetDirectory(s9x_getdirtype) { return NULL; }
 const char* S9xChooseFilename(unsigned char) { return NULL; }
 void S9xHandlePortCommand(s9xcommand_t, short, short) {}
 const char* S9xBasename(const char* in) { return in; }
-bool8 S9xOpenSoundDevice() { return TRUE; }
 void S9xMessage(int, int, const char*) {}
 bool S9xPollAxis(unsigned int, short*) { return FALSE; }
-void S9xSetPalette() {}
 void S9xExit() {}
 void S9xOnSNESPadRead (void) {}
 void S9xDoThrottling (bool throttle) {}

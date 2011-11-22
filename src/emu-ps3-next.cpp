@@ -693,8 +693,6 @@ static bool emulator_init_system(void)
 	audio_active = true;
 	pthread_mutex_unlock(&audio_lock);
 
-	S9xSetRenderPixelFormat(RGB555);
-
 	if (current_rom == NULL)
 		return false; //No ROM to load
 

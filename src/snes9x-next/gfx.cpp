@@ -202,11 +202,6 @@ bool8 S9xGraphicsInit (void)
 	S9xInitTileRenderer();
 	ZeroMemory(BlackColourMap, 256 * sizeof(uint16));
 
-#ifdef GFX_MULTI_FORMAT
-	if (GFX.BuildPixel == NULL)
-		S9xSetRenderPixelFormat(RGB565);
-#endif
-
 	GFX.DoInterlace = 0;
 	GFX.InterlaceFrame = 0;
 	GFX.RealPPL = GFX.Pitch >> 1;
@@ -426,7 +421,6 @@ void S9xEndScreenRefresh (void)
 		{
 			uint32 saved = PPU.CGDATA[0];
 			IPPU.ColorsChanged = FALSE;
-			//S9xSetPalette();
 			PPU.CGDATA[0] = saved;
 		}
 
@@ -2280,123 +2274,3 @@ void S9xDrawCrosshair (const char *crosshair, uint8 fgcolor, uint8 bgcolor, int1
 		}
 	}
 }
-
-#ifdef GFX_MULTI_FORMAT
-
-static uint32 BuildPixelRGB565  (uint32, uint32, uint32);
-static uint32 BuildPixelRGB555  (uint32, uint32, uint32);
-static uint32 BuildPixelBGR565  (uint32, uint32, uint32);
-static uint32 BuildPixelBGR555  (uint32, uint32, uint32);
-static uint32 BuildPixelGBR565  (uint32, uint32, uint32);
-static uint32 BuildPixelGBR555  (uint32, uint32, uint32);
-static uint32 BuildPixelRGB5551 (uint32, uint32, uint32);
-
-static uint32 BuildPixel2RGB565  (uint32, uint32, uint32);
-static uint32 BuildPixel2RGB555  (uint32, uint32, uint32);
-static uint32 BuildPixel2BGR565  (uint32, uint32, uint32);
-static uint32 BuildPixel2BGR555  (uint32, uint32, uint32);
-static uint32 BuildPixel2GBR565  (uint32, uint32, uint32);
-static uint32 BuildPixel2GBR555  (uint32, uint32, uint32);
-static uint32 BuildPixel2RGB5551 (uint32, uint32, uint32);
-
-static void DecomposePixelRGB565  (uint32, uint32 &, uint32 &, uint32 &);
-static void DecomposePixelRGB555  (uint32, uint32 &, uint32 &, uint32 &);
-static void DecomposePixelBGR565  (uint32, uint32 &, uint32 &, uint32 &);
-static void DecomposePixelBGR555  (uint32, uint32 &, uint32 &, uint32 &);
-static void DecomposePixelGBR565  (uint32, uint32 &, uint32 &, uint32 &);
-static void DecomposePixelGBR555  (uint32, uint32 &, uint32 &, uint32 &);
-static void DecomposePixelRGB5551 (uint32, uint32 &, uint32 &, uint32 &);
-
-#define _BUILD_PIXEL(F) \
-static uint32 BuildPixel##F (uint32 R, uint32 G, uint32 B) \
-{ \
-	return (BUILD_PIXEL_##F(R, G, B)); \
-} \
-\
-static uint32 BuildPixel2##F (uint32 R, uint32 G, uint32 B) \
-{ \
-	return (BUILD_PIXEL2_##F(R, G, B)); \
-} \
-\
-static void DecomposePixel##F (uint32 pixel, uint32 &R, uint32 &G, uint32 &B) \
-{ \
-	DECOMPOSE_PIXEL_##F(pixel, R, G, B); \
-}
-
-_BUILD_PIXEL(RGB565)
-_BUILD_PIXEL(RGB555)
-_BUILD_PIXEL(BGR565)
-_BUILD_PIXEL(BGR555)
-_BUILD_PIXEL(GBR565)
-_BUILD_PIXEL(GBR555)
-_BUILD_PIXEL(RGB5551)
-
-#define _BUILD_SETUP(F) \
-GFX.BuildPixel             = BuildPixel##F; \
-GFX.BuildPixel2            = BuildPixel2##F; \
-GFX.DecomposePixel         = DecomposePixel##F; \
-RED_LOW_BIT_MASK           = RED_LOW_BIT_MASK_##F; \
-GREEN_LOW_BIT_MASK         = GREEN_LOW_BIT_MASK_##F; \
-BLUE_LOW_BIT_MASK          = BLUE_LOW_BIT_MASK_##F; \
-RED_HI_BIT_MASK            = RED_HI_BIT_MASK_##F; \
-GREEN_HI_BIT_MASK          = GREEN_HI_BIT_MASK_##F; \
-BLUE_HI_BIT_MASK           = BLUE_HI_BIT_MASK_##F; \
-MAX_RED                    = MAX_RED_##F; \
-MAX_GREEN                  = MAX_GREEN_##F; \
-MAX_BLUE                   = MAX_BLUE_##F; \
-SPARE_RGB_BIT_MASK         = SPARE_RGB_BIT_MASK_##F; \
-GREEN_HI_BIT               = ((MAX_GREEN_##F + 1) >> 1); \
-RGB_LOW_BITS_MASK          = (RED_LOW_BIT_MASK_##F | GREEN_LOW_BIT_MASK_##F | BLUE_LOW_BIT_MASK_##F); \
-RGB_HI_BITS_MASK           = (RED_HI_BIT_MASK_##F  | GREEN_HI_BIT_MASK_##F  | BLUE_HI_BIT_MASK_##F); \
-RGB_HI_BITS_MASKx2         = (RED_HI_BIT_MASK_##F  | GREEN_HI_BIT_MASK_##F  | BLUE_HI_BIT_MASK_##F) << 1; \
-RGB_REMOVE_LOW_BITS_MASK   = ~RGB_LOW_BITS_MASK; \
-FIRST_COLOR_MASK           = FIRST_COLOR_MASK_##F; \
-SECOND_COLOR_MASK          = SECOND_COLOR_MASK_##F; \
-THIRD_COLOR_MASK           = THIRD_COLOR_MASK_##F; \
-ALPHA_BITS_MASK            = ALPHA_BITS_MASK_##F; \
-FIRST_THIRD_COLOR_MASK     = FIRST_COLOR_MASK | THIRD_COLOR_MASK; \
-TWO_LOW_BITS_MASK          = RGB_LOW_BITS_MASK | (RGB_LOW_BITS_MASK << 1); \
-HIGH_BITS_SHIFTED_TWO_MASK = ((FIRST_COLOR_MASK | SECOND_COLOR_MASK | THIRD_COLOR_MASK) & ~TWO_LOW_BITS_MASK) >> 2;
-
-bool8 S9xSetRenderPixelFormat (int format)
-{
-	GFX.PixelFormat = format;
-
-	switch (format)
-	{
-		case RGB565:
-			_BUILD_SETUP(RGB565)
-			return (TRUE);
-
-		case RGB555:
-			_BUILD_SETUP(RGB555)
-			return (TRUE);
-
-		case BGR565:
-			_BUILD_SETUP(BGR565)
-			return (TRUE);
-
-		case BGR555:
-			_BUILD_SETUP(BGR555)
-			return (TRUE);
-
-		case GBR565:
-			_BUILD_SETUP(GBR565)
-			return (TRUE);
-
-		case GBR555:
-			_BUILD_SETUP(GBR555)
-			return (TRUE);
-
-		case RGB5551:
-			_BUILD_SETUP(RGB5551)
-			return (TRUE);
-
-		default:
-			break;
-	}
-
-	return (FALSE);
-}
-
-#endif

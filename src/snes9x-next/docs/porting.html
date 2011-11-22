@@ -7,10 +7,10 @@
 		<style type="text/css">
 			<!-- ul { list-style-type:none } h2 { margin-top:3em } h3 { margin-top:2em } -->
 		</style>
-		<title>Porting Snes9x</title>
+		<title>Porting SNES9x Next</title>
 	</head>
 	<body>
-		<h1 style="text-align:center">How to Port Snes9x to a New Platform</h1>
+		<h1 style="text-align:center">How to Port SNES9x Next to a New Platform</h1>
 		<div style="text-align:right">
 			Version: 1.52<br>
 			(c) Copyright 1998 Gary Henderson
@@ -21,7 +21,7 @@
 		</p>
 		<h2>System Requirements</h2>
 		<p>
-			A C++ compiler. For the most part Snes9x really isn't written in C++, it just uses the C++ compiler as a &ldquo;better C&rdquo; compiler to get inline functions and so on. GCC is good for compiling Snes9x (<a href="http://gcc.gnu.org/">http://gcc.gnu.org/</a>).
+			A C++ compiler. For the most part Snes9x really isn't written in C++, it just uses the C++ compiler as a &ldquo;better C&rdquo; compiler. GCC is good for compiling Snes9x (<a href="http://gcc.gnu.org/">http://gcc.gnu.org/</a>).
 		</p>
 		<p>
 			A fast CPU. SNES emulation is very compute intensive; two, or sometimes three CPUs to emulate, an 8-channel 16-bit stereo sound digital signal processor with real-time sample decompression, filter and echo effects, two custom graphics processor chips that can produce transparency, scaling, rotation and window effects in 32768 colors, and finally hardware DMA all take their toll on the host CPU.
@@ -83,7 +83,7 @@
 			If the byte ordering of your system is least significant byte first, make sure <code>LSB_FIRST</code> is defined, otherwise make sure it's not defined.
 		</p>
 		<p>
-			You'll need to make sure what pixel format your system uses for 16-bit colors (<code>RGB565</code>, <code>RGB555</code>, <code>BGR565</code> or <code>BGR555</code>), and if it's not <code>RGB565</code>, define <code>PIXEL_FORMAT</code> to it so that Snes9x will use it to render the SNES screen. For example, Windows uses <code>RGB565</code>, Mac OS X uses <code>RGB555</code>. If your system supports more than one pixel format, you can define <code>GFX_MULTI_FORMAT</code> and change Snes9x's pixel format dynamically by calling <code>S9xSetRenderPixelFormat</code> function. If your system is 24 or 32-bit only, then don't define anything; instead write a conversion routine that will take a complete rendered 16-bit SNES screen in <code>RGB565</code> format and convert to the format required to be displayed on your system.
+			You'll need to make sure what pixel format your system uses for 16-bit colors (<code>RGB565</code>, <code>RGB555</code>, <code>BGR565</code> or <code>BGR555</code>), and if it's not <code>RGB565</code>, define <code>PIXEL_FORMAT</code> to it so that Snes9x will use it to render the SNES screen. For example, Windows uses <code>RGB565</code>, Mac OS X uses <code>RGB555</code>. If your system is 24 or 32-bit only, then don't define anything; instead write a conversion routine that will take a complete rendered 16-bit SNES screen in <code>RGB565</code> format and convert to the format required to be displayed on your system.
 		</p>
 		<p>
 			<code>port.h</code> also typedefs some types; <code>uint8</code> for an unsigned 8-bit quantity, <code>uint16</code> for an unsigned 16-bit quantity, <code>uint32</code> for a 32-bit unsigned quantity and <code>bool8</code> for a <code>true</code>/<code>false</code> type. Signed versions are also typedef'ed.
@@ -122,9 +122,6 @@
 			{<br>
 			&nbsp;&nbsp;&nbsp;&nbsp;S9xReportButton(k1P_A_Button, (key_is_pressed ? true : false));<br>
 			}</code>
-		</p>
-		<p>
-			Prepare your <code>S9xPollButton</code> and <code>S9xPollPointer</code> function to reply Snes9x's request for other buttons/cursors states.
 		</p>
 		<p>
 			Call <code>S9xSetController</code> function. It connects each input device to each SNES input port.<br>
@@ -185,7 +182,7 @@
 		</p>
 		<h3><code>bool8 S9xInitSound (int buffer_ms, int lag_ms)</code></h3>
 		<p>
-			Allocates memory for mixing and queueing SNES sound data, does more sound code initialization and opens the host system's sound device by calling <code>S9xOpenSoundDevice</code>, a function you must provide. Before calling this function you must set up <code>Settings.SoundSync</code>, <code>Settings.SoundPlaybackRate</code>, <code>Settings.SoundInputRate</code> (see section below) and <code>Settings.Stereo</code>.<br>
+			Allocates memory for mixing and queueing SNES sound data and does more sound code initialization. Before calling this function you must set up <code>Settings.SoundSync</code>, <code>Settings.SoundPlaybackRate</code>, <code>Settings.SoundInputRate</code> (see section below) and <code>Settings.Stereo</code>.<br>
 			<code>buffer_ms</code>, given in milliseconds, is the memory buffer size for queueing sound data. <code>lag_ms</code> is allowable latency between when a sample is queued and when it is pulled in <code>S9xMixSamples</code>. Set <code>lag_ms</code> to zero if you have your own latency handling code in your port.
 		</p>
 		<h3><code>void S9xReset (void)</code></h3>
@@ -231,10 +228,6 @@
 			Call this function to set up a callback that is run when sound samples are made available. <code>samples_available</code> is a function you provide that returns <code>void</code> and takes a pointer as an argument. <code>data</code> is a pointer that you may wish to pass to your callback or can be <code>NULL</code>. If you choose to provide a callback, you must call the provided <code>S9xFinalizeSamples</code> function inside it to actually buffer the samples. If you are using a callback-oriented sound API, it is recommended to set up a function that locks a common mutex during the calls to <code>S9xFinalizeSamples</code> and <code>S9xMixSamples</code> to prevent them from running at the same time and corrupting the sound buffer.<br>
 			If you wish to disable a callback you have set up or need to temporarily shut down your sound system, you may pass <code>NULL</code> for both arguments to revert to the built-in version.
 		</p>
-		<h3><code>bool8 S9xSyncSound (void)</code></h3>
-		<p>
-			Call this function to synchronize the sound buffers to the game state. If Snes9x is generating too much sound data, or a buffer-overrun is likely, this function will return <code>false</code>. In this case, you may wish to wait until your host sound system uses the available samples, and <code>S9xSyncSound</code> returns <code>true</code> before continuing to execute <code>S9xMainLoop</code>.
-		</p>
 		<h3><code>bool8 S9xSetSoundMute (bool8 mute)</code></h3>
 		<p>
 			Call with a <code>true</code> parameter to prevent <code>S9xMixSamples</code> function from processing SNES sample data and instead just filling the return buffer with silent sound data. Useful if your sound system is interrupt or callback driven and the game has been paused either directly or indirectly because the user interacting with the emulator's user interface in some way.
@@ -247,35 +240,18 @@
 		<p>
 			Restore the SNES hardware back to the exactly the state it was in when <code>S9xFreezeGame</code> function was used to generate the file specified. You have to arrange the correct ROM is already loaded using <code>Memory.LoadROM</code> function, an easy way to arrange this is to base freeze-game filenames on the ROM image name. The UNIX/Linux ports load freeze-game files when the user presses a function key, with the names romfilename.000 for F1, romfilename.001 for F2, etc. Games are frozen in the first place when the user presses Shift-function key. You could choose some other scheme.
 		</p>
-		<h3><code>void S9xDumpSPCSnapshot (void)</code></h3>
-		<p>
-			Call this funtion to make a so-called SPC file, a snapshot of SNES sound state. Actual dump occurs at the first key-on event after this function is called.
-		</p>
 		<h3><code>void S9xSetInfoString (const char *string)</code></h3>
 		<p>
 			Call this function if you want to show a message onto the SNES screen.
 		</p>
 		<h3>Other Available Functions</h3>
 		<p>
-			See <code>movie.h</code> and <code>movie.cpp</code> to support the Snes9x movie feature.<br>
 			See <code>cheats.h</code>, <code>cheats.cpp</code> and <code>cheats2.cpp</code> to support the cheat feature.
 		</p>
 		<h2>Interface Functions You Need to Implement</h2>
-		<h3><code>bool8 S9xOpenSnapshotFile (const char *filepath, bool8 read_only, STREAM *file)</code></h3>
-		<p>
-			This function opens a freeze-game file. <code>STREAM</code> is defined as a <code>gzFile</code> if <code>ZLIB</code> is defined else it's defined as <code>FILE *</code>. The <code>read_only</code> parameter is set to <code>true</code> when reading a freeze-game file and <code>false</code> when writing a freeze-game file. Open the file <code>filepath</code> and return its pointer <code>file</code>.
-		</p>
-		<h3><code>void S9xCloseSnapshotFile (STREAM file)</code></h3>
-		<p>
-			This function closes the freeze-game file opened by <code>S9xOpenSnapshotFile</code> function.
-		</p>
 		<h3><code>void S9xExit (void)</code></h3>
 		<p>
 			Called when some fatal error situation arises or when the &ldquo;q&rdquo; debugger command is used.
-		</p>
-		<h3><code>bool8 S9xInitUpdate (void)</code></h3>
-		<p>
-			Called just before Snes9x begins to render an SNES screen. Use this function if you should prepare before drawing, otherwise let it empty.
 		</p>
 		<h3><code>bool8 S9xDeinitUpdate (int width, int height)</code></h3>
 		<p>
@@ -286,10 +262,6 @@
 			When Snes9x wants to display an error, information or warning message, it calls this function. Check in <code>messages.h</code> for the types and individual message numbers that Snes9x currently passes as parameters.<br>
 			The idea is display the message string so the user can see it, but you choose not to display anything at all, or change the message based on the message number or message type.<br>
 			Eventually all debug output will also go via this function, trace information already does.
-		</p>
-		<h3><code>bool8 S9xOpenSoundDevice (void)</code></h3>
-		<p>
-			<code>S9xInitSound</code> function calls this function to actually open the host sound device.
 		</p>
 		<h3><code>const char *S9xGetFilename (const char *extension, enum s9x_getdirtype dirtype)</code></h3>
 		<p>
@@ -307,10 +279,6 @@
 		<p>
 			If your port can match Snes9x's built-in <code>LoadFreezeFile</code>/<code>SaveFreezeFile</code> command (see <code>controls.cpp</code>), you may choose to use this function. Otherwise return <code>NULL</code>.
 		</p>
-		<h3><code>const char *S9xChooseMovieFilename (bool8 read_only)</code></h3>
-		<p>
-			If your port can match Snes9x's built-in <code>BeginRecordingMovie</code>/<code>LoadMovie</code> command (see <code>controls.cpp</code>), you may choose to use this function. Otherwise return <code>NULL</code>.
-		</p>
 		<h3><code>const char *S9xBasename (const char *path)</code></h3>
 		<p>
 			Called when Snes9x wants to know the name of the ROM image. Typically, extract the filename from <code>path</code> and return it.
@@ -318,18 +286,6 @@
 		<h3><code>void S9xAutoSaveSRAM (void)</code></h3>
 		<p>
 			If <code>Settings.AutoSaveDelay</code> is not zero, Snes9x calls this function when the contents of the S-RAM has been changed. Typically, call <code>Memory.SaveSRAM</code> function from this function.
-		</p>
-		<h3><code>void S9xToggleSoundChannel (int c)</code></h3>
-		<p>
-			If your port can match Snes9x's built-in <code>SoundChannelXXX</code> command (see <code>controls.cpp</code>), you may choose to use this function. Otherwise return <code>NULL</code>. Basically, turn on/off the sound channel <code>c</code> (0-7), and turn on all channels if <code>c</code> is 8.
-		</p>
-		<h3><code>void S9xSetPalette (void)</code></h3>
-		<p>
-			Called when the SNES color palette has changed. Use this function if your system should change its color palette to match the SNES's. Otherwise let it empty.
-		</p>
-		<h3><code>void S9xSyncSpeed (void)</code></h3>
-		<p>
-			Called at the end of <code>S9xMainLoop</code> function, when emulating one frame has been done. You should adjust the frame rate in this function.
 		</p>
 		<h2>Global Variables</h2>
 		<h3><code>uint16 *GFX.Screen</code></h3>

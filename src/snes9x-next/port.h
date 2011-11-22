@@ -193,8 +193,6 @@
 #endif
 #include <sys/types.h>
 
-#define GFX_MULTI_FORMAT
-
 #ifdef __WIN32__
 //#define RIGHTSHIFT_IS_SAR
 #define RIGHTSHIFT_int8_IS_SAR
@@ -203,10 +201,7 @@
 #define SNES_JOY_READ_CALLBACKS
 #endif
 
-#ifdef __MACOSX__
-#undef GFX_MULTI_FORMAT
 #define PIXEL_FORMAT RGB555
-#endif
 
 #ifndef snes9x_types_defined
 #define snes9x_types_defined
