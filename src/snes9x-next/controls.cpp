@@ -428,34 +428,16 @@ void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2
 		case CTL_MOUSE:
 			if (id1 < 0 || id1 > 1)
 				break;
-			if (!Settings.MouseMaster)
-			{
-				S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, "Cannot select SNES Mouse: MouseMaster disabled");
-				break;
-			}
-
 			newcontrollers[port] = MOUSE0 + id1;
 			return;
 
 		case CTL_SUPERSCOPE:
-			if (!Settings.SuperScopeMaster)
-			{
-				S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, "Cannot select SNES Superscope: SuperScopeMaster disabled");
-				break;
-			}
-
 			newcontrollers[port] = SUPERSCOPE;
 			return;
 
 		case CTL_JUSTIFIER:
 			if (id1 < 0 || id1 > 1)
 				break;
-			if (!Settings.JustifierMaster)
-			{
-				S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, "Cannot select Konami Justifier: JustifierMaster disabled");
-				break;
-			}
-
 			newcontrollers[port] = ONE_JUSTIFIER + id1;
 			return;
 
@@ -468,11 +450,6 @@ void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2
 				break;
 			if (id4 < -1 || id4 > 7)
 				break;
-			if (!Settings.MultiPlayer5Master)
-			{
-				S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, "Cannot select MP5: MultiPlayer5Master disabled");
-				break;
-			}
 
 			newcontrollers[port] = MP5;
 			mp5[port][0] = (id1 < 0) ? NONE : JOYPAD0 + id1;
@@ -502,14 +479,6 @@ bool S9xVerifyControllers (void)
 		{
 			case MOUSE0:
 			case MOUSE1:
-				if (!Settings.MouseMaster)
-				{
-					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, "Cannot select SNES Mouse: MouseMaster disabled");
-					newcontrollers[port] = NONE;
-					ret = true;
-					break;
-				}
-
 				if (used[i]++ > 0)
 				{
 					snprintf(buf, sizeof(buf), "Mouse%d used more than once! Disabling extra instances", i - MOUSE0 + 1);
@@ -522,13 +491,6 @@ bool S9xVerifyControllers (void)
 				break;
 
 			case SUPERSCOPE:
-				if (!Settings.SuperScopeMaster)
-				{
-					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, "Cannot select SNES Superscope: SuperScopeMaster disabled");
-					newcontrollers[port] = NONE;
-					ret = true;
-					break;
-				}
 
 				if (used[i]++ > 0)
 				{
@@ -543,13 +505,6 @@ bool S9xVerifyControllers (void)
 
 			case ONE_JUSTIFIER:
 			case TWO_JUSTIFIERS:
-				if (!Settings.JustifierMaster)
-				{
-					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, "Cannot select Konami Justifier: JustifierMaster disabled");
-					newcontrollers[port] = NONE;
-					ret = true;
-					break;
-				}
 
 				if (used[ONE_JUSTIFIER]++ > 0)
 				{
@@ -563,13 +518,6 @@ bool S9xVerifyControllers (void)
 				break;
 
 			case MP5:
-				if (!Settings.MultiPlayer5Master)
-				{
-					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, "Cannot select MP5: MultiPlayer5Master disabled");
-					newcontrollers[port] = NONE;
-					ret = true;
-					break;
-				}
 
 				for (i = 0; i < 4; i++)
 				{
@@ -1601,7 +1549,7 @@ void S9xControlPostLoadState (struct SControlSnapshot *s)
 	if (curcontrollers[0] == MP5 && s->ver < 1)
 	{
 		// Crap. Old snes9x didn't support this.
-		S9xMessage(S9X_WARNING, S9X_FREEZE_FILE_INFO, "Old savestate has no support for MP5 in port 1.");
+		// Old savestate has no support for MP5 in port 1.
 		newcontrollers[0] = curcontrollers[0];
 		curcontrollers[0] = mp5[0][0];
 	}

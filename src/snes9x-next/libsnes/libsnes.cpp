@@ -319,10 +319,6 @@ void snes_init()
 		}
 	}
 	memset(&Settings, 0, sizeof(Settings));
-	Settings.MouseMaster = TRUE;
-	Settings.SuperScopeMaster = TRUE;
-	Settings.JustifierMaster = TRUE;
-	Settings.MultiPlayer5Master = TRUE;
 	Settings.FrameTimePAL = 20000;
 	Settings.FrameTimeNTSC = 16667;
 	Settings.SoundPlaybackRate = 32000;
@@ -664,7 +660,11 @@ const char* S9xGetDirectory(s9x_getdirtype) { return NULL; }
 const char* S9xChooseFilename(unsigned char) { return NULL; }
 void S9xHandlePortCommand(s9xcommand_t, short, short) {}
 const char* S9xBasename(const char* in) { return in; }
-void S9xMessage(int, int, const char*) {}
+
+void S9xMessage(int, int, const char* msg)
+{
+	fprintf(stderr, "%s\n", msg);
+}
 bool S9xPollAxis(unsigned int, short*) { return FALSE; }
 void S9xExit() {}
 void S9xOnSNESPadRead (void) {}

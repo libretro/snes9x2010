@@ -376,10 +376,6 @@ struct SSettings
 	bool	BS;
 	bool	BSXItself;
 	bool	BSXBootup;
-	bool	MouseMaster;
-	bool	SuperScopeMaster;
-	bool	JustifierMaster;
-	bool	MultiPlayer5Master;
 
 	bool	ForceLoROM;
 	bool	ForceHiROM;

@@ -983,13 +983,6 @@ void emulator_init_settings(void)
 	init_setting_uint("Settings::FrameTime", Settings.FrameTimePAL, 1667);
 	init_setting_uint("Settings::FrameTime", Settings.FrameTimeNTSC, 1667);
 
-	// Controls
-
-	init_setting_bool("Controls::MouseMaster", Settings.MouseMaster, true);
-	init_setting_bool("Controls::SuperscopeMaster", Settings.SuperScopeMaster, true);
-	init_setting_bool("Controls::JustifierMaster", Settings.JustifierMaster, true);
-	init_setting_bool("Controls::MP5Master", Settings.MultiPlayer5Master, true);
-
 	// Hack
 
 	init_setting_bool("Hack::DisableGameSpecificHacks", Settings.DisableGameSpecificHacks, false);

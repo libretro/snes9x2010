@@ -2562,9 +2562,6 @@ void CMemory::InitROM (void)
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
 		MapType(), Size(), KartContents(), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), ROMId, ROMCRC32);
 	S9xMessage(S9X_INFO, S9X_ROM_INFO, String);
-	#ifdef __LIBSNES__
-	fprintf(stderr, "%s\n", String);
-	#endif
 
 	Settings.ForceLoROM = FALSE;
 	Settings.ForceHiROM = FALSE;

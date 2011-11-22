@@ -348,8 +348,7 @@ bool8 S9xDoDMA (uint8 Channel)
 			uint8	*base = S9xGetBasePointer((d->ABank << 16) + addr);
 			if (!base)
 			{
-				sprintf(String, "SA-1: DMA from non-block address $%02X:%04X", d->ABank, addr);
-				S9xMessage(S9X_WARNING, S9X_DMA_TRACE, String);
+				//"SA-1: DMA from non-block address $%02X:%04X", d->ABank, addr
 				base = Memory.ROM;
 			}
 
