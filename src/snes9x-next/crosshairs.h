@@ -178,14 +178,6 @@
 #ifndef _CROSSHAIRS_H_
 #define _CROSSHAIRS_H_
 
-// Read in the specified crosshair file, replacing whatever data might be in that slot.
-// Available slots are 1-31.
-// The input file must be a PNG or a text file. 
-// PNG:  15x15 pixels, palettized, with 3 colors (white, black, and transparent).
-// text: 15 lines of 16 characters (counting the \n), consisting of ' ', '#', or '.'.
-
-bool S9xLoadCrosshairFile (int idx, const char *filename);
-
 // Return the specified crosshair. Woo-hoo.
 // char * to a 225-byte string, with '#' marking foreground, '.' marking background,
 // and anything else transparent.
@@ -213,8 +205,6 @@ enum crosscontrols
 	X_JUSTIFIER1,
 	X_JUSTIFIER2
 };
-
-void S9xSetControllerCrosshair (enum crosscontrols ctl, int8 idx, const char *fg, const char *bg);
 
 // In gfx.cpp, much like S9xDisplayChar() except it takes the parameters
 // listed and looks up GFX.Screen.

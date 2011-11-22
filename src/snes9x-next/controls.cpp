@@ -186,8 +186,6 @@
 #include "crosshairs.h"
 #include "display.h"
 
-using namespace	std;
-
 #define NONE				(-2)
 #define MP5				(-1)
 #define JOYPAD0				0
@@ -274,42 +272,6 @@ static int32				newcontrollers[2] = { JOYPAD0, NONE };
 static char				buf[256];
 extern uint16_t joypad[8];
 
-static const char	*color_names[32] =
-{
-	"Trans",
-	"Black",
-	"25Grey",
-	"50Grey",
-	"75Grey",
-	"White",
-	"Red",
-	"Orange",
-	"Yellow",
-	"Green",
-	"Cyan",
-	"Sky",
-	"Blue",
-	"Violet",
-	"MagicPink",
-	"Purple",
-	NULL,
-	"tBlack",
-	"t25Grey",
-	"t50Grey",
-	"t75Grey",
-	"tWhite",
-	"tRed",
-	"tOrange",
-	"tYellow",
-	"tGreen",
-	"tCyan",
-	"tSky",
-	"tBlue",
-	"tViolet",
-	"tMagicPink",
-	"tPurple"
-};
-
 // Note: these should be in asciibetical order!
 #define THE_COMMANDS \
 	S(ExitEmu), \
@@ -392,8 +354,10 @@ void S9xControlsReset (void)
 void S9xControlsSoftReset (void)
 {
 	for (int i = 0; i < 2; i++)
-		for (int j = 0; j < 2; j++)
-			read_idx[i][j]=0;
+	{
+		read_idx[i][0]=0;
+		read_idx[i][1]=0;
+	}
 
 	FLAG_LATCH = FALSE;
 }
@@ -660,7 +624,7 @@ static int findstr (const char *needle, const char **haystack, int numstr)
 {
 	const char	**r;
 
-	r = lower_bound(haystack, haystack + numstr, needle, strless);
+	r = std::lower_bound(haystack, haystack + numstr, needle, strless);
 	if (r >= haystack + numstr || strcmp(needle, *r))
 		return (-1);
 
@@ -1202,6 +1166,15 @@ static void UpdatePolledMouse (int i)
 	}
 }
 
+#define S9xSetJoypadLatch_Latch0() \
+	if (FLAG_LATCH) \
+	{ \
+		/* 1 written, 'plug in' new controllers now */ \
+		curcontrollers[0] = newcontrollers[0]; \
+		curcontrollers[1] = newcontrollers[1]; \
+	} \
+	FLAG_LATCH = 0;
+
 void S9xSetJoypadLatch (bool latch)
 {
 	if (!latch && FLAG_LATCH)
@@ -1421,7 +1394,7 @@ void S9xDoAutoJoypad (void)
 	int	i, j;
 
 	S9xSetJoypadLatch(1);
-	S9xSetJoypadLatch(0);
+	S9xSetJoypadLatch_Latch0();
 
 	for (int n = 0; n < 2; n++)
 	{
@@ -1560,103 +1533,6 @@ do_justifier:
 
 	pad_read_last = pad_read;
 	pad_read      = false;
-}
-
-void S9xSetControllerCrosshair (enum crosscontrols ctl, int8 idx, const char *fg, const char *bg)
-{
-	struct crosshair	*c;
-	int8				fgcolor = -1, bgcolor = -1;
-	int					i, j;
-
-	if (idx < -1 || idx > 31)
-	{
-		fprintf(stderr, "S9xSetControllerCrosshair() called with invalid index\n");
-		return;
-	}
-
-	switch (ctl)
-	{
-		case X_MOUSE1:		c = &mouse[0].crosshair;		break;
-		case X_MOUSE2:		c = &mouse[1].crosshair;		break;
-		case X_SUPERSCOPE:	c = &superscope.crosshair;		break;
-		case X_JUSTIFIER1:	c = &justifier.crosshair[0];	break;
-		case X_JUSTIFIER2:	c = &justifier.crosshair[1];	break;
-		default:
-			fprintf(stderr, "S9xSetControllerCrosshair() called with an invalid controller ID %d\n", ctl);
-			return;
-	}
-
-	if (fg)
-	{
-		fgcolor = 0;
-		if (*fg == 't')
-		{
-			fg++;
-			fgcolor = 16;
-		}
-
-		for (i = 0; i < 16; i++)
-		{
-			for (j = 0; color_names[i][j] && fg[j] == color_names[i][j]; j++) ;
-				if (isalnum(fg[j]))
-					continue;
-
-			if (!color_names[i][j])
-				break;
-		}
-
-		fgcolor |= i;
-		if (i > 15 || fgcolor == 16)
-		{
-			fprintf(stderr, "S9xSetControllerCrosshair() called with invalid fgcolor\n");
-			return;
-		}
-	}
-
-	if (bg)
-	{
-		bgcolor = 0;
-		if (*bg == 't')
-		{
-			bg++;
-			bgcolor = 16;
-		}
-
-		for (i = 0; i < 16; i++)
-		{
-			for (j = 0; color_names[i][j] && bg[j] == color_names[i][j]; j++) ;
-				if (isalnum(bg[j]))
-					continue;
-
-			if (!color_names[i][j])
-				break;
-		}
-
-		bgcolor |= i;
-		if (i > 15 || bgcolor == 16)
-		{
-			fprintf(stderr, "S9xSetControllerCrosshair() called with invalid bgcolor\n");
-			return;
-		}
-	}
-
-	if (idx != -1)
-	{
-		c->set |= 1;
-		c->img = idx;
-	}
-
-	if (fgcolor != -1)
-	{
-		c->set |= 2;
-		c->fg = fgcolor;
-	}
-
-	if (bgcolor != -1)
-	{
-		c->set |= 4;
-		c->bg = bgcolor;
-	}
 }
 
 void S9xControlPreSaveState (struct SControlSnapshot *s)
