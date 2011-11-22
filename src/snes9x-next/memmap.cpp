@@ -3519,10 +3519,15 @@ void CMemory::ApplyROMFixes (void)
 		//Speedup hack for Star Fox 2/Vortex
 		if (
 				match_na("VORTEX") ||			// Vortex
+				match_na("Super Street Fighter21") ||	// Super Street Fighter II
 				match_na("STAR FOX 2"))			// Star Fox 2
 					PPU.SFXSpeedupHack = true;
 				else
 					PPU.SFXSpeedupHack = false;
+
+		#ifdef __LIBSNES__
+		fprintf(stderr, "PPU.SFXSpeedupHack = %d\n", PPU.SFXSpeedupHack);
+		#endif
 
 		// Check if Chrono Trigger is loaded, if so, we need to set a variable to true
 		// to get rid of an annoying mid-frame resolution switch to 256x239 which can cause
@@ -3571,6 +3576,7 @@ void CMemory::ApplyROMFixes (void)
 			|| Memory.match_na("UNIRALLY")		// Unirally
 			|| Memory.match_na("CHRONO TRIGGER")	// Chrono Trigger
 			|| Memory.match_na("JURASSIC PARK")	// Jurassic Park
+			|| Memory.match_na("THE MAGICAL QUEST")	// The Magical Quest
 			|| Memory.match_na("SOULBLAZER - 1 USA")	// Soul Blazer (US)
 			|| Memory.match_na("SOULBLAZER - 1 ENG")	// Soul Blazer (PAL)
 			|| Memory.match_na("SOULBLADER - 1")		// Soul Blader
@@ -3639,6 +3645,19 @@ void CMemory::ApplyROMFixes (void)
 			|| Memory.match_id("AR9")		// Primal Rage
 			|| Memory.match_id("APUE")		// Prehistorik Man
 			|| Memory.match_id("ALSJ")		// Lady Stalker
+			|| Memory.match_na("ROCKMAN&FORTE")	// Rockman & Forte
+			|| Memory.match_na("SUPER SWIV")	// Super SWIV
+			|| Memory.match_na("CONTRA3 THE ALIEN WARS")	// Contra 3 The Alien Wars
+			|| Memory.match_na("EARTHWORM JIM 2")	// Earthworm Jim 2
+			|| Memory.match_na("CHOHMAKAIMURA")	// Chou Makai Mura
+			|| Memory.match_na("SUPER GHOULS'N GHOSTS")	// Super Ghouls 'n Ghosts
+			|| Memory.match_na("X-KALIBER 2097")	// X-Kaliber 2097
+			|| Memory.match_na("FINAL FIGHT 2")	// Final Fight 2
+			|| Memory.match_na("SUPER TURRICAN 2")	// Super Turrican 2
+			|| Memory.match_na("DUNGEON MASTER")	// Dungeon Master
+			|| Memory.match_na("DOOM TROOPERS")	// Doom Troopers
+			|| Memory.match_na("XAK 1")		// Xak 1
+			|| Memory.match_na("XARDION")		// Xardion
 		  )
 		  	PPU.RenderSub = false;
 		else

@@ -191,7 +191,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
 void S9xComputeClipWindows (void);
 
 static int	font_width = 8, font_height = 9;
-//static int counter = 0;
+#ifdef REPORT_MODES
+static int counter = 0;
+#endif
 
 #define TILE_PLUS(t, x)	(((t) & 0xfc00) | ((t + x) & 0x3ff))
 
@@ -2163,7 +2165,12 @@ void S9xUpdateScreen (void)
 				//fprintf(stderr, "RenderScreen_Sub1() #%d\n", counter++);
 				RenderScreen(TRUE);
 				if(PPU.RenderSub)
+				{
+					#ifdef REPORT_MODES
+					fprintf(stderr, "Subscreen drawing: Frame #%d\n", counter++);
+					#endif
 					DrawBackdrop_NoMath();
+				}
 			}
 
 			RenderScreen(FALSE);
