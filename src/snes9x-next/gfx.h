@@ -309,7 +309,6 @@ extern struct SGFX	GFX;
 void S9xStartScreenRefresh (void);
 void S9xEndScreenRefresh (void);
 void S9xUpdateScreen (void);
-void S9xBuildDirectColourMaps (void);
 void RenderLine (uint8);
 void S9xComputeClipWindows (void);
 

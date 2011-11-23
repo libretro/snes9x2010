@@ -241,10 +241,6 @@
 			See <code>cheats.h</code>, <code>cheats.cpp</code> and <code>cheats2.cpp</code> to support the cheat feature.
 		</p>
 		<h2>Interface Functions You Need to Implement</h2>
-		<h3><code>void S9xExit (void)</code></h3>
-		<p>
-			Called when some fatal error situation arises.
-		</p>
 		<h3><code>bool8 S9xDeinitUpdate (int width, int height)</code></h3>
 		<p>
 			Called once a complete SNES screen has been rendered into the <code>GFX.Screen</code> memory buffer, now is your chance to copy the SNES rendered screen to the host computer's screen memory. The problem is that you have to cope with different sized SNES rendered screens: 256*224, 256*239, 512*224, 512*239, 512*448 and 512*478.
