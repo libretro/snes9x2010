@@ -203,7 +203,6 @@ struct SDMA
 
 extern struct SDMA	DMA[8];
 
-bool8 S9xDoDMA (uint8);
 void S9xStartHDMA (void);
 uint8 S9xDoHDMA (uint8);
 void S9xResetDMA (void);
