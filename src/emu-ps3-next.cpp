@@ -90,7 +90,7 @@ bool audio_active = false;
 extern bool8 pad_read_last;
 
 //emulator-specific
-s9xcommand_t keymap[1024];
+extern s9xcommand_t keymap[1024];
 extern uint16_t joypad[8];
 static unsigned snes_devices[2];
 

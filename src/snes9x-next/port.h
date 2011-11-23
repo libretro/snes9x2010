@@ -181,7 +181,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#ifdef __CELLOS_LV2__
+#if defined(__CELLOS_LV2__) || defined(GEKKO)
 #include <memory>
 #else
 #include <memory.h>
@@ -201,7 +201,11 @@
 #define SNES_JOY_READ_CALLBACKS
 #endif
 
+#ifdef GEKKO
+#define PIXEL_FORMAT RGB565
+#else
 #define PIXEL_FORMAT RGB555
+#endif
 
 #ifndef snes9x_types_defined
 #define snes9x_types_defined

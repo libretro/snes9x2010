@@ -265,12 +265,12 @@ static struct
 }	justifier;
 
 static int8 mp5[2][4];
-extern s9xcommand_t			keymap[1024];
+s9xcommand_t			keymap[1024];
 static bool8				FLAG_LATCH = FALSE;
 static int32				curcontrollers[2] = { NONE,    NONE };
 static int32				newcontrollers[2] = { JOYPAD0, NONE };
 static char				buf[256];
-uint16_t joypad[8];
+uint16 joypad[8];
 
 static void DoGunLatch (int x, int y)
 {

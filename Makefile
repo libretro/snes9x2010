@@ -14,7 +14,7 @@ CELL_BUILD_TOOLS     = SNC
 ifeq ($(CELL_DEBUG),1)
 PPU_OPTIMIZE_LV      := -O0
 else
-PPU_OPTIMIZE_LV      := -O2
+PPU_OPTIMIZE_LV      := -O3
 endif
 
 # specify build tools
@@ -43,7 +43,7 @@ CC                   = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-g++
 
 UTILS_DIR            = ./utils
 SRC_DIR              = ./src
-SNES9X_API_DIR       = ./src/snes9x
+SNES9X_API_DIR       = ./src/snes9x-next
 CELL_FRAMEWORK_DIR	= ./src/cellframework
 CELL_FRAMEWORK2_DIR	= ./src/cellframework2
 EBOOT_LAUNCHER_DIR   = eboot-launcher
@@ -51,12 +51,12 @@ EBOOT_LAUNCHER_DIR   = eboot-launcher
 EMULATOR_VERSION     = 1.0
 
 PPU_SRCS		+= $(SNES9X_API_DIR)/tile.cpp \
-         $(SNES9X_API_DIR)/cpu.cpp \
+			$(SNES9X_API_DIR)/cpu.cpp \
 			$(SNES9X_API_DIR)/dma.cpp \
+			$(SNES9X_API_DIR)/gfx.cpp \
 			$(SNES9X_API_DIR)/ppu.cpp \
 			$(SNES9X_API_DIR)/sa1.cpp \
 			$(SNES9X_API_DIR)/sa1cpu.cpp \
-			$(SNES9X_API_DIR)/fxdbg.cpp \
 			$(SNES9X_API_DIR)/fxemu.cpp \
 			$(SNES9X_API_DIR)/fxinst.cpp \
 			$(SNES9X_API_DIR)/cpuexec.cpp \
@@ -65,7 +65,9 @@ PPU_SRCS		+= $(SNES9X_API_DIR)/tile.cpp \
 			$(SNES9X_API_DIR)/memmap.cpp \
 			$(SNES9X_API_DIR)/apu/apu.cpp \
 			$(SNES9X_API_DIR)/apu/SNES_SPC.cpp \
-			$(foreach dir,$(SNES9X_API_DIR)/jma/,$(wildcard $(dir)/*.cpp)) \
+			$(SNES9X_API_DIR)/apu/SNES_SPC_misc.cpp \
+			$(SNES9X_API_DIR)/apu/SNES_SPC_state.cpp \
+			$(SNES9X_API_DIR)/apu/SPC_DSP.cpp \
 			$(SNES9X_API_DIR)/bsx.cpp \
 			$(SNES9X_API_DIR)/c4.cpp \
 			$(SNES9X_API_DIR)/c4emu.cpp \
@@ -80,23 +82,19 @@ PPU_SRCS		+= $(SNES9X_API_DIR)/tile.cpp \
 			$(SNES9X_API_DIR)/dsp4.cpp \
 			$(SNES9X_API_DIR)/globals.cpp \
 			$(SNES9X_API_DIR)/loadzip.cpp \
-			$(SNES9X_API_DIR)/netplay.cpp \
 			$(SNES9X_API_DIR)/obc1.cpp \
 			$(SNES9X_API_DIR)/reader.cpp \
 			$(SNES9X_API_DIR)/sdd1.cpp \
 			$(SNES9X_API_DIR)/sdd1emu.cpp \
-			$(SNES9X_API_DIR)/server.cpp \
 			$(SNES9X_API_DIR)/seta.cpp \
 			$(SNES9X_API_DIR)/seta010.cpp \
 			$(SNES9X_API_DIR)/seta011.cpp \
 			$(SNES9X_API_DIR)/seta018.cpp \
 			$(SNES9X_API_DIR)/snapshot.cpp \
-			$(SNES9X_API_DIR)/snes9x.cpp \
 			$(SNES9X_API_DIR)/spc7110.cpp
 
 
 PPU_SRCS		+= $(UTILS_DIR)/zlib/adler32.c \
-			$(UTILS_DIR)/zlib/compress.c \
 			$(UTILS_DIR)/zlib/crc32.c \
 			$(UTILS_DIR)/zlib/deflate.c \
 			$(UTILS_DIR)/zlib/gzclose.c \
@@ -111,27 +109,26 @@ PPU_SRCS		+= $(UTILS_DIR)/zlib/adler32.c \
 			$(UTILS_DIR)/zlib/uncompr.c \
 			$(UTILS_DIR)/zlib/zutil.c \
 			$(UTILS_DIR)/zlib/contrib/minizip/ioapi.c \
-			$(UTILS_DIR)/zlib/contrib/minizip/mztools.c \
-			$(UTILS_DIR)/zlib/contrib/minizip/zip.c \
 			$(UTILS_DIR)/zlib/contrib/minizip/unzip.c
-PPU_SRCS    +=  $(CELL_FRAMEWORK2_DIR)/audio/rsound.c \
-         $(CELL_FRAMEWORK2_DIR)/audio/librsound.c \
-         $(CELL_FRAMEWORK2_DIR)/audio/buffer.c \
-         $(CELL_FRAMEWORK2_DIR)/input/pad_input.c \
-         $(CELL_FRAMEWORK2_DIR)/input/mouse_input.c \
+
+PPU_SRCS		+=  $(CELL_FRAMEWORK2_DIR)/audio/rsound.c \
+			$(CELL_FRAMEWORK2_DIR)/audio/librsound.c \
+			$(CELL_FRAMEWORK2_DIR)/audio/buffer.c \
+			$(CELL_FRAMEWORK2_DIR)/input/pad_input.c \
+			$(CELL_FRAMEWORK2_DIR)/input/mouse_input.c \
 
 PPU_SRCS += $(SRC_DIR)/ps3video.cpp \
 			$(SRC_DIR)/snes_state/snes_state.c \
 			$(SRC_DIR)/snes_state/config_file.c \
 			$(SRC_DIR)/menu.cpp \
-         $(CELL_FRAMEWORK2_DIR)/audio/resampler.c \
+			$(CELL_FRAMEWORK2_DIR)/audio/resampler.c \
 			$(CELL_FRAMEWORK2_DIR)/audio/audioport.c \
 			$(SRC_DIR)/ps3input.c \
-			$(SRC_DIR)/emu-ps3.cpp \
-         $(CELL_FRAMEWORK2_DIR)/utility/oskutil.c \
+			$(SRC_DIR)/emu-ps3-next.cpp \
+			$(CELL_FRAMEWORK2_DIR)/utility/oskutil.c \
 			$(CELL_FRAMEWORK_DIR)/fileio/FileBrowser.cpp
 
-PPU_TARGET		= snes9x-ps3.ppu.elf
+PPU_TARGET		= snes9x-next-ps3.ppu.elf
 
 ifeq ($(CELL_DEBUG),1)
 DEBUGFLAGS = -D_DEBUG -g
@@ -139,8 +136,10 @@ else
 DEBUGFLAGS =
 endif
 
-PPU_CFLAGS		   += -I. -DUSE_FILE32API -Dunix -DPSGL -DCORRECT_VRAM_READS -DRIGHTSHIFT_IS_SAR -DSN_TARGET_PS3 -DNDEBUG=1 -DWORDS_BIGENDIAN -DBLARGG_BIG_ENDIAN=1 -DNO_LOGGER -D__POWERPC__ -D__ppc__ $(DEBUGFLAGS)
-PPU_CXXFLAGS		+= -I./src/ -I./src/snes9x/ -DZLIB -DUNZIP_SUPPORT -DJMA_SUPPORT -DPSGL -DCORRECT_VRAM_READS -DRIGHTSHIFT_IS_SAR -DNO_LOGGER -DSN_TARGET_PS3 -DNDEBUG=1 -DWORDS_BIGENDIAN -DBLARGG_BIG_ENDIAN=1 -D__POWERPC__ -D__ppc__ $(DEBUGFLAGS)
+ZLIB_DEFINES		= -DUSE_FILE32API -DUnix -DFASTEST
+DEFINES			=  -DBLARGG_BIG_ENDIAN=1 -DWORDS_BIGENDIAN -D__POWERPC__ -D__ppc__ -DCLUNKY_FILE_ABSTRACTION -DSNES9X_NEXT -DPSGL -DCORRECT_VRAM_READS -DRIGHTSHIFT_IS_SAR -DNDEBUG=1 -DSN_TARGET_PS3 -DHAVE_STDINT_H -DHAVE_INTTYPES_H -DUNZIP_SUPPORT
+PPU_CFLAGS		+= -I. $(ZLIB_DEFINES) $(DEFINES) $(DEBUGFLAGS)
+PPU_CXXFLAGS		+= -I./src/ -I$(SNES_API_DIR) -I$(UTILS_DIR)/zlib -DZLIB  $(DEFINES) $(DEBUGFLAGS)
 
 ifeq ($(CELL_BUILD_TOOLS),SNC)
 PARAMS = -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1 -Xnotocrestore=2 -Xc-=rtti

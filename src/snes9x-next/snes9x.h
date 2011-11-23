@@ -411,7 +411,7 @@ struct SSettings
 
 	bool	Paused;
 
-	uint32_t	Throttled;
+	uint32	Throttled;
 
 	#ifdef __CELLOS_LV2__
 	uint32_t	PS3KeepAspect;
@@ -453,8 +453,8 @@ struct SSettings
 	int32_t		PS3OverscanAmount;
 	int32_t		ControlScheme;
 	#endif
-	uint32_t	AccessoryType;
-	int32_t		AccessoryAutoDetection;
+	uint32	AccessoryType;
+	int32		AccessoryAutoDetection;
 	bool		ChronoTriggerFrameHack;
 	bool		CurrentROMisMultitapCompatible;
 	bool		CurrentROMisMouseCompatible;

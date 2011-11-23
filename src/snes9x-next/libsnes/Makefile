@@ -35,11 +35,11 @@ OBJECTS    = ../apu/apu.o ../apu/SNES_SPC.o ../apu/SNES_SPC_misc.o ../apu/SNES_S
 CXX        = g++
 CC         = gcc
 INCLUDES   = -I. -I.. -I../apu/
-DEFINES    = 
+DEFINES    = -DHAVE_STRINGS_H -DHAVE_STDINT_H -DHAVE_INTTYPES_H -D__LIBSNES__ -DRIGHTSHIFT_IS_SAR
+COMMON_DEFINES += -O3 -fomit-frame-pointer -pedantic -Wall -W -Wno-unused-parameter -DNDEBUG=1 $(fpic)
 
-CXXFLAGS    += -O3 -fomit-frame-pointer -fno-exceptions -fno-rtti -pedantic -Wall -W -Wno-unused-parameter $(fpic)
-CXXFLAGS    += -DHAVE_STRINGS_H -DHAVE_STDINT_H -DRIGHTSHIFT_IS_SAR -D__LIBSNES__ $(DEFINES)
-CFLAGS     = $(CXXFLAGS)
+CXXFLAGS    += $(COMMON_DEFINES) $(DEFINES) -fno-exceptions -fno-rtti
+CFLAGS     = $(DEFINES) $(COMMON_DEFINES)
 
 all: $(TARGET)
 

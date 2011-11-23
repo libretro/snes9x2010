@@ -571,12 +571,12 @@ void fx_computeScreenPointers (void)
 
 		// Make a list of pointers to the start of each screen column
 		uint8* pvScreenBase = GSU.pvScreenBase;
-		uint32_t vmode = GSU.vMode;
-		int32_t condition = vmode - 2;
-		int32_t mask = (condition | -condition) >> 31;
-		int32_t result = (vmode & mask) | (3 & ~mask);
-		uint32_t screenheight = GSU.vScreenHeight;
-		uint32_t incrementvalue = screenheight+screenheight;
+		uint32 vmode = GSU.vMode;
+		int32 condition = vmode - 2;
+		int32 mask = (condition | -condition) >> 31;
+		int32 result = (vmode & mask) | (3 & ~mask);
+		uint32 screenheight = GSU.vScreenHeight;
+		uint32 incrementvalue = screenheight+screenheight;
 		vmode = result;
 		vmode++;
 		switch (screenheight)
@@ -585,7 +585,7 @@ void fx_computeScreenPointers (void)
 			case 160:
 			case 192:
 				{
-					uint32_t tempvalue[32];
+					uint32 tempvalue[32];
 					for(int i = 0; i < 32; i++)
 					{
 						tempvalue[i] = incrementvalue * i * vmode;
@@ -627,7 +627,7 @@ void fx_computeScreenPointers (void)
 				}
 				break;
 			case 256:
-				const uint32_t mul_8192 = vmode << 13;
+				const uint32 mul_8192 = vmode << 13;
 
 				GSU.apvScreen[0] = GSU.apvScreen[16] = pvScreenBase;
 				GSU.apvScreen[1] = GSU.apvScreen[17] = pvScreenBase + (256 * vmode);
@@ -662,7 +662,7 @@ void fx_computeScreenPointers (void)
 				GSU.apvScreen[30] += mul_8192;
 				GSU.apvScreen[31] += mul_8192;
 
-				const uint32_t mul_4096 = vmode << 12;
+				const uint32 mul_4096 = vmode << 12;
 				GSU.x[0] = GSU.x[16] = 0; 
 				GSU.x[1] = GSU.x[17] = 16 * vmode;
 				GSU.x[2] = GSU.x[18] = 32 * vmode;

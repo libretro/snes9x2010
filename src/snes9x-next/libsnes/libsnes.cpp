@@ -362,7 +362,7 @@ static int16_t snes_mouse_state[2][2] = {{0}, {0}};
 static int16_t snes_scope_state[2] = {0};
 static int16_t snes_justifier_state[2][2] = {{0}, {0}};
 extern uint16_t joypad[8];
-s9xcommand_t keymap[1024];
+extern s9xcommand_t keymap[1024];
 extern bool8 pad_read_last;
 
 static void report_buttons()
