@@ -202,7 +202,7 @@ static inline unsigned min (unsigned a, unsigned b)
 }
 
 #include "srtcemu.h"
-#include "srtcemu.cpp"
+#include "srtcemu_.h"
 
 static SRTC	srtcemu;
 
