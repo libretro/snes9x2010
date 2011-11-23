@@ -59,8 +59,6 @@ extern "C" {
 extern void __exception_setreload(int t);
 }
 
-extern void S9xInitSync();
-
 /****************************************************************************
  * Shutdown / Reboot / Exit
  ***************************************************************************/
@@ -179,31 +177,6 @@ void ipl_set_config(unsigned char c)
 	exi[0] &= 0x405;	//deselect IPL
 }
 #endif
-
-/****************************************************************************
- * setFrameTimerMethod()
- * change frametimer method depending on whether ROM is NTSC or PAL
- ***************************************************************************/
-
-void setFrameTimerMethod()
-{
-	/*
-	Set frametimer method
-	(timerstyle: 0=NTSC vblank, 1=PAL int timer)
-	*/
-	if ( Settings.PAL ) {
-		if(vmode_60hz)
-			timerstyle = 1;
-		else
-			timerstyle = 0;
-	} else {
-		if(vmode_60hz)
-			timerstyle = 0;
-		else
-			timerstyle = 1;
-	}
-	return;
-}
 
 /****************************************************************************
  * IOS Check
@@ -404,7 +377,6 @@ main(int argc, char *argv[])
 		ExitApp();
 	
 	AllocGfxMem();
-	S9xInitSync(); // initialize frame sync
 	InitFreeType((u8*)font_ttf, font_ttf_size); // Initialize font system
 #ifdef HW_RVL
 	savebuffer = (unsigned char *)mem2_malloc(SAVEBUFFERSIZE);
@@ -415,7 +387,7 @@ main(int argc, char *argv[])
 #endif
 	InitGUIThreads();
 
-	while (1) // main loop
+	do	// main loop
 	{
 		// go back to checking if devices were inserted/removed
 		// since we're entering the menu
@@ -444,14 +416,12 @@ main(int argc, char *argv[])
 		HaltDeviceThread();
 
 		AudioStart ();
-
-		FrameTimer = 0;
-		setFrameTimerMethod (); // set frametimer method every time a ROM is loaded
+		InitAudio();
 
 		CheckVideo = 2;	// force video update
 		currentMode = GCSettings.render;
 
-		while(1) // emulation loop
+		do // emulation loop
 		{
 			S9xMainLoop ();
 			ReportButtons ();
@@ -471,6 +441,6 @@ main(int argc, char *argv[])
 			if(ShutdownRequested)
 				ExitApp();
 			#endif
-		} // emulation loop
-	} // main loop
+		}while(1); // emulation loop
+	}while(1); // main loop
 }

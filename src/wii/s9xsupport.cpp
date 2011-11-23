@@ -51,33 +51,10 @@ void S9xMessage(int /*type */, int /*number */, const char *message)
  *
  * Main initialisation for Wii sound system
  ***************************************************************************/
-bool8 S9xOpenSoundDevice(void)
-{
-	InitAudio();
-	return TRUE;
-}
-
-/* eke-eke */
-void S9xInitSync()
-{
-	FrameTimer = 0;
-	prev = gettime();
-}
-
 /*** Video / Display related functions ***/
-bool8 S9xInitUpdate()
-{
-	return (TRUE);
-}
-
 void S9xDeinitUpdate(int Width, int Height)
 {
 	update_video(Width, Height);
-}
-
-bool8 S9xContinueUpdate(int Width, int Height)
-{
-	return (TRUE);
 }
 
 /****************************************************************************

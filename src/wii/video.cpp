@@ -63,10 +63,7 @@ static int vwidth, vheight, oldvwidth, oldvheight;
 u8 * gameScreenPng = NULL;
 int gameScreenPngSize = 0;
 
-u32 FrameTimer = 0;
-
 bool vmode_60hz = true;
-int timerstyle = 0;
 bool progressive = 0;
 
 #define HASPECT 320
@@ -303,7 +300,6 @@ copy_to_xfb (u32 arg)
 		GX_Flush ();
 		copynow = GX_FALSE;
 	}
-	++FrameTimer;
 }
 
 /****************************************************************************
@@ -697,7 +693,6 @@ MakeTexture (const void *src, void *dst, s32 width, s32 height)
 /****************************************************************************
  * Update Video
  ***************************************************************************/
-uint32 prevRenderedFrameCount = 0;
 int fscale = 1;
 
 void
