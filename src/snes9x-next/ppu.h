@@ -213,7 +213,6 @@ struct ClipData
 struct InternalPPU
 {
 	struct ClipData Clip[2][6];
-	bool8	ColorsChanged;
 	bool8	OBJChanged;
 	bool8	DirectColourMapsNeedRebuild;
 	uint8	*TileCache[7];
@@ -667,7 +666,6 @@ static inline void REGISTER_2122 (uint8 Byte)
 			FLUSH_REDRAW();
 			PPU.CGDATA[PPU.CGADD] &= 0x00ff;
 			PPU.CGDATA[PPU.CGADD] |= (Byte & 0x7f) << 8;
-			IPPU.ColorsChanged = TRUE;
 			IPPU.Blue[PPU.CGADD] = IPPU.XB[(Byte >> 2) & 0x1f];
 			IPPU.Green[PPU.CGADD] = IPPU.XB[(PPU.CGDATA[PPU.CGADD] >> 5) & 0x1f];
 			IPPU.ScreenColors[PPU.CGADD] = (uint16) BUILD_PIXEL(IPPU.Red[PPU.CGADD], IPPU.Green[PPU.CGADD], IPPU.Blue[PPU.CGADD]);
@@ -682,7 +680,6 @@ static inline void REGISTER_2122 (uint8 Byte)
 			FLUSH_REDRAW();
 			PPU.CGDATA[PPU.CGADD] &= 0x7f00;
 			PPU.CGDATA[PPU.CGADD] |= Byte;
-			IPPU.ColorsChanged = TRUE;
 			IPPU.Red[PPU.CGADD] = IPPU.XB[Byte & 0x1f];
 			IPPU.Green[PPU.CGADD] = IPPU.XB[(PPU.CGDATA[PPU.CGADD] >> 5) & 0x1f];
 			IPPU.ScreenColors[PPU.CGADD] = (uint16) BUILD_PIXEL(IPPU.Red[PPU.CGADD], IPPU.Green[PPU.CGADD], IPPU.Blue[PPU.CGADD]);

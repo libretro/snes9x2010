@@ -306,14 +306,14 @@ void S9xStartScreenRefresh (void)
 		GFX.RealPPL = GFX.Pitch >> 1;
 		IPPU.RenderedScreenWidth = SNES_WIDTH;
 		IPPU.RenderedScreenHeight = PPU.ScreenHeight;
+		IPPU.DoubleWidthPixels = FALSE;
+		IPPU.DoubleHeightPixels = FALSE;
 
 		if ((PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
 		{
 			IPPU.DoubleWidthPixels = TRUE;
 			IPPU.RenderedScreenWidth += SNES_WIDTH;
 		}
-		else
-			IPPU.DoubleWidthPixels = FALSE;
 
 		GFX.PPL = GFX.RealPPL;
 		if (IPPU.Interlace)
@@ -323,8 +323,6 @@ void S9xStartScreenRefresh (void)
 			IPPU.RenderedScreenHeight += PPU.ScreenHeight;
 			GFX.DoInterlace++;
 		}
-		else
-			IPPU.DoubleHeightPixels = FALSE;
 	}
 
 	PPU.MosaicStart = 0;
@@ -339,21 +337,10 @@ void S9xEndScreenRefresh (void)
 {
 	FLUSH_REDRAW();
 
-	if (GFX.DoInterlace && GFX.InterlaceFrame == 0)
-	{
-		S9xControlEOF();
-	}
-	else
-	{
-		if (IPPU.ColorsChanged)
-		{
-			uint32 saved = PPU.CGDATA[0];
-			IPPU.ColorsChanged = FALSE;
-			PPU.CGDATA[0] = saved;
-		}
+	S9xControlEOF();
 
-		S9xControlEOF();
-
+	if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
+	{
 		//Chrono Trigger mid-frame overscan hack - field to battle transition
 		if (Settings.ChronoTriggerFrameHack & (IPPU.RenderedScreenHeight == 239))
 			IPPU.RenderedScreenHeight = 224;
@@ -2377,7 +2364,6 @@ void S9xUpdateScreen (void)
 			{
 				// If hires (Mode 5/6 or pseudo-hires) or math is to be done
 				// involving the subscreen, then we need to render the subscreen...
-				//fprintf(stderr, "RenderScreen_Sub1() #%d\n", counter++);
 				RenderScreen(TRUE);
 				if(PPU.RenderSub)
 				{

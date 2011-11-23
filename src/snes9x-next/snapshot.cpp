@@ -1500,7 +1500,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 		CPU.HDMARanInDMA = 0;
 
 		S9xFixColourBrightness();
-		IPPU.ColorsChanged = TRUE;
 		IPPU.OBJChanged = TRUE;
 
 		uint8 hdma_byte = Memory.FillRAM[0x420c];
