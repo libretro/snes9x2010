@@ -319,8 +319,6 @@ struct SCPUState
 	uint8	WhichEvent;
 	int32	NextEvent;
 	bool8	WaitingForInterrupt;
-	uint32	AutoSaveTimer;
-	bool8	SRAMModified;
 };
 
 enum
@@ -415,7 +413,6 @@ struct SSettings
 
 	uint32_t	Throttled;
 
-	int32	AutoSaveDelay;
 	#ifdef __CELLOS_LV2__
 	uint32_t	PS3KeepAspect;
 	uint32_t	PS3Smooth;
@@ -477,6 +474,5 @@ extern struct SSettings			Settings;
 extern struct SCPUState			CPU;
 extern struct STimings			Timings;
 extern struct SSNESGameFixes	SNESGameFixes;
-extern char String[513];
 
 #endif

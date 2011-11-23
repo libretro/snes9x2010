@@ -327,7 +327,6 @@ void snes_init()
 	Settings.BlockInvalidVRAMAccessMaster = TRUE;
 	Settings.CartAName[0] = 0;
 	Settings.CartBName[0] = 0;
-	Settings.AutoSaveDelay = 1;
 
 	CPU.Flags = 0;
 
@@ -660,11 +659,6 @@ const char* S9xChooseFilename(unsigned char) { return NULL; }
 void S9xMessage(int, int, const char* msg)
 {
 	fprintf(stderr, "%s\n", msg);
-}
-
-void S9xAutoSaveSRAM() 
-{
-   return;
 }
 
 // S9x weirdness.

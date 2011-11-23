@@ -361,23 +361,6 @@ void S9xEndScreenRefresh (void)
 	}
 
 	S9xApplyCheats();
-
-	if (CPU.SRAMModified)
-	{
-		if (!CPU.AutoSaveTimer)
-		{
-			if (!(CPU.AutoSaveTimer = Settings.AutoSaveDelay * Memory.ROMFramesPerSecond))
-				CPU.SRAMModified = FALSE;
-		}
-		else
-		{
-			if (!--CPU.AutoSaveTimer)
-			{
-				S9xAutoSaveSRAM();
-				CPU.SRAMModified = FALSE;
-			}
-		}
-	}
 }
 
 static void SetupOBJ (void)

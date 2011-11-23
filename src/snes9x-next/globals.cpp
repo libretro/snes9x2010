@@ -221,7 +221,6 @@ struct FxInfo_s			SuperFX;
 #endif
 CMemory				Memory;
 
-char	String[513];
 uint8	OpenBus = 0;
 uint8	*HDMAMemPointers[8];
 uint16	DirectColourMaps[8][256];

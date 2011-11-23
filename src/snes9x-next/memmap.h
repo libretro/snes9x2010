@@ -363,7 +363,6 @@ extern uint8	*RegRAM;
 }
 #endif
 
-void S9xAutoSaveSRAM (void);
 bool8 LoadZip(const char *, int32 *, int32 *, uint8 *);
 
 enum s9xwrap_t

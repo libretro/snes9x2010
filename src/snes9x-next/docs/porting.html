@@ -33,7 +33,7 @@
 			A 16-bit color (two bytes per pixel) or deeper display, at least 512*478 pixels in resolution. Pixel format conversion may be required before you place the rendered SNES screen on to the display.
 		</p>
 		<p>
-			Sound output requires spooling 16-bit stereo digital sound data to the host sound system. Some ports can use interrupts or callbacks from the sound system to know when more sound data is required, most other ports have to periodically poll the host sound system to see if more data is required; if it is then the sound mixing code is called to fill the sound buffer with SNES sound data, which then can be passed on to the host sound system. Sound data is generated as an array of bytes (<code>uint8</code>) for 8-bit sound or shorts (<code>int16</code>) for 16-bit data. Stereo sound data generates twice as many samples, with each channel's samples interleaved, first left's then right's.
+			Sound output requires spooling 16-bit stereo digital sound data to the host sound system. Some ports can use interrupts or callbacks from the sound system to know when more sound data is required, most other ports have to periodically poll the host sound system to see if more data is required; if it is then the sound mixing code is called to fill the sound buffer with SNES sound data, which then can be passed on to the host sound system. Sound data is generated as an array of shorts (<code>int16</code>). Stereo sound data generates twice as many samples, with each channel's samples interleaved, first left's then right's.
 		</p>
 		<p>
 			For the user to be able to control and play SNES games, some form of input device is required, a joypad or keyboard, for example. The real SNES can have 2 eight-button digital joypads connected to it or 5 joypads when an optional multi-player adaptor is connected, although most games only require a single joypad. Access to all eight buttons and the direction pad, of course, are usually required by most games. Snes9x does emulate the multi-player adaptor hardware, if you were wondering, but its still up to you to provide the emulation of the individual joypads.
@@ -223,9 +223,9 @@
 		<p>
 			Returns the number of sound samples available in the buffer for your configured playback settings.
 		</p>
-		<h3><code>void S9xSetSamplesAvailableCallback (void (*) samples_available (void *), void *data)</code></h3>
+		<h3><code>void S9xSetSamplesAvailableCallback (void (*) samples_available (void *))</code></h3>
 		<p>
-			Call this function to set up a callback that is run when sound samples are made available. <code>samples_available</code> is a function you provide that returns <code>void</code> and takes a pointer as an argument. <code>data</code> is a pointer that you may wish to pass to your callback or can be <code>NULL</code>. If you choose to provide a callback, you must call the provided <code>S9xFinalizeSamples</code> function inside it to actually buffer the samples. If you are using a callback-oriented sound API, it is recommended to set up a function that locks a common mutex during the calls to <code>S9xFinalizeSamples</code> and <code>S9xMixSamples</code> to prevent them from running at the same time and corrupting the sound buffer.<br>
+			Call this function to set up a callback that is run when sound samples are made available. <code>samples_available</code> is a function you provide that returns <code>void</code>. If you choose to provide a callback, you must call the provided <code>S9xFinalizeSamples</code> function inside it to actually buffer the samples. If you are using a callback-oriented sound API, it is recommended to set up a function that locks a common mutex during the calls to <code>S9xFinalizeSamples</code> and <code>S9xMixSamples</code> to prevent them from running at the same time and corrupting the sound buffer.<br>
 			If you wish to disable a callback you have set up or need to temporarily shut down your sound system, you may pass <code>NULL</code> for both arguments to revert to the built-in version.
 		</p>
 		<h3><code>bool8 S9xFreezeGame (const char *filepath)</code></h3>
@@ -262,10 +262,6 @@
 		<h3><code>const char *S9xChooseFilename (bool8 read_only)</code></h3>
 		<p>
 			If your port can match Snes9x's built-in <code>LoadFreezeFile</code>/<code>SaveFreezeFile</code> command (see <code>controls.cpp</code>), you may choose to use this function. Otherwise return <code>NULL</code>.
-		</p>
-		<h3><code>void S9xAutoSaveSRAM (void)</code></h3>
-		<p>
-			If <code>Settings.AutoSaveDelay</code> is not zero, Snes9x calls this function when the contents of the S-RAM has been changed. Typically, call <code>Memory.SaveSRAM</code> function from this function.
 		</p>
 		<h2>Global Variables</h2>
 		<h3><code>uint16 *GFX.Screen</code></h3>

@@ -2525,6 +2525,7 @@ void CMemory::InitROM (void)
 	sprintf(ROMName, "%s", Safe(ROMName));
 	sprintf(ROMId, "%s", Safe(ROMId));
 
+	char String[513];
 	#ifndef __LIBSNES__
 	sprintf(String, "\"%s\" [%s] ID:%s",
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),

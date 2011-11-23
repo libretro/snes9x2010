@@ -1034,7 +1034,6 @@ void emulator_init_settings(void)
 	// Settings
 
 	init_setting_bool("Settings::BSXBootup", Settings.BSXBootup, false);
-	init_setting_int("Settings::AutoSaveDelay", Settings.AutoSaveDelay, 0);
 
 	/*
 	   if (conf.Exists("BSX::CartAName"))
@@ -1644,9 +1643,6 @@ void _makepath (char *path, const char *, const char *dir, const char *fname, co
 		strcat(path, ext);
 	}
 }
-
-
-void S9xAutoSaveSRAM() { }
 
 void S9xDeinitUpdate(int width, int height)
 {
