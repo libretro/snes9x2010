@@ -18,7 +18,7 @@
 
 #define _SPC7110EMU_CPP_
 
-#include "spc7110dec.cpp"
+#include "spc7110dec_.h"
 
 const unsigned SPC7110::months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
