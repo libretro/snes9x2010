@@ -194,10 +194,6 @@
 #include "reader.h"
 #include "display.h"
 
-#ifndef SET_UI_COLOR
-#define SET_UI_COLOR(r, g, b) ;
-#endif
-
 #ifndef max
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #endif
@@ -205,8 +201,6 @@
 #ifndef min
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
-
-static char		LastRomFilename[PATH_MAX + 1] = "";
 
 // from NSRT
 static const char	*nintendo_licensees[] =
@@ -930,9 +924,6 @@ static const uint32	crc32Table[256] =
 
 static void S9xDeinterleaveType1 (int size, uint8 *base)
 {
-	Settings.DisplayColor = BUILD_PIXEL(0, 31, 0);
-	SET_UI_COLOR(0, 255, 0);
-
 	uint8	blocks[256];
 	int		nblocks = size >> 16;
 
@@ -969,9 +960,6 @@ static void S9xDeinterleaveType1 (int size, uint8 *base)
 static void S9xDeinterleaveType2 (int size, uint8 *base)
 {
 	// for odd Super FX images
-	Settings.DisplayColor = BUILD_PIXEL(31, 14, 6);
-	SET_UI_COLOR(255, 119, 25);
-
 	uint8	blocks[256];
 	int		nblocks = size >> 16;
 	int		step = 64;
@@ -1012,9 +1000,6 @@ static void S9xDeinterleaveGD24 (int size, uint8 *base)
 	// for 24Mb images dumped with Game Doctor
 	if (size != 0x300000)
 		return;
-
-	Settings.DisplayColor = BUILD_PIXEL(0, 31, 31);
-	SET_UI_COLOR(0, 255, 255);
 
 	uint8	*tmp = (uint8 *) malloc(0x80000);
 	if (tmp)
@@ -1465,9 +1450,6 @@ bool8 CMemory::LoadROM (const char *filename)
 	ZeroMemory(&Multi, sizeof(Multi));
  
 again:
-	Settings.DisplayColor = BUILD_PIXEL(31, 31, 31);
-	SET_UI_COLOR(255, 255, 255);
-
 	CalculatedSize = 0;
 	ExtendedFormat = NOPE;
 
@@ -1667,12 +1649,6 @@ again:
 		}
 	}
 
-	if (strncmp(LastRomFilename, filename, PATH_MAX + 1))
-	{
-		strncpy(LastRomFilename, filename, PATH_MAX + 1);
-		LastRomFilename[PATH_MAX] = 0;
-	}
-
 	ZeroMemory(&SNESGameFixes, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
 
@@ -1694,9 +1670,6 @@ bool8 CMemory::LoadMultiCart (const char *cartA, const char *cartB)
 
 	ZeroMemory(ROM, MAX_ROM_SIZE);
 	ZeroMemory(&Multi, sizeof(Multi));
-
-	Settings.DisplayColor = BUILD_PIXEL(31, 31, 31);
-	SET_UI_COLOR(255, 255, 255);
 
 	CalculatedSize = 0;
 	ExtendedFormat = NOPE;
@@ -2510,14 +2483,10 @@ void CMemory::InitROM (void)
 	// checksum
 	if (!isChecksumOK || ((uint32) CalculatedSize > (uint32) (((1 << (ROMSize - 7)) * 128) * 1024)))
 	{
-		Settings.DisplayColor = BUILD_PIXEL(31, 31, 0);
-		SET_UI_COLOR(255, 255, 0);
 	}
 
 	if (Multi.cartType == 4)
 	{
-		Settings.DisplayColor = BUILD_PIXEL(0, 16, 31);
-		SET_UI_COLOR(0, 128, 255);
 	}
 
 	//// Initialize emulation
@@ -3434,8 +3403,6 @@ void CMemory::ApplyROMFixes (void)
 		(match_na("FX SKIING NINTENDO 96") && (ROM[0x7fda] == 0)) ||
 		(match_nn("HONKAKUHA IGO GOSEI")   && (ROM[0xffd5] != 0x31)))
 	{
-		Settings.DisplayColor = BUILD_PIXEL(31, 0, 0);
-		SET_UI_COLOR(255, 0, 0);
 	}
 
 	//// APU timing hacks :(

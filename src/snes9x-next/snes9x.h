@@ -297,7 +297,6 @@
 #define HALTED_FLAG			(1 << 12)	// APU
 
 #define ROM_NAME_LEN	23
-#define AUTO_FRAMERATE	200
 
 struct SCPUState
 {
@@ -402,10 +401,6 @@ struct SSettings
 
 	uint32	SoundPlaybackRate;
 	uint32	SoundInputRate;
-
-	uint8	BG_Forced;
-
-	uint16	DisplayColor;
 
 	bool	Multi;
 	char	CartAName[PATH_MAX + 1];

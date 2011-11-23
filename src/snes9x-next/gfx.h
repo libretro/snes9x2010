@@ -310,7 +310,6 @@ void S9xStartScreenRefresh (void);
 void S9xEndScreenRefresh (void);
 void S9xUpdateScreen (void);
 void RenderLine (uint8);
-void S9xComputeClipWindows (void);
 
 // external port interface which must be implemented or initialised for each port
 bool8 S9xGraphicsInit (void);
