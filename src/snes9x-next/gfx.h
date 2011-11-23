@@ -282,7 +282,6 @@ struct SLineMatrixData
 	short	M7VOFS;
 };
 
-extern uint16		DirectColourMaps[8][256];
 extern uint8		mul_brightness[16][32];
 extern struct SBG	BG;
 extern struct SGFX	GFX;
@@ -306,14 +305,10 @@ extern struct SGFX	GFX;
 	GFX.ZERO[(((C1) | RGB_HI_BITS_MASKx2) - \
 	((C2) & RGB_REMOVE_LOW_BITS_MASK)) >> 1]
 
-void S9xStartScreenRefresh (void);
-void S9xEndScreenRefresh (void);
 void S9xUpdateScreen (void);
-void RenderLine (uint8);
 
 // external port interface which must be implemented or initialised for each port
 bool8 S9xGraphicsInit (void);
 void S9xGraphicsDeinit (void);
-void S9xDeinitUpdate (int, int);
 
 #endif

@@ -223,7 +223,6 @@ CMemory				Memory;
 
 uint8	OpenBus = 0;
 uint8	*HDMAMemPointers[8];
-uint16	DirectColourMaps[8][256];
 
 #if defined(ZSNES_FX) || defined(ZSNES_C4)
 uint8	*ROM    = NULL;

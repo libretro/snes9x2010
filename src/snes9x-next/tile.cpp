@@ -210,6 +210,9 @@ static inline uint16 COLOR_SUB (uint16 C1, uint16 C2)
 	return (v);
 }
 
+static uint16	DirectColourMaps[8][256];
+static uint16 BlackColourMap[256] = {0};
+
 static void S9xBuildDirectColourMaps (void)
 {
 	IPPU.XB = mul_brightness[PPU.Brightness];
@@ -221,7 +224,6 @@ static void S9xBuildDirectColourMaps (void)
 	IPPU.DirectColourMapsNeedRebuild = FALSE;
 }
 
-static uint16 BlackColourMap[256] = {0};
 static uint32	pixbit[8][16];
 static uint8	hrbit_odd[256];
 static uint8	hrbit_even[256];

@@ -181,9 +181,12 @@
 #include "dma.h"
 #include "apu/apu.h"
 #include "fxemu.h"
+#include "controls.h"
+#include "cheats.h"
 #include "snapshot.h"
 
-//static int counter;
+extern struct SLineData		LineData[240];
+extern struct SLineMatrixData	LineMatrixData[240];
 
 void S9xMainLoop (void)
 {
@@ -329,6 +332,97 @@ static void S9xCheckMissingHTimerHalt (int32 hc_from, int32 range)
 		if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
 			CPU.IRQPending = 1;
 	}
+}
+
+static void S9xEndScreenRefresh (void)
+{
+	FLUSH_REDRAW();
+
+	S9xControlEOF();
+
+	if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
+	{
+		//Chrono Trigger mid-frame overscan hack - field to battle transition
+		if (Settings.ChronoTriggerFrameHack & (IPPU.RenderedScreenHeight == 239))
+			IPPU.RenderedScreenHeight = 224;
+		S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
+	}
+
+	S9xApplyCheats();
+}
+
+static void RenderLine (uint8 C)
+{
+	LineData[C].BG[0].VOffset = PPU.BG[0].VOffset + 1;
+	LineData[C].BG[0].HOffset = PPU.BG[0].HOffset;
+	LineData[C].BG[1].VOffset = PPU.BG[1].VOffset + 1;
+	LineData[C].BG[1].HOffset = PPU.BG[1].HOffset;
+
+	if (PPU.BGMode == 7)
+	{
+		struct SLineMatrixData *p = &LineMatrixData[C];
+		p->MatrixA = PPU.MatrixA;
+		p->MatrixB = PPU.MatrixB;
+		p->MatrixC = PPU.MatrixC;
+		p->MatrixD = PPU.MatrixD;
+		p->CentreX = PPU.CentreX;
+		p->CentreY = PPU.CentreY;
+		p->M7HOFS  = PPU.M7HOFS;
+		p->M7VOFS  = PPU.M7VOFS;
+	}
+	else
+	{
+		LineData[C].BG[2].VOffset = PPU.BG[2].VOffset + 1;
+		LineData[C].BG[2].HOffset = PPU.BG[2].HOffset;
+		LineData[C].BG[3].VOffset = PPU.BG[3].VOffset + 1;
+		LineData[C].BG[3].HOffset = PPU.BG[3].HOffset;
+	}
+
+	IPPU.CurrentLine = C + 1;
+}
+
+static void S9xStartScreenRefresh (void)
+{
+	GFX.InterlaceFrame = !GFX.InterlaceFrame;
+	if (!GFX.DoInterlace || !GFX.InterlaceFrame)
+	{
+		if (GFX.DoInterlace)
+			GFX.DoInterlace--;
+
+		IPPU.MaxBrightness = PPU.Brightness;
+
+		IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
+		IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
+		IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
+
+		GFX.RealPPL = GFX.Pitch >> 1;
+		IPPU.RenderedScreenWidth = SNES_WIDTH;
+		IPPU.RenderedScreenHeight = PPU.ScreenHeight;
+		IPPU.DoubleWidthPixels = FALSE;
+		IPPU.DoubleHeightPixels = FALSE;
+
+		if ((PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
+		{
+			IPPU.DoubleWidthPixels = TRUE;
+			IPPU.RenderedScreenWidth += SNES_WIDTH;
+		}
+
+		GFX.PPL = GFX.RealPPL;
+		if (IPPU.Interlace)
+		{
+			GFX.PPL += GFX.RealPPL;
+			IPPU.DoubleHeightPixels = TRUE;
+			IPPU.RenderedScreenHeight += PPU.ScreenHeight;
+			GFX.DoInterlace++;
+		}
+	}
+
+	PPU.MosaicStart = 0;
+	PPU.RecomputeClipWindows = TRUE;
+	IPPU.PreviousLine = IPPU.CurrentLine = 0;
+
+	ZeroMemory(GFX.ZBuffer, GFX.ScreenSize);
+	ZeroMemory(GFX.SubZBuffer, GFX.ScreenSize);
 }
 
 void S9xDoHEventProcessing (void)

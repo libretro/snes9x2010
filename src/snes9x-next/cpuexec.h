@@ -218,6 +218,8 @@ void S9xDoHEventProcessing (void);
 void S9xClearIRQ (uint32);
 void S9xSetIRQ (uint32);
 
+void S9xDeinitUpdate (int, int);
+
 #define S9xUnpackStatus() \
 	ICPU._Zero = (Registers.PL & Zero) == 0; \
 	ICPU._Negative = (Registers.PL & Negative); \
