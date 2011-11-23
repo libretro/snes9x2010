@@ -47,7 +47,6 @@
 #include "snes9x-next/apu/apu.h"
 #include "snes9x-next/controls.h"
 
-int ScreenshotRequested = 0;
 int ConfigRequested = 0;
 int ShutdownRequested = 0;
 int ResetRequested = 0;
@@ -432,7 +431,6 @@ main(int argc, char *argv[])
 		SelectFilterMethod();
 #endif
 		ConfigRequested = 0;
-		ScreenshotRequested = 0;
 		SwitchAudioMode(0);
 
 		//Settings.MultiPlayer5Master = (GCSettings.Controller == CTRL_PAD4 ? true : false);

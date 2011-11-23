@@ -638,7 +638,8 @@ void ReportButtons ()
 	 * OR Left on classic right analog stick
 	 */
 	if(MenuRequested())
-		ScreenshotRequested = 1; // go to the menu
+	{
+	}
 
 	//j = (Settings.MultiPlayer5Master == true ? 4 : 2);
 	j = 2;

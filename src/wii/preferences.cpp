@@ -106,8 +106,7 @@ static const char * XMLSaveCallback(mxml_node_t *node, int where)
 	return (NULL);
 }
 
-static int
-preparePrefsData ()
+static int preparePrefsData ()
 {
 	xml = mxmlNewXML("1.0");
 	mxmlSetWrapMargin(0); // disable line wrapping
@@ -245,8 +244,7 @@ static void loadXMLController(unsigned int controller[], const char * name)
  * Decodes preferences - parses XML and loads preferences into the variables
  ***************************************************************************/
 
-static bool
-decodePrefsData ()
+static bool decodePrefsData ()
 {
 	bool result = false;
 

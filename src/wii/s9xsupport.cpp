@@ -46,11 +46,6 @@ void S9xMessage(int /*type */, int /*number */, const char *message)
 	//S9xSetInfoString(buffer);
 }
 
-void S9xAutoSaveSRAM()
-{
-
-}
-
 /****************************************************************************
  * OpenSoundDevice
  *
@@ -69,12 +64,6 @@ void S9xInitSync()
 	prev = gettime();
 }
 
-/*** Synchronisation ***/
-
-void S9xSyncSpeed ()
-{
-}
-
 /*** Video / Display related functions ***/
 bool8 S9xInitUpdate()
 {
@@ -91,44 +80,12 @@ bool8 S9xContinueUpdate(int Width, int Height)
 	return (TRUE);
 }
 
-void S9xSetPalette()
-{
-	return;
-}
-
-/*** Input functions ***/
-void S9xHandlePortCommand(s9xcommand_t cmd, int16 data1, int16 data2)
-{
-	return;
-}
-
-bool S9xPollButton(uint32 id, bool * pressed)
-{
-	return 0;
-}
-
-bool S9xPollAxis(uint32 id, int16 * value)
-{
-	return 0;
-}
-
-bool S9xPollPointer(uint32 id, int16 * x, int16 * y)
-{
-	return 0;
-}
-
 /****************************************************************************
  * Note that these are DUMMY functions, and only allow Snes9x to
  * compile. Where possible, they will return an error signal.
  ***************************************************************************/
 
 const char *S9xChooseFilename(bool8 read_only)
-{
-	ExitApp();
-	return NULL;
-}
-
-const char * S9xChooseMovieFilename(bool8 read_only)
 {
 	ExitApp();
 	return NULL;
@@ -144,24 +101,6 @@ const char * S9xGetFilename(const char *ex, enum s9x_getdirtype dirtype)
 {
 	ExitApp();
 	return NULL;
-}
-
-const char * S9xGetFilenameInc(const char *e, enum s9x_getdirtype dirtype)
-{
-	ExitApp();
-	return NULL;
-}
-
-const char * S9xBasename(const char *name)
-{
-	ExitApp();
-	return name;
-}
-
-const char * S9xStringInput (const char * s)
-{
-	ExitApp();
-	return s;
 }
 
 void _splitpath(char const *buf, char *drive, char *dir, char *fname, char *ext)

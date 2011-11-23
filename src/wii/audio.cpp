@@ -94,13 +94,7 @@ static void FinalizeSamplesCallback()
 void
 InitAudio ()
 {
-	#ifdef NO_SOUND
-	AUDIO_Init (NULL);
-	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
-	AUDIO_RegisterDMACallback(GCMixSamples);
-	#else
 	ASND_Init();
-	#endif
 	LWP_MutexInit(&audiomutex, false);
 	LWP_CreateThread (&athread, AudioThread, NULL, astack, AUDIOSTACK, 70);
 }
@@ -115,12 +109,6 @@ SwitchAudioMode(int mode)
 {
 	if(mode == 0) // emulator
 	{
-		#ifndef NO_SOUND
-		ASND_Pause(1);
-		AUDIO_StopDMA();
-		AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
-		AUDIO_RegisterDMACallback(GCMixSamples);
-		#endif
 		memset(soundbuffer[0],0,AUDIOBUFFER);
 		memset(soundbuffer[1],0,AUDIOBUFFER);
 		DCFlushRange(soundbuffer[0],AUDIOBUFFER);
@@ -133,12 +121,7 @@ SwitchAudioMode(int mode)
 	else // menu
 	{
 		S9xSetSamplesAvailableCallback(NULL);
-		#ifndef NO_SOUND
-		ASND_Init();
-		ASND_Pause(0);
-		#else
 		AUDIO_StopDMA();
-		#endif
 	}
 }
 

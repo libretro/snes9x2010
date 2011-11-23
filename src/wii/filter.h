@@ -22,11 +22,6 @@
  
 enum RenderFilter{
 	FILTER_NONE = 0,
-
-	FILTER_HQ2X,
-	FILTER_HQ2XS,
-	FILTER_HQ2XBOLD,
-
 	NUM_FILTERS
 };
 
@@ -53,9 +48,6 @@ void RenderPlain (uint8 *srcPtr, uint32 srcPitch, uint8 *dstPtr, uint32 dstPitch
 void SelectFilterMethod ();
 TFilterMethod FilterToMethod (RenderFilter filterID);
 const char* GetFilterName (RenderFilter filterID);
-bool GetFilterHiResSupport (RenderFilter filterID);
-int GetFilterScale(RenderFilter filterID);
-template<int GuiScale> void RenderHQ2X (uint8 *srcPtr, uint32 srcPitch, uint8 *dstPtr, uint32 dstPitch, int width, int height);
 void InitLUTs();
 
 #endif
