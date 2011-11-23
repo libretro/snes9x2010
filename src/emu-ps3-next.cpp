@@ -111,7 +111,6 @@ static unsigned snes_devices[2];
 	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
 
 #define emulator_load_current_save_state_slot() \
-	/* emulator-specific */ \
 	int ret = S9xUnfreezeGame(S9xChooseFilename(FALSE)); \
 	if(ret) \
 		snprintf(special_action_msg, sizeof(special_action_msg), "Loaded save state slot #%d", Settings.CurrentSaveStateSlot); \
@@ -120,18 +119,17 @@ static unsigned snes_devices[2];
 	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
 
 #define emulator_save_current_save_state_slot() \
-	/* emulator-specific */ \
 	S9xFreezeGame(S9xChooseFilename(FALSE)); \
 	snprintf(special_action_msg, sizeof(special_action_msg), "Saved to save state slot #%d", Settings.CurrentSaveStateSlot); \
 	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
 
 /* emulator-specific */
 
-#define S9xReportButton(id, pressed) \
+#define S9xReportButton(id, action, pressed) \
       if(keymap[id].type == S9xButtonJoypad) \
       joypad[keymap[id].button.joypad.idx] = ((joypad[keymap[id].button.joypad.idx] | keymap[id].button.joypad.buttons) & (((pressed) | -(pressed)) >> 31)) | ((joypad[keymap[id].button.joypad.idx] & ~keymap[id].button.joypad.buttons) & ~(((pressed) | -(pressed)) >> 31)); \
       else if(pressed) \
-         special_action_to_execute = id;
+         special_action_to_execute = action;
 
 void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 {
@@ -355,8 +353,7 @@ const char * emulator_input_cheat(void)
 				return "ERROR: Code entered was incorrect.";
 		}
 	}
-	else
-		return "ERROR: Code input canceled.";
+	return "ERROR: Code input canceled.";
 }
 
 void emulator_toggle_sound(uint64_t soundmode)
@@ -412,7 +409,7 @@ void emulator_toggle_sound(uint64_t soundmode)
 
 }
 
-void emulator_save_sram(void)
+static void emulator_save_sram(void)
 {
 	if(!Settings.SRAMWriteProtect)
 		Memory.SaveSRAM(S9xGetFilename(".srm", SRAM_DIR));
@@ -425,6 +422,77 @@ void emulator_switch_pal_60hz(bool pal60Hz)
 	Settings.PS3PALTemporalMode60Hz = pal60Hz;
 	ps3graphics_set_pal60hz(Settings.PS3PALTemporalMode60Hz);
 	ps3graphics_switch_resolution(ps3graphics_get_current_resolution(), Settings.PS3PALTemporalMode60Hz, Settings.TripleBuffering, Settings.ScaleEnabled, Settings.ScaleFactor);
+}
+
+static void ingame_menu_enable (int enable)
+{
+	is_running = false;
+	audio_active = false;
+	is_ingame_menu_running = enable;
+}
+
+#define emulator_toggle_throttle(enable) \
+	ps3graphics_set_vsync(enable); \
+	if(enable) \
+		snprintf(special_action_msg, sizeof(special_action_msg), "Throttle mode: ON"); \
+	else \
+		snprintf(special_action_msg, sizeof(special_action_msg), "Throttle mode: OFF"); \
+	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
+
+static void special_actions(uint64_t number)
+{
+	switch (number)
+	{
+		case BTN_EXITTOMENU:
+		{
+			ingame_menu_enable(0);
+			mode_switch = MODE_MENU;
+			break;
+		}
+		case BTN_INGAME_MENU:
+			ingame_menu_enable(1);
+			break;
+		case BTN_RESET:
+			S9xReset();
+			break;
+		case BTN_SOFTRESET:
+			S9xSoftReset();
+			break;
+		case BTN_FASTFORWARD:
+		{
+			if(frame_count < special_action_msg_expired)
+			{
+			}
+			else
+			{
+				Settings.Throttled = !Settings.Throttled;
+				emulator_toggle_throttle(Settings.Throttled);
+			}
+		}
+			break;
+		case BTN_QUICKLOAD:
+		{
+			emulator_load_current_save_state_slot();
+			break;
+		}
+		case BTN_INCREMENTSAVE:
+		{
+			emulator_increment_current_save_state_slot();
+			break;
+		}
+		case BTN_DECREMENTSAVE:
+		{
+			emulator_decrement_current_save_state_slot();
+			break;
+		}
+		case BTN_QUICKSAVE:
+		{
+			emulator_save_current_save_state_slot();
+			break;
+		}
+		default:
+			break;
+	}
 }
 
 static void emulator_implementation_input_loop_mouse(int snes_device)
@@ -573,7 +641,10 @@ static void emulator_implementation_input_loop_mouse(int snes_device)
 	}
 
 	if(special_action_to_execute)
-		S9xApplyCommand(keymap[special_action_to_execute], 1, 0);
+	{
+		special_actions(special_action_to_execute);
+	}
+		//S9xApplyCommand(keymap[special_action_to_execute], 1, 0);
 	old_state = state;
 }
 
@@ -592,42 +663,44 @@ static void emulator_implementation_input_loop()
 		const uint64_t pad = i + 1;
 		uint64_t special_action_to_execute = 0;
 
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonCircle[i]), (CTRL_CIRCLE(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonCross[i]), (CTRL_CROSS(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonTriangle[i]), (CTRL_TRIANGLE(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonSquare[i]), (CTRL_SQUARE(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonSelect[i]), (CTRL_SELECT(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonStart[i]), (CTRL_START(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL1[i]), (CTRL_L1(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2[i]), (CTRL_L2(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR1[i]), (CTRL_R1(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2[i]), (CTRL_R2(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Up[i]), (CTRL_UP(state) | CTRL_LSTICK_UP(state)) != 0);
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Down[i]), (CTRL_DOWN(state) | CTRL_LSTICK_DOWN(state)) != 0);
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Left[i]), (CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state)) != 0);
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Right[i]), (CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state)) != 0);
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_ButtonR3[i]), (CTRL_R2(state) && CTRL_R3(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR3[i]), (CTRL_L2(state) && CTRL_R3(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonL3[i]), (CTRL_L2(state) && CTRL_L3(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL3[i]), (CTRL_L3(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3[i]), (CTRL_R3(state)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Right[i]), CTRL_RSTICK_RIGHT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Left[i]), CTRL_RSTICK_LEFT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Up[i]), CTRL_RSTICK_UP(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Down[i]), CTRL_RSTICK_DOWN(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Right[i]), (CTRL_L2(button_was_held) && CTRL_RSTICK_RIGHT(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Left[i]), (CTRL_L2(button_was_held) && CTRL_RSTICK_LEFT(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Up[i]), (CTRL_L2(state) && CTRL_RSTICK_UP(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Down[i]), (CTRL_L2(state) && CTRL_R2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Right[i]), (CTRL_L2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Left[i]), (CTRL_R2(state) && CTRL_RSTICK_LEFT(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Right[i]), (CTRL_R2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Up[i]), (CTRL_R2(state) && CTRL_RSTICK_UP(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Down[i]), (CTRL_R2(state) && CTRL_L2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3_ButtonL3[i]), (CTRL_R3(state) && CTRL_L3(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonCircle[i]), PS3Input.ButtonCircle[i], (CTRL_CIRCLE(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonCross[i]), PS3Input.ButtonCross[i], (CTRL_CROSS(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonTriangle[i]), PS3Input.ButtonTriangle[i], (CTRL_TRIANGLE(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonSquare[i]), PS3Input.ButtonSquare[i], (CTRL_SQUARE(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonSelect[i]), PS3Input.ButtonSelect[i], (CTRL_SELECT(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonStart[i]), PS3Input.ButtonStart[i], (CTRL_START(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL1[i]), PS3Input.ButtonL1[i], (CTRL_L1(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2[i]), PS3Input.ButtonL2[i], (CTRL_L2(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR1[i]), PS3Input.ButtonR1[i], (CTRL_R1(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2[i]), PS3Input.ButtonR2[i], (CTRL_R2(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Up[i]), PS3Input.DPad_Up[i], (CTRL_UP(state) | CTRL_LSTICK_UP(state)) != 0);
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Down[i]), PS3Input.DPad_Down[i], (CTRL_DOWN(state) | CTRL_LSTICK_DOWN(state)) != 0);
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Left[i]), PS3Input.DPad_Left[i], (CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state)) != 0);
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.DPad_Right[i]), PS3Input.DPad_Left[i], (CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state)) != 0);
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_ButtonR3[i]), PS3Input.ButtonR2_ButtonR3[i], (CTRL_R2(state) && CTRL_R3(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonR3[i]), PS3Input.ButtonL2_ButtonR3[i], (CTRL_L2(state) && CTRL_R3(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_ButtonL3[i]), PS3Input.ButtonL2_ButtonL3[i], (CTRL_L2(state) && CTRL_L3(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL3[i]), PS3Input.ButtonL3[i], (CTRL_L3(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3[i]), PS3Input.ButtonR3[i], (CTRL_R3(state)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Right[i]), PS3Input.AnalogR_Right[i], CTRL_RSTICK_RIGHT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Left[i]), PS3Input.AnalogR_Left[i], CTRL_RSTICK_LEFT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Up[i]), PS3Input.AnalogR_Up[i], CTRL_RSTICK_UP(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.AnalogR_Down[i]), PS3Input.AnalogR_Down[i], CTRL_RSTICK_DOWN(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Left[i]), PS3Input.ButtonL2_AnalogR_Left[i], (CTRL_L2(button_was_held) && CTRL_RSTICK_LEFT(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Up[i]), PS3Input.ButtonL2_AnalogR_Up[i], (CTRL_L2(state) && CTRL_RSTICK_UP(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Down[i]), PS3Input.ButtonL2_AnalogR_Down[i], (CTRL_L2(state) && CTRL_R2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonL2_AnalogR_Right[i]), PS3Input.ButtonL2_AnalogR_Right[i], (CTRL_L2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Left[i]), PS3Input.ButtonR2_AnalogR_Left[i], (CTRL_R2(state) && CTRL_RSTICK_LEFT(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Right[i]), PS3Input.ButtonR2_AnalogR_Right[i], (CTRL_R2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Up[i]), PS3Input.ButtonR2_AnalogR_Up[i], (CTRL_R2(state) && CTRL_RSTICK_UP(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR2_AnalogR_Down[i]), PS3Input.ButtonR2_AnalogR_Down[i], (CTRL_R2(state) && CTRL_L2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
+		S9xReportButton(MAKE_BUTTON(pad, PS3Input.ButtonR3_ButtonL3[i]), PS3Input.ButtonR3_ButtonL3[i], (CTRL_R3(state) && CTRL_L3(state)));
 
 		if(special_action_to_execute)
-			S9xApplyCommand(keymap[special_action_to_execute], 1, 0);
+		{
+			special_actions(special_action_to_execute);
+		}
+			//S9xApplyCommand(keymap[special_action_to_execute], 1, 0);
 		old_state[i] = state;
 	}
 }
@@ -663,7 +736,6 @@ static void emulator_implementation_input_loop()
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_FASTFORWARD), "ToggleEmuTurbo"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_RESET), "Reset"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_SOFTRESET), "SoftReset"); \
-   MAP_BUTTON(MAKE_BUTTON(padno, BTN_SWAPJOYPADS), "SwapJoypads"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_SRAM_WRITEPROTECT), "SramWriteProtect"); \
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_INGAME_MENU), "ExitToMenu");
 
@@ -984,9 +1056,6 @@ void emulator_init_settings(void)
 	init_setting_bool("Hack::BlockInvalidVRAMAccess", Settings.BlockInvalidVRAMAccessMaster, true)
 	init_setting_int("Hack::HDMATiming", Settings.HDMATimingHack, 100);
 
-	int tmp_int;
-	double tmp_double;
-	bool tmp_bool;
 	char *tmp_str;
 
 	//Some additional settings that are not properly set by SNES9x's LoadConfigFiles
@@ -1451,19 +1520,6 @@ void emulator_save_settings(uint64_t filetosave)
 	}
 }
 
-void S9xExit (void)
-{
-	emulator_stop_rom_running();
-	ingame_menu_enable(0);
-	mode_switch = MODE_MENU;
-}
-
-void S9xExitToMenu(void)
-{
-	emulator_stop_rom_running();
-	ingame_menu_enable(1);
-}
-
 void S9xMessage (int type, int number, char const *message)
 {
 	snprintf(special_action_msg, sizeof(special_action_msg), message);
@@ -1589,10 +1645,6 @@ void _makepath (char *path, const char *, const char *dir, const char *fname, co
 	}
 }
 
-void S9xDoThrottling(bool throttle)
-{
-	ps3graphics_set_vsync(throttle);
-}
 
 void S9xAutoSaveSRAM() { }
 
@@ -1757,14 +1809,6 @@ void Emulator_StartROMRunning(uint32_t set_is_running)
 
 
 
-void ingame_menu_enable (int enable)
-{
-	is_running = false;
-	audio_active = false;
-	is_ingame_menu_running = enable;
-}
-
-
 //FIXME: Turn GREEN into WHITE and RED into LIGHTBLUE once the overlay is in
 #define ingame_menu_reset_entry_colors(ingame_menu_item) \
 { \
@@ -1778,7 +1822,6 @@ static void ingame_menu(void)
 {
 	uint64_t menuitem_colors[MENU_ITEM_LAST];
 	char comment[256];
-	char aspectratio[256];
 
 	do
 	{

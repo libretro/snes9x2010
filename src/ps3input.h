@@ -35,7 +35,6 @@ extern "C" {
 #define BTN_RESET			25
 #define BTN_PAUSE			26
 #define BTN_FASTFORWARD			30
-#define BTN_SWAPJOYPADS			33
 #define BTN_SRAM_WRITEPROTECT		34
 #define BTN_POINTER1			35
 #define BTN_POINTER2			36

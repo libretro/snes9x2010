@@ -272,36 +272,6 @@ static int32				newcontrollers[2] = { JOYPAD0, NONE };
 static char				buf[256];
 uint16_t joypad[8];
 
-// Note: these should be in asciibetical order!
-#define THE_COMMANDS \
-	S(ExitEmu), \
-	S(ExitToMenu), \
-	S(LoadFreezeFile), \
-	S(Reset), \
-	S(SaveFreezeFile), \
-	S(SoftReset), \
-	S(ToggleEmuTurbo) \
-
-#define S(x)	x
-
-enum command_numbers
-{
-	THE_COMMANDS,
-	LAST_COMMAND
-};
-
-#undef S
-#define S(x)	#x
-
-static const char	*command_names[LAST_COMMAND + 1] =
-{
-	THE_COMMANDS,
-	NULL
-};
-
-#undef S
-#undef THE_COMMANDS
-
 static void DoGunLatch (int x, int y)
 {
 	x += 40;
@@ -692,15 +662,6 @@ s9xcommand_t S9xGetCommandT (const char *name)
 
 		cmd.type = S9xPointer;
 	}
-	else
-	{
-		i = findstr(name, command_names, LAST_COMMAND);
-		if (i < 0)
-			return (cmd);
-
-		cmd.type = S9xButtonCommand;
-		cmd.button.command = i;
-	}
 
 	return (cmd);
 }
@@ -876,43 +837,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 				justifier.buttons &= ~i;
 
 			return;
-
-		case S9xButtonCommand:
-			if (data1)
-			{
-				switch ((enum command_numbers) (i = cmd.button.command))
-				{
-					case ExitEmu:
-						S9xExit();
-						break;
-					case ExitToMenu:
-						S9xExitToMenu();
-						break;
-					case Reset:
-						S9xReset();
-						break;
-
-					case SoftReset:
-						S9xSoftReset();
-						break;
-					case ToggleEmuTurbo:
-						Settings.Throttled = !Settings.Throttled;
-						S9xDoThrottling(Settings.Throttled);
-						break;
-					case LoadFreezeFile:
-						S9xUnfreezeGame(S9xChooseFilename(TRUE));
-						break;
-
-					case SaveFreezeFile:
-						S9xFreezeGame(S9xChooseFilename(FALSE));
-						break;
-					case LAST_COMMAND:
-						break;
-				}
-			}
-
-			return;
-
 		case S9xPointer:
 			if (cmd.pointer.aim_mouse0)
 			{

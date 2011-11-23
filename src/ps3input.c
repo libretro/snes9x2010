@@ -49,8 +49,6 @@ const char * Input_PrintMappedButton(uint32_t mappedbutton)
 			return "Toggle selected cheat";
 		case BTN_CHEATINPUT:
 			return "Input cheatcode";
-		case BTN_CHEATINPUTLABEL:
-			return "Input cheatcode label";
 		case BTN_EXITTOMENU:
 			return "Exit to menu";
 		case BTN_NONE:
@@ -63,8 +61,6 @@ const char * Input_PrintMappedButton(uint32_t mappedbutton)
 			return "Pause";
 		case BTN_FASTFORWARD:
 			return "Fast forward";
-		case BTN_SWAPJOYPADS:
-			return "Swap Joypads";
 		case BTN_SRAM_WRITEPROTECT:
 			return "SRAM Write-Protect";
 		case BTN_INGAME_MENU:
@@ -116,11 +112,9 @@ uint32_t Input_GetAdjacentButtonmap(uint32_t buttonmap, uint32_t next)
 		case BTN_CHEATTOGGLE:
 			return next ? BTN_CHEATINPUT : BTN_EXITTOMENU;
 		case BTN_CHEATINPUT:
-			return next ? BTN_CHEATINPUTLABEL : BTN_CHEATTOGGLE;
-		case BTN_CHEATINPUTLABEL:
-			return next ? BTN_DECREMENTSAVE : BTN_CHEATINPUT;
+			return next ? BTN_DECREMENTSAVE : BTN_CHEATTOGGLE;
 		case BTN_DECREMENTSAVE:
-			return next ? BTN_INCREMENTSAVE : BTN_CHEATINPUTLABEL;
+			return next ? BTN_INCREMENTSAVE : BTN_CHEATINPUT;
 		case BTN_INCREMENTSAVE:
 			return next ? BTN_FASTFORWARD : BTN_DECREMENTSAVE;
 		case BTN_FASTFORWARD:
@@ -130,11 +124,9 @@ uint32_t Input_GetAdjacentButtonmap(uint32_t buttonmap, uint32_t next)
 		case BTN_SOFTRESET:
 			return next ? BTN_PAUSE : BTN_RESET;
 		case BTN_PAUSE:
-			return next ? BTN_SWAPJOYPADS : BTN_SOFTRESET;
-		case BTN_SWAPJOYPADS:
-			return next ? BTN_SRAM_WRITEPROTECT : BTN_PAUSE;
+			return next ? BTN_SRAM_WRITEPROTECT : BTN_SOFTRESET;
 		case BTN_SRAM_WRITEPROTECT:
-			return next ? BTN_INGAME_MENU : BTN_SWAPJOYPADS;
+			return next ? BTN_INGAME_MENU : BTN_PAUSE;
 		case BTN_INGAME_MENU:
 			return next ? BTN_NONE : BTN_SRAM_WRITEPROTECT;
 		case BTN_NONE:

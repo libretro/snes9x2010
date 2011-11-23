@@ -661,11 +661,6 @@ void S9xMessage(int, int, const char* msg)
 {
 	fprintf(stderr, "%s\n", msg);
 }
-bool S9xPollAxis(unsigned int, short*) { return FALSE; }
-void S9xExit() {}
-void S9xOnSNESPadRead (void) {}
-void S9xDoThrottling (bool throttle) {}
-void S9xExitToMenu(void) {}
 
 void S9xAutoSaveSRAM() 
 {
