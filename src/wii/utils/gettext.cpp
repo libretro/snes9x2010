@@ -43,8 +43,7 @@ static inline u32 hash_string(const char *str_param)
 }
 
 /* Expand some escape sequences found in the argument string.  */
-static char *
-expand_escape(const char *str)
+static char * expand_escape(const char *str)
 {
 	char *retval, *rp;
 	const char *cp = str;
@@ -176,16 +175,14 @@ static MSG *setMSG(const char *msgid, const char *msgstr)
 	return NULL;
 }
 
-static void gettextCleanUp(void)
-{
-	while (baseMSG)
-	{
-		MSG *nextMsg = baseMSG->next;
-		free(baseMSG->msgstr);
-		free(baseMSG);
-		baseMSG = nextMsg;
+#define gettextCleanUp() \
+	while (baseMSG) \
+	{ \
+		MSG *nextMsg = baseMSG->next; \
+		free(baseMSG->msgstr); \
+		free(baseMSG); \
+		baseMSG = nextMsg; \
 	}
-}
 
 static char * memfgets(char * dst, int maxlen, char * src)
 {

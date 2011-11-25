@@ -248,7 +248,6 @@ static void BSX_Map_Dirty (void);
 static void BSX_Map (void);
 static void BSX_Set_Bypass_FlashIO (uint16, uint8);
 static uint8 BSX_Get_Bypass_FlashIO (uint16);
-static bool8 BSX_LoadBIOS (void);
 static void map_psram_mirror_sub (uint32);
 static int is_bsx (unsigned char *);
 
@@ -981,6 +980,9 @@ uint8 * S9xGetBasePointerBSX (uint32 address)
 
 static bool8 BSX_LoadBIOS (void)
 {
+#ifdef CUSTOM_FILE_HANDLING
+	return CustomBSX_LoadBIOS();
+#else
 	FILE	*fp;
 	char	path[PATH_MAX + 1], name[PATH_MAX + 1];
 	bool8	r = FALSE;
@@ -1016,6 +1018,7 @@ static bool8 BSX_LoadBIOS (void)
 #endif
 
 	return (r);
+#endif
 }
 
 void S9xInitBSX (void)

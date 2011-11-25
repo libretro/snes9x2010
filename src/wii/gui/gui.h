@@ -974,7 +974,6 @@ class GuiFileBrowser : public GuiElement
 		GuiImageData * iconSD;
 		GuiImageData * iconUSB;
 		GuiImageData * iconDVD;
-		GuiImageData * iconSMB;
 		GuiImageData * scrollbar;
 		GuiImageData * arrowDown;
 		GuiImageData * arrowDownOver;

@@ -125,7 +125,7 @@ void GuiWindow::ResetState()
 
 	u32 elemSize = _elements.size();
 	for (u32 i = 0; i < elemSize; ++i)
-		_elements.at(i)->ResetState();
+		 _elements.at(i)->ResetState();
 }
 
 void GuiWindow::SetState(int s)
@@ -210,25 +210,25 @@ void GuiWindow::ToggleFocus(GuiTrigger * t)
 	{
 		for (i = found; i < elemSize; ++i)
 		{
-				if(_elements.at(i)->IsFocused() == 0 && _elements.at(i)->GetState() != STATE_DISABLED) // focus is possible (but not set)
-				{
-					newfocus = i;
-					_elements.at(i)->SetFocus(1); // give this element focus
-					_elements.at(found)->SetFocus(0); // disable focus on other element
-					break;
-				}
+			if(_elements.at(i)->IsFocused() == 0 && _elements.at(i)->GetState() != STATE_DISABLED) // focus is possible (but not set)
+			{
+				newfocus = i;
+				_elements.at(i)->SetFocus(1); // give this element focus
+				_elements.at(found)->SetFocus(0); // disable focus on other element
+				break;
+			}
 		}
 
 		if(newfocus == -1)
 		{
 			for (i = 0; i < found; ++i)
 			{
-					if(_elements.at(i)->IsFocused() == 0 && _elements.at(i)->GetState() != STATE_DISABLED) // focus is possible (but not set)
-					{
-						_elements.at(i)->SetFocus(1); // give this element focus
-						_elements.at(found)->SetFocus(0); // disable focus on other element
-						break;
-					}
+				if(_elements.at(i)->IsFocused() == 0 && _elements.at(i)->GetState() != STATE_DISABLED) // focus is possible (but not set)
+				{
+					_elements.at(i)->SetFocus(1); // give this element focus
+					_elements.at(found)->SetFocus(0); // disable focus on other element
+					break;
+				}
 			}
 		}
 	}
@@ -366,7 +366,7 @@ void GuiWindow::ResetText()
 {
 	u32 elemSize = _elements.size();
 	for (u32 i = 0; i < elemSize; i++)
-		_elements.at(i)->ResetText();
+		 _elements.at(i)->ResetText();
 }
 
 void GuiWindow::Update(GuiTrigger * t)

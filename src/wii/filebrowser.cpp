@@ -20,33 +20,31 @@
 #include <sys/dir.h>
 #include <malloc.h>
 
-#ifdef HW_RVL
 #include <di/di.h>
-#endif
 
 #include "snes9xgx.h"
 #include "filebrowser.h"
 #include "menu.h"
 #include "video.h"
-#include "networkop.h"
 #include "fileop.h"
 #include "input.h"
-#include "gcunzip.h"
 #include "freeze.h"
 #include "sram.h"
 
-#include "snes9x-next/snes9x.h"
-#include "snes9x-next/memmap.h"
-#include "snes9x-next/cheats.h"
+#include "../snes9x-next/snes9x.h"
+#include "../snes9x-next/memmap.h"
+#include "../snes9x-next/cheats.h"
+#include "../snes9x-next/reader.h"
 
 BROWSERINFO browser;
 BROWSERENTRY * browserList = NULL; // list of files/folders in browser
 
-static char szpath[MAXPATHLEN];
-static bool inSz = false;
-
 unsigned long SNESROMSize = 0;
 bool loadingFile = false;
+
+extern char * GetFirstZipFilename();
+extern bool8 ReadIPSPatch(Reader *r, long offset, int32 &rom_size);
+extern bool8 ReadUPSPatch(Reader *r, long, int32 &rom_size);
 
 /****************************************************************************
 * autoLoadMethod()
@@ -63,14 +61,8 @@ int autoLoadMethod()
 		device = DEVICE_SD;
 	else if(ChangeInterface(DEVICE_USB, SILENT))
 		device = DEVICE_USB;
-	else if(ChangeInterface(DEVICE_SD_SLOTA, SILENT))
-		device = DEVICE_SD_SLOTA;
-	else if(ChangeInterface(DEVICE_SD_SLOTB, SILENT))
-		device = DEVICE_SD_SLOTB;
 	else if(ChangeInterface(DEVICE_DVD, SILENT))
 		device = DEVICE_DVD;
-	else if(ChangeInterface(DEVICE_SMB, SILENT))
-		device = DEVICE_SMB;
 	else
 		ErrorPrompt("Unable to locate a load device!");
 
@@ -96,12 +88,6 @@ int autoSaveMethod(bool silent)
 		device = DEVICE_SD;
 	else if(ChangeInterface(DEVICE_USB, SILENT))
 		device = DEVICE_USB;
-	else if(ChangeInterface(DEVICE_SD_SLOTA, SILENT))
-		device = DEVICE_SD_SLOTA;
-	else if(ChangeInterface(DEVICE_SD_SLOTB, SILENT))
-		device = DEVICE_SD_SLOTB;
-	else if(ChangeInterface(DEVICE_SMB, SILENT))
-		device = DEVICE_SMB;
 	else if(!silent)
 		ErrorPrompt("Unable to locate a save device!");
 
@@ -167,7 +153,6 @@ bool IsDeviceRoot(char * path)
 	if( strcmp(path, "sd:/")    == 0 ||
 		strcmp(path, "usb:/")   == 0 ||
 		strcmp(path, "dvd:/")   == 0 ||
-		strcmp(path, "smb:/")   == 0 ||
 		strcmp(path, "carda:/") == 0 ||
 		strcmp(path, "cardb:/") == 0)
 	{
@@ -358,7 +343,7 @@ static bool IsValidROM()
 		{
 			char * zippedFilename = NULL;
 			
-			if(stricmp(p, ".zip") == 0 && !inSz)
+			if(stricmp(p, ".zip") == 0)
 			{
 				// we need to check the file extension of the first file in the archive
 				zippedFilename = GetFirstZipFilename ();
@@ -424,33 +409,7 @@ void StripExt(char* returnstring, char * inputstring)
 		*loc_dot = 0; // strip file extension
 }
 
-/****************************************************************************
- * BrowserLoadSz
- *
- * Opens the selected 7z file, and parses a listing of the files within
- ***************************************************************************/
-int BrowserLoadSz()
-{
-	char filepath[MAXPATHLEN];
-	memset(filepath, 0, MAXPATHLEN);
-
-	// we'll store the 7z filepath for extraction later
-	if(!MakeFilePath(szpath, FILE_ROM))
-		return 0;
-
-	int szfiles = SzParse(szpath);
-	if(szfiles)
-	{
-		browser.numEntries = szfiles;
-		inSz = true;
-	}
-	else
-		ErrorPrompt("Error opening archive!");
-
-	return szfiles;
-}
-
-int WiiFileLoader()
+int CustomFileLoader()
 {
 	int size;
 	char filepath[1024];
@@ -459,23 +418,10 @@ int WiiFileLoader()
 	Memory.HeaderCount = 0;
 	loadingFile = true;
 
-	if(!inSz)
-	{
-		if(!MakeFilePath(filepath, FILE_ROM))
-			return 0;
+	if(!MakeFilePath(filepath, FILE_ROM))
+		return 0;
 
-		size = LoadFile ((char *)Memory.ROM, filepath, browserList[browser.selIndex].length, NOTSILENT);
-	}
-	else
-	{
-		size = LoadSzFile(szpath, (unsigned char *)Memory.ROM);
-
-		if(size <= 0)
-		{
-			browser.selIndex = 0;
-			BrowserChangeFolder();
-		}
-	}
+	size = LoadFile ((char *)Memory.ROM, filepath, browserList[browser.selIndex].length, NOTSILENT);
 	loadingFile = false;
 
 	if(size <= 0)
@@ -483,6 +429,30 @@ int WiiFileLoader()
 
 	SNESROMSize = Memory.HeaderRemove(size, Memory.HeaderCount, Memory.ROM);
 	return SNESROMSize;
+}
+
+void CustomCheckForAnyPatch(unsigned char header, int32 rom_size)
+{
+	int patchtype;
+	char patchpath[2][512];
+	STREAM patchfile = NULL;
+	long offset = header ? 512 : 0;
+
+	sprintf(patchpath[0], "%s%s.ips", browser.dir, Memory.ROMFilename);
+	sprintf(patchpath[1], "%s%s.ups", browser.dir, Memory.ROMFilename);
+
+	for(patchtype=0; patchtype<2; patchtype++)
+	{
+		if ((patchfile = OPEN_STREAM(patchpath[patchtype], "rb")) != NULL)
+		{
+			if(patchtype == 0)
+				ReadIPSPatch(new fReader(patchfile), offset, rom_size);
+			else
+				ReadUPSPatch(new fReader(patchfile), 0, rom_size);
+			CLOSE_STREAM(patchfile);
+			break;
+		}
+	}
 }
 
 /****************************************************************************
@@ -542,12 +512,6 @@ int BrowserChangeFolder()
 	int device = 0;
 	FindDevice(browser.dir, &device);
 	
-	if(inSz && browser.selIndex == 0) // inside a 7z, requesting to leave
-	{
-		inSz = false;
-		SzClose();
-	}
-
 	if(!UpdateDirName())
 		return -1;
 
@@ -563,7 +527,6 @@ int BrowserChangeFolder()
 		browser.dir[0] = 0;
 		int i=0;
 		
-#ifdef HW_RVL
 		AddBrowserEntry();
 		sprintf(browserList[i].filename, "sd:/");
 		sprintf(browserList[i].displayname, "SD Card");
@@ -578,30 +541,6 @@ int BrowserChangeFolder()
 		browserList[i].length = 0;
 		browserList[i].isdir = 1;
 		browserList[i].icon = ICON_USB;
-		i++;
-#else
-		AddBrowserEntry();
-		sprintf(browserList[i].filename, "carda:/");
-		sprintf(browserList[i].displayname, "SD Gecko Slot A");
-		browserList[i].length = 0;
-		browserList[i].isdir = 1;
-		browserList[i].icon = ICON_SD;
-		i++;
-		
-		AddBrowserEntry();
-		sprintf(browserList[i].filename, "cardb:/");
-		sprintf(browserList[i].displayname, "SD Gecko Slot B");
-		browserList[i].length = 0;
-		browserList[i].isdir = 1;
-		browserList[i].icon = ICON_SD;
-		i++;
-#endif
-		AddBrowserEntry();
-		sprintf(browserList[i].filename, "smb:/");
-		sprintf(browserList[i].displayname, "Network Share");
-		browserList[i].length = 0;
-		browserList[i].isdir = 1;
-		browserList[i].icon = ICON_SMB;
 		i++;
 		
 		AddBrowserEntry();

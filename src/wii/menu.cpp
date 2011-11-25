@@ -16,38 +16,31 @@
 #include <wiiuse/wpad.h>
 #include <sys/stat.h>
 
-#ifdef HW_RVL
 #include <di/di.h>
-#endif
 
 #include "snes9xgx.h"
 #include "video.h"
 #include "filebrowser.h"
-#include "gcunzip.h"
-#include "networkop.h"
 #include "fileop.h"
 #include "sram.h"
 #include "freeze.h"
 #include "preferences.h"
 #include "button_mapping.h"
 #include "input.h"
-#include "filter.h"
 #include "filelist.h"
 #include "gui/gui.h"
 #include "menu.h"
 #include "utils/gettext.h"
 
-#include "snes9x-next/snes9x.h"
-#include "snes9x-next/memmap.h"
-#include "snes9x-next/cheats.h"
+#include "../snes9x-next/snes9x.h"
+#include "../snes9x-next/memmap.h"
+#include "../snes9x-next/cheats.h"
 
 extern SCheatData Cheat;
 
 #define THREAD_SLEEP 100
 
-#ifdef HW_RVL
 static GuiImageData * pointer[4];
-#endif
 
 static GuiTrigger * trigA = NULL;
 static GuiTrigger * trig2 = NULL;
@@ -66,9 +59,7 @@ static int mapMenuCtrlSNES = 0;
 
 static lwp_t guithread = LWP_THREAD_NULL;
 static lwp_t progressthread = LWP_THREAD_NULL;
-#ifdef HW_RVL
 static lwp_t updatethread = LWP_THREAD_NULL;
-#endif
 static bool guiHalt = true;
 static int showProgress = 0;
 
@@ -84,8 +75,7 @@ static int progressTotal = 0;
  * after finishing the removal/insertion of new elements, and after initial
  * GUI setup.
  ***************************************************************************/
-static void
-ResumeGui()
+static void ResumeGui()
 {
 	guiHalt = false;
 	LWP_ResumeThread (guithread);
@@ -99,8 +89,7 @@ ResumeGui()
  * This eliminates the possibility that the GUI is in the middle of accessing
  * an element that is being changed.
  ***************************************************************************/
-static void
-HaltGui()
+static void HaltGui()
 {
 	guiHalt = true;
 
@@ -123,8 +112,7 @@ void ResetText()
  * Displays a prompt window to user, with information, an error message, or
  * presenting a user with a choice
  ***************************************************************************/
-int
-WindowPrompt(const char *title, const char *msg, const char *btn1Label, const char *btn2Label)
+int WindowPrompt(const char *title, const char *msg, const char *btn1Label, const char *btn2Label)
 {
 	if(!mainWindow || ExitRequested || ShutdownRequested)
 		return 0;
@@ -225,26 +213,6 @@ WindowPrompt(const char *title, const char *msg, const char *btn1Label, const ch
 	return choice;
 }
 
-#ifdef HW_RVL
-/****************************************************************************
- * EmulatorUpdate
- *
- * Prompts for confirmation, and downloads/installs updates
- ***************************************************************************/
-static void * EmulatorUpdate (void *arg)
-{
-	bool installUpdate = WindowPrompt(
-		"Update Available",
-		"An update is available!",
-		"Update now",
-		"Update later");
-	if(installUpdate)
-		if(DownloadUpdate())
-			ExitRequested = 1;
-	return NULL;
-}
-#endif
-
 /****************************************************************************
  * UpdateGUI
  *
@@ -266,7 +234,6 @@ static void * UpdateGUI (void *arg)
 		if (mainWindow->GetState() != STATE_DISABLED)
 			mainWindow->DrawTooltip();
 
-		#ifdef HW_RVL
 		i = 3;
 		do
 		{
@@ -276,7 +243,6 @@ static void * UpdateGUI (void *arg)
 			DoRumble(i);
 			--i;
 		} while(i>=0);
-		#endif
 
 		Menu_Render();
 
@@ -284,16 +250,6 @@ static void * UpdateGUI (void *arg)
 		mainWindow->Update(&userInput[2]);
 		mainWindow->Update(&userInput[1]);
 		mainWindow->Update(&userInput[0]);
-
-		#ifdef HW_RVL
-		if(updateFound)
-		{
-			updateFound = false;
-
-			if(!loadingFile)
-				LWP_CreateThread (&updatethread, EmulatorUpdate, NULL, NULL, 0, 70);
-		}
-		#endif
 
 		if(ExitRequested || ShutdownRequested)
 		{
@@ -319,8 +275,7 @@ static void * UpdateGUI (void *arg)
  ***************************************************************************/
 static int progsleep = 0;
 
-static void
-ProgressWindow(char *title, char *msg)
+static void ProgressWindow(char *title, char *msg)
 {
 	GuiWindow promptWindow(448,288);
 	promptWindow.SetAlignment(ALIGN_CENTRE, ALIGN_MIDDLE);
@@ -451,8 +406,7 @@ static void * ProgressThread (void *arg)
  *
  * Startup GUI threads
  ***************************************************************************/
-void
-InitGUIThreads()
+void InitGUIThreads()
 {
 	LWP_CreateThread (&guithread, UpdateGUI, NULL, NULL, 0, 70);
 	LWP_CreateThread (&progressthread, ProgressThread, NULL, NULL, 0, 40);
@@ -465,8 +419,7 @@ InitGUIThreads()
  * finish. Prevents multiple progress window events from interfering /
  * overriding each other.
  ***************************************************************************/
-void
-CancelAction()
+void CancelAction()
 {
 	showProgress = 0;
 
@@ -481,8 +434,7 @@ CancelAction()
  * Updates the variables used by the progress window for drawing a progress
  * bar. Also resumes the progress window thread if it is suspended.
  ***************************************************************************/
-void
-ShowProgress (const char *msg, int done, int total)
+void ShowProgress (const char *msg, int done, int total)
 {
 	if(!mainWindow || ExitRequested || ShutdownRequested)
 		return;
@@ -512,8 +464,7 @@ ShowProgress (const char *msg, int done, int total)
  * Shows that an action is underway. Also resumes the progress window thread
  * if it is suspended.
  ***************************************************************************/
-void
-ShowAction (const char *msg)
+void ShowAction (const char *msg)
 {
 	if(!mainWindow || ExitRequested || ShutdownRequested)
 		return;
@@ -649,8 +600,7 @@ static void OnScreenKeyboard(char * var, u32 maxlen)
  * Opens a new window, with the specified window element appended. Allows
  * for a customizable prompted setting.
  ***************************************************************************/
-static int
-SettingWindow(const char * title, GuiWindow * w)
+static int SettingWindow(const char * title, GuiWindow * w)
 {
 	int save = -1;
 
@@ -812,9 +762,7 @@ static void WindowCredits(void * ptr)
 
 	char iosVersion[20];
 
-#ifdef HW_RVL
 	sprintf(iosVersion, "IOS: %d", IOS_GetVersion());
-#endif
 
 	txt[i] = new GuiText(iosVersion, 18, (GXColor){0, 0, 0, 255});
 	txt[i]->SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
@@ -834,7 +782,6 @@ static void WindowCredits(void * ptr)
 		bgTopImg->Draw();
 		creditsWindow.Draw();
 
-		#ifdef HW_RVL
 		i = 3;
 		do {	
 		if(userInput[i].wpad->ir.valid)
@@ -843,7 +790,6 @@ static void WindowCredits(void * ptr)
 			DoRumble(i);
 			--i;
 		} while(i >= 0);
-		#endif
 
 		Menu_Render();
 
@@ -943,9 +889,7 @@ static int MenuGameSelection()
 	mainWindow->Append(&buttonWindow);
 	ResumeGui();
 
-	#ifdef HW_RVL
 	ShutoffRumble();
-	#endif
 
 	// populate initial directory listing
 	selectLoadedFile = 1;
@@ -976,10 +920,7 @@ static int MenuGameSelection()
 				// check corresponding browser entry
 				if(browserList[browser.selIndex].isdir || IsSz())
 				{
-					if(IsSz())
-						res = BrowserLoadSz();
-					else
-						res = BrowserChangeFolder();
+					res = BrowserChangeFolder();
 
 					if(res)
 					{
@@ -995,9 +936,7 @@ static int MenuGameSelection()
 				}
 				else
 				{
-					#ifdef HW_RVL
 					ShutoffRumble();
-					#endif
 					mainWindow->SetState(STATE_DISABLED);
 					if(BrowserLoadFile())
 						menu = MENU_EXIT;
@@ -1230,7 +1169,6 @@ static int MenuGame()
 	closeBtn.SetTrigger(&trigHome);
 	closeBtn.SetEffectGrow();
 
-	#ifdef HW_RVL
 	int i;
 	char txt[3];
 	bool status[4] = { false, false, false, false };
@@ -1270,7 +1208,6 @@ static int MenuGame()
 	batteryBtn[1]->SetPosition(135, -65);
 	batteryBtn[2]->SetPosition(45, -40);
 	batteryBtn[3]->SetPosition(135, -40);
-	#endif
 
 	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
@@ -1280,12 +1217,10 @@ static int MenuGame()
 	w.Append(&resetBtn);
 	w.Append(&gameSettingsBtn);
 
-	#ifdef HW_RVL
 	w.Append(batteryBtn[0]);
 	w.Append(batteryBtn[1]);
 	w.Append(batteryBtn[2]);
 	w.Append(batteryBtn[3]);
-	#endif
 
 	w.Append(&mainmenuBtn);
 	w.Append(&closeBtn);
@@ -1302,12 +1237,10 @@ static int MenuGame()
 		mainmenuBtn.SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
 		bgBottomImg->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
 		btnLogo->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
-		#ifdef HW_RVL
 		batteryBtn[0]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
 		batteryBtn[1]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
 		batteryBtn[2]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
 		batteryBtn[3]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_IN, 35);
-		#endif
 
 		w.SetEffect(EFFECT_FADE, 15);
 	}
@@ -1321,7 +1254,6 @@ static int MenuGame()
 	{
 		usleep(THREAD_SLEEP);
 
-		#ifdef HW_RVL
 		for(i=0; i < 4; i++)
 		{
 			if(WPAD_Probe(i, NULL) == WPAD_ERR_NONE)
@@ -1358,7 +1290,6 @@ static int MenuGame()
 				level[i] = newLevel;
 			}
 		}
-		#endif
 
 		if(saveBtn.GetState() == STATE_CLICKED)
 		{
@@ -1408,12 +1339,10 @@ static int MenuGame()
 			mainmenuBtn.SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
 			bgBottomImg->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
 			btnLogo->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
-			#ifdef HW_RVL
 			batteryBtn[0]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
 			batteryBtn[1]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
 			batteryBtn[2]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
 			batteryBtn[3]->SetEffect(EFFECT_SLIDE_BOTTOM | EFFECT_SLIDE_OUT, 15);
-			#endif
 
 			w.SetEffect(EFFECT_FADE, -15);
 			usleep(350000); // wait for effects to finish
@@ -1422,7 +1351,6 @@ static int MenuGame()
 
 	HaltGui();
 
-	#ifdef HW_RVL
 	for(i=0; i < 4; i++)
 	{
 		delete batteryTxt[i];
@@ -1430,7 +1358,6 @@ static int MenuGame()
 		delete batteryBarImg[i];
 		delete batteryBtn[i];
 	}
-	#endif
 
 	mainWindow->Remove(&w);
 	return menu;
@@ -2235,7 +2162,6 @@ static int MenuSettingsMappingsController()
 	w.Append(&subtitleTxt);
 
 	w.Append(&gamecubeBtn);
-#ifdef HW_RVL
 	w.Append(&wiimoteBtn);
 
 	if(mapMenuCtrlSNES == CTRL_PAD)
@@ -2243,7 +2169,6 @@ static int MenuSettingsMappingsController()
 		w.Append(&nunchukBtn);
 		w.Append(&classicBtn);
 	}
-#endif
 	w.Append(&backBtn);
 
 	mainWindow->Append(&w);
@@ -2309,11 +2234,7 @@ ButtonMappingWindow()
 	switch(mapMenuCtrl)
 	{
 		case CTRLR_GCPAD:
-			#ifdef HW_RVL
 			sprintf(msg, "Press any button on the GameCube Controller now. Press Home or the C-Stick in any direction to clear the existing mapping.");
-			#else
-			sprintf(msg, "Press any button on the GameCube Controller now. Press the C-Stick in any direction to clear the existing mapping.");
-			#endif
 			break;
 		case CTRLR_WIIMOTE:
 			sprintf(msg, "Press any button on the Wiimote now. Press Home to clear the existing mapping.");
@@ -2853,17 +2774,12 @@ static int MenuSettingsVideo()
 
 	sprintf(options.name[i++], "Rendering");
 	sprintf(options.name[i++], "Scaling");
-	sprintf(options.name[i++], "Filtering");
 	sprintf(options.name[i++], "Screen Zoom");
 	sprintf(options.name[i++], "Screen Position");
 	sprintf(options.name[i++], "Crosshair");
 	sprintf(options.name[i++], "Video Mode");
 	options.length = i;
 	
-#ifdef HW_DOL
-	options.name[2][0] = 0; // disable hq2x on GameCube
-#endif
-
 	for(i=0; i < options.length; i++)
 		options.value[i][0] = 0;
 
@@ -2917,26 +2833,19 @@ static int MenuSettingsVideo()
 			case 1:
 				GCSettings.widescreen ^= 1;
 				break;
-
 			case 2:
-				GCSettings.FilterMethod++;
-				if (GCSettings.FilterMethod >= NUM_FILTERS)
-					GCSettings.FilterMethod = 0;
-				break;
-
-			case 3:
 				ScreenZoomWindow();
 				break;
 
-			case 4:
+			case 3:
 				ScreenPositionWindow();
 				break;
 
-			case 5:
-				GCSettings.crosshair ^= 1;
+			case 4:
+				Settings.Crosshair ^= 1;
 				break;
 
-			case 6:
+			case 5:
 				GCSettings.videomode++;
 				if(GCSettings.videomode > 4)
 					GCSettings.videomode = 0;
@@ -2962,25 +2871,22 @@ static int MenuSettingsVideo()
 				sprintf (options.value[1], "16:9 Correction");
 			else
 				sprintf (options.value[1], "Default");
-#ifdef HW_RVL
-			sprintf (options.value[2], "%s", GetFilterName((RenderFilter)GCSettings.FilterMethod));
-#endif
-			sprintf (options.value[3], "%.2f%%, %.2f%%", GCSettings.zoomHor*100, GCSettings.zoomVert*100);
-			sprintf (options.value[4], "%d, %d", GCSettings.xshift, GCSettings.yshift);
-			sprintf (options.value[5], "%s", GCSettings.crosshair == 1 ? "On" : "Off");
+			sprintf (options.value[2], "%.2f%%, %.2f%%", GCSettings.zoomHor*100, GCSettings.zoomVert*100);
+			sprintf (options.value[3], "%d, %d", GCSettings.xshift, GCSettings.yshift);
+			sprintf (options.value[4], "%s", Settings.Crosshair == 1 ? "On" : "Off");
 
 			switch(GCSettings.videomode)
 			{
 				case 0:
-					sprintf (options.value[6], "Automatic (Recommended)"); break;
+					sprintf (options.value[5], "Automatic (Recommended)"); break;
 				case 1:
-					sprintf (options.value[6], "NTSC (480i)"); break;
+					sprintf (options.value[5], "NTSC (480i)"); break;
 				case 2:
-					sprintf (options.value[6], "Progressive (480p)"); break;
+					sprintf (options.value[5], "Progressive (480p)"); break;
 				case 3:
-					sprintf (options.value[6], "PAL (50Hz)"); break;
+					sprintf (options.value[5], "PAL (50Hz)"); break;
 				case 4:
-					sprintf (options.value[6], "PAL (60Hz)"); break;
+					sprintf (options.value[5], "PAL (60Hz)"); break;
 			}
 			optionBrowser.TriggerUpdate();
 		}
@@ -3014,7 +2920,6 @@ static int MenuSettings()
 	GuiImageData btnLargeOutlineOver(button_large_over_png);
 	GuiImageData iconFile(icon_settings_file_png);
 	GuiImageData iconMenu(icon_settings_menu_png);
-	GuiImageData iconNetwork(icon_settings_network_png);
 
 	GuiText savingBtnTxt1("Saving", 22, (GXColor){0, 0, 0, 255});
 	GuiText savingBtnTxt2("&", 18, (GXColor){0, 0, 0, 255});
@@ -3053,22 +2958,6 @@ static int MenuSettings()
 	menuBtn.SetTrigger(trig2);
 	menuBtn.SetEffectGrow();
 
-	GuiText networkBtnTxt("Network", 22, (GXColor){0, 0, 0, 255});
-	networkBtnTxt.SetWrap(true, btnLargeOutline.GetWidth()-20);
-	GuiImage networkBtnImg(&btnLargeOutline);
-	GuiImage networkBtnImgOver(&btnLargeOutlineOver);
-	GuiImage networkBtnIcon(&iconNetwork);
-	GuiButton networkBtn(btnLargeOutline.GetWidth(), btnLargeOutline.GetHeight());
-	networkBtn.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
-	networkBtn.SetPosition(0, 250);
-	networkBtn.SetLabel(&networkBtnTxt);
-	networkBtn.SetImage(&networkBtnImg);
-	networkBtn.SetImageOver(&networkBtnImgOver);
-	networkBtn.SetIcon(&networkBtnIcon);
-	networkBtn.SetTrigger(trigA);
-	networkBtn.SetTrigger(trig2);
-	networkBtn.SetEffectGrow();
-
 	GuiText backBtnTxt("Go Back", 22, (GXColor){0, 0, 0, 255});
 	GuiImage backBtnImg(&btnOutline);
 	GuiImage backBtnImgOver(&btnOutlineOver);
@@ -3100,7 +2989,6 @@ static int MenuSettings()
 	w.Append(&titleTxt);
 	w.Append(&savingBtn);
 	w.Append(&menuBtn);
-	w.Append(&networkBtn);
 	w.Append(&backBtn);
 	w.Append(&resetBtn);
 
@@ -3119,10 +3007,6 @@ static int MenuSettings()
 		else if(menuBtn.GetState() == STATE_CLICKED)
 		{
 			menu = MENU_SETTINGS_MENU;
-		}
-		else if(networkBtn.GetState() == STATE_CLICKED)
-		{
-			menu = MENU_SETTINGS_NETWORK;
 		}
 		else if(backBtn.GetState() == STATE_CLICKED)
 		{
@@ -3252,54 +3136,25 @@ static int MenuSettingsFile()
 			// some load/save methods are not implemented - here's where we skip them
 			// they need to be skipped in the order they were enumerated
 
-			// no SD/USB ports on GameCube
-			#ifdef HW_DOL
-			if(GCSettings.LoadMethod == DEVICE_SD)
-				GCSettings.LoadMethod++;
-			if(GCSettings.SaveMethod == DEVICE_SD)
-				GCSettings.SaveMethod++;
-			if(GCSettings.LoadMethod == DEVICE_USB)
-				GCSettings.LoadMethod++;
-			if(GCSettings.SaveMethod == DEVICE_USB)
-				GCSettings.SaveMethod++;
-			#endif
-
 			// saving to DVD is impossible
 			if(GCSettings.SaveMethod == DEVICE_DVD)
 				GCSettings.SaveMethod++;
 
-			// don't allow SD Gecko on Wii
-			#ifdef HW_RVL
-			if(GCSettings.LoadMethod == DEVICE_SD_SLOTA)
-				GCSettings.LoadMethod++;
-			if(GCSettings.SaveMethod == DEVICE_SD_SLOTA)
-				GCSettings.SaveMethod++;
-			if(GCSettings.LoadMethod == DEVICE_SD_SLOTB)
-				GCSettings.LoadMethod++;
-			if(GCSettings.SaveMethod == DEVICE_SD_SLOTB)
-				GCSettings.SaveMethod++;
-			#endif
-
 			// correct load/save methods out of bounds
-			if(GCSettings.LoadMethod > 6)
-				GCSettings.LoadMethod = 0;
-			if(GCSettings.SaveMethod > 6)
-				GCSettings.SaveMethod = 0;
+			if(GCSettings.LoadMethod > DEVICE_DVD)
+				GCSettings.LoadMethod = DEVICE_AUTO;
+
+			if(GCSettings.SaveMethod > DEVICE_DVD)
+				GCSettings.SaveMethod = DEVICE_AUTO;
 
 			if (GCSettings.LoadMethod == DEVICE_AUTO) sprintf (options.value[0],"Auto Detect");
 			else if (GCSettings.LoadMethod == DEVICE_SD) sprintf (options.value[0],"SD");
 			else if (GCSettings.LoadMethod == DEVICE_USB) sprintf (options.value[0],"USB");
 			else if (GCSettings.LoadMethod == DEVICE_DVD) sprintf (options.value[0],"DVD");
-			else if (GCSettings.LoadMethod == DEVICE_SMB) sprintf (options.value[0],"Network");
-			else if (GCSettings.LoadMethod == DEVICE_SD_SLOTA) sprintf (options.value[0],"SD Gecko Slot A");
-			else if (GCSettings.LoadMethod == DEVICE_SD_SLOTB) sprintf (options.value[0],"SD Gecko Slot B");
 
 			if (GCSettings.SaveMethod == DEVICE_AUTO) sprintf (options.value[1],"Auto Detect");
 			else if (GCSettings.SaveMethod == DEVICE_SD) sprintf (options.value[1],"SD");
 			else if (GCSettings.SaveMethod == DEVICE_USB) sprintf (options.value[1],"USB");
-			else if (GCSettings.SaveMethod == DEVICE_SMB) sprintf (options.value[1],"Network");
-			else if (GCSettings.SaveMethod == DEVICE_SD_SLOTA) sprintf (options.value[1],"SD Gecko Slot A");
-			else if (GCSettings.SaveMethod == DEVICE_SD_SLOTB) sprintf (options.value[1],"SD Gecko Slot B");
 
 			snprintf (options.value[2], 35, "%s", GCSettings.LoadFolder);
 			snprintf (options.value[3], 35, "%s", GCSettings.SaveFolder);
@@ -3343,8 +3198,6 @@ static int MenuSettingsMenu()
 
 	sprintf(options.name[i++], "Exit Action");
 	sprintf(options.name[i++], "Wiimote Orientation");
-	sprintf(options.name[i++], "Music Volume");
-	sprintf(options.name[i++], "Sound Effects Volume");
 	sprintf(options.name[i++], "Rumble");
 	sprintf(options.name[i++], "Language");
 	options.length = i;
@@ -3402,19 +3255,9 @@ static int MenuSettingsMenu()
 				GCSettings.WiimoteOrientation ^= 1;
 				break;
 			case 2:
-				GCSettings.MusicVolume += 10;
-				if(GCSettings.MusicVolume > 100)
-					GCSettings.MusicVolume = 0;
-				break;
-			case 3:
-				GCSettings.SFXVolume += 10;
-				if(GCSettings.SFXVolume > 100)
-					GCSettings.SFXVolume = 0;
-				break;
-			case 4:
 				GCSettings.Rumble ^= 1;
 				break;
-			case 5:
+			case 3:
 				GCSettings.language++;
 				
 				if(GCSettings.language >= LANG_LENGTH)
@@ -3432,7 +3275,6 @@ static int MenuSettingsMenu()
 		{
 			firstRun = false;
 
-			#ifdef HW_RVL
 			if (GCSettings.ExitAction == 1)
 				sprintf (options.value[0], "Return to Wii Menu");
 			else if (GCSettings.ExitAction == 2)
@@ -3441,56 +3283,33 @@ static int MenuSettingsMenu()
 				sprintf (options.value[0], "Return to Loader");
 			else
 				sprintf (options.value[0], "Auto");
-			#else // GameCube
-			if(GCSettings.ExitAction > 1)
-				GCSettings.ExitAction = 0;
-			if (GCSettings.ExitAction == 0)
-				sprintf (options.value[0], "Return to Loader");
-			else
-				sprintf (options.value[0], "Reboot");
-
-			options.name[1][0] = 0; // Wiimote
-			options.name[2][0] = 0; // Music
-			options.name[3][0] = 0; // Sound Effects
-			options.name[4][0] = 0; // Rumble
-			#endif
 
 			if (GCSettings.WiimoteOrientation == 0)
 				sprintf (options.value[1], "Vertical");
 			else if (GCSettings.WiimoteOrientation == 1)
 				sprintf (options.value[1], "Horizontal");
 
-			if(GCSettings.MusicVolume > 0)
-				sprintf(options.value[2], "%d%%", GCSettings.MusicVolume);
-			else
-				sprintf(options.value[2], "Mute");
-
-			if(GCSettings.SFXVolume > 0)
-				sprintf(options.value[3], "%d%%", GCSettings.SFXVolume);
-			else
-				sprintf(options.value[3], "Mute");
-
 			if (GCSettings.Rumble == 1)
-				sprintf (options.value[4], "Enabled");
+				sprintf (options.value[2], "Enabled");
 			else
-				sprintf (options.value[4], "Disabled");
+				sprintf (options.value[2], "Disabled");
 
 			switch(GCSettings.language)
 			{
-				case LANG_JAPANESE:		sprintf(options.value[5], "Japanese"); break;
-				case LANG_ENGLISH:		sprintf(options.value[5], "English"); break;
-				case LANG_GERMAN:		sprintf(options.value[5], "German"); break;
-				case LANG_FRENCH:		sprintf(options.value[5], "French"); break;
-				case LANG_SPANISH:		sprintf(options.value[5], "Spanish"); break;
-				case LANG_ITALIAN:		sprintf(options.value[5], "Italian"); break;
-				case LANG_DUTCH:		sprintf(options.value[5], "Dutch"); break;
-				case LANG_SIMP_CHINESE:	sprintf(options.value[5], "Chinese (Simplified)"); break;
-				case LANG_TRAD_CHINESE:	sprintf(options.value[5], "Chinese (Traditional)"); break;
-				case LANG_KOREAN:		sprintf(options.value[5], "Korean"); break;
-				case LANG_PORTUGUESE:	sprintf(options.value[5], "Portuguese"); break;
-				case LANG_BRAZILIAN_PORTUGUESE: sprintf(options.value[5], "Brazilian Portuguese"); break;
-				case LANG_CATALAN:		sprintf(options.value[5], "Catalan"); break;
-				case LANG_TURKISH:		sprintf(options.value[5], "Turkish"); break;
+				case LANG_JAPANESE:		sprintf(options.value[3], "Japanese"); break;
+				case LANG_ENGLISH:		sprintf(options.value[3], "English"); break;
+				case LANG_GERMAN:		sprintf(options.value[3], "German"); break;
+				case LANG_FRENCH:		sprintf(options.value[3], "French"); break;
+				case LANG_SPANISH:		sprintf(options.value[3], "Spanish"); break;
+				case LANG_ITALIAN:		sprintf(options.value[3], "Italian"); break;
+				case LANG_DUTCH:		sprintf(options.value[3], "Dutch"); break;
+				case LANG_SIMP_CHINESE:	sprintf(options.value[3], "Chinese (Simplified)"); break;
+				case LANG_TRAD_CHINESE:	sprintf(options.value[3], "Chinese (Traditional)"); break;
+				case LANG_KOREAN:		sprintf(options.value[3], "Korean"); break;
+				case LANG_PORTUGUESE:	sprintf(options.value[3], "Portuguese"); break;
+				case LANG_BRAZILIAN_PORTUGUESE: sprintf(options.value[3], "Brazilian Portuguese"); break;
+				case LANG_CATALAN:		sprintf(options.value[3], "Catalan"); break;
+				case LANG_TURKISH:		sprintf(options.value[3], "Turkish"); break;
 			}
 			
 			optionBrowser.TriggerUpdate();
@@ -3510,107 +3329,6 @@ static int MenuSettingsMenu()
 }
 
 /****************************************************************************
- * MenuSettingsNetwork
- ***************************************************************************/
-
-static int MenuSettingsNetwork()
-{
-	int menu = MENU_NONE;
-	int ret;
-	int i = 0;
-	bool firstRun = true;
-	OptionList options;
-	sprintf(options.name[i++], "SMB Share IP");
-	sprintf(options.name[i++], "SMB Share Name");
-	sprintf(options.name[i++], "SMB Share Username");
-	sprintf(options.name[i++], "SMB Share Password");
-	options.length = i;
-
-	for(i=0; i < options.length; i++)
-		options.value[i][0] = 0;
-
-	GuiText titleTxt("Settings - Network", 26, (GXColor){255, 255, 255, 255});
-	titleTxt.SetAlignment(ALIGN_LEFT, ALIGN_TOP);
-	titleTxt.SetPosition(50,50);
-
-	GuiImageData btnOutline(button_long_png);
-	GuiImageData btnOutlineOver(button_long_over_png);
-
-	GuiText backBtnTxt("Go Back", 22, (GXColor){0, 0, 0, 255});
-	GuiImage backBtnImg(&btnOutline);
-	GuiImage backBtnImgOver(&btnOutlineOver);
-	GuiButton backBtn(btnOutline.GetWidth(), btnOutline.GetHeight());
-	backBtn.SetAlignment(ALIGN_LEFT, ALIGN_BOTTOM);
-	backBtn.SetPosition(90, -35);
-	backBtn.SetLabel(&backBtnTxt);
-	backBtn.SetImage(&backBtnImg);
-	backBtn.SetImageOver(&backBtnImgOver);
-	backBtn.SetTrigger(trigA);
-	backBtn.SetTrigger(trig2);
-	backBtn.SetEffectGrow();
-
-	GuiOptionBrowser optionBrowser(552, 248, &options);
-	optionBrowser.SetPosition(0, 108);
-	optionBrowser.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
-	optionBrowser.SetCol2Position(290);
-
-	HaltGui();
-	GuiWindow w(screenwidth, screenheight);
-	w.Append(&backBtn);
-	mainWindow->Append(&optionBrowser);
-	mainWindow->Append(&w);
-	mainWindow->Append(&titleTxt);
-	ResumeGui();
-
-	while(menu == MENU_NONE)
-	{
-		usleep(THREAD_SLEEP);
-
-		ret = optionBrowser.GetClickedOption();
-
-		switch (ret)
-		{
-			case 0:
-				OnScreenKeyboard(GCSettings.smbip, 80);
-				break;
-
-			case 1:
-				OnScreenKeyboard(GCSettings.smbshare, 20);
-				break;
-
-			case 2:
-				OnScreenKeyboard(GCSettings.smbuser, 20);
-				break;
-
-			case 3:
-				OnScreenKeyboard(GCSettings.smbpwd, 20);
-				break;
-		}
-
-		if(ret >= 0 || firstRun)
-		{
-			firstRun = false;
-			snprintf (options.value[0], 25, "%s", GCSettings.smbip);
-			snprintf (options.value[1], 19, "%s", GCSettings.smbshare);
-			snprintf (options.value[2], 19, "%s", GCSettings.smbuser);
-			snprintf (options.value[3], 19, "%s", GCSettings.smbpwd);
-			optionBrowser.TriggerUpdate();
-		}
-
-		if(backBtn.GetState() == STATE_CLICKED)
-		{
-			menu = MENU_SETTINGS;
-		}
-	}
-	HaltGui();
-	mainWindow->Remove(&optionBrowser);
-	mainWindow->Remove(&w);
-	mainWindow->Remove(&titleTxt);
-	CloseShare();
-	return menu;
-}
-
-/****************************************************************************
  * MainMenu
  ***************************************************************************/
 
@@ -3624,12 +3342,10 @@ MainMenu (int menu)
 	if(!init)
 	{
 		init = true;
-		#ifdef HW_RVL
 		pointer[0] = new GuiImageData(player1_point_png);
 		pointer[1] = new GuiImageData(player2_point_png);
 		pointer[2] = new GuiImageData(player3_point_png);
 		pointer[3] = new GuiImageData(player4_point_png);
-		#endif
 
 		trigA = new GuiTrigger;
 		trigA->SetSimpleTrigger(-1, WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A, PAD_BUTTON_A);
@@ -3689,7 +3405,6 @@ MainMenu (int menu)
 	if(!LoadPrefs())
 		SavePrefs(SILENT);
 
-#ifdef HW_RVL
 	static bool checkIOS = true;
 
 	if(checkIOS)
@@ -3703,7 +3418,6 @@ MainMenu (int menu)
 	}
 
 	checkIOS = false;
-#endif
 
 	while(currentMenu != MENU_EXIT || SNESROMSize <= 0)
 	{
@@ -3748,9 +3462,6 @@ MainMenu (int menu)
 			case MENU_SETTINGS_MENU:
 				currentMenu = MenuSettingsMenu();
 				break;
-			case MENU_SETTINGS_NETWORK:
-				currentMenu = MenuSettingsNetwork();
-				break;
 			default: // unrecognized menu
 				currentMenu = MenuGameSelection();
 				break;
@@ -3759,17 +3470,13 @@ MainMenu (int menu)
 		usleep(THREAD_SLEEP);
 	}
 
-	#ifdef HW_RVL
 	ShutoffRumble();
-	#endif
 
 	CancelAction();
 	HaltGui();
 
-	#ifdef HW_RVL
 	if(updatethread != LWP_THREAD_NULL)
 		LWP_JoinThread(updatethread, NULL);
-	#endif
 
 	delete btnLogo;
 	delete gameScreenImg;

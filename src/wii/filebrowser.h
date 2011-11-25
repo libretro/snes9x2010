@@ -18,11 +18,7 @@
 #include <gccore.h>
 
 #define MAXJOLIET 255
-#ifdef HW_DOL
-#define MAX_BROWSER_SIZE	1000
-#else
 #define MAX_BROWSER_SIZE	5000
-#endif
 
 typedef struct
 {

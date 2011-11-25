@@ -997,8 +997,8 @@ void emulator_init_settings(void)
 
 	/* emulator-specific settings */
 
+	Settings.Crosshair = 1;
 #if 0
-	Settings.DumpStreamsMaxFrames = -1;
 	Settings.CartAName[0] = 0;
 	Settings.CartBName[0] = 0;
 #endif

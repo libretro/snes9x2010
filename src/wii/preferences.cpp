@@ -106,7 +106,8 @@ static const char * XMLSaveCallback(mxml_node_t *node, int where)
 	return (NULL);
 }
 
-static int preparePrefsData ()
+static int
+preparePrefsData ()
 {
 	xml = mxmlNewXML("1.0");
 	mxmlSetWrapMargin(0); // disable line wrapping
@@ -127,11 +128,6 @@ static int preparePrefsData ()
 
 	createXMLSection("Network", "Network Settings");
 
-	createXMLSetting("smbip", "Share Computer IP", GCSettings.smbip);
-	createXMLSetting("smbshare", "Share Name", GCSettings.smbshare);
-	createXMLSetting("smbuser", "Share Username", GCSettings.smbuser);
-	createXMLSetting("smbpwd", "Share Password", GCSettings.smbpwd);
-
 	createXMLSection("Video", "Video Settings");
 
 	createXMLSetting("videomode", "Video Mode", toStr(GCSettings.videomode));
@@ -139,8 +135,7 @@ static int preparePrefsData ()
 	createXMLSetting("zoomVert", "Vertical Zoom Level", FtoStr(GCSettings.zoomVert));
 	createXMLSetting("render", "Video Filtering", toStr(GCSettings.render));
 	createXMLSetting("widescreen", "Aspect Ratio Correction", toStr(GCSettings.widescreen));
-	createXMLSetting("crosshair", "Crosshair", toStr(GCSettings.crosshair));
-	createXMLSetting("FilterMethod", "Filter Method", toStr(GCSettings.FilterMethod));
+	createXMLSetting("crosshair", "Crosshair", toStr(Settings.Crosshair));
 	createXMLSetting("xshift", "Horizontal Video Shift", toStr(GCSettings.xshift));
 	createXMLSetting("yshift", "Vertical Video Shift", toStr(GCSettings.yshift));
 
@@ -148,8 +143,6 @@ static int preparePrefsData ()
 
 	createXMLSetting("WiimoteOrientation", "Wiimote Orientation", toStr(GCSettings.WiimoteOrientation));
 	createXMLSetting("ExitAction", "Exit Action", toStr(GCSettings.ExitAction));
-	createXMLSetting("MusicVolume", "Music Volume", toStr(GCSettings.MusicVolume));
-	createXMLSetting("SFXVolume", "Sound Effects Volume", toStr(GCSettings.SFXVolume));
 	createXMLSetting("Rumble", "Rumble", toStr(GCSettings.Rumble));
 	createXMLSetting("language", "Language", toStr(GCSettings.language));
 
@@ -298,13 +291,6 @@ static bool decodePrefsData ()
 			loadXMLSetting(GCSettings.SaveFolder, "SaveFolder", sizeof(GCSettings.SaveFolder));
 			loadXMLSetting(GCSettings.CheatFolder, "CheatFolder", sizeof(GCSettings.CheatFolder));
 
-			// Network Settings
-
-			loadXMLSetting(GCSettings.smbip, "smbip", sizeof(GCSettings.smbip));
-			loadXMLSetting(GCSettings.smbshare, "smbshare", sizeof(GCSettings.smbshare));
-			loadXMLSetting(GCSettings.smbuser, "smbuser", sizeof(GCSettings.smbuser));
-			loadXMLSetting(GCSettings.smbpwd, "smbpwd", sizeof(GCSettings.smbpwd));
-
 			// Video Settings
 
 			loadXMLSetting(&GCSettings.videomode, "videomode");
@@ -312,8 +298,7 @@ static bool decodePrefsData ()
 			loadXMLSetting(&GCSettings.zoomVert, "zoomVert");
 			loadXMLSetting(&GCSettings.render, "render");
 			loadXMLSetting(&GCSettings.widescreen, "widescreen");
-			loadXMLSetting(&GCSettings.crosshair, "crosshair");
-			loadXMLSetting(&GCSettings.FilterMethod, "FilterMethod");
+			loadXMLSetting(&Settings.Crosshair, "crosshair");
 			loadXMLSetting(&GCSettings.xshift, "xshift");
 			loadXMLSetting(&GCSettings.yshift, "yshift");
 
@@ -321,8 +306,6 @@ static bool decodePrefsData ()
 
 			loadXMLSetting(&GCSettings.WiimoteOrientation, "WiimoteOrientation");
 			loadXMLSetting(&GCSettings.ExitAction, "ExitAction");
-			loadXMLSetting(&GCSettings.MusicVolume, "MusicVolume");
-			loadXMLSetting(&GCSettings.SFXVolume, "SFXVolume");
 			loadXMLSetting(&GCSettings.Rumble, "Rumble");
 			loadXMLSetting(&GCSettings.language, "language");
 
@@ -366,10 +349,6 @@ void FixInvalidSettings()
 		GCSettings.xshift = 0;
 	if(!(GCSettings.yshift > -50 && GCSettings.yshift < 50))
 		GCSettings.yshift = 0;
-	if(!(GCSettings.MusicVolume >= 0 && GCSettings.MusicVolume <= 100))
-		GCSettings.MusicVolume = 40;
-	if(!(GCSettings.SFXVolume >= 0 && GCSettings.SFXVolume <= 100))
-		GCSettings.SFXVolume = 40;
 	if(GCSettings.language < 0 || GCSettings.language >= LANG_LENGTH)
 		GCSettings.language = LANG_ENGLISH;
 	if(GCSettings.Controller > CTRL_PAD4 || GCSettings.Controller < CTRL_MOUSE)
@@ -392,8 +371,8 @@ DefaultSettings ()
 
 	ResetControls(); // controller button mappings
 
-	GCSettings.LoadMethod = DEVICE_AUTO; // Auto, SD, DVD, USB, Network (SMB)
-	GCSettings.SaveMethod = DEVICE_AUTO; // Auto, SD, USB, Network (SMB)
+	GCSettings.LoadMethod = DEVICE_AUTO; // Auto, SD, DVD, USB
+	GCSettings.SaveMethod = DEVICE_AUTO; // Auto, SD, USB
 	sprintf (GCSettings.LoadFolder, "%s/roms", APPFOLDER); // Path to game files
 	sprintf (GCSettings.SaveFolder, "%s/saves", APPFOLDER); // Path to save files
 	sprintf (GCSettings.CheatFolder, "%s/cheats", APPFOLDER); // Path to cheat files
@@ -404,21 +383,17 @@ DefaultSettings ()
 
 	GCSettings.videomode = 0; // automatic video mode detection
 	GCSettings.render = 2; // Unfiltered
-	GCSettings.FilterMethod = FILTER_NONE;	// no hq2x
 
 	GCSettings.widescreen = 0; // no aspect ratio correction
 	GCSettings.zoomHor = 1.0; // horizontal zoom level
 	GCSettings.zoomVert = 1.0; // vertical zoom level
 	GCSettings.xshift = 0; // horizontal video shift
 	GCSettings.yshift = 0; // vertical video shift
-	GCSettings.crosshair = 1;
+	Settings.Crosshair = 1;
 
 	GCSettings.WiimoteOrientation = 0;
 	GCSettings.ExitAction = 0;
-	GCSettings.MusicVolume = 40;
-	GCSettings.SFXVolume = 40;
 	GCSettings.Rumble = 1;
-#ifdef HW_RVL
 	GCSettings.language = CONF_GetLanguage();
 
 	if(GCSettings.language == LANG_JAPANESE || 
@@ -426,9 +401,6 @@ DefaultSettings ()
 		GCSettings.language == LANG_TRAD_CHINESE || 
 		GCSettings.language == LANG_KOREAN)
 		GCSettings.language = LANG_ENGLISH;
-#else
-	GCSettings.language = LANG_ENGLISH;
-#endif
 
 	/****************** SNES9x Settings ***********************/
 
@@ -437,6 +409,12 @@ DefaultSettings ()
 
 	// General
 
+	#if 0
+	Settings.MouseMaster = true;
+	Settings.SuperScopeMaster = true;
+	Settings.JustifierMaster = true;
+	Settings.MultiPlayer5Master = true;
+	#endif
 	Settings.ApplyCheats = true;
 
 	Settings.BlockInvalidVRAMAccess = false;
@@ -576,18 +554,12 @@ bool LoadPrefs()
 	char filepath[5][MAXPATHLEN];
 	int numDevices;
 	
-#ifdef HW_RVL
 	numDevices = 5;
 	sprintf(filepath[0], "%s", appPath);
 	sprintf(filepath[1], "sd:/apps/%s", APPFOLDER);
 	sprintf(filepath[2], "usb:/apps/%s", APPFOLDER);
 	sprintf(filepath[3], "sd:/%s", APPFOLDER);
 	sprintf(filepath[4], "usb:/%s", APPFOLDER);
-#else
-	numDevices = 2;
-	sprintf(filepath[0], "carda:/%s", APPFOLDER);
-	sprintf(filepath[1], "cardb:/%s", APPFOLDER);
-#endif
 
 	for(int i=0; i<numDevices; i++)
 	{
@@ -612,11 +584,6 @@ bool LoadPrefs()
 	{
 		if(ChangeInterface(DEVICE_USB, NOTSILENT) && opendir("usb:/snes9x"))
 			rename("usb:/snes9x", "usb:/snes9xgx");
-	}
-	else if(GCSettings.LoadMethod == DEVICE_SMB)
-	{
-		if(ChangeInterface(DEVICE_SMB, NOTSILENT) && opendir("smb:/snes9x"))
-			rename("smb:/snes9x", "smb:/snes9xgx");
 	}
 
 	// update folder locations

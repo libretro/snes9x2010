@@ -93,8 +93,6 @@ void GuiTrigger::SetButtonOnlyInFocusTrigger(s32 ch, u32 wiibtns, u16 gcbtns)
 
 s8 GuiTrigger::WPAD_Stick(u8 stick, int axis)
 {
-	#ifdef HW_RVL
-
 	float mag = 0.0;
 	float ang = 0.0;
 
@@ -138,9 +136,6 @@ s8 GuiTrigger::WPAD_Stick(u8 stick, int axis)
 
 	return (s8)(val * 128.0f);
 
-	#else
-	return 0;
-	#endif
 }
 
 s8 GuiTrigger::WPAD_StickX(u8 stick)

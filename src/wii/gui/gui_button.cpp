@@ -195,7 +195,6 @@ void GuiButton::Update(GuiTrigger * t)
 	else if(parentElement && parentElement->GetState() == STATE_DISABLED)
 		return;
 
-	#ifdef HW_RVL
 	// cursor
 	if(t->wpad->ir.valid && t->chan >= 0)
 	{
@@ -231,7 +230,6 @@ void GuiButton::Update(GuiTrigger * t)
 			}
 		}
 	}
-	#endif
 
 	// button triggers
 	if(this->IsClickable())
@@ -262,6 +260,7 @@ void GuiButton::Update(GuiTrigger * t)
 							if(!t->wpad->ir.valid ||	this->IsInside(t->wpad->ir.x, t->wpad->ir.y))
 							{
 								this->SetState(STATE_CLICKED, t->chan);
+
 							}
 						}
 						else if(trigger[i]->type == TRIGGER_BUTTON_ONLY)

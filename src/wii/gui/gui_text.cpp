@@ -425,7 +425,7 @@ void GuiText::Draw()
 
 		if(textScroll == SCROLL_HORIZONTAL)
 		{
-			if(fontSystem[currentSize]->getWidth(text) > maxWidth)
+			if(fontSystem[currentSize]->getWidth(text) > maxWidth && (FrameTimer % textScrollDelay == 0))
 			{
 				if(textScrollInitialDelay)
 				{

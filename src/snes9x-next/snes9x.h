@@ -409,9 +409,8 @@ struct SSettings
 	bool	BlockInvalidVRAMAccess;
 	int32	HDMATimingHack;
 
-	bool	Paused;
-
 	uint32	Throttled;
+	int32_t	Crosshair;
 
 	#ifdef __CELLOS_LV2__
 	uint32_t	PS3KeepAspect;

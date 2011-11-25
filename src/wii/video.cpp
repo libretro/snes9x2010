@@ -21,21 +21,22 @@
 
 #include "snes9xgx.h"
 #include "menu.h"
-#include "filter.h"
 #include "filelist.h"
-#include "audio.h"
 #include "gui/gui.h"
 #include "input.h"
 
-#include "snes9x-next/snes9x.h"
-#include "snes9x-next/memmap.h"
+#include "../snes9x-next/gfx.h"
+#include "../snes9x-next/snes9x.h"
 
 /*** Snes9x GFX Buffer ***/
+#define EXT_WIDTH		(MAX_SNES_WIDTH + 4)
+#define EXT_PITCH		(EXT_WIDTH * 2)
+#define EXT_HEIGHT		(MAX_SNES_HEIGHT + 4)
+#define EXT_OFFSET		(EXT_PITCH * 2 + 2 * 2)
 #define SNES9XGFX_SIZE 		(EXT_PITCH*EXT_HEIGHT)
 #define FILTERMEM_SIZE 		(512*MAX_SNES_HEIGHT*4)
 
 static unsigned char * snes9xgfx = NULL;
-unsigned char * filtermem = NULL; // only want ((512*2) X (239*2))
 
 /*** 2D Video ***/
 static unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
@@ -43,7 +44,6 @@ static int whichfb = 0; // Switch
 GXRModeObj *vmode = NULL; // Current video mode
 int screenheight = 480;
 int screenwidth = 640;
-static int oldRenderMode = -1; // set to GCSettings.render when changing (temporarily) to another mode
 int CheckVideo = 0; // for forcing video reset
 
 /*** GX ***/
@@ -53,7 +53,6 @@ int CheckVideo = 0; // for forcing video reset
 static unsigned char texturemem[TEXTUREMEM_SIZE] ATTRIBUTE_ALIGN (32);
 
 #define DEFAULT_FIFO_SIZE 256 * 1024
-static unsigned int copynow = GX_FALSE;
 static unsigned char gp_fifo[DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN (32);
 static GXTexObj texobj;
 static Mtx view;
@@ -62,6 +61,8 @@ static int vwidth, vheight, oldvwidth, oldvheight;
 
 u8 * gameScreenPng = NULL;
 int gameScreenPngSize = 0;
+
+u32 FrameTimer = 0;
 
 bool vmode_60hz = true;
 bool progressive = 0;
@@ -251,8 +252,6 @@ static GXRModeObj TV_448i =
 	}
 };
 
-static GXRModeObj TV_Custom;
-
 /* TV Modes table */
 static GXRModeObj *tvmodes[4] = {
 	&TV_239p, &TV_478i,			/* Snes PAL video modes */
@@ -260,53 +259,19 @@ static GXRModeObj *tvmodes[4] = {
 };
 
 /****************************************************************************
- * VideoThreading
- ***************************************************************************/
-#define TSTACK 16384
-static lwp_t vbthread = LWP_THREAD_NULL;
-static unsigned char vbstack[TSTACK];
-
-/****************************************************************************
- * vbgetback
- *
- * This callback enables the emulator to keep running while waiting for a
- * vertical blank.
- *
- * Putting LWP to good use :)
- ***************************************************************************/
-static void *
-vbgetback (void *arg)
-{
-	while (1)
-	{
-		VIDEO_WaitVSync ();	 /**< Wait for video vertical blank */
-		LWP_SuspendThread (vbthread);
-	}
-	return NULL;
-}
-
-/****************************************************************************
  * copy_to_xfb
  *
  * Stock code to copy the GX buffer to the current display mode.
  * Also increments the frameticker, as it's called for each vb.
  ***************************************************************************/
-static inline void
-copy_to_xfb (u32 arg)
+static inline void copy_to_xfb (u32 arg)
 {
-	if (copynow == GX_TRUE)
-	{
-		GX_CopyDisp (xfb[whichfb], GX_TRUE);
-		GX_Flush ();
-		copynow = GX_FALSE;
-	}
 }
 
 /****************************************************************************
  * Scaler Support Functions
  ***************************************************************************/
-static inline void
-draw_init ()
+static inline void draw_init ()
 {
 	GX_ClearVtxDesc ();
 	GX_SetVtxDesc (GX_VA_POS, GX_INDEX8);
@@ -334,32 +299,26 @@ draw_init ()
 	GX_InvVtxCache ();	// update vertex cache
 }
 
-static inline void
-draw_vert (u8 pos, u8 c, f32 s, f32 t)
-{
-	GX_Position1x8 (pos);
-	GX_Color1x8 (c);
+#define draw_vert(pos, c, s, t) \
+	GX_Position1x8 (pos); \
+	GX_Color1x8 (c); \
 	GX_TexCoord2f32 (s, t);
-}
 
-static inline void
-draw_square (Mtx v)
-{
-	Mtx m;			// model matrix.
-	Mtx mv;			// modelview matrix.
-
-	guMtxIdentity (m);
-	guMtxTransApply (m, m, 0, 0, -100);
-	guMtxConcat (v, m, mv);
-
-	GX_LoadPosMtxImm (mv, GX_PNMTX0);
-	GX_Begin (GX_QUADS, GX_VTXFMT0, 4);
-	draw_vert (0, 0, 0.0, 0.0);
-	draw_vert (1, 0, 1.0, 0.0);
-	draw_vert (2, 0, 1.0, 1.0);
-	draw_vert (3, 0, 0.0, 1.0);
+#define draw_square(v) \
+	Mtx m;			/* model matrix. */ \
+	Mtx mv;			/* modelview matrix. */ \
+	\
+	guMtxIdentity (m); \
+	guMtxTransApply (m, m, 0, 0, -100); \
+	guMtxConcat (v, m, mv); \
+	\
+	GX_LoadPosMtxImm (mv, GX_PNMTX0); \
+	GX_Begin (GX_QUADS, GX_VTXFMT0, 4); \
+	draw_vert (0, 0, 0.0, 0.0); \
+	draw_vert (1, 0, 1.0, 0.0); \
+	draw_vert (2, 0, 1.0, 1.0); \
+	draw_vert (3, 0, 0.0, 1.0); \
 	GX_End ();
-}
 
 /****************************************************************************
  * StopGX
@@ -405,14 +364,6 @@ static GXRModeObj * FindVideoMode()
 
 			if(mode == &TVPal528IntDf)
 				mode = &TVPal574IntDfScale;
-
-			#ifdef HW_DOL
-			/* we have component cables, but the preferred mode is interlaced
-			 * why don't we switch into progressive?
-			 * on the Wii, the user can do this themselves on their Wii Settings */
-			if(VIDEO_HaveComponentCable())
-				mode = &TVNtsc480Prog;
-			#endif
 
 			break;
 	}
@@ -474,7 +425,6 @@ static GXRModeObj * FindVideoMode()
 	else
 		progressive = false;
 
-	#ifdef HW_RVL
 	if (CONF_GetAspectRatio() == CONF_ASPECT_16_9)
 		mode->viWidth = 678;
 	else
@@ -490,7 +440,6 @@ static GXRModeObj * FindVideoMode()
 		mode->viXOrigin = (VI_MAX_WIDTH_PAL - mode->viWidth) / 2;
 		mode->viYOrigin = (VI_MAX_HEIGHT_PAL - mode->viHeight) / 2;
 	}
-	#endif
 	return mode;
 }
 
@@ -504,8 +453,6 @@ static void SetupVideoMode(GXRModeObj * mode)
 	if(vmode == mode)
 		return;
 	
-	VIDEO_SetPostRetraceCallback (NULL);
-	copynow = GX_FALSE;
 	VIDEO_Configure (mode);
 	VIDEO_Flush();
 
@@ -515,7 +462,7 @@ static void SetupVideoMode(GXRModeObj * mode)
 	VIDEO_SetNextFramebuffer (xfb[0]);
 
 	VIDEO_SetBlack (FALSE);
-	VIDEO_Flush ();
+	VIDEO_Flush();
 	VIDEO_WaitVSync ();
 		
 	if (mode->viTVMode & VI_NON_INTERLACE)
@@ -523,8 +470,6 @@ static void SetupVideoMode(GXRModeObj * mode)
 	else
 		while (VIDEO_GetNextField())
 			VIDEO_WaitVSync();
-	
-	VIDEO_SetPostRetraceCallback ((VIRetraceCallback)copy_to_xfb);
 	vmode = mode;
 }
 
@@ -549,10 +494,6 @@ void InitGCVideo ()
 
 	GXRModeObj *rmode = FindVideoMode();
 	SetupVideoMode(rmode);
-#ifdef HW_RVL
-	InitLUTs();	// init LUTs for hq2x
-#endif
-	LWP_CreateThread (&vbthread, vbgetback, NULL, vbstack, TSTACK, 68);
 	
 	// Initialize GX
 	GXColor background = { 0, 0, 0, 0xff };
@@ -571,8 +512,7 @@ void InitGCVideo ()
  *
  * Reset the video/rendering mode for the emulator rendering
 ****************************************************************************/
-void
-ResetVideo_Emu ()
+void ResetVideo_Emu ()
 {
 	GXRModeObj *rmode;
 	Mtx44 p;
@@ -595,24 +535,14 @@ ResetVideo_Emu ()
 	{
 		rmode = tvmodes[i];
 
-		// hack to fix video output for hq2x (only when actually filtering; h<=239, w<=256)
-		if (GCSettings.FilterMethod != FILTER_NONE && vheight <= 239 && vwidth <= 256)
-		{
-			memcpy(&TV_Custom, tvmodes[i], sizeof(TV_Custom));
-			rmode = &TV_Custom;
-
-			rmode->fbWidth = 512;
-			rmode->efbHeight *= 2;
-			rmode->xfbHeight *= 2;
-			rmode->xfbMode = VI_XFBMODE_DF;
-			rmode->viTVMode |= VI_INTERLACE;
-		}
-		Settings.SoundInputRate = 31894;
+		//Settings.SoundInputRate = 31894;
+		//UpdatePlaybackRate();
 	}
 	else
 	{
 		rmode = FindVideoMode();
-		Settings.SoundInputRate = 31953;
+		//Settings.SoundInputRate = 31953;
+		//UpdatePlaybackRate();
 	}
 
 	SetupVideoMode(rmode); // reconfigure VI
@@ -649,8 +579,7 @@ ResetVideo_Emu ()
  *
  * Modified for a buffer with an offset (border)
  ***************************************************************************/
-void
-MakeTexture (const void *src, void *dst, s32 width, s32 height)
+void MakeTexture (const void *src, void *dst, s32 width, s32 height)
 {
 	register u32 tmp0=0,tmp1=0,tmp2=0,tmp3=0;
 
@@ -693,19 +622,11 @@ MakeTexture (const void *src, void *dst, s32 width, s32 height)
 /****************************************************************************
  * Update Video
  ***************************************************************************/
-int fscale = 1;
-
-void
-update_video (int width, int height)
+void S9xDeinitUpdate(int width, int height)
 {
 	vwidth = width;
 	vheight = height;
 
-	// Ensure previous vb has complete
-	while ((LWP_ThreadIsSuspended (vbthread) == 0) || (copynow == GX_TRUE))
-		usleep (50);
-
-	whichfb ^= 1;
 
 	if (oldvheight != vheight || oldvwidth != vwidth)	// if rendered width/height changes, update scaling
 		CheckVideo = 1;
@@ -713,25 +634,13 @@ update_video (int width, int height)
 	if (CheckVideo)	// if we get back from the menu, and have rendered at least 1 frame
 	{
 		int xscale, yscale;
-#ifdef HW_RVL
-		fscale = 1;
-#endif
 		ResetVideo_Emu ();	// reset video to emulator rendering settings
 
 		/** Update scaling **/
 		if (GCSettings.render == 0)	// original render mode
 		{
-			if (GCSettings.FilterMethod != FILTER_NONE && vheight <= 239 && vwidth <= 256)
-			{	// filters; normal operation
-				xscale = vwidth;
-				yscale = vheight;
-			}
-			else
-			{	// no filtering
-				fscale = 1;
-				xscale = 256;
-				yscale = vheight / 2;
-			}
+			xscale = 256;
+			yscale = vheight / 2;
 		}
 		else // unfiltered and filtered mode
 		{
@@ -758,12 +667,12 @@ update_video (int width, int height)
 		square[4] = square[1]  =  yscale - GCSettings.yshift;
 		square[7] = square[10] = -yscale - GCSettings.yshift;
 		DCFlushRange (square, 32); // update memory BEFORE the GPU accesses it!
-    	draw_init ();
+		draw_init ();
 
 		// initialize the texture obj we are going to use
-		GX_InitTexObj (&texobj, texturemem, vwidth*fscale, vheight*fscale, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+		GX_InitTexObj (&texobj, texturemem, vwidth, vheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
 
-	    if (GCSettings.render == 0 || GCSettings.render == 2)
+		if (GCSettings.render == 0 || GCSettings.render == 2)
 			GX_InitTexObjLOD(&texobj,GX_NEAR,GX_NEAR_MIP_NEAR,2.5,9.0,0.0,GX_FALSE,GX_FALSE,GX_ANISO_1); // original/unfiltered video mode: force texture filtering OFF
 
 		GX_LoadTexObj (&texobj, GX_TEXMAP0);	// load texture object so its ready to use
@@ -772,43 +681,33 @@ update_video (int width, int height)
 		oldvheight = vheight;
 		CheckVideo = 0;
 	}
-#ifdef HW_RVL
-	// convert image to texture
-	if (GCSettings.FilterMethod != FILTER_NONE && vheight <= 239 && vwidth <= 256)	// don't do filtering on game textures > 256 x 239
-	{
-		FilterMethod ((uint8*) GFX.Screen, EXT_PITCH, (uint8*) filtermem, vwidth*fscale*2, vwidth, vheight);
-		MakeTexture565((char *) filtermem, (char *) texturemem, vwidth*fscale, vheight*fscale);
-	}
-	else
-#endif
-	{
-		MakeTexture((char *) GFX.Screen, (char *) texturemem, vwidth, vheight);
-	}
+	MakeTexture((char *) GFX.Screen, (char *) texturemem, vwidth, vheight);
 
-	DCFlushRange (texturemem, TEXTUREMEM_SIZE);	// update the texture memory
+	/* texture cache update */
+	DCFlushRange (texturemem, TEXTUREMEM_SIZE);
 	GX_InvalidateTexAll ();
 
-	draw_square (view);		// draw the quad
+	draw_square(view);		// draw the quad
 
+	/* swap XFB */
+	whichfb ^= 1;
+
+	/* copy EFB to XFB */
 	GX_DrawDone ();
+	GX_CopyDisp (xfb[whichfb], GX_TRUE);
+	GX_Flush ();
 
+	/* XFB is ready to be displayed */
 	VIDEO_SetNextFramebuffer (xfb[whichfb]);
 	VIDEO_Flush ();
-	copynow = GX_TRUE;
-
-	// Return to caller, don't waste time waiting for vb
-	LWP_ResumeThread (vbthread);
+	VIDEO_WaitVSync();
+	++FrameTimer;
 }
 
 void AllocGfxMem()
 {
 	snes9xgfx = (unsigned char *)memalign(32, SNES9XGFX_SIZE);
 	memset(snes9xgfx, 0, SNES9XGFX_SIZE);
-
-#ifdef HW_RVL
-	filtermem = (unsigned char *)memalign(32, FILTERMEM_SIZE);
-	memset(filtermem, 0, FILTERMEM_SIZE);
-#endif
 
 	GFX.Pitch = EXT_PITCH;
 	GFX.Screen = (uint16*)(snes9xgfx + EXT_OFFSET);
@@ -819,8 +718,7 @@ void AllocGfxMem()
  *
  * Setup the global GFX information for Snes9x
  ***************************************************************************/
-void
-setGFX ()
+void setGFX ()
 {
 	GFX.Pitch = EXT_PITCH;
 }
@@ -830,8 +728,7 @@ setGFX ()
  *
  * Reset the video/rendering mode for the menu
 ****************************************************************************/
-void
-ResetVideo_Menu ()
+void ResetVideo_Menu ()
 {
 	Mtx44 p;
 	f32 yscale;
@@ -900,8 +797,11 @@ void Menu_Render()
 	whichfb ^= 1; // flip framebuffer
 	GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
 	GX_SetColorUpdate(GX_TRUE);
-	GX_CopyDisp(xfb[whichfb],GX_TRUE);
+
 	GX_DrawDone();
+	GX_CopyDisp(xfb[whichfb],GX_TRUE);
+	GX_Flush();
+
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
 	VIDEO_WaitVSync();
@@ -912,8 +812,7 @@ void Menu_Render()
  *
  * Draws the specified image on screen using GX
  ***************************************************************************/
-void Menu_DrawImg(f32 xpos, f32 ypos, u16 width, u16 height, u8 data[],
-	f32 degrees, f32 scaleX, f32 scaleY, u8 alpha)
+void Menu_DrawImg(f32 xpos, f32 ypos, u16 width, u16 height, u8 data[], f32 degrees, f32 scaleX, f32 scaleY, u8 alpha)
 {
 	if(data == NULL)
 		return;

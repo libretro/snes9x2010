@@ -1,5 +1,5 @@
 /****************************************************************************
- * Snes9x Nintendo Wii/Gamecube Port
+ * Snes9x Nintendo Wii/Gamecube
  *
  * michniewski August 2008
  * Tantric 2008-2010

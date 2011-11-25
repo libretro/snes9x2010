@@ -46,23 +46,6 @@ extern const u32	ca_lang_size;
 extern const u8		tr_lang[];
 extern const u32	tr_lang_size;
 
-// Sounds
-
-extern const u8		bg_music_ogg[];
-extern const u32	bg_music_ogg_size;
-
-extern const u8		enter_ogg[];
-extern const u32	enter_ogg_size;
-
-extern const u8		exit_ogg[];
-extern const u32	exit_ogg_size;
-
-extern const u8		button_over_pcm[];
-extern const u32	button_over_pcm_size;
-
-extern const u8		button_click_pcm[];
-extern const u32	button_click_pcm_size;
-
 // Graphics
 
 extern const u8		logo_png[];
@@ -120,8 +103,6 @@ extern const u8		icon_settings_mappings_png[];
 extern const u32	icon_settings_mappings_png_size;
 extern const u8		icon_settings_menu_png[];
 extern const u32	icon_settings_menu_png_size;
-extern const u8		icon_settings_network_png[];
-extern const u32	icon_settings_network_png_size;
 extern const u8		icon_settings_video_png[];
 extern const u32	icon_settings_video_png_size;
 
@@ -226,9 +207,6 @@ extern const u32	icon_usb_png_size;
 
 extern const u8		icon_dvd_png[];
 extern const u32	icon_dvd_png_size;
-
-extern const u8		icon_smb_png[];
-extern const u32	icon_smb_png_size;
 
 extern const u8		battery_png[];
 extern const u32	battery_png_size;

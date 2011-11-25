@@ -15,13 +15,12 @@
 #define _SNES9XGX_H_
 
 #include "utils/FreeTypeGX.h"
-#include "snes9x.h"
-#include "filter.h"
+#include "../snes9x-next/snes9x.h"
 #include "filelist.h"
 
-#define APPNAME 		"Snes9x GX Next"
-#define APPVERSION 		"4.2.8next"
-#define APPFOLDER 		"snes9xgxnext"
+#define APPNAME 		"Snes9x GX"
+#define APPVERSION 		"4.2.8"
+#define APPFOLDER 		"snes9xgx"
 #define PREF_FILE_NAME 	"settings.xml"
 
 #define NOTSILENT 0
@@ -34,10 +33,7 @@ enum {
 	DEVICE_AUTO,
 	DEVICE_SD,
 	DEVICE_USB,
-	DEVICE_DVD,
-	DEVICE_SMB,
-	DEVICE_SD_SLOTA,
-	DEVICE_SD_SLOTB
+	DEVICE_DVD
 };
 
 enum {
@@ -79,35 +75,26 @@ enum {
 	LANG_LENGTH
 };
 
-struct SGCSettings{
-    int		AutoLoad;
-    int		AutoSave;
-    int		LoadMethod; // For ROMS: Auto, SD, DVD, USB, Network (SMB)
+struct SGCSettings
+{
+	int		AutoLoad;
+	int		AutoSave;
+	int		LoadMethod; // For ROMS: Auto, SD, DVD, USB, Network (SMB)
 	int		SaveMethod; // For SRAM, Freeze, Prefs: Auto, SD, USB, SMB
 	char	LoadFolder[MAXPATHLEN]; // Path to game files
 	char	SaveFolder[MAXPATHLEN]; // Path to save files
 	char	CheatFolder[MAXPATHLEN]; // Path to cheat files
-
-	char	smbip[80];
-	char	smbuser[20];
-	char	smbpwd[20];
-	char	smbshare[20];
-
 	float	zoomHor; // horizontal zoom amount
 	float	zoomVert; // vertical zoom amount
-	int		videomode; // 0 - automatic, 1 - NTSC (480i), 2 - Progressive (480p), 3 - PAL (50Hz), 4 - PAL (60Hz)
-	int		render;		// 0 - original, 1 - filtered, 2 - unfiltered
-	int		FilterMethod; // convert to RenderFilter
-	int		Controller;
-	int		crosshair;
-	int		widescreen;	// 0 - 4:3 aspect, 1 - 16:9 aspect
-	int		xshift;	// video output shift
-	int		yshift;
-	int		WiimoteOrientation;
-	int		ExitAction;
-	int		MusicVolume;
-	int		SFXVolume;
-	int		Rumble;
+	int	videomode; // 0 - automatic, 1 - NTSC (480i), 2 - Progressive (480p), 3 - PAL (50Hz), 4 - PAL (60Hz)
+	int	render;		// 0 - original, 1 - filtered, 2 - unfiltered
+	int	Controller;
+	int	widescreen;	// 0 - 4:3 aspect, 1 - 16:9 aspect
+	int	xshift;	// video output shift
+	int	yshift;
+	int	WiimoteOrientation;
+	int	ExitAction;
+	int	Rumble;
 	int 	language;
 };
 
@@ -116,7 +103,6 @@ void ShutdownWii();
 bool SupportedIOS(u32 ios);
 bool SaneIOS(u32 ios);
 extern struct SGCSettings GCSettings;
-extern int ScreenshotRequested;
 extern int ConfigRequested;
 extern int ShutdownRequested;
 extern int ExitRequested;

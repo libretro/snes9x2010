@@ -1455,7 +1455,11 @@ again:
 
 	int32 totalFileSize;
 
+	#ifdef CUSTOM_FILE_HANDLING
+	totalFileSize = CustomFileLoader();
+	#else
 	totalFileSize = FileLoader(ROM, filename, MAX_ROM_SIZE);
+	#endif
 	if (!totalFileSize)
 		return (FALSE);
 
@@ -1652,7 +1656,11 @@ again:
 	ZeroMemory(&SNESGameFixes, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
 
+#ifdef CUSTOM_FILE_HANDLING
+	S9xCustomLoadCheatFile();
+#else
 	S9xLoadCheatFile(S9xGetFilename(".cht", CHEAT_DIR));
+#endif
 
 	InitROM();
 
@@ -3982,7 +3990,7 @@ static uint32 ReadUPSPointer (const uint8 *data, unsigned &addr, unsigned size)
 //no-header patching errors that result in IPS patches having a 50/50 chance of
 //being applied correctly.
 
-static bool8 ReadUPSPatch (Reader *r, long, int32 &rom_size)
+bool8 ReadUPSPatch (Reader *r, long, int32 &rom_size)
 {
 	//Reader lacks size() and rewind(), so we need to read in the file to get its size
 	uint8 *data = new uint8[8 * 1024 * 1024];  //allocate a lot of memory, better safe than sorry ...
@@ -4075,7 +4083,7 @@ static long ReadInt (Reader *r, unsigned nbytes)
 	return (v);
 }
 
-static bool8 ReadIPSPatch (Reader *r, long offset, int32 &rom_size)
+bool8 ReadIPSPatch (Reader *r, long offset, int32 &rom_size)
 {
 	const int32	IPS_EOF = 0x00454F46l;
 	int32		ofs;
@@ -4194,6 +4202,9 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 	if (Settings.NoPatch)
 		return;
 
+#ifdef CUSTOM_FILE_HANDLING
+	CustomCheckForAnyPatch(header, rom_size);
+#else
 	STREAM		patch_file  = NULL;
 	uint32		i;
 	long		offset = header ? 512 : 0;
@@ -4639,4 +4650,5 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 		if (flag)
 			return;
 	}
+#endif
 }

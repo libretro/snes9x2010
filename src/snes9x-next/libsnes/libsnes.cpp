@@ -327,6 +327,7 @@ void snes_init()
 	Settings.BlockInvalidVRAMAccessMaster = TRUE;
 	Settings.CartAName[0] = 0;
 	Settings.CartBName[0] = 0;
+	Settings.Crosshair = 1;
 
 	CPU.Flags = 0;
 

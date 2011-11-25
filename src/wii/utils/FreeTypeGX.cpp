@@ -486,13 +486,9 @@ uint16_t FreeTypeGX::getWidth(wchar_t *text)
 	{
 		ftgxCharData* glyphData = NULL;
 		if (this->fontData.find(text[i]) != this->fontData.end())
-		{
 			glyphData = &this->fontData[text[i]];
-		}
 		else
-		{
 			glyphData = this->cacheGlyphData(text[i]);
-		}
 
 		if (glyphData != NULL)
 		{
@@ -562,13 +558,9 @@ void FreeTypeGX::getOffset(wchar_t *text, ftgxDataOffset* offset)
 	{
 		ftgxCharData* glyphData = NULL;
 		if (this->fontData.find(text[i]) != this->fontData.end())
-		{
 			glyphData = &this->fontData[text[i]];
-		}
 		else
-		{
 			glyphData = this->cacheGlyphData(text[i]);
-		}
 
 		if(glyphData != NULL)
 		{

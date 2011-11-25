@@ -29,20 +29,20 @@
 #include "input.h"
 #include "gui/gui.h"
 
-#include "snes9x-next/snes9x.h"
-#include "snes9x-next/memmap.h"
-#include "snes9x-next/controls.h"
+#include "../snes9x-next/snes9x.h"
+#include "../snes9x-next/memmap.h"
+#include "../snes9x-next/controls.h"
 
 int rumbleRequest[4] = {0,0,0,0};
 GuiTrigger userInput[4];
 
-#ifdef HW_RVL
 static int rumbleCount[4] = {0,0,0,0};
-#endif
 
 // hold superscope/mouse/justifier cursor positions
 static int cursor_x[5] = {0,0,0,0,0};
 static int cursor_y[5] = {0,0,0,0,0};
+
+extern s9xcommand_t keymap[1024];
 
 /****************************************************************************
  * Controller Functions
@@ -200,12 +200,9 @@ void ResetControls(int consoleCtrl, int wiiCtrl)
 static int padsConnected = 0;
 static u64 prev, now;
 
-void
-UpdatePads()
+void UpdatePads()
 {
-	#ifdef HW_RVL
 	WPAD_ScanPads();
-	#endif
 
 	now = gettime();
 
@@ -238,29 +235,23 @@ UpdatePads()
  *
  * Sets up userInput triggers for use
  ***************************************************************************/
-void
-SetupPads()
+void SetupPads()
 {
 	PAD_Init();
 
-	#ifdef HW_RVL
 	WPAD_Init();
 	
 	// read wiimote accelerometer and IR data
 	WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
 	WPAD_SetVRes(WPAD_CHAN_ALL, screenwidth, screenheight);
-	#endif
 
 	for(int i=0; i < 4; i++)
 	{
 		userInput[i].chan = i;
-		#ifdef HW_RVL
 		userInput[i].wpad = WPAD_Data(i);
-		#endif
 	}
 }
 
-#ifdef HW_RVL
 /****************************************************************************
  * ShutoffRumble
  ***************************************************************************/
@@ -301,7 +292,6 @@ void DoRumble(int i)
 		WPAD_Rumble(i, 0); // rumble off
 	}
 }
-#endif
 
 /****************************************************************************
  * UpdateCursorPosition
@@ -336,7 +326,6 @@ static void UpdateCursorPosition (int chan, int &pos_x, int &pos_y)
 		if (pos_y < 0) pos_y = 0;
 	}
 
-#ifdef HW_RVL
 	if (userInput[chan].wpad->ir.valid)
 	{
 		pos_x = (userInput[chan].wpad->ir.x * 256) / 640;
@@ -369,7 +358,6 @@ static void UpdateCursorPosition (int chan, int &pos_x, int &pos_y)
 			if (pos_y < 0) pos_y = 0;
 		}
 	}
-#endif
 
 }
 
@@ -388,7 +376,6 @@ static void decodepad (int chan)
 	s8 pad_y = userInput[chan].pad.stickY;
 	u32 jp = userInput[chan].pad.btns_h;
 
-#ifdef HW_RVL
 	s8 wm_ax = userInput[chan].WPAD_StickX(0);
 	s8 wm_ay = userInput[chan].WPAD_StickY(0);
 	u32 wp = userInput[chan].wpad->btns_h;
@@ -396,7 +383,6 @@ static void decodepad (int chan)
 	u32 exp_type;
 	if ( WPAD_Probe(chan, &exp_type) != 0 )
 		exp_type = WPAD_EXP_NONE;
-#endif
 
 	/***
 	Gamecube Joystick input
@@ -437,7 +423,6 @@ static void decodepad (int chan)
 			}
 		}
 	}
-#ifdef HW_RVL
 	/***
 	Wii Joystick (classic, nunchuk) input
 	***/
@@ -475,35 +460,28 @@ static void decodepad (int chan)
 			if (t >= -2.41421356237 && t < 2.41421356237)
 			{
 				if (wm_ay >= 0)
-				{
 					wp |= (exp_type == WPAD_EXP_CLASSIC) ? WPAD_CLASSIC_BUTTON_UP : WPAD_BUTTON_UP;
-				}
 				else
-				{
 					wp |= (exp_type == WPAD_EXP_CLASSIC) ? WPAD_CLASSIC_BUTTON_DOWN : WPAD_BUTTON_DOWN;
-				}
 			}
 		}
 	}
-#endif
 
 	/*** Fix offset to pad ***/
 	offset = ((chan + 1) << 4);
 
 	/*** Report pressed buttons (gamepads) ***/
 	for (i = 0; i < MAXJP; i++)
-    {
+	{
 		if ( (jp & btnmap[CTRL_PAD][CTRLR_GCPAD][i])											// gamecube controller
-#ifdef HW_RVL
-		|| ( (exp_type == WPAD_EXP_NONE) && (wp & btnmap[CTRL_PAD][CTRLR_WIIMOTE][i]) )	// wiimote
-		|| ( (exp_type == WPAD_EXP_CLASSIC) && (wp & btnmap[CTRL_PAD][CTRLR_CLASSIC][i]) )	// classic controller
-		|| ( (exp_type == WPAD_EXP_NUNCHUK) && (wp & btnmap[CTRL_PAD][CTRLR_NUNCHUK][i]) )	// nunchuk + wiimote
-#endif
-		)
-			S9xReportButton (offset + i, true);
+				|| ( (exp_type == WPAD_EXP_NONE) && (wp & btnmap[CTRL_PAD][CTRLR_WIIMOTE][i]) )	// wiimote
+				|| ( (exp_type == WPAD_EXP_CLASSIC) && (wp & btnmap[CTRL_PAD][CTRLR_CLASSIC][i]) )	// classic controller
+				|| ( (exp_type == WPAD_EXP_NUNCHUK) && (wp & btnmap[CTRL_PAD][CTRLR_NUNCHUK][i]) )	// nunchuk + wiimote
+		   )
+			S9xApplyCommand(keymap[offset + i], true, 0);
 		else
-			S9xReportButton (offset + i, false);
-    }
+			S9xApplyCommand(keymap[offset + i], false, 0);
+	}
 
 	/*** Superscope ***/
 	#if 0
@@ -514,9 +492,7 @@ static void decodepad (int chan)
 		for (i = 0; i < 6; i++)
 		{
 			if (jp & btnmap[CTRL_SCOPE][CTRLR_GCPAD][i]
-#ifdef HW_RVL
 			|| wp & btnmap[CTRL_SCOPE][CTRLR_WIIMOTE][i]
-#endif
 			)
 			{
 				if(i == 3 || i == 4) // turbo
@@ -524,19 +500,19 @@ static void decodepad (int chan)
 					if((i == 3 && scopeTurbo == 1) || // turbo ON already, don't change
 						(i == 4 && scopeTurbo == 0)) // turbo OFF already, don't change
 					{
-						S9xReportButton(offset + i, false);
+						S9xApplyCommand(keymap[offset + i], false, 0);
 					}
 					else // turbo changed to ON or OFF
 					{
 						scopeTurbo = 4-i;
-						S9xReportButton(offset + i, true);
+						S9xApplyCommand(keymap[offset + i], true, 0);
 					}
 				}
 				else
-					S9xReportButton(offset + i, true);
+					S9xApplyCommand(keymap[offset + i], true, 0);
 			}
 			else
-				S9xReportButton(offset + i, false);
+				S9xApplyCommand(keymap[offset + i], false, 0);
 		}
 		// pointer
 		offset = 0x80;
@@ -551,13 +527,11 @@ static void decodepad (int chan)
 		for (i = 0; i < 2; i++)
 		{
 			if (jp & btnmap[CTRL_MOUSE][CTRLR_GCPAD][i]
-#ifdef HW_RVL
 			|| wp & btnmap[CTRL_MOUSE][CTRLR_WIIMOTE][i]
-#endif
 			)
-				S9xReportButton(offset + i, true);
+				S9xApplyCommand(keymap[offset + i], true, 0);
 			else
-				S9xReportButton(offset + i, false);
+				S9xApplyCommand(keymap[offset + i], false, 0);
 		}
 		// pointer
 		offset = 0x81;
@@ -573,13 +547,11 @@ static void decodepad (int chan)
 		for (i = 0; i < 3; i++)
 		{
 			if (jp & btnmap[CTRL_JUST][CTRLR_GCPAD][i]
-#ifdef HW_RVL
 			|| wp & btnmap[CTRL_JUST][CTRLR_WIIMOTE][i]
-#endif
 			)
-				S9xReportButton(offset + i, true);
+				S9xApplyCommand(keymap[offset + i], true, 0);
 			else
-				S9xReportButton(offset + i, false);
+				S9xApplyCommand(keymap[offset + i], false, 0);
 		}
 		// pointer
 		offset = 0x83;
@@ -588,14 +560,6 @@ static void decodepad (int chan)
 				(u16) cursor_y[3 + chan]);
 	}
 	#endif
-
-#ifdef HW_RVL
-	// screenshot (temp)
-	if (wp & CLASSIC_CTRL_BUTTON_ZR)
-		S9xReportButton(0x90, true);
-	else
-		S9xReportButton(0x90, false);
-#endif
 }
 
 bool MenuRequested()
@@ -638,8 +602,7 @@ void ReportButtons ()
 	 * OR Left on classic right analog stick
 	 */
 	if(MenuRequested())
-	{
-	}
+		ConfigRequested = 1; // go to the menu
 
 	//j = (Settings.MultiPlayer5Master == true ? 4 : 2);
 	j = 2;
@@ -778,9 +741,6 @@ void SetDefaultButtonMap ()
 	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Mouse2"), false);
 	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Justifier1"), false);
 	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Justifier2"), false);
-
-	maxcode = 0x90;
-	//ASSIGN_BUTTON_FALSE (maxcode++, "Screenshot");
 
 	SetControllers();
 }

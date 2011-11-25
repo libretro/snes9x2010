@@ -178,6 +178,8 @@
 #ifndef _READER_H_
 #define _READER_H_
 
+#include <string>
+
 class Reader
 {
 	public:

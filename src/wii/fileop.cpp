@@ -29,8 +29,6 @@
 
 #include "snes9xgx.h"
 #include "fileop.h"
-#include "networkop.h"
-#include "gcunzip.h"
 #include "menu.h"
 #include "filebrowser.h"
 #include "gui/gui.h"
@@ -43,15 +41,9 @@ FILE * file; // file pointer - the only one we should ever use!
 bool unmountRequired[7] = { false, false, false, false, false, false, false };
 bool isMounted[7] = { false, false, false, false, false, false, false };
 
-#ifdef HW_RVL
-	const DISC_INTERFACE* sd = &__io_wiisd;
-	const DISC_INTERFACE* usb = &__io_usbstorage;
-	const DISC_INTERFACE* dvd = &__io_wiidvd;
-#else
-	const DISC_INTERFACE* carda = &__io_gcsda;
-	const DISC_INTERFACE* cardb = &__io_gcsdb;
-	const DISC_INTERFACE* dvd = &__io_gcdvd;
-#endif
+const DISC_INTERFACE* sd = &__io_wiisd;
+const DISC_INTERFACE* usb = &__io_usbstorage;
+const DISC_INTERFACE* dvd = &__io_wiidvd;
 
 // folder parsing thread
 static lwp_t parsethread = LWP_THREAD_NULL;
@@ -65,13 +57,208 @@ int selectLoadedFile = 0;
 static lwp_t devicethread = LWP_THREAD_NULL;
 static bool deviceHalt = true;
 
+#define ZIPCHUNK 2048
+
+/*
+ * Zip file header definition
+ */
+typedef struct
+{
+  unsigned int zipid __attribute__ ((__packed__));	// 0x04034b50
+  unsigned short zipversion __attribute__ ((__packed__));
+  unsigned short zipflags __attribute__ ((__packed__));
+  unsigned short compressionMethod __attribute__ ((__packed__));
+  unsigned short lastmodtime __attribute__ ((__packed__));
+  unsigned short lastmoddate __attribute__ ((__packed__));
+  unsigned int crc32 __attribute__ ((__packed__));
+  unsigned int compressedSize __attribute__ ((__packed__));
+  unsigned int uncompressedSize __attribute__ ((__packed__));
+  unsigned short filenameLength __attribute__ ((__packed__));
+  unsigned short extraDataLength __attribute__ ((__packed__));
+}
+PKZIPHEADER;
+
+/*
+ * Zip files are stored little endian
+ * Support functions for short and int types
+ */
+static u32 FLIP32 (u32 b)
+{
+	unsigned int c;
+
+	c = (b & 0xff000000) >> 24;
+	c |= (b & 0xff0000) >> 8;
+	c |= (b & 0xff00) << 8;
+	c |= (b & 0xff) << 24;
+
+	return c;
+}
+
+static u16 FLIP16 (u16 b)
+{
+	u16 c;
+
+	c = (b & 0xff00) >> 8;
+	c |= (b & 0xff) << 8;
+
+	return c;
+}
+
+/****************************************************************************
+ * IsZipFile
+ *
+ * Returns TRUE when 0x504b0304 is first four characters of buffer
+ ***************************************************************************/
+static int IsZipFile (char *buffer)
+{
+	unsigned int *check = (unsigned int *) buffer;
+
+	if (check[0] == 0x504b0304)
+		return 1;
+
+	return 0;
+}
+
+/*****************************************************************************
+* UnZipBuffer
+******************************************************************************/
+
+static size_t UnZipBuffer (unsigned char *outbuffer)
+{
+	PKZIPHEADER pkzip;
+	size_t zipoffset = 0;
+	size_t zipchunk = 0;
+	char out[ZIPCHUNK];
+	z_stream zs;
+	int res;
+	size_t bufferoffset = 0;
+	size_t have = 0;
+	char readbuffer[ZIPCHUNK];
+	size_t sizeread = 0;
+
+	// Read Zip Header
+	fseek(file, 0, SEEK_SET);
+	sizeread = fread (readbuffer, 1, ZIPCHUNK, file);
+
+	if(sizeread <= 0)
+		return 0;
+
+	/*** Copy PKZip header to local, used as info ***/
+	memcpy (&pkzip, readbuffer, sizeof (PKZIPHEADER));
+
+	pkzip.uncompressedSize = FLIP32 (pkzip.uncompressedSize);
+
+	ShowProgress ("Loading...", 0, pkzip.uncompressedSize);
+
+	/*** Prepare the zip stream ***/
+	memset (&zs, 0, sizeof (z_stream));
+	zs.zalloc = Z_NULL;
+	zs.zfree = Z_NULL;
+	zs.opaque = Z_NULL;
+	zs.avail_in = 0;
+	zs.next_in = Z_NULL;
+	res = inflateInit2 (&zs, -MAX_WBITS);
+
+	if (res != Z_OK)
+		goto done;
+
+	/*** Set ZipChunk for first pass ***/
+	zipoffset =
+	(sizeof (PKZIPHEADER) + FLIP16 (pkzip.filenameLength) +
+	FLIP16 (pkzip.extraDataLength));
+	zipchunk = ZIPCHUNK - zipoffset;
+
+	/*** Now do it! ***/
+	do
+	{
+		zs.avail_in = zipchunk;
+		zs.next_in = (Bytef *) & readbuffer[zipoffset];
+
+		/*** Now inflate until input buffer is exhausted ***/
+		do
+		{
+			zs.avail_out = ZIPCHUNK;
+			zs.next_out = (Bytef *) & out;
+
+			res = inflate (&zs, Z_NO_FLUSH);
+
+			if (res == Z_MEM_ERROR)
+			{
+				goto done;
+			}
+
+			have = ZIPCHUNK - zs.avail_out;
+			if (have)
+			{
+				/*** Copy to normal block buffer ***/
+				memcpy (&outbuffer[bufferoffset], &out, have);
+				bufferoffset += have;
+			}
+		}
+		while (zs.avail_out == 0);
+
+		// Readup the next 2k block
+		zipoffset = 0;
+		zipchunk = ZIPCHUNK;
+
+		sizeread = fread (readbuffer, 1, ZIPCHUNK, file);
+		if(sizeread <= 0)
+			goto done; // read failure
+
+		ShowProgress ("Loading...", bufferoffset, pkzip.uncompressedSize);
+	}
+	while (res != Z_STREAM_END);
+
+done:
+	inflateEnd (&zs);
+	CancelAction();
+
+	if (res == Z_STREAM_END)
+		return pkzip.uncompressedSize;
+	else
+		return 0;
+}
+
+/****************************************************************************
+* GetFirstZipFilename
+*
+* Returns the filename of the first file in the zipped archive
+* The idea here is to do the least amount of work required
+***************************************************************************/
+
+char * GetFirstZipFilename ()
+{
+	char * firstFilename = NULL;
+	char tempbuffer[ZIPCHUNK];
+	char filepath[1024];
+
+	if(!MakeFilePath(filepath, FILE_ROM))
+		return NULL;
+
+	// read start of ZIP
+	if(LoadFile (tempbuffer, filepath, ZIPCHUNK, NOTSILENT) < 35)
+		return NULL;
+
+	tempbuffer[28] = 0; // truncate - filename length is 2 bytes long (bytes 26-27)
+	int namelength = tempbuffer[26]; // filename length starts 26 bytes in
+
+	if(namelength < 0 || namelength > 200) // filename is not a reasonable length
+	{
+		ErrorPrompt("Error - Invalid ZIP file!");
+		return NULL;
+	}
+	
+	firstFilename = &tempbuffer[30]; // first filename of a ZIP starts 31 bytes in
+	firstFilename[namelength] = 0; // truncate at filename length
+	return strdup(firstFilename);
+}
+
 /****************************************************************************
  * ResumeDeviceThread
  *
  * Signals the device thread to start, and resumes the thread.
  ***************************************************************************/
-void
-ResumeDeviceThread()
+void ResumeDeviceThread()
 {
 	deviceHalt = false;
 	LWP_ResumeThread(devicethread);
@@ -82,16 +269,13 @@ ResumeDeviceThread()
  *
  * Signals the device thread to stop.
  ***************************************************************************/
-void
-HaltDeviceThread()
+void HaltDeviceThread()
 {
-#ifdef HW_RVL
 	deviceHalt = true;
 
 	// wait for thread to finish
 	while(!LWP_ThreadIsSuspended(devicethread))
 		usleep(THREAD_SLEEP);
-#endif
 }
 
 /****************************************************************************
@@ -99,8 +283,7 @@ HaltDeviceThread()
  *
  * Signals the parse thread to stop.
  ***************************************************************************/
-void
-HaltParseThread()
+void HaltParseThread()
 {
 	parseHalt = true;
 
@@ -114,11 +297,9 @@ HaltParseThread()
  *
  * This checks our devices for changes (SD/USB/DVD removed)
  ***************************************************************************/
-#ifdef HW_RVL
 static int devsleep;
 
-static void *
-devicecallback (void *arg)
+static void * devicecallback (void *arg)
 {
 	while (1)
 	{
@@ -158,14 +339,11 @@ devicecallback (void *arg)
 			usleep(THREAD_SLEEP);
 			devsleep -= THREAD_SLEEP;
 		}
-		UpdateCheck();
 	}
 	return NULL;
 }
-#endif
 
-static void *
-parsecallback (void *arg)
+static void * parsecallback (void *arg)
 {
 	while(1)
 	{
@@ -182,12 +360,9 @@ parsecallback (void *arg)
  * libOGC provides a nice wrapper for LWP access.
  * This function sets up a new local queue and attaches the thread to it.
  ***************************************************************************/
-void
-InitDeviceThread()
+void InitDeviceThread()
 {
-#ifdef HW_RVL
 	LWP_CreateThread (&devicethread, devicecallback, NULL, NULL, 0, 40);
-#endif
 	LWP_CreateThread (&parsethread, parsecallback, NULL, NULL, 0, 80);
 }
 
@@ -197,13 +372,8 @@ InitDeviceThread()
  ***************************************************************************/
 void UnmountAllFAT()
 {
-#ifdef HW_RVL
 	fatUnmount("sd:");
 	fatUnmount("usb:");
-#else
-	fatUnmount("carda:");
-	fatUnmount("cardb:");
-#endif
 }
 
 /****************************************************************************
@@ -223,7 +393,6 @@ static bool MountFAT(int device, int silent)
 
 	switch(device)
 	{
-#ifdef HW_RVL
 		case DEVICE_SD:
 			sprintf(name, "sd");
 			sprintf(name2, "sd:");
@@ -234,19 +403,6 @@ static bool MountFAT(int device, int silent)
 			sprintf(name2, "usb:");
 			disc = usb;
 			break;
-#else
-		case DEVICE_SD_SLOTA:
-			sprintf(name, "carda");
-			sprintf(name2, "carda:");
-			disc = carda;
-			break;
-
-		case DEVICE_SD_SLOTB:
-			sprintf(name, "cardb");
-			sprintf(name2, "cardb:");
-			disc = cardb;
-			break;
-#endif
 		default:
 			return false; // unknown device
 	}
@@ -267,14 +423,10 @@ static bool MountFAT(int device, int silent)
 		if(mounted || silent)
 			break;
 
-#ifdef HW_RVL
 		if(device == DEVICE_SD)
 			retry = ErrorPromptRetry("SD card not found!");
 		else
 			retry = ErrorPromptRetry("USB drive not found!");
-#else
-		retry = ErrorPromptRetry("SD card not found!");
-#endif
 	}
 
 	isMounted[device] = mounted;
@@ -283,13 +435,8 @@ static bool MountFAT(int device, int silent)
 
 void MountAllFAT()
 {
-#ifdef HW_RVL
 	MountFAT(DEVICE_SD, SILENT);
 	MountFAT(DEVICE_USB, SILENT);
-#else
-	MountFAT(DEVICE_SD_SLOTA, SILENT);
-	MountFAT(DEVICE_SD_SLOTB, SILENT);
-#endif
 }
 
 /****************************************************************************
@@ -337,7 +484,7 @@ bool MountDVD(bool silent)
 	return mounted;
 }
 
-bool FindDevice(char * filepath, int * device)
+bool FindDevice(const char * filepath, int * device)
 {
 	if(!filepath || filepath[0] == 0)
 		return false;
@@ -350,21 +497,6 @@ bool FindDevice(char * filepath, int * device)
 	else if(strncmp(filepath, "usb:", 4) == 0)
 	{
 		*device = DEVICE_USB;
-		return true;
-	}
-	else if(strncmp(filepath, "smb:", 4) == 0)
-	{
-		*device = DEVICE_SMB;
-		return true;
-	}
-	else if(strncmp(filepath, "carda:", 6) == 0)
-	{
-		*device = DEVICE_SD_SLOTA;
-		return true;
-	}
-	else if(strncmp(filepath, "cardb:", 6) == 0)
-	{
-		*device = DEVICE_SD_SLOTB;
 		return true;
 	}
 	else if(strncmp(filepath, "dvd:", 4) == 0)
@@ -401,20 +533,12 @@ bool ChangeInterface(int device, bool silent)
 
 	switch(device)
 	{
-#ifdef HW_RVL
 		case DEVICE_SD:
 		case DEVICE_USB:
-#else
-		case DEVICE_SD_SLOTA:
-		case DEVICE_SD_SLOTB:
-#endif
 			mounted = MountFAT(device, silent);
 			break;
 		case DEVICE_DVD:
 			mounted = MountDVD(silent);
-			break;
-		case DEVICE_SMB:
-			mounted = ConnectShare(silent);
 			break;
 	}
 
@@ -534,7 +658,7 @@ static bool ParseDirEntries()
 
 				if(	stricmp(ext, "smc") != 0 && stricmp(ext, "fig") != 0 &&
 					stricmp(ext, "sfc") != 0 && stricmp(ext, "swc") != 0 &&
-					stricmp(ext, "zip") != 0 && stricmp(ext, "7z") != 0)
+					stricmp(ext, "zip") != 0)
 					continue;
 			}
 		}
@@ -618,8 +742,7 @@ static bool ParseDirEntries()
 /***************************************************************************
  * Browse subdirectories
  **************************************************************************/
-int
-ParseDirectory(bool waitParse, bool filter)
+int ParseDirectory(bool waitParse, bool filter)
 {
 	int retry = 1;
 	bool mounted = false;
@@ -703,8 +826,7 @@ ParseDirectory(bool waitParse, bool filter)
  * AllocSaveBuffer ()
  * Clear and allocate the savebuffer
  ***************************************************************************/
-void
-AllocSaveBuffer ()
+void AllocSaveBuffer ()
 {
 	if(bufferLock == LWP_MUTEX_NULL)
 		LWP_MutexInit(&bufferLock, false);
@@ -718,52 +840,16 @@ AllocSaveBuffer ()
  * FreeSaveBuffer ()
  * Free the savebuffer memory
  ***************************************************************************/
-void
-FreeSaveBuffer ()
+void FreeSaveBuffer ()
 {
 	if(bufferLock != LWP_MUTEX_NULL)
 		LWP_MutexUnlock(bufferLock);
 }
 
 /****************************************************************************
- * LoadSzFile
- * Loads the selected file # from the specified 7z into rbuffer
- * Returns file size
- ***************************************************************************/
-size_t
-LoadSzFile(char * filepath, unsigned char * rbuffer)
-{
-	size_t size = 0;
-
-	// stop checking if devices were removed/inserted
-	// since we're loading a file
-	HaltDeviceThread();
-
-	// halt parsing
-	HaltParseThread();
-
-	file = fopen (filepath, "rb");
-	if (file > 0)
-	{
-		size = SzExtractFile(browserList[browser.selIndex].filenum, rbuffer);
-		fclose (file);
-	}
-	else
-	{
-		ErrorPrompt("Error opening file!");
-	}
-
-	// go back to checking if devices were inserted/removed
-	ResumeDeviceThread();
-
-	return size;
-}
-
-/****************************************************************************
  * LoadFile
  ***************************************************************************/
-size_t
-LoadFile (char * rbuffer, char *filepath, size_t length, bool silent)
+size_t LoadFile(char * rbuffer, const char *filepath, size_t length, bool silent)
 {
 	char zipbuffer[2048];
 	size_t size = 0, offset = 0, readsize = 0;
@@ -856,8 +942,7 @@ size_t LoadFile(char * filepath, bool silent)
  * SaveFile
  * Write buffer to file
  ***************************************************************************/
-size_t
-SaveFile (char * buffer, char *filepath, size_t datasize, bool silent)
+size_t SaveFile (char * buffer, char *filepath, size_t datasize, bool silent)
 {
 	size_t written = 0;
 	size_t writesize, nextwrite;
