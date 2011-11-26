@@ -705,7 +705,7 @@ static void WindowCredits(void * ptr)
 	txt[i] = new GuiText("Credits", 30, (GXColor){0, 0, 0, 255});
 	txt[i]->SetAlignment(ALIGN_CENTRE, ALIGN_TOP); txt[i]->SetPosition(0,y); i++; y+=32;
 
-	txt[i] = new GuiText("Official Site: http://code.google.com/p/snes9x-gx/", 20, (GXColor){0, 0, 0, 255});
+	txt[i] = new GuiText("Official Site: http://github.com/twinaphex/snes9x-next/", 20, (GXColor){0, 0, 0, 255});
 	txt[i]->SetAlignment(ALIGN_CENTRE, ALIGN_TOP); txt[i]->SetPosition(0,y); i++; y+=40;
 
 	txt[i]->SetPresets(20, (GXColor){0, 0, 0, 255}, 0,
@@ -737,6 +737,10 @@ static void WindowCredits(void * ptr)
 	txt[i] = new GuiText("Snes9x");
 	txt[i]->SetPosition(60,y); i++;
 	txt[i] = new GuiText("Snes9x Team");
+	txt[i]->SetPosition(350,y); i++; y+=24;
+	txt[i] = new GuiText("SNES9x Next");
+	txt[i]->SetPosition(60,y); i++;
+	txt[i] = new GuiText("Twin Aphex");
 	txt[i]->SetPosition(350,y); i++; y+=24;
 
 	txt[i] = new GuiText("libogc / devkitPPC");
