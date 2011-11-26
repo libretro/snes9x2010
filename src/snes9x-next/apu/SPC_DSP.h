@@ -49,8 +49,6 @@ public:
 	// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
 	// Reduces emulation accuracy.
 	enum { voice_count = 8 };
-	void mute_voices( int mask );
-
 // State
 	
 	// Resets DSP and uses supplied values to initialize registers
@@ -92,7 +90,6 @@ public:
 	enum { extra_size = 16 };
 	sample_t* extra()               { return m.extra; }
 	sample_t const* out_pos() const { return m.out; }
-	void disable_surround( bool ) { } // not supported
 public:
 	BLARGG_DISABLE_NOTHROW
 	
@@ -178,7 +175,6 @@ private:
 		
 		// non-emulation state
 		uint8_t* ram; // 64K shared RAM between DSP and SMP
-		int mute_mask;
 		sample_t* out;
 		sample_t* out_end;
 		sample_t* out_begin;
@@ -186,17 +182,10 @@ private:
 	};
 	state_t m;
 	
-	void init_counter();
-	void run_counters();
-	unsigned read_counter( int rate );
-	
 	int  interpolate( voice_t const* v );
 	void run_envelope( voice_t* const v );
 	void decode_brr( voice_t* v );
 
-	void misc_27();
-	void misc_28();
-	void misc_29();
 	void misc_30();
 
 	void voice_output( voice_t const* v, int ch );
@@ -216,18 +205,13 @@ private:
 	void voice_V8_V5_V2( voice_t* const );
 	void voice_V9_V6_V3( voice_t* const );
 
-	void echo_read( int ch );
-	int  echo_output( int ch );
-	void echo_write( int ch );
 	void echo_22();
 	void echo_23();
 	void echo_24();
 	void echo_25();
 	void echo_26();
 	void echo_27();
-	void echo_28();
 	void echo_29();
-	void echo_30();
 	
 	void soft_reset_common();
 };
@@ -264,8 +248,6 @@ inline void SPC_DSP::write( int addr, int data )
 		break;
 	}
 }
-
-inline void SPC_DSP::mute_voices( int mask ) { m.mute_mask = mask; }
 
 #if !SPC_NO_COPY_STATE_FUNCS
 

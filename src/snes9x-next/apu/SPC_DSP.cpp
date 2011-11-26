@@ -64,9 +64,6 @@ static BOOST::uint8_t const initial_regs [SPC_DSP::register_count] =
 	out += 2;\
 	if ( out >= m.out_end )\
 	{\
-		check( out == m.out_end );\
-		check( m.out_end != &m.extra [extra_size] || \
-			(m.extra <= m.out_begin && m.extra < &m.extra [extra_size]) );\
 		out       = m.extra;\
 		m.out_end = &m.extra [extra_size];\
 	}\
@@ -183,22 +180,13 @@ static unsigned const counter_offsets [32] =
 	     0
 };
 
-inline void SPC_DSP::init_counter()
-{
-	m.counter = 0;
-}
+#define init_counter() m.counter = 0;
 
-inline void SPC_DSP::run_counters()
-{
-	if ( --m.counter < 0 )
+#define run_counters() \
+	if ( --m.counter < 0 ) \
 		m.counter = simple_counter_range - 1;
-}
 
-inline unsigned SPC_DSP::read_counter( int rate )
-{
-	return ((unsigned) m.counter + counter_offsets [rate]) % counter_rates [rate];
-}
-
+#define read_counter(rate) (((unsigned) m.counter + counter_offsets [rate]) % counter_rates [rate]);
 
 //// Envelope
 
@@ -344,29 +332,24 @@ inline void SPC_DSP::decode_brr( voice_t* v )
 
 //// Misc
 
-#define MISC_CLOCK( n ) inline void SPC_DSP::misc_##n()
+// voice 0 doesn't support PMON
+#define misc_27() m.t_pmon = REG(pmon) & 0xFE;
 
-MISC_CLOCK( 27 )
-{
-	m.t_pmon = REG(pmon) & 0xFE; // voice 0 doesn't support PMON
-}
-MISC_CLOCK( 28 )
-{
-	m.t_non = REG(non);
-	m.t_eon = REG(eon);
+#define misc_28() \
+	m.t_non = REG(non); \
+	m.t_eon = REG(eon); \
 	m.t_dir = REG(dir);
-}
-MISC_CLOCK( 29 )
-{
-	if ( (m.every_other_sample ^= 1) != 0 )
-		m.new_kon &= ~m.kon; // clears KON 63 clocks after it was last read
-}
-MISC_CLOCK( 30 )
+
+#define misc_29() \
+	if ( (m.every_other_sample ^= 1) != 0 ) \
+		m.new_kon &= ~m.kon; /* clears KON 63 clocks after it was last read */
+
+inline void SPC_DSP::misc_30()
 {
 	if ( m.every_other_sample )
 	{
 		m.kon    = m.new_kon;
-		m.t_koff = REG(koff) | m.mute_mask; 
+		m.t_koff = REG(koff); 
 	}
 	
 	run_counters();
@@ -379,40 +362,40 @@ MISC_CLOCK( 30 )
 	}
 }
 
-
 //// Voices
 
-#define VOICE_CLOCK( n ) void SPC_DSP::voice_##n( voice_t* const v )
-
-inline VOICE_CLOCK( V1 )
+inline void SPC_DSP::voice_V1( voice_t* const v )
 {
 	m.t_dir_addr = m.t_dir * 0x100 + m.t_srcn * 4;
-	m.t_srcn = VREG(v->regs,srcn);
+	m.t_srcn = v->regs [v_srcn];
 }
-inline VOICE_CLOCK( V2 )
+
+inline void SPC_DSP::voice_V2( voice_t* const v )
 {
-	// Read sample pointer (ignored if not needed)
+
 	uint8_t const* entry = &m.ram [m.t_dir_addr];
 	if ( !v->kon_delay )
 		entry += 2;
-	m.t_brr_next_addr = GET_LE16A( entry );
-	
-	m.t_adsr0 = VREG(v->regs,adsr0);
-	
-	// Read pitch, spread over two clocks
-	m.t_pitch = VREG(v->regs,pitchl);
+	m.t_brr_next_addr = get_le16( entry );
+
+	m.t_adsr0 = v->regs [v_adsr0];
+
+
+	m.t_pitch = v->regs [v_pitchl];
 }
-inline VOICE_CLOCK( V3a )
+
+inline void SPC_DSP::voice_V3a( voice_t* const v )
 {
-	m.t_pitch += (VREG(v->regs,pitchh) & 0x3F) << 8;
+	m.t_pitch += (v->regs [v_pitchh] & 0x3F) << 8;
 }
-inline VOICE_CLOCK( V3b )
+
+inline void spc_dsp::voice_v3b( voice_t* const v )
 {
-	// Read BRR header and byte
-	m.t_brr_byte   = m.ram [(v->brr_addr + v->brr_offset) & 0xFFFF];
-	m.t_brr_header = m.ram [v->brr_addr]; // brr_addr doesn't need masking
+	m.t_brr_byte = m.ram [(v->brr_addr + v->brr_offset) & 0xffff];
+	m.t_brr_header = m.ram [v->brr_addr];
 }
-VOICE_CLOCK( V3c )
+
+void SPC_DSP::voice_V3c( voice_t* const v )
 {
 	// Pitch modulation using previous voice's output
 	if ( m.t_pmon & v->vbit )
@@ -443,17 +426,15 @@ VOICE_CLOCK( V3c )
 	}
 	
 	// Gaussian interpolation
-	{
-		int output = interpolate( v );
-		
-		// Noise
-		if ( m.t_non & v->vbit )
-			output = (int16_t) (m.noise * 2);
-		
-		// Apply envelope
-		m.t_output = (output * v->env) >> 11 & ~1;
-		v->t_envx_out = (uint8_t) (v->env >> 4);
-	}
+	int output = interpolate( v );
+
+	// Noise
+	if ( m.t_non & v->vbit )
+		output = (int16_t) (m.noise * 2);
+
+	// Apply envelope
+	m.t_output = (output * v->env) >> 11 & ~1;
+	v->t_envx_out = (uint8_t) (v->env >> 4);
 	
 	// Immediate silence due to end of sample or soft reset
 	if ( REG(flg) & 0x80 || (m.t_brr_header & 3) == 1 )
@@ -498,7 +479,8 @@ inline void SPC_DSP::voice_output( voice_t const* v, int ch )
 		CLAMP16( m.t_echo_out [ch] );
 	}
 }
-VOICE_CLOCK( V4 )
+
+void SPC_DSP::voice_V4( voice_t* const v )
 {
 	// Decode BRR
 	m.t_looped = 0;
@@ -529,44 +511,48 @@ VOICE_CLOCK( V4 )
 	// Output left
 	voice_output( v, 0 );
 }
-inline VOICE_CLOCK( V5 )
+
+inline void SPC_DSP::voice_V5( voice_t* const v )
 {
 	// Output right
 	voice_output( v, 1 );
-	
+
 	// ENDX, OUTX, and ENVX won't update if you wrote to them 1-2 clocks earlier
 	int endx_buf = REG(endx) | m.t_looped;
-	
+
 	// Clear bit in ENDX if KON just began
 	if ( v->kon_delay == 5 )
 		endx_buf &= ~v->vbit;
 	m.endx_buf = (uint8_t) endx_buf;
 }
-inline VOICE_CLOCK( V6 )
+
+inline void SPC_DSP::voice_V6( voice_t* const v )
 {
 	(void) v; // avoid compiler warning about unused v
 	m.outx_buf = (uint8_t) (m.t_output >> 8);
 }
-inline VOICE_CLOCK( V7 )
+
+inline void SPC_DSP::voice_V7( voice_t* const v )
 {
 	// Update ENDX
 	REG(endx) = m.endx_buf;
 	
 	m.envx_buf = v->t_envx_out;
 }
-inline VOICE_CLOCK( V8 )
+
+inline void SPC_DSP::voice_V8( voice_t* const v )
 {
 	// Update OUTX
-	VREG(v->regs,outx) = m.outx_buf;
+	v->regs [v_outx] = m.outx_buf;
 }
-inline VOICE_CLOCK( V9 )
+
+inline void SPC_DSP::voice_V9( voice_t* const v )
 {
-	// Update ENVX
-	VREG(v->regs,envx) = m.envx_buf;
+	v->regs [v_envx] = m.envx_buf;
 }
 
 // Most voices do all these in one clock, so make a handy composite
-inline VOICE_CLOCK( V3 )
+inline void SPC_DSP::voice_V3( voice_t* const v )
 {
 	voice_V3a( v );
 	voice_V3b( v );
@@ -575,10 +561,26 @@ inline VOICE_CLOCK( V3 )
 
 // Common combinations of voice steps on different voices. This greatly reduces
 // code size and allows everything to be inlined in these functions.
-VOICE_CLOCK(V7_V4_V1) { voice_V7(v); voice_V1(v+3); voice_V4(v+1); }
-VOICE_CLOCK(V8_V5_V2) { voice_V8(v); voice_V5(v+1); voice_V2(v+2); }
-VOICE_CLOCK(V9_V6_V3) { voice_V9(v); voice_V6(v+1); voice_V3(v+2); }
+void SPC_DSP::voice_V7_V4_V1( voice_t* const v )
+{
+	voice_V7(v);
+	voice_V1(v+3);
+	voice_V4(v+1);
+}
 
+void SPC_DSP::voice_V8_V5_V2( voice_t* const v )
+{
+	voice_V8(v);
+	voice_V5(v+1);
+	voice_V2(v+2);
+}
+
+void SPC_DSP::voice_V9_V6_V3( voice_t* const v )
+{
+	voice_V9(v);
+	voice_V6(v+1);
+	voice_V3(v+2);
+}
 
 //// Echo
 
@@ -591,151 +593,146 @@ VOICE_CLOCK(V9_V6_V3) { voice_V9(v); voice_V6(v+1); voice_V3(v+2); }
 // Calculate FIR point for left/right channel
 #define CALC_FIR( i, ch )   ((ECHO_FIR( i + 1 ) [ch] * (int8_t) REG(fir + i * 0x10)) >> 6)
 
-#define ECHO_CLOCK( n ) inline void SPC_DSP::echo_##n()
+#define echo_read(ch) \
+	int s = GET_LE16SA( ECHO_PTR( ch ) ); \
+	/* second copy simplifies wrap-around handling */ \
+	(m.echo_hist_pos [0]) [ch] = (m.echo_hist_pos [8]) [ch] = s >> 1;
 
-inline void SPC_DSP::echo_read( int ch )
+inline void SPC_DSP::echo_22()
 {
-	int s = GET_LE16SA( ECHO_PTR( ch ) );
-	// second copy simplifies wrap-around handling
-	ECHO_FIR( 0 ) [ch] = ECHO_FIR( 8 ) [ch] = s >> 1;
-}
 
-ECHO_CLOCK( 22 )
-{
-	// History
 	if ( ++m.echo_hist_pos >= &m.echo_hist [echo_hist_size] )
 		m.echo_hist_pos = m.echo_hist;
-	
+
 	m.t_echo_ptr = (m.t_esa * 0x100 + m.echo_offset) & 0xFFFF;
-	echo_read( 0 );
-	
-	// FIR (using l and r temporaries below helps compiler optimize)
-	int l = CALC_FIR( 0, 0 );
-	int r = CALC_FIR( 0, 1 );
-	
+	echo_read(0);
+
+
+	int l = (((m.echo_hist_pos [0 + 1]) [0] * (int8_t) m.regs [r_fir + 0 * 0x10]) >> 6);
+	int r = (((m.echo_hist_pos [0 + 1]) [1] * (int8_t) m.regs [r_fir + 0 * 0x10]) >> 6);
+
 	m.t_echo_in [0] = l;
 	m.t_echo_in [1] = r;
 }
-ECHO_CLOCK( 23 )
+
+inline void SPC_DSP::echo_23()
 {
-	int l = CALC_FIR( 1, 0 ) + CALC_FIR( 2, 0 );
-	int r = CALC_FIR( 1, 1 ) + CALC_FIR( 2, 1 );
-	
+	int l = (((m.echo_hist_pos [1 + 1]) [0] * (int8_t) m.regs [r_fir + 1 * 0x10]) >> 6) + (((m.echo_hist_pos [2 + 1]) [0] * (int8_t) m.regs [r_fir + 2 * 0x10]) >> 6);
+	int r = (((m.echo_hist_pos [1 + 1]) [1] * (int8_t) m.regs [r_fir + 1 * 0x10]) >> 6) + (((m.echo_hist_pos [2 + 1]) [1] * (int8_t) m.regs [r_fir + 2 * 0x10]) >> 6);
+
 	m.t_echo_in [0] += l;
 	m.t_echo_in [1] += r;
-	
-	echo_read( 1 );
+
+	echo_read(1);
 }
-ECHO_CLOCK( 24 )
+
+inline void SPC_DSP::echo_24()
 {
-	int l = CALC_FIR( 3, 0 ) + CALC_FIR( 4, 0 ) + CALC_FIR( 5, 0 );
-	int r = CALC_FIR( 3, 1 ) + CALC_FIR( 4, 1 ) + CALC_FIR( 5, 1 );
-	
+	int l = (((m.echo_hist_pos [3 + 1]) [0] * (int8_t) m.regs [r_fir + 3 * 0x10]) >> 6) + (((m.echo_hist_pos [4 + 1]) [0] * (int8_t) m.regs [r_fir + 4 * 0x10]) >> 6) + (((m.echo_hist_pos [5 + 1]) [0] * (int8_t) m.regs [r_fir + 5 * 0x10]) >> 6);
+	int r = (((m.echo_hist_pos [3 + 1]) [1] * (int8_t) m.regs [r_fir + 3 * 0x10]) >> 6) + (((m.echo_hist_pos [4 + 1]) [1] * (int8_t) m.regs [r_fir + 4 * 0x10]) >> 6) + (((m.echo_hist_pos [5 + 1]) [1] * (int8_t) m.regs [r_fir + 5 * 0x10]) >> 6);
+
 	m.t_echo_in [0] += l;
 	m.t_echo_in [1] += r;
 }
-ECHO_CLOCK( 25 )
+
+inline void SPC_DSP::echo_25()
 {
-	int l = m.t_echo_in [0] + CALC_FIR( 6, 0 );
-	int r = m.t_echo_in [1] + CALC_FIR( 6, 1 );
-	
+	int l = m.t_echo_in [0] + (((m.echo_hist_pos [6 + 1]) [0] * (int8_t) m.regs [r_fir + 6 * 0x10]) >> 6);
+	int r = m.t_echo_in [1] + (((m.echo_hist_pos [6 + 1]) [1] * (int8_t) m.regs [r_fir + 6 * 0x10]) >> 6);
+
 	l = (int16_t) l;
 	r = (int16_t) r;
-	
-	l += (int16_t) CALC_FIR( 7, 0 );
-	r += (int16_t) CALC_FIR( 7, 1 );
-	
-	CLAMP16( l );
-	CLAMP16( r );
-	
+
+	l += (int16_t) (((m.echo_hist_pos [7 + 1]) [0] * (int8_t) m.regs [r_fir + 7 * 0x10]) >> 6);
+	r += (int16_t) (((m.echo_hist_pos [7 + 1]) [1] * (int8_t) m.regs [r_fir + 7 * 0x10]) >> 6);
+
+	if ( (int16_t) l != l )
+		l = (l >> 31) ^ 0x7FFF;
+	if ( (int16_t) r != r )
+		r = (r >> 31) ^ 0x7FFF;
+
 	m.t_echo_in [0] = l & ~1;
 	m.t_echo_in [1] = r & ~1;
 }
-inline int SPC_DSP::echo_output( int ch )
+
+#define echo_output(var, ch) \
 {
-	int out = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(mvoll + ch * 0x10)) >> 7) +
+	var = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(mvoll + ch * 0x10)) >> 7) +
 			(int16_t) ((m.t_echo_in [ch] * (int8_t) REG(evoll + ch * 0x10)) >> 7);
 	CLAMP16( out );
-	return out;
 }
-ECHO_CLOCK( 26 )
+
+inline void SPC_DSP::echo_26()
 {
-	// Left output volumes
-	// (save sample for next clock so we can output both together)
-	m.t_main_out [0] = echo_output( 0 );
-	
-	// Echo feedback
-	int l = m.t_echo_out [0] + (int16_t) ((m.t_echo_in [0] * (int8_t) REG(efb)) >> 7);
-	int r = m.t_echo_out [1] + (int16_t) ((m.t_echo_in [1] * (int8_t) REG(efb)) >> 7);
-	
-	CLAMP16( l );
-	CLAMP16( r );
-	
+	echo_output(m.t_main_out[0], 0 );
+
+	int l = m.t_echo_out [0] + (int16_t) ((m.t_echo_in [0] * (int8_t) m.regs [r_efb]) >> 7);
+	int r = m.t_echo_out [1] + (int16_t) ((m.t_echo_in [1] * (int8_t) m.regs [r_efb]) >> 7);
+
+	if ( (int16_t) l != l ) l = (l >> 31) ^ 0x7FFF;
+	if ( (int16_t) r != r ) r = (r >> 31) ^ 0x7FFF;
+
 	m.t_echo_out [0] = l & ~1;
 	m.t_echo_out [1] = r & ~1;
 }
-ECHO_CLOCK( 27 )
+
+inline void SPC_DSP::echo_27()
 {
-	// Output
+	int r;
 	int l = m.t_main_out [0];
-	int r = echo_output( 1 );
+	echo_output(r, 1);
 	m.t_main_out [0] = 0;
 	m.t_main_out [1] = 0;
-	
-	// TODO: global muting isn't this simple (turns DAC on and off
-	// or something, causing small ~37-sample pulse when first muted)
-	if ( REG(flg) & 0x40 )
+
+	if ( m.regs [r_flg] & 0x40 )
 	{
 		l = 0;
 		r = 0;
 	}
-	
-	// Output sample to DAC
-	#ifdef SPC_DSP_OUT_HOOK
-		SPC_DSP_OUT_HOOK( l, r );
-	#else
-		sample_t* out = m.out;
-		WRITE_SAMPLES( l, r, out );
-		m.out = out;
-	#endif
+
+
+	sample_t* out = m.out;
+	out [0] = l;
+	out [1] = r;
+	out += 2;
+	if ( out >= m.out_end )
+	{
+		out = m.extra;
+		m.out_end = &m.extra [extra_size];
+	}
+	m.out = out;
 }
-ECHO_CLOCK( 28 )
-{
-	m.t_echo_enabled = REG(flg);
-}
-inline void SPC_DSP::echo_write( int ch )
-{
-	if ( !(m.t_echo_enabled & 0x20) )
-		SET_LE16A( ECHO_PTR( ch ), m.t_echo_out [ch] );
+
+#define echo_28() m.t_echo_enabled = m.regs [r_flg];
+
+#define echo_write(ch) \
+	if ( !(m.t_echo_enabled & 0x20) ) \
+		SET_LE16A( ECHO_PTR( ch ), m.t_echo_out [ch] ); \
 	m.t_echo_out [ch] = 0;
-}
-ECHO_CLOCK( 29 )
+
+inline void SPC_DSP::echo_29()
 {
-	m.t_esa = REG(esa);
-	
+	m.t_esa = m.regs [r_esa];
+
 	if ( !m.echo_offset )
-		m.echo_length = (REG(edl) & 0x0F) * 0x800;
-	
+		m.echo_length = (m.regs [r_edl] & 0x0F) * 0x800;
+
 	m.echo_offset += 4;
 	if ( m.echo_offset >= m.echo_length )
 		m.echo_offset = 0;
-	
-	// Write left echo
-	echo_write( 0 );
-	
-	m.t_echo_enabled = REG(flg);
-}
-ECHO_CLOCK( 30 )
-{
-	// Write right echo
-	echo_write( 1 );
+
+
+	echo_write(0);
+
+	m.t_echo_enabled = m.regs [r_flg];
 }
 
+#define echo_30() \
+	echo_write(1);
 
 //// Timing
 
 // Execute clock for a particular voice
-#define V( clock, voice )   voice_##clock( &m.voices [voice] );
 
 /* The most common sequence of clocks uses composite operations
 for efficiency. For example, the following are equivalent to the
@@ -746,60 +743,167 @@ V(V8_V5_V2,2) -> V(V8,2) V(V5,3) V(V2,4)
 V(V9_V6_V3,2) -> V(V9,2) V(V6,3) V(V3,4) */
 
 // Voice      0      1      2      3      4      5      6      7
-#define GEN_DSP_TIMING \
-PHASE( 0)  V(V5,0)V(V2,1)\
-PHASE( 1)  V(V6,0)V(V3,1)\
-PHASE( 2)  V(V7_V4_V1,0)\
-PHASE( 3)  V(V8_V5_V2,0)\
-PHASE( 4)  V(V9_V6_V3,0)\
-PHASE( 5)         V(V7_V4_V1,1)\
-PHASE( 6)         V(V8_V5_V2,1)\
-PHASE( 7)         V(V9_V6_V3,1)\
-PHASE( 8)                V(V7_V4_V1,2)\
-PHASE( 9)                V(V8_V5_V2,2)\
-PHASE(10)                V(V9_V6_V3,2)\
-PHASE(11)                       V(V7_V4_V1,3)\
-PHASE(12)                       V(V8_V5_V2,3)\
-PHASE(13)                       V(V9_V6_V3,3)\
-PHASE(14)                              V(V7_V4_V1,4)\
-PHASE(15)                              V(V8_V5_V2,4)\
-PHASE(16)                              V(V9_V6_V3,4)\
-PHASE(17)  V(V1,0)                            V(V7,5)V(V4,6)\
-PHASE(18)                                     V(V8_V5_V2,5)\
-PHASE(19)                                     V(V9_V6_V3,5)\
-PHASE(20)         V(V1,1)                            V(V7,6)V(V4,7)\
-PHASE(21)                                            V(V8,6)V(V5,7)  V(V2,0)  /* t_brr_next_addr order dependency */\
-PHASE(22)  V(V3a,0)                                  V(V9,6)V(V6,7)  echo_22();\
-PHASE(23)                                                   V(V7,7)  echo_23();\
-PHASE(24)                                                   V(V8,7)  echo_24();\
-PHASE(25)  V(V3b,0)                                         V(V9,7)  echo_25();\
-PHASE(26)                                                            echo_26();\
-PHASE(27) misc_27();                                                 echo_27();\
-PHASE(28) misc_28();                                                 echo_28();\
-PHASE(29) misc_29();                                                 echo_29();\
-PHASE(30) misc_30();V(V3c,0)                                         echo_30();\
-PHASE(31)  V(V4,0)       V(V1,2)\
-
-#if !SPC_DSP_CUSTOM_RUN
-
 void SPC_DSP::run( int clocks_remain )
 {
 	int const phase = m.phase;
 	m.phase = (phase + clocks_remain) & 31;
 	switch ( phase )
 	{
-	loop:
-	
-		#define PHASE( n ) if ( n && !--clocks_remain ) break; case n:
-		GEN_DSP_TIMING
-		#undef PHASE
-	
+loop:
+		if ( 0 && !--clocks_remain )
+			break;
+		case 0:
+		voice_V5( &m.voices [0] );
+		voice_V2( &m.voices [1] );
+		if ( 1 && !--clocks_remain )
+			break;
+		case 1:
+		voice_V6( &m.voices [0] );
+		voice_V3( &m.voices [1] );
+		if ( 2 && !--clocks_remain )
+			break;
+		case 2:
+		voice_V7_V4_V1( &m.voices [0] );
+		if ( 3 && !--clocks_remain )
+			break;
+		case 3:
+		voice_V8_V5_V2( &m.voices [0] );
+		if ( 4 && !--clocks_remain )
+			break;
+		case 4:
+		voice_V9_V6_V3( &m.voices [0] );
+		if ( 5 && !--clocks_remain )
+			break;
+		case 5:
+		voice_V7_V4_V1( &m.voices [1] );
+		if ( 6 && !--clocks_remain )
+			break;
+		case 6:
+		voice_V8_V5_V2( &m.voices [1] );
+		if ( 7 && !--clocks_remain )
+			break;
+		case 7:
+		voice_V9_V6_V3( &m.voices [1] );
+		if ( 8 && !--clocks_remain )
+			break;
+		case 8:
+		voice_V7_V4_V1( &m.voices [2] );
+		if ( 9 && !--clocks_remain )
+			break;
+		case 9:
+		voice_V8_V5_V2( &m.voices [2] );
+		if ( 10 && !--clocks_remain )
+			break;
+		case 10:
+		voice_V9_V6_V3( &m.voices [2] );
+		if ( 11 && !--clocks_remain )
+			break;
+		case 11:
+		voice_V7_V4_V1( &m.voices [3] );
+		if ( 12 && !--clocks_remain )
+			break;
+		case 12:
+		voice_V8_V5_V2( &m.voices [3] );
+		if ( 13 && !--clocks_remain )
+			break;
+		case 13:
+		voice_V9_V6_V3( &m.voices [3] );
+		if ( 14 && !--clocks_remain )
+			break;
+		case 14:
+		voice_V7_V4_V1( &m.voices [4] );
+		if ( 15 && !--clocks_remain )
+			break;
+		case 15:
+		voice_V8_V5_V2( &m.voices [4] );
+		if ( 16 && !--clocks_remain )
+			break;
+		case 16:
+		voice_V9_V6_V3( &m.voices [4] );
+		if ( 17 && !--clocks_remain )
+			break;
+		case 17:
+		voice_V1( &m.voices [0] );
+		voice_V7( &m.voices [5] );
+		voice_V4( &m.voices [6] );
+		if ( 18 && !--clocks_remain )
+			break;
+		case 18:
+		voice_V8_V5_V2( &m.voices [5] );
+		if ( 19 && !--clocks_remain )
+			break;
+		case 19:
+		voice_V9_V6_V3( &m.voices [5] );
+		if ( 20 && !--clocks_remain )
+			break;
+		case 20:
+		voice_V1( &m.voices [1] );
+		voice_V7( &m.voices [6] );
+		voice_V4( &m.voices [7] );
+		if ( 21 && !--clocks_remain )
+			break;
+		case 21:
+		voice_V8( &m.voices [6] );
+		voice_V5( &m.voices [7] );
+		voice_V2( &m.voices [0] );
+		if ( 22 && !--clocks_remain )
+			break;
+		case 22:
+		voice_V3a( &m.voices [0] );
+		voice_V9( &m.voices [6] );
+		voice_V6( &m.voices [7] );
+		echo_22();
+		if ( 23 && !--clocks_remain )
+			break;
+		case 23:
+		voice_V7( &m.voices [7] );
+		echo_23();
+		if ( 24 && !--clocks_remain )
+			break;
+		case 24:
+		voice_V8( &m.voices [7] );
+		echo_24();
+		if ( 25 && !--clocks_remain )
+			break;
+		case 25:
+		voice_V3b( &m.voices [0] );
+		voice_V9( &m.voices [7] );
+		echo_25();
+		if ( 26 && !--clocks_remain )
+			break;
+		case 26:
+		echo_26();
+		if ( 27 && !--clocks_remain )
+			break;
+		case 27:
+		misc_27();
+		echo_27();
+		if ( 28 && !--clocks_remain )
+			break;
+		case 28:
+		misc_28();
+		echo_28();
+		if ( 29 && !--clocks_remain )
+			break;
+		case 29:
+		misc_29();
+		echo_29();
+		if ( 30 && !--clocks_remain )
+			break;
+		case 30:
+		misc_30();
+		voice_V3c( &m.voices [0] );
+		echo_30();
+		if ( 31 && !--clocks_remain )
+			break;
+		case 31:
+		voice_V4( &m.voices [0] );
+		voice_V1( &m.voices [2] );
+
 		if ( --clocks_remain )
 			goto loop;
 	}
 }
-
-#endif
 
 
 //// Setup
@@ -807,8 +911,6 @@ void SPC_DSP::run( int clocks_remain )
 void SPC_DSP::init( void* ram_64k )
 {
 	m.ram = (uint8_t*) ram_64k;
-	mute_voices( 0 );
-	disable_surround( false );
 	set_output( 0, 0 );
 	reset();
 
@@ -855,8 +957,10 @@ void SPC_DSP::load( uint8_t const regs [register_count] )
 	soft_reset_common();
 }
 
-void SPC_DSP::reset() { load( initial_regs ); }
-
+void SPC_DSP::reset()
+{
+	load( initial_regs );
+}
 
 //// State save/load
 

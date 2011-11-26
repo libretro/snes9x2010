@@ -120,20 +120,12 @@ int SNES_SPC::dsp_read( rel_time_t time )
 	
 	int result = dsp.read( REGS [r_dspaddr] & 0x7F );
 	
-	#ifdef SPC_DSP_READ_HOOK
-		SPC_DSP_READ_HOOK( spc_time + time, (REGS [r_dspaddr] & 0x7F), result );
-	#endif
-	
 	return result;
 }
 
 inline void SNES_SPC::dsp_write( int data, rel_time_t time )
 {
 	RUN_DSP( time, reg_times [REGS [r_dspaddr]] )
-	
-	#ifdef SPC_DSP_WRITE_HOOK
-		SPC_DSP_WRITE_HOOK( m.spc_time + time, REGS [r_dspaddr], (uint8_t) data );
-	#endif
 	
 	if ( REGS [r_dspaddr] <= 0x7F )
 		dsp.write( REGS [r_dspaddr], data );

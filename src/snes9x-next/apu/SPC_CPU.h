@@ -138,10 +138,6 @@ loop:
 	unsigned opcode;
 	unsigned data;
 	
-	check( (unsigned) a < 0x100 );
-	check( (unsigned) x < 0x100 );
-	check( (unsigned) y < 0x100 );
-	
 	opcode = *pc;
 	if (allow_time_overflow && rel_time >= 0 )
 		goto stop;

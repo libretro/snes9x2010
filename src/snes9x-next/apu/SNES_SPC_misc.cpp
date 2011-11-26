@@ -26,10 +26,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 // (n ? n : 256)
 #define IF_0_THEN_256( n ) ((uint8_t) ((n) - 1) + 1)
 
-
 //// Init
 
-blargg_err_t SNES_SPC::init()
+void SNES_SPC::init()
 {
 	memset( &m, 0, sizeof m );
 	dsp.init( RAM );

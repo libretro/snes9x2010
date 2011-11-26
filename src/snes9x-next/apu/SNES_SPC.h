@@ -12,7 +12,7 @@ public:
 	typedef BOOST::uint8_t uint8_t;
 	
 	// Must be called once before using
-	blargg_err_t init();
+	void init();
 	
 	// Sample pairs generated per second
 	enum { sample_rate = 32000 };
@@ -58,10 +58,6 @@ public:
 	// Reduces emulation accuracy.
 	enum { voice_count = 8 };
 	void mute_voices( int mask );
-	
-	// If true, prevents channels and global volumes from being phase-negated.
-	// Only supported by fast DSP.
-	void disable_surround( bool disable = true );
 	
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	enum { tempo_unit = 0x100 };
@@ -238,8 +234,6 @@ inline void SNES_SPC::write_port( time_t t, int port, int data )
 
 inline void SNES_SPC::mute_voices( int mask ) { dsp.mute_voices( mask ); }
 	
-inline void SNES_SPC::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
-
 inline void SNES_SPC::spc_allow_time_overflow( bool allow ) { allow_time_overflow = allow; }
 
 #endif
