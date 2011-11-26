@@ -232,8 +232,8 @@ static int rb_size;
 static int rb_buffer_size;
 static int rb_start;
 static unsigned char *rb_buffer;
-static double r_step;
-static double r_frac;
+static float r_step;
+static float r_frac;
 static int    r_left[4], r_right[4];
 
 #define SPACE_EMPTY() (rb_buffer_size - rb_size)
@@ -245,26 +245,17 @@ static int    r_left[4], r_right[4];
 #define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 #define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
 
-static double hermite (double mu1, double a, double b, double c, double d)
+static float hermite (float mu1, float a, float b, float c, float d)
 {
-	const double tension = 0.0; //-1 = low, 0 = normal, 1 = high
-	const double bias    = 0.0; //-1 = left, 0 = even, 1 = right
-
-	double mu2, mu3, m0, m1, a0, a1, a2, a3;
-
+	float mu2, mu3, m0, m1, a0, a1, a2, a3;
 	mu2 = mu1 * mu1;
 	mu3 = mu2 * mu1;
-
-	m0  = (b - a) * (1 + bias) * (1 - tension) / 2;
-	m0 += (c - b) * (1 - bias) * (1 - tension) / 2;
-	m1  = (c - b) * (1 + bias) * (1 - tension) / 2;
-	m1 += (d - c) * (1 - bias) * (1 - tension) / 2;
-
+	m0  = (c - a) * 0.5;
+	m1  = (d - b) * 0.5;
 	a0 = +2 * mu3 - 3 * mu2 + 1;
 	a1 =      mu3 - 2 * mu2 + mu1;
 	a2 =      mu3 -     mu2;
 	a3 = -2 * mu3 + 3 * mu2;
-
 	return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }
 
@@ -297,20 +288,6 @@ static void resampler_read(short *data, int num_samples)
 		int s_left = internal_buffer[i_position];
 		int s_right = internal_buffer[i_position + 1];
 		int max_samples = rb_buffer_size >> 1;
-		const double margin_of_error = 1.0e-10;
-
-		if (fabs(r_step - 1.0) < margin_of_error)
-		{
-			data[o_position] = (short) s_left;
-			data[o_position + 1] = (short) s_right;
-
-			o_position += 2; i_position += 2;
-			if (i_position >= max_samples)
-				i_position -= max_samples;
-			consumed += 2;
-
-			continue;
-		}
 
 		while (r_frac <= 1.0 && o_position < num_samples)
 		{
