@@ -8,25 +8,6 @@
 
 extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t ); }
 
-// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
-// Reduces emulation accuracy.
-#define VOICE_COUNT 8
-
-#define BRR_BLOCK_SIZE 9
-
-// Global DSP registers
-enum {
-    R_MVOLL = 0x0C, R_MVOLR = 0x1C,
-    R_EVOLL = 0x2C, R_EVOLR = 0x3C,
-    R_KON   = 0x4C, R_KOFF  = 0x5C,
-    R_FLG   = 0x6C, R_ENDX  = 0x7C,
-    R_EFB   = 0x0D, R_PMON  = 0x2D,
-    R_NON   = 0x3D, R_EON   = 0x4D,
-    R_DIR   = 0x5D, R_ESA   = 0x6D,
-    R_EDL   = 0x7D,
-    R_FIR   = 0x0F // 8 coefficients at 0x0F, 0x1F ... 0x7F
-};
-
 class SPC_DSP {
 public:
 	typedef BOOST::uint8_t uint8_t;
@@ -40,6 +21,11 @@ public:
 	// doesn't generate any.
 	typedef short sample_t;
 	void set_output( sample_t* out, int out_size );
+
+	// Number of samples written to output since it was last set, always
+	// a multiple of 2. Undefined if more samples were generated than
+	// output buffer could hold.
+	int sample_count() const;
 
 // Emulation
 
@@ -58,6 +44,13 @@ public:
 	// a pair of samples is be generated.
 	void run( int clock_count );
 	
+// Sound control
+
+	// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
+	// Reduces emulation accuracy.
+	enum { voice_count = 8 };
+	void mute_voices( int mask );
+
 // State
 	
 	// Resets DSP and uses supplied values to initialize registers
@@ -69,12 +62,31 @@ public:
 	typedef dsp_copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
 
+	// Returns non-zero if new key-on events occurred since last call
+	bool check_kon();
+
 // Snes9x Accessor
-	int rom_enabled; // mirror
-	uint8_t *rom, *hi_ram; // mirror
+
+	int  stereo_switch;
+
+	void    set_stereo_switch( int );
+	uint8_t reg_value( int, int );
+	int     envx_value( int );
 
 // DSP register addresses
 
+	// Global registers
+	enum {
+	    r_mvoll = 0x0C, r_mvolr = 0x1C,
+	    r_evoll = 0x2C, r_evolr = 0x3C,
+	    r_kon   = 0x4C, r_koff  = 0x5C,
+	    r_flg   = 0x6C, r_endx  = 0x7C,
+	    r_efb   = 0x0D, r_pmon  = 0x2D,
+	    r_non   = 0x3D, r_eon   = 0x4D,
+	    r_dir   = 0x5D, r_esa   = 0x6D,
+	    r_edl   = 0x7D,
+	    r_fir   = 0x0F // 8 coefficients at 0x0F, 0x1F ... 0x7F
+	};
 
 	// Voice registers
 	enum {
@@ -89,6 +101,7 @@ public:
 	enum { extra_size = 16 };
 	sample_t* extra()               { return m.extra; }
 	sample_t const* out_pos() const { return m.out; }
+	void disable_surround( bool ) { } // not supported
 public:
 	BLARGG_DISABLE_NOTHROW
 	
@@ -113,8 +126,10 @@ public:
 		int env;                // current envelope level
 		int hidden_env;         // used by GAIN mode 7, very obscure quirk
 		uint8_t t_envx_out;
+		int voice_number;
 	};
 private:
+	enum { brr_block_size = 9 };
 	
 	struct state_t
 	{
@@ -131,6 +146,7 @@ private:
 		int echo_offset;        // offset from ESA in echo buffer
 		int echo_length;        // number of bytes that echo_offset will stop at
 		int phase;              // next clock cycle to run (0-31)
+		bool kon_check;         // set when a new KON occurs
 		
 		// Hidden registers also written to when main register is written to
 		int new_kon;
@@ -168,10 +184,11 @@ private:
 		int t_echo_out [2];
 		int t_echo_in  [2];
 		
-		voice_t voices [VOICE_COUNT];
+		voice_t voices [voice_count];
 		
 		// non-emulation state
 		uint8_t* ram; // 64K shared RAM between DSP and SMP
+		int mute_mask;
 		sample_t* out;
 		sample_t* out_end;
 		sample_t* out_begin;
@@ -179,30 +196,53 @@ private:
 	};
 	state_t m;
 	
+	void init_counter();
+	void run_counters();
 	unsigned read_counter( int rate );
 	
 	int  interpolate( voice_t const* v );
 	void run_envelope( voice_t* const v );
 	void decode_brr( voice_t* v );
 
+	void misc_27();
+	void misc_28();
+	void misc_29();
 	void misc_30();
 
 	void voice_output( voice_t const* v, int ch );
+	void voice_V1( voice_t* const );
 	void voice_V2( voice_t* const );
+	void voice_V3( voice_t* const );
+	void voice_V3a( voice_t* const );
+	void voice_V3b( voice_t* const );
 	void voice_V3c( voice_t* const );
 	void voice_V4( voice_t* const );
 	void voice_V5( voice_t* const );
+	void voice_V6( voice_t* const );
+	void voice_V7( voice_t* const );
+	void voice_V8( voice_t* const );
+	void voice_V9( voice_t* const );
 	void voice_V7_V4_V1( voice_t* const );
 	void voice_V8_V5_V2( voice_t* const );
 	void voice_V9_V6_V3( voice_t* const );
 
+	void echo_read( int ch );
+	int  echo_output( int ch );
+	void echo_write( int ch );
 	void echo_22();
+	void echo_23();
+	void echo_24();
+	void echo_25();
 	void echo_26();
 	void echo_27();
+	void echo_28();
 	void echo_29();
+	void echo_30();
 	
 	void soft_reset_common();
 };
+
+inline int SPC_DSP::sample_count() const { return m.out - m.out_begin; }
 
 inline int SPC_DSP::read( int addr ) const
 {
@@ -223,16 +263,25 @@ inline void SPC_DSP::write( int addr, int data )
 		break;
 	
 	case 0x0C:
-		if ( addr == R_KON )
+		if ( addr == r_kon )
 			m.new_kon = (uint8_t) data;
 		
-		if ( addr == R_ENDX ) // always cleared, regardless of data written
+		if ( addr == r_endx ) // always cleared, regardless of data written
 		{
 			m.endx_buf = 0;
-			m.regs [R_ENDX] = 0;
+			m.regs [r_endx] = 0;
 		}
 		break;
 	}
+}
+
+inline void SPC_DSP::mute_voices( int mask ) { m.mute_mask = mask; }
+
+inline bool SPC_DSP::check_kon()
+{
+	bool old = m.kon_check;
+	m.kon_check = 0;
+	return old;
 }
 
 #if !SPC_NO_COPY_STATE_FUNCS
@@ -256,3 +305,4 @@ public:
 #endif
 
 #endif
+

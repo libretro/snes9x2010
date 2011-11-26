@@ -89,3 +89,4 @@ void SNES_SPC::copy_state( unsigned char** io, copy_func_t copy )
 	copier.extra();
 }
 #endif
+

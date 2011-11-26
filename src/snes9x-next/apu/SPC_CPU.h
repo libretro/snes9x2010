@@ -13,7 +13,12 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 //// Memory access
 //#define SUSPICIOUS_OPCODE( name ) dprintf( "SPC: suspicious opcode: " name "\n" )
-//#define SUSPICIOUS_OPCODE( name )
+
+#if SPC_MORE_ACCURACY
+	#define SUSPICIOUS_OPCODE( name ) ((void) 0)
+#else
+	#define SUSPICIOUS_OPCODE( name )
+#endif
 
 #define CPU_READ( time, offset, addr )\
 	cpu_read( addr, time + offset )
@@ -21,28 +26,34 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define CPU_WRITE( time, offset, addr, data )\
 	cpu_write( data, addr, time + offset )
 
-// timers are by far the most common thing read from dp
-#define CPU_READ_TIMER( time, offset, addr_, out )\
-{\
-	rel_time_t adj_time = time + offset;\
-	int dp_addr = addr_;\
-	int ti = dp_addr - (r_t0out + 0xF0);\
-	if ( (unsigned) ti < timer_count )\
+#if SPC_MORE_ACCURACY
+	#define CPU_READ_TIMER( time, offset, addr, out )\
+		{ out = CPU_READ( time, offset, addr ); }
+
+#else
+	// timers are by far the most common thing read from dp
+	#define CPU_READ_TIMER( time, offset, addr_, out )\
 	{\
-		Timer* t = &m.timers [ti];\
-		if ( adj_time >= t->next_time )\
-		t = run_timer_( t, adj_time );\
-		out = t->counter;\
-		t->counter = 0;\
-	}\
-	else\
-	{\
-		out = ram [dp_addr];\
-		int i = dp_addr - 0xF0;\
-		if ( (unsigned) i < 0x10 )\
-		out = cpu_read_smp_reg( i, adj_time );\
-	}\
-}
+		rel_time_t adj_time = time + offset;\
+		int dp_addr = addr_;\
+		int ti = dp_addr - (r_t0out + 0xF0);\
+		if ( (unsigned) ti < timer_count )\
+		{\
+			Timer* t = &m.timers [ti];\
+			if ( adj_time >= t->next_time )\
+				t = run_timer_( t, adj_time );\
+			out = t->counter;\
+			t->counter = 0;\
+		}\
+		else\
+		{\
+			out = ram [dp_addr];\
+			int i = dp_addr - 0xF0;\
+			if ( (unsigned) i < 0x10 )\
+				out = cpu_read_smp_reg( i, adj_time );\
+		}\
+	}
+#endif
 
 #define TIME_ADJ( n )   (n)
 
@@ -64,7 +75,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define READ_PC16( pc ) GET_LE16( pc )
 
 // TODO: remove non-wrapping versions?
-#define SPC_NO_SP_WRAPAROUND 1
+#define SPC_NO_SP_WRAPAROUND 0
 
 #define SET_SP( v )     (sp = ram + 0x101 + (v))
 #define GET_SP()        (sp - 0x101 - ram)
@@ -181,6 +192,10 @@ loop:
 	unsigned opcode;
 	unsigned data;
 	
+	check( (unsigned) a < 0x100 );
+	check( (unsigned) x < 0x100 );
+	check( (unsigned) y < 0x100 );
+	
 	opcode = *pc;
 	if (allow_time_overflow && rel_time >= 0 )
 		goto stop;
@@ -272,6 +287,7 @@ loop:
 		int temp = READ_PC( pc + 1 );
 		pc += 2;
 		
+		#if !SPC_MORE_ACCURACY
 		{
 			int i = dp + temp;
 			ram [i] = (uint8_t) data;
@@ -283,19 +299,18 @@ loop:
 				// Registers other than $F2 and $F4-$F7
 				//if ( i != 2 && i != 4 && i != 5 && i != 6 && i != 7 )
 				if ( ((~0x2F00 << (bits_in_int - 16)) << i) < 0 ) // 12%
-				{
-					if (i == r_dspdata)	// 99%
-						dsp_write(data, rel_time);
-					else
-						cpu_write_smp_reg_( data, rel_time, i );
-				}
+					cpu_write_smp_reg( data, rel_time, i );
 			}
 		}
+		#else
+			WRITE_DP( 0, temp, data );
+		#endif
 		goto loop;
 	}
 	
 	case 0xC4: // MOV dp,a
 		++pc;
+		#if !SPC_MORE_ACCURACY
 		{
 			int i = dp + data;
 			ram [i] = (uint8_t) a;
@@ -311,6 +326,9 @@ loop:
 					cpu_write_smp_reg_( a, rel_time, i );
 			}
 		}
+		#else
+			WRITE_DP( 0, data, a );
+		#endif
 		goto loop;
 	
 #define CASE( n )   case n:
@@ -830,7 +848,7 @@ loop:
 // 11. DECIMAL COMPENSATION COMMANDS
 	
 	case 0xDF: // DAA
-		//SUSPICIOUS_OPCODE( "DAA" );
+		SUSPICIOUS_OPCODE( "DAA" );
 		if ( a > 0x99 || c & 0x100 )
 		{
 			a += 0x60;
@@ -845,7 +863,7 @@ loop:
 		goto loop;
 	
 	case 0xBE: // DAS
-		//SUSPICIOUS_OPCODE( "DAS" );
+		SUSPICIOUS_OPCODE( "DAS" );
 		if ( a > 0x99 || !(c & 0x100) )
 		{
 			a -= 0x60;
@@ -944,7 +962,7 @@ loop:
 	case 0x0F:{// BRK
 		int temp;
 		int ret_addr = GET_PC();
-		//SUSPICIOUS_OPCODE( "BRK" );
+		SUSPICIOUS_OPCODE( "BRK" );
 		SET_PC( READ_PROG16( 0xFFDE ) ); // vector address verified
 		PUSH16( ret_addr );
 		GET_PSW( temp );
@@ -1148,12 +1166,12 @@ loop:
 		goto loop;
 	
 	case 0xA0: // EI
-		//SUSPICIOUS_OPCODE( "EI" );
+		SUSPICIOUS_OPCODE( "EI" );
 		psw |= i04;
 		goto loop;
 	
 	case 0xC0: // DI
-		//SUSPICIOUS_OPCODE( "DI" );
+		SUSPICIOUS_OPCODE( "DI" );
 		psw &= ~i04;
 		goto loop;
 	
@@ -1169,15 +1187,16 @@ loop:
 		{
 			addr &= 0xFFFF;
 			SET_PC( addr );
-			//dprintf( "SPC: PC wrapped around\n" );
+			dprintf( "SPC: PC wrapped around\n" );
 			goto loop;
 		}
 	}
 	// fall through
 	case 0xEF: // SLEEP
-		//SUSPICIOUS_OPCODE( "STOP/SLEEP" );
+		SUSPICIOUS_OPCODE( "STOP/SLEEP" );
 		--pc;
 		rel_time = 0;
+		m.cpu_error = "SPC emulation error";
 		goto stop;
 	} // switch
 }   
@@ -1186,10 +1205,8 @@ out_of_time:
 stop:
 	
 	// Uncache registers
-	#if 0
 	if ( GET_PC() >= 0x10000 )
 		dprintf( "SPC: PC wrapped around\n" );
-	#endif
 	m.cpu_regs.pc = (uint16_t) GET_PC();
 	m.cpu_regs.sp = ( uint8_t) GET_SP();
 	m.cpu_regs.a  = ( uint8_t) a;
@@ -1202,3 +1219,4 @@ stop:
 	}
 }
 SPC_CPU_RUN_FUNC_END
+

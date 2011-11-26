@@ -7,14 +7,12 @@
 #include "SPC_DSP.h"
 #include "blargg_endian.h"
 
-#define PORT_COUNT 4
-
 struct SNES_SPC {
 public:
 	typedef BOOST::uint8_t uint8_t;
 	
 	// Must be called once before using
-	void init();
+	blargg_err_t init();
 	
 	// Sample pairs generated per second
 	enum { sample_rate = 32000 };
@@ -43,20 +41,49 @@ public:
 
 	// 1024000 SPC clocks per second, sample pair every 32 clocks
 	typedef int time_t;
+	enum { clock_rate = 1024000 };
 	enum { clocks_per_sample = 32 };
 	
 	// Emulated port read/write at specified time
-	void write_port(int port, int data );
+	enum { port_count = 4 };
+	int  read_port ( time_t, int port );
+	void write_port( time_t, int port, int data );
 
 	// Runs SPC to end_time and starts a new time frame at 0
 	void end_frame( time_t end_time );
 	
 // Sound control
 	
+	// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
+	// Reduces emulation accuracy.
+	enum { voice_count = 8 };
+	void mute_voices( int mask );
+	
+	// If true, prevents channels and global volumes from being phase-negated.
+	// Only supported by fast DSP.
+	void disable_surround( bool disable = true );
+	
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	enum { tempo_unit = 0x100 };
 	void set_tempo( int );
 
+// SPC music files
+
+	// Loads SPC data into emulator
+	enum { spc_min_file_size = 0x10180 };
+	enum { spc_file_size     = 0x10200 };
+	blargg_err_t load_spc( void const* in, long size );
+	
+	// Clears echo region. Useful after loading an SPC as many have garbage in echo.
+	void clear_echo();
+
+	// Plays for count samples and write samples to out. Discards samples if out
+	// is NULL. Count must be a multiple of 2 since output is stereo.
+	blargg_err_t play( int count, sample_t* out );
+	
+	// Skips count samples. Several times faster than play() when using fast DSP.
+	blargg_err_t skip( int count );
+	
 // State save/load (only available with accurate DSP)
 
 #if !SPC_NO_COPY_STATE_FUNCS
@@ -64,11 +91,20 @@ public:
 	enum { state_size = 68 * 1024L }; // maximum space needed when saving
 	typedef SPC_DSP::copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
+	
+	// Returns true if new key-on events occurred since last check. Useful for
+	// trimming silence while saving an SPC.
+	bool check_kon();
 #endif
 
 //// Snes9x Accessor
 
 	void	spc_allow_time_overflow( bool );
+
+	void    dsp_set_stereo_switch( int );
+	uint8_t dsp_reg_value( int, int );
+	int     dsp_envx_value( int );
+
 public:
 	BLARGG_DISABLE_NOTHROW
 	
@@ -92,14 +128,18 @@ public:
 	enum { timer_count = 3 };
 	enum { extra_size = SPC_DSP::extra_size };
 	
+	enum { signature_size = 35 };
+
 	// Support SNES_MEMORY_APURAM
 	uint8_t *apuram();
-	uint8_t* run_until_( time_t end_time );
+	
 private:
 	SPC_DSP dsp;
 	
-	static signed char const reg_times_ [256];
-	signed char reg_times [256];
+	#if SPC_LESS_ACCURATE
+		static signed char const reg_times_ [256];
+		signed char reg_times [256];
+	#endif
 	
 	struct state_t
 	{
@@ -119,8 +159,12 @@ private:
 		
 		rel_time_t  dsp_time;
 		time_t      spc_time;
+		bool        echo_accessed;
 		
 		int         tempo;
+		int         skipped_kon;
+		int         skipped_koff;
+		const char* cpu_error;
 		
 		int         extra_clocks;
 		sample_t*   buf_begin;
@@ -148,6 +192,8 @@ private:
 	state_t m;
 	
 	enum { rom_addr = 0xFFC0 };
+	
+	enum { skipping_time = 127 };
 	
 	// Value that padding should be filled with
 	enum { cpu_pad_fill = 0xFF };
@@ -177,18 +223,62 @@ private:
 	int dsp_read           ( rel_time_t );
 	void dsp_write         ( int data, rel_time_t );
 	void cpu_write_smp_reg_( int data, rel_time_t, int addr );
+	void cpu_write_smp_reg ( int data, rel_time_t, int addr );
 	void cpu_write_high    ( int data, int i, rel_time_t );
 	void cpu_write         ( int data, int addr, rel_time_t );
 	int cpu_read_smp_reg   ( int i, rel_time_t );
 	int cpu_read           ( int addr, rel_time_t );
 	unsigned CPU_mem_bit   ( uint8_t const* pc, rel_time_t );
+	
+	bool check_echo_access ( int addr );
+	uint8_t* run_until_( time_t end_time );
+	
+	struct spc_file_t
+	{
+		char    signature [signature_size];
+		uint8_t has_id666;
+		uint8_t version;
+		uint8_t pcl, pch;
+		uint8_t a;
+		uint8_t x;
+		uint8_t y;
+		uint8_t psw;
+		uint8_t sp;
+		char    text [212];
+		uint8_t ram [0x10000];
+		uint8_t dsp [128];
+		uint8_t unused [0x40];
+		uint8_t ipl_rom [0x40];
+	};
+
+	static char const signature [signature_size + 1];
+	
 // Snes9x timing hack
 	bool allow_time_overflow;
 };
 
 inline int SNES_SPC::sample_count() const { return (m.extra_clocks >> 5) * 2; }
-inline void SNES_SPC::write_port(int port, int data ) { m.ram.ram [0xF4 + port] = data; }
+
+inline int SNES_SPC::read_port( time_t t, int port )
+{
+	return run_until_( t ) [port];
+}
+
+inline void SNES_SPC::write_port( time_t t, int port, int data )
+{
+	run_until_( t ) [0x10 + port] = data;
+	m.ram.ram [0xF4 + port] = data;
+}
+
+inline void SNES_SPC::mute_voices( int mask ) { dsp.mute_voices( mask ); }
+	
+inline void SNES_SPC::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
+
+#if !SPC_NO_COPY_STATE_FUNCS
+inline bool SNES_SPC::check_kon() { return dsp.check_kon(); }
+#endif
 
 inline void SNES_SPC::spc_allow_time_overflow( bool allow ) { allow_time_overflow = allow; }
 
 #endif
+
