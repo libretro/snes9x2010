@@ -73,6 +73,9 @@ static heap_cntrl mem2_heap;
 static short soundbuffer[2][AUDIOBUFFER] __attribute__ ((__aligned__ (32)));
 static int whichab = 0;	/*** Audio buffer flip switch ***/
 
+static lwpq_t audioqueue;
+static mutex_t audiomutex = LWP_MUTEX_NULL;
+
 /****************************************************************************
  * AUDIO
  ***************************************************************************/
@@ -82,15 +85,21 @@ static int whichab = 0;	/*** Audio buffer flip switch ***/
  ***************************************************************************/
 static void MixSamples()
 {
+
 	whichab ^= 1;
 	AUDIO_InitDMA ((u32) soundbuffer[whichab], AUDIOBUFFER);
+	LWP_MutexLock(audiomutex);
 	S9xMixSamples (soundbuffer[whichab], AUDIOBUFFER >> 1);
+	LWP_MutexUnlock(audiomutex);
 	DCFlushRange (soundbuffer[whichab], AUDIOBUFFER);
+	LWP_ThreadSignal(audioqueue);
 }
 
 static void FinalizeSamplesCallback(void)
 { 
+	LWP_MutexLock(audiomutex);
 	S9xFinalizeSamples();
+	LWP_MutexUnlock(audiomutex);
 }
 
 static void InitAudio ()
@@ -98,6 +107,8 @@ static void InitAudio ()
 	AUDIO_Init(NULL);
 	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
 	AUDIO_RegisterDMACallback(MixSamples);
+	LWP_InitQueue(&audioqueue);
+	LWP_MutexInit(&audiomutex, false);
 }
 
 /****************************************************************************
@@ -757,6 +768,8 @@ int main(int argc, char *argv[])
 		{
 			S9xMainLoop ();
 			ReportButtons ();
+			while(!S9xSyncSound())
+				LWP_ThreadSleep(audioqueue);
 
 			if(ResetRequested)
 			{
