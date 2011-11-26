@@ -59,7 +59,6 @@ static int mapMenuCtrlSNES = 0;
 
 static lwp_t guithread = LWP_THREAD_NULL;
 static lwp_t progressthread = LWP_THREAD_NULL;
-static lwp_t updatethread = LWP_THREAD_NULL;
 static bool guiHalt = true;
 static int showProgress = 0;
 
@@ -3478,9 +3477,6 @@ MainMenu (int menu)
 
 	CancelAction();
 	HaltGui();
-
-	if(updatethread != LWP_THREAD_NULL)
-		LWP_JoinThread(updatethread, NULL);
 
 	delete btnLogo;
 	delete gameScreenImg;
