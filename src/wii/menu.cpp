@@ -57,6 +57,7 @@ static int lastMenu = MENU_NONE;
 static int mapMenuCtrl = 0;
 static int mapMenuCtrlSNES = 0;
 
+static lwp_t guithread = LWP_THREAD_NULL;
 static lwp_t progressthread = LWP_THREAD_NULL;
 static bool guiHalt = true;
 static int showProgress = 0;
@@ -65,6 +66,36 @@ static char progressTitle[101];
 static char progressMsg[201];
 static int progressDone = 0;
 static int progressTotal = 0;
+
+/****************************************************************************
+ * ResumeGui
+ *
+ * Signals the GUI thread to start, and resumes the thread. This is called
+ * after finishing the removal/insertion of new elements, and after initial
+ * GUI setup.
+ ***************************************************************************/
+static void ResumeGui()
+{
+	guiHalt = false;
+	LWP_ResumeThread (guithread);
+}
+
+/****************************************************************************
+ * HaltGui
+ *
+ * Signals the GUI thread to stop, and waits for GUI thread to stop
+ * This is necessary whenever removing/inserting new elements into the GUI.
+ * This eliminates the possibility that the GUI is in the middle of accessing
+ * an element that is being changed.
+ ***************************************************************************/
+static void HaltGui()
+{
+	guiHalt = true;
+
+	// wait for thread to finish
+	while(!LWP_ThreadIsSuspended(guithread))
+		usleep(THREAD_SLEEP);
+}
 
 void ResetText()
 {
@@ -151,6 +182,7 @@ int WindowPrompt(const char *title, const char *msg, const char *btn1Label, cons
 
 	promptWindow.SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_IN, 50);
 	CancelAction();
+	HaltGui();
 	mainWindow->SetState(STATE_DISABLED);
 	mainWindow->Append(&promptWindow);
 	mainWindow->ChangeFocus(&promptWindow);
@@ -159,6 +191,7 @@ int WindowPrompt(const char *title, const char *msg, const char *btn1Label, cons
 		btn1.ResetState();
 		btn2.SetState(STATE_SELECTED);
 	}
+	ResumeGui();
 
 	while(choice == -1)
 	{
@@ -172,9 +205,64 @@ int WindowPrompt(const char *title, const char *msg, const char *btn1Label, cons
 
 	promptWindow.SetEffect(EFFECT_SLIDE_TOP | EFFECT_SLIDE_OUT, 50);
 	while(promptWindow.GetEffect() > 0) usleep(THREAD_SLEEP);
+	HaltGui();
 	mainWindow->Remove(&promptWindow);
 	mainWindow->SetState(STATE_DEFAULT);
+	ResumeGui();
 	return choice;
+}
+
+/****************************************************************************
+ * UpdateGUI
+ *
+ * Primary thread to allow GUI to respond to state changes, and draws GUI
+ ***************************************************************************/
+
+static void * UpdateGUI (void *arg)
+{
+	int i;
+
+	while(1)
+	{
+		if(guiHalt)
+			LWP_SuspendThread(guithread);
+
+		UpdatePads();
+		mainWindow->Draw();
+
+		if (mainWindow->GetState() != STATE_DISABLED)
+			mainWindow->DrawTooltip();
+
+		i = 3;
+		do
+		{
+			if(userInput[i].wpad->ir.valid)
+				Menu_DrawImg(userInput[i].wpad->ir.x-48, userInput[i].wpad->ir.y-48,
+					96, 96, pointer[i]->GetImage(), userInput[i].wpad->ir.angle, 1, 1, 255);
+			DoRumble(i);
+			--i;
+		} while(i>=0);
+
+		Menu_Render();
+
+		mainWindow->Update(&userInput[3]);
+		mainWindow->Update(&userInput[2]);
+		mainWindow->Update(&userInput[1]);
+		mainWindow->Update(&userInput[0]);
+
+		if(ExitRequested || ShutdownRequested)
+		{
+			for(i = 0; i <= 255; i += 15)
+			{
+				mainWindow->Draw();
+				Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, i},1);
+				Menu_Render();
+			}
+			ExitApp();
+		}
+		usleep(THREAD_SLEEP);
+	}
+	return NULL;
 }
 
 /****************************************************************************
@@ -254,10 +342,12 @@ static void ProgressWindow(char *title, char *msg)
 	if(!showProgress)
 		return;
 
+	HaltGui();
 	int oldState = mainWindow->GetState();
 	mainWindow->SetState(STATE_DISABLED);
 	mainWindow->Append(&promptWindow);
 	mainWindow->ChangeFocus(&promptWindow);
+	ResumeGui();
 
 	float angle = 0;
 	u32 count = 0;
@@ -291,8 +381,10 @@ static void ProgressWindow(char *title, char *msg)
 		}
 	}
 
+	HaltGui();
 	mainWindow->Remove(&promptWindow);
 	mainWindow->SetState(oldState);
+	ResumeGui();
 }
 
 static void * ProgressThread (void *arg)
@@ -315,6 +407,7 @@ static void * ProgressThread (void *arg)
  ***************************************************************************/
 void InitGUIThreads()
 {
+	LWP_CreateThread (&guithread, UpdateGUI, NULL, NULL, 0, 70);
 	LWP_CreateThread (&progressthread, ProgressThread, NULL, NULL, 0, 40);
 }
 
@@ -473,9 +566,11 @@ static void OnScreenKeyboard(char * var, u32 maxlen)
 	keyboard.Append(&okBtn);
 	keyboard.Append(&cancelBtn);
 
+	HaltGui();
 	mainWindow->SetState(STATE_DISABLED);
 	mainWindow->Append(&keyboard);
 	mainWindow->ChangeFocus(&keyboard);
+	ResumeGui();
 
 	while(save == -1)
 	{
@@ -492,8 +587,10 @@ static void OnScreenKeyboard(char * var, u32 maxlen)
 		snprintf(var, maxlen, "%s", keyboard.kbtextstr);
 	}
 
+	HaltGui();
 	mainWindow->Remove(&keyboard);
 	mainWindow->SetState(STATE_DEFAULT);
+	ResumeGui();
 }
 
 /****************************************************************************
@@ -551,10 +648,12 @@ static int SettingWindow(const char * title, GuiWindow * w)
 	promptWindow.Append(&okBtn);
 	promptWindow.Append(&cancelBtn);
 
+	HaltGui();
 	mainWindow->SetState(STATE_DISABLED);
 	mainWindow->Append(&promptWindow);
 	mainWindow->Append(w);
 	mainWindow->ChangeFocus(w);
+	ResumeGui();
 
 	while(save == -1)
 	{
@@ -565,9 +664,11 @@ static int SettingWindow(const char * title, GuiWindow * w)
 		else if(cancelBtn.GetState() == STATE_CLICKED)
 			save = 0;
 	}
+	HaltGui();
 	mainWindow->Remove(&promptWindow);
 	mainWindow->Remove(w);
 	mainWindow->SetState(STATE_DEFAULT);
+	ResumeGui();
 	return save;
 }
 
@@ -783,11 +884,13 @@ static int MenuGameSelection()
 	gameBrowser.SetPosition(50, 98);
 	ResetBrowser();
 
+	HaltGui();
 	btnLogo->SetAlignment(ALIGN_RIGHT, ALIGN_TOP);
 	btnLogo->SetPosition(-50, 24);
 	mainWindow->Append(&titleTxt);
 	mainWindow->Append(&gameBrowser);
 	mainWindow->Append(&buttonWindow);
+	ResumeGui();
 
 	ShutoffRumble();
 
@@ -853,6 +956,7 @@ static int MenuGameSelection()
 	}
 
 	HaltParseThread(); // halt parsing
+	HaltGui();
 	ResetBrowser();
 	mainWindow->Remove(&titleTxt);
 	mainWindow->Remove(&buttonWindow);
@@ -1108,6 +1212,7 @@ static int MenuGame()
 	batteryBtn[2]->SetPosition(45, -40);
 	batteryBtn[3]->SetPosition(135, -40);
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&titleTxt);
 	w.Append(&saveBtn);
@@ -1143,6 +1248,7 @@ static int MenuGame()
 		w.SetEffect(EFFECT_FADE, 15);
 	}
 
+	ResumeGui();
 
 	if(lastMenu == MENU_NONE)
 		AutoSave();
@@ -1212,6 +1318,7 @@ static int MenuGame()
 		{
 			if (WindowPrompt("Quit Game", "Quit this game? Any unsaved progress will be lost.", "OK", "Cancel"))
 			{
+				HaltGui();
 				mainWindow->Remove(gameScreenImg);
 				delete gameScreenImg;
 				delete gameScreen;
@@ -1221,6 +1328,7 @@ static int MenuGame()
 				gameScreenImg = new GuiImage(screenwidth, screenheight, (GXColor){175, 200, 215, 255});
 				gameScreenImg->ColorStripe(10);
 				mainWindow->Insert(gameScreenImg, 0);
+				ResumeGui();
 				menu = MENU_GAMESELECTION;
 			}
 		}
@@ -1244,6 +1352,7 @@ static int MenuGame()
 		}
 	}
 
+	HaltGui();
 
 	for(i=0; i < 4; i++)
 	{
@@ -1357,11 +1466,13 @@ static int MenuGameSaves(int action)
 	closeBtn.SetTrigger(&trigHome);
 	closeBtn.SetEffectGrow();
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&backBtn);
 	w.Append(&closeBtn);
 	mainWindow->Append(&w);
 	mainWindow->Append(&titleTxt);
+	ResumeGui();
 
 	memset(&saves, 0, sizeof(saves));
 
@@ -1429,8 +1540,10 @@ static int MenuGameSaves(int action)
 	saveBrowser.SetPosition(0, 108);
 	saveBrowser.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
 
+	HaltGui();
 	mainWindow->Append(&saveBrowser);
 	mainWindow->ChangeFocus(&saveBrowser);
+	ResumeGui();
 
 	while(menu == MENU_NONE)
 	{
@@ -1524,6 +1637,7 @@ static int MenuGameSaves(int action)
 		}
 	}
 
+	HaltGui();
 
 	for(i=0; i < saves.length; i++)
 		if(saves.previewImg[i])
@@ -1650,6 +1764,7 @@ static int MenuGameSettings()
 	backBtn.SetTrigger(trig2);
 	backBtn.SetEffectGrow();
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&titleTxt);
 	w.Append(&mappingBtn);
@@ -1661,6 +1776,7 @@ static int MenuGameSettings()
 
 	mainWindow->Append(&w);
 
+	ResumeGui();
 
 	while(menu == MENU_NONE)
 	{
@@ -1707,6 +1823,7 @@ static int MenuGameSettings()
 		}
 	}
 
+	HaltGui();
 	mainWindow->Remove(&w);
 	return menu;
 }
@@ -1756,11 +1873,13 @@ static int MenuGameCheats()
 	optionBrowser.SetPosition(0, 108);
 	optionBrowser.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&backBtn);
 	mainWindow->Append(&optionBrowser);
 	mainWindow->Append(&w);
 	mainWindow->Append(&titleTxt);
+	ResumeGui();
 
 	while(menu == MENU_NONE)
 	{
@@ -1783,6 +1902,7 @@ static int MenuGameCheats()
 			menu = MENU_GAMESETTINGS;
 		}
 	}
+	HaltGui();
 	mainWindow->Remove(&optionBrowser);
 	mainWindow->Remove(&w);
 	mainWindow->Remove(&titleTxt);
@@ -1885,6 +2005,7 @@ static int MenuSettingsMappings()
 	backBtn.SetTrigger(trig2);
 	backBtn.SetEffectGrow();
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&titleTxt);
 	w.Append(&snesBtn);
@@ -1896,6 +2017,7 @@ static int MenuSettingsMappings()
 
 	mainWindow->Append(&w);
 
+	ResumeGui();
 
 	while(menu == MENU_NONE)
 	{
@@ -1926,6 +2048,7 @@ static int MenuSettingsMappings()
 			menu = MENU_GAMESETTINGS;
 		}
 	}
+	HaltGui();
 	mainWindow->Remove(&w);
 	return menu;
 }
@@ -2036,6 +2159,7 @@ static int MenuSettingsMappingsController()
 	backBtn.SetTrigger(trig2);
 	backBtn.SetEffectGrow();
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&titleTxt);
 	w.Append(&subtitleTxt);
@@ -2052,6 +2176,7 @@ static int MenuSettingsMappingsController()
 
 	mainWindow->Append(&w);
 
+	ResumeGui();
 
 	while(menu == MENU_NONE)
 	{
@@ -2082,6 +2207,7 @@ static int MenuSettingsMappingsController()
 			menu = MENU_GAMESETTINGS_MAPPINGS;
 		}
 	}
+	HaltGui();
 	mainWindow->Remove(&w);
 	return menu;
 }
@@ -2133,9 +2259,11 @@ ButtonMappingWindow()
 	promptWindow.Append(&titleTxt);
 	promptWindow.Append(&msgTxt);
 
+	HaltGui();
 	mainWindow->SetState(STATE_DISABLED);
 	mainWindow->Append(&promptWindow);
 	mainWindow->ChangeFocus(&promptWindow);
+	ResumeGui();
 
 	u32 pressed = 0;
 
@@ -2191,8 +2319,10 @@ ButtonMappingWindow()
 		|| pressed == WPAD_CLASSIC_BUTTON_HOME)
 		pressed = 0;
 
+	HaltGui();
 	mainWindow->Remove(&promptWindow);
 	mainWindow->SetState(STATE_DEFAULT);
+	ResumeGui();
 
 	return pressed;
 }
@@ -2297,6 +2427,7 @@ static int MenuSettingsMappingsMap()
 	optionBrowser.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
 	optionBrowser.SetCol2Position(215);
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&backBtn);
 	w.Append(&resetBtn);
@@ -2304,6 +2435,7 @@ static int MenuSettingsMappingsMap()
 	mainWindow->Append(&w);
 	mainWindow->Append(&titleTxt);
 	mainWindow->Append(&subtitleTxt);
+	ResumeGui();
 
 	while(menu == MENU_NONE)
 	{
@@ -2362,6 +2494,7 @@ static int MenuSettingsMappingsMap()
 			optionBrowser.TriggerUpdate();
 		}
 	}
+	HaltGui();
 	mainWindow->Remove(&optionBrowser);
 	mainWindow->Remove(&w);
 	mainWindow->Remove(&titleTxt);
@@ -2678,11 +2811,13 @@ static int MenuSettingsVideo()
 	optionBrowser.SetCol2Position(200);
 	optionBrowser.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&backBtn);
 	mainWindow->Append(&optionBrowser);
 	mainWindow->Append(&w);
 	mainWindow->Append(&titleTxt);
+	ResumeGui();
 
 	while(menu == MENU_NONE)
 	{
@@ -2764,6 +2899,7 @@ static int MenuSettingsVideo()
 			menu = MENU_GAMESETTINGS;
 		}
 	}
+	HaltGui();
 	mainWindow->Remove(&optionBrowser);
 	mainWindow->Remove(&w);
 	mainWindow->Remove(&titleTxt);
@@ -2851,6 +2987,7 @@ static int MenuSettings()
 	resetBtn.SetTrigger(trig2);
 	resetBtn.SetEffectGrow();
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&titleTxt);
 	w.Append(&savingBtn);
@@ -2860,6 +2997,7 @@ static int MenuSettings()
 
 	mainWindow->Append(&w);
 
+	ResumeGui();
 
 	while(menu == MENU_NONE)
 	{
@@ -2892,6 +3030,7 @@ static int MenuSettings()
 		}
 	}
 
+	HaltGui();
 	mainWindow->Remove(&w);
 	return menu;
 }
@@ -2944,11 +3083,13 @@ static int MenuSettingsFile()
 	optionBrowser.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
 	optionBrowser.SetCol2Position(215);
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&backBtn);
 	mainWindow->Append(&optionBrowser);
 	mainWindow->Append(&w);
 	mainWindow->Append(&titleTxt);
+	ResumeGui();
 
 	while(menu == MENU_NONE)
 	{
@@ -3039,6 +3180,7 @@ static int MenuSettingsFile()
 			menu = MENU_SETTINGS;
 		}
 	}
+	HaltGui();
 	mainWindow->Remove(&optionBrowser);
 	mainWindow->Remove(&w);
 	mainWindow->Remove(&titleTxt);
@@ -3091,11 +3233,13 @@ static int MenuSettingsMenu()
 	optionBrowser.SetAlignment(ALIGN_CENTRE, ALIGN_TOP);
 	optionBrowser.SetCol2Position(275);
 
+	HaltGui();
 	GuiWindow w(screenwidth, screenheight);
 	w.Append(&backBtn);
 	mainWindow->Append(&optionBrowser);
 	mainWindow->Append(&w);
 	mainWindow->Append(&titleTxt);
+	ResumeGui();
 
 	while(menu == MENU_NONE)
 	{
@@ -3179,6 +3323,7 @@ static int MenuSettingsMenu()
 			menu = MENU_SETTINGS;
 		}
 	}
+	HaltGui();
 	mainWindow->Remove(&optionBrowser);
 	mainWindow->Remove(&w);
 	mainWindow->Remove(&titleTxt);
@@ -3256,6 +3401,9 @@ MainMenu (int menu)
 	mainWindow->Append(bgBottomImg);
 	mainWindow->Append(btnLogo);
 
+	if(currentMenu == MENU_GAMESELECTION)
+		ResumeGui();
+
 	// Load preferences
 	if(!LoadPrefs())
 		SavePrefs(SILENT);
@@ -3328,6 +3476,7 @@ MainMenu (int menu)
 	ShutoffRumble();
 
 	CancelAction();
+	HaltGui();
 
 	delete btnLogo;
 	delete gameScreenImg;
@@ -3347,42 +3496,9 @@ MainMenu (int menu)
 	}
 
 	// wait for keys to be depressed
-	int i;
-
-	while(1)
+	while(MenuRequested())
 	{
 		UpdatePads();
-		mainWindow->Draw();
-
-		if (mainWindow->GetState() != STATE_DISABLED)
-			mainWindow->DrawTooltip();
-
-		i = 3;
-		do
-		{
-			if(userInput[i].wpad->ir.valid)
-				Menu_DrawImg(userInput[i].wpad->ir.x-48, userInput[i].wpad->ir.y-48,
-					96, 96, pointer[i]->GetImage(), userInput[i].wpad->ir.angle, 1, 1, 255);
-			DoRumble(i);
-			--i;
-		} while(i>=0);
-
-		Menu_Render();
-
-		mainWindow->Update(&userInput[3]);
-		mainWindow->Update(&userInput[2]);
-		mainWindow->Update(&userInput[1]);
-		mainWindow->Update(&userInput[0]);
-
-		if(ExitRequested || ShutdownRequested)
-		{
-			for(i = 0; i <= 255; i += 15)
-			{
-				mainWindow->Draw();
-				Menu_DrawRectangle(0,0,screenwidth,screenheight,(GXColor){0, 0, 0, i},1);
-				Menu_Render();
-			}
-			ExitApp();
-		}
+		usleep(THREAD_SLEEP);
 	}
 }
