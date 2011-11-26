@@ -15,18 +15,6 @@
 #ifndef BLARGG_COMMON_H
 #define BLARGG_COMMON_H
 
-// BLARGG_RESTRICT: equivalent to restrict, where supported
-#if defined (__GNUC__) || _MSC_VER >= 1100
-	#define BLARGG_RESTRICT __restrict
-#else
-	#define BLARGG_RESTRICT
-#endif
-
-// STATIC_CAST(T,expr): Used in place of static_cast<T> (expr)
-#ifndef STATIC_CAST
-	#define STATIC_CAST(T,expr) ((T) (expr))
-#endif
-
 // blargg_err_t (0 on success, otherwise error string)
 #ifndef blargg_err_t
 	typedef const char* blargg_err_t;
@@ -46,24 +34,6 @@
 #else
 	#include <new>
 	#define BLARGG_NEW new (std::nothrow)
-#endif
-
-// BLARGG_4CHAR('a','b','c','d') = 'abcd' (four character integer constant)
-#define BLARGG_4CHAR( a, b, c, d ) \
-	((a&0xFF)*0x1000000L + (b&0xFF)*0x10000L + (c&0xFF)*0x100L + (d&0xFF))
-
-// BOOST_STATIC_ASSERT( expr ): Generates compile error if expr is 0.
-#ifndef BOOST_STATIC_ASSERT
-	#ifdef _MSC_VER
-		// MSVC6 (_MSC_VER < 1300) fails for use of __LINE__ when /Zl is specified
-		#define BOOST_STATIC_ASSERT( expr ) \
-			void blargg_failed_( int (*arg) [2 / (int) !!(expr) - 1] )
-	#else
-		// Some other compilers fail when declaring same function multiple times in class,
-		// so differentiate them by line
-		#define BOOST_STATIC_ASSERT( expr ) \
-			void blargg_failed_( int (*arg) [2 / !!(expr) - 1] [__LINE__] )
-	#endif
 #endif
 
 // BLARGG_COMPILER_HAS_BOOL: If 0, provides bool support for old compiler. If 1,
@@ -88,14 +58,6 @@
 	typedef int bool;
 	const bool true  = 1;
 	const bool false = 0;
-#endif
-
-// blargg_long/blargg_ulong = at least 32 bits, int if it's big enough
-
-#if INT_MAX < 0x7FFFFFFF || LONG_MAX == 0x7FFFFFFF
-	typedef long blargg_long;
-#else
-	typedef int blargg_long;
 #endif
 
 #if UINT_MAX < 0xFFFFFFFF || ULONG_MAX == 0xFFFFFFFF

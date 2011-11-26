@@ -7,13 +7,6 @@ all other #include lines. */
 #ifndef BLARGG_SOURCE_H
 #define BLARGG_SOURCE_H
 
-// Like printf() except output goes to debug log file. Might be defined to do
-// nothing (not even evaluate its arguments).
-// void dprintf( const char* format, ... );
-static inline void blargg_dprintf_( const char*, ... ) { }
-#undef dprintf
-#define dprintf (1) ? (void) 0 : blargg_dprintf_
-
 // If enabled, evaluate expr and if false, make debug log entry with source file
 // and line. Meant for finding situations that should be examined further, but that
 // don't indicate a problem. In all cases, execution continues normally.

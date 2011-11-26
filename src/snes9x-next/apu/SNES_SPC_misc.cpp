@@ -71,9 +71,7 @@ blargg_err_t SNES_SPC::init()
 
 	allow_time_overflow = false;
 	
-	#if SPC_LESS_ACCURATE
-		memcpy( reg_times, reg_times_, sizeof reg_times );
-	#endif
+	memcpy( reg_times, reg_times_, sizeof reg_times );
 	
 	reset();
 	return 0;
@@ -90,21 +88,9 @@ void SNES_SPC::set_tempo( int t )
 	int const timer2_shift = 4; // 64 kHz
 	int const other_shift  = 3; //  8 kHz
 	
-	#if SPC_DISABLE_TEMPO
-		m.timers [2].prescaler = timer2_shift;
-		m.timers [1].prescaler = timer2_shift + other_shift;
-		m.timers [0].prescaler = timer2_shift + other_shift;
-	#else
-		if ( !t )
-			t = 1;
-		int const timer2_rate  = 1 << timer2_shift;
-		int rate = (timer2_rate * tempo_unit + (t >> 1)) / t;
-		if ( rate < timer2_rate / 4 )
-			rate = timer2_rate / 4; // max 4x tempo
-		m.timers [2].prescaler = rate;
-		m.timers [1].prescaler = rate << other_shift;
-		m.timers [0].prescaler = rate << other_shift;
-	#endif
+	m.timers [2].prescaler = timer2_shift;
+	m.timers [1].prescaler = timer2_shift + other_shift;
+	m.timers [0].prescaler = timer2_shift + other_shift;
 }
 
 // Timer registers have been loaded. Applies these to the timers. Does not
@@ -158,13 +144,9 @@ void SNES_SPC::regs_loaded()
 
 void SNES_SPC::reset_time_regs()
 {
-	m.cpu_error     = 0;
-	m.echo_accessed = 0;
 	m.spc_time      = 0;
 	m.dsp_time      = 0;
-	#if SPC_LESS_ACCURATE
-		m.dsp_time = clocks_per_sample + 1;
-	#endif
+	m.dsp_time = clocks_per_sample + 1;
 	
 	for ( int i = 0; i < timer_count; i++ )
 	{
@@ -216,53 +198,6 @@ void SNES_SPC::reset()
 	reset_common( 0x0F );
 	dsp.reset();
 }
-
-char const SNES_SPC::signature [signature_size + 1] =
-		"SNES-SPC700 Sound File Data v0.30\x1A\x1A";
-
-blargg_err_t SNES_SPC::load_spc( void const* data, long size )
-{
-	spc_file_t const* const spc = (spc_file_t const*) data;
-	
-	// Check signature and file size
-	if ( size < signature_size || memcmp( spc, signature, 27 ) )
-		return "Not an SPC file";
-	
-	if ( size < spc_min_file_size )
-		return "Corrupt SPC file";
-	
-	// CPU registers
-	m.cpu_regs.pc  = spc->pch * 0x100 + spc->pcl;
-	m.cpu_regs.a   = spc->a;
-	m.cpu_regs.x   = spc->x;
-	m.cpu_regs.y   = spc->y;
-	m.cpu_regs.psw = spc->psw;
-	m.cpu_regs.sp  = spc->sp;
-	
-	// RAM and registers
-	memcpy( RAM, spc->ram, 0x10000 );
-	ram_loaded();
-	
-	// DSP registers
-	dsp.load( spc->dsp );
-	
-	reset_time_regs();
-	
-	return 0;
-}
-
-void SNES_SPC::clear_echo()
-{
-	if ( !(dsp.read( SPC_DSP::r_flg ) & 0x20) )
-	{
-		int addr = 0x100 * dsp.read( SPC_DSP::r_esa );
-		int end  = addr + 0x800 * (dsp.read( SPC_DSP::r_edl ) & 0x0F);
-		if ( end > 0x10000 )
-			end = 0x10000;
-		memset( &RAM [addr], 0xFF, end - addr );
-	}
-}
-
 
 //// Sample output
 
@@ -334,65 +269,3 @@ void SNES_SPC::save_extra()
 	
 	m.extra_pos = out;
 }
-
-blargg_err_t SNES_SPC::play( int count, sample_t* out )
-{
-	if ( count )
-	{
-		set_output( out, count );
-		end_frame( count * (clocks_per_sample / 2) );
-	}
-	
-	const char* err = m.cpu_error;
-	m.cpu_error = 0;
-	return err;
-}
-
-blargg_err_t SNES_SPC::skip( int count )
-{
-	#if SPC_LESS_ACCURATE
-	if ( count > 2 * sample_rate * 2 )
-	{
-		set_output( 0, 0 );
-		
-		// Skip a multiple of 4 samples
-		time_t end = count;
-		count = (count & 3) + 1 * sample_rate * 2;
-		end = (end - count) * (clocks_per_sample / 2);
-		
-		m.skipped_kon  = 0;
-		m.skipped_koff = 0;
-		
-		// Preserve DSP and timer synchronization
-		// TODO: verify that this really preserves it
-		int old_dsp_time = m.dsp_time + m.spc_time;
-		m.dsp_time = end - m.spc_time + skipping_time;
-		end_frame( end );
-		m.dsp_time = m.dsp_time - skipping_time + old_dsp_time;
-		
-		dsp.write( SPC_DSP::r_koff, m.skipped_koff & ~m.skipped_kon );
-		dsp.write( SPC_DSP::r_kon , m.skipped_kon );
-		clear_echo();
-	}
-	#endif
-	
-	return play( count, 0 );
-}
-
-//// Snes9x Accessor
-
-void SNES_SPC::dsp_set_stereo_switch( int value )
-{
-	dsp.set_stereo_switch( value );
-}
-
-SNES_SPC::uint8_t SNES_SPC::dsp_reg_value( int ch, int addr )
-{
-	return dsp.reg_value( ch, addr );
-}
-
-int SNES_SPC::dsp_envx_value( int ch )
-{
-	return dsp.envx_value( ch );
-}
-

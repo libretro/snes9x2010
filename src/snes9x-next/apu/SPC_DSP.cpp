@@ -427,7 +427,6 @@ VOICE_CLOCK( V3c )
 			v->brr_offset  = 1;
 			v->buf_pos     = 0;
 			m.t_brr_header = 0; // header is ignored on this sample
-			m.kon_check    = true;
 		}
 		
 		// Envelope is never run during KON
@@ -1002,22 +1001,3 @@ void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
 	copier.extra();
 }
 #endif
-
-
-//// Snes9x Accessor
-
-void SPC_DSP::set_stereo_switch( int value )
-{
-	stereo_switch = value;
-}
-
-SPC_DSP::uint8_t SPC_DSP::reg_value( int ch, int addr )
-{
-	return m.voices[ch].regs[addr];
-}
-
-int SPC_DSP::envx_value( int ch )
-{
-	return m.voices[ch].env;
-}
-

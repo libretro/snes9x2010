@@ -66,24 +66,6 @@ public:
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	enum { tempo_unit = 0x100 };
 	void set_tempo( int );
-
-// SPC music files
-
-	// Loads SPC data into emulator
-	enum { spc_min_file_size = 0x10180 };
-	enum { spc_file_size     = 0x10200 };
-	blargg_err_t load_spc( void const* in, long size );
-	
-	// Clears echo region. Useful after loading an SPC as many have garbage in echo.
-	void clear_echo();
-
-	// Plays for count samples and write samples to out. Discards samples if out
-	// is NULL. Count must be a multiple of 2 since output is stereo.
-	blargg_err_t play( int count, sample_t* out );
-	
-	// Skips count samples. Several times faster than play() when using fast DSP.
-	blargg_err_t skip( int count );
-	
 // State save/load (only available with accurate DSP)
 
 #if !SPC_NO_COPY_STATE_FUNCS
@@ -91,20 +73,10 @@ public:
 	enum { state_size = 68 * 1024L }; // maximum space needed when saving
 	typedef SPC_DSP::copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
-	
-	// Returns true if new key-on events occurred since last check. Useful for
-	// trimming silence while saving an SPC.
-	bool check_kon();
 #endif
 
 //// Snes9x Accessor
-
 	void	spc_allow_time_overflow( bool );
-
-	void    dsp_set_stereo_switch( int );
-	uint8_t dsp_reg_value( int, int );
-	int     dsp_envx_value( int );
-
 public:
 	BLARGG_DISABLE_NOTHROW
 	
@@ -136,10 +108,8 @@ public:
 private:
 	SPC_DSP dsp;
 	
-	#if SPC_LESS_ACCURATE
-		static signed char const reg_times_ [256];
-		signed char reg_times [256];
-	#endif
+	static signed char const reg_times_ [256];
+	signed char reg_times [256];
 	
 	struct state_t
 	{
@@ -159,12 +129,8 @@ private:
 		
 		rel_time_t  dsp_time;
 		time_t      spc_time;
-		bool        echo_accessed;
 		
 		int         tempo;
-		int         skipped_kon;
-		int         skipped_koff;
-		const char* cpu_error;
 		
 		int         extra_clocks;
 		sample_t*   buf_begin;
@@ -273,10 +239,6 @@ inline void SNES_SPC::write_port( time_t t, int port, int data )
 inline void SNES_SPC::mute_voices( int mask ) { dsp.mute_voices( mask ); }
 	
 inline void SNES_SPC::disable_surround( bool disable ) { dsp.disable_surround( disable ); }
-
-#if !SPC_NO_COPY_STATE_FUNCS
-inline bool SNES_SPC::check_kon() { return dsp.check_kon(); }
-#endif
 
 inline void SNES_SPC::spc_allow_time_overflow( bool allow ) { allow_time_overflow = allow; }
 

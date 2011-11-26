@@ -11,49 +11,34 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
-//// Memory access
-//#define SUSPICIOUS_OPCODE( name ) dprintf( "SPC: suspicious opcode: " name "\n" )
-
-#if SPC_MORE_ACCURACY
-	#define SUSPICIOUS_OPCODE( name ) ((void) 0)
-#else
-	#define SUSPICIOUS_OPCODE( name )
-#endif
-
 #define CPU_READ( time, offset, addr )\
 	cpu_read( addr, time + offset )
 
 #define CPU_WRITE( time, offset, addr, data )\
 	cpu_write( data, addr, time + offset )
 
-#if SPC_MORE_ACCURACY
-	#define CPU_READ_TIMER( time, offset, addr, out )\
-		{ out = CPU_READ( time, offset, addr ); }
-
-#else
-	// timers are by far the most common thing read from dp
-	#define CPU_READ_TIMER( time, offset, addr_, out )\
+// timers are by far the most common thing read from dp
+#define CPU_READ_TIMER( time, offset, addr_, out )\
+{\
+	rel_time_t adj_time = time + offset;\
+	int dp_addr = addr_;\
+	int ti = dp_addr - (r_t0out + 0xF0);\
+	if ( (unsigned) ti < timer_count )\
 	{\
-		rel_time_t adj_time = time + offset;\
-		int dp_addr = addr_;\
-		int ti = dp_addr - (r_t0out + 0xF0);\
-		if ( (unsigned) ti < timer_count )\
-		{\
-			Timer* t = &m.timers [ti];\
-			if ( adj_time >= t->next_time )\
-				t = run_timer_( t, adj_time );\
-			out = t->counter;\
-			t->counter = 0;\
-		}\
-		else\
-		{\
-			out = ram [dp_addr];\
-			int i = dp_addr - 0xF0;\
-			if ( (unsigned) i < 0x10 )\
-				out = cpu_read_smp_reg( i, adj_time );\
-		}\
-	}
-#endif
+		Timer* t = &m.timers [ti];\
+		if ( adj_time >= t->next_time )\
+		t = run_timer_( t, adj_time );\
+		out = t->counter;\
+		t->counter = 0;\
+	}\
+	else\
+	{\
+		out = ram [dp_addr];\
+		int i = dp_addr - 0xF0;\
+		if ( (unsigned) i < 0x10 )\
+		out = cpu_read_smp_reg( i, adj_time );\
+	}\
+}
 
 #define TIME_ADJ( n )   (n)
 
@@ -74,51 +59,12 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define READ_PC( pc )   (*(pc))
 #define READ_PC16( pc ) GET_LE16( pc )
 
-// TODO: remove non-wrapping versions?
-#define SPC_NO_SP_WRAPAROUND 0
-
 #define SET_SP( v )     (sp = ram + 0x101 + (v))
 #define GET_SP()        (sp - 0x101 - ram)
 
-#if SPC_NO_SP_WRAPAROUND
 #define PUSH16( v )     (sp -= 2, SET_LE16( sp, v ))
 #define PUSH( v )       (void) (*--sp = (uint8_t) (v))
 #define POP( out )      (void) ((out) = *sp++)
-
-#else
-#define PUSH16( data )\
-{\
-	int addr = (sp -= 2) - ram;\
-	if ( addr > 0x100 )\
-	{\
-		SET_LE16( sp, data );\
-	}\
-	else\
-	{\
-		ram [(uint8_t) addr + 0x100] = (uint8_t) data;\
-		sp [1] = (uint8_t) (data >> 8);\
-		sp += 0x100;\
-	}\
-}
-
-#define PUSH( data )\
-{\
-	*--sp = (uint8_t) (data);\
-	if ( sp - ram == 0x100 )\
-		sp += 0x100;\
-}
-
-#define POP( out )\
-{\
-	out = *sp++;\
-	if ( sp - ram == 0x201 )\
-	{\
-		out = sp [-0x101];\
-		sp -= 0x100;\
-	}\
-}
-
-#endif
 
 #define MEM_BIT( rel ) CPU_mem_bit( pc, rel_time + rel )
 
@@ -205,20 +151,6 @@ loop:
 	#ifdef SPC_CPU_OPCODE_HOOK
 		SPC_CPU_OPCODE_HOOK( GET_PC(), opcode );
 	#endif
-	/*
-	//SUB_CASE_COUNTER( 1 );
-	#define PROFILE_TIMER_LOOP( op, addr, len )\
-	if ( opcode == op )\
-	{\
-		int cond = (unsigned) ((addr) - 0xFD) < 3 &&\
-				pc [len] == 0xF0 && pc [len+1] == 0xFE - len;\
-		SUB_CASE_COUNTER( op && cond );\
-	}
-	
-	PROFILE_TIMER_LOOP( 0xEC, GET_LE16( pc + 1 ), 3 );
-	PROFILE_TIMER_LOOP( 0xEB, pc [1], 2 );
-	PROFILE_TIMER_LOOP( 0xE4, pc [1], 2 );
-	*/
 	
 	// TODO: if PC is at end of memory, this will get wrong operand (very obscure)
 	data = *++pc;
@@ -252,23 +184,8 @@ loop:
 	}
 	
 	case 0x6F:// RET
-		#if SPC_NO_SP_WRAPAROUND
-		{
-			SET_PC( GET_LE16( sp ) );
-			sp += 2;
-		}
-		#else
-		{
-			int addr = sp - ram;
-			SET_PC( GET_LE16( sp ) );
-			sp += 2;
-			if ( addr < 0x1FF )
-				goto loop;
-			
-			SET_PC( sp [-0x101] * 0x100 + ram [(uint8_t) addr + 0x100] );
-			sp -= 0x100;
-		}
-		#endif
+	SET_PC( GET_LE16( sp ) );
+	sp += 2;
 		goto loop;
 	
 	case 0xE4: // MOV a,dp
@@ -283,12 +200,11 @@ loop:
 		data = temp + no_read_before_write ;
 	}
 	// fall through
-	case 0x8F:{// MOV dp,#imm
+	case 0x8F:
+	{// MOV dp,#imm
 		int temp = READ_PC( pc + 1 );
 		pc += 2;
 		
-		#if !SPC_MORE_ACCURACY
-		{
 			int i = dp + temp;
 			ram [i] = (uint8_t) data;
 			i -= 0xF0;
@@ -301,17 +217,11 @@ loop:
 				if ( ((~0x2F00 << (bits_in_int - 16)) << i) < 0 ) // 12%
 					cpu_write_smp_reg( data, rel_time, i );
 			}
-		}
-		#else
-			WRITE_DP( 0, temp, data );
-		#endif
 		goto loop;
 	}
 	
 	case 0xC4: // MOV dp,a
 		++pc;
-		#if !SPC_MORE_ACCURACY
-		{
 			int i = dp + data;
 			ram [i] = (uint8_t) a;
 			i -= 0xF0;
@@ -325,10 +235,6 @@ loop:
 				else if ( sel > 1 ) // 1% not $F2 or $F3
 					cpu_write_smp_reg_( a, rel_time, i );
 			}
-		}
-		#else
-			WRITE_DP( 0, data, a );
-		#endif
 		goto loop;
 	
 #define CASE( n )   case n:
@@ -848,7 +754,6 @@ loop:
 // 11. DECIMAL COMPENSATION COMMANDS
 	
 	case 0xDF: // DAA
-		SUSPICIOUS_OPCODE( "DAA" );
 		if ( a > 0x99 || c & 0x100 )
 		{
 			a += 0x60;
@@ -863,7 +768,6 @@ loop:
 		goto loop;
 	
 	case 0xBE: // DAS
-		SUSPICIOUS_OPCODE( "DAS" );
 		if ( a > 0x99 || !(c & 0x100) )
 		{
 			a -= 0x60;
@@ -962,7 +866,6 @@ loop:
 	case 0x0F:{// BRK
 		int temp;
 		int ret_addr = GET_PC();
-		SUSPICIOUS_OPCODE( "BRK" );
 		SET_PC( READ_PROG16( 0xFFDE ) ); // vector address verified
 		PUSH16( ret_addr );
 		GET_PSW( temp );
@@ -1166,12 +1069,10 @@ loop:
 		goto loop;
 	
 	case 0xA0: // EI
-		SUSPICIOUS_OPCODE( "EI" );
 		psw |= i04;
 		goto loop;
 	
 	case 0xC0: // DI
-		SUSPICIOUS_OPCODE( "DI" );
 		psw &= ~i04;
 		goto loop;
 	
@@ -1187,16 +1088,14 @@ loop:
 		{
 			addr &= 0xFFFF;
 			SET_PC( addr );
-			dprintf( "SPC: PC wrapped around\n" );
+			//dprintf( "SPC: PC wrapped around\n" );
 			goto loop;
 		}
 	}
 	// fall through
 	case 0xEF: // SLEEP
-		SUSPICIOUS_OPCODE( "STOP/SLEEP" );
 		--pc;
 		rel_time = 0;
-		m.cpu_error = "SPC emulation error";
 		goto stop;
 	} // switch
 }   
@@ -1205,8 +1104,10 @@ out_of_time:
 stop:
 	
 	// Uncache registers
+	#if 0
 	if ( GET_PC() >= 0x10000 )
 		dprintf( "SPC: PC wrapped around\n" );
+	#endif
 	m.cpu_regs.pc = (uint16_t) GET_PC();
 	m.cpu_regs.sp = ( uint8_t) GET_SP();
 	m.cpu_regs.a  = ( uint8_t) a;

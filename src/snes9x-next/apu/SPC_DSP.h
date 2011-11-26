@@ -61,18 +61,9 @@ public:
 	enum { state_size = 640 }; // maximum space needed when saving
 	typedef dsp_copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
-
-	// Returns non-zero if new key-on events occurred since last call
-	bool check_kon();
-
 // Snes9x Accessor
 
 	int  stereo_switch;
-
-	void    set_stereo_switch( int );
-	uint8_t reg_value( int, int );
-	int     envx_value( int );
-
 // DSP register addresses
 
 	// Global registers
@@ -146,7 +137,6 @@ private:
 		int echo_offset;        // offset from ESA in echo buffer
 		int echo_length;        // number of bytes that echo_offset will stop at
 		int phase;              // next clock cycle to run (0-31)
-		bool kon_check;         // set when a new KON occurs
 		
 		// Hidden registers also written to when main register is written to
 		int new_kon;
@@ -276,13 +266,6 @@ inline void SPC_DSP::write( int addr, int data )
 }
 
 inline void SPC_DSP::mute_voices( int mask ) { m.mute_mask = mask; }
-
-inline bool SPC_DSP::check_kon()
-{
-	bool old = m.kon_check;
-	m.kon_check = 0;
-	return old;
-}
 
 #if !SPC_NO_COPY_STATE_FUNCS
 
