@@ -9,7 +9,7 @@ SDK_340              = 1
 
 #which compiler to build  with - GCC or SNC
 #set to GCC for debug builds for use with debugger
-CELL_BUILD_TOOLS     = SNC
+CELL_BUILD_TOOLS     = GCC
 
 ifeq ($(CELL_DEBUG),1)
 PPU_OPTIMIZE_LV      := -O0
