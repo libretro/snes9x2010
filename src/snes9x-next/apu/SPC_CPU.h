@@ -193,7 +193,7 @@ loop:
 	case 0xFA:{// MOV dp,dp
 		int temp;
 		READ_DP_TIMER( -2, data, temp );
-		data = temp + no_read_before_write ;
+		data = temp + NO_READ_BEFORE_WRITE ;
 	}
 	// fall through
 	case 0x8F:
@@ -211,7 +211,12 @@ loop:
 				// Registers other than $F2 and $F4-$F7
 				//if ( i != 2 && i != 4 && i != 5 && i != 6 && i != 7 )
 				if ( ((~0x2F00 << (bits_in_int - 16)) << i) < 0 ) // 12%
-					cpu_write_smp_reg( data, rel_time, i );
+				{
+					if ( i == r_dspdata ) // 99%
+						dsp_write( data, rel_time );
+					else
+						cpu_write_smp_reg_( data, rel_time, i);
+				}
 			}
 		goto loop;
 	}
@@ -393,7 +398,7 @@ loop:
 	//case 0xC6: // MOV (X),A (handled by MOV addr,A in group 2)
 	
 	case 0xAF: // MOV (X)+,A
-		WRITE_DP( 0, x, a + no_read_before_write  );
+		WRITE_DP( 0, x, a + NO_READ_BEFORE_WRITE  );
 		x++;
 		goto loop;
 	
@@ -647,7 +652,7 @@ loop:
 	
 	case 0xDA: // MOVW dp,YA
 		WRITE_DP( -1, data, a );
-		WRITE_DP( 0, (uint8_t) (data + 1), y + no_read_before_write  );
+		WRITE_DP( 0, (uint8_t) (data + 1), y + NO_READ_BEFORE_WRITE  );
 		goto inc_pc_loop;
 	
 // 9. 16-BIT OPERATION COMMANDS
@@ -846,7 +851,7 @@ loop:
 	
 	case 0x6E: { // DBNZ dp,rel
 		unsigned temp = READ_DP( -4, data ) - 1;
-		WRITE_DP( -3, (uint8_t) data, /*(uint8_t)*/ temp + no_read_before_write  );
+		WRITE_DP( -3, (uint8_t) data, /*(uint8_t)*/ temp + NO_READ_BEFORE_WRITE  );
 		CBRANCH( temp )
 	}
 	
@@ -1033,7 +1038,7 @@ loop:
 			unsigned temp = READ( -2, data & 0x1FFF );
 			unsigned bit = data >> 13;
 			temp = (temp & ~(1 << bit)) | ((c >> 8 & 1) << bit);
-			WRITE( 0, data & 0x1FFF, temp + no_read_before_write  );
+			WRITE( 0, data & 0x1FFF, temp + NO_READ_BEFORE_WRITE  );
 		}
 		goto loop;
 	

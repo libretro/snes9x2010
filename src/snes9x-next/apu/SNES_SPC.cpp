@@ -140,7 +140,9 @@ inline void SNES_SPC::dsp_write( int data, rel_time_t time )
 // so often-used functionality can be optimized better by compiler
 
 // If write isn't preceded by read, data has this added to it
-int const no_read_before_write = 0x2000;
+//int const no_read_before_write = 0x2000;
+#define NO_READ_BEFORE_WRITE			8192
+#define NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO	4096 
 
 void SNES_SPC::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 {
@@ -163,7 +165,7 @@ void SNES_SPC::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 	case r_t2out:
 		//dprintf( "SPC wrote to counter %d\n", (int) addr - r_t0out );
 		
-		if ( data < no_read_before_write  / 2 )
+		if ( data < NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO)
 			run_timer( &m.timers [addr - r_t0out], time - 1 )->counter = 0;
 		break;
 	
@@ -216,14 +218,6 @@ void SNES_SPC::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 	}
 }
 
-void SNES_SPC::cpu_write_smp_reg( int data, rel_time_t time, int addr )
-{
-	if ( addr == r_dspdata ) // 99%
-		dsp_write( data, time );
-	else
-		cpu_write_smp_reg_( data, time, addr );
-}
-
 void SNES_SPC::cpu_write_high( int data, int i, rel_time_t time )
 {
 	if ( i < rom_size )
@@ -264,7 +258,12 @@ void SNES_SPC::cpu_write( int data, int addr, rel_time_t time )
 			//if ( reg != 2 && reg != 4 && reg != 5 && reg != 6 && reg != 7 )
 			// TODO: this is a bit on the fragile side
 			if ( ((~0x2F00 << (bits_in_int - 16)) << reg) < 0 ) // 36%
-				cpu_write_smp_reg( data, time, reg );
+			{
+				if ( reg == r_dspdata ) // 99%
+					dsp_write( data, time );
+				else
+					cpu_write_smp_reg_( data, time, reg);
+			}
 		}
 		// High mem/address wrap-around
 		else
