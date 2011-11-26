@@ -180,7 +180,6 @@
 #include "apu.h"
 #include "snapshot.h"
 #include "display.h"
-#include "hermite_resampler.h"
 
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512
@@ -189,7 +188,6 @@
 #define APU_DENOMINATOR_NTSC		328125
 #define APU_NUMERATOR_PAL		34176
 #define APU_DENOMINATOR_PAL		709379
-#define APU_DEFAULT_RESAMPLER		HermiteResampler
 
 SNES_SPC	*spc_core = NULL;
 
@@ -215,10 +213,10 @@ static int		lag             = 0;
 
 static uint8		*landing_buffer = NULL;
 
-static HermiteResampler	*resampler      = NULL;
+static bool8		resampler      = false;
 
 static int32		reference_time;
-static uint32		remainder;
+static uint32		spc_remainder;
 
 static const int	timing_hack_numerator   = SNES_SPC::tempo_unit;
 static int		timing_hack_denominator = SNES_SPC::tempo_unit;
@@ -227,33 +225,203 @@ static int		timing_hack_denominator = SNES_SPC::tempo_unit;
 static uint32		ratio_numerator = APU_NUMERATOR_NTSC;
 static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 
-bool8 S9xMixSamples (uint8 *buffer, int sample_count)
+/***********************************************************************************
+RESAMPLER
+ ***********************************************************************************/
+static int rb_size;
+static int rb_buffer_size;
+static int rb_start;
+static unsigned char *rb_buffer;
+static double r_step;
+static double r_frac;
+static int    r_left[4], r_right[4];
+
+#define SPACE_EMPTY() (rb_buffer_size - rb_size)
+#define SPACE_FILLED() (rb_size)
+#define MAX_WRITE() (SPACE_EMPTY() >> 1)
+#define AVAIL() ((int) floor (((rb_size >> 2) - r_frac) / r_step) * 2)
+
+#define RESAMPLER_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+#define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
+
+static double hermite (double mu1, double a, double b, double c, double d)
 {
-	uint8	*dest = buffer;
+	const double tension = 0.0; //-1 = low, 0 = normal, 1 = high
+	const double bias    = 0.0; //-1 = left, 0 = even, 1 = right
 
-	if (Settings.Mute)
+	double mu2, mu3, m0, m1, a0, a1, a2, a3;
+
+	mu2 = mu1 * mu1;
+	mu3 = mu2 * mu1;
+
+	m0  = (b - a) * (1 + bias) * (1 - tension) / 2;
+	m0 += (c - b) * (1 - bias) * (1 - tension) / 2;
+	m1  = (c - b) * (1 + bias) * (1 - tension) / 2;
+	m1 += (d - c) * (1 - bias) * (1 - tension) / 2;
+
+	a0 = +2 * mu3 - 3 * mu2 + 1;
+	a1 =      mu3 - 2 * mu2 + mu1;
+	a2 =      mu3 -     mu2;
+	a3 = -2 * mu3 + 3 * mu2;
+
+	return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
+}
+
+static void resampler_clear(void)
+{
+	rb_start = 0;
+	rb_size = 0;
+	memset (rb_buffer,  0, rb_buffer_size);
+
+	r_frac = 1.0;
+	r_left [0] = r_left [1] = r_left [2] = r_left [3] = 0;
+	r_right[0] = r_right[1] = r_right[2] = r_right[3] = 0;
+}
+
+static void resampler_time_ratio(double ratio)
+{
+	r_step = ratio;
+	resampler_clear();
+}
+
+static void resampler_read(short *data, int num_samples)
+{
+	int i_position = rb_start >> 1;
+	short *internal_buffer = (short *)rb_buffer;
+	int o_position = 0;
+	int consumed = 0;
+
+	while (o_position < num_samples && consumed < rb_buffer_size)
 	{
-		memset(dest, 0, sample_count << 1);
-		resampler->clear();
+		int s_left = internal_buffer[i_position];
+		int s_right = internal_buffer[i_position + 1];
+		int max_samples = rb_buffer_size >> 1;
+		const double margin_of_error = 1.0e-10;
 
-		return (FALSE);
+		if (fabs(r_step - 1.0) < margin_of_error)
+		{
+			data[o_position] = (short) s_left;
+			data[o_position + 1] = (short) s_right;
+
+			o_position += 2; i_position += 2;
+			if (i_position >= max_samples)
+				i_position -= max_samples;
+			consumed += 2;
+
+			continue;
+		}
+
+		while (r_frac <= 1.0 && o_position < num_samples)
+		{
+			data[o_position]     = SHORT_CLAMP (hermite(r_frac, r_left [0], r_left [1], r_left [2], r_left [3]));
+			data[o_position + 1] = SHORT_CLAMP (hermite(r_frac, r_right[0], r_right[1], r_right[2], r_right[3]));
+
+			o_position += 2;
+
+			r_frac += r_step;
+		}
+
+		if (r_frac > 1.0)
+		{
+			r_left [0] = r_left [1];
+			r_left [1] = r_left [2];
+			r_left [2] = r_left [3];
+			r_left [3] = s_left;
+
+			r_right[0] = r_right[1];
+			r_right[1] = r_right[2];
+			r_right[2] = r_right[3];
+			r_right[3] = s_right;                    
+
+			r_frac -= 1.0;
+
+			i_position += 2;
+			if (i_position >= max_samples)
+				i_position -= max_samples;
+			consumed += 2;
+		}
+	}
+
+	rb_size -= consumed << 1;
+	rb_start += consumed << 1;
+	if (rb_start >= rb_buffer_size)
+		rb_start -= rb_buffer_size;
+}
+
+static void resampler_new(int num_samples)
+{
+	int new_size = num_samples << 1;
+
+	rb_buffer_size = new_size;
+	rb_buffer = new unsigned char[rb_buffer_size];
+	memset (rb_buffer, 0, rb_buffer_size);
+
+	rb_size = 0;
+	rb_start = 0;
+	resampler_clear();
+}
+
+static bool ring_buffer_push(unsigned char *src, int bytes)
+{
+	int end = (rb_start + rb_size) % rb_buffer_size;
+	int first_write_size = RESAMPLER_MIN(bytes, rb_buffer_size - end);
+
+	memcpy (rb_buffer + end, src, first_write_size);
+
+	if (bytes > first_write_size)
+		memcpy (rb_buffer, src + first_write_size, bytes - first_write_size);
+
+	rb_size += bytes;
+
+	return true;
+}
+
+
+static inline bool resampler_push(short *src, int num_samples)
+{
+	int bytes = num_samples << 1;
+	if (MAX_WRITE() < num_samples || SPACE_EMPTY() < bytes)
+		return false;
+
+	!num_samples || ring_buffer_push((unsigned char *)src, bytes);
+
+	return true;
+}
+
+static inline void resampler_resize (int num_samples)
+{
+	int size = num_samples << 1;
+	delete[] rb_buffer;
+	rb_buffer_size = rb_size;
+	rb_buffer = new unsigned char[rb_buffer_size];
+	memset (rb_buffer, 0, rb_buffer_size);
+
+	rb_size = 0;
+	rb_start = 0;
+}
+
+/***********************************************************************************
+APU
+ ***********************************************************************************/
+
+bool8 S9xMixSamples (short *buffer, int sample_count)
+{
+	short	*dest = buffer;
+
+	if (AVAIL() >= (sample_count + lag))
+	{
+		resampler_read(dest, sample_count);
+		if (lag == lag_master)
+			lag = 0;
 	}
 	else
 	{
-		if (resampler->avail() >= (sample_count + lag))
-		{
-			resampler->read((short *) dest, sample_count);
-			if (lag == lag_master)
-				lag = 0;
-		}
-		else
-		{
-			memset(buffer, 0, (sample_count << 1) >> 0);
-			if (lag == 0)
-				lag = lag_master;
+		memset(buffer, 0, (sample_count << 1) >> 0);
+		if (lag == 0)
+			lag = lag_master;
 
-			return (FALSE);
-		}
+		return (FALSE);
 	}
 
 	return (TRUE);
@@ -261,27 +429,24 @@ bool8 S9xMixSamples (uint8 *buffer, int sample_count)
 
 int S9xGetSampleCount (void)
 {
-	return resampler->avail();
+	return AVAIL();
 }
 
 void S9xFinalizeSamples (void)
 {
-	if (!resampler->push((short *) landing_buffer, spc_core->sample_count()))
+	if (!resampler_push((short *) landing_buffer, spc_core->sample_count()))
 	{
 		/* We weren't able to process the entire buffer. Potential overrun. */
 		sound_in_sync = FALSE;
 
-		if (Settings.SoundSync && !Settings.TurboMode)
+		if (Settings.SoundSync)
 			return;
 	}
 
-	if (!Settings.SoundSync)
+	sound_in_sync = FALSE;
+
+	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED()))
 		sound_in_sync = TRUE;
-	else
-	if (resampler->space_empty() >= resampler->space_filled())
-		sound_in_sync = TRUE;
-	else
-		sound_in_sync = FALSE;
 
 	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
 }
@@ -296,7 +461,7 @@ void S9xLandSamples (void)
 
 void S9xClearSamples (void)
 {
-	resampler->clear();
+	resampler_clear();
 	lag = lag_master;
 }
 
@@ -321,7 +486,7 @@ static void UpdatePlaybackRate (void)
 		Settings.SoundInputRate = APU_DEFAULT_INPUT_RATE;
 
 	double time_ratio = (double) Settings.SoundInputRate * timing_hack_numerator / (Settings.SoundPlaybackRate * timing_hack_denominator);
-	resampler->time_ratio(time_ratio);
+	resampler_time_ratio(time_ratio);
 }
 
 bool8 S9xInitSound (int buffer_ms, int lag_ms)
@@ -357,15 +522,11 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
 	if (!resampler)
 	{
-		resampler = new APU_DEFAULT_RESAMPLER(buffer_size >> (Settings.SoundSync ? 0 : 1));
-		if (!resampler)
-		{
-			delete[] landing_buffer;
-			return (FALSE);
-		}
+		resampler_new(buffer_size >> (Settings.SoundSync ? 0 : 1));
+		resampler = true;
 	}
 	else
-		resampler->resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
+		resampler_resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
 
 	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
 
@@ -384,7 +545,6 @@ bool8 S9xInitAPU (void)
 	spc_core->init_rom(APUROM);
 
 	landing_buffer = NULL;
-	resampler      = NULL;
 
 	return (TRUE);
 }
@@ -399,8 +559,8 @@ void S9xDeinitAPU (void)
 
 	if (resampler)
 	{
-		delete resampler;
-		resampler = NULL;
+		delete[] rb_buffer;
+		resampler = false;
 	}
 
 	if (landing_buffer)
@@ -412,13 +572,13 @@ void S9xDeinitAPU (void)
 
 static inline int S9xAPUGetClock (int32 cpucycles)
 {
-	return (ratio_numerator * (cpucycles - reference_time) + remainder) /
+	return (ratio_numerator * (cpucycles - reference_time) + spc_remainder) /
 			ratio_denominator;
 }
 
 static inline int S9xAPUGetClockRemainder (int32 cpucycles)
 {
-	return (ratio_numerator * (cpucycles - reference_time) + remainder) %
+	return (ratio_numerator * (cpucycles - reference_time) + spc_remainder) %
 			ratio_denominator;
 }
 
@@ -442,7 +602,7 @@ void S9xAPUExecute (void)
 	/* Accumulate partial APU cycles */
 	spc_core->end_frame(S9xAPUGetClock(CPU.Cycles));
 
-	remainder = S9xAPUGetClockRemainder(CPU.Cycles);
+	spc_remainder = S9xAPUGetClockRemainder(CPU.Cycles);
 
 	S9xAPUSetReferenceTime(CPU.Cycles);
 }
@@ -478,21 +638,21 @@ void S9xAPUAllowTimeOverflow (bool allow)
 void S9xResetAPU (void)
 {
 	reference_time = 0;
-	remainder = 0;
+	spc_remainder = 0;
 	spc_core->reset();
 	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
 
-	resampler->clear();
+	resampler_clear();
 }
 
 void S9xSoftResetAPU (void)
 {
 	reference_time = 0;
-	remainder = 0;
+	spc_remainder = 0;
 	spc_core->soft_reset();
 	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
 
-	resampler->clear();
+	resampler_clear();
 }
 
 static void from_apu_to_state (uint8 **buf, void *var, size_t size)
@@ -515,7 +675,7 @@ void S9xAPUSaveState (uint8 *block)
 
 	SET_LE32(ptr, reference_time);
 	ptr += sizeof(int32);
-	SET_LE32(ptr, remainder);
+	SET_LE32(ptr, spc_remainder);
 }
 
 void S9xAPULoadState (uint8 *block)
@@ -528,6 +688,6 @@ void S9xAPULoadState (uint8 *block)
 
 	reference_time = GET_LE32(ptr);
 	ptr += sizeof(int32);
-	remainder = GET_LE32(ptr);
+	spc_remainder = GET_LE32(ptr);
 }
 

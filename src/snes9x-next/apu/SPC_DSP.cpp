@@ -145,11 +145,12 @@ inline int SPC_DSP::interpolate( voice_t const* v )
 
 //// Counters
 
-int const simple_counter_range = 2048 * 5 * 3; // 30720
+// 30720 =  2048 * 5 * 3
+#define SIMPLE_COUNTER_RANGE 30720
 
 static unsigned const counter_rates [32] =
 {
-   simple_counter_range + 1, // never fires
+   SIMPLE_COUNTER_RANGE + 1, // never fires
           2048, 1536,
 	1280, 1024,  768,
 	 640,  512,  384,
@@ -184,9 +185,9 @@ static unsigned const counter_offsets [32] =
 
 #define run_counters() \
 	if ( --m.counter < 0 ) \
-		m.counter = simple_counter_range - 1;
+		m.counter = SIMPLE_COUNTER_RANGE - 1;
 
-#define read_counter(rate) (((unsigned) m.counter + counter_offsets [rate]) % counter_rates [rate]);
+#define read_counter(rate) (((unsigned) m.counter + counter_offsets [rate]) % counter_rates [rate])
 
 //// Envelope
 
@@ -264,7 +265,7 @@ inline void SPC_DSP::run_envelope( voice_t* const v )
 				v->env_mode = env_decay;
 		}
 		
-		if ( !read_counter( rate ) )
+		if (!read_counter( rate ))
 			v->env = env; // nothing else is controlled by the counter
 	}
 }
@@ -389,7 +390,7 @@ inline void SPC_DSP::voice_V3a( voice_t* const v )
 	m.t_pitch += (v->regs [v_pitchh] & 0x3F) << 8;
 }
 
-inline void spc_dsp::voice_v3b( voice_t* const v )
+inline void SPC_DSP::voice_V3b( voice_t* const v )
 {
 	m.t_brr_byte = m.ram [(v->brr_addr + v->brr_offset) & 0xffff];
 	m.t_brr_header = m.ram [v->brr_addr];
@@ -656,10 +657,9 @@ inline void SPC_DSP::echo_25()
 }
 
 #define echo_output(var, ch) \
-{
-	var = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(mvoll + ch * 0x10)) >> 7) +
-			(int16_t) ((m.t_echo_in [ch] * (int8_t) REG(evoll + ch * 0x10)) >> 7);
-	CLAMP16( out );
+{ \
+	var = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(mvoll + ch * 0x10)) >> 7) + (int16_t) ((m.t_echo_in [ch] * (int8_t) REG(evoll + ch * 0x10)) >> 7); \
+	CLAMP16( var ); \
 }
 
 inline void SPC_DSP::echo_26()

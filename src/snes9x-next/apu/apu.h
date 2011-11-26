@@ -206,7 +206,7 @@ int S9xGetSampleCount (void);
 void S9xLandSamples (void);
 void S9xFinalizeSamples (void);
 void S9xClearSamples (void);
-bool8 S9xMixSamples (uint8 *, int);
+bool8 S9xMixSamples (short *, int);
 void S9xSetSamplesAvailableCallback (apu_callback);
 
 extern SNES_SPC	*spc_core;

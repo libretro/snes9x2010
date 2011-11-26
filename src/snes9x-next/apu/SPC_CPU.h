@@ -218,6 +218,7 @@ loop:
 	
 	case 0xC4: // MOV dp,a
 		++pc;
+		{
 			int i = dp + data;
 			ram [i] = (uint8_t) a;
 			i -= 0xF0;
@@ -231,6 +232,7 @@ loop:
 				else if ( sel > 1 ) // 1% not $F2 or $F3
 					cpu_write_smp_reg_( a, rel_time, i );
 			}
+		}
 		goto loop;
 	
 #define CASE( n )   case n:
@@ -277,7 +279,9 @@ loop:
 		a = nz = READ( 0, data );
 		goto inc_pc_loop;
 	
-	case 0xBF:{// MOV A,(X)+
+	case 0xBF:
+	{
+		// MOV A,(X)+
 		int temp = x + dp;
 		x = (uint8_t) (x + 1);
 		a = nz = READ( -1, temp );

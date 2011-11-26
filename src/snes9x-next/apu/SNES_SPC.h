@@ -57,7 +57,6 @@ public:
 	// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
 	// Reduces emulation accuracy.
 	enum { voice_count = 8 };
-	void mute_voices( int mask );
 	
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	enum { tempo_unit = 0x100 };
@@ -232,8 +231,6 @@ inline void SNES_SPC::write_port( time_t t, int port, int data )
 	m.ram.ram [0xF4 + port] = data;
 }
 
-inline void SNES_SPC::mute_voices( int mask ) { dsp.mute_voices( mask ); }
-	
 inline void SNES_SPC::spc_allow_time_overflow( bool allow ) { allow_time_overflow = allow; }
 
 #endif

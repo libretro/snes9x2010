@@ -73,7 +73,6 @@ void SNES_SPC::init()
 	memcpy( reg_times, reg_times_, sizeof reg_times );
 	
 	reset();
-	return 0;
 }
 
 void SNES_SPC::init_rom( uint8_t const in [rom_size] )

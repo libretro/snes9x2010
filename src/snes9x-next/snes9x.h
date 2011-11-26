@@ -360,6 +360,7 @@ struct STimings
 
 struct SSettings
 {
+	bool	SoundSync;
 	bool	SuperFX;
 	uint8	DSP;
 	bool	SA1;
