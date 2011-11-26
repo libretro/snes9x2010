@@ -65,8 +65,6 @@ PPU_SRCS		+= $(SNES9X_API_DIR)/tile.cpp \
 			$(SNES9X_API_DIR)/memmap.cpp \
 			$(SNES9X_API_DIR)/apu/apu.cpp \
 			$(SNES9X_API_DIR)/apu/SNES_SPC.cpp \
-			$(SNES9X_API_DIR)/apu/SNES_SPC_misc.cpp \
-			$(SNES9X_API_DIR)/apu/SNES_SPC_state.cpp \
 			$(SNES9X_API_DIR)/apu/SPC_DSP.cpp \
 			$(SNES9X_API_DIR)/bsx.cpp \
 			$(SNES9X_API_DIR)/c4.cpp \
@@ -81,7 +79,6 @@ PPU_SRCS		+= $(SNES9X_API_DIR)/tile.cpp \
 			$(SNES9X_API_DIR)/dsp3.cpp \
 			$(SNES9X_API_DIR)/dsp4.cpp \
 			$(SNES9X_API_DIR)/globals.cpp \
-			$(SNES9X_API_DIR)/loadzip.cpp \
 			$(SNES9X_API_DIR)/obc1.cpp \
 			$(SNES9X_API_DIR)/reader.cpp \
 			$(SNES9X_API_DIR)/sdd1.cpp \

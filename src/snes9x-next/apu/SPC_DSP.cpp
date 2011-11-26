@@ -69,7 +69,7 @@ static BOOST::uint8_t const initial_regs [SPC_DSP::register_count] =
 	}\
 }\
 
-void SPC_DSP::set_output( sample_t* out, int size )
+void SPC_DSP::set_output( short * out, int size )
 {
 	if ( !out )
 	{
@@ -690,8 +690,7 @@ inline void SPC_DSP::echo_27()
 		r = 0;
 	}
 
-
-	sample_t* out = m.out;
+	short * out = m.out;
 	out [0] = l;
 	out [1] = r;
 	out += 2;

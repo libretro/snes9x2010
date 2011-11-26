@@ -19,8 +19,7 @@ public:
 
 	// Sets destination for output samples. If out is NULL or out_size is 0,
 	// doesn't generate any.
-	typedef short sample_t;
-	void set_output( sample_t* out, int out_size );
+	void set_output( short* out, int out_size );
 
 	// Number of samples written to output since it was last set, always
 	// a multiple of 2. Undefined if more samples were generated than
@@ -88,8 +87,8 @@ public:
 
 public:
 	enum { extra_size = 16 };
-	sample_t* extra()               { return m.extra; }
-	sample_t const* out_pos() const { return m.out; }
+	short* extra()               { return m.extra; }
+	short const* out_pos() const { return m.out; }
 public:
 	BLARGG_DISABLE_NOTHROW
 	
@@ -175,10 +174,10 @@ private:
 		
 		// non-emulation state
 		uint8_t* ram; // 64K shared RAM between DSP and SMP
-		sample_t* out;
-		sample_t* out_end;
-		sample_t* out_begin;
-		sample_t extra [extra_size];
+		short* out;
+		short* out_end;
+		short* out_begin;
+		short extra [extra_size];
 	};
 	state_t m;
 	

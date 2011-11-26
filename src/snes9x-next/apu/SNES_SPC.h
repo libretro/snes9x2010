@@ -25,8 +25,7 @@ public:
 	void init_rom( uint8_t const rom [rom_size] );
 
 	// Sets destination for output samples
-	typedef short sample_t;
-	void set_output( sample_t* out, int out_size );
+	void set_output( short* out, int out_size );
 
 	// Number of samples written to output since last set
 	int sample_count() const;
@@ -95,8 +94,6 @@ public:
 	enum { timer_count = 3 };
 	enum { extra_size = SPC_DSP::extra_size };
 	
-	enum { signature_size = 35 };
-
 	// Support SNES_MEMORY_APURAM
 	uint8_t *apuram();
 	
@@ -128,10 +125,10 @@ private:
 		int         tempo;
 		
 		int         extra_clocks;
-		sample_t*   buf_begin;
-		sample_t const* buf_end;
-		sample_t*   extra_pos;
-		sample_t    extra_buf [extra_size];
+		short*   buf_begin;
+		short const* buf_end;
+		short*   extra_pos;
+		short    extra_buf [extra_size];
 		
 		int         rom_enabled;
 		uint8_t     rom    [rom_size];
@@ -191,28 +188,7 @@ private:
 	int cpu_read           ( int addr, rel_time_t );
 	unsigned CPU_mem_bit   ( uint8_t const* pc, rel_time_t );
 	
-	bool check_echo_access ( int addr );
 	uint8_t* run_until_( time_t end_time );
-	
-	struct spc_file_t
-	{
-		char    signature [signature_size];
-		uint8_t has_id666;
-		uint8_t version;
-		uint8_t pcl, pch;
-		uint8_t a;
-		uint8_t x;
-		uint8_t y;
-		uint8_t psw;
-		uint8_t sp;
-		char    text [212];
-		uint8_t ram [0x10000];
-		uint8_t dsp [128];
-		uint8_t unused [0x40];
-		uint8_t ipl_rom [0x40];
-	};
-
-	static char const signature [signature_size + 1];
 	
 // Snes9x timing hack
 	bool allow_time_overflow;

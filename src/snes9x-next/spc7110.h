@@ -233,17 +233,17 @@ struct SSPC7110Snapshot
 	uint8	r4833;
 	uint8	r4834;
 
-	uint32	dx_offset;				// unsigned
-	uint32	ex_offset;				// unsigned
-	uint32	fx_offset;				// unsigned
+	uint32	dx_offset;			// unsigned
+	uint32	ex_offset;			// unsigned
+	uint32	fx_offset;			// unsigned
 
 	uint8	r4840;
 	uint8	r4841;
 	uint8	r4842;
 
-	int32	rtc_state;				// enum RTC_State
-	int32	rtc_mode;				// enum RTC_Mode
-	uint32	rtc_index;				// unsigned
+	int32	rtc_state;			// enum RTC_State
+	int32	rtc_mode;			// enum RTC_Mode
+	uint32	rtc_index;			// unsigned
 
 	uint32	decomp_mode;			// unsigned
 	uint32	decomp_offset;			// unsigned

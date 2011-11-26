@@ -26,7 +26,6 @@ public:
   void init();
   void enable();
   void power();
-  void reset();
 
   unsigned datarom_addr(unsigned addr);
 
@@ -129,8 +128,6 @@ public:
   enum RTC_State { RTCS_Inactive, RTCS_ModeSelect, RTCS_IndexSelect, RTCS_Write } rtc_state;
   enum RTC_Mode  { RTCM_Linear = 0x03, RTCM_Indexed = 0x0c } rtc_mode;
   unsigned rtc_index;
-
-  static const unsigned months[12];
 };
 
 #endif

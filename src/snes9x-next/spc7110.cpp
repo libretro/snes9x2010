@@ -211,9 +211,6 @@
 
 SPC7110	s7emu;
 
-static void SetSPC7110SRAMMap (uint8);
-
-
 void S9xInitSPC7110 (void)
 {
 	s7emu.power();
@@ -222,7 +219,7 @@ void S9xInitSPC7110 (void)
 
 void S9xResetSPC7110 (void)
 {
-	s7emu.reset();
+	s7emu.power();
 }
 
 static void SetSPC7110SRAMMap (uint8 newstate)

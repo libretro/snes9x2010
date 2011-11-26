@@ -176,10 +176,10 @@
 
 
 #include <math.h>
-#include "snes9x.h"
+#include "../snes9x.h"
 #include "apu.h"
-#include "snapshot.h"
-#include "display.h"
+#include "../snapshot.h"
+#include "../display.h"
 
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512
@@ -211,7 +211,7 @@ static int		buffer_size;
 static int		lag_master      = 0;
 static int		lag             = 0;
 
-static uint8		*landing_buffer = NULL;
+static short		*landing_buffer = NULL;
 
 static bool8		resampler      = false;
 
@@ -448,7 +448,7 @@ void S9xFinalizeSamples (void)
 	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED()))
 		sound_in_sync = TRUE;
 
-	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
+	spc_core->set_output(landing_buffer, buffer_size >> 1);
 }
 
 void S9xLandSamples (void)
@@ -514,7 +514,7 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 
 	if (landing_buffer)
 		delete[] landing_buffer;
-	landing_buffer = new uint8[buffer_size * 2];
+	landing_buffer = new short[buffer_size * 2];
 	if (!landing_buffer)
 		return (FALSE);
 
@@ -528,7 +528,7 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	else
 		resampler_resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
 
-	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
+	spc_core->set_output(landing_buffer, buffer_size >> 1);
 
 	UpdatePlaybackRate();
 
@@ -640,7 +640,7 @@ void S9xResetAPU (void)
 	reference_time = 0;
 	spc_remainder = 0;
 	spc_core->reset();
-	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
+	spc_core->set_output(landing_buffer, buffer_size >> 1);
 
 	resampler_clear();
 }
@@ -650,7 +650,7 @@ void S9xSoftResetAPU (void)
 	reference_time = 0;
 	spc_remainder = 0;
 	spc_core->soft_reset();
-	spc_core->set_output((SNES_SPC::sample_t *) landing_buffer, buffer_size >> 1);
+	spc_core->set_output(landing_buffer, buffer_size >> 1);
 
 	resampler_clear();
 }

@@ -235,23 +235,6 @@ static bool8	FlashMode;
 static uint32	FlashSize;
 static uint8	*MapROM, *FlashROM;
 
-static void BSX_Map_SNES (void);
-static void BSX_Map_LoROM (void);
-static void BSX_Map_HiROM (void);
-static void BSX_Map_MMC (void);
-static void BSX_Map_FlashIO (void);
-static void BSX_Map_SRAM (void);
-static void BSX_Map_PSRAM (void);
-static void BSX_Map_BIOS (void);
-static void BSX_Map_RAM (void);
-static void BSX_Map_Dirty (void);
-static void BSX_Map (void);
-static void BSX_Set_Bypass_FlashIO (uint16, uint8);
-static uint8 BSX_Get_Bypass_FlashIO (uint16);
-static void map_psram_mirror_sub (uint32);
-static int is_bsx (unsigned char *);
-
-
 static void BSX_Map_SNES (void)
 {
 	// These maps will be partially overwritten
@@ -1021,6 +1004,30 @@ static bool8 BSX_LoadBIOS (void)
 #endif
 }
 
+static bool valid_normal_bank (unsigned char bankbyte)
+{
+	if(bankbyte == 32 || bankbyte == 33 || bankbyte == 48 || bankbyte == 49)
+		return (true);
+	else
+		return (false);
+}
+
+static int is_bsx (unsigned char *p)
+{
+	if ((p[26] == 0x33 || p[26] == 0xFF) && (!p[21] || (p[21] & 131) == 128) && valid_normal_bank(p[24]))
+	{
+		unsigned char	m = p[22];
+
+		if (!m && !p[23])
+			return (2);
+
+		if ((m == 0xFF && p[23] == 0xFF) || (!(m & 0xF) && ((m >> 4) - 1 < 12)))
+			return (1);
+	}
+
+	return (0);
+}
+
 void S9xInitBSX (void)
 {
 	Settings.BS = FALSE;
@@ -1170,28 +1177,4 @@ void S9xBSXPostLoadState (void)
 	memcpy(BSX.MMC, temp, sizeof(BSX.MMC));
 	BSX.dirty  = pd1;
 	BSX.dirty2 = pd2;
-}
-
-static bool valid_normal_bank (unsigned char bankbyte)
-{
-	if(bankbyte == 32 || bankbyte == 33 || bankbyte == 48 || bankbyte == 49)
-		return (true);
-	else
-		return (false);
-}
-
-static int is_bsx (unsigned char *p)
-{
-	if ((p[26] == 0x33 || p[26] == 0xFF) && (!p[21] || (p[21] & 131) == 128) && valid_normal_bank(p[24]))
-	{
-		unsigned char	m = p[22];
-
-		if (!m && !p[23])
-			return (2);
-
-		if ((m == 0xFF && p[23] == 0xFF) || (!(m & 0xF) && ((m >> 4) - 1 < 12)))
-			return (1);
-	}
-
-	return (0);
 }
