@@ -196,6 +196,23 @@
 #define S9xBadMapping			255
 #define InvalidControlID		((uint32) -1)
 
+#define NONE				(-2)
+#define MP5				(-1)
+#define JOYPAD0				0
+#define JOYPAD1				1
+#define JOYPAD2				2
+#define JOYPAD3				3
+#define JOYPAD4				4
+#define JOYPAD5				5
+#define JOYPAD6				6
+#define JOYPAD7				7
+#define MOUSE0				8
+#define MOUSE1				9
+#define SUPERSCOPE			10
+#define ONE_JUSTIFIER			11
+#define TWO_JUSTIFIERS			12
+#define NUMCTLS				13 // This must be LAST
+
 typedef struct
 {
 	uint8	type;
