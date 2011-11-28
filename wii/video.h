@@ -15,7 +15,7 @@
 
 #include <ogcsys.h>
 
-#include "../snes9x-next/snes9x.h"
+#include "../src/snes9x.h"
 
 void AllocGfxMem();
 void InitGCVideo ();

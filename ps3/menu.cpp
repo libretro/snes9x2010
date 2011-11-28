@@ -11,11 +11,7 @@
 #include "cellframework/fileio/FileBrowser.hpp"
 
 //emulator-specific
-#ifdef SNES9X_NEXT
-#include "snes9x-next/snes9x.h"
-#else
-#include "snes9x/snes9x.h"
-#endif
+#include "../src/snes9x.h"
 #include "emu-ps3.hpp"
 
 #include "menu.hpp"

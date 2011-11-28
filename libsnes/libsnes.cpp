@@ -1,14 +1,3 @@
-#include "libsnes.hpp"
-
-#include "snes9x.h"
-#include "memmap.h"
-#include "srtc.h"
-#include "apu/apu.h"
-#include "gfx.h"
-#include "snapshot.h"
-#include "controls.h"
-#include "cheats.h"
-#include "display.h"
 #include <stdio.h>
 #ifndef __WIN32__
 #include <unistd.h>
@@ -16,7 +5,17 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include "libsnes.hpp"
 
+#include "../src/snes9x.h"
+#include "../src/memmap.h"
+#include "../src/srtc.h"
+#include "../src/apu/apu.h"
+#include "../src/gfx.h"
+#include "../src/snapshot.h"
+#include "../src/controls.h"
+#include "../src/cheats.h"
+#include "../src/display.h"
 
 static snes_video_refresh_t s9x_video_cb = NULL;
 static snes_audio_sample_t s9x_audio_cb = NULL;

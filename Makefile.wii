@@ -16,12 +16,11 @@ include $(DEVKITPPC)/wii_rules
 # INCLUDES is a list of directories containing extra header files
 #---------------------------------------------------------------------------------
 TARGET		:=	boot
-TARGETDIR	:=	executables
-BUILD		:=	build_wii
-SOURCES		:=	src/wii src/wii/images src/wii/sounds src/wii/fonts src/wii/lang \
-			src/wii/gui src/wii/utils src/wii/utils/sz src/wii/utils/unzip \
-			src/snes9x-next src/snes9x-next/apu
-INCLUDES	:=	src src/snes9x-next
+BUILD		:=	objs-wii
+SOURCES		:=	wii wii/images wii/sounds wii/fonts wii/lang \
+			wii/gui wii/utils wii/utils/unzip \
+			src src/apu
+INCLUDES	:=	src
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -40,8 +39,7 @@ LDFLAGS		=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-ldi -liso9660 -lpng -lmxml \
-			-lfat -lwiiuse -lz -lbte -lasnd -logc -lvorbisidec -lfreetype -ltinysmb
+LIBS	:= -ldi -liso9660 -lpng -lmxml -lfat -lwiiuse -lz -lbte -lasnd -logc -lfreetype
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
@@ -55,7 +53,7 @@ LIBDIRS	:= $(PORTLIBS)
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
-export OUTPUT	:=	$(CURDIR)/$(TARGETDIR)/$(TARGET)
+export OUTPUT	:=	$(CURDIR)/wii/pkg
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir))
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
@@ -100,13 +98,12 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib) \
 					-L$(LIBOGC_LIB)
 
-export OUTPUT	:=	$(CURDIR)/$(TARGETDIR)/$(TARGET)
+export OUTPUT	:=	$(CURDIR)/wii/pkg/$(TARGET)
 .PHONY: $(BUILD) clean
 
 #---------------------------------------------------------------------------------
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-	@[ -d $(TARGETDIR) ] || mkdir -p $(TARGETDIR)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile.wii
 
 #---------------------------------------------------------------------------------
@@ -135,7 +132,7 @@ $(OUTPUT).dol: $(OUTPUT).elf
 $(OUTPUT).elf: $(OFILES)
 
 #---------------------------------------------------------------------------------
-# This rule links in binary data with these extensions: ttf lang png ogg pcm
+# This rule links in binary data with these extensions: ttf lang png
 #---------------------------------------------------------------------------------
 %.ttf.o : %.ttf
 	@echo $(notdir $<)
@@ -149,14 +146,6 @@ $(OUTPUT).elf: $(OFILES)
 	@echo $(notdir $<)
 	$(bin2o)
 	
-%.ogg.o : %.ogg
-	@echo $(notdir $<)
-	$(bin2o)
-	
-%.pcm.o : %.pcm
-	@echo $(notdir $<)
-	$(bin2o)
-
 -include $(DEPENDS)
 
 #---------------------------------------------------------------------------------

@@ -15,7 +15,7 @@
 #define _SNES9XGX_H_
 
 #include "utils/FreeTypeGX.h"
-#include "../snes9x-next/snes9x.h"
+#include "../src/snes9x.h"
 #include "filelist.h"
 
 #define APPNAME 		"Snes9x GX"

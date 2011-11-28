@@ -31,10 +31,10 @@
 #include "freeze.h"
 #include "sram.h"
 
-#include "../snes9x-next/snes9x.h"
-#include "../snes9x-next/memmap.h"
-#include "../snes9x-next/cheats.h"
-#include "../snes9x-next/reader.h"
+#include "../src/snes9x.h"
+#include "../src/memmap.h"
+#include "../src/cheats.h"
+#include "../src/reader.h"
 
 BROWSERINFO browser;
 BROWSERENTRY * browserList = NULL; // list of files/folders in browser

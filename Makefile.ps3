@@ -34,19 +34,18 @@ include $(CELL_MK_DIR)/sdk.makedef.mk
 
 # Geohot CFW defines
 MKSELF_GEOHOT        = make_self_npdrm
-MKPKG_PSLIGHT        = buildtools/PS3Py/pkg.py
+MKPKG_PSLIGHT        = ps3/buildtools/PS3Py/pkg.py
 PKG_FINALIZE         = package_finalize
 
 STRIP                = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-strip
 C                    = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-gcc
 CC                   = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-g++
 
-UTILS_DIR            = ./utils
-SRC_DIR              = ./src
-SNES9X_API_DIR       = ./src/snes9x-next
-CELL_FRAMEWORK_DIR	= ./src/cellframework
-CELL_FRAMEWORK2_DIR	= ./src/cellframework2
-EBOOT_LAUNCHER_DIR   = eboot-launcher
+UTILS_DIR		= ./utils
+SRC_DIR			= ./ps3
+SNES9X_API_DIR		= ./src
+CELL_FRAMEWORK_DIR	= ./ps3/cellframework
+CELL_FRAMEWORK2_DIR	= ./ps3/cellframework2
 
 EMULATOR_VERSION     = 1.0
 
@@ -140,8 +139,8 @@ PPU_CXXFLAGS		+= -I./src/ -I$(SNES_API_DIR) -I$(UTILS_DIR)/zlib -DZLIB  $(DEFINE
 
 ifeq ($(CELL_BUILD_TOOLS),SNC)
 PARAMS = -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1 -Xnotocrestore=2 -Xc-=rtti
-	PPU_CFLAGS		   += $(PARAMS)
-	PPU_CXXFLAGS		+= $(PARAMS)
+	PPU_CFLAGS	+= $(PARAMS)
+	PPU_CXXFLAGS	+= $(PARAMS)
    NOTOCRESTORE      = --notocrestore
 else
 PPU_CFLAGS		      += -funroll-loops -fno-rtti
@@ -199,29 +198,29 @@ include $(CELL_MK_DIR)/sdk.target.mk
 #standard pkg packaging
 pkg: $(PPU_TARGET) 
 ifeq ($(MULTIMAN_SUPPORT),1)
-	$(MKFSELF_WC) $(PPU_TARGET) pkg/USRDIR/RELOAD.SELF
+	$(MKFSELF_WC) $(PPU_TARGET) ps3/pkg/USRDIR/RELOAD.SELF
 else
-	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) pkg/USRDIR/EBOOT.BIN
+	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
 endif
-	$(MAKE_PACKAGE_NPDRM) pkg/package.conf pkg
+	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
 #massively reduced filesize using MKSELF_GEOHOT - use this for normal jailbreak builds
 .PHONY: pkg-signed
 pkg-signed: $(PPU_TARGET)
 ifeq ($(MULTIMAN_SUPPORT),1)
-	$(MKFSELF_WC) $(PPU_TARGET) pkg/USRDIR/RELOAD.SELF
+	$(MKFSELF_WC) $(PPU_TARGET) ps3/pkg/USRDIR/RELOAD.SELF
 else
-	$(MKSELF_GEOHOT) $(PPU_TARGET) pkg/USRDIR/EBOOT.BIN SNES900000
+	$(MKSELF_GEOHOT) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN SNES900000
 endif
-	$(PYTHONBIN) $(MKPKG_PSLIGHT) --contentid IV0002-SNES90000_00-SAMPLE0000000001 pkg/ snes9xnext-ps3-v$(EMULATOR_VERSION)-fw3.41.pkg
+	$(PYTHONBIN) $(MKPKG_PSLIGHT) --contentid IV0002-SNES90000_00-SAMPLE0000000001 ps3/pkg/ snes9xnext-ps3-v$(EMULATOR_VERSION)-fw3.41.pkg
 
 #use this to create a PKG for use with Geohot CFW 3.55
 .PHONY: pkg-signed-cfw
 pkg-signed-cfw:
 ifeq ($(MULTIMAN_SUPPORT),1)
-	$(MKFSELF_WC) $(PPU_TARGET) pkg/USRDIR/RELOAD.SELF
+	$(MKFSELF_WC) $(PPU_TARGET) ps3/pkg/USRDIR/RELOAD.SELF
 else
-	$(MKSELF_GEOHOT) $(PPU_TARGET) pkg/USRDIR/EBOOT.BIN SNES900000
+	$(MKSELF_GEOHOT) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN SNES900000
 endif
-	$(PYTHONBIN) $(MKPKG_PSLIGHT) --contentid IV0002-SNES90000_00-SAMPLE0000000001 pkg/ snes9xnext-ps3-v$(EMULATOR_VERSION)-cfw3.55.pkg
+	$(PYTHONBIN) $(MKPKG_PSLIGHT) --contentid IV0002-SNES90000_00-SAMPLE0000000001 ps3/pkg/ snes9xnext-ps3-v$(EMULATOR_VERSION)-cfw3.55.pkg
 	$(PKG_FINALIZE) snes9xnext-ps3-v$(EMULATOR_VERSION)-cfw3.55.pkg

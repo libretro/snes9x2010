@@ -25,8 +25,8 @@
 #include "gui/gui.h"
 #include "input.h"
 
-#include "../snes9x-next/gfx.h"
-#include "../snes9x-next/snes9x.h"
+#include "../src/gfx.h"
+#include "../src/snes9x.h"
 
 /*** Snes9x GFX Buffer ***/
 #define EXT_WIDTH		(MAX_SNES_WIDTH + 4)

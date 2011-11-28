@@ -18,7 +18,7 @@
 #define INPUT_PRESET_FILE		2
 
 #define EMULATOR_VERSION		"1.0"
-#define EMULATOR_NAME			"SNES9xNext PS3"
+#define EMULATOR_NAME			"SNES9x Next PS3"
 #define EMULATOR_CONTENT_DIR		"SNES90000"
 
 #define MODE_MENU		0

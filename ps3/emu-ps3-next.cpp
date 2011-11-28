@@ -23,14 +23,14 @@
 #endif
 
 #include <pthread.h>
-#include "snes9x-next/snes9x.h"
-#include "snes9x-next/memmap.h"
-#include "snes9x-next/apu/apu.h"
-#include "snes9x-next/ppu.h"
-#include "snes9x-next/controls.h"
-#include "snes9x-next/cheats.h"
-#include "snes9x-next/display.h"
-#include "snes9x-next/snapshot.h"
+#include "../src/snes9x.h"
+#include "../src/memmap.h"
+#include "../src/apu/apu.h"
+#include "../src/ppu.h"
+#include "../src/controls.h"
+#include "../src/cheats.h"
+#include "../src/display.h"
+#include "../src/snapshot.h"
 
 #include "snes_state/config_file.h"
 
@@ -1816,7 +1816,7 @@ void Emulator_StartROMRunning(uint32_t set_is_running)
 
 static void ingame_menu(void)
 {
-	uint64_t menuitem_colors[MENU_ITEM_LAST];
+	uint32_t menuitem_colors[MENU_ITEM_LAST];
 	char comment[256];
 
 	do

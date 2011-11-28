@@ -32,9 +32,9 @@
 #include "menu.h"
 #include "utils/gettext.h"
 
-#include "../snes9x-next/snes9x.h"
-#include "../snes9x-next/memmap.h"
-#include "../snes9x-next/cheats.h"
+#include "../src/snes9x.h"
+#include "../src/memmap.h"
+#include "../src/cheats.h"
 
 extern SCheatData Cheat;
 

@@ -23,17 +23,17 @@
 #endif
 
 #include <pthread.h>
-#include "snes9x/snes9x.h"
-#include "snes9x/memmap.h"
-#include "snes9x/apu/apu.h"
-#include "snes9x/ppu.h"
-#include "snes9x/controls.h"
-#include "snes9x/cheats.h"
-#include "snes9x/display.h"
+#include "../src/snes9x.h"
+#include "../src/memmap.h"
+#include "../src/apu/apu.h"
+#include "../src/ppu.h"
+#include "../src/controls.h"
+#include "../src/cheats.h"
+#include "../src/display.h"
 
 #include "snes_state/config_file.h"
 
-#include "snes9x/snapshot.h"
+#include "../src/snapshot.h"
 
 #ifdef PS3_PROFILING
 #include "cellframework/network-stdio/net_stdio.h"

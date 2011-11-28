@@ -29,9 +29,9 @@
 #include "input.h"
 #include "gui/gui.h"
 
-#include "../snes9x-next/snes9x.h"
-#include "../snes9x-next/memmap.h"
-#include "../snes9x-next/controls.h"
+#include "../src/snes9x.h"
+#include "../src/memmap.h"
+#include "../src/controls.h"
 
 int rumbleRequest[4] = {0,0,0,0};
 GuiTrigger userInput[4];

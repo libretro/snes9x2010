@@ -21,7 +21,6 @@
 #include <cell/sysmodule.h>
 #include <cell/cell_fs.h>
 #include <sysutil/sysutil_sysparam.h>
-//#include <sysutil/sysutil_discgame.h>
 #include <sysutil/sysutil_common.h>
 
 SYS_PROCESS_PARAM(1001, 0x100000)

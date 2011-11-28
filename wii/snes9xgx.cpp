@@ -42,15 +42,15 @@
 #include "input.h"
 #include "utils/FreeTypeGX.h"
 
-#include "../snes9x-next/cheats.h"
-#include "../snes9x-next/snes9x.h"
-#include "../snes9x-next/memmap.h"
-#include "../snes9x-next/apu/apu.h"
-#include "../snes9x-next/controls.h"
-#include "../snes9x-next/snapshot.h"
-#include "../snes9x-next/display.h"
-#include "../snes9x-next/language.h"
-#include "../snes9x-next/srtc.h"
+#include "../src/cheats.h"
+#include "../src/snes9x.h"
+#include "../src/memmap.h"
+#include "../src/apu/apu.h"
+#include "../src/controls.h"
+#include "../src/snapshot.h"
+#include "../src/display.h"
+#include "../src/language.h"
+#include "../src/srtc.h"
 
 #define MAX_MESSAGE_LEN (36 * 3)
 
