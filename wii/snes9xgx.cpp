@@ -85,8 +85,6 @@ static mutex_t audiomutex = LWP_MUTEX_NULL;
  ***************************************************************************/
 static void MixSamples()
 {
-
-	whichab ^= 1;
 	AUDIO_InitDMA ((u32) soundbuffer[whichab], AUDIOBUFFER);
 	LWP_MutexLock(audiomutex);
 	S9xMixSamples (soundbuffer[whichab], AUDIOBUFFER >> 1);
@@ -99,6 +97,7 @@ static void FinalizeSamplesCallback(void)
 { 
 	LWP_MutexLock(audiomutex);
 	S9xFinalizeSamples();
+	whichab ^= 1;
 	LWP_MutexUnlock(audiomutex);
 }
 

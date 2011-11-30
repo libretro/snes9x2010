@@ -23,6 +23,7 @@
 #endif
 
 #include <pthread.h>
+#include <sys/synchronization.h>
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
 #include "../src/apu/apu.h"
@@ -65,7 +66,7 @@ char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 char MULTIMAN_GAME_TO_BOOT[MAX_PATH_LENGTH];
 #endif
 
-pthread_mutex_t audio_lock = PTHREAD_MUTEX_INITIALIZER;
+sys_lwmutex_t audio_lock;
 cell_audio_handle_t audio_handle;
 const struct cell_audio_driver *audio_driver = &cell_audio_audioport;
 oskutil_params oskutil_handle;
@@ -747,7 +748,7 @@ static bool emulator_init_system(void)
 	else
 		cell_mouse_input_deinit();
 
-	pthread_mutex_lock(&audio_lock);
+	sys_lwmutex_lock(&audio_lock, SYS_NO_TIMEOUT);
 
 	if(emulator_initialized)
 		Memory.Deinit();
@@ -763,7 +764,7 @@ static bool emulator_init_system(void)
 
 	S9xSetSamplesAvailableCallback(S9xAudioCallback);
 	audio_active = true;
-	pthread_mutex_unlock(&audio_lock);
+	sys_lwmutex_unlock(&audio_lock);
 
 	if (current_rom == NULL)
 		return false; //No ROM to load
@@ -2310,6 +2311,9 @@ int main(int argc, char **argv)
 #if(CELL_SDK_VERSION > 0x340000)
 	cellSysutilEnableBgmPlayback();
 #endif
+	sys_lwmutex_attribute_t attr;
+	sys_lwmutex_attribute_initialize(attr);
+	sys_lwmutex_create(&audio_lock, &attr);
 
 	MenuInit();
 
