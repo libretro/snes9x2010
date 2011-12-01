@@ -21,6 +21,12 @@ else ifeq ($(platform), osx)
    TARGET := libsnes.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
+else ifeq ($(platform), ps3)
+   TARGET := libsnes.a
+   SHARED := -shared, -Wl, --version-script=libsnes/link.T
+   CC = ppu-lv2-gcc
+   CXX = ppu-lv2-g++
+   AR = ppu-lv2-ar
 else
    TARGET := snes.dll
    CC = gcc
@@ -55,6 +61,9 @@ all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 	$(CXX) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) -lm
+
+libsnes.a: $(OBJECTS)
+	$(AR) rcs $@ $(OBJECTS)
 
 %.o: %.cpp 
 	$(CXX) $(INCLUDES) $(CXXFLAGS) -c -o $@ $<
