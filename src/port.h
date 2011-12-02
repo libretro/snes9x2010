@@ -188,7 +188,7 @@
 #endif
 #include <time.h>
 #include <string.h>
-#ifdef HAVE_STRINGS_H
+#if defined(HAVE_STRINGS_H) && !defined(__CELLOS_LV2__)
 #include <strings.h>
 #endif
 #include <sys/types.h>
