@@ -74,7 +74,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 		uint64_t nread = 0;
 
 		// set new dir
-		strcpy(filebrowser->dir[filebrowser->directory_stack_size].dir, path);
+		strcpy(filebrowser->dir[filebrowser->directory_stack_size], path);
 
 		// reset num entries
 		filebrowser->file_count = 0;
@@ -94,7 +94,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 			if ((dirent.d_type != CELL_FS_TYPE_REGULAR) && (dirent.d_type != CELL_FS_TYPE_DIRECTORY))
 				continue;
 
-			// skip cur dir
+			// skip past the "." directory (current directory entry)
 			if (dirent.d_type == CELL_FS_TYPE_DIRECTORY && !(strcmp(dirent.d_name, ".")))
 				continue;
 
@@ -181,5 +181,5 @@ void filebrowser_pop_directory (filebrowser_t * filebrowser)
 	if (filebrowser->directory_stack_size > 0)
 		filebrowser->directory_stack_size--;
 
-	filebrowser_parse_directory(filebrowser, filebrowser->dir[filebrowser->directory_stack_size].dir, filebrowser->extensions);
+	filebrowser_parse_directory(filebrowser, filebrowser->dir[filebrowser->directory_stack_size], filebrowser->extensions);
 }
