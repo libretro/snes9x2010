@@ -44,7 +44,6 @@ CC                   = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-g++
 UTILS_DIR		= ./utils
 SRC_DIR			= ./ps3
 SNES9X_API_DIR		= ./src
-CELL_FRAMEWORK_DIR	= ./ps3/cellframework
 CELL_FRAMEWORK2_DIR	= ./ps3/cellframework2
 
 EMULATOR_VERSION     = 1.0
@@ -122,7 +121,7 @@ PPU_SRCS += $(SRC_DIR)/ps3video.cpp \
 			$(SRC_DIR)/ps3input.c \
 			$(SRC_DIR)/emu-ps3-next.cpp \
 			$(CELL_FRAMEWORK2_DIR)/utility/oskutil.c \
-			$(CELL_FRAMEWORK_DIR)/fileio/FileBrowser.cpp
+			$(CELL_FRAMEWORK2_DIR)/fileio/file_browser.c
 
 PPU_TARGET		= snes9x-next-ps3.ppu.elf
 

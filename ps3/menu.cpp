@@ -8,13 +8,14 @@
 #include <sysutil/sysutil_screenshot.h>
 
 #include "cellframework2/input/pad_input.h"
-#include "cellframework/fileio/FileBrowser.hpp"
 
 //emulator-specific
 #include "../src/snes9x.h"
 #include "emu-ps3.hpp"
 
 #include "menu.hpp"
+
+#include "cellframework2/fileio/file_browser.h"
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
@@ -131,7 +132,7 @@ static void RenderBrowser(filebrowser_t * b)
 	for (int i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
 	{
 		currentY = currentY + ySpacing;
-		cellDbgFontPuts(currentX, currentY, Emulator_GetFontSize(), i == current_index ? RED : b->cur[i]->d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i]->d_name);
+		cellDbgFontPuts(currentX, currentY, Emulator_GetFontSize(), i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
 		cellDbgFontDraw();
 	}
 	cellDbgFontDraw();
