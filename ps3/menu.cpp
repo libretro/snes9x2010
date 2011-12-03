@@ -46,7 +46,7 @@ static void UpdateBrowser(filebrowser_t * b)
 
 	if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
 	{
-		if(b->currently_selected < b->dir[b->directory_stack_size].file_count-1)
+		if(b->currently_selected < b->file_count-1)
 		{
 			FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
 
@@ -72,7 +72,7 @@ static void UpdateBrowser(filebrowser_t * b)
 
 	if (CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 	{
-		b->currently_selected = (MIN(b->currently_selected + 5, b->dir[b->directory_stack_size].file_count-1));
+		b->currently_selected = (MIN(b->currently_selected + 5, b->file_count-1));
 		if(CTRL_RIGHT(state))
 			sys_timer_usleep(FILEBROWSER_DELAY);
 		else
@@ -94,7 +94,7 @@ static void UpdateBrowser(filebrowser_t * b)
 
 	if (CTRL_R1(state))
 	{
-		b->currently_selected = (MIN(b->currently_selected + NUM_ENTRY_PER_PAGE, b->dir[b->directory_stack_size].file_count-1));
+		b->currently_selected = (MIN(b->currently_selected + NUM_ENTRY_PER_PAGE, b->file_count-1));
 		sys_timer_usleep(FILEBROWSER_DELAY);
 	}
 
@@ -119,7 +119,7 @@ static void UpdateBrowser(filebrowser_t * b)
 
 static void RenderBrowser(filebrowser_t * b)
 {
-	uint32_t file_count = b->dir[b->directory_stack_size].file_count;
+	uint32_t file_count = b->file_count;
 	int current_index = b->currently_selected;
 
 	int page_number = current_index / NUM_ENTRY_PER_PAGE;
@@ -716,7 +716,7 @@ static void do_ROMMenu(void)
 			{
 				const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
 				snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(browser));
-				filebrowser_push_directory(&browser, newpath, CELL_FS_TYPE_REGULAR | CELL_FS_TYPE_DIRECTORY, ROM_EXTENSIONS);
+				filebrowser_push_directory(&browser, newpath, ROM_EXTENSIONS);
 			}
 		}
 		else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))

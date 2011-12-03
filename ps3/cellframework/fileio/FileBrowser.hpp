@@ -38,9 +38,6 @@
 
 struct DirectoryInfo
 {
-        uint32_t types;
-        uint32_t size;
-        uint32_t file_count;
 	char dir[CELL_FS_MAX_FS_PATH_LENGTH];
 	std::string extensions;
 };
@@ -48,6 +45,7 @@ struct DirectoryInfo
 
 typedef struct
 {
+        uint32_t file_count;		// amount of files in current dir
 	uint32_t currently_selected;	// currently select browser entry
 	uint32_t directory_stack_size;
 	DirectoryInfo dir[128];		// info of the current directory
@@ -56,7 +54,7 @@ typedef struct
 
 void filebrowser_new(filebrowser_t * filebrowser, const char * start_dir, std::string extensions);
 void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char * start_dir, std::string extensions);
-void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, uint32_t types, std::string extensions);
+void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, std::string extensions);
 void filebrowser_pop_directory (filebrowser_t * filebrowser);
 
 #define FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(filebrowser) (filebrowser.dir[filebrowser.directory_stack_size].dir)

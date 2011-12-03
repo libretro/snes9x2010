@@ -75,7 +75,7 @@ static char * substr(const char * str, size_t begin, size_t len)
 	return strndup(str + begin, len);
 }
 
-static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path, uint32_t types, std::string extensions)
+static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path, std::string extensions)
 {
 	int fd;
 	// for extension parsing
@@ -103,10 +103,9 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 		// set new dir
 		strcpy(filebrowser->dir[filebrowser->directory_stack_size].dir, path);
 		filebrowser->dir[filebrowser->directory_stack_size].extensions = extensions;
-		filebrowser->dir[filebrowser->directory_stack_size].types = types;
 
 		// reset num entries
-		filebrowser->dir[filebrowser->directory_stack_size].file_count = 0;
+		filebrowser->file_count = 0;
 
 		// reset currently selected variable for safety
 		filebrowser->currently_selected = 0;
@@ -120,7 +119,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 				break;
 
 			// check for valid types
-			if (dirent.d_type != (types & CELL_FS_TYPE_REGULAR) && dirent.d_type != (types & CELL_FS_TYPE_DIRECTORY))
+			if ((dirent.d_type != CELL_FS_TYPE_REGULAR) && (dirent.d_type != CELL_FS_TYPE_DIRECTORY))
 				continue;
 
 			// skip cur dir
@@ -193,7 +192,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 			filebrowser->cur.push_back(entry);
 
 			// next file
-			++filebrowser->dir[filebrowser->directory_stack_size].file_count;
+			++filebrowser->file_count;
 		}
 
 		cellFsClosedir(fd);
@@ -210,9 +209,8 @@ void filebrowser_new(filebrowser_t * filebrowser, const char * start_dir, std::s
 {
 	filebrowser->currently_selected = 0;
 	filebrowser->directory_stack_size = 0;
-	filebrowser->dir[filebrowser->directory_stack_size].file_count = 0;
 
-	filebrowser_parse_directory(filebrowser, start_dir, CELL_FS_TYPE_DIRECTORY | CELL_FS_TYPE_REGULAR, extensions);
+	filebrowser_parse_directory(filebrowser, start_dir, extensions);
 }
 
 void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char * start_dir, std::string extensions)
@@ -224,15 +222,14 @@ void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char *
    
 	filebrowser->currently_selected = 0;
 	filebrowser->directory_stack_size = 0;
-	filebrowser->dir[filebrowser->directory_stack_size].file_count = 0;
 
-	filebrowser_parse_directory(filebrowser, start_dir, CELL_FS_TYPE_DIRECTORY | CELL_FS_TYPE_REGULAR, extensions);
+	filebrowser_parse_directory(filebrowser, start_dir, extensions);
 }
 
-void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, uint32_t types, std::string extensions)
+void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, std::string extensions)
 {
 	filebrowser->directory_stack_size++;
-	filebrowser_parse_directory(filebrowser, path, types, extensions);
+	filebrowser_parse_directory(filebrowser, path, extensions);
 }
 
 
@@ -241,5 +238,5 @@ void filebrowser_pop_directory (filebrowser_t * filebrowser)
 	if (filebrowser->directory_stack_size > 0)
 		filebrowser->directory_stack_size--;
 
-	filebrowser_parse_directory(filebrowser, filebrowser->dir[filebrowser->directory_stack_size].dir, filebrowser->dir[filebrowser->directory_stack_size].types, filebrowser->dir[filebrowser->directory_stack_size].extensions);
+	filebrowser_parse_directory(filebrowser, filebrowser->dir[filebrowser->directory_stack_size].dir, filebrowser->dir[filebrowser->directory_stack_size].extensions);
 }

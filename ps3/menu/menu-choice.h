@@ -76,7 +76,7 @@ static void do_select_file(uint32_t menu_id)
 			{
                                 const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
 				snprintf(path, sizeof(path), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-				filebrowser_push_directory(&tmpBrowser, path, CELL_FS_TYPE_REGULAR | CELL_FS_TYPE_DIRECTORY, extensions);
+				filebrowser_push_directory(&tmpBrowser, path, extensions);
 			}
 		}
 		else if (FILEBROWSER_IS_CURRENT_A_FILE(tmpBrowser))
@@ -204,7 +204,7 @@ static void do_pathChoice(uint32_t menu_id)
                         {
                                 const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
                                 snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
-                                filebrowser_push_directory(&tmpBrowser, newpath, CELL_FS_TYPE_REGULAR | CELL_FS_TYPE_DIRECTORY, "empty");
+                                filebrowser_push_directory(&tmpBrowser, newpath, "empty");
                         }
                 }
         }
