@@ -75,7 +75,7 @@ static const char * filebrowser_get_extension(const char * filename)
 		return "";
 }
 
-char * strndup (const char *s, size_t n)
+static char * strndup (const char *s, size_t n)
 {
 	char *result;
 	size_t len = strlen (s);
@@ -186,8 +186,10 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 							if (strcmp(ext, tmp) == 0)
 							{
 								bSkip = false;
+								free(tmp);
 								break;
 							}
+							free(tmp);
 
 							lastIndex = index + 1;
 							index = extensions.find('|', index+1);
