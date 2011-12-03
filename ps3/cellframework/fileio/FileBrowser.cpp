@@ -32,36 +32,12 @@
 
 static bool less_than_key(CellFsDirent* a, CellFsDirent* b)
 {
-	// dir compare to file, let us always make the dir less than
+	// compare a directory to a file
+	// directory is always lesser than
 	if ((a->d_type == CELL_FS_TYPE_DIRECTORY && b->d_type == CELL_FS_TYPE_REGULAR))
 		return true;
 	else if (a->d_type == CELL_FS_TYPE_REGULAR && b->d_type == CELL_FS_TYPE_DIRECTORY)
 		return false;
-
-	// use this to ignore extension
-	if (a->d_type == CELL_FS_TYPE_REGULAR && b->d_type == CELL_FS_TYPE_REGULAR)
-	{
-		char *pIndex1 = strrchr(a->d_name, '.');
-		char *pIndex2 = strrchr(b->d_name, '.');
-
-		// null the dots
-		if (pIndex1 != NULL)
-			*pIndex1 = '\0';
-
-		if (pIndex2 != NULL)
-			*pIndex2 = '\0';
-
-		// compare
-		int retVal = strcasecmp(a->d_name, b->d_name);
-
-		// restore the dot
-		if (pIndex1 != NULL)
-			*pIndex1 = '.';
-
-		if (pIndex2 != NULL)
-			*pIndex2 = '.';
-		return retVal < 0;
-	}
 
 	return strcasecmp(a->d_name, b->d_name) < 0;
 }
