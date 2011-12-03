@@ -29,6 +29,7 @@
 #include <cell/cell_fs.h>
 
 #include <string>
+#include <string.h>
 #include <vector>
 
 #include <sys/types.h>

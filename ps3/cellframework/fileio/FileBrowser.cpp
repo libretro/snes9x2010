@@ -26,6 +26,7 @@
  *  Last updated:	 
  ********************************************************************************/
 
+#include <stdlib.h>
 #include <algorithm>
 #include "FileBrowser.hpp"
 
@@ -72,6 +73,30 @@ static const char * filebrowser_get_extension(const char * filename)
 		return ext+1;
 	else
 		return "";
+}
+
+char * strndup (const char *s, size_t n)
+{
+	char *result;
+	size_t len = strlen (s);
+
+	if (n < len)
+		len = n;
+
+	result = (char *) malloc (len + 1);
+	if (!result)
+		return 0;
+
+	result[len] = '\0';
+	return (char *) memcpy (result, s, len);
+}
+
+static char * substr(const char * str, size_t begin, size_t len)
+{
+	if (str == 0 || strlen(str) == 0 || strlen(str) < begin || strlen(str) < (begin+len))
+		return 0;
+
+	return strndup(str + begin, len);
 }
 
 static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path, uint32_t types, std::string extensions)
@@ -139,8 +164,9 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 				// assume to skip it, prove otherwise
 				bool bSkip = true;
 
+				size_t ext_len = strlen(extensions.c_str());
 				// build the extensions to compare against
-				if (extensions.size() > 0)
+				if (ext_len > 0)
 				{
 					index = extensions.find('|', 0);
 
@@ -154,10 +180,9 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 					{
 						lastIndex = 0;
 						index = extensions.find('|', 0);
-						char tmp[1024];
 						while (index != std::string::npos)
 						{
-							strcpy(tmp,extensions.substr(lastIndex, (index-lastIndex)).c_str());
+							char * tmp = substr(extensions.c_str(), lastIndex, (index-lastIndex));
 							if (strcmp(ext, tmp) == 0)
 							{
 								bSkip = false;
@@ -169,8 +194,8 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 						}
 
 						// grab the final extension
-						strcpy(tmp, extensions.substr(lastIndex).c_str());
-						if (strcmp(ext, tmp) == 0)
+						const char * tmp = strrchr(extensions.c_str(), '|');
+						if (strcmp(ext, tmp+1) == 0)
 							bSkip = false;
 					}
 				}
