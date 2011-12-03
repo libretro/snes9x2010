@@ -716,7 +716,7 @@ static void do_ROMMenu(void)
 			{
 				const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
 				snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(browser));
-				filebrowser_push_directory(&browser, newpath, ROM_EXTENSIONS);
+				filebrowser_push_directory(&browser, newpath, true);
 			}
 		}
 		else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))

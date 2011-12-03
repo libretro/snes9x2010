@@ -102,7 +102,6 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 
 		// set new dir
 		strcpy(filebrowser->dir[filebrowser->directory_stack_size].dir, path);
-		filebrowser->dir[filebrowser->directory_stack_size].extensions = extensions;
 
 		// reset num entries
 		filebrowser->file_count = 0;
@@ -207,10 +206,10 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 
 void filebrowser_new(filebrowser_t * filebrowser, const char * start_dir, std::string extensions)
 {
-	filebrowser->currently_selected = 0;
 	filebrowser->directory_stack_size = 0;
+	filebrowser->extensions = extensions;
 
-	filebrowser_parse_directory(filebrowser, start_dir, extensions);
+	filebrowser_parse_directory(filebrowser, start_dir, filebrowser->extensions);
 }
 
 void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char * start_dir, std::string extensions)
@@ -220,23 +219,25 @@ void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char *
 		delete (*iter);
 	filebrowser->cur.clear();
    
-	filebrowser->currently_selected = 0;
 	filebrowser->directory_stack_size = 0;
+	filebrowser->extensions = extensions;
 
-	filebrowser_parse_directory(filebrowser, start_dir, extensions);
+	filebrowser_parse_directory(filebrowser, start_dir, filebrowser->extensions);
 }
 
-void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, std::string extensions)
+void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, bool with_extension)
 {
 	filebrowser->directory_stack_size++;
-	filebrowser_parse_directory(filebrowser, path, extensions);
+	if(with_extension)
+		filebrowser_parse_directory(filebrowser, path, filebrowser->extensions);
+	else
+		filebrowser_parse_directory(filebrowser, path, "empty");
 }
-
 
 void filebrowser_pop_directory (filebrowser_t * filebrowser)
 {
 	if (filebrowser->directory_stack_size > 0)
 		filebrowser->directory_stack_size--;
 
-	filebrowser_parse_directory(filebrowser, filebrowser->dir[filebrowser->directory_stack_size].dir, filebrowser->dir[filebrowser->directory_stack_size].extensions);
+	filebrowser_parse_directory(filebrowser, filebrowser->dir[filebrowser->directory_stack_size].dir, filebrowser->extensions);
 }
