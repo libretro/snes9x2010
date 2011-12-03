@@ -51,36 +51,9 @@ static const char * filebrowser_get_extension(const char * filename)
 		return "";
 }
 
-static char * strndup (const char *s, size_t n)
-{
-	char *result;
-	size_t len = strlen (s);
-
-	if (n < len)
-		len = n;
-
-	result = (char *) malloc (len + 1);
-	if (!result)
-		return 0;
-
-	result[len] = '\0';
-	return (char *) memcpy (result, s, len);
-}
-
-static char * substr(const char * str, size_t begin, size_t len)
-{
-	if (str == 0 || strlen(str) == 0 || strlen(str) < begin || strlen(str) < (begin+len))
-		return 0;
-
-	return strndup(str + begin, len);
-}
-
-static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path, std::string extensions)
+static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char * path, const char * extensions)
 {
 	int fd;
-	// for extension parsing
-	uint32_t index = 0;
-	uint32_t lastIndex = 0;
 
 	// bad path
 	if (strcmp(path,"") == 0)
@@ -117,7 +90,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 			if (nread == 0)
 				break;
 
-			// check for valid types
+			// if entry is not a file or directory, skip it
 			if ((dirent.d_type != CELL_FS_TYPE_REGULAR) && (dirent.d_type != CELL_FS_TYPE_DIRECTORY))
 				continue;
 
@@ -125,60 +98,29 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 			if (dirent.d_type == CELL_FS_TYPE_DIRECTORY && !(strcmp(dirent.d_name, ".")))
 				continue;
 
-			// validate extensions
+			// if entry is a file, check if extension is allowed 
 			if (dirent.d_type == CELL_FS_TYPE_REGULAR)
 			{
-				// reset indices from last search
-				index = 0;
-				lastIndex = 0;
+				char tmp_extensions[512];
+				strncpy(tmp_extensions, extensions, sizeof(tmp_extensions));
+				const char * current_extension = filebrowser_get_extension(dirent.d_name);
+				bool found_rom = false;
 
-				// get this file extension
-				const char * ext = filebrowser_get_extension(dirent.d_name);
-
-				// assume to skip it, prove otherwise
-				bool bSkip = true;
-
-				size_t ext_len = strlen(extensions.c_str());
-				// build the extensions to compare against
-				if (ext_len > 0)
+				if(current_extension)
 				{
-					index = extensions.find('|', 0);
-
-					// only 1 extension
-					if (index == std::string::npos)
+					char * pch = strtok(tmp_extensions, "|");
+					while (pch != NULL)
 					{
-						if (strcmp(ext, extensions.c_str()) == 0)
-							bSkip = false;
-					}
-					else
-					{
-						lastIndex = 0;
-						index = extensions.find('|', 0);
-						while (index != std::string::npos)
+						if(strcmp(current_extension, pch) == 0)
 						{
-							char * tmp = substr(extensions.c_str(), lastIndex, (index-lastIndex));
-							if (strcmp(ext, tmp) == 0)
-							{
-								bSkip = false;
-								free(tmp);
-								break;
-							}
-							free(tmp);
-
-							lastIndex = index + 1;
-							index = extensions.find('|', index+1);
+							found_rom = true;
+							break;
 						}
-
-						// grab the final extension
-						const char * tmp = strrchr(extensions.c_str(), '|');
-						if (strcmp(ext, tmp+1) == 0)
-							bSkip = false;
+						pch = strtok(NULL, "|");
 					}
 				}
-				else
-					bSkip = false; // no extensions we'll take as all extensions
 
-				if (bSkip)
+				if(!found_rom)
 					continue;
 			}
 
@@ -204,15 +146,15 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 	return true;
 }
 
-void filebrowser_new(filebrowser_t * filebrowser, const char * start_dir, std::string extensions)
+void filebrowser_new(filebrowser_t * filebrowser, const char * start_dir, const char * extensions)
 {
 	filebrowser->directory_stack_size = 0;
-	filebrowser->extensions = extensions;
+	strncpy(filebrowser->extensions, extensions, sizeof(filebrowser->extensions));
 
 	filebrowser_parse_directory(filebrowser, start_dir, filebrowser->extensions);
 }
 
-void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char * start_dir, std::string extensions)
+void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char * start_dir, const char * extensions)
 {
 	std::vector<CellFsDirent*>::const_iterator iter;
 	for(iter = filebrowser->cur.begin(); iter != filebrowser->cur.end(); ++iter)
@@ -220,7 +162,7 @@ void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char *
 	filebrowser->cur.clear();
    
 	filebrowser->directory_stack_size = 0;
-	filebrowser->extensions = extensions;
+	strncpy(filebrowser->extensions, extensions, sizeof(filebrowser->extensions));
 
 	filebrowser_parse_directory(filebrowser, start_dir, filebrowser->extensions);
 }
