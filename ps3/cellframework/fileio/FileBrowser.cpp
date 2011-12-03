@@ -26,9 +26,8 @@
  *  Last updated:	 
  ********************************************************************************/
 
-#include "FileBrowser.hpp"
-
 #include <algorithm>
+#include "FileBrowser.hpp"
 
 static bool less_than_key(CellFsDirent* a, CellFsDirent* b)
 {
@@ -37,9 +36,6 @@ static bool less_than_key(CellFsDirent* a, CellFsDirent* b)
 		return true;
 	else if (a->d_type == CELL_FS_TYPE_REGULAR && b->d_type == CELL_FS_TYPE_DIRECTORY)
 		return false;
-
-	// FIXME: add a way to customize sorting someday
-	// 	also add a ignore filename, sort by extension
 
 	// use this to ignore extension
 	if (a->d_type == CELL_FS_TYPE_REGULAR && b->d_type == CELL_FS_TYPE_REGULAR)
@@ -69,11 +65,11 @@ static bool less_than_key(CellFsDirent* a, CellFsDirent* b)
 	return strcasecmp(a->d_name, b->d_name) < 0;
 }
 
-static std::string filebrowser_get_extension(std::string filename)
+static const char * filebrowser_get_extension(const char * filename)
 {
-	uint32_t index = filename.find_last_of(".");
-	if (index != std::string::npos)
-		return filename.substr(index+1);
+	const char * ext = strrchr(filename, '.');
+	if (ext)
+		return ext+1;
 	else
 		return "";
 }
@@ -118,7 +114,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 		CellFsDirent dirent;
 		while (cellFsReaddir(fd, &dirent, &nread) == CELL_FS_SUCCEEDED)
 		{
-			// no data read, something is wrong... FIXME: bad way to handle this
+			// no data read, something is wrong
 			if (nread == 0)
 				break;
 
@@ -138,7 +134,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 				lastIndex = 0;
 
 				// get this file extension
-				std::string ext = filebrowser_get_extension(dirent.d_name);
+				const char * ext = filebrowser_get_extension(dirent.d_name);
 
 				// assume to skip it, prove otherwise
 				bool bSkip = true;
@@ -151,7 +147,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 					// only 1 extension
 					if (index == std::string::npos)
 					{
-						if (strcmp(ext.c_str(), extensions.c_str()) == 0)
+						if (strcmp(ext, extensions.c_str()) == 0)
 							bSkip = false;
 					}
 					else
@@ -162,7 +158,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 						while (index != std::string::npos)
 						{
 							strcpy(tmp,extensions.substr(lastIndex, (index-lastIndex)).c_str());
-							if (strcmp(ext.c_str(), tmp) == 0)
+							if (strcmp(ext, tmp) == 0)
 							{
 								bSkip = false;
 								break;
@@ -174,7 +170,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 
 						// grab the final extension
 						strcpy(tmp, extensions.substr(lastIndex).c_str());
-						if (strcmp(ext.c_str(), tmp) == 0)
+						if (strcmp(ext, tmp) == 0)
 							bSkip = false;
 					}
 				}
@@ -182,9 +178,7 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 					bSkip = false; // no extensions we'll take as all extensions
 
 				if (bSkip)
-				{
 					continue;
-				}
 			}
 
 			// AT THIS POINT WE HAVE A VALID ENTRY
@@ -204,8 +198,6 @@ static bool filebrowser_parse_directory(filebrowser_t * filebrowser, const char 
 	else
 		return false;
 
-	// FIXME: hack, forces '..' to stay on top by ignoring the first entry
-	// this is always '..' in dirs
 	std::sort(++filebrowser->cur.begin(), filebrowser->cur.end(), less_than_key);
 
 	return true;

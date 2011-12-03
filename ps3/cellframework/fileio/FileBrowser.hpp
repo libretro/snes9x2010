@@ -58,41 +58,41 @@ void filebrowser_reset_start_directory(filebrowser_t * filebrowser, const char *
 void filebrowser_push_directory(filebrowser_t * filebrowser, const char * path, uint32_t types, std::string extensions);
 void filebrowser_pop_directory (filebrowser_t * filebrowser);
 
-#define filebrowser_get_current_directory_name(filebrowser) (filebrowser.dir[filebrowser.directory_stack_size].dir)
-#define filebrowser_get_current_directory_file_count(filebrowser) (filebrowser.dir[filebrowser.directory_stack_size].file_count)
-#define filebrowser_goto_entry(filebrowser, i)	filebrowser.currently_selected = i;
+#define FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(filebrowser) (filebrowser.dir[filebrowser.directory_stack_size].dir)
+#define FILEBROWSER_GET_CURRENT_DIRECTORY_FILE_COUNT(filebrowser) (filebrowser.dir[filebrowser.directory_stack_size].file_count)
+#define FILEBROWSER_GOTO_ENTRY(filebrowser, i)	filebrowser.currently_selected = i;
 
-#define filebrowser_increment_entry(filebrowser) \
+#define FILEBROWSER_INCREMENT_ENTRY(filebrowser) \
 { \
 	filebrowser.currently_selected++; \
 	if (filebrowser.currently_selected >= filebrowser.cur.size()) \
 		filebrowser.currently_selected = 0; \
 }
 
-#define filebrowser_increment_entry_pointer(filebrowser) \
+#define FILEBROWSER_INCREMENT_ENTRY_POINTER(filebrowser) \
 { \
 	filebrowser->currently_selected++; \
 	if (filebrowser->currently_selected >= filebrowser->cur.size()) \
 		filebrowser->currently_selected = 0; \
 }
 
-#define filebrowser_decrement_entry(filebrowser) \
+#define FILEBROWSER_DECREMENT_ENTRY(filebrowser) \
 { \
 	filebrowser.currently_selected--; \
 	if (filebrowser.currently_selected >= filebrowser.cur.size()) \
 		filebrowser.currently_selected = filebrowser.cur.size() - 1; \
 }
 
-#define filebrowser_decrement_entry_pointer(filebrowser) \
+#define FILEBROWSER_DECREMENT_ENTRY_POINTER(filebrowser) \
 { \
 	filebrowser->currently_selected--; \
 	if (filebrowser->currently_selected >= filebrowser->cur.size()) \
 		filebrowser->currently_selected = filebrowser->cur.size() - 1; \
 }
 
-#define filebrowser_get_current_filename(filebrowser) (filebrowser.cur[filebrowser.currently_selected]->d_name)
-#define filebrowser_get_current_entry_index(filebrowser) (filebrowser.currently_selected)
-#define filebrowser_is_current_a_file(filebrowser)	(filebrowser.cur[filebrowser.currently_selected]->d_type == CELL_FS_TYPE_REGULAR)
-#define filebrowser_is_current_a_directory(filebrowser)	(filebrowser.cur[filebrowser.currently_selected]->d_type == CELL_FS_TYPE_DIRECTORY)
+#define FILEBROWSER_GET_CURRENT_FILENAME(filebrowser) (filebrowser.cur[filebrowser.currently_selected]->d_name)
+#define FILEBROWSER_GET_CURRENT_ENTRY_INDEX(filebrowser) (filebrowser.currently_selected)
+#define FILEBROWSER_IS_CURRENT_A_FILE(filebrowser)	(filebrowser.cur[filebrowser.currently_selected]->d_type == CELL_FS_TYPE_REGULAR)
+#define FILEBROWSER_IS_CURRENT_A_DIRECTORY(filebrowser)	(filebrowser.cur[filebrowser.currently_selected]->d_type == CELL_FS_TYPE_DIRECTORY)
 
 #endif /* FILEBROWSER_H_ */

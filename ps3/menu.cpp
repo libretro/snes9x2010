@@ -48,7 +48,7 @@ static void UpdateBrowser(filebrowser_t * b)
 	{
 		if(b->currently_selected < b->dir[b->directory_stack_size].file_count-1)
 		{
-			filebrowser_increment_entry_pointer(b);
+			FILEBROWSER_INCREMENT_ENTRY_POINTER(b);
 
 			if(CTRL_DOWN(state))
 				sys_timer_usleep(FILEBROWSER_DELAY);
@@ -61,7 +61,7 @@ static void UpdateBrowser(filebrowser_t * b)
 	{
 		if(b->currently_selected > 0)
 		{
-			filebrowser_decrement_entry_pointer(b);
+			FILEBROWSER_DECREMENT_ENTRY_POINTER(b);
 
 			if(CTRL_UP(state))
 				sys_timer_usleep(FILEBROWSER_DELAY);
@@ -704,7 +704,7 @@ static void do_ROMMenu(void)
 
 	if (CTRL_CROSS(button_was_pressed))
 	{
-		if(filebrowser_is_current_a_directory(browser))
+		if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
 		{
 			//if 'filename' is in fact '..' - then pop back directory instead of adding '..' to filename path
 			if(browser.currently_selected == 0)
@@ -714,14 +714,14 @@ static void do_ROMMenu(void)
 			}
 			else
 			{
-				const char * separatorslash = (strcmp(filebrowser_get_current_directory_name(browser),"/") == 0) ? "" : "/";
-				snprintf(newpath, sizeof(newpath), "%s%s%s", filebrowser_get_current_directory_name(browser), separatorslash, filebrowser_get_current_filename(browser));
+				const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
+				snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(browser));
 				filebrowser_push_directory(&browser, newpath, CELL_FS_TYPE_REGULAR | CELL_FS_TYPE_DIRECTORY, ROM_EXTENSIONS);
 			}
 		}
-		else if (filebrowser_is_current_a_file(browser))
+		else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 		{
-			snprintf(rom_path, sizeof(rom_path), "%s/%s", filebrowser_get_current_directory_name(browser), filebrowser_get_current_filename(browser));
+			snprintf(rom_path, sizeof(rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
 			menu_is_running = 0;
 
@@ -747,22 +747,22 @@ static void do_ROMMenu(void)
 		return;
 	}
 
-	if (filebrowser_is_current_a_directory(browser))
+	if (FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
 	{
-		if(!strcmp(filebrowser_get_current_filename(browser),"app_home") || !strcmp(filebrowser_get_current_filename(browser),"host_root"))
+		if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"app_home") || !strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),"host_root"))
 			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, RED, "WARNING - This path only works on DEX PS3 systems. Do not attempt to open\n this directory on CEX PS3 systems, or you might have to restart!");
-		else if(!strcmp(filebrowser_get_current_filename(browser),".."))
+		else if(!strcmp(FILEBROWSER_GET_CURRENT_FILENAME(browser),".."))
 			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to go back to the previous directory.");
 		else
 			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to enter the directory.");
 	}
 
-	if (filebrowser_is_current_a_file(browser))
+	if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 		cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - Press X to load the game. ");
 
 	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	"FILE BROWSER");
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
-	cellDbgFontPrintf (0.09f, 0.09f, Emulator_GetFontSize(), YELLOW, "PATH: %s", filebrowser_get_current_directory_name(browser));
+	cellDbgFontPrintf (0.09f, 0.09f, Emulator_GetFontSize(), YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
 	cellDbgFontPuts   (0.09f, 0.93f, Emulator_GetFontSize(), YELLOW,
 	"L2 + R2 - resume game           SELECT - Settings screen");
 	cellDbgFontDraw();
