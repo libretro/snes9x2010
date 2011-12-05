@@ -197,6 +197,11 @@ static void S9xAudioCallback()
 		audio_driver->write(audio_handle, audio_buf, avail);
 }
 
+static void Emulator_SetControllerMode(int m)
+{
+	controller_settings = m;
+}
+
 #define audio_default_params() \
    cell_audio_params params; \
    memset(&params, 0, sizeof(params)); \
@@ -263,11 +268,6 @@ static void callback_superscope_compatible(int button_type, void *userdata)
 			dialog_is_running = false;
 			break;
 	}
-}
-
-void emulator_stop_rom_running(void)
-{
-	is_running = 0;
 }
 
 void emulator_implementation_add_cheat(uint32_t address, uint8_t byte, const char* description)
@@ -1009,7 +1009,7 @@ static bool file_exists(const char * filename)
 		return false;
 }
 
-void emulator_init_settings(void)
+static void emulator_init_settings(void)
 {
 	bool config_file_newly_created = false;
 	memset(&Settings, 0, sizeof(Settings));
@@ -1753,10 +1753,6 @@ float Emulator_GetFontSize(void)
 	return Settings.PS3FontSize/100.0;
 }
 
-void Emulator_SetControllerMode(int m)
-{
-	controller_settings = m;
-}
 
 bool Emulator_IsROMLoaded(void)
 {

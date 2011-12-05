@@ -13,7 +13,6 @@
 #include <cell/control_console.h>
 #endif
 
-
 #include <sysutil/sysutil_gamecontent.h>
 
 #include "cellframework2/audio/stream.h"
@@ -22,7 +21,6 @@
 #include "emu-ps3-constants.h"
 #include "ps3input.h"
 #include "ps3video.hpp"
-
 
 /* PS3 frontend constants */
 
@@ -79,25 +77,18 @@ enum {
 #define PAD_4           4
 #define PAD_5           5
 
-void enable_apply_border(bool enable);
 void emulator_implementation_set_texture (const char * fname);
-void emulator_init_settings(void);
 const char * emulator_input_cheat(void);
 const char * emulator_input_cheatlabel(void);
 void emulator_set_controls(const char * config_file, int mapping_enum, const char * title);
-void emulator_stop_rom_running(void);
 void emulator_toggle_sound(uint64_t soundmode);
 void emulator_implementation_set_shader_preset(const char * fname);
 void emulator_implementation_set_gameaware(const char * fname);
 float Emulator_GetFontSize(void);
-void Emulator_SetControllerMode(int);
 void Emulator_RequestLoadROM(const char* rom);
-int Emulator_SaveSettings(void);
 bool Emulator_IsROMLoaded(void);
 void Emulator_StartROMRunning(uint32_t set_is_running);
-void Emulator_GraphicsInit(uint32_t resId);
 void emulator_save_settings(uint64_t filetosave);
-void ingame_menu_enable( int enable);
 
 extern char contentInfoPath[MAX_PATH_LENGTH];
 extern char usrDirPath[MAX_PATH_LENGTH];
