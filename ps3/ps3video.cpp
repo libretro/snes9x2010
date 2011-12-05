@@ -144,20 +144,6 @@ static void CalculateViewports()
 	_cgViewHeight = m_viewport_height_temp;
 }
 
-#define setup_aspect_ratio_array() \
-   aspectratios[ASPECT_RATIO_4_3] = SCREEN_4_3_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_5_4] = SCREEN_5_4_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_8_7] = SCREEN_8_7_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_16_9] = SCREEN_16_9_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_16_10] = SCREEN_16_10_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_16_15] = SCREEN_16_15_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_19_14] = SCREEN_19_14_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_2_1] = SCREEN_2_1_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_3_2] = SCREEN_3_2_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_3_4] = SCREEN_3_4_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_1_1] = SCREEN_1_1_ASPECT_RATIO; \
-   aspectratios[ASPECT_RATIO_AUTO] = 0.0/0.0;
-
 /*******************************************************************************
 	Set macros
 ********************************************************************************/

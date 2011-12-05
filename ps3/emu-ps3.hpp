@@ -94,9 +94,9 @@ void Emulator_SetControllerMode(int);
 void Emulator_RequestLoadROM(const char* rom);
 int Emulator_SaveSettings(void);
 bool Emulator_IsROMLoaded(void);
-void Emulator_StartROMRunning(uint32_t set_is_running = 1);
+void Emulator_StartROMRunning(uint32_t set_is_running);
 void Emulator_GraphicsInit(uint32_t resId);
-void emulator_save_settings(uint64_t filetosave = 0);
+void emulator_save_settings(uint64_t filetosave);
 void ingame_menu_enable( int enable);
 
 extern char contentInfoPath[MAX_PATH_LENGTH];

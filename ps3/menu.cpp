@@ -261,7 +261,7 @@ static void do_controls_settings(void)
 		if (Emulator_IsROMLoaded())
 		{
 			menu_is_running = 0;
-			Emulator_StartROMRunning();
+			Emulator_StartROMRunning(1);
 		}
 		old_state = state;
 		return;
@@ -653,7 +653,7 @@ static void do_settings(menu * menu_obj)
 		if (Emulator_IsROMLoaded())
 		{
 			menu_is_running = 0;
-			Emulator_StartROMRunning();
+			Emulator_StartROMRunning(1);
 		}
 		old_state = state;
 		return;
@@ -724,7 +724,7 @@ static void do_ROMMenu(void)
 			menu_is_running = 0;
 
 			// switch emulator to emulate mode
-			Emulator_StartROMRunning();
+			Emulator_StartROMRunning(1);
 
 			Emulator_RequestLoadROM(rom_path);
 
@@ -739,7 +739,7 @@ static void do_ROMMenu(void)
 		if (Emulator_IsROMLoaded())
 		{
 			menu_is_running = 0;
-			Emulator_StartROMRunning();
+			Emulator_StartROMRunning(1);
 		}
 		old_state = state;
 		return;
