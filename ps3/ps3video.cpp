@@ -16,7 +16,7 @@
 struct lookup_texture
 {
 	GLuint tex;
-	std::string id;
+	char id[512];
 };
 
 /* public  variables */
@@ -32,7 +32,7 @@ static uint32_t m_pal60Hz;
 static uint32_t m_smooth, m_smooth2;
 static uint8_t *decode_buffer;
 static uint32_t m_viewport_x, m_viewport_y, m_viewport_width, m_viewport_height;
-static uint32_t m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp, m_delta_temp;
+static uint32_t m_viewport_x_temp, m_viewport_y_temp, m_viewport_width_temp, m_viewport_height_temp;
 static uint32_t m_vsync;
 static int m_calculate_aspect_ratio_before_game_load;
 static int m_currentResolutionPos;
@@ -84,63 +84,65 @@ static std::vector<lookup_texture> lut_textures; // Lookup textures in use.
 	Calculate macros
 ********************************************************************************/
 
-#define CalculateViewports() \
-	float device_aspect = psglGetDeviceAspectRatio(psgl_device); \
-   GLuint temp_width = gl_width; \
-   GLuint temp_height = gl_height; \
-	/* calculate the glOrtho matrix needed to transform the texture to the desired aspect ratio */ \
-	/* If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), assume they are actually equal */ \
-   float delta; \
-	if (m_ratio == SCREEN_CUSTOM_ASPECT_RATIO) \
-	{ \
-	  m_viewport_x_temp = m_viewport_x; \
-	  m_viewport_y_temp = m_viewport_y; \
-	  m_viewport_width_temp = m_viewport_width;  \
-	  m_viewport_height_temp = m_viewport_height; \
-	} \
-	else if ( (int)(device_aspect*1000) > (int)(m_ratio * 1000) ) \
-	{ \
-     delta = (m_ratio / device_aspect - 1.0) / 2.0 + 0.5; \
-	  m_viewport_x_temp = temp_width * (0.5 - delta); \
-	  m_viewport_y_temp = 0; \
-     m_viewport_width_temp = (int)(2.0 * temp_width * delta); \
-	  m_viewport_height_temp = temp_height; \
-	} \
-	else if ( (int)(device_aspect*1000) < (int)(m_ratio * 1000) ) \
-	{ \
-     delta = (device_aspect / m_ratio - 1.0) / 2.0 + 0.5; \
-	  m_viewport_x_temp = 0; \
-	  m_viewport_y_temp = temp_height * (0.5 - delta); \
-	  m_viewport_width_temp = temp_width; \
-	  m_viewport_height_temp = (int)(2.0 * temp_height * delta); \
-	} \
-	else \
-	{ \
-	  m_viewport_x_temp = 0; \
-	  m_viewport_y_temp = 0; \
-	  m_viewport_width_temp = temp_width; \
-	  m_viewport_height_temp = temp_height; \
-	} \
-	if (m_overscan) \
-   { \
-      m_left = -m_overscan_amount/2; \
-      m_right = 1 + m_overscan_amount/2; \
-      m_bottom = -m_overscan_amount/2; \
-      m_top = 1 + m_overscan_amount/2; \
-      m_zFar = -1; \
-      m_zNear = 1; \
-   } \
-	else \
-   { \
-      m_left = 0; \
-      m_right = 1; \
-      m_bottom = 0; \
-      m_top = 1; \
-      m_zNear = -1; \
-      m_zFar = 1; \
-   } \
-	_cgViewWidth = m_viewport_width_temp; \
+static void CalculateViewports()
+{
+	float device_aspect = psglGetDeviceAspectRatio(psgl_device);
+	GLuint temp_width = gl_width;
+	GLuint temp_height = gl_height;
+	/* calculate the glOrtho matrix needed to transform the texture to the desired aspect ratio */
+	/* If the aspect ratios of screen and desired aspect ratio are sufficiently equal (floating point stuff), assume they are actually equal */
+	float delta;
+	if (m_ratio == SCREEN_CUSTOM_ASPECT_RATIO)
+	{
+		m_viewport_x_temp = m_viewport_x;
+		m_viewport_y_temp = m_viewport_y;
+		m_viewport_width_temp = m_viewport_width;
+		m_viewport_height_temp = m_viewport_height;
+	}
+	else if ( (int)(device_aspect*1000) > (int)(m_ratio * 1000) )
+	{
+		delta = (m_ratio / device_aspect - 1.0) / 2.0 + 0.5;
+		m_viewport_x_temp = (uint32_t)(temp_width * (0.5 - delta));
+		m_viewport_y_temp = 0;
+		m_viewport_width_temp = (int)(2.0 * temp_width * delta);
+		m_viewport_height_temp = temp_height;
+	}
+	else if ( (int)(device_aspect*1000) < (int)(m_ratio * 1000) )
+	{
+		delta = (device_aspect / m_ratio - 1.0) / 2.0 + 0.5;
+		m_viewport_x_temp = 0;
+		m_viewport_y_temp = (uint32_t)(temp_height * (0.5 - delta));
+		m_viewport_width_temp = temp_width;
+		m_viewport_height_temp = (int)(2.0 * temp_height * delta);
+	}
+	else
+	{
+		m_viewport_x_temp = 0;
+		m_viewport_y_temp = 0;
+		m_viewport_width_temp = temp_width;
+		m_viewport_height_temp = temp_height;
+	}
+	if (m_overscan)
+	{
+		m_left = -m_overscan_amount/2;
+		m_right = 1 + m_overscan_amount/2;
+		m_bottom = -m_overscan_amount/2;
+		m_top = 1 + m_overscan_amount/2;
+		m_zFar = -1;
+		m_zNear = 1;
+	}
+	else
+	{
+		m_left = 0;
+		m_right = 1;
+		m_bottom = 0;
+		m_top = 1;
+		m_zNear = -1;
+		m_zFar = 1;
+	}
+	_cgViewWidth = m_viewport_width_temp;
 	_cgViewHeight = m_viewport_height_temp;
+}
 
 #define setup_aspect_ratio_array() \
    aspectratios[ASPECT_RATIO_4_3] = SCREEN_4_3_ASPECT_RATIO; \
@@ -651,7 +653,7 @@ static void ps3graphics_update_state_uniforms(unsigned index)
 
 		for (std::vector<lookup_texture>::const_iterator itr = lut_textures.begin(); itr != lut_textures.end(); ++itr)
 		{
-			CGparameter param = cgGetNamedParameter(_fragmentProgram[index], itr->id.c_str());
+			CGparameter param = cgGetNamedParameter(_fragmentProgram[index], itr->id);
 			cgGLSetTextureParameter(param, itr->tex);
 			cgGLEnableTextureParameter(param);
 		}
@@ -660,7 +662,7 @@ static void ps3graphics_update_state_uniforms(unsigned index)
 
 void ps3graphics_draw(int width, int height, uint16_t* screen)
 {
-	frame_count += 1;
+	frame_count++;
 	if (fbo_enable)
 	{
 		glBindFramebufferOES(GL_FRAMEBUFFER_OES, fbo);
@@ -746,8 +748,9 @@ void ps3graphics_draw(int width, int height, uint16_t* screen)
 	}
 }
 
-void ps3graphics_draw_menu(int width, int height)
+void ps3graphics_draw_menu(void)
 {
+	frame_count++;
 	float device_aspect = psglGetDeviceAspectRatio(psgl_device);
 	GLuint temp_width = gl_width;
 	GLuint temp_height = gl_height;
@@ -763,11 +766,11 @@ void ps3graphics_draw_menu(int width, int height)
 	cgGLBindProgram(_vertexProgram[MENU_SHADER_NO]);
 	cgGLBindProgram(_fragmentProgram[MENU_SHADER_NO]);
 	cgGLSetStateMatrixParameter(_cgpModelViewProj[MENU_SHADER_NO], CG_GL_MODELVIEW_PROJECTION_MATRIX, CG_GL_MATRIX_IDENTITY);
-	cgGLSetParameter2f(_cgpVideoSize[MENU_SHADER_NO], width, height);
-	cgGLSetParameter2f(_cgpTextureSize[MENU_SHADER_NO], width, height);
+	cgGLSetParameter2f(_cgpVideoSize[MENU_SHADER_NO], temp_width, temp_height);
+	cgGLSetParameter2f(_cgpTextureSize[MENU_SHADER_NO], temp_width, temp_height);
 	cgGLSetParameter2f(_cgpOutputSize[MENU_SHADER_NO], _cgViewWidth, _cgViewHeight);
-	cgGLSetParameter2f(_cgp_vertex_VideoSize[MENU_SHADER_NO], width, height);
-	cgGLSetParameter2f(_cgp_vertex_TextureSize[MENU_SHADER_NO], width, height);
+	cgGLSetParameter2f(_cgp_vertex_VideoSize[MENU_SHADER_NO], temp_width, temp_height);
+	cgGLSetParameter2f(_cgp_vertex_TextureSize[MENU_SHADER_NO], temp_width, temp_height);
 	cgGLSetParameter2f(_cgp_vertex_OutputSize[MENU_SHADER_NO], _cgViewWidth, _cgViewHeight);
 
 	_cgp_timer[MENU_SHADER_NO] = cgGetNamedParameter(_fragmentProgram[MENU_SHADER_NO], "IN.frame_count");
@@ -1545,7 +1548,7 @@ static void ps3graphics_load_textures(config_file_t *conf, char *attr)
 		unsigned width, height;
 
 		lookup_texture tex;
-		tex.id = id;
+		strncpy(tex.id, id, sizeof(tex.id));
 
 		if(strstr(path, ".PNG") != NULL || strstr(path, ".png") != NULL)
 		{

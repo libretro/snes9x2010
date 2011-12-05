@@ -557,32 +557,6 @@ if(menu_controlssettings.page == 1)
 
 #include "menu/settings-logic.h"
 
-#define set_next_menu(menu_obj) \
-	menuStackindex++; \
-	switch(menu_obj->enum_id) \
-	{ \
-		case GENERAL_VIDEO_MENU: \
-			menuStack[menuStackindex] = menu_generalaudiosettings; \
-			old_state = state; \
-			break; \
-		case GENERAL_AUDIO_MENU: \
-			menuStack[menuStackindex] = menu_emu_settings; \
-			old_state = state; \
-			break; \
-		case EMU_GENERAL_MENU: \
-			menuStack[menuStackindex] = menu_emu_audiosettings; \
-			old_state = state; \
-			break; \
-		case EMU_AUDIO_MENU: \
-			menuStack[menuStackindex] = menu_pathsettings; \
-			old_state = state; \
-			break; \
-		case PATH_MENU: \
-			menuStack[menuStackindex] = menu_controlssettings; \
-			old_state = state; \
-			break; \
-	}
-
 static void do_settings(menu * menu_obj)
 {
 	uint64_t state = cell_pad_input_poll_device(0);
@@ -617,7 +591,30 @@ static void do_settings(menu * menu_obj)
 
 	if (CTRL_R1(button_was_pressed))
 	{
-		set_next_menu(menu_obj);
+		menuStackindex++;
+		switch(menu_obj->enum_id)
+		{
+			case GENERAL_VIDEO_MENU:
+				menuStack[menuStackindex] = menu_generalaudiosettings;
+				old_state = state;
+				break;
+			case GENERAL_AUDIO_MENU:
+				menuStack[menuStackindex] = menu_emu_settings;
+				old_state = state;
+				break;
+			case EMU_GENERAL_MENU:
+				menuStack[menuStackindex] = menu_emu_audiosettings;
+				old_state = state;
+				break;
+			case EMU_AUDIO_MENU:
+				menuStack[menuStackindex] = menu_pathsettings;
+				old_state = state;
+				break;
+			case PATH_MENU:
+				menuStack[menuStackindex] = menu_controlssettings;
+				old_state = state;
+				break;
+		}
 	}
 
 	if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))	// down to next settin
@@ -788,7 +785,7 @@ void MenuMainLoop(void)
 	do
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
-		ps3graphics_draw_menu(1920, 1080);
+		ps3graphics_draw_menu();
 
 		switch(menuStack[menuStackindex].enum_id)
 		{

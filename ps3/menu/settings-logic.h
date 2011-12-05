@@ -352,7 +352,7 @@ static void producesettingentry(uint64_t switchvalue)
 				while(OSK_IS_RUNNING(oskutil_handle))
 				{
 					glClear(GL_COLOR_BUFFER_BIT);
-					ps3graphics_draw_menu(1920, 1080);
+					ps3graphics_draw_menu();
 					psglSwap(); 
 					cell_console_poll();
 					cellSysutilCheckCallback();

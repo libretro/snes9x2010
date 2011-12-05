@@ -93,7 +93,7 @@ void ps3graphics_resize_aspect_mode_input_loop(uint64_t state);
 
 /* draw functions */
 void ps3graphics_draw(int width, int height, uint16_t* screen);
-void ps3graphics_draw_menu(int width, int height);
+void ps3graphics_draw_menu();
 
 /* image png/jpg */
 bool ps3graphics_load_menu_texture(enum menu_type type, const char * path);

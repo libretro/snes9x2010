@@ -1426,7 +1426,7 @@ void emulator_save_settings(uint64_t filetosave)
 				{
 					/* OSK Util gets updated */
 					glClear(GL_COLOR_BUFFER_BIT);
-					ps3graphics_draw_menu(1920, 1080);
+					ps3graphics_draw_menu();
 					psglSwap();
 					cell_console_poll();
 					cellSysutilCheckCallback();
@@ -1450,7 +1450,7 @@ void emulator_save_settings(uint64_t filetosave)
 					{
 						/* OSK Util gets updated */
 						glClear(GL_COLOR_BUFFER_BIT);
-						ps3graphics_draw_menu(1920, 1080);
+						ps3graphics_draw_menu();
 						psglSwap();
 						cell_console_poll();
 						cellSysutilCheckCallback();
@@ -1499,7 +1499,7 @@ void emulator_save_settings(uint64_t filetosave)
 				{
 					/* OSK Util gets updated */
 					glClear(GL_COLOR_BUFFER_BIT);
-					ps3graphics_draw_menu(1920, 1080);
+					ps3graphics_draw_menu();
 					psglSwap();
 					cell_console_poll();
 					cellSysutilCheckCallback();
@@ -1523,7 +1523,7 @@ void emulator_save_settings(uint64_t filetosave)
 					{
 						/* OSK Util gets updated */
 						glClear(GL_COLOR_BUFFER_BIT);
-						ps3graphics_draw_menu(1920, 1080);
+						ps3graphics_draw_menu();
 						psglSwap();
 						cell_console_poll();
 						cellSysutilCheckCallback();
