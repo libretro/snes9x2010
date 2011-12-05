@@ -97,32 +97,55 @@ static unsigned snes_devices[2];
 
 /* PS3 frontend - save state/emulator SRAM related functions */
 
-#define emulator_decrement_current_save_state_slot() \
-	if (Settings.CurrentSaveStateSlot != MIN_SAVE_STATE_SLOT) \
-	{ \
-		Settings.CurrentSaveStateSlot--; \
-	} \
-	snprintf(special_action_msg, sizeof(special_action_msg), "Save state slot changed to: #%d", Settings.CurrentSaveStateSlot); \
-	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
+void set_text_message(const char * message, uint32_t speed)
+{
+	snprintf(special_action_msg, sizeof(special_action_msg), message);
+	special_action_msg_expired = ps3graphics_set_text_message_speed(speed);
+}
 
-#define emulator_increment_current_save_state_slot() \
-	Settings.CurrentSaveStateSlot++; \
-	\
-	snprintf(special_action_msg, sizeof(special_action_msg), "Save state slot changed to: #%d", Settings.CurrentSaveStateSlot); \
-	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
+static void emulator_decrement_current_save_state_slot(void)
+{
+	char msg[512];
 
-#define emulator_load_current_save_state_slot() \
-	int ret = S9xUnfreezeGame(S9xChooseFilename(FALSE)); \
-	if(ret) \
-		snprintf(special_action_msg, sizeof(special_action_msg), "Loaded save state slot #%d", Settings.CurrentSaveStateSlot); \
-	else \
-		snprintf(special_action_msg, sizeof(special_action_msg), "Can't load from save state slot #%d", Settings.CurrentSaveStateSlot); \
-	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
+	if (Settings.CurrentSaveStateSlot != MIN_SAVE_STATE_SLOT)
+		Settings.CurrentSaveStateSlot--;
+	snprintf(msg, sizeof(msg), "Save state slot changed to: #%d", Settings.CurrentSaveStateSlot);
 
-#define emulator_save_current_save_state_slot() \
-	S9xFreezeGame(S9xChooseFilename(FALSE)); \
-	snprintf(special_action_msg, sizeof(special_action_msg), "Saved to save state slot #%d", Settings.CurrentSaveStateSlot); \
-	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
+	set_text_message(msg, 60);
+}
+
+static void emulator_increment_current_save_state_slot(void)
+{
+	char msg[512];
+
+	Settings.CurrentSaveStateSlot++;
+	snprintf(msg, sizeof(msg), "Save state slot changed to: #%d", Settings.CurrentSaveStateSlot);
+	
+	set_text_message(msg, 60);
+}
+
+static void emulator_load_current_save_state_slot(void)
+{
+	char msg[512];
+
+	int ret = S9xUnfreezeGame(S9xChooseFilename(FALSE));
+	if(ret)
+		snprintf(msg, sizeof(msg), "Loaded save state slot #%d", Settings.CurrentSaveStateSlot);
+	else
+		snprintf(msg, sizeof(msg), "Can't load from save state slot #%d", Settings.CurrentSaveStateSlot);
+
+	set_text_message(msg, 60);
+}
+
+static void emulator_save_current_save_state_slot(void)
+{
+	char msg[512];
+
+	S9xFreezeGame(S9xChooseFilename(FALSE));
+	snprintf(msg, sizeof(msg), "Saved to save state slot #%d", Settings.CurrentSaveStateSlot);
+
+	set_text_message(msg, 60);
+}
 
 /* emulator-specific */
 
@@ -432,13 +455,18 @@ static void ingame_menu_enable (int enable)
 	is_ingame_menu_running = enable;
 }
 
-#define emulator_toggle_throttle(enable) \
-	ps3graphics_set_vsync(enable); \
-	if(enable) \
-		snprintf(special_action_msg, sizeof(special_action_msg), "Throttle mode: ON"); \
-	else \
-		snprintf(special_action_msg, sizeof(special_action_msg), "Throttle mode: OFF"); \
-	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
+static void emulator_toggle_throttle(bool enable)
+{
+	char msg[512];
+
+	ps3graphics_set_vsync(enable);
+	if(enable)
+		snprintf(msg, sizeof(msg), "Throttle mode: ON");
+	else
+		snprintf(msg, sizeof(msg), "Throttle mode: OFF");
+
+	set_text_message(msg, 60);
+}
 
 static void special_actions(uint64_t number)
 {
@@ -1522,8 +1550,7 @@ void emulator_save_settings(uint64_t filetosave)
 
 void S9xMessage (int type, int number, char const *message)
 {
-	snprintf(special_action_msg, sizeof(special_action_msg), message);
-	special_action_msg_expired = ps3graphics_set_text_message_speed(60);
+	set_text_message(message, 60);
 }
 
 const char * S9xGetFilename (const char *ex, enum s9x_getdirtype dirtype)

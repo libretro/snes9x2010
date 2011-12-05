@@ -772,37 +772,6 @@ static void do_ROMMenu(void)
 	old_state = state;
 }
 
-#define MenuGoTo() \
-	switch(menuStack[menuStackindex].enum_id) \
-	{ \
-		case FILE_BROWSER_MENU: \
-			do_ROMMenu(); \
-			break; \
-		case GENERAL_VIDEO_MENU: \
-		case GENERAL_AUDIO_MENU: \
-		case EMU_GENERAL_MENU: \
-		case EMU_AUDIO_MENU: \
-		case PATH_MENU: \
-			do_settings(&menuStack[menuStackindex]); \
-			break; \
-		case CONTROLS_MENU: \
-			do_controls_settings(); \
-			break; \
-		case GAME_AWARE_SHADER_CHOICE: \
-		case SHADER_CHOICE: \
-		case PRESET_CHOICE: \
-		case BORDER_CHOICE: \
-		case INPUT_PRESET_CHOICE: \
-			do_select_file(menuStack[menuStackindex].enum_id); \
-			break; \
-		case PATH_SAVESTATES_DIR_CHOICE: \
-		case PATH_DEFAULT_ROM_DIR_CHOICE: \
-		case PATH_CHEATS_DIR_CHOICE: \
-		case PATH_SRAM_DIR_CHOICE: \
-			do_pathChoice(menuStack[menuStackindex].enum_id); \
-			break; \
-	}
-
 void MenuInit(void)
 {
 	filebrowser_new(&browser, Settings.PS3PathROMDirectory, ROM_EXTENSIONS);
@@ -821,7 +790,35 @@ void MenuMainLoop(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 		ps3graphics_draw_menu(1920, 1080);
 
-		MenuGoTo();
+		switch(menuStack[menuStackindex].enum_id)
+		{
+			case FILE_BROWSER_MENU:
+				do_ROMMenu();
+				break;
+			case GENERAL_VIDEO_MENU:
+			case GENERAL_AUDIO_MENU:
+			case EMU_GENERAL_MENU:
+			case EMU_AUDIO_MENU:
+			case PATH_MENU:
+				do_settings(&menuStack[menuStackindex]);
+				break;
+			case CONTROLS_MENU:
+				do_controls_settings();
+				break;
+			case GAME_AWARE_SHADER_CHOICE:
+			case SHADER_CHOICE:
+			case PRESET_CHOICE:
+			case BORDER_CHOICE:
+			case INPUT_PRESET_CHOICE:
+				do_select_file(menuStack[menuStackindex].enum_id);
+				break;
+			case PATH_SAVESTATES_DIR_CHOICE:
+			case PATH_DEFAULT_ROM_DIR_CHOICE:
+			case PATH_CHEATS_DIR_CHOICE:
+			case PATH_SRAM_DIR_CHOICE:
+				do_pathChoice(menuStack[menuStackindex].enum_id);
+				break;
+		}
 
 		psglSwap();
 		cell_console_poll();
