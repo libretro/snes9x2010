@@ -2134,7 +2134,7 @@ bool8 CMemory::SaveSRAM (const char *filename)
 		{
 			fwrite((char *) Multi.sramB, size, 1, file);
 			fclose(file);
-		#ifdef __linux
+		#if defined(__linux) && !defined(__LIBXENON__)
 			chown(name, getuid(), getgid());
 		#endif
 		}
@@ -2153,7 +2153,7 @@ bool8 CMemory::SaveSRAM (const char *filename)
 		{
 			fwrite((char *) SRAM, size, 1, file);
 			fclose(file);
-		#ifdef __linux
+		#if defined(__linux) && !defined(__LIBXENON__)
 			chown(sramName, getuid(), getgid());
 		#endif
 

@@ -30,6 +30,14 @@ else ifeq ($(platform), ps3)
    CC = ppu-lv2-gcc
    CXX = ppu-lv2-g++
    AR = ppu-lv2-ar
+else ifeq ($(platform), xenon)
+   TARGET := libsnes.a
+   SHARED := -shared, -Wl, --version-script=libsnes/link.T
+   CC = xenon-gcc
+   CXX = xenon-g++
+   AR = xenon-ar
+   CFLAGS += -D__LIBXENON__
+   CXXFLAGS += -D__LIBXENON__
 else
    TARGET := snes.dll
    CC = gcc
@@ -62,6 +70,8 @@ all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 ifeq ($(platform), ps3)
+	$(AR) rcs $@ $(OBJECTS)
+else ifeq ($(platform), xenon)
 	$(AR) rcs $@ $(OBJECTS)
 else
 	$(CXX) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) -lm
