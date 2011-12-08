@@ -1,7 +1,6 @@
 #!/bin/sh
 FORMAT=libsnes
 START_DIR=`pwd`
-BUILD_DIR_EXECUTABLES=`pwd`/wii/pkg
 
 #******************
 # PROGRAM FUNCTIONS
@@ -10,6 +9,16 @@ BUILD_DIR_EXECUTABLES=`pwd`/wii/pkg
 function clean()
 {
 	make -f Makefile.libsnes clean
+}
+
+function clean_libxenon()
+{
+	make -f Makefile.libsnes platform=xenon clean
+}
+
+function clean_ps3()
+{
+	make -f Makefile.libsnes platform=ps3 clean
 }
 
 function make_libsnes()
@@ -27,6 +36,16 @@ function make_libsnes_debug()
 	make -f Makefile.libsnes DEBUG=1
 }
 
+function make_libsnes_ps3()
+{
+	make -f Makefile.libsnes platform=ps3
+}
+
+function make_libsnes_libxenon()
+{
+	make -f Makefile.libsnes platform=xenon
+}
+
 #******************
 # DISPLAY FUNCTIONS
 #******************
@@ -34,9 +53,9 @@ function make_libsnes_debug()
 function title()
 {
 	echo ""
-	echo "***********************"
+	echo "***************************"
 	echo "COMPILER SCRIPT FOR $FORMAT"
-	echo "***********************"
+	echo "***************************"
 }
 
 function display_clean()
@@ -44,9 +63,29 @@ function display_clean()
 	echo "clean          Clean the object files"
 }
 
+function display_clean_libxenon()
+{
+	echo "clean_libxenon Clean the object files (for libxenon)"
+}
+
+function display_clean_ps3()
+{
+	echo "clean_ps3      Clean the object files (for PS3)"
+}
+
 function display_make()
 {
 	echo "make           Compile libsnes library"
+}
+
+function display_make_libxenon()
+{
+	echo "make_libxenon  Compile libsnes library (for libxenon)"
+}
+
+function display_make_ps3()
+{
+	echo "make_ps3       Compile libsnes library (for PS3)"
 }
 
 function display_make_ntsc()
@@ -61,8 +100,14 @@ function display_make_debug()
 
 function display_all_options()
 {
+	echo ""
 	display_clean
+	display_clean_libxenon
+	display_clean_ps3
+	echo ""
 	display_make
+	display_make_libxenon
+	display_make_ps3
 	display_make_ntsc
 	display_make_debug
 }
@@ -79,6 +124,7 @@ function display_usage()
 #***********************
 
 title
+
 if [ ! -n "$1" ]; then
 	display_usage
 else
@@ -95,6 +141,22 @@ else
 			echo "*************************************"
 			clean
 		fi
+		if [ "$i" = "clean_ps3" ]; then
+			echo ""
+			echo "*************************************"
+			echo "DOING:"
+			display_clean_ps3
+			echo "*************************************"
+			clean_ps3
+		fi
+		if [ "$i" = "clean_libxenon" ]; then
+			echo ""
+			echo "*************************************"
+			echo "DOING:"
+			display_clean_libxenon
+			echo "*************************************"
+			clean_libxenon
+		fi
 		if [ "$i" = "make" ]; then
 			echo ""
 			echo "*************************************"
@@ -102,6 +164,22 @@ else
 			display_make
 			echo "*************************************"
 			make_libsnes
+		fi
+		if [ "$i" = "make_libxenon" ]; then
+			echo ""
+			echo "*************************************"
+			echo "DOING:"
+			display_make_libxenon
+			echo "*************************************"
+			make_libsnes_libxenon
+		fi
+		if [ "$i" = "make_ps3" ]; then
+			echo ""
+			echo "*************************************"
+			echo "DOING:"
+			display_make_ps3
+			echo "*************************************"
+			make_libsnes_ps3
 		fi
 		if [ "$i" = "make_ntsc" ]; then
 			echo ""
