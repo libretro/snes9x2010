@@ -180,7 +180,7 @@
 #include "fxemu.h"
 
 // Set this define if you wish the plot instruction to check for y-pos limits (I don't think it's nessecary)
-#define CHECK_LIMITS
+//#define CHECK_LIMITS
 
 
 /*
