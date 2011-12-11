@@ -67,9 +67,7 @@ enum {
 #define TWO_JOYSTICKS   1 << 1
 #define MULTITAP        1 << 2
 #define MOUSE           1 << 3
-#define SUPERSCOPE      1 << 4
 #define JUSTIFIER       1 << 5
-#define TWO_JUSTIFIERS  1 << 6
 
 #define PAD_1           1
 #define PAD_2           2

@@ -12,7 +12,7 @@ SDK_340              = 1
 CELL_BUILD_TOOLS     = SNC
 
 ifeq ($(CELL_DEBUG),1)
-PPU_OPTIMIZE_LV      := -O0
+PPU_OPTIMIZE_LV      := -O0 -g
 else
 PPU_OPTIMIZE_LV      := -O3
 endif
