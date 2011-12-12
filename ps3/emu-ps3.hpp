@@ -87,6 +87,7 @@ void Emulator_RequestLoadROM(const char* rom);
 bool Emulator_IsROMLoaded(void);
 void Emulator_StartROMRunning(uint32_t set_is_running);
 void emulator_save_settings(uint64_t filetosave);
+void set_text_message(const char * message, uint32_t speed);
 
 extern char contentInfoPath[MAX_PATH_LENGTH];
 extern char usrDirPath[MAX_PATH_LENGTH];
@@ -103,6 +104,8 @@ extern char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 extern char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 extern oskutil_params oskutil_handle;
 extern uint64_t mode_switch;
+
+extern uint32_t special_action_msg_expired;			// time at which the message no longer needs to be overlaid onscreen
 
 #endif /* EMULATOR_IMPLEMENTATION_H_ */
 

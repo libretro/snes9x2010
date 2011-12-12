@@ -82,7 +82,7 @@ bool need_load_rom = false;				// need to load the current rom
 char* current_rom = NULL;				// current filename of the ROM being emulated
 bool dialog_is_running = false;				// is a dialog screen currently running?
 char special_action_msg[256];				
-static uint32_t special_action_msg_expired;		// time at which the message no longer needs to be overlaid onscreen
+uint32_t special_action_msg_expired;			// time at which the message no longer needs to be overlaid onscreen
 
 uint64_t ingame_menu_item = 0;
 bool need_load_settings = true;				// needs settings loaded
@@ -474,12 +474,25 @@ static void special_actions(uint64_t number)
 	{
 		case BTN_EXITTOMENU:
 		{
-			ingame_menu_enable(0);
-			mode_switch = MODE_MENU;
+			if(frame_count < special_action_msg_expired)
+			{
+			}
+			else
+			{
+				ingame_menu_enable(0);
+				mode_switch = MODE_MENU;
+				set_text_message("", 15);
+			}
 			break;
 		}
 		case BTN_INGAME_MENU:
-			ingame_menu_enable(1);
+			if(frame_count < special_action_msg_expired)
+			{
+			}
+			else
+			{
+				ingame_menu_enable(1);
+			}
 			break;
 		case BTN_RESET:
 			S9xReset();
@@ -1777,278 +1790,292 @@ static void ingame_menu(void)
 		uint64_t stuck_in_loop = 1;
 		const uint64_t button_was_pressed = old_state & (old_state ^ state);
 		const uint64_t button_was_held = old_state & state;
+		static uint64_t blocking = 0;
 
-		if(CTRL_CIRCLE(state))
-		{
-			is_running = 1;
-			ingame_menu_item = 0;
-			is_ingame_menu_running = 0;
-			Emulator_StartROMRunning(0);
-		}
 
 		ps3graphics_draw(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, GFX.Screen);
 
-		switch(ingame_menu_item)
+		if(frame_count < special_action_msg_expired && blocking)
 		{
-			case MENU_ITEM_LOAD_STATE:
-				if(CTRL_CROSS(button_was_pressed))
-				{
-					emulator_load_current_save_state_slot();
-					is_running = 1;
-					ingame_menu_item = 0;
-					is_ingame_menu_running = 0;
-					Emulator_StartROMRunning(0);
-				}
-				if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
-				{
-					emulator_decrement_current_save_state_slot();
-				}
-				if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed))
-				{
-					emulator_increment_current_save_state_slot();
-				}
-
-				ingame_menu_reset_entry_colors(ingame_menu_item);
-				strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.");
-				break;
-			case MENU_ITEM_SAVE_STATE:
-				if(CTRL_CROSS(button_was_pressed))
-				{
-					emulator_save_current_save_state_slot();
-					is_running = 1;
-					ingame_menu_item = 0;
-					is_ingame_menu_running = 0;
-					Emulator_StartROMRunning(0);
-				}
-				if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
-				{
-					emulator_decrement_current_save_state_slot();
-				}
-				if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed))
-				{
-					emulator_increment_current_save_state_slot();
-				}
-
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.");
-				break;
-			case MENU_ITEM_KEEP_ASPECT_RATIO:
-				if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
-				{
-					if(Settings.PS3KeepAspect > 0)
-					{
-						Settings.PS3KeepAspect--;
-						ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
-						if (ps3graphics_calculate_aspect_ratio_before_game_load())
-							ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
-					}
-				}
-				if(CTRL_RIGHT(button_was_pressed)  || CTRL_LSTICK_RIGHT(button_was_pressed))
-				{
-					if(Settings.PS3KeepAspect < LAST_ASPECT_RATIO)
-					{
-						Settings.PS3KeepAspect++;
-						ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
-						if (ps3graphics_calculate_aspect_ratio_before_game_load())
-							ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
-					}
-				}
-				if(CTRL_START(button_was_pressed))
-				{
-					Settings.PS3KeepAspect = ASPECT_RATIO_4_3;
-					ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
-				}
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.");
-				break;
-			case MENU_ITEM_OVERSCAN_AMOUNT:
-				if(CTRL_LEFT(button_was_pressed)  ||  CTRL_LSTICK_LEFT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_held))
-				{
-					Settings.PS3OverscanAmount--;
-					Settings.PS3OverscanEnabled = 1;
-
-					if(Settings.PS3OverscanAmount == 0)
-						Settings.PS3OverscanEnabled = 0;
-
-					ps3graphics_set_overscan(Settings.PS3OverscanEnabled, (float)Settings.PS3OverscanAmount/100, 1);
-				}
-				if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_held))
-				{
-					Settings.PS3OverscanAmount++;
-					Settings.PS3OverscanEnabled = 1;
-					if(Settings.PS3OverscanAmount == 0)
-						Settings.PS3OverscanEnabled = 0;
-
-					ps3graphics_set_overscan(Settings.PS3OverscanEnabled, (float)Settings.PS3OverscanAmount/100, 1);
-				}
-				if(CTRL_START(button_was_pressed))
-				{
-					Settings.PS3OverscanAmount = 0;
-					Settings.PS3OverscanEnabled = 0;
-					ps3graphics_set_overscan(Settings.PS3OverscanEnabled, (float)Settings.PS3OverscanAmount/100, 1);
-				}
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.");
-				break;
-			case MENU_ITEM_FRAME_ADVANCE:
-				if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
-				{
-					is_running = 0;
-					ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
-					is_ingame_menu_running = 0;
-					Emulator_StartROMRunning(0);
-				}
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame.\nNOTE: Pressing the button rapidly will advance the frame more slowly\nand prevent buttons from being input.");
-				break;
-			case MENU_ITEM_RESIZE_MODE:
-				if(CTRL_CROSS(state))
-				{
-					ps3graphics_set_aspect_ratio(ASPECT_RATIO_CUSTOM, IPPU.RenderedScreenWidth, IPPU.RenderedScreenWidth, 1);
-					do
-					{
-						ps3graphics_draw(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, GFX.Screen);
-						state = cell_pad_input_poll_device(0);
-						ps3graphics_resize_aspect_mode_input_loop(state);
-
-						if(CTRL_CIRCLE(state))
-						{
-							sys_timer_usleep(FILEBROWSER_DELAY);
-							stuck_in_loop = 0;
-						}
-
-						psglSwap();
-						cellSysutilCheckCallback();
-						old_state = state;
-					}while(stuck_in_loop && is_ingame_menu_running);
-				}
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the\nin-game menu.");
-				break;
-			case MENU_ITEM_SCREENSHOT_MODE:
-				if(CTRL_CROSS(state))
-				{
-					while(stuck_in_loop && is_ingame_menu_running)
-					{
-						state = cell_pad_input_poll_device(0);
-						if(CTRL_CIRCLE(state))
-						{
-							sys_timer_usleep(FILEBROWSER_DELAY);
-							stuck_in_loop = 0;
-						}
-
-						ps3graphics_draw(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, GFX.Screen);
-						psglSwap();
-						cellSysutilCheckCallback();
-						old_state = state;
-					}
-				}
-
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.");
-				break;
-			case MENU_ITEM_RETURN_TO_GAME:
-				if(CTRL_CROSS(button_was_pressed))
-				{
-					is_running = 1;
-					ingame_menu_item = 0;
-					is_ingame_menu_running = 0;
-					Emulator_StartROMRunning(0);
-				}
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press 'CROSS' to return back to the game.");
-				break;
-			case MENU_ITEM_RESET:
-				if(CTRL_CROSS(button_was_pressed))
-				{
-					S9xSoftReset();
-					is_running = 1;
-					ingame_menu_item = 0;
-					is_ingame_menu_running = 0;
-					Emulator_StartROMRunning(0);
-				}
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press 'CROSS' to reset the game.");
-				break;
-			case MENU_ITEM_RESET_FORCE_NTSC_PAL:
-				if(CTRL_CROSS(button_was_pressed))
-				{
-					Settings.ForceNTSC = false;
-					Settings.ForcePAL = true;
-					need_load_rom = 1;
-					is_running = 1;
-					is_ingame_menu_running = 0;
-					Emulator_StartROMRunning(0);
-					ingame_menu_item = 0;
-				}
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press 'CROSS' to reset the game and force it into PAL videomode.");
-				break;
-			case MENU_ITEM_RESET_FORCE_PAL_NTSC:
-				if(CTRL_CROSS(button_was_pressed))
-				{
-					Settings.ForceNTSC = true;
-					Settings.ForcePAL = false;
-					need_load_rom = 1;
-					is_running = 1;
-					is_ingame_menu_running = 0;
-					Emulator_StartROMRunning(0);
-					ingame_menu_item = 0;
-				} 
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press 'CROSS' to reset the game and force it into NTSC videomode.");
-				break;
-			case MENU_ITEM_RETURN_TO_MENU:
-				if(CTRL_CROSS(button_was_pressed))
-				{
-					is_running = 0;
-					ingame_menu_item = 0;
-					is_ingame_menu_running = 0;
-					mode_switch = MODE_MENU;
-				}
-
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.");
-				break;
-#ifdef MULTIMAN_SUPPORT
-			case MENU_ITEM_RETURN_TO_MULTIMAN:
-				if(CTRL_CROSS(button_was_pressed))
-				{
-					is_running = 0;
-					is_ingame_menu_running = 0;
-					mode_switch = MODE_EXIT; 
-				}
-
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.");
-				break;
-#endif
-			case MENU_ITEM_RETURN_TO_XMB:
-				if(CTRL_CROSS(button_was_pressed))
-				{
-					is_running = 0;
-					is_ingame_menu_running = 0;
-#ifdef MULTIMAN_SUPPORT
-					return_to_MM = false;
-#endif
-					mode_switch = MODE_EXIT; 
-				}
-
-				ingame_menu_reset_entry_colors (ingame_menu_item);
-				strcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.");
-				break;
 		}
-
-		if(CTRL_UP(button_was_pressed) || CTRL_LSTICK_UP(button_was_pressed))
+		else
 		{
-			if(ingame_menu_item > 0)
-				ingame_menu_item--;
-		}
+			if(CTRL_CIRCLE(state))
+			{
+				is_running = 1;
+				ingame_menu_item = 0;
+				is_ingame_menu_running = 0;
+				Emulator_StartROMRunning(0);
+			}
 
-		if(CTRL_DOWN(button_was_pressed) || CTRL_LSTICK_DOWN(button_was_pressed))
-		{
-			if(ingame_menu_item < MENU_ITEM_LAST)
-				ingame_menu_item++;
+			switch(ingame_menu_item)
+			{
+				case MENU_ITEM_LOAD_STATE:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						emulator_load_current_save_state_slot();
+						is_running = 1;
+						ingame_menu_item = 0;
+						is_ingame_menu_running = 0;
+						Emulator_StartROMRunning(0);
+					}
+					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
+					{
+						emulator_decrement_current_save_state_slot();
+						blocking = 0;
+					}
+					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed))
+					{
+						emulator_increment_current_save_state_slot();
+						blocking = 0;
+					}
+
+					ingame_menu_reset_entry_colors(ingame_menu_item);
+					strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to load the state from the currently selected save state slot.");
+					break;
+				case MENU_ITEM_SAVE_STATE:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						emulator_save_current_save_state_slot();
+						is_running = 1;
+						ingame_menu_item = 0;
+						is_ingame_menu_running = 0;
+						Emulator_StartROMRunning(0);
+					}
+					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
+					{
+						emulator_decrement_current_save_state_slot();
+						blocking = 0;
+					}
+					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed))
+					{
+						emulator_increment_current_save_state_slot();
+						blocking = 0;
+					}
+
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press LEFT or RIGHT to change the current save state slot.\nPress CROSS to save the state to the currently selected save state slot.");
+					break;
+				case MENU_ITEM_KEEP_ASPECT_RATIO:
+					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
+					{
+						if(Settings.PS3KeepAspect > 0)
+						{
+							Settings.PS3KeepAspect--;
+							ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
+							if (ps3graphics_calculate_aspect_ratio_before_game_load())
+								ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
+						}
+					}
+					if(CTRL_RIGHT(button_was_pressed)  || CTRL_LSTICK_RIGHT(button_was_pressed))
+					{
+						if(Settings.PS3KeepAspect < LAST_ASPECT_RATIO)
+						{
+							Settings.PS3KeepAspect++;
+							ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
+							if (ps3graphics_calculate_aspect_ratio_before_game_load())
+								ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
+						}
+					}
+					if(CTRL_START(button_was_pressed))
+					{
+						Settings.PS3KeepAspect = ASPECT_RATIO_4_3;
+						ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press LEFT or RIGHT to change the [Aspect Ratio].\nPress START to reset back to default values.");
+					break;
+				case MENU_ITEM_OVERSCAN_AMOUNT:
+					if(CTRL_LEFT(button_was_pressed)  ||  CTRL_LSTICK_LEFT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_held))
+					{
+						Settings.PS3OverscanAmount--;
+						Settings.PS3OverscanEnabled = 1;
+
+						if(Settings.PS3OverscanAmount == 0)
+							Settings.PS3OverscanEnabled = 0;
+
+						ps3graphics_set_overscan(Settings.PS3OverscanEnabled, (float)Settings.PS3OverscanAmount/100, 1);
+					}
+					if(CTRL_RIGHT(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_LSTICK_RIGHT(button_was_held))
+					{
+						Settings.PS3OverscanAmount++;
+						Settings.PS3OverscanEnabled = 1;
+						if(Settings.PS3OverscanAmount == 0)
+							Settings.PS3OverscanEnabled = 0;
+
+						ps3graphics_set_overscan(Settings.PS3OverscanEnabled, (float)Settings.PS3OverscanAmount/100, 1);
+					}
+					if(CTRL_START(button_was_pressed))
+					{
+						Settings.PS3OverscanAmount = 0;
+						Settings.PS3OverscanEnabled = 0;
+						ps3graphics_set_overscan(Settings.PS3OverscanEnabled, (float)Settings.PS3OverscanAmount/100, 1);
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press LEFT or RIGHT to change the [Overscan] settings.\nPress START to reset back to default values.");
+					break;
+				case MENU_ITEM_FRAME_ADVANCE:
+					if(CTRL_CROSS(state) || CTRL_R2(state) || CTRL_L2(state))
+					{
+						is_running = 0;
+						ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
+						is_ingame_menu_running = 0;
+						Emulator_StartROMRunning(0);
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame.\nNOTE: Pressing the button rapidly will advance the frame more slowly\nand prevent buttons from being input.");
+					break;
+				case MENU_ITEM_RESIZE_MODE:
+					if(CTRL_CROSS(state))
+					{
+						ps3graphics_set_aspect_ratio(ASPECT_RATIO_CUSTOM, IPPU.RenderedScreenWidth, IPPU.RenderedScreenWidth, 1);
+						do
+						{
+							ps3graphics_draw(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, GFX.Screen);
+							state = cell_pad_input_poll_device(0);
+							ps3graphics_resize_aspect_mode_input_loop(state);
+
+							if(CTRL_CIRCLE(state))
+							{
+								set_text_message("", 7);
+								blocking = 1;
+								stuck_in_loop = 0;
+							}
+
+							psglSwap();
+							cellSysutilCheckCallback();
+							old_state = state;
+						}while(stuck_in_loop && is_ingame_menu_running);
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Allows you to resize the screen by moving around the two analog sticks.\nPress TRIANGLE to reset to default values, and CIRCLE to go back to the\nin-game menu.");
+					break;
+				case MENU_ITEM_SCREENSHOT_MODE:
+					if(CTRL_CROSS(state))
+					{
+						while(stuck_in_loop && is_ingame_menu_running)
+						{
+							state = cell_pad_input_poll_device(0);
+							if(CTRL_CIRCLE(state))
+							{
+								set_text_message("", 7);
+								blocking = 1;
+								stuck_in_loop = 0;
+							}
+
+							ps3graphics_draw(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, GFX.Screen);
+							psglSwap();
+							cellSysutilCheckCallback();
+							old_state = state;
+						}
+					}
+
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Allows you to take a screenshot without any text clutter.\nPress CIRCLE to go back to the in-game menu while in 'Screenshot Mode'.");
+					break;
+				case MENU_ITEM_RETURN_TO_GAME:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						is_running = 1;
+						ingame_menu_item = 0;
+						is_ingame_menu_running = 0;
+						Emulator_StartROMRunning(0);
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to return back to the game.");
+					break;
+				case MENU_ITEM_RESET:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						S9xSoftReset();
+						is_running = 1;
+						ingame_menu_item = 0;
+						is_ingame_menu_running = 0;
+						Emulator_StartROMRunning(0);
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to reset the game.");
+					break;
+				case MENU_ITEM_RESET_FORCE_NTSC_PAL:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						Settings.ForceNTSC = false;
+						Settings.ForcePAL = true;
+						need_load_rom = 1;
+						is_running = 1;
+						is_ingame_menu_running = 0;
+						Emulator_StartROMRunning(0);
+						ingame_menu_item = 0;
+					}
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to reset the game and force it into PAL videomode.");
+					break;
+				case MENU_ITEM_RESET_FORCE_PAL_NTSC:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						Settings.ForceNTSC = true;
+						Settings.ForcePAL = false;
+						need_load_rom = 1;
+						is_running = 1;
+						is_ingame_menu_running = 0;
+						Emulator_StartROMRunning(0);
+						ingame_menu_item = 0;
+					} 
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to reset the game and force it into NTSC videomode.");
+					break;
+				case MENU_ITEM_RETURN_TO_MENU:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						is_running = 0;
+						ingame_menu_item = 0;
+						is_ingame_menu_running = 0;
+						mode_switch = MODE_MENU;
+					}
+
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to return to the ROM Browser menu.");
+					break;
+#ifdef MULTIMAN_SUPPORT
+				case MENU_ITEM_RETURN_TO_MULTIMAN:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						is_running = 0;
+						is_ingame_menu_running = 0;
+						mode_switch = MODE_EXIT; 
+					}
+
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to quit the emulator and return to multiMAN.");
+					break;
+#endif
+				case MENU_ITEM_RETURN_TO_XMB:
+					if(CTRL_CROSS(button_was_pressed))
+					{
+						is_running = 0;
+						is_ingame_menu_running = 0;
+#ifdef MULTIMAN_SUPPORT
+						return_to_MM = false;
+#endif
+						mode_switch = MODE_EXIT; 
+					}
+
+					ingame_menu_reset_entry_colors (ingame_menu_item);
+					strcpy(comment, "Press 'CROSS' to quit the emulator and return to the XMB.");
+					break;
+			}
+
+			if(CTRL_UP(button_was_pressed) || CTRL_LSTICK_UP(button_was_pressed))
+			{
+				if(ingame_menu_item > 0)
+					ingame_menu_item--;
+			}
+
+			if(CTRL_DOWN(button_was_pressed) || CTRL_LSTICK_DOWN(button_was_pressed))
+			{
+				if(ingame_menu_item < MENU_ITEM_LAST)
+					ingame_menu_item++;
+			}
 		}
 
 		float x_position = 0.3f;
