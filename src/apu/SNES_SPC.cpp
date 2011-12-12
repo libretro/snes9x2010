@@ -81,7 +81,7 @@ void SNES_SPC::enable_rom( int enable )
 
 //// DSP
 
-int const max_reg_time = 29;
+#define MAX_REG_TIME 29
 
 signed char const SNES_SPC::reg_times_ [256] =
 {
@@ -105,13 +105,13 @@ signed char const SNES_SPC::reg_times_ [256] =
 };
 	
 #define RUN_DSP( time, offset ) \
-	int count = (time) - (offset) - m.dsp_time;\
-if ( count >= 0 )\
-{\
-	int clock_count = (count & ~(clocks_per_sample - 1)) + clocks_per_sample;\
-	m.dsp_time += clock_count;\
-	dsp.run( clock_count );\
-}
+	int count = (time) - (offset) - m.dsp_time; \
+	if ( count >= 0 ) \
+	{ \
+		int clock_count = (count & ~(clocks_per_sample - 1)) + clocks_per_sample; \
+		m.dsp_time += clock_count; \
+		dsp.run( clock_count ); \
+	}
 
 int SNES_SPC::dsp_read( rel_time_t time )
 {
@@ -243,16 +243,9 @@ void SNES_SPC::cpu_write( int data, int addr, rel_time_t time )
 	if ( reg >= 0 ) // 64%
 	{
 		// $F0-$FF
-		if ( reg < reg_count ) // 87%
+		if ( reg < REG_COUNT ) // 87%
 		{
 			REGS [reg] = (uint8_t) data;
-			
-			// Ports
-			#ifdef SPC_PORT_WRITE_HOOK
-				if ( (unsigned) (reg - r_cpuio0) < port_count )
-					SPC_PORT_WRITE_HOOK( m.spc_time + time, (reg - r_cpuio0),
-							(uint8_t) data, &REGS [r_cpuio0] );
-			#endif
 			
 			// Registers other than $F2 and $F4-$F7
 			//if ( reg != 2 && reg != 4 && reg != 5 && reg != 6 && reg != 7 )
@@ -328,28 +321,7 @@ int SNES_SPC::cpu_read( int addr, rel_time_t time )
 	return result;
 }
 
-
 //// Run
-
-// Prefix and suffix for CPU emulator function
-#define SPC_CPU_RUN_FUNC \
-BOOST::uint8_t* SNES_SPC::run_until_( time_t end_time )\
-{\
-	rel_time_t rel_time = m.spc_time - end_time;\
-	m.spc_time = end_time;\
-	m.dsp_time += rel_time;\
-	m.timers [0].next_time += rel_time;\
-	m.timers [1].next_time += rel_time;\
-	m.timers [2].next_time += rel_time;
-
-#define SPC_CPU_RUN_FUNC_END \
-	m.spc_time += rel_time;\
-	m.dsp_time -= rel_time;\
-	m.timers [0].next_time -= rel_time;\
-	m.timers [1].next_time -= rel_time;\
-	m.timers [2].next_time -= rel_time;\
-	return &REGS [r_cpuio0];\
-}
 
 void SNES_SPC::end_frame( time_t end_time )
 {
@@ -368,7 +340,7 @@ void SNES_SPC::end_frame( time_t end_time )
 	// Catch DSP up to CPU
 	if ( m.dsp_time < 0 )
 	{
-		RUN_DSP( 0, max_reg_time );
+		RUN_DSP( 0, MAX_REG_TIME );
 	}
 	
 	// Save any extra samples beyond what should be generated
@@ -389,7 +361,7 @@ void SNES_SPC::init()
 	memset( &m, 0, sizeof m );
 	dsp.init( RAM );
 	
-	m.tempo = tempo_unit;
+	m.tempo = TEMPO_UNIT;
 	
 	// Most SPC music doesn't need ROM, and almost all the rest only rely
 	// on these two bytes
@@ -464,10 +436,10 @@ void SNES_SPC::timers_loaded()
 }
 
 // Loads registers from unified 16-byte format
-void SNES_SPC::load_regs( uint8_t const in [reg_count] )
+void SNES_SPC::load_regs( uint8_t const in [REG_COUNT] )
 {
-	memcpy( REGS, in, reg_count );
-	memcpy( REGS_IN, REGS, reg_count );
+	memcpy( REGS, in, REG_COUNT );
+	memcpy( REGS_IN, REGS, REG_COUNT );
 	
 	// These always read back as 0
 	REGS_IN [r_test    ] = 0;
@@ -527,7 +499,7 @@ void SNES_SPC::reset_common( int timer_counter_init )
 	
 	REGS [r_test   ] = 0x0A;
 	REGS [r_control] = 0xB0; // ROM enabled, clear ports
-	for ( i = 0; i < port_count; i++ )
+	for ( i = 0; i < PORT_COUNT; i++ )
 		REGS_IN [r_cpuio0 + i] = 0;
 	
 	reset_time_regs();
@@ -559,7 +531,7 @@ void SNES_SPC::reset_buf()
 {
 	// Start with half extra buffer of silence
 	short* out = m.extra_buf;
-	while ( out < &m.extra_buf [extra_size / 2] )
+	while ( out < &m.extra_buf [EXTRA_SIZE_DIV_2] )
 		*out++ = 0;
 	
 	m.extra_pos = out;
@@ -587,7 +559,7 @@ void SNES_SPC::set_output( short* out, int size )
 		{
 			// Have DSP write to remaining extra space
 			out     = dsp.extra();
-			out_end = &dsp.extra() [extra_size];
+			out_end = &dsp.extra() [EXTRA_SIZE];
 			
 			// Copy any remaining extra samples as if DSP wrote them
 			while ( in < m.extra_pos )
@@ -638,17 +610,17 @@ void SNES_SPC::copy_state( unsigned char** io, copy_func_t copy )
 	
 	{
 		// SMP registers
-		uint8_t regs [reg_count];
-		uint8_t regs_in [reg_count];
+		uint8_t regs [REG_COUNT];
+		uint8_t regs_in [REG_COUNT];
 
-		memcpy( regs, REGS, reg_count );
-		memcpy( regs_in, REGS_IN, reg_count );
+		memcpy( regs, REGS, REG_COUNT );
+		memcpy( regs_in, REGS_IN, REG_COUNT );
 
 		copier.copy( regs, sizeof regs );
 		copier.copy( regs_in, sizeof regs_in );
 
-		memcpy( REGS, regs, reg_count);
-		memcpy( REGS_IN, regs_in, reg_count );
+		memcpy( REGS, regs, REG_COUNT);
+		memcpy( REGS_IN, regs_in, REG_COUNT );
 
 		enable_rom( REGS [r_control] & 0x80 );
 	}
@@ -688,4 +660,3 @@ void SNES_SPC::copy_state( unsigned char** io, copy_func_t copy )
 
 // Inclusion here allows static memory access functions and better optimization
 #include "SPC_CPU.h"
-

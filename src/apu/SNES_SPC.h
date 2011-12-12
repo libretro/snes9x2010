@@ -7,6 +7,14 @@
 #include "SPC_DSP.h"
 #include "blargg_endian.h"
 
+#define REG_COUNT 0x10
+
+#define PORT_COUNT 4
+
+#define TEMPO_UNIT 0x100
+
+#define STATE_SIZE 68 * 1024L // maximum space needed when saving
+
 struct SNES_SPC {
 public:
 	typedef BOOST::uint8_t uint8_t;
@@ -40,31 +48,21 @@ public:
 
 	// 1024000 SPC clocks per second, sample pair every 32 clocks
 	typedef int time_t;
-	enum { clock_rate = 1024000 };
 	enum { clocks_per_sample = 32 };
 	
 	// Emulated port read/write at specified time
-	enum { port_count = 4 };
 	int  read_port ( time_t, int port );
 	void write_port( time_t, int port, int data );
 
 	// Runs SPC to end_time and starts a new time frame at 0
 	void end_frame( time_t end_time );
 	
-// Sound control
-	
-	// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
-	// Reduces emulation accuracy.
-	enum { voice_count = 8 };
-	
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
-	enum { tempo_unit = 0x100 };
 	void set_tempo( int );
 // State save/load (only available with accurate DSP)
 
 #if !SPC_NO_COPY_STATE_FUNCS
 	// Saves/loads state
-	enum { state_size = 68 * 1024L }; // maximum space needed when saving
 	typedef SPC_DSP::copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
 #endif
@@ -90,9 +88,7 @@ public:
 		int enabled;
 		int counter;
 	};
-	enum { reg_count = 0x10 };
 	enum { timer_count = 3 };
-	enum { extra_size = SPC_DSP::extra_size };
 	
 	// Support SNES_MEMORY_APURAM
 	uint8_t *apuram();
@@ -107,7 +103,7 @@ private:
 	{
 		Timer timers [timer_count];
 		
-		uint8_t smp_regs [2] [reg_count];
+		uint8_t smp_regs [2] [REG_COUNT];
 		
 		struct
 		{
@@ -128,7 +124,7 @@ private:
 		short*   buf_begin;
 		short const* buf_end;
 		short*   extra_pos;
-		short    extra_buf [extra_size];
+		short    extra_buf [EXTRA_SIZE];
 		
 		int         rom_enabled;
 		uint8_t     rom    [rom_size];
@@ -151,8 +147,6 @@ private:
 	
 	enum { rom_addr = 0xFFC0 };
 	
-	enum { skipping_time = 127 };
-	
 	// Value that padding should be filled with
 	enum { cpu_pad_fill = 0xFF };
 	
@@ -170,7 +164,7 @@ private:
 	void enable_rom( int enable );
 	void reset_buf();
 	void save_extra();
-	void load_regs( uint8_t const in [reg_count] );
+	void load_regs( uint8_t const in [REG_COUNT] );
 	void ram_loaded();
 	void regs_loaded();
 	void reset_time_regs();

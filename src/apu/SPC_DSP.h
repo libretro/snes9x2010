@@ -8,6 +8,53 @@
 
 extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t ); }
 
+#define ECHO_HIST_SIZE		8
+#define ECHO_HIST_SIZE_X2	16
+
+// Sound control
+
+// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
+// Reduces emulation accuracy.
+#define VOICE_COUNT 8
+
+#define EXTRA_SIZE 16
+#define EXTRA_SIZE_DIV_2 8
+
+#define BRR_BUF_SIZE 12
+#define BRR_BUF_SIZE_X2 24
+
+// DSP register addresses
+
+// Global registers
+#define R_MVOLL 0x0C
+#define R_MVOLR 0x1C
+#define R_EVOLL 0x2C
+#define R_EVOLR 0x3C
+#define R_KON	0x4C
+#define R_KOFF	0x5C
+#define R_FLG	0x6C
+#define R_ENDX	0x7C
+#define R_EFB	0x0D
+#define R_EON	0x4D
+#define R_PMON	0x2D
+#define R_NON	0x3D
+#define R_DIR	0x5D
+#define R_ESA	0x6D
+#define R_EDL	0x7D
+#define R_FIR	0x0F	// 8 coefficients at 0x0F, 0x1F ... 0x7F
+
+// Voice registers
+#define V_VOLL 0x00
+#define V_VOLR 0x01
+#define V_PITCHL 0x02
+#define V_PITCHH 0x03
+#define V_SRCN 0x04
+#define V_ADSR0 0x05
+#define V_ADSR1 0x06
+#define V_GAIN 0x07
+#define V_ENVX 0x08
+#define V_OUTX 0x09
+
 class SPC_DSP {
 public:
 	typedef BOOST::uint8_t uint8_t;
@@ -43,11 +90,7 @@ public:
 	// a pair of samples is be generated.
 	void run( int clock_count );
 	
-// Sound control
 
-	// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
-	// Reduces emulation accuracy.
-	enum { voice_count = 8 };
 // State
 	
 	// Resets DSP and uses supplied values to initialize registers
@@ -55,38 +98,14 @@ public:
 	void load( uint8_t const regs [register_count] );
 
 	// Saves/loads exact emulator state
-	enum { state_size = 640 }; // maximum space needed when saving
 	typedef dsp_copy_func_t copy_func_t;
 	void copy_state( unsigned char** io, copy_func_t );
 // Snes9x Accessor
 
 	int  stereo_switch;
-// DSP register addresses
 
-	// Global registers
-	enum {
-	    r_mvoll = 0x0C, r_mvolr = 0x1C,
-	    r_evoll = 0x2C, r_evolr = 0x3C,
-	    r_kon   = 0x4C, r_koff  = 0x5C,
-	    r_flg   = 0x6C, r_endx  = 0x7C,
-	    r_efb   = 0x0D, r_pmon  = 0x2D,
-	    r_non   = 0x3D, r_eon   = 0x4D,
-	    r_dir   = 0x5D, r_esa   = 0x6D,
-	    r_edl   = 0x7D,
-	    r_fir   = 0x0F // 8 coefficients at 0x0F, 0x1F ... 0x7F
-	};
-
-	// Voice registers
-	enum {
-		v_voll   = 0x00, v_volr   = 0x01,
-		v_pitchl = 0x02, v_pitchh = 0x03,
-		v_srcn   = 0x04, v_adsr0  = 0x05,
-		v_adsr1  = 0x06, v_gain   = 0x07,
-		v_envx   = 0x08, v_outx   = 0x09
-	};
 
 public:
-	enum { extra_size = 16 };
 	short* extra()               { return m.extra; }
 	short const* out_pos() const { return m.out; }
 public:
@@ -95,13 +114,11 @@ public:
 	typedef BOOST::int8_t   int8_t;
 	typedef BOOST::int16_t int16_t;
 	
-	enum { echo_hist_size = 8 };
 	
 	enum env_mode_t { env_release, env_attack, env_decay, env_sustain };
-	enum { brr_buf_size = 12 };
 	struct voice_t
 	{
-		int buf [brr_buf_size*2];// decoded samples (twice the size to simplify wrap handling)
+		int buf [BRR_BUF_SIZE_X2];// decoded samples (twice the size to simplify wrap handling)
 		int buf_pos;            // place in buffer where next samples will be decoded
 		int interp_pos;         // relative fractional position in sample (0x1000 = 1.0)
 		int brr_addr;           // address of current BRR block
@@ -123,7 +140,7 @@ private:
 		uint8_t regs [register_count];
 		
 		// Echo history keeps most recent 8 samples (twice the size to simplify wrap handling)
-		int echo_hist [echo_hist_size * 2] [2];
+		int echo_hist [ECHO_HIST_SIZE_X2] [2];
 		int (*echo_hist_pos) [2]; // &echo_hist [0 to 7]
 		
 		int every_other_sample; // toggles every sample
@@ -170,14 +187,14 @@ private:
 		int t_echo_out [2];
 		int t_echo_in  [2];
 		
-		voice_t voices [voice_count];
+		voice_t voices [VOICE_COUNT];
 		
 		// non-emulation state
 		uint8_t* ram; // 64K shared RAM between DSP and SMP
 		short* out;
 		short* out_end;
 		short* out_begin;
-		short extra [extra_size];
+		short extra [EXTRA_SIZE];
 	};
 	state_t m;
 	
@@ -227,24 +244,24 @@ inline void SPC_DSP::write( int addr, int data )
 	m.regs [addr] = (uint8_t) data;
 	switch ( addr & 0x0F )
 	{
-	case v_envx:
-		m.envx_buf = (uint8_t) data;
-		break;
-		
-	case v_outx:
-		m.outx_buf = (uint8_t) data;
-		break;
-	
-	case 0x0C:
-		if ( addr == r_kon )
-			m.new_kon = (uint8_t) data;
-		
-		if ( addr == r_endx ) // always cleared, regardless of data written
-		{
-			m.endx_buf = 0;
-			m.regs [r_endx] = 0;
-		}
-		break;
+		case V_ENVX:
+			m.envx_buf = (uint8_t) data;
+			break;
+
+		case V_OUTX:
+			m.outx_buf = (uint8_t) data;
+			break;
+
+		case 0x0C:
+			if ( addr == R_KON )
+				m.new_kon = (uint8_t) data;
+
+			if ( addr == R_ENDX ) // always cleared, regardless of data written
+			{
+				m.endx_buf = 0;
+				m.regs [R_ENDX] = 0;
+			}
+			break;
 	}
 }
 

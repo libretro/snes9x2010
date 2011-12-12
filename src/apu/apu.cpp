@@ -218,8 +218,8 @@ static bool8		resampler      = false;
 static int32		reference_time;
 static uint32		spc_remainder;
 
-static const int	timing_hack_numerator   = SNES_SPC::tempo_unit;
-static int		timing_hack_denominator = SNES_SPC::tempo_unit;
+static const int	timing_hack_numerator   = TEMPO_UNIT;
+static int		timing_hack_denominator = TEMPO_UNIT;
 /* Set these to NTSC for now. Will change to PAL in S9xAPUTimingSetSpeedup
    if necessary on game load. */
 static uint32		ratio_numerator = APU_NUMERATOR_NTSC;
@@ -597,7 +597,7 @@ void S9xAPUTimingSetSpeedup (int ticks)
 	if (ticks != 0)
 		printf("APU speedup hack: %d\n", ticks);
 
-	timing_hack_denominator = SNES_SPC::tempo_unit - ticks;
+	timing_hack_denominator = TEMPO_UNIT - ticks;
 	spc_core->set_tempo(timing_hack_denominator);
 
 	ratio_numerator = Settings.PAL ? APU_NUMERATOR_PAL : APU_NUMERATOR_NTSC;
