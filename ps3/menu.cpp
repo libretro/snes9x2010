@@ -181,8 +181,6 @@ static void RenderBrowser(filebrowser_t * b)
 
 #include "menu/menu-helpmessages.h"
 
-#define do_controls_settings_entry(settingsptr, defaultvalue) \
-
 #define do_controls_refreshpage(beginvalue, endvalue) \
 { \
 	float increment = 0.13f; \
