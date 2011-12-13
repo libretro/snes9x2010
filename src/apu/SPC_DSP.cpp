@@ -952,24 +952,23 @@ void dsp_reset()
 
 #if !SPC_NO_COPY_STATE_FUNCS
 
-void SPC_State_Copier::copy( void* state, size_t size )
+void spc_copier_copy(spc_state_copy_t * copier, void* state, size_t size )
 {
-	func( buf, state, size );
+	copier->func(copier->buf, state, size );
 }
 
-int SPC_State_Copier::copy_int( int state, int size )
+int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size )
 {
 	BOOST::uint8_t s [2];
 	SET_LE16( s, state );
-	func( buf, &s, size );
+	copier->func(copier->buf, &s, size );
 	return GET_LE16( s );
 }
 
-void SPC_State_Copier::extra()
+void spc_copier_extra(spc_state_copy_t * copier)
 {
 	int n = 0;
-	SPC_State_Copier& copier = *this;
-	SPC_COPY( uint8_t, n );
+	n = (BOOST::uint8_t) spc_copier_copy_int(copier, n, sizeof (BOOST::uint8_t) );
 
 	if ( n > 0 )
 	{
@@ -981,7 +980,7 @@ void SPC_State_Copier::extra()
 			if ( size_n > n )
 				size_n = n;
 			n -= size_n;
-			func( buf, temp, size_n );
+			copier->func(copier->buf, temp, size_n );
 		}
 		while ( n );
 	}
@@ -989,10 +988,12 @@ void SPC_State_Copier::extra()
 
 void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 {
-	SPC_State_Copier copier( io, copy );
+	spc_state_copy_t copier;
+	copier.func = copy;
+	copier.buf = io;
 	
 	// DSP registers
-	copier.copy( dsp_m.regs, REGISTER_COUNT );
+	spc_copier_copy(&copier, dsp_m.regs, REGISTER_COUNT );
 	
 	// Internal state
 	
@@ -1025,7 +1026,7 @@ void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 		}
 		SPC_COPY(  uint8_t, v->t_envx_out );
 		
-		copier.extra();
+		spc_copier_extra(&copier);
 	}
 	
 	// Echo history
@@ -1085,6 +1086,6 @@ void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	SPC_COPY( uint16_t, dsp_m.t_echo_ptr );
 	SPC_COPY(  uint8_t, dsp_m.t_looped );
 	
-	copier.extra();
+	spc_copier_extra(&copier);
 }
 #endif

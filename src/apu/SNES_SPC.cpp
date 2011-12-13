@@ -595,14 +595,16 @@ void spc_set_output( short* out, int size )
 #if !SPC_NO_COPY_STATE_FUNCS
 void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 {
-	SPC_State_Copier copier( io, copy );
+	spc_state_copy_t copier;
+	copier.func = copy;
+	copier.buf = io;
 	
 	// Make state data more readable by putting 64K RAM, 16 SMP registers,
 	// then DSP (with its 128 registers) first
 
 	// RAM
 	spc_enable_rom( 0 ); // will get re-enabled if necessary in regs_loaded() below
-	copier.copy( m.ram.ram, 0x10000 );
+	spc_copier_copy(&copier, m.ram.ram, 0x10000 );
 	
 	{
 		// SMP registers
@@ -612,8 +614,8 @@ void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 		memcpy( regs, m.smp_regs[0], REG_COUNT );
 		memcpy( regs_in, m.smp_regs[1], REG_COUNT );
 
-		copier.copy( regs, sizeof regs );
-		copier.copy( regs_in, sizeof regs_in );
+		spc_copier_copy(&copier, regs, sizeof(regs));
+		spc_copier_copy(&copier, regs_in, sizeof(regs_in));
 
 		memcpy( m.smp_regs[0], regs, REG_COUNT);
 		memcpy( m.smp_regs[1], regs_in, REG_COUNT );
@@ -628,7 +630,7 @@ void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	SPC_COPY(  uint8_t, m.cpu_regs.y );
 	SPC_COPY(  uint8_t, m.cpu_regs.psw );
 	SPC_COPY(  uint8_t, m.cpu_regs.sp );
-	copier.extra();
+	spc_copier_extra(&copier);
 	
 	SPC_COPY( int16_t, m.spc_time );
 	SPC_COPY( int16_t, m.dsp_time );
@@ -645,12 +647,12 @@ void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 		SPC_COPY( int16_t, t->next_time );
 		SPC_COPY( uint8_t, t->divider );
 		SPC_COPY( uint8_t, t->counter );
-		copier.extra();
+		spc_copier_extra(&copier);
 	}
 
 	spc_set_tempo( m.tempo );
 
-	copier.extra();
+	spc_copier_extra(&copier);
 }
 #endif
 

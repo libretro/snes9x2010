@@ -172,19 +172,18 @@ typedef BOOST::int16_t int16_t;
 
 #if !SPC_NO_COPY_STATE_FUNCS
 
-class SPC_State_Copier {
+typedef struct {
 	dsp_copy_func_t func;
 	unsigned char** buf;
-public:
-	SPC_State_Copier( unsigned char** p, dsp_copy_func_t f ) { func = f; buf = p; }
-	void copy( void* state, size_t size );
-	int copy_int( int state, int size );
-	void extra();
-};
+} spc_state_copy_t;
+
+void spc_copier_copy(spc_state_copy_t * copier, void* state, size_t size );
+int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size);
+void spc_copier_extra(spc_state_copy_t * copier);
 
 #define SPC_COPY( type, state )\
 {\
-	state = (BOOST::type) copier.copy_int( state, sizeof (BOOST::type) );\
+	state = (BOOST::type) spc_copier_copy_int(&copier, state, sizeof (BOOST::type) );\
 }
 
 #endif
