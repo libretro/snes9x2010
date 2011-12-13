@@ -4102,7 +4102,7 @@ void CMemory::ApplyROMFixes (void)
 
 // UPS % IPS
 
-static uint32 ReadUPSPointer (const uint8 *data, unsigned &addr, unsigned size)
+static uint32 ReadUPSPointer (const uint8 *data, uint32 &addr, unsigned size)
 {
 	uint32 offset = 0, shift = 1;
 	while(addr < size) {

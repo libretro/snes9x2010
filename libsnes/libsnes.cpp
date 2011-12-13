@@ -502,7 +502,7 @@ uint8_t* snes_get_memory_data(unsigned type)
         data = Memory.RAM;
        break;
      case SNES_MEMORY_APURAM:
-        data = spc_core->apuram();
+        data = spc_apuram();
        break;
      case SNES_MEMORY_VRAM:
         data = Memory.VRAM;

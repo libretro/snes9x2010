@@ -36,8 +36,8 @@ else ifeq ($(platform), xenon)
    CC = xenon-gcc
    CXX = xenon-g++
    AR = xenon-ar
-   CFLAGS += -D__LIBXENON__
-   CXXFLAGS += -D__LIBXENON__
+   CFLAGS += -D__LIBXENON__ -m32
+   CXXFLAGS += -D__LIBXENON__ -m32
 else
    TARGET := snes.dll
    CC = gcc
