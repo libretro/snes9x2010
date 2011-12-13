@@ -41,7 +41,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 				if ( (unsigned) reg == 1 ) \
 				{ \
 					RUN_DSP( adj_time, reg_times [m.smp_regs[0][R_DSPADDR] & 0x7F] ); \
-					out = dsp.dsp_read(m.smp_regs[0][R_DSPADDR] & 0x7F ); /* 0xF3 */ \
+					out = dsp_m.regs[m.smp_regs[0][R_DSPADDR] & 0x7F ]; /* 0xF3 */ \
 				} \
 			} \
 		} \

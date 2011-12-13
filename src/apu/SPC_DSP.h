@@ -63,196 +63,140 @@ extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, s
 #define ENV_DECAY	2
 #define ENV_SUSTAIN	3
 
-class SPC_DSP {
-public:
-	typedef BOOST::uint8_t uint8_t;
-	
-// Setup
+typedef BOOST::uint8_t uint8_t;
 
-	// Initializes DSP and has it use the 64K RAM provided
-	void dsp_init( void* ram_64k );
-
-	// Sets destination for output samples. If out is NULL or out_size is 0,
-	// doesn't generate any.
-	void dsp_set_output( short* out, int out_size );
-
-	// Number of samples written to output since it was last set, always
-	// a multiple of 2. Undefined if more samples were generated than
-	// output buffer could hold.
-	int dsp_sample_count() const;
-
-// Emulation
-
-	// Resets DSP to power-on state
-	void dsp_reset();
-
-	// Emulates pressing reset switch on SNES
-	void dsp_soft_reset();
-	
-	// Reads/writes DSP registers. For accuracy, you must first call run()
-	// to catch the DSP up to present.
-	int  dsp_read ( int addr ) const;
-	void dsp_write( int addr, int data );
-
-	// Runs DSP for specified number of clocks (~1024000 per second). Every 32 clocks
-	// a pair of samples is be generated.
-	void dsp_run( int clock_count );
-
-// State
-	// Saves/loads exact emulator state
-	void dsp_copy_state( unsigned char** io, dsp_copy_func_t );
-public:
-	short* dsp_extra()               { return m.extra; }
-	short const* dsp_out_pos() const { return m.out; }
-public:
-	BLARGG_DISABLE_NOTHROW
-	
-	typedef BOOST::int8_t   int8_t;
-	typedef BOOST::int16_t int16_t;
-	
-	
-	struct dsp_voice_t
-	{
-		int buf [BRR_BUF_SIZE_X2];// decoded samples (twice the size to simplify wrap handling)
-		int buf_pos;            // place in buffer where next samples will be decoded
-		int interp_pos;         // relative fractional position in sample (0x1000 = 1.0)
-		int brr_addr;           // address of current BRR block
-		int brr_offset;         // current decoding offset in BRR block
-		uint8_t* regs;          // pointer to voice's DSP registers
-		int vbit;               // bitmask for voice: 0x01 for voice 0, 0x02 for voice 1, etc.
-		int kon_delay;          // KON delay/current setup phase
-		int env_mode;
-		int env;                // current envelope level
-		int hidden_env;         // used by GAIN mode 7, very obscure quirk
-		uint8_t t_envx_out;
-	};
-private:
-	
-	struct state_t
-	{
-		uint8_t regs [REGISTER_COUNT];
-		
-		// Echo history keeps most recent 8 samples (twice the size to simplify wrap handling)
-		int echo_hist [ECHO_HIST_SIZE_X2] [2];
-		int (*echo_hist_pos) [2]; // &echo_hist [0 to 7]
-		
-		int every_other_sample; // toggles every sample
-		int kon;                // KON value when last checked
-		int noise;
-		int counter;
-		int echo_offset;        // offset from ESA in echo buffer
-		int echo_length;        // number of bytes that echo_offset will stop at
-		int phase;              // next clock cycle to run (0-31)
-		
-		// Hidden registers also written to when main register is written to
-		int new_kon;
-		uint8_t endx_buf;
-		uint8_t envx_buf;
-		uint8_t outx_buf;
-		
-		// Temporary state between clocks
-		
-		// read once per sample
-		int t_pmon;
-		int t_non;
-		int t_eon;
-		int t_dir;
-		int t_koff;
-		
-		// read a few clocks ahead then used
-		int t_brr_next_addr;
-		int t_adsr0;
-		int t_brr_header;
-		int t_brr_byte;
-		int t_srcn;
-		int t_esa;
-		int t_echo_enabled;
-		
-		// internal state that is recalculated every sample
-		int t_dir_addr;
-		int t_pitch;
-		int t_output;
-		int t_looped;
-		int t_echo_ptr;
-		
-		// left/right sums
-		int t_main_out [2];
-		int t_echo_out [2];
-		int t_echo_in  [2];
-		
-		dsp_voice_t voices [VOICE_COUNT];
-		
-		// non-emulation state
-		uint8_t* ram; // 64K shared RAM between DSP and SMP
-		short* out;
-		short* out_end;
-		short* out_begin;
-		short extra [EXTRA_SIZE];
-	};
-	state_t m;
-	
-	int  dsp_interpolate( dsp_voice_t const* v );
-	void dsp_run_envelope( dsp_voice_t* const v );
-	void dsp_decode_brr( dsp_voice_t* v );
-
-	void dsp_misc_30();
-
-	void dsp_voice_output( dsp_voice_t const* v, int ch );
-	void dsp_voice_V1( dsp_voice_t* const );
-	void dsp_voice_V2( dsp_voice_t* const );
-	void dsp_voice_V3( dsp_voice_t* const );
-	void dsp_voice_V3a( dsp_voice_t* const );
-	void dsp_voice_V3b( dsp_voice_t* const );
-	void dsp_voice_V3c( dsp_voice_t* const );
-	void dsp_voice_V4( dsp_voice_t* const );
-	void dsp_voice_V5( dsp_voice_t* const );
-	void dsp_voice_V6( dsp_voice_t* const );
-	void dsp_voice_V7( dsp_voice_t* const );
-	void dsp_voice_V8( dsp_voice_t* const );
-	void dsp_voice_V9( dsp_voice_t* const );
-	void dsp_voice_V7_V4_V1( dsp_voice_t* const );
-	void dsp_voice_V8_V5_V2( dsp_voice_t* const );
-	void dsp_voice_V9_V6_V3( dsp_voice_t* const );
-
-	void dsp_echo_22();
-	void dsp_echo_23();
-	void dsp_echo_24();
-	void dsp_echo_25();
-	void dsp_echo_26();
-	void dsp_echo_27();
-	void dsp_echo_29();
-	
-	void dsp_soft_reset_common();
-};
-
-inline int SPC_DSP::dsp_sample_count() const { return m.out - m.out_begin; }
-
-inline int SPC_DSP::dsp_read( int addr ) const
+typedef struct
 {
-	return m.regs [addr];
-}
+	int buf [BRR_BUF_SIZE_X2];// decoded samples (twice the size to simplify wrap handling)
+	int buf_pos;            // place in buffer where next samples will be decoded
+	int interp_pos;         // relative fractional position in sample (0x1000 = 1.0)
+	int brr_addr;           // address of current BRR block
+	int brr_offset;         // current decoding offset in BRR block
+	uint8_t* regs;          // pointer to voice's DSP registers
+	int vbit;               // bitmask for voice: 0x01 for voice 0, 0x02 for voice 1, etc.
+	int kon_delay;          // KON delay/current setup phase
+	int env_mode;
+	int env;                // current envelope level
+	int hidden_env;         // used by GAIN mode 7, very obscure quirk
+	uint8_t t_envx_out;
+} dsp_voice_t;
 
-inline void SPC_DSP::dsp_write( int addr, int data )
+// Initializes DSP and has it use the 64K RAM provided
+void dsp_init( void* ram_64k );
+
+// Sets destination for output samples. If out is NULL or out_size is 0,
+// doesn't generate any.
+void dsp_set_output( short* out, int out_size );
+
+// Resets DSP to power-on state
+void dsp_reset();
+
+// Emulates pressing reset switch on SNES
+void dsp_soft_reset();
+
+// Runs DSP for specified number of clocks (~1024000 per second). Every 32 clocks
+// a pair of samples is be generated.
+void dsp_run( int clock_count );
+
+// Saves/loads exact emulator state
+void dsp_copy_state( unsigned char** io, dsp_copy_func_t );
+
+int  dsp_interpolate( dsp_voice_t const* v );
+void dsp_run_envelope( dsp_voice_t* const v );
+
+void dsp_soft_reset_common();
+
+
+typedef struct
 {
-	m.regs [addr] = (uint8_t) data;
+	uint8_t regs [REGISTER_COUNT];
+
+	// Echo history keeps most recent 8 samples (twice the size to simplify wrap handling)
+	int echo_hist [ECHO_HIST_SIZE_X2] [2];
+	int (*echo_hist_pos) [2]; // &echo_hist [0 to 7]
+
+	int every_other_sample; // toggles every sample
+	int kon;                // KON value when last checked
+	int noise;
+	int counter;
+	int echo_offset;        // offset from ESA in echo buffer
+	int echo_length;        // number of bytes that echo_offset will stop at
+	int phase;              // next clock cycle to run (0-31)
+
+	// Hidden registers also written to when main register is written to
+	int new_kon;
+	uint8_t endx_buf;
+	uint8_t envx_buf;
+	uint8_t outx_buf;
+
+	// Temporary state between clocks
+
+	// read once per sample
+	int t_pmon;
+	int t_non;
+	int t_eon;
+	int t_dir;
+	int t_koff;
+
+	// read a few clocks ahead then used
+	int t_brr_next_addr;
+	int t_adsr0;
+	int t_brr_header;
+	int t_brr_byte;
+	int t_srcn;
+	int t_esa;
+	int t_echo_enabled;
+
+	// internal state that is recalculated every sample
+	int t_dir_addr;
+	int t_pitch;
+	int t_output;
+	int t_looped;
+	int t_echo_ptr;
+
+	// left/right sums
+	int t_main_out [2];
+	int t_echo_out [2];
+	int t_echo_in  [2];
+
+	dsp_voice_t voices [VOICE_COUNT];
+
+	// non-emulation state
+	uint8_t* ram; // 64K shared RAM between DSP and SMP
+	short* out;
+	short* out_end;
+	short* out_begin;
+	short extra [EXTRA_SIZE];
+} dsp_state_t;
+
+extern dsp_state_t dsp_m;
+
+typedef BOOST::int8_t   int8_t;
+typedef BOOST::int16_t int16_t;
+
+// Writes DSP registers. For accuracy, you must first call run()
+// to catch the DSP up to present.
+inline void dsp_write( int addr, int data )
+{
+	dsp_m.regs [addr] = (uint8_t) data;
 	switch ( addr & 0x0F )
 	{
 		case V_ENVX:
-			m.envx_buf = (uint8_t) data;
+			dsp_m.envx_buf = (uint8_t) data;
 			break;
 
 		case V_OUTX:
-			m.outx_buf = (uint8_t) data;
+			dsp_m.outx_buf = (uint8_t) data;
 			break;
 
 		case 0x0C:
 			if ( addr == R_KON )
-				m.new_kon = (uint8_t) data;
+				dsp_m.new_kon = (uint8_t) data;
 
 			if ( addr == R_ENDX ) // always cleared, regardless of data written
 			{
-				m.endx_buf = 0;
-				m.regs [R_ENDX] = 0;
+				dsp_m.endx_buf = 0;
+				dsp_m.regs [R_ENDX] = 0;
 			}
 			break;
 	}

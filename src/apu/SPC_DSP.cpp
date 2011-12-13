@@ -5,6 +5,8 @@
 #include "blargg_endian.h"
 #include <string.h>
 
+dsp_state_t dsp_m;
+
 /* Copyright (C) 2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
 General Public License as published by the Free Software Foundation; either
@@ -35,7 +37,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 }
 
 // Access global DSP register
-#define REG(n)      m.regs [R_##n]
+#define REG(n)      dsp_m.regs [R_##n]
 
 // Access voice DSP register
 #define VREG(r,n)   r [V_##n]
@@ -45,23 +47,23 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 	out [0] = l;\
 	out [1] = r;\
 	out += 2;\
-	if ( out >= m.out_end )\
+	if ( out >= dsp_m.out_end )\
 	{\
-		out       = m.extra;\
-		m.out_end = &m.extra [EXTRA_SIZE];\
+		out       = dsp_m.extra;\
+		dsp_m.out_end = &dsp_m.extra [EXTRA_SIZE];\
 	}\
 }\
 
-void SPC_DSP::dsp_set_output( short * out, int size )
+void dsp_set_output( short * out, int size )
 {
 	if ( !out )
 	{
-		out  = m.extra;
+		out  = dsp_m.extra;
 		size = EXTRA_SIZE;
 	}
-	m.out_begin = out;
-	m.out       = out;
-	m.out_end   = out + size;
+	dsp_m.out_begin = out;
+	dsp_m.out       = out;
+	dsp_m.out_end   = out + size;
 }
 
 // Volume registers and efb are signed! Easy to forget int8_t cast.
@@ -105,7 +107,7 @@ static short const gauss [512] =
 1299,1300,1300,1301,1302,1302,1303,1303,1303,1304,1304,1304,1304,1304,1305,1305,
 };
 
-inline int SPC_DSP::dsp_interpolate( dsp_voice_t const* v )
+static inline int dsp_interpolate( dsp_voice_t const* v )
 {
 	// Make pointers into gaussian based on fractional position between samples
 	int offset = v->interp_pos >> 4 & 0xFF;
@@ -164,17 +166,17 @@ static unsigned const counter_offsets [32] =
 	     0
 };
 
-#define INIT_COUNTER() m.counter = 0;
+#define INIT_COUNTER() dsp_m.counter = 0;
 
 #define RUN_COUNTERS() \
-	if ( --m.counter < 0 ) \
-		m.counter = SIMPLE_COUNTER_RANGE - 1;
+	if ( --dsp_m.counter < 0 ) \
+		dsp_m.counter = SIMPLE_COUNTER_RANGE - 1;
 
-#define READ_COUNTER(rate) (((unsigned) m.counter + counter_offsets [rate]) % counter_rates [rate])
+#define READ_COUNTER(rate) (((unsigned) dsp_m.counter + counter_offsets [rate]) % counter_rates [rate])
 
 //// Envelope
 
-inline void SPC_DSP::dsp_run_envelope( dsp_voice_t* const v )
+inline void dsp_run_envelope( dsp_voice_t* const v )
 {
 	int env = v->env;
 	if ( v->env_mode == ENV_RELEASE ) // 60%
@@ -187,7 +189,7 @@ inline void SPC_DSP::dsp_run_envelope( dsp_voice_t* const v )
 	{
 		int rate;
 		int env_data = v->regs[V_ADSR1];
-		if ( m.t_adsr0 & 0x80 ) // 99% ADSR
+		if ( dsp_m.t_adsr0 & 0x80 ) // 99% ADSR
 		{
 			if ( v->env_mode >= ENV_DECAY ) // 99%
 			{
@@ -195,11 +197,11 @@ inline void SPC_DSP::dsp_run_envelope( dsp_voice_t* const v )
 				env -= env >> 8;
 				rate = env_data & 0x1F;
 				if ( v->env_mode == ENV_DECAY ) // 1%
-					rate = (m.t_adsr0 >> 3 & 0x0E) + 0x10;
+					rate = (dsp_m.t_adsr0 >> 3 & 0x0E) + 0x10;
 			}
 			else // ENV_ATTACK
 			{
-				rate = (m.t_adsr0 & 0x0F) * 2 + 1;
+				rate = (dsp_m.t_adsr0 & 0x0F) * 2 + 1;
 				env += rate < 31 ? 0x20 : 0x400;
 			}
 		}
@@ -256,12 +258,12 @@ inline void SPC_DSP::dsp_run_envelope( dsp_voice_t* const v )
 
 //// BRR Decoding
 
-inline void SPC_DSP::dsp_decode_brr( dsp_voice_t* v )
+static inline void dsp_decode_brr( dsp_voice_t* v )
 {
 	// Arrange the four input nybbles in 0xABCD order for easy decoding
-	int nybbles = m.t_brr_byte * 0x100 + m.ram [(v->brr_addr + v->brr_offset + 1) & 0xFFFF];
+	int nybbles = dsp_m.t_brr_byte * 0x100 + dsp_m.ram [(v->brr_addr + v->brr_offset + 1) & 0xFFFF];
 	
-	int const header = m.t_brr_header;
+	int const header = dsp_m.t_brr_header;
 	
 	// Write to next four samples in circular buffer
 	int* pos = &v->buf [v->buf_pos];
@@ -317,83 +319,83 @@ inline void SPC_DSP::dsp_decode_brr( dsp_voice_t* v )
 //// Misc
 
 // voice 0 doesn't support PMON
-#define MISC_27() m.t_pmon = m.regs[R_PMON] & 0xFE;
+#define MISC_27() dsp_m.t_pmon = dsp_m.regs[R_PMON] & 0xFE;
 
 #define MISC_28() \
-	m.t_non = m.regs[R_NON]; \
-	m.t_eon = m.regs[R_EON]; \
-	m.t_dir = m.regs[R_DIR];
+	dsp_m.t_non = dsp_m.regs[R_NON]; \
+	dsp_m.t_eon = dsp_m.regs[R_EON]; \
+	dsp_m.t_dir = dsp_m.regs[R_DIR];
 
 #define MISC_29() \
-	if ( (m.every_other_sample ^= 1) != 0 ) \
-		m.new_kon &= ~m.kon; /* clears KON 63 clocks after it was last read */
+	if ( (dsp_m.every_other_sample ^= 1) != 0 ) \
+		dsp_m.new_kon &= ~dsp_m.kon; /* clears KON 63 clocks after it was last read */
 
-inline void SPC_DSP::dsp_misc_30()
+static inline void dsp_misc_30()
 {
-	if ( m.every_other_sample )
+	if ( dsp_m.every_other_sample )
 	{
-		m.kon    = m.new_kon;
-		m.t_koff = m.regs[R_KOFF]; 
+		dsp_m.kon    = dsp_m.new_kon;
+		dsp_m.t_koff = dsp_m.regs[R_KOFF]; 
 	}
 	
 	RUN_COUNTERS();
 	
 	// Noise
-	if ( !READ_COUNTER( m.regs[R_FLG] & 0x1F ) )
+	if ( !READ_COUNTER( dsp_m.regs[R_FLG] & 0x1F ) )
 	{
-		int feedback = (m.noise << 13) ^ (m.noise << 14);
-		m.noise = (feedback & 0x4000) ^ (m.noise >> 1);
+		int feedback = (dsp_m.noise << 13) ^ (dsp_m.noise << 14);
+		dsp_m.noise = (feedback & 0x4000) ^ (dsp_m.noise >> 1);
 	}
 }
 
 //// Voices
 
-inline void SPC_DSP::dsp_voice_V1( dsp_voice_t* const v )
+static inline void dsp_voice_V1( dsp_voice_t* const v )
 {
-	m.t_dir_addr = m.t_dir * 0x100 + m.t_srcn * 4;
-	m.t_srcn = v->regs[V_SRCN];
+	dsp_m.t_dir_addr = dsp_m.t_dir * 0x100 + dsp_m.t_srcn * 4;
+	dsp_m.t_srcn = v->regs[V_SRCN];
 }
 
-inline void SPC_DSP::dsp_voice_V2( dsp_voice_t* const v )
+static inline void dsp_voice_V2( dsp_voice_t* const v )
 {
 
-	uint8_t const* entry = &m.ram [m.t_dir_addr];
+	uint8_t const* entry = &dsp_m.ram [dsp_m.t_dir_addr];
 	if ( !v->kon_delay )
 		entry += 2;
-	m.t_brr_next_addr = get_le16( entry );
+	dsp_m.t_brr_next_addr = get_le16( entry );
 
-	m.t_adsr0 = v->regs [V_ADSR0];
+	dsp_m.t_adsr0 = v->regs [V_ADSR0];
 
 
-	m.t_pitch = v->regs [V_PITCHL];
+	dsp_m.t_pitch = v->regs [V_PITCHL];
 }
 
-inline void SPC_DSP::dsp_voice_V3a( dsp_voice_t* const v )
+static inline void dsp_voice_V3a( dsp_voice_t* const v )
 {
-	m.t_pitch += (v->regs [V_PITCHH] & 0x3F) << 8;
+	dsp_m.t_pitch += (v->regs [V_PITCHH] & 0x3F) << 8;
 }
 
-inline void SPC_DSP::dsp_voice_V3b( dsp_voice_t* const v )
+static inline void dsp_voice_V3b( dsp_voice_t* const v )
 {
-	m.t_brr_byte = m.ram [(v->brr_addr + v->brr_offset) & 0xffff];
-	m.t_brr_header = m.ram [v->brr_addr];
+	dsp_m.t_brr_byte = dsp_m.ram [(v->brr_addr + v->brr_offset) & 0xffff];
+	dsp_m.t_brr_header = dsp_m.ram [v->brr_addr];
 }
 
-void SPC_DSP::dsp_voice_V3c( dsp_voice_t* const v )
+static void dsp_voice_V3c( dsp_voice_t* const v )
 {
 	// Pitch modulation using previous voice's output
-	if ( m.t_pmon & v->vbit )
-		m.t_pitch += ((m.t_output >> 5) * m.t_pitch) >> 10;
+	if ( dsp_m.t_pmon & v->vbit )
+		dsp_m.t_pitch += ((dsp_m.t_output >> 5) * dsp_m.t_pitch) >> 10;
 	
 	if ( v->kon_delay )
 	{
 		// Get ready to start BRR decoding on next sample
 		if ( v->kon_delay == 5 )
 		{
-			v->brr_addr    = m.t_brr_next_addr;
+			v->brr_addr    = dsp_m.t_brr_next_addr;
 			v->brr_offset  = 1;
 			v->buf_pos     = 0;
-			m.t_brr_header = 0; // header is ignored on this sample
+			dsp_m.t_brr_header = 0; // header is ignored on this sample
 		}
 		
 		// Envelope is never run during KON
@@ -406,35 +408,35 @@ void SPC_DSP::dsp_voice_V3c( dsp_voice_t* const v )
 			v->interp_pos = 0x4000;
 		
 		// Pitch is never added during KON
-		m.t_pitch = 0;
+		dsp_m.t_pitch = 0;
 	}
 	
 	// Gaussian interpolation
 	int output = dsp_interpolate( v );
 
 	// Noise
-	if ( m.t_non & v->vbit )
-		output = (int16_t) (m.noise * 2);
+	if ( dsp_m.t_non & v->vbit )
+		output = (int16_t) (dsp_m.noise * 2);
 
 	// Apply envelope
-	m.t_output = (output * v->env) >> 11 & ~1;
+	dsp_m.t_output = (output * v->env) >> 11 & ~1;
 	v->t_envx_out = (uint8_t) (v->env >> 4);
 	
 	// Immediate silence due to end of sample or soft reset
-	if ( m.regs[R_FLG] & 0x80 || (m.t_brr_header & 3) == 1 )
+	if ( dsp_m.regs[R_FLG] & 0x80 || (dsp_m.t_brr_header & 3) == 1 )
 	{
 		v->env_mode = ENV_RELEASE;
 		v->env      = 0;
 	}
 	
-	if ( m.every_other_sample )
+	if ( dsp_m.every_other_sample )
 	{
 		// KOFF
-		if ( m.t_koff & v->vbit )
+		if ( dsp_m.t_koff & v->vbit )
 			v->env_mode = ENV_RELEASE;
 		
 		// KON
-		if ( m.kon & v->vbit )
+		if ( dsp_m.kon & v->vbit )
 		{
 			v->kon_delay = 5;
 			v->env_mode  = ENV_ATTACK;
@@ -446,27 +448,27 @@ void SPC_DSP::dsp_voice_V3c( dsp_voice_t* const v )
 		dsp_run_envelope( v );
 }
 
-inline void SPC_DSP::dsp_voice_output( dsp_voice_t const* v, int ch )
+static inline void dsp_voice_output( dsp_voice_t const* v, int ch )
 {
 	// Apply left/right volume
-	int amp = (m.t_output * (int8_t) VREG(v->regs,VOLL + ch)) >> 7;
+	int amp = (dsp_m.t_output * (int8_t) VREG(v->regs,VOLL + ch)) >> 7;
 
 	// Add to output total
-	m.t_main_out [ch] += amp;
-	CLAMP16( m.t_main_out [ch] );
+	dsp_m.t_main_out [ch] += amp;
+	CLAMP16( dsp_m.t_main_out [ch] );
 	
 	// Optionally add to echo total
-	if ( m.t_eon & v->vbit )
+	if ( dsp_m.t_eon & v->vbit )
 	{
-		m.t_echo_out [ch] += amp;
-		CLAMP16( m.t_echo_out [ch] );
+		dsp_m.t_echo_out [ch] += amp;
+		CLAMP16( dsp_m.t_echo_out [ch] );
 	}
 }
 
-void SPC_DSP::dsp_voice_V4( dsp_voice_t* const v )
+static void dsp_voice_V4( dsp_voice_t* const v )
 {
 	// Decode BRR
-	m.t_looped = 0;
+	dsp_m.t_looped = 0;
 	if ( v->interp_pos >= 0x4000 )
 	{
 		dsp_decode_brr( v );
@@ -475,17 +477,17 @@ void SPC_DSP::dsp_voice_V4( dsp_voice_t* const v )
 		{
 			// Start decoding next BRR block
 			v->brr_addr = (v->brr_addr + BRR_BLOCK_SIZE) & 0xFFFF;
-			if ( m.t_brr_header & 1 )
+			if ( dsp_m.t_brr_header & 1 )
 			{
-				v->brr_addr = m.t_brr_next_addr;
-				m.t_looped = v->vbit;
+				v->brr_addr = dsp_m.t_brr_next_addr;
+				dsp_m.t_looped = v->vbit;
 			}
 			v->brr_offset = 1;
 		}
 	}
 	
 	// Apply pitch
-	v->interp_pos = (v->interp_pos & 0x3FFF) + m.t_pitch;
+	v->interp_pos = (v->interp_pos & 0x3FFF) + dsp_m.t_pitch;
 	
 	// Keep from getting too far ahead (when using pitch modulation)
 	if ( v->interp_pos > 0x7FFF )
@@ -495,47 +497,47 @@ void SPC_DSP::dsp_voice_V4( dsp_voice_t* const v )
 	dsp_voice_output( v, 0 );
 }
 
-inline void SPC_DSP::dsp_voice_V5( dsp_voice_t* const v )
+static inline void dsp_voice_V5( dsp_voice_t* const v )
 {
 	// Output right
 	dsp_voice_output( v, 1 );
 
 	// ENDX, OUTX, and ENVX won't update if you wrote to them 1-2 clocks earlier
-	int endx_buf = m.regs[R_ENDX] | m.t_looped;
+	int endx_buf = dsp_m.regs[R_ENDX] | dsp_m.t_looped;
 
 	// Clear bit in ENDX if KON just began
 	if ( v->kon_delay == 5 )
 		endx_buf &= ~v->vbit;
-	m.endx_buf = (uint8_t) endx_buf;
+	dsp_m.endx_buf = (uint8_t) endx_buf;
 }
 
-inline void SPC_DSP::dsp_voice_V6( dsp_voice_t* const v )
+static inline void dsp_voice_V6( dsp_voice_t* const v )
 {
 	(void) v; // avoid compiler warning about unused v
-	m.outx_buf = (uint8_t) (m.t_output >> 8);
+	dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
 }
 
-inline void SPC_DSP::dsp_voice_V7( dsp_voice_t* const v )
+static inline void dsp_voice_V7( dsp_voice_t* const v )
 {
 	// Update ENDX
-	m.regs[R_ENDX] = m.endx_buf;
+	dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
 	
-	m.envx_buf = v->t_envx_out;
+	dsp_m.envx_buf = v->t_envx_out;
 }
 
-inline void SPC_DSP::dsp_voice_V8( dsp_voice_t* const v )
+static inline void dsp_voice_V8( dsp_voice_t* const v )
 {
 	// Update OUTX
-	v->regs [V_OUTX] = m.outx_buf;
+	v->regs [V_OUTX] = dsp_m.outx_buf;
 }
 
-inline void SPC_DSP::dsp_voice_V9( dsp_voice_t* const v )
+inline void dsp_voice_V9( dsp_voice_t* const v )
 {
-	v->regs [V_ENVX] = m.envx_buf;
+	v->regs [V_ENVX] = dsp_m.envx_buf;
 }
 
 // Most voices do all these in one clock, so make a handy composite
-inline void SPC_DSP::dsp_voice_V3( dsp_voice_t* const v )
+static inline void dsp_voice_V3( dsp_voice_t* const v )
 {
 	dsp_voice_V3a( v );
 	dsp_voice_V3b( v );
@@ -544,21 +546,21 @@ inline void SPC_DSP::dsp_voice_V3( dsp_voice_t* const v )
 
 // Common combinations of voice steps on different voices. This greatly reduces
 // code size and allows everything to be inlined in these functions.
-void SPC_DSP::dsp_voice_V7_V4_V1( dsp_voice_t* const v )
+static void dsp_voice_V7_V4_V1( dsp_voice_t* const v )
 {
 	dsp_voice_V7(v);
 	dsp_voice_V1(v+3);
 	dsp_voice_V4(v+1);
 }
 
-void SPC_DSP::dsp_voice_V8_V5_V2( dsp_voice_t* const v )
+static void dsp_voice_V8_V5_V2( dsp_voice_t* const v )
 {
 	dsp_voice_V8(v);
 	dsp_voice_V5(v+1);
 	dsp_voice_V2(v+2);
 }
 
-void SPC_DSP::dsp_voice_V9_V6_V3( dsp_voice_t* const v )
+static void dsp_voice_V9_V6_V3( dsp_voice_t* const v )
 {
 	dsp_voice_V9(v);
 	dsp_voice_V6(v+1);
@@ -568,10 +570,10 @@ void SPC_DSP::dsp_voice_V9_V6_V3( dsp_voice_t* const v )
 //// Echo
 
 // Current echo buffer pointer for left/right channel
-#define ECHO_PTR( ch )      (&m.ram [m.t_echo_ptr + ch * 2])
+#define ECHO_PTR( ch )      (&dsp_m.ram [dsp_m.t_echo_ptr + ch * 2])
 
 // Sample in echo history buffer, where 0 is the oldest
-#define ECHO_FIR( i )       (m.echo_hist_pos [i])
+#define ECHO_FIR( i )       (dsp_m.echo_hist_pos [i])
 
 // Calculate FIR point for left/right channel
 #define CALC_FIR( i, ch )   ((ECHO_FIR( i + 1 ) [ch] * (int8_t) REG(FIR + i * 0x10)) >> 6)
@@ -579,133 +581,133 @@ void SPC_DSP::dsp_voice_V9_V6_V3( dsp_voice_t* const v )
 #define ECHO_READ(ch) \
 	int s = GET_LE16SA( ECHO_PTR( ch ) ); \
 	/* second copy simplifies wrap-around handling */ \
-	(m.echo_hist_pos [0]) [ch] = (m.echo_hist_pos [8]) [ch] = s >> 1;
+	(dsp_m.echo_hist_pos [0]) [ch] = (dsp_m.echo_hist_pos [8]) [ch] = s >> 1;
 
-inline void SPC_DSP::dsp_echo_22()
+static inline void dsp_echo_22()
 {
 
-	if ( ++m.echo_hist_pos >= &m.echo_hist [ECHO_HIST_SIZE] )
-		m.echo_hist_pos = m.echo_hist;
+	if ( ++dsp_m.echo_hist_pos >= &dsp_m.echo_hist [ECHO_HIST_SIZE] )
+		dsp_m.echo_hist_pos = dsp_m.echo_hist;
 
-	m.t_echo_ptr = (m.t_esa * 0x100 + m.echo_offset) & 0xFFFF;
+	dsp_m.t_echo_ptr = (dsp_m.t_esa * 0x100 + dsp_m.echo_offset) & 0xFFFF;
 	ECHO_READ(0);
 
 
-	int l = (((m.echo_hist_pos [0 + 1]) [0] * (int8_t) m.regs [R_FIR + 0 * 0x10]) >> 6);
-	int r = (((m.echo_hist_pos [0 + 1]) [1] * (int8_t) m.regs [R_FIR + 0 * 0x10]) >> 6);
+	int l = (((dsp_m.echo_hist_pos [0 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6);
+	int r = (((dsp_m.echo_hist_pos [0 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6);
 
-	m.t_echo_in [0] = l;
-	m.t_echo_in [1] = r;
+	dsp_m.t_echo_in [0] = l;
+	dsp_m.t_echo_in [1] = r;
 }
 
-inline void SPC_DSP::dsp_echo_23()
+static inline void dsp_echo_23()
 {
-	int l = (((m.echo_hist_pos [1 + 1]) [0] * (int8_t) m.regs [R_FIR + 1 * 0x10]) >> 6) + (((m.echo_hist_pos [2 + 1]) [0] * (int8_t) m.regs [R_FIR + 2 * 0x10]) >> 6);
-	int r = (((m.echo_hist_pos [1 + 1]) [1] * (int8_t) m.regs [R_FIR + 1 * 0x10]) >> 6) + (((m.echo_hist_pos [2 + 1]) [1] * (int8_t) m.regs [R_FIR + 2 * 0x10]) >> 6);
+	int l = (((dsp_m.echo_hist_pos [1 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
+	int r = (((dsp_m.echo_hist_pos [1 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
 
-	m.t_echo_in [0] += l;
-	m.t_echo_in [1] += r;
+	dsp_m.t_echo_in [0] += l;
+	dsp_m.t_echo_in [1] += r;
 
 	ECHO_READ(1);
 }
 
-inline void SPC_DSP::dsp_echo_24()
+static inline void dsp_echo_24()
 {
-	int l = (((m.echo_hist_pos [3 + 1]) [0] * (int8_t) m.regs [R_FIR + 3 * 0x10]) >> 6) + (((m.echo_hist_pos [4 + 1]) [0] * (int8_t) m.regs [R_FIR + 4 * 0x10]) >> 6) + (((m.echo_hist_pos [5 + 1]) [0] * (int8_t) m.regs [R_FIR + 5 * 0x10]) >> 6);
-	int r = (((m.echo_hist_pos [3 + 1]) [1] * (int8_t) m.regs [R_FIR + 3 * 0x10]) >> 6) + (((m.echo_hist_pos [4 + 1]) [1] * (int8_t) m.regs [R_FIR + 4 * 0x10]) >> 6) + (((m.echo_hist_pos [5 + 1]) [1] * (int8_t) m.regs [R_FIR + 5 * 0x10]) >> 6);
+	int l = (((dsp_m.echo_hist_pos [3 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6);
+	int r = (((dsp_m.echo_hist_pos [3 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6);
 
-	m.t_echo_in [0] += l;
-	m.t_echo_in [1] += r;
+	dsp_m.t_echo_in [0] += l;
+	dsp_m.t_echo_in [1] += r;
 }
 
-inline void SPC_DSP::dsp_echo_25()
+static inline void dsp_echo_25()
 {
-	int l = m.t_echo_in [0] + (((m.echo_hist_pos [6 + 1]) [0] * (int8_t) m.regs [R_FIR + 6 * 0x10]) >> 6);
-	int r = m.t_echo_in [1] + (((m.echo_hist_pos [6 + 1]) [1] * (int8_t) m.regs [R_FIR + 6 * 0x10]) >> 6);
+	int l = dsp_m.t_echo_in [0] + (((dsp_m.echo_hist_pos [6 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 6 * 0x10]) >> 6);
+	int r = dsp_m.t_echo_in [1] + (((dsp_m.echo_hist_pos [6 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 6 * 0x10]) >> 6);
 
 	l = (int16_t) l;
 	r = (int16_t) r;
 
-	l += (int16_t) (((m.echo_hist_pos [7 + 1]) [0] * (int8_t) m.regs [R_FIR + 7 * 0x10]) >> 6);
-	r += (int16_t) (((m.echo_hist_pos [7 + 1]) [1] * (int8_t) m.regs [R_FIR + 7 * 0x10]) >> 6);
+	l += (int16_t) (((dsp_m.echo_hist_pos [7 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 7 * 0x10]) >> 6);
+	r += (int16_t) (((dsp_m.echo_hist_pos [7 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 7 * 0x10]) >> 6);
 
 	if ( (int16_t) l != l )
 		l = (l >> 31) ^ 0x7FFF;
 	if ( (int16_t) r != r )
 		r = (r >> 31) ^ 0x7FFF;
 
-	m.t_echo_in [0] = l & ~1;
-	m.t_echo_in [1] = r & ~1;
+	dsp_m.t_echo_in [0] = l & ~1;
+	dsp_m.t_echo_in [1] = r & ~1;
 }
 
 #define ECHO_OUTPUT(var, ch) \
 { \
-	var = (int16_t) ((m.t_main_out [ch] * (int8_t) REG(MVOLL + ch * 0x10)) >> 7) + (int16_t) ((m.t_echo_in [ch] * (int8_t) REG(EVOLL + ch * 0x10)) >> 7); \
+	var = (int16_t) ((dsp_m.t_main_out [ch] * (int8_t) REG(MVOLL + ch * 0x10)) >> 7) + (int16_t) ((dsp_m.t_echo_in [ch] * (int8_t) REG(EVOLL + ch * 0x10)) >> 7); \
 	CLAMP16( var ); \
 }
 
-inline void SPC_DSP::dsp_echo_26()
+static inline void dsp_echo_26()
 {
-	ECHO_OUTPUT(m.t_main_out[0], 0 );
+	ECHO_OUTPUT(dsp_m.t_main_out[0], 0 );
 
-	int l = m.t_echo_out [0] + (int16_t) ((m.t_echo_in [0] * (int8_t) m.regs [R_EFB]) >> 7);
-	int r = m.t_echo_out [1] + (int16_t) ((m.t_echo_in [1] * (int8_t) m.regs [R_EFB]) >> 7);
+	int l = dsp_m.t_echo_out [0] + (int16_t) ((dsp_m.t_echo_in [0] * (int8_t) dsp_m.regs [R_EFB]) >> 7);
+	int r = dsp_m.t_echo_out [1] + (int16_t) ((dsp_m.t_echo_in [1] * (int8_t) dsp_m.regs [R_EFB]) >> 7);
 
 	if ( (int16_t) l != l ) l = (l >> 31) ^ 0x7FFF;
 	if ( (int16_t) r != r ) r = (r >> 31) ^ 0x7FFF;
 
-	m.t_echo_out [0] = l & ~1;
-	m.t_echo_out [1] = r & ~1;
+	dsp_m.t_echo_out [0] = l & ~1;
+	dsp_m.t_echo_out [1] = r & ~1;
 }
 
-inline void SPC_DSP::dsp_echo_27()
+static inline void dsp_echo_27()
 {
 	int r;
-	int l = m.t_main_out [0];
+	int l = dsp_m.t_main_out [0];
 	ECHO_OUTPUT(r, 1);
-	m.t_main_out [0] = 0;
-	m.t_main_out [1] = 0;
+	dsp_m.t_main_out [0] = 0;
+	dsp_m.t_main_out [1] = 0;
 
-	if ( m.regs [R_FLG] & 0x40 )
+	if ( dsp_m.regs [R_FLG] & 0x40 )
 	{
 		l = 0;
 		r = 0;
 	}
 
-	short * out = m.out;
+	short * out = dsp_m.out;
 	out [0] = l;
 	out [1] = r;
 	out += 2;
-	if ( out >= m.out_end )
+	if ( out >= dsp_m.out_end )
 	{
-		out = m.extra;
-		m.out_end = &m.extra [EXTRA_SIZE];
+		out = dsp_m.extra;
+		dsp_m.out_end = &dsp_m.extra [EXTRA_SIZE];
 	}
-	m.out = out;
+	dsp_m.out = out;
 }
 
-#define ECHO_28() m.t_echo_enabled = m.regs [R_FLG];
+#define ECHO_28() dsp_m.t_echo_enabled = dsp_m.regs [R_FLG];
 
 #define ECHO_WRITE(ch) \
-	if ( !(m.t_echo_enabled & 0x20) ) \
-		SET_LE16A( ECHO_PTR( ch ), m.t_echo_out [ch] ); \
-	m.t_echo_out [ch] = 0;
+	if ( !(dsp_m.t_echo_enabled & 0x20) ) \
+		SET_LE16A( ECHO_PTR( ch ), dsp_m.t_echo_out [ch] ); \
+	dsp_m.t_echo_out [ch] = 0;
 
-inline void SPC_DSP::dsp_echo_29()
+static inline void dsp_echo_29()
 {
-	m.t_esa = m.regs [R_ESA];
+	dsp_m.t_esa = dsp_m.regs [R_ESA];
 
-	if ( !m.echo_offset )
-		m.echo_length = (m.regs [R_EDL] & 0x0F) * 0x800;
+	if ( !dsp_m.echo_offset )
+		dsp_m.echo_length = (dsp_m.regs [R_EDL] & 0x0F) * 0x800;
 
-	m.echo_offset += 4;
-	if ( m.echo_offset >= m.echo_length )
-		m.echo_offset = 0;
+	dsp_m.echo_offset += 4;
+	if ( dsp_m.echo_offset >= dsp_m.echo_length )
+		dsp_m.echo_offset = 0;
 
 
 	ECHO_WRITE(0);
 
-	m.t_echo_enabled = m.regs [R_FLG];
+	dsp_m.t_echo_enabled = dsp_m.regs [R_FLG];
 }
 
 #define ECHO_30() \
@@ -724,131 +726,131 @@ V(V8_V5_V2,2) -> V(V8,2) V(V5,3) V(V2,4)
 V(V9_V6_V3,2) -> V(V9,2) V(V6,3) V(V3,4) */
 
 // Voice      0      1      2      3      4      5      6      7
-void SPC_DSP::dsp_run( int clocks_remain )
+void dsp_run( int clocks_remain )
 {
-	int const phase = m.phase;
-	m.phase = (phase + clocks_remain) & 31;
+	int const phase = dsp_m.phase;
+	dsp_m.phase = (phase + clocks_remain) & 31;
 	switch ( phase )
 	{
 loop:
 		if ( 0 && !--clocks_remain )
 			break;
 		case 0:
-		dsp_voice_V5( &m.voices [0] );
-		dsp_voice_V2( &m.voices [1] );
+		dsp_voice_V5( &dsp_m.voices [0] );
+		dsp_voice_V2( &dsp_m.voices [1] );
 		if ( 1 && !--clocks_remain )
 			break;
 		case 1:
-		dsp_voice_V6( &m.voices [0] );
-		dsp_voice_V3( &m.voices [1] );
+		dsp_voice_V6( &dsp_m.voices [0] );
+		dsp_voice_V3( &dsp_m.voices [1] );
 		if ( 2 && !--clocks_remain )
 			break;
 		case 2:
-		dsp_voice_V7_V4_V1( &m.voices [0] );
+		dsp_voice_V7_V4_V1( &dsp_m.voices [0] );
 		if ( 3 && !--clocks_remain )
 			break;
 		case 3:
-		dsp_voice_V8_V5_V2( &m.voices [0] );
+		dsp_voice_V8_V5_V2( &dsp_m.voices [0] );
 		if ( 4 && !--clocks_remain )
 			break;
 		case 4:
-		dsp_voice_V9_V6_V3( &m.voices [0] );
+		dsp_voice_V9_V6_V3( &dsp_m.voices [0] );
 		if ( 5 && !--clocks_remain )
 			break;
 		case 5:
-		dsp_voice_V7_V4_V1( &m.voices [1] );
+		dsp_voice_V7_V4_V1( &dsp_m.voices [1] );
 		if ( 6 && !--clocks_remain )
 			break;
 		case 6:
-		dsp_voice_V8_V5_V2( &m.voices [1] );
+		dsp_voice_V8_V5_V2( &dsp_m.voices [1] );
 		if ( 7 && !--clocks_remain )
 			break;
 		case 7:
-		dsp_voice_V9_V6_V3( &m.voices [1] );
+		dsp_voice_V9_V6_V3( &dsp_m.voices [1] );
 		if ( 8 && !--clocks_remain )
 			break;
 		case 8:
-		dsp_voice_V7_V4_V1( &m.voices [2] );
+		dsp_voice_V7_V4_V1( &dsp_m.voices [2] );
 		if ( 9 && !--clocks_remain )
 			break;
 		case 9:
-		dsp_voice_V8_V5_V2( &m.voices [2] );
+		dsp_voice_V8_V5_V2( &dsp_m.voices [2] );
 		if ( 10 && !--clocks_remain )
 			break;
 		case 10:
-		dsp_voice_V9_V6_V3( &m.voices [2] );
+		dsp_voice_V9_V6_V3( &dsp_m.voices [2] );
 		if ( 11 && !--clocks_remain )
 			break;
 		case 11:
-		dsp_voice_V7_V4_V1( &m.voices [3] );
+		dsp_voice_V7_V4_V1( &dsp_m.voices [3] );
 		if ( 12 && !--clocks_remain )
 			break;
 		case 12:
-		dsp_voice_V8_V5_V2( &m.voices [3] );
+		dsp_voice_V8_V5_V2( &dsp_m.voices [3] );
 		if ( 13 && !--clocks_remain )
 			break;
 		case 13:
-		dsp_voice_V9_V6_V3( &m.voices [3] );
+		dsp_voice_V9_V6_V3( &dsp_m.voices [3] );
 		if ( 14 && !--clocks_remain )
 			break;
 		case 14:
-		dsp_voice_V7_V4_V1( &m.voices [4] );
+		dsp_voice_V7_V4_V1( &dsp_m.voices [4] );
 		if ( 15 && !--clocks_remain )
 			break;
 		case 15:
-		dsp_voice_V8_V5_V2( &m.voices [4] );
+		dsp_voice_V8_V5_V2( &dsp_m.voices [4] );
 		if ( 16 && !--clocks_remain )
 			break;
 		case 16:
-		dsp_voice_V9_V6_V3( &m.voices [4] );
+		dsp_voice_V9_V6_V3( &dsp_m.voices [4] );
 		if ( 17 && !--clocks_remain )
 			break;
 		case 17:
-		dsp_voice_V1( &m.voices [0] );
-		dsp_voice_V7( &m.voices [5] );
-		dsp_voice_V4( &m.voices [6] );
+		dsp_voice_V1( &dsp_m.voices [0] );
+		dsp_voice_V7( &dsp_m.voices [5] );
+		dsp_voice_V4( &dsp_m.voices [6] );
 		if ( 18 && !--clocks_remain )
 			break;
 		case 18:
-		dsp_voice_V8_V5_V2( &m.voices [5] );
+		dsp_voice_V8_V5_V2( &dsp_m.voices [5] );
 		if ( 19 && !--clocks_remain )
 			break;
 		case 19:
-		dsp_voice_V9_V6_V3( &m.voices [5] );
+		dsp_voice_V9_V6_V3( &dsp_m.voices [5] );
 		if ( 20 && !--clocks_remain )
 			break;
 		case 20:
-		dsp_voice_V1( &m.voices [1] );
-		dsp_voice_V7( &m.voices [6] );
-		dsp_voice_V4( &m.voices [7] );
+		dsp_voice_V1( &dsp_m.voices [1] );
+		dsp_voice_V7( &dsp_m.voices [6] );
+		dsp_voice_V4( &dsp_m.voices [7] );
 		if ( 21 && !--clocks_remain )
 			break;
 		case 21:
-		dsp_voice_V8( &m.voices [6] );
-		dsp_voice_V5( &m.voices [7] );
-		dsp_voice_V2( &m.voices [0] );
+		dsp_voice_V8( &dsp_m.voices [6] );
+		dsp_voice_V5( &dsp_m.voices [7] );
+		dsp_voice_V2( &dsp_m.voices [0] );
 		if ( 22 && !--clocks_remain )
 			break;
 		case 22:
-		dsp_voice_V3a( &m.voices [0] );
-		dsp_voice_V9( &m.voices [6] );
-		dsp_voice_V6( &m.voices [7] );
+		dsp_voice_V3a( &dsp_m.voices [0] );
+		dsp_voice_V9( &dsp_m.voices [6] );
+		dsp_voice_V6( &dsp_m.voices [7] );
 		dsp_echo_22();
 		if ( 23 && !--clocks_remain )
 			break;
 		case 23:
-		dsp_voice_V7( &m.voices [7] );
+		dsp_voice_V7( &dsp_m.voices [7] );
 		dsp_echo_23();
 		if ( 24 && !--clocks_remain )
 			break;
 		case 24:
-		dsp_voice_V8( &m.voices [7] );
+		dsp_voice_V8( &dsp_m.voices [7] );
 		dsp_echo_24();
 		if ( 25 && !--clocks_remain )
 			break;
 		case 25:
-		dsp_voice_V3b( &m.voices [0] );
-		dsp_voice_V9( &m.voices [7] );
+		dsp_voice_V3b( &dsp_m.voices [0] );
+		dsp_voice_V9( &dsp_m.voices [7] );
 		dsp_echo_25();
 		if ( 26 && !--clocks_remain )
 			break;
@@ -873,13 +875,13 @@ loop:
 			break;
 		case 30:
 		dsp_misc_30();
-		dsp_voice_V3c( &m.voices [0] );
+		dsp_voice_V3c( &dsp_m.voices [0] );
 		ECHO_30();
 		if ( 31 && !--clocks_remain )
 			break;
 		case 31:
-		dsp_voice_V4( &m.voices [0] );
-		dsp_voice_V1( &m.voices [2] );
+		dsp_voice_V4( &dsp_m.voices [0] );
+		dsp_voice_V1( &dsp_m.voices [2] );
 
 		if ( --clocks_remain )
 			goto loop;
@@ -889,31 +891,31 @@ loop:
 
 //// Setup
 
-void SPC_DSP::dsp_init( void* ram_64k )
+void dsp_init( void* ram_64k )
 {
-	m.ram = (uint8_t*) ram_64k;
+	dsp_m.ram = (uint8_t*) ram_64k;
 	dsp_set_output( 0, 0 );
 	dsp_reset();
 }
 
-void SPC_DSP::dsp_soft_reset_common()
+void dsp_soft_reset_common()
 {
-	m.noise              = 0x4000;
-	m.echo_hist_pos      = m.echo_hist;
-	m.every_other_sample = 1;
-	m.echo_offset        = 0;
-	m.phase              = 0;
+	dsp_m.noise              = 0x4000;
+	dsp_m.echo_hist_pos      = dsp_m.echo_hist;
+	dsp_m.every_other_sample = 1;
+	dsp_m.echo_offset        = 0;
+	dsp_m.phase              = 0;
 	
 	INIT_COUNTER();
 }
 
-void SPC_DSP::dsp_soft_reset()
+void dsp_soft_reset()
 {
-	m.regs[R_FLG] = 0xE0;
+	dsp_m.regs[R_FLG] = 0xE0;
 	dsp_soft_reset_common();
 }
 
-void SPC_DSP::dsp_reset()
+void dsp_reset()
 {
 	BOOST::uint8_t const initial_regs [REGISTER_COUNT] =
 	{
@@ -928,20 +930,20 @@ void SPC_DSP::dsp_reset()
 	};
 
 	// Resets DSP and uses supplied values to initialize registers
-	memcpy( m.regs, initial_regs, sizeof(m.regs));
-	memset( &m.regs [REGISTER_COUNT], 0, offsetof (state_t,ram) - REGISTER_COUNT );
+	memcpy( dsp_m.regs, initial_regs, sizeof(dsp_m.regs));
+	memset( &dsp_m.regs [REGISTER_COUNT], 0, offsetof (dsp_state_t,ram) - REGISTER_COUNT );
 	
 	// Internal state
 	for ( int i = VOICE_COUNT; --i >= 0; )
 	{
-		dsp_voice_t* v = &m.voices [i];
+		dsp_voice_t* v = &dsp_m.voices [i];
 		v->brr_offset = 1;
 		v->vbit       = 1 << i;
-		v->regs       = &m.regs [i * 0x10];
+		v->regs       = &dsp_m.regs [i * 0x10];
 	}
-	m.new_kon = m.regs[R_KON];
-	m.t_dir   = m.regs[R_DIR];
-	m.t_esa   = m.regs[R_ESA];
+	dsp_m.new_kon = dsp_m.regs[R_KON];
+	dsp_m.t_dir   = dsp_m.regs[R_DIR];
+	dsp_m.t_esa   = dsp_m.regs[R_ESA];
 	
 	dsp_soft_reset_common();
 }
@@ -985,12 +987,12 @@ void SPC_State_Copier::extra()
 	}
 }
 
-void SPC_DSP::dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
+void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 {
 	SPC_State_Copier copier( io, copy );
 	
 	// DSP registers
-	copier.copy( m.regs, REGISTER_COUNT );
+	copier.copy( dsp_m.regs, REGISTER_COUNT );
 	
 	// Internal state
 	
@@ -998,7 +1000,7 @@ void SPC_DSP::dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	int i;
 	for ( i = 0; i < VOICE_COUNT; i++ )
 	{
-		dsp_voice_t* v = &m.voices [i];
+		dsp_voice_t* v = &dsp_m.voices [i];
 		
 		// BRR buffer
 		int i;
@@ -1029,59 +1031,59 @@ void SPC_DSP::dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	// Echo history
 	for ( i = 0; i < ECHO_HIST_SIZE; i++ )
 	{
-		int s = m.echo_hist_pos [i] [0];
-		int s2 = m.echo_hist_pos [i] [1];
+		int s = dsp_m.echo_hist_pos [i] [0];
+		int s2 = dsp_m.echo_hist_pos [i] [1];
 
 		SPC_COPY( int16_t, s );
-		m.echo_hist [i] [0] = s; // write back at offset 0
+		dsp_m.echo_hist [i] [0] = s; // write back at offset 0
 
 		SPC_COPY( int16_t, s2 );
-		m.echo_hist [i] [1] = s2; // write back at offset 0
+		dsp_m.echo_hist [i] [1] = s2; // write back at offset 0
 	}
-	m.echo_hist_pos = m.echo_hist;
-	memcpy( &m.echo_hist [ECHO_HIST_SIZE], m.echo_hist, ECHO_HIST_SIZE * sizeof m.echo_hist [0] );
+	dsp_m.echo_hist_pos = dsp_m.echo_hist;
+	memcpy( &dsp_m.echo_hist [ECHO_HIST_SIZE], dsp_m.echo_hist, ECHO_HIST_SIZE * sizeof dsp_m.echo_hist [0] );
 	
 	// Misc
-	SPC_COPY(  uint8_t, m.every_other_sample );
-	SPC_COPY(  uint8_t, m.kon );
+	SPC_COPY(  uint8_t, dsp_m.every_other_sample );
+	SPC_COPY(  uint8_t, dsp_m.kon );
 	
-	SPC_COPY( uint16_t, m.noise );
-	SPC_COPY( uint16_t, m.counter );
-	SPC_COPY( uint16_t, m.echo_offset );
-	SPC_COPY( uint16_t, m.echo_length );
-	SPC_COPY(  uint8_t, m.phase );
+	SPC_COPY( uint16_t, dsp_m.noise );
+	SPC_COPY( uint16_t, dsp_m.counter );
+	SPC_COPY( uint16_t, dsp_m.echo_offset );
+	SPC_COPY( uint16_t, dsp_m.echo_length );
+	SPC_COPY(  uint8_t, dsp_m.phase );
 	
-	SPC_COPY(  uint8_t, m.new_kon );
-	SPC_COPY(  uint8_t, m.endx_buf );
-	SPC_COPY(  uint8_t, m.envx_buf );
-	SPC_COPY(  uint8_t, m.outx_buf );
+	SPC_COPY(  uint8_t, dsp_m.new_kon );
+	SPC_COPY(  uint8_t, dsp_m.endx_buf );
+	SPC_COPY(  uint8_t, dsp_m.envx_buf );
+	SPC_COPY(  uint8_t, dsp_m.outx_buf );
 	
-	SPC_COPY(  uint8_t, m.t_pmon );
-	SPC_COPY(  uint8_t, m.t_non );
-	SPC_COPY(  uint8_t, m.t_eon );
-	SPC_COPY(  uint8_t, m.t_dir );
-	SPC_COPY(  uint8_t, m.t_koff );
+	SPC_COPY(  uint8_t, dsp_m.t_pmon );
+	SPC_COPY(  uint8_t, dsp_m.t_non );
+	SPC_COPY(  uint8_t, dsp_m.t_eon );
+	SPC_COPY(  uint8_t, dsp_m.t_dir );
+	SPC_COPY(  uint8_t, dsp_m.t_koff );
 	
-	SPC_COPY( uint16_t, m.t_brr_next_addr );
-	SPC_COPY(  uint8_t, m.t_adsr0 );
-	SPC_COPY(  uint8_t, m.t_brr_header );
-	SPC_COPY(  uint8_t, m.t_brr_byte );
-	SPC_COPY(  uint8_t, m.t_srcn );
-	SPC_COPY(  uint8_t, m.t_esa );
-	SPC_COPY(  uint8_t, m.t_echo_enabled );
+	SPC_COPY( uint16_t, dsp_m.t_brr_next_addr );
+	SPC_COPY(  uint8_t, dsp_m.t_adsr0 );
+	SPC_COPY(  uint8_t, dsp_m.t_brr_header );
+	SPC_COPY(  uint8_t, dsp_m.t_brr_byte );
+	SPC_COPY(  uint8_t, dsp_m.t_srcn );
+	SPC_COPY(  uint8_t, dsp_m.t_esa );
+	SPC_COPY(  uint8_t, dsp_m.t_echo_enabled );
 	
-	SPC_COPY(  int16_t, m.t_main_out [0] );
-	SPC_COPY(  int16_t, m.t_main_out [1] );
-	SPC_COPY(  int16_t, m.t_echo_out [0] );
-	SPC_COPY(  int16_t, m.t_echo_out [1] );
-	SPC_COPY(  int16_t, m.t_echo_in  [0] );
-	SPC_COPY(  int16_t, m.t_echo_in  [1] );
+	SPC_COPY(  int16_t, dsp_m.t_main_out [0] );
+	SPC_COPY(  int16_t, dsp_m.t_main_out [1] );
+	SPC_COPY(  int16_t, dsp_m.t_echo_out [0] );
+	SPC_COPY(  int16_t, dsp_m.t_echo_out [1] );
+	SPC_COPY(  int16_t, dsp_m.t_echo_in  [0] );
+	SPC_COPY(  int16_t, dsp_m.t_echo_in  [1] );
 	
-	SPC_COPY( uint16_t, m.t_dir_addr );
-	SPC_COPY( uint16_t, m.t_pitch );
-	SPC_COPY(  int16_t, m.t_output );
-	SPC_COPY( uint16_t, m.t_echo_ptr );
-	SPC_COPY(  uint8_t, m.t_looped );
+	SPC_COPY( uint16_t, dsp_m.t_dir_addr );
+	SPC_COPY( uint16_t, dsp_m.t_pitch );
+	SPC_COPY(  int16_t, dsp_m.t_output );
+	SPC_COPY( uint16_t, dsp_m.t_echo_ptr );
+	SPC_COPY(  uint8_t, dsp_m.t_looped );
 	
 	copier.extra();
 }

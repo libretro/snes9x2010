@@ -67,8 +67,6 @@ typedef struct
 	int counter;
 } Timer;
 
-extern SPC_DSP dsp;
-
 extern bool allow_time_overflow;
 
 Timer* spc_run_timer_( Timer* t, int );

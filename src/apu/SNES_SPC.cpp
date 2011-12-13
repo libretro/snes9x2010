@@ -4,7 +4,6 @@
 
 #include "SNES_SPC.h"
 
-SPC_DSP dsp;
 spc_state_t m;
 static signed char reg_times [256];
 bool allow_time_overflow;
@@ -83,7 +82,7 @@ void spc_enable_rom( int enable )
 	{ \
 		int clock_count = (count & ~(CLOCKS_PER_SAMPLE - 1)) + CLOCKS_PER_SAMPLE; \
 		m.dsp_time += clock_count; \
-		dsp.dsp_run( clock_count ); \
+		dsp_run( clock_count ); \
 	}
 
 inline void spc_dsp_write( int data, int time )
@@ -91,7 +90,7 @@ inline void spc_dsp_write( int data, int time )
 	RUN_DSP(time, reg_times [m.smp_regs[0][R_DSPADDR]] )
 	
 	if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
-		dsp.dsp_write(m.smp_regs[0][R_DSPADDR], data );
+		dsp_write(m.smp_regs[0][R_DSPADDR], data );
 	//dprintf( "SPC wrote to DSP register > $7F\n" );
 }
 
@@ -271,7 +270,7 @@ int spc_cpu_read( int addr, int time )
 					{
 						RUN_DSP( time, reg_times [m.smp_regs[0][R_DSPADDR] & 0x7F] );
 
-						result = dsp.dsp_read(m.smp_regs[0][R_DSPADDR] & 0x7F ); // 0xF3
+						result = dsp_m.regs[m.smp_regs[0][R_DSPADDR] & 0x7F]; // 0xF3
 					}
 				}
 			}
@@ -310,11 +309,11 @@ void spc_end_frame( int end_time )
 	{
 		// Get end pointers
 		short const* main_end = m.buf_end;     // end of data written to buf
-		short const* dsp_end  = dsp.dsp_out_pos(); // end of data written to dsp.extra()
+		short const* dsp_end  = dsp_m.out; // end of data written to dsp.extra()
 		if ( m.buf_begin <= dsp_end && dsp_end <= main_end )
 		{
 			main_end = dsp_end;
-			dsp_end  = dsp.dsp_extra(); // nothing in DSP's extra
+			dsp_end  = dsp_m.extra; // nothing in DSP's extra
 		}
 
 		// Copy any extra samples at these ends into extra_buf
@@ -322,7 +321,7 @@ void spc_end_frame( int end_time )
 		short const* in;
 		for ( in = m.buf_begin + spc_sample_count(); in < main_end; in++ )
 			*out++ = *in;
-		for ( in = dsp.dsp_extra(); in < dsp_end ; in++ )
+		for ( in = dsp_m.extra; in < dsp_end ; in++ )
 			*out++ = *in;
 
 		m.extra_pos = out;
@@ -367,13 +366,13 @@ void spc_reset()
 	memset( m.ram.padding2, CPU_PAD_FILL, sizeof m.ram.padding2 );
 
 	spc_reset_common( 0x0F );
-	dsp.dsp_reset();
+	dsp_reset();
 }
 
 void spc_init()
 {
 	memset( &m, 0, sizeof m );
-	dsp.dsp_init( m.ram.ram );
+	dsp_init( m.ram.ram );
 	
 	m.tempo = TEMPO_UNIT;
 	
@@ -472,7 +471,7 @@ void spc_set_tempo( int t )
 	m.extra_pos = out; \
 	m.buf_begin = 0; \
 	\
-	dsp.dsp_set_output( 0, 0 );
+	dsp_set_output( 0, 0 );
 
 void spc_reset_common( int timer_counter_init )
 {
@@ -523,7 +522,7 @@ void spc_reset_common( int timer_counter_init )
 void spc_soft_reset()
 {
 	spc_reset_common( 0 );
-	dsp.dsp_soft_reset();
+	dsp_soft_reset();
 }
 
 
@@ -548,15 +547,15 @@ void spc_set_output( short* out, int size )
 		if ( out >= out_end )
 		{
 			// Have DSP write to remaining extra space
-			out     = dsp.dsp_extra();
-			out_end = &dsp.dsp_extra() [EXTRA_SIZE];
+			out     = dsp_m.extra; 
+			out_end = &dsp_m.extra[EXTRA_SIZE];
 			
 			// Copy any remaining extra samples as if DSP wrote them
 			while ( in < m.extra_pos )
 				*out++ = *in++;
 		}
 		
-		dsp.dsp_set_output( out, out_end - out );
+		dsp_set_output( out, out_end - out );
 	}
 	else
 	{
@@ -606,7 +605,7 @@ void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	SPC_COPY( int16_t, m.dsp_time );
 
 	// DSP
-	dsp.dsp_copy_state( io, copy );
+	dsp_copy_state( io, copy );
 	
 	// Timers
 	for ( int i = 0; i < TIMER_COUNT; i++ )
