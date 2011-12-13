@@ -450,7 +450,6 @@ inline void SPC_DSP::voice_output( voice_t const* v, int ch )
 {
 	// Apply left/right volume
 	int amp = (m.t_output * (int8_t) VREG(v->regs,VOLL + ch)) >> 7;
-	amp *= ((stereo_switch & (1 << (v->voice_number + ch * VOICE_COUNT))) ? 1 : 0);
 
 	// Add to output total
 	m.t_main_out [ch] += amp;
@@ -895,8 +894,6 @@ void SPC_DSP::init( void* ram_64k )
 	m.ram = (uint8_t*) ram_64k;
 	set_output( 0, 0 );
 	reset();
-
-	stereo_switch = 0xffff;
 }
 
 void SPC_DSP::soft_reset_common()
@@ -908,9 +905,6 @@ void SPC_DSP::soft_reset_common()
 	m.phase              = 0;
 	
 	INIT_COUNTER();
-
-	for (int i = 0; i < VOICE_COUNT; i++)
-		m.voices[i].voice_number = i;
 }
 
 void SPC_DSP::soft_reset()
