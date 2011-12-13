@@ -189,9 +189,6 @@
 #define APU_NUMERATOR_PAL		34176
 #define APU_DENOMINATOR_PAL		709379
 
-SNES_SPC	*spc_core = NULL;
-
-
 static apu_callback	sa_callback     = NULL;
 
 static bool8		sound_in_sync   = TRUE;
@@ -400,7 +397,7 @@ int S9xGetSampleCount (void)
 
 void S9xFinalizeSamples (void)
 {
-	if (!resampler_push((short *) landing_buffer, spc_core->sample_count()))
+	if (!resampler_push((short *) landing_buffer, spc_sample_count()))
 	{
 		/* We weren't able to process the entire buffer. Potential overrun. */
 		sound_in_sync = FALSE;
@@ -414,7 +411,7 @@ void S9xFinalizeSamples (void)
 	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED()))
 		sound_in_sync = TRUE;
 
-	spc_core->set_output(landing_buffer, buffer_size >> 1);
+	spc_set_output(landing_buffer, buffer_size >> 1);
 }
 
 void S9xLandSamples (void)
@@ -494,7 +491,7 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	else
 		resampler_resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
 
-	spc_core->set_output(landing_buffer, buffer_size >> 1);
+	spc_set_output(landing_buffer, buffer_size >> 1);
 
 	UpdatePlaybackRate();
 
@@ -503,11 +500,7 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 
 bool8 S9xInitAPU (void)
 {
-	spc_core = new SNES_SPC;
-	if (!spc_core)
-		return (FALSE);
-
-	spc_core->init();
+	spc_init();
 
 	landing_buffer = NULL;
 
@@ -516,12 +509,6 @@ bool8 S9xInitAPU (void)
 
 void S9xDeinitAPU (void)
 {
-	if (spc_core)
-	{
-		delete spc_core;
-		spc_core = NULL;
-	}
-
 	if (resampler)
 	{
 		delete[] rb_buffer;
@@ -549,12 +536,15 @@ static inline int S9xAPUGetClockRemainder (int32 cpucycles)
 
 uint8 S9xAPUReadPort (int port)
 {
-	return ((uint8) spc_core->read_port(S9xAPUGetClock(CPU.Cycles), port));
+	// Emulated port read at specified time
+	return ((uint8) spc_run_until_(S9xAPUGetClock(CPU.Cycles))[port]);
 }
 
 void S9xAPUWritePort (int port, uint8 byte)
 {
-	spc_core->write_port(S9xAPUGetClock(CPU.Cycles), port, byte);
+	// Emulated port write at specified time
+	spc_run_until_( S9xAPUGetClock(CPU.Cycles) ) [0x10 + port] = byte;
+	m.ram.ram [0xF4 + port] = byte;
 }
 
 void S9xAPUSetReferenceTime (int32 cpucycles)
@@ -565,7 +555,7 @@ void S9xAPUSetReferenceTime (int32 cpucycles)
 void S9xAPUExecute (void)
 {
 	/* Accumulate partial APU cycles */
-	spc_core->end_frame(S9xAPUGetClock(CPU.Cycles));
+	spc_end_frame(S9xAPUGetClock(CPU.Cycles));
 
 	spc_remainder = S9xAPUGetClockRemainder(CPU.Cycles);
 
@@ -576,7 +566,7 @@ void S9xAPUEndScanline (void)
 {
 	S9xAPUExecute();
 
-	if (spc_core->sample_count() >= APU_MINIMUM_SAMPLE_BLOCK || !sound_in_sync)
+	if (spc_sample_count() >= APU_MINIMUM_SAMPLE_BLOCK || !sound_in_sync)
 		S9xLandSamples();
 }
 
@@ -586,7 +576,7 @@ void S9xAPUTimingSetSpeedup (int ticks)
 		printf("APU speedup hack: %d\n", ticks);
 
 	timing_hack_denominator = TEMPO_UNIT - ticks;
-	spc_core->set_tempo(timing_hack_denominator);
+	spc_set_tempo(timing_hack_denominator);
 
 	ratio_numerator = Settings.PAL ? APU_NUMERATOR_PAL : APU_NUMERATOR_NTSC;
 	ratio_denominator = Settings.PAL ? APU_DENOMINATOR_PAL : APU_DENOMINATOR_NTSC;
@@ -597,15 +587,15 @@ void S9xAPUTimingSetSpeedup (int ticks)
 
 void S9xAPUAllowTimeOverflow (bool allow)
 {
-	spc_core->spc_allow_time_overflow(allow);
+	allow_time_overflow = allow;
 }
 
 void S9xResetAPU (void)
 {
 	reference_time = 0;
 	spc_remainder = 0;
-	spc_core->reset();
-	spc_core->set_output(landing_buffer, buffer_size >> 1);
+	spc_reset();
+	spc_set_output(landing_buffer, buffer_size >> 1);
 
 	resampler_clear();
 }
@@ -614,8 +604,8 @@ void S9xSoftResetAPU (void)
 {
 	reference_time = 0;
 	spc_remainder = 0;
-	spc_core->soft_reset();
-	spc_core->set_output(landing_buffer, buffer_size >> 1);
+	spc_soft_reset();
+	spc_set_output(landing_buffer, buffer_size >> 1);
 
 	resampler_clear();
 }
@@ -636,7 +626,7 @@ void S9xAPUSaveState (uint8 *block)
 {
 	uint8	*ptr = block;
 
-	spc_core->copy_state(&ptr, from_apu_to_state);
+	spc_copy_state(&ptr, from_apu_to_state);
 
 	SET_LE32(ptr, reference_time);
 	ptr += sizeof(int32);
@@ -649,7 +639,7 @@ void S9xAPULoadState (uint8 *block)
 
 	S9xResetAPU();
 
-	spc_core->copy_state(&ptr, to_apu_from_state);
+	spc_copy_state(&ptr, to_apu_from_state);
 
 	reference_time = GET_LE32(ptr);
 	ptr += sizeof(int32);

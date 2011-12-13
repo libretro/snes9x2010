@@ -44,153 +44,116 @@
 // Value that padding should be filled with
 #define CPU_PAD_FILL 0xFF
 
-struct SNES_SPC {
-public:
-	typedef BOOST::uint8_t uint8_t;
-	
-	// Must be called once before using
-	void init();
-
-	// Emulator use
-
-	// Sets destination for output samples
-	void set_output( short* out, int out_size );
-
-	// Number of samples written to output since last set
-	int sample_count() const;
-
-	// Resets SPC to power-on state. This resets your output buffer, so you must
-	// call set_output() after this.
-	void reset();
-
-	// Emulates pressing reset switch on SNES. This resets your output buffer, so
-	// you must call set_output() after this.
-	void soft_reset();
-
-	// Emulated port read/write at specified time
-	int  read_port ( int, int port );
-	void write_port( int, int port, int data );
-
-	// Runs SPC to end_time and starts a new time frame at 0
-	void end_frame( int end_time );
-	
-	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
-	void set_tempo( int );
-// State save/load (only available with accurate DSP)
+typedef BOOST::uint8_t uint8_t;
 
 #if !SPC_NO_COPY_STATE_FUNCS
 	// Saves/loads state
-	void copy_state( unsigned char** io, dsp_copy_func_t );
+	void spc_copy_state( unsigned char** io, dsp_copy_func_t );
 #endif
 
-//// Snes9x Accessor
-	void	spc_allow_time_overflow( bool );
-public:
-	BLARGG_DISABLE_NOTHROW
-	
-	typedef BOOST::uint16_t uint16_t;
-	
-	// rel_time_t - Time relative to m_spc_time. Speeds up code a bit by eliminating need to
-	// constantly add m_spc_time to time from CPU. CPU uses time that ends at
-	// 0 to eliminate reloading end time every instruction. It pays off.
-	
-	struct Timer
-	{
-		int next_time; // time of next event
-		int prescaler;
-		int period;
-		int divider;
-		int enabled;
-		int counter;
-	};
-	
-	// Support SNES_MEMORY_APURAM
-	uint8_t *apuram();
-	
-private:
-	SPC_DSP dsp;
-	
-	static signed char const reg_times_ [256];
-	signed char reg_times [256];
-	
-	struct state_t
-	{
-		Timer timers [TIMER_COUNT];
-		
-		uint8_t smp_regs [2] [REG_COUNT];
-		
-		struct
-		{
-			int pc;
-			int a;
-			int x;
-			int y;
-			int psw;
-			int sp;
-		} cpu_regs;
-		
-		int  dsp_time;
-		int  spc_time;
-		
-		int         tempo;
-		
-		int         extra_clocks;
-		short*   buf_begin;
-		short const* buf_end;
-		short*   extra_pos;
-		short    extra_buf [EXTRA_SIZE];
-		
-		int         rom_enabled;
-		uint8_t     rom    [ROM_SIZE];
-		uint8_t     hi_ram [ROM_SIZE];
-		
-		unsigned char cycle_table [256];
-		
-		struct
-		{
-			// padding to neutralize address overflow
-			union {
-				uint8_t padding1 [0x100];
-				uint16_t align; // makes compiler align data for 16-bit access
-			} padding1 [1];
-			uint8_t ram      [0x10000];
-			uint8_t padding2 [0x100];
-		} ram;
-	};
-	state_t m;
-	
-	void enable_rom( int enable );
-	void reset_common( int timer_counter_init );
-	
-	Timer* run_timer_      ( Timer* t, int );
-	Timer* run_timer       ( Timer* t, int );
-	void dsp_write         ( int data, int );
-	void cpu_write_smp_reg_( int data, int, int addr );
-	void cpu_write_smp_reg ( int data, int, int addr );
-	void cpu_write         ( int data, int addr, int );
-	int cpu_read           ( int addr, int );
-	unsigned CPU_mem_bit   ( uint8_t const* pc, int );
-	
-	uint8_t* run_until_( int end_time );
-	
-// Snes9x timing hack
-	bool allow_time_overflow;
-};
+typedef BOOST::uint16_t uint16_t;
 
-inline int SNES_SPC::sample_count() const { return (m.extra_clocks >> 5) * 2; }
+// rel_time_t - Time relative to m_spc_time. Speeds up code a bit by eliminating need to
+// constantly add m_spc_time to time from CPU. CPU uses time that ends at
+// 0 to eliminate reloading end time every instruction. It pays off.
 
-inline int SNES_SPC::read_port( int t, int port )
+typedef struct
 {
-	return run_until_( t ) [port];
-}
+	int next_time; // time of next event
+	int prescaler;
+	int period;
+	int divider;
+	int enabled;
+	int counter;
+} Timer;
 
-inline void SNES_SPC::write_port( int t, int port, int data )
+extern SPC_DSP dsp;
+
+extern bool allow_time_overflow;
+
+Timer* spc_run_timer_( Timer* t, int );
+void spc_dsp_write( int data, int );
+uint8_t* spc_run_until_( int end_time );
+
+// Resets SPC to power-on state. This resets your output buffer, so you must
+// call set_output() after this.
+void spc_reset();
+
+// Sets destination for output samples
+void spc_set_output( short* out, int out_size );
+
+// Emulates pressing reset switch on SNES. This resets your output buffer, so
+// you must call set_output() after this.
+void spc_soft_reset();
+
+void spc_enable_rom( int enable );
+void spc_reset_common( int timer_counter_init );
+
+void spc_cpu_write_smp_reg_( int data, int, int addr );
+int spc_cpu_read( int addr, int );
+void spc_cpu_write( int data, int addr, int );
+
+// Runs SPC to end_time and starts a new time frame at 0
+void spc_end_frame( int end_time );
+
+// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
+void spc_set_tempo( int );
+
+// Must be called once before using
+void spc_init();
+
+// Support SNES_MEMORY_APURAM
+uint8_t *spc_apuram();
+
+typedef struct
 {
-	run_until_( t ) [0x10 + port] = data;
-	m.ram.ram [0xF4 + port] = data;
-}
+	Timer timers [TIMER_COUNT];
 
-inline void SNES_SPC::spc_allow_time_overflow( bool allow ) { allow_time_overflow = allow; }
+	uint8_t smp_regs [2] [REG_COUNT];
+
+	struct
+	{
+		int pc;
+		int a;
+		int x;
+		int y;
+		int psw;
+		int sp;
+	} cpu_regs;
+
+	int  dsp_time;
+	int  spc_time;
+
+	int         tempo;
+
+	int         extra_clocks;
+	short*   buf_begin;
+	short const* buf_end;
+	short*   extra_pos;
+	short    extra_buf [EXTRA_SIZE];
+
+	int         rom_enabled;
+	uint8_t     rom    [ROM_SIZE];
+	uint8_t     hi_ram [ROM_SIZE];
+
+	unsigned char cycle_table [256];
+
+	struct
+	{
+		// padding to neutralize address overflow
+		union {
+			uint8_t padding1 [0x100];
+			uint16_t align; // makes compiler align data for 16-bit access
+		} padding1 [1];
+		uint8_t ram      [0x10000];
+		uint8_t padding2 [0x100];
+	} ram;
+} spc_state_t;
+
+extern spc_state_t m;
+
+// Number of samples written to output since last set
+#define spc_sample_count() ((m.extra_clocks >> 5) * 2)
 
 #endif
 

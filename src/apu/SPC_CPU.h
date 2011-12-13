@@ -21,7 +21,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 	{\
 		Timer* t = &m.timers [ti];\
 		if ( adj_time >= t->next_time )\
-		t = run_timer_( t, adj_time );\
+		t = spc_run_timer_( t, adj_time );\
 		out = t->counter;\
 		t->counter = 0;\
 	}\
@@ -48,9 +48,17 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 	}\
 }
 
+
 #define READ_TIMER( time, addr, out )	CPU_READ_TIMER( rel_time, time, (addr), out )
-#define READ( time, addr )		cpu_read((addr), rel_time + time )
-#define WRITE( time, addr, data )	cpu_write((data), (addr), rel_time + time )
+#define READ( time, addr )		spc_cpu_read((addr), rel_time + time )
+#define WRITE( time, addr, data )	spc_cpu_write((data), (addr), rel_time + time )
+
+static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
+{
+	unsigned addr = GET_LE16( pc );
+	unsigned t = READ( 0, addr & 0x1FFF ) >> (addr >> 13);
+	return t << 8 & 0x100;
+}
 
 #define DP_ADDR( addr )                     (dp + (addr))
 
@@ -71,14 +79,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define PUSH( v )       (void) (*--sp = (uint8_t) (v))
 #define POP( out )      (void) ((out) = *sp++)
 
-#define MEM_BIT( rel ) CPU_mem_bit( pc, rel_time + rel )
-
-unsigned SNES_SPC::CPU_mem_bit( uint8_t const* pc, int rel_time )
-{
-	unsigned addr = GET_LE16( pc );
-	unsigned t = READ( 0, addr & 0x1FFF ) >> (addr >> 13);
-	return t << 8 & 0x100;
-}
+#define MEM_BIT( rel ) spc_CPU_mem_bit( pc, rel_time + rel )
 
 //// Status flag handling
 
@@ -112,7 +113,7 @@ unsigned SNES_SPC::CPU_mem_bit( uint8_t const* pc, int rel_time )
 	nz  = (in << 4 & 0x800) | (~in & Z02);\
 }
 
-BOOST::uint8_t* SNES_SPC::run_until_( int end_time )
+BOOST::uint8_t* spc_run_until_( int end_time )
 {
 	int rel_time = m.spc_time - end_time;
 	m.spc_time = end_time;
@@ -220,9 +221,9 @@ loop:
 						  if ( ((~0x2F00 << (bits_in_int - 16)) << i) < 0 ) // 12%
 						  {
 							  if ( i == R_DSPDATA ) // 99%
-								  dsp_write( data, rel_time );
+								  spc_dsp_write( data, rel_time );
 							  else
-								  cpu_write_smp_reg_( data, rel_time, i);
+								  spc_cpu_write_smp_reg_( data, rel_time, i);
 						  }
 					  }
 					  goto loop;
@@ -240,9 +241,9 @@ loop:
 						  m.smp_regs[0][i] = (uint8_t) a;
 
 						  if ( sel == 1 ) // 51% $F3
-							  dsp_write( a, rel_time );
+							  spc_dsp_write( a, rel_time );
 						  else if ( sel > 1 ) // 1% not $F2 or $F3
-							  cpu_write_smp_reg_( a, rel_time, i );
+							  spc_cpu_write_smp_reg_( a, rel_time, i );
 					  }
 				  }
 				  goto loop;
