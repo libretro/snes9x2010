@@ -70,40 +70,40 @@ public:
 // Setup
 
 	// Initializes DSP and has it use the 64K RAM provided
-	void init( void* ram_64k );
+	void dsp_init( void* ram_64k );
 
 	// Sets destination for output samples. If out is NULL or out_size is 0,
 	// doesn't generate any.
-	void set_output( short* out, int out_size );
+	void dsp_set_output( short* out, int out_size );
 
 	// Number of samples written to output since it was last set, always
 	// a multiple of 2. Undefined if more samples were generated than
 	// output buffer could hold.
-	int sample_count() const;
+	int dsp_sample_count() const;
 
 // Emulation
 
 	// Resets DSP to power-on state
-	void reset();
+	void dsp_reset();
 
 	// Emulates pressing reset switch on SNES
-	void soft_reset();
+	void dsp_soft_reset();
 	
 	// Reads/writes DSP registers. For accuracy, you must first call run()
 	// to catch the DSP up to present.
-	int  read ( int addr ) const;
-	void write( int addr, int data );
+	int  dsp_read ( int addr ) const;
+	void dsp_write( int addr, int data );
 
 	// Runs DSP for specified number of clocks (~1024000 per second). Every 32 clocks
 	// a pair of samples is be generated.
-	void run( int clock_count );
+	void dsp_run( int clock_count );
 
 // State
 	// Saves/loads exact emulator state
-	void copy_state( unsigned char** io, dsp_copy_func_t );
+	void dsp_copy_state( unsigned char** io, dsp_copy_func_t );
 public:
-	short* extra()               { return m.extra; }
-	short const* out_pos() const { return m.out; }
+	short* dsp_extra()               { return m.extra; }
+	short const* dsp_out_pos() const { return m.out; }
 public:
 	BLARGG_DISABLE_NOTHROW
 	
@@ -111,7 +111,7 @@ public:
 	typedef BOOST::int16_t int16_t;
 	
 	
-	struct voice_t
+	struct dsp_voice_t
 	{
 		int buf [BRR_BUF_SIZE_X2];// decoded samples (twice the size to simplify wrap handling)
 		int buf_pos;            // place in buffer where next samples will be decoded
@@ -180,7 +180,7 @@ private:
 		int t_echo_out [2];
 		int t_echo_in  [2];
 		
-		voice_t voices [VOICE_COUNT];
+		dsp_voice_t voices [VOICE_COUNT];
 		
 		// non-emulation state
 		uint8_t* ram; // 64K shared RAM between DSP and SMP
@@ -191,48 +191,48 @@ private:
 	};
 	state_t m;
 	
-	int  interpolate( voice_t const* v );
-	void run_envelope( voice_t* const v );
-	void decode_brr( voice_t* v );
+	int  dsp_interpolate( dsp_voice_t const* v );
+	void dsp_run_envelope( dsp_voice_t* const v );
+	void dsp_decode_brr( dsp_voice_t* v );
 
-	void misc_30();
+	void dsp_misc_30();
 
-	void voice_output( voice_t const* v, int ch );
-	void voice_V1( voice_t* const );
-	void voice_V2( voice_t* const );
-	void voice_V3( voice_t* const );
-	void voice_V3a( voice_t* const );
-	void voice_V3b( voice_t* const );
-	void voice_V3c( voice_t* const );
-	void voice_V4( voice_t* const );
-	void voice_V5( voice_t* const );
-	void voice_V6( voice_t* const );
-	void voice_V7( voice_t* const );
-	void voice_V8( voice_t* const );
-	void voice_V9( voice_t* const );
-	void voice_V7_V4_V1( voice_t* const );
-	void voice_V8_V5_V2( voice_t* const );
-	void voice_V9_V6_V3( voice_t* const );
+	void dsp_voice_output( dsp_voice_t const* v, int ch );
+	void dsp_voice_V1( dsp_voice_t* const );
+	void dsp_voice_V2( dsp_voice_t* const );
+	void dsp_voice_V3( dsp_voice_t* const );
+	void dsp_voice_V3a( dsp_voice_t* const );
+	void dsp_voice_V3b( dsp_voice_t* const );
+	void dsp_voice_V3c( dsp_voice_t* const );
+	void dsp_voice_V4( dsp_voice_t* const );
+	void dsp_voice_V5( dsp_voice_t* const );
+	void dsp_voice_V6( dsp_voice_t* const );
+	void dsp_voice_V7( dsp_voice_t* const );
+	void dsp_voice_V8( dsp_voice_t* const );
+	void dsp_voice_V9( dsp_voice_t* const );
+	void dsp_voice_V7_V4_V1( dsp_voice_t* const );
+	void dsp_voice_V8_V5_V2( dsp_voice_t* const );
+	void dsp_voice_V9_V6_V3( dsp_voice_t* const );
 
-	void echo_22();
-	void echo_23();
-	void echo_24();
-	void echo_25();
-	void echo_26();
-	void echo_27();
-	void echo_29();
+	void dsp_echo_22();
+	void dsp_echo_23();
+	void dsp_echo_24();
+	void dsp_echo_25();
+	void dsp_echo_26();
+	void dsp_echo_27();
+	void dsp_echo_29();
 	
-	void soft_reset_common();
+	void dsp_soft_reset_common();
 };
 
-inline int SPC_DSP::sample_count() const { return m.out - m.out_begin; }
+inline int SPC_DSP::dsp_sample_count() const { return m.out - m.out_begin; }
 
-inline int SPC_DSP::read( int addr ) const
+inline int SPC_DSP::dsp_read( int addr ) const
 {
 	return m.regs [addr];
 }
 
-inline void SPC_DSP::write( int addr, int data )
+inline void SPC_DSP::dsp_write( int addr, int data )
 {
 	m.regs [addr] = (uint8_t) data;
 	switch ( addr & 0x0F )
