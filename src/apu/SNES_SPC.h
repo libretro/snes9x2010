@@ -50,11 +50,8 @@ public:
 	
 	// Must be called once before using
 	void init();
-// Emulator use
-	
-	// Sets IPL ROM data. Library does not include ROM data. Most SPC music files
-	// don't need ROM, but a full emulator must provide this.
-	void init_rom( uint8_t const rom [ROM_SIZE] );
+
+	// Emulator use
 
 	// Sets destination for output samples
 	void set_output( short* out, int out_size );
@@ -162,26 +159,15 @@ private:
 	};
 	state_t m;
 	
-	
-	
-	
-	void timers_loaded();
 	void enable_rom( int enable );
-	void reset_buf();
-	void load_regs( uint8_t const in [REG_COUNT] );
-	void ram_loaded();
-	void regs_loaded();
-	void reset_time_regs();
 	void reset_common( int timer_counter_init );
 	
 	Timer* run_timer_      ( Timer* t, int );
 	Timer* run_timer       ( Timer* t, int );
-	int dsp_read           ( int );
 	void dsp_write         ( int data, int );
 	void cpu_write_smp_reg_( int data, int, int addr );
 	void cpu_write_smp_reg ( int data, int, int addr );
 	void cpu_write         ( int data, int addr, int );
-	int cpu_read_smp_reg   ( int i, int );
 	int cpu_read           ( int addr, int );
 	unsigned CPU_mem_bit   ( uint8_t const* pc, int );
 	

@@ -97,13 +97,8 @@ public:
 	// Runs DSP for specified number of clocks (~1024000 per second). Every 32 clocks
 	// a pair of samples is be generated.
 	void run( int clock_count );
-	
 
 // State
-	
-	// Resets DSP and uses supplied values to initialize registers
-	void load( uint8_t const regs [REGISTER_COUNT] );
-
 	// Saves/loads exact emulator state
 	void copy_state( unsigned char** io, dsp_copy_func_t );
 public:
@@ -272,7 +267,6 @@ public:
 	SPC_State_Copier( unsigned char** p, dsp_copy_func_t f ) { func = f; buf = p; }
 	void copy( void* state, size_t size );
 	int copy_int( int state, int size );
-	void skip( int count );
 	void extra();
 };
 
