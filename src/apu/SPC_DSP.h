@@ -22,6 +22,7 @@ extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, s
 
 #define BRR_BUF_SIZE 12
 #define BRR_BUF_SIZE_X2 24
+#define BRR_BLOCK_SIZE 9
 
 // DSP register addresses
 
@@ -54,6 +55,13 @@ extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, s
 #define V_GAIN 0x07
 #define V_ENVX 0x08
 #define V_OUTX 0x09
+
+#define REGISTER_COUNT 128
+
+#define ENV_RELEASE	0
+#define ENV_ATTACK	1
+#define ENV_DECAY	2
+#define ENV_SUSTAIN	3
 
 class SPC_DSP {
 public:
@@ -94,12 +102,10 @@ public:
 // State
 	
 	// Resets DSP and uses supplied values to initialize registers
-	enum { register_count = 128 };
-	void load( uint8_t const regs [register_count] );
+	void load( uint8_t const regs [REGISTER_COUNT] );
 
 	// Saves/loads exact emulator state
-	typedef dsp_copy_func_t copy_func_t;
-	void copy_state( unsigned char** io, copy_func_t );
+	void copy_state( unsigned char** io, dsp_copy_func_t );
 // Snes9x Accessor
 
 	int  stereo_switch;
@@ -115,7 +121,6 @@ public:
 	typedef BOOST::int16_t int16_t;
 	
 	
-	enum env_mode_t { env_release, env_attack, env_decay, env_sustain };
 	struct voice_t
 	{
 		int buf [BRR_BUF_SIZE_X2];// decoded samples (twice the size to simplify wrap handling)
@@ -126,18 +131,17 @@ public:
 		uint8_t* regs;          // pointer to voice's DSP registers
 		int vbit;               // bitmask for voice: 0x01 for voice 0, 0x02 for voice 1, etc.
 		int kon_delay;          // KON delay/current setup phase
-		env_mode_t env_mode;
+		int env_mode;
 		int env;                // current envelope level
 		int hidden_env;         // used by GAIN mode 7, very obscure quirk
 		uint8_t t_envx_out;
 		int voice_number;
 	};
 private:
-	enum { brr_block_size = 9 };
 	
 	struct state_t
 	{
-		uint8_t regs [register_count];
+		uint8_t regs [REGISTER_COUNT];
 		
 		// Echo history keeps most recent 8 samples (twice the size to simplify wrap handling)
 		int echo_hist [ECHO_HIST_SIZE_X2] [2];
@@ -268,10 +272,10 @@ inline void SPC_DSP::write( int addr, int data )
 #if !SPC_NO_COPY_STATE_FUNCS
 
 class SPC_State_Copier {
-	SPC_DSP::copy_func_t func;
+	dsp_copy_func_t func;
 	unsigned char** buf;
 public:
-	SPC_State_Copier( unsigned char** p, SPC_DSP::copy_func_t f ) { func = f; buf = p; }
+	SPC_State_Copier( unsigned char** p, dsp_copy_func_t f ) { func = f; buf = p; }
 	void copy( void* state, size_t size );
 	int copy_int( int state, int size );
 	void skip( int count );

@@ -16,12 +16,6 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
-#include "blargg_source.h"
-
-#ifdef BLARGG_ENABLE_OPTIMIZER
-	#include BLARGG_ENABLE_OPTIMIZER
-#endif
-
 #if INT_MAX < 0x7FFFFFFF
 	#error "Requires that int type have at least 32 bits"
 #endif
@@ -31,17 +25,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define GET_LE16A( addr )       GET_LE16( addr )
 #define SET_LE16A( addr, data ) SET_LE16( addr, data )
 
-static BOOST::uint8_t const initial_regs [SPC_DSP::register_count] =
-{
-	0x45,0x8B,0x5A,0x9A,0xE4,0x82,0x1B,0x78,0x00,0x00,0xAA,0x96,0x89,0x0E,0xE0,0x80,
-	0x2A,0x49,0x3D,0xBA,0x14,0xA0,0xAC,0xC5,0x00,0x00,0x51,0xBB,0x9C,0x4E,0x7B,0xFF,
-	0xF4,0xFD,0x57,0x32,0x37,0xD9,0x42,0x22,0x00,0x00,0x5B,0x3C,0x9F,0x1B,0x87,0x9A,
-	0x6F,0x27,0xAF,0x7B,0xE5,0x68,0x0A,0xD9,0x00,0x00,0x9A,0xC5,0x9C,0x4E,0x7B,0xFF,
-	0xEA,0x21,0x78,0x4F,0xDD,0xED,0x24,0x14,0x00,0x00,0x77,0xB1,0xD1,0x36,0xC1,0x67,
-	0x52,0x57,0x46,0x3D,0x59,0xF4,0x87,0xA4,0x00,0x00,0x7E,0x44,0x00,0x4E,0x7B,0xFF,
-	0x75,0xF5,0x06,0x97,0x10,0xC3,0x24,0xBB,0x00,0x00,0x7B,0x7A,0xE0,0x60,0x12,0x0F,
-	0xF7,0x74,0x1C,0xE5,0x39,0x3D,0x73,0xC1,0x00,0x00,0x7A,0xB3,0xFF,0x4E,0x7B,0xFF
-};
 
 // if ( io < -32768 ) io = -32768;
 // if ( io >  32767 ) io =  32767;
@@ -194,7 +177,7 @@ static unsigned const counter_offsets [32] =
 inline void SPC_DSP::run_envelope( voice_t* const v )
 {
 	int env = v->env;
-	if ( v->env_mode == env_release ) // 60%
+	if ( v->env_mode == ENV_RELEASE ) // 60%
 	{
 		if ( (env -= 0x8) < 0 )
 			env = 0;
@@ -206,15 +189,15 @@ inline void SPC_DSP::run_envelope( voice_t* const v )
 		int env_data = v->regs[V_ADSR1];
 		if ( m.t_adsr0 & 0x80 ) // 99% ADSR
 		{
-			if ( v->env_mode >= env_decay ) // 99%
+			if ( v->env_mode >= ENV_DECAY ) // 99%
 			{
 				env--;
 				env -= env >> 8;
 				rate = env_data & 0x1F;
-				if ( v->env_mode == env_decay ) // 1%
+				if ( v->env_mode == ENV_DECAY ) // 1%
 					rate = (m.t_adsr0 >> 3 & 0x0E) + 0x10;
 			}
-			else // env_attack
+			else // ENV_ATTACK
 			{
 				rate = (m.t_adsr0 & 0x0F) * 2 + 1;
 				env += rate < 31 ? 0x20 : 0x400;
@@ -252,8 +235,8 @@ inline void SPC_DSP::run_envelope( voice_t* const v )
 		}
 		
 		// Sustain level
-		if ( (env >> 8) == (env_data >> 5) && v->env_mode == env_decay )
-			v->env_mode = env_sustain;
+		if ( (env >> 8) == (env_data >> 5) && v->env_mode == ENV_DECAY )
+			v->env_mode = ENV_SUSTAIN;
 		
 		v->hidden_env = env;
 		
@@ -261,8 +244,8 @@ inline void SPC_DSP::run_envelope( voice_t* const v )
 		if ( (unsigned) env > 0x7FF )
 		{
 			env = (env < 0 ? 0 : 0x7FF);
-			if ( v->env_mode == env_attack )
-				v->env_mode = env_decay;
+			if ( v->env_mode == ENV_ATTACK )
+				v->env_mode = ENV_DECAY;
 		}
 		
 		if (!READ_COUNTER( rate ))
@@ -440,7 +423,7 @@ void SPC_DSP::voice_V3c( voice_t* const v )
 	// Immediate silence due to end of sample or soft reset
 	if ( m.regs[R_FLG] & 0x80 || (m.t_brr_header & 3) == 1 )
 	{
-		v->env_mode = env_release;
+		v->env_mode = ENV_RELEASE;
 		v->env      = 0;
 	}
 	
@@ -448,13 +431,13 @@ void SPC_DSP::voice_V3c( voice_t* const v )
 	{
 		// KOFF
 		if ( m.t_koff & v->vbit )
-			v->env_mode = env_release;
+			v->env_mode = ENV_RELEASE;
 		
 		// KON
 		if ( m.kon & v->vbit )
 		{
 			v->kon_delay = 5;
-			v->env_mode  = env_attack;
+			v->env_mode  = ENV_ATTACK;
 		}
 	}
 	
@@ -489,10 +472,10 @@ void SPC_DSP::voice_V4( voice_t* const v )
 	{
 		decode_brr( v );
 		
-		if ( (v->brr_offset += 2) >= brr_block_size )
+		if ( (v->brr_offset += 2) >= BRR_BLOCK_SIZE )
 		{
 			// Start decoding next BRR block
-			v->brr_addr = (v->brr_addr + brr_block_size) & 0xFFFF;
+			v->brr_addr = (v->brr_addr + BRR_BLOCK_SIZE) & 0xFFFF;
 			if ( m.t_brr_header & 1 )
 			{
 				v->brr_addr = m.t_brr_next_addr;
@@ -936,10 +919,10 @@ void SPC_DSP::soft_reset()
 	soft_reset_common();
 }
 
-void SPC_DSP::load( uint8_t const regs [register_count] )
+void SPC_DSP::load( uint8_t const regs [REGISTER_COUNT] )
 {
 	memcpy( m.regs, regs, sizeof m.regs );
-	memset( &m.regs [register_count], 0, offsetof (state_t,ram) - register_count );
+	memset( &m.regs [REGISTER_COUNT], 0, offsetof (state_t,ram) - REGISTER_COUNT );
 	
 	// Internal state
 	for ( int i = VOICE_COUNT; --i >= 0; )
@@ -958,6 +941,17 @@ void SPC_DSP::load( uint8_t const regs [register_count] )
 
 void SPC_DSP::reset()
 {
+	BOOST::uint8_t const initial_regs [REGISTER_COUNT] =
+	{
+		0x45,0x8B,0x5A,0x9A,0xE4,0x82,0x1B,0x78,0x00,0x00,0xAA,0x96,0x89,0x0E,0xE0,0x80,
+		0x2A,0x49,0x3D,0xBA,0x14,0xA0,0xAC,0xC5,0x00,0x00,0x51,0xBB,0x9C,0x4E,0x7B,0xFF,
+		0xF4,0xFD,0x57,0x32,0x37,0xD9,0x42,0x22,0x00,0x00,0x5B,0x3C,0x9F,0x1B,0x87,0x9A,
+		0x6F,0x27,0xAF,0x7B,0xE5,0x68,0x0A,0xD9,0x00,0x00,0x9A,0xC5,0x9C,0x4E,0x7B,0xFF,
+		0xEA,0x21,0x78,0x4F,0xDD,0xED,0x24,0x14,0x00,0x00,0x77,0xB1,0xD1,0x36,0xC1,0x67,
+		0x52,0x57,0x46,0x3D,0x59,0xF4,0x87,0xA4,0x00,0x00,0x7E,0x44,0x00,0x4E,0x7B,0xFF,
+		0x75,0xF5,0x06,0x97,0x10,0xC3,0x24,0xBB,0x00,0x00,0x7B,0x7A,0xE0,0x60,0x12,0x0F,
+		0xF7,0x74,0x1C,0xE5,0x39,0x3D,0x73,0xC1,0x00,0x00,0x7A,0xB3,0xFF,0x4E,0x7B,0xFF
+	};
 	load( initial_regs );
 }
 
@@ -1004,12 +998,12 @@ void SPC_State_Copier::extra()
 	skip( n );
 }
 
-void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
+void SPC_DSP::copy_state( unsigned char** io, dsp_copy_func_t copy )
 {
 	SPC_State_Copier copier( io, copy );
 	
 	// DSP registers
-	copier.copy( m.regs, register_count );
+	copier.copy( m.regs, REGISTER_COUNT );
 	
 	// Internal state
 	
@@ -1038,7 +1032,7 @@ void SPC_DSP::copy_state( unsigned char** io, copy_func_t copy )
 		{
 			int m = v->env_mode;
 			SPC_COPY(  uint8_t, m );
-			v->env_mode = (enum env_mode_t) m;
+			v->env_mode = m;
 		}
 		SPC_COPY(  uint8_t, v->t_envx_out );
 		

@@ -17,25 +17,15 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
-#include "blargg_source.h"
-
-#define RAM         (m.ram.ram)
-#define REGS        (m.smp_regs [0])
-#define REGS_IN     (m.smp_regs [1])
-
 // (n ? n : 256)
 #define IF_0_THEN_256( n ) ((uint8_t) ((n) - 1) + 1)
-
-#ifdef BLARGG_ENABLE_OPTIMIZER
-	#include BLARGG_ENABLE_OPTIMIZER
-#endif
 
 //// Timers
 
 #define TIMER_DIV( t, n ) ((n) >> t->prescaler)
 #define TIMER_MUL( t, n ) ((n) << t->prescaler)
 
-SNES_SPC::Timer* SNES_SPC::run_timer_( Timer* t, rel_time_t time )
+SNES_SPC::Timer* SNES_SPC::run_timer_( Timer* t, int time )
 {
 	int elapsed = TIMER_DIV( t, time - t->next_time ) + 1;
 	t->next_time += TIMER_MUL( t, elapsed );
@@ -56,7 +46,7 @@ SNES_SPC::Timer* SNES_SPC::run_timer_( Timer* t, rel_time_t time )
 	return t;
 }
 
-inline SNES_SPC::Timer* SNES_SPC::run_timer( Timer* t, rel_time_t time )
+inline SNES_SPC::Timer* SNES_SPC::run_timer( Timer* t, int time )
 {
 	if ( time >= t->next_time )
 		t = run_timer_( t, time );
@@ -72,8 +62,8 @@ void SNES_SPC::enable_rom( int enable )
 	{
 		m.rom_enabled = enable;
 		if ( enable )
-			memcpy( m.hi_ram, &RAM [rom_addr], sizeof m.hi_ram );
-		memcpy( &RAM [rom_addr], (enable ? m.rom : m.hi_ram), rom_size );
+			memcpy( m.hi_ram, &m.ram.ram[ROM_ADDR], sizeof m.hi_ram );
+		memcpy( &m.ram.ram[ROM_ADDR], (enable ? m.rom : m.hi_ram), ROM_SIZE );
 		// TODO: ROM can still get overwritten when DSP writes to echo buffer
 	}
 }
@@ -108,26 +98,26 @@ signed char const SNES_SPC::reg_times_ [256] =
 	int count = (time) - (offset) - m.dsp_time; \
 	if ( count >= 0 ) \
 	{ \
-		int clock_count = (count & ~(clocks_per_sample - 1)) + clocks_per_sample; \
+		int clock_count = (count & ~(CLOCKS_PER_SAMPLE - 1)) + CLOCKS_PER_SAMPLE; \
 		m.dsp_time += clock_count; \
 		dsp.run( clock_count ); \
 	}
 
-int SNES_SPC::dsp_read( rel_time_t time )
+int SNES_SPC::dsp_read( int time )
 {
-	RUN_DSP( time, reg_times [REGS [r_dspaddr] & 0x7F] );
+	RUN_DSP( time, reg_times [m.smp_regs[0][R_DSPADDR] & 0x7F] );
 	
-	int result = dsp.read( REGS [r_dspaddr] & 0x7F );
+	int result = dsp.read(m.smp_regs[0][R_DSPADDR] & 0x7F );
 	
 	return result;
 }
 
-inline void SNES_SPC::dsp_write( int data, rel_time_t time )
+inline void SNES_SPC::dsp_write( int data, int time )
 {
-	RUN_DSP( time, reg_times [REGS [r_dspaddr]] )
+	RUN_DSP( time, reg_times [m.smp_regs[0][R_DSPADDR]] )
 	
-	if ( REGS [r_dspaddr] <= 0x7F )
-		dsp.write( REGS [r_dspaddr], data );
+	if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
+		dsp.write(m.smp_regs[0][R_DSPADDR], data );
 	//dprintf( "SPC wrote to DSP register > $7F\n" );
 }
 
@@ -144,115 +134,101 @@ inline void SNES_SPC::dsp_write( int data, rel_time_t time )
 #define NO_READ_BEFORE_WRITE			8192
 #define NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO	4096 
 
-void SNES_SPC::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
+void SNES_SPC::cpu_write_smp_reg_( int data, int time, int addr )
 {
 	switch ( addr )
 	{
-	case r_t0target:
-	case r_t1target:
-	case r_t2target: {
-		Timer* t = &m.timers [addr - r_t0target];
-		int period = IF_0_THEN_256( data );
-		if ( t->period != period )
-		{
-			t = run_timer( t, time );
-			t->period = period;
-		}
-		break;
-	}
-	case r_t0out:
-	case r_t1out:
-	case r_t2out:
-		//dprintf( "SPC wrote to counter %d\n", (int) addr - r_t0out );
-		
-		if ( data < NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO)
-			run_timer( &m.timers [addr - r_t0out], time - 1 )->counter = 0;
-		break;
-	
-	// Registers that act like RAM
-	case 0x8:
-	case 0x9:
-		REGS_IN [addr] = (uint8_t) data;
-		break;
-	
-	case r_test:
-		#if 0
-		if ( (uint8_t) data != 0x0A )
-			dprintf( "SPC wrote to test register\n" );
-		#endif
-		break;
-	
-	case r_control:
-		// port clears
-		if ( data & 0x10 )
-		{
-			REGS_IN [r_cpuio0] = 0;
-			REGS_IN [r_cpuio1] = 0;
-		}
-		if ( data & 0x20 )
-		{
-			REGS_IN [r_cpuio2] = 0;
-			REGS_IN [r_cpuio3] = 0;
-		}
-		
-		// timers
-		{
-			for ( int i = 0; i < timer_count; i++ )
+		case R_T0TARGET:
+		case R_T1TARGET:
+		case R_T2TARGET:
 			{
-				Timer* t = &m.timers [i];
-				int enabled = data >> i & 1;
-				if ( t->enabled != enabled )
+				Timer* t = &m.timers [addr - R_T0TARGET];
+				int period = IF_0_THEN_256( data );
+				if ( t->period != period )
 				{
 					t = run_timer( t, time );
-					t->enabled = enabled;
-					if ( enabled )
-					{
-						t->divider = 0;
-						t->counter = 0;
-					}
+					t->period = period;
 				}
+				break;
 			}
-		}
-		enable_rom( data & 0x80 );
-		break;
-	}
-}
+		case R_T0OUT:
+		case R_T1OUT:
+		case R_T2OUT:
+				 //dprintf( "SPC wrote to counter %d\n", (int) addr - R_T0OUT );
 
-void SNES_SPC::cpu_write_high( int data, int i, rel_time_t time )
-{
-	if ( i < rom_size )
-	{
-		m.hi_ram [i] = (uint8_t) data;
-		if ( m.rom_enabled )
-			RAM [i + rom_addr] = m.rom [i]; // restore overwritten ROM
-	}
-	else
-	{
-		*(&(RAM [0]) + i + rom_addr) = cpu_pad_fill; // restore overwritten padding
-		cpu_write( data, i + rom_addr - 0x10000, time );
+				 if ( data < NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO)
+					 run_timer( &m.timers [addr - R_T0OUT], time - 1 )->counter = 0;
+				 break;
+
+				 // Registers that act like RAM
+		case 0x8:
+		case 0x9:
+				 m.smp_regs[1][addr] = (uint8_t) data;
+				 break;
+
+		case R_TEST:
+#if 0
+				 if ( (uint8_t) data != 0x0A )
+					 dprintf( "SPC wrote to test register\n" );
+#endif
+				 break;
+
+		case R_CONTROL:
+				 // port clears
+				 if ( data & 0x10 )
+				 {
+					 m.smp_regs[1][R_CPUIO0] = 0;
+					 m.smp_regs[1][R_CPUIO1] = 0;
+				 }
+				 if ( data & 0x20 )
+				 {
+					 m.smp_regs[1][R_CPUIO2] = 0;
+					 m.smp_regs[1][R_CPUIO3] = 0;
+				 }
+
+				 // timers
+				 {
+					 for ( int i = 0; i < TIMER_COUNT; i++ )
+					 {
+						 Timer* t = &m.timers [i];
+						 int enabled = data >> i & 1;
+						 if ( t->enabled != enabled )
+						 {
+							 t = run_timer( t, time );
+							 t->enabled = enabled;
+							 if ( enabled )
+							 {
+								 t->divider = 0;
+								 t->counter = 0;
+							 }
+						 }
+					 }
+				 }
+				 enable_rom( data & 0x80 );
+				 break;
 	}
 }
 
 int const bits_in_int = CHAR_BIT * sizeof (int);
 
-void SNES_SPC::cpu_write( int data, int addr, rel_time_t time )
+void SNES_SPC::cpu_write( int data, int addr, int time )
 {
 	// RAM
-	RAM [addr] = (uint8_t) data;
+	m.ram.ram[addr] = (uint8_t) data;
 	int reg = addr - 0xF0;
 	if ( reg >= 0 ) // 64%
 	{
 		// $F0-$FF
 		if ( reg < REG_COUNT ) // 87%
 		{
-			REGS [reg] = (uint8_t) data;
+			m.smp_regs[0][reg] = (uint8_t) data;
 			
 			// Registers other than $F2 and $F4-$F7
 			//if ( reg != 2 && reg != 4 && reg != 5 && reg != 6 && reg != 7 )
 			// TODO: this is a bit on the fragile side
 			if ( ((~0x2F00 << (bits_in_int - 16)) << reg) < 0 ) // 36%
 			{
-				if ( reg == r_dspdata ) // 99%
+				if ( reg == R_DSPDATA ) // 99%
 					dsp_write( data, time );
 				else
 					cpu_write_smp_reg_( data, time, reg);
@@ -261,9 +237,21 @@ void SNES_SPC::cpu_write( int data, int addr, rel_time_t time )
 		// High mem/address wrap-around
 		else
 		{
-			reg -= rom_addr - 0xF0;
+			reg -= ROM_ADDR - 0xF0;
 			if ( reg >= 0 ) // 1% in IPL ROM area or address wrapped around
-				cpu_write_high( data, reg, time );
+			{
+				if ( reg < ROM_SIZE )
+				{
+					m.hi_ram [reg] = (uint8_t) data;
+					if ( m.rom_enabled )
+						m.ram.ram[reg + ROM_ADDR] = m.rom [reg]; // restore overwritten ROM
+				}
+				else
+				{
+					*(&(m.ram.ram[0]) + reg + ROM_ADDR) = CPU_PAD_FILL; // restore overwritten padding
+					cpu_write( data, reg + ROM_ADDR - 0x10000, time );
+				}
+			}
 		}
 	}
 }
@@ -271,34 +259,34 @@ void SNES_SPC::cpu_write( int data, int addr, rel_time_t time )
 
 //// CPU read
 
-inline int SNES_SPC::cpu_read_smp_reg( int reg, rel_time_t time )
+inline int SNES_SPC::cpu_read_smp_reg( int reg, int time )
 {
-	int result = REGS_IN [reg];
-	reg -= r_dspaddr;
+	int result = m.smp_regs[1][reg];
+	reg -= R_DSPADDR;
 	// DSP addr and data
 	if ( (unsigned) reg <= 1 ) // 4% 0xF2 and 0xF3
 	{
-		result = REGS [r_dspaddr];
+		result = m.smp_regs[0][R_DSPADDR];
 		if ( (unsigned) reg == 1 )
 			result = dsp_read( time ); // 0xF3
 	}
 	return result;
 }
 
-int SNES_SPC::cpu_read( int addr, rel_time_t time )
+int SNES_SPC::cpu_read( int addr, int time )
 {
 	// RAM
-	int result = RAM [addr];
+	int result = m.ram.ram[addr];
 	int reg = addr - 0xF0;
 	if ( reg >= 0 ) // 40%
 	{
 		reg -= 0x10;
 		if ( (unsigned) reg >= 0xFF00 ) // 21%
 		{
-			reg += 0x10 - r_t0out;
+			reg += 0x10 - R_T0OUT;
 			
 			// Timers
-			if ( (unsigned) reg < timer_count ) // 90%
+			if ( (unsigned) reg < TIMER_COUNT ) // 90%
 			{
 				Timer* t = &m.timers [reg];
 				if ( time >= t->next_time )
@@ -308,13 +296,9 @@ int SNES_SPC::cpu_read( int addr, rel_time_t time )
 			}
 			// Other registers
 			else if ( reg < 0 ) // 10%
-			{
-				result = cpu_read_smp_reg( reg + r_t0out, time );
-			}
+				result = cpu_read_smp_reg( reg + R_T0OUT, time );
 			else // 1%
-			{
-				result = cpu_read( reg + (r_t0out + 0xF0 - 0x10000), time );
-			}
+				result = cpu_read( reg + (R_T0OUT + 0xF0 - 0x10000), time );
 		}
 	}
 	
@@ -323,7 +307,7 @@ int SNES_SPC::cpu_read( int addr, rel_time_t time )
 
 //// Run
 
-void SNES_SPC::end_frame( time_t end_time )
+void SNES_SPC::end_frame( int end_time )
 {
 	// Catch CPU up to as close to end as possible. If final instruction
 	// would exceed end, does NOT execute it and leaves m.spc_time < end.
@@ -334,7 +318,7 @@ void SNES_SPC::end_frame( time_t end_time )
 	m.extra_clocks += end_time;
 	
 	// Catch timers up to CPU
-	for ( int i = 0; i < timer_count; i++ )
+	for ( int i = 0; i < TIMER_COUNT; i++ )
 		run_timer( &m.timers [i], 0 );
 	
 	// Catch DSP up to CPU
@@ -345,7 +329,26 @@ void SNES_SPC::end_frame( time_t end_time )
 	
 	// Save any extra samples beyond what should be generated
 	if ( m.buf_begin )
-		save_extra();
+	{
+		// Get end pointers
+		short const* main_end = m.buf_end;     // end of data written to buf
+		short const* dsp_end  = dsp.out_pos(); // end of data written to dsp.extra()
+		if ( m.buf_begin <= dsp_end && dsp_end <= main_end )
+		{
+			main_end = dsp_end;
+			dsp_end  = dsp.extra(); // nothing in DSP's extra
+		}
+
+		// Copy any extra samples at these ends into extra_buf
+		short* out = m.extra_buf;
+		short const* in;
+		for ( in = m.buf_begin + sample_count(); in < main_end; in++ )
+			*out++ = *in;
+		for ( in = dsp.extra(); in < dsp_end ; in++ )
+			*out++ = *in;
+
+		m.extra_pos = out;
+	}
 }
 
 //Support SNES_MEMORY_APURAM
@@ -359,7 +362,7 @@ uint8_t * SNES_SPC::apuram()
 void SNES_SPC::init()
 {
 	memset( &m, 0, sizeof m );
-	dsp.init( RAM );
+	dsp.init( m.ram.ram );
 	
 	m.tempo = TEMPO_UNIT;
 	
@@ -403,7 +406,7 @@ void SNES_SPC::init()
 	reset();
 }
 
-void SNES_SPC::init_rom( uint8_t const in [rom_size] )
+void SNES_SPC::init_rom( uint8_t const in [ROM_SIZE] )
 {
 	memcpy( m.rom, in, sizeof m.rom );
 }
@@ -423,13 +426,12 @@ void SNES_SPC::set_tempo( int t )
 // reset timer prescalers or dividers.
 void SNES_SPC::timers_loaded()
 {
-	int i;
-	for ( i = 0; i < timer_count; i++ )
+	for (int i = 0; i < TIMER_COUNT; i++ )
 	{
 		Timer* t = &m.timers [i];
-		t->period  = IF_0_THEN_256( REGS [r_t0target + i] );
-		t->enabled = REGS [r_control] >> i & 1;
-		t->counter = REGS_IN [r_t0out + i] & 0x0F;
+		t->period  = IF_0_THEN_256( m.smp_regs[0][R_T0TARGET + i] );
+		t->enabled = m.smp_regs[0][R_CONTROL] >> i & 1;
+		t->counter = m.smp_regs[1][R_T0OUT + i] & 0x0F;
 	}
 	
 	set_tempo( m.tempo );
@@ -438,15 +440,15 @@ void SNES_SPC::timers_loaded()
 // Loads registers from unified 16-byte format
 void SNES_SPC::load_regs( uint8_t const in [REG_COUNT] )
 {
-	memcpy( REGS, in, REG_COUNT );
-	memcpy( REGS_IN, REGS, REG_COUNT );
+	memcpy( m.smp_regs[0], in, REG_COUNT );
+	memcpy( m.smp_regs[1], m.smp_regs[0], REG_COUNT );
 	
 	// These always read back as 0
-	REGS_IN [r_test    ] = 0;
-	REGS_IN [r_control ] = 0;
-	REGS_IN [r_t0target] = 0;
-	REGS_IN [r_t1target] = 0;
-	REGS_IN [r_t2target] = 0;
+	m.smp_regs[1][R_TEST    ] = 0;
+	m.smp_regs[1][R_CONTROL ] = 0;
+	m.smp_regs[1][R_T0TARGET] = 0;
+	m.smp_regs[1][R_T1TARGET] = 0;
+	m.smp_regs[1][R_T2TARGET] = 0;
 }
 
 // RAM was just loaded from SPC, with $F0-$FF containing SMP registers
@@ -454,17 +456,17 @@ void SNES_SPC::load_regs( uint8_t const in [REG_COUNT] )
 void SNES_SPC::ram_loaded()
 {
 	m.rom_enabled = 0;
-	load_regs( &RAM [0xF0] );
+	load_regs( &m.ram.ram[0xF0] );
 	
 	// Put STOP instruction around memory to catch PC underflow/overflow
-	memset( m.ram.padding1, cpu_pad_fill, sizeof m.ram.padding1 );
-	memset( m.ram.padding2, cpu_pad_fill, sizeof m.ram.padding2 );
+	memset( m.ram.padding1, CPU_PAD_FILL, sizeof m.ram.padding1 );
+	memset( m.ram.padding2, CPU_PAD_FILL, sizeof m.ram.padding2 );
 }
 
 // Registers were just loaded. Applies these new values.
 void SNES_SPC::regs_loaded()
 {
-	enable_rom( REGS [r_control] & 0x80 );
+	enable_rom( m.smp_regs[0][R_CONTROL] & 0x80 );
 	timers_loaded();
 }
 
@@ -472,9 +474,9 @@ void SNES_SPC::reset_time_regs()
 {
 	m.spc_time      = 0;
 	m.dsp_time      = 0;
-	m.dsp_time = clocks_per_sample + 1;
+	m.dsp_time = CLOCKS_PER_SAMPLE + 1;
 	
-	for ( int i = 0; i < timer_count; i++ )
+	for ( int i = 0; i < TIMER_COUNT; i++ )
 	{
 		Timer* t = &m.timers [i];
 		t->next_time = 1;
@@ -490,17 +492,17 @@ void SNES_SPC::reset_time_regs()
 void SNES_SPC::reset_common( int timer_counter_init )
 {
 	int i;
-	for ( i = 0; i < timer_count; i++ )
-		REGS_IN [r_t0out + i] = timer_counter_init;
+	for ( i = 0; i < TIMER_COUNT; i++ )
+		m.smp_regs[1][R_T0OUT + i] = timer_counter_init;
 	
 	// Run IPL ROM
 	memset( &m.cpu_regs, 0, sizeof m.cpu_regs );
-	m.cpu_regs.pc = rom_addr;
+	m.cpu_regs.pc = ROM_ADDR;
 	
-	REGS [r_test   ] = 0x0A;
-	REGS [r_control] = 0xB0; // ROM enabled, clear ports
+	m.smp_regs[0][R_TEST   ] = 0x0A;
+	m.smp_regs[0][R_CONTROL] = 0xB0; // ROM enabled, clear ports
 	for ( i = 0; i < PORT_COUNT; i++ )
-		REGS_IN [r_cpuio0 + i] = 0;
+		m.smp_regs[1][R_CPUIO0 + i] = 0;
 	
 	reset_time_regs();
 }
@@ -519,7 +521,7 @@ void SNES_SPC::reset()
 	m.cpu_regs.y   = 0x00;
 	m.cpu_regs.psw = 0x02;
 	m.cpu_regs.sp  = 0xEF;
-	memset( RAM, 0x00, 0x10000 );
+	memset( m.ram.ram, 0x00, 0x10000 );
 	ram_loaded();
 	reset_common( 0x0F );
 	dsp.reset();
@@ -542,7 +544,7 @@ void SNES_SPC::reset_buf()
 
 void SNES_SPC::set_output( short* out, int size )
 {
-	m.extra_clocks &= clocks_per_sample - 1;
+	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	if ( out )
 	{
 		short const* out_end = out + size;
@@ -574,30 +576,8 @@ void SNES_SPC::set_output( short* out, int size )
 	}
 }
 
-void SNES_SPC::save_extra()
-{
-	// Get end pointers
-	short const* main_end = m.buf_end;     // end of data written to buf
-	short const* dsp_end  = dsp.out_pos(); // end of data written to dsp.extra()
-	if ( m.buf_begin <= dsp_end && dsp_end <= main_end )
-	{
-		main_end = dsp_end;
-		dsp_end  = dsp.extra(); // nothing in DSP's extra
-	}
-	
-	// Copy any extra samples at these ends into extra_buf
-	short* out = m.extra_buf;
-	short const* in;
-	for ( in = m.buf_begin + sample_count(); in < main_end; in++ )
-		*out++ = *in;
-	for ( in = dsp.extra(); in < dsp_end ; in++ )
-		*out++ = *in;
-	
-	m.extra_pos = out;
-}
-
 #if !SPC_NO_COPY_STATE_FUNCS
-void SNES_SPC::copy_state( unsigned char** io, copy_func_t copy )
+void SNES_SPC::copy_state( unsigned char** io, dsp_copy_func_t copy )
 {
 	SPC_State_Copier copier( io, copy );
 	
@@ -606,23 +586,23 @@ void SNES_SPC::copy_state( unsigned char** io, copy_func_t copy )
 
 	// RAM
 	enable_rom( 0 ); // will get re-enabled if necessary in regs_loaded() below
-	copier.copy( RAM, 0x10000 );
+	copier.copy( m.ram.ram, 0x10000 );
 	
 	{
 		// SMP registers
 		uint8_t regs [REG_COUNT];
 		uint8_t regs_in [REG_COUNT];
 
-		memcpy( regs, REGS, REG_COUNT );
-		memcpy( regs_in, REGS_IN, REG_COUNT );
+		memcpy( regs, m.smp_regs[0], REG_COUNT );
+		memcpy( regs_in, m.smp_regs[1], REG_COUNT );
 
 		copier.copy( regs, sizeof regs );
 		copier.copy( regs_in, sizeof regs_in );
 
-		memcpy( REGS, regs, REG_COUNT);
-		memcpy( REGS_IN, regs_in, REG_COUNT );
+		memcpy( m.smp_regs[0], regs, REG_COUNT);
+		memcpy( m.smp_regs[1], regs_in, REG_COUNT );
 
-		enable_rom( REGS [r_control] & 0x80 );
+		enable_rom( m.smp_regs[0][R_CONTROL] & 0x80 );
 	}
 	
 	// CPU registers
@@ -641,11 +621,11 @@ void SNES_SPC::copy_state( unsigned char** io, copy_func_t copy )
 	dsp.copy_state( io, copy );
 	
 	// Timers
-	for ( int i = 0; i < timer_count; i++ )
+	for ( int i = 0; i < TIMER_COUNT; i++ )
 	{
 		Timer* t = &m.timers [i];
-		t->period  = IF_0_THEN_256( REGS [r_t0target + i] );
-		t->enabled = REGS [r_control] >> i & 1;
+		t->period  = IF_0_THEN_256( m.smp_regs[0][R_T0TARGET + i] );
+		t->enabled = m.smp_regs[0][R_CONTROL] >> i & 1;
 		SPC_COPY( int16_t, t->next_time );
 		SPC_COPY( uint8_t, t->divider );
 		SPC_COPY( uint8_t, t->counter );

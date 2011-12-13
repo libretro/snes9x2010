@@ -14,10 +14,10 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 // timers are by far the most common thing read from dp
 #define CPU_READ_TIMER( time, offset, addr_, out )\
 {\
-	rel_time_t adj_time = time + offset;\
+	int adj_time = time + offset;\
 	int dp_addr = addr_;\
-	int ti = dp_addr - (r_t0out + 0xF0);\
-	if ( (unsigned) ti < timer_count )\
+	int ti = dp_addr - (R_T0OUT + 0xF0);\
+	if ( (unsigned) ti < TIMER_COUNT )\
 	{\
 		Timer* t = &m.timers [ti];\
 		if ( adj_time >= t->next_time )\
@@ -34,15 +34,13 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 	}\
 }
 
-#define TIME_ADJ( n )   (n)
-
-#define READ_TIMER( time, addr, out )	CPU_READ_TIMER( rel_time, TIME_ADJ(time), (addr), out )
-#define READ( time, addr )		cpu_read((addr), rel_time + TIME_ADJ(time) )
-#define WRITE( time, addr, data )	cpu_write((data), (addr), rel_time + TIME_ADJ(time) )
+#define READ_TIMER( time, addr, out )	CPU_READ_TIMER( rel_time, time, (addr), out )
+#define READ( time, addr )		cpu_read((addr), rel_time + time )
+#define WRITE( time, addr, data )	cpu_write((data), (addr), rel_time + time )
 
 #define DP_ADDR( addr )                     (dp + (addr))
 
-#define READ_DP_TIMER(  time, addr, out )   CPU_READ_TIMER( rel_time, TIME_ADJ(time), DP_ADDR( addr ), out )
+#define READ_DP_TIMER(  time, addr, out )   CPU_READ_TIMER( rel_time, time, DP_ADDR( addr ), out )
 #define READ_DP(  time, addr )              READ ( time, DP_ADDR( addr ) )
 #define WRITE_DP( time, addr, data )        WRITE( time, DP_ADDR( addr ), data )
 
@@ -51,7 +49,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define SET_PC( n )     (pc = ram + (n))
 #define GET_PC()        (pc - ram)
 #define READ_PC( pc )   (*(pc))
-#define READ_PC16( pc ) GET_LE16( pc )
 
 #define SET_SP( v )     (sp = ram + 0x101 + (v))
 #define GET_SP()        (sp - 0x101 - ram)
@@ -62,9 +59,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 #define MEM_BIT( rel ) CPU_mem_bit( pc, rel_time + rel )
 
-unsigned SNES_SPC::CPU_mem_bit( uint8_t const* pc, rel_time_t rel_time )
+unsigned SNES_SPC::CPU_mem_bit( uint8_t const* pc, int rel_time )
 {
-	unsigned addr = READ_PC16( pc );
+	unsigned addr = GET_LE16( pc );
 	unsigned t = READ( 0, addr & 0x1FFF ) >> (addr >> 13);
 	return t << 8 & 0x100;
 }
@@ -101,16 +98,16 @@ unsigned SNES_SPC::CPU_mem_bit( uint8_t const* pc, rel_time_t rel_time )
 	nz  = (in << 4 & 0x800) | (~in & Z02);\
 }
 
-BOOST::uint8_t* SNES_SPC::run_until_( time_t end_time )
+BOOST::uint8_t* SNES_SPC::run_until_( int end_time )
 {
-	rel_time_t rel_time = m.spc_time - end_time;
+	int rel_time = m.spc_time - end_time;
 	m.spc_time = end_time;
 	m.dsp_time += rel_time;
 	m.timers [0].next_time += rel_time;
 	m.timers [1].next_time += rel_time;
 	m.timers [2].next_time += rel_time;
 	{
-		uint8_t* const ram = RAM;
+		uint8_t* const ram = m.ram.ram;
 		int a = m.cpu_regs.a;
 		int x = m.cpu_regs.x;
 		int y = m.cpu_regs.y;
@@ -171,7 +168,7 @@ loop:
 
 				case 0x3F:{// CALL
 						  int old_addr = GET_PC() + 2;
-						  SET_PC( READ_PC16( pc ) );
+						  SET_PC( GET_LE16( pc ) );
 						  PUSH16( old_addr );
 						  goto loop;
 					  }
@@ -203,13 +200,13 @@ loop:
 						  i -= 0xF0;
 						  if ( (unsigned) i < 0x10 ) // 76%
 						  {
-							  REGS [i] = (uint8_t) data;
+							  m.smp_regs[0][i] = (uint8_t) data;
 
 							  // Registers other than $F2 and $F4-$F7
 							  //if ( i != 2 && i != 4 && i != 5 && i != 6 && i != 7 )
 							  if ( ((~0x2F00 << (bits_in_int - 16)) << i) < 0 ) // 12%
 							  {
-								  if ( i == r_dspdata ) // 99%
+								  if ( i == R_DSPDATA ) // 99%
 									  dsp_write( data, rel_time );
 								  else
 									  cpu_write_smp_reg_( data, rel_time, i);
@@ -227,7 +224,7 @@ loop:
 						  if ( (unsigned) i < 0x10 ) // 39%
 						  {
 							  unsigned sel = i - 2;
-							  REGS [i] = (uint8_t) a;
+							  m.smp_regs[0][i] = (uint8_t) a;
 
 							  if ( sel == 1 ) // 51% $F3
 								  dsp_write( a, rel_time );
@@ -302,7 +299,7 @@ loop:
 					  goto inc_pc_loop;
 
 				case 0xE9: // MOV X,abs
-					  data = READ_PC16( pc );
+					  data = GET_LE16( pc );
 					  ++pc;
 					  data = READ( 0, data );
 				case 0xCD: // MOV X,imm
@@ -319,7 +316,7 @@ loop:
 					  goto loop;
 
 				case 0xEC:{// MOV Y,abs
-						  int temp = READ_PC16( pc );
+						  int temp = GET_LE16( pc );
 						  pc += 2;
 						  READ_TIMER( 0, temp, y = nz );
 						  //y = nz = READ( 0, temp );
@@ -345,7 +342,7 @@ loop:
 						  case 0xC9: // MOV abs,X
 						  temp = x;
 mov_abs_temp:
-						  WRITE( 0, READ_PC16( pc ), temp );
+						  WRITE( 0, GET_LE16( pc ), temp );
 						  pc += 2;
 						  goto loop;
 					  }
@@ -460,7 +457,7 @@ mov_abs_temp:
 					  data += dp;
 					  goto cmp_x_addr;
 				case 0x1E: // CMP X,abs
-					  data = READ_PC16( pc );
+					  data = GET_LE16( pc );
 					  pc++;
 cmp_x_addr:
 					  data = READ( 0, data );
@@ -474,7 +471,7 @@ cmp_x_addr:
 					  data += dp;
 					  goto cmp_y_addr;
 				case 0x5E: // CMP Y,abs
-					  data = READ_PC16( pc );
+					  data = GET_LE16( pc );
 					  pc++;
 cmp_y_addr:
 					  data = READ( 0, data );
@@ -559,7 +556,7 @@ adc_data: {
 					   goto inc_abs;
 				case 0x8C: // DEC abs
 				case 0xAC: // INC abs
-					   data = READ_PC16( pc );
+					   data = GET_LE16( pc );
 					   pc++;
 inc_abs:
 					   nz = (opcode >> 4 & 2) - 1;
@@ -602,7 +599,7 @@ inc_abs:
 				case 0x0C: // ASL abs
 					  c = 0;
 				case 0x2C: // ROL abs
-					  data = READ_PC16( pc );
+					  data = GET_LE16( pc );
 					  pc++;
 rol_mem:
 					  nz = c >> 8 & 1;
@@ -624,7 +621,7 @@ rol_mem:
 				case 0x4C: // LSR abs
 					  c = 0;
 				case 0x6C: // ROR abs
-					  data = READ_PC16( pc );
+					  data = GET_LE16( pc );
 					  pc++;
 ror_mem: {
 		 int temp = READ( -1, data );
@@ -857,10 +854,10 @@ ror_mem: {
 					   BRANCH( y )
 
 				case 0x1F: // JMP [abs+X]
-						   SET_PC( READ_PC16( pc ) + x );
+						   SET_PC( GET_LE16( pc ) + x );
 						   // fall through
 				case 0x5F: // JMP abs
-						   SET_PC( READ_PC16( pc ) );
+						   SET_PC( GET_LE16( pc ) );
 						   goto loop;
 
 						   // 13. SUB-ROUTINE CALL RETURN COMMANDS
@@ -981,7 +978,7 @@ set_psw:
 
 				case 0x0E: // TSET1 abs
 				case 0x4E: // TCLR1 abs
-					   data = READ_PC16( pc );
+					   data = GET_LE16( pc );
 					   pc += 2;
 					   {
 						   unsigned temp = READ( -2, data );
@@ -1019,7 +1016,7 @@ set_psw:
 					   goto loop;
 
 				case 0xEA: // NOT1 mem.bit
-					   data = READ_PC16( pc );
+					   data = GET_LE16( pc );
 					   pc += 2;
 					   {
 						   unsigned temp = READ( -1, data & 0x1FFF );
@@ -1029,7 +1026,7 @@ set_psw:
 					   goto loop;
 
 				case 0xCA: // MOV1 mem.bit,C
-					   data = READ_PC16( pc );
+					   data = GET_LE16( pc );
 					   pc += 2;
 					   {
 						   unsigned temp = READ( -2, data & 0x1FFF );
@@ -1126,5 +1123,5 @@ stop:
 	m.timers [0].next_time -= rel_time;
 	m.timers [1].next_time -= rel_time;
 	m.timers [2].next_time -= rel_time;
-	return &REGS [r_cpuio0];
+	return &m.smp_regs[0][R_CPUIO0];
 }

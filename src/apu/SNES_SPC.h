@@ -15,22 +15,46 @@
 
 #define STATE_SIZE 68 * 1024L // maximum space needed when saving
 
+#define TIMER_COUNT 3
+
+#define ROM_SIZE 0x40
+
+// 1024000 SPC clocks per second, sample pair every 32 clocks
+#define CLOCKS_PER_SAMPLE 32
+
+#define R_TEST 0x0
+#define R_CONTROL 0x1
+#define R_DSPADDR 0x2
+#define R_DSPDATA 0x3
+#define R_CPUIO0 0x4
+#define R_CPUIO1 0x5
+#define R_CPUIO2 0x6
+#define R_CPUIO3 0x7
+#define R_F8 0x8
+#define R_F9 0x9
+#define R_T0TARGET 0xA
+#define R_T1TARGET 0xB
+#define R_T2TARGET 0xC
+#define R_T0OUT 0xD
+#define R_T1OUT 0xE
+#define R_T2OUT 0xF
+
+#define ROM_ADDR 0xFFC0
+
+// Value that padding should be filled with
+#define CPU_PAD_FILL 0xFF
+
 struct SNES_SPC {
 public:
 	typedef BOOST::uint8_t uint8_t;
 	
 	// Must be called once before using
 	void init();
-	
-	// Sample pairs generated per second
-	enum { sample_rate = 32000 };
-	
 // Emulator use
 	
 	// Sets IPL ROM data. Library does not include ROM data. Most SPC music files
 	// don't need ROM, but a full emulator must provide this.
-	enum { rom_size = 0x40 };
-	void init_rom( uint8_t const rom [rom_size] );
+	void init_rom( uint8_t const rom [ROM_SIZE] );
 
 	// Sets destination for output samples
 	void set_output( short* out, int out_size );
@@ -46,16 +70,12 @@ public:
 	// you must call set_output() after this.
 	void soft_reset();
 
-	// 1024000 SPC clocks per second, sample pair every 32 clocks
-	typedef int time_t;
-	enum { clocks_per_sample = 32 };
-	
 	// Emulated port read/write at specified time
-	int  read_port ( time_t, int port );
-	void write_port( time_t, int port, int data );
+	int  read_port ( int, int port );
+	void write_port( int, int port, int data );
 
 	// Runs SPC to end_time and starts a new time frame at 0
-	void end_frame( time_t end_time );
+	void end_frame( int end_time );
 	
 	// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
 	void set_tempo( int );
@@ -63,8 +83,7 @@ public:
 
 #if !SPC_NO_COPY_STATE_FUNCS
 	// Saves/loads state
-	typedef SPC_DSP::copy_func_t copy_func_t;
-	void copy_state( unsigned char** io, copy_func_t );
+	void copy_state( unsigned char** io, dsp_copy_func_t );
 #endif
 
 //// Snes9x Accessor
@@ -74,21 +93,19 @@ public:
 	
 	typedef BOOST::uint16_t uint16_t;
 	
-	// Time relative to m_spc_time. Speeds up code a bit by eliminating need to
+	// rel_time_t - Time relative to m_spc_time. Speeds up code a bit by eliminating need to
 	// constantly add m_spc_time to time from CPU. CPU uses time that ends at
 	// 0 to eliminate reloading end time every instruction. It pays off.
-	typedef int rel_time_t;
 	
 	struct Timer
 	{
-		rel_time_t next_time; // time of next event
+		int next_time; // time of next event
 		int prescaler;
 		int period;
 		int divider;
 		int enabled;
 		int counter;
 	};
-	enum { timer_count = 3 };
 	
 	// Support SNES_MEMORY_APURAM
 	uint8_t *apuram();
@@ -101,7 +118,7 @@ private:
 	
 	struct state_t
 	{
-		Timer timers [timer_count];
+		Timer timers [TIMER_COUNT];
 		
 		uint8_t smp_regs [2] [REG_COUNT];
 		
@@ -115,8 +132,8 @@ private:
 			int sp;
 		} cpu_regs;
 		
-		rel_time_t  dsp_time;
-		time_t      spc_time;
+		int  dsp_time;
+		int  spc_time;
 		
 		int         tempo;
 		
@@ -127,8 +144,8 @@ private:
 		short    extra_buf [EXTRA_SIZE];
 		
 		int         rom_enabled;
-		uint8_t     rom    [rom_size];
-		uint8_t     hi_ram [rom_size];
+		uint8_t     rom    [ROM_SIZE];
+		uint8_t     hi_ram [ROM_SIZE];
 		
 		unsigned char cycle_table [256];
 		
@@ -145,44 +162,30 @@ private:
 	};
 	state_t m;
 	
-	enum { rom_addr = 0xFFC0 };
 	
-	// Value that padding should be filled with
-	enum { cpu_pad_fill = 0xFF };
 	
-	enum {
-        r_test     = 0x0, r_control  = 0x1,
-        r_dspaddr  = 0x2, r_dspdata  = 0x3,
-        r_cpuio0   = 0x4, r_cpuio1   = 0x5,
-        r_cpuio2   = 0x6, r_cpuio3   = 0x7,
-        r_f8       = 0x8, r_f9       = 0x9,
-        r_t0target = 0xA, r_t1target = 0xB, r_t2target = 0xC,
-        r_t0out    = 0xD, r_t1out    = 0xE, r_t2out    = 0xF
-	};
 	
 	void timers_loaded();
 	void enable_rom( int enable );
 	void reset_buf();
-	void save_extra();
 	void load_regs( uint8_t const in [REG_COUNT] );
 	void ram_loaded();
 	void regs_loaded();
 	void reset_time_regs();
 	void reset_common( int timer_counter_init );
 	
-	Timer* run_timer_      ( Timer* t, rel_time_t );
-	Timer* run_timer       ( Timer* t, rel_time_t );
-	int dsp_read           ( rel_time_t );
-	void dsp_write         ( int data, rel_time_t );
-	void cpu_write_smp_reg_( int data, rel_time_t, int addr );
-	void cpu_write_smp_reg ( int data, rel_time_t, int addr );
-	void cpu_write_high    ( int data, int i, rel_time_t );
-	void cpu_write         ( int data, int addr, rel_time_t );
-	int cpu_read_smp_reg   ( int i, rel_time_t );
-	int cpu_read           ( int addr, rel_time_t );
-	unsigned CPU_mem_bit   ( uint8_t const* pc, rel_time_t );
+	Timer* run_timer_      ( Timer* t, int );
+	Timer* run_timer       ( Timer* t, int );
+	int dsp_read           ( int );
+	void dsp_write         ( int data, int );
+	void cpu_write_smp_reg_( int data, int, int addr );
+	void cpu_write_smp_reg ( int data, int, int addr );
+	void cpu_write         ( int data, int addr, int );
+	int cpu_read_smp_reg   ( int i, int );
+	int cpu_read           ( int addr, int );
+	unsigned CPU_mem_bit   ( uint8_t const* pc, int );
 	
-	uint8_t* run_until_( time_t end_time );
+	uint8_t* run_until_( int end_time );
 	
 // Snes9x timing hack
 	bool allow_time_overflow;
@@ -190,12 +193,12 @@ private:
 
 inline int SNES_SPC::sample_count() const { return (m.extra_clocks >> 5) * 2; }
 
-inline int SNES_SPC::read_port( time_t t, int port )
+inline int SNES_SPC::read_port( int t, int port )
 {
 	return run_until_( t ) [port];
 }
 
-inline void SNES_SPC::write_port( time_t t, int port, int data )
+inline void SNES_SPC::write_port( int t, int port, int data )
 {
 	run_until_( t ) [0x10 + port] = data;
 	m.ram.ram [0xF4 + port] = data;

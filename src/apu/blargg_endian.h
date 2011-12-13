@@ -54,16 +54,15 @@
 
 inline unsigned get_le16( void const* p )
 {
-	return  (unsigned) ((unsigned char const*) p) [1] << 8 |
-			(unsigned) ((unsigned char const*) p) [0];
+	return  (unsigned) ((unsigned char const*) p) [1] << 8 | (unsigned) ((unsigned char const*) p) [0];
 }
 
 inline blargg_ulong get_le32( void const* p )
 {
 	return  (blargg_ulong) ((unsigned char const*) p) [3] << 24 |
-			(blargg_ulong) ((unsigned char const*) p) [2] << 16 |
-			(blargg_ulong) ((unsigned char const*) p) [1] <<  8 |
-			(blargg_ulong) ((unsigned char const*) p) [0];
+	(blargg_ulong) ((unsigned char const*) p) [2] << 16 |
+	(blargg_ulong) ((unsigned char const*) p) [1] <<  8 |
+	(blargg_ulong) ((unsigned char const*) p) [0];
 }
 
 inline void set_le16( void* p, unsigned n )
