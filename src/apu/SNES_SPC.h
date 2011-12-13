@@ -69,8 +69,6 @@ typedef struct
 
 extern bool allow_time_overflow;
 
-Timer* spc_run_timer_( Timer* t, int );
-void spc_dsp_write( int data, int );
 uint8_t* spc_run_until_( int end_time );
 
 // Resets SPC to power-on state. This resets your output buffer, so you must
@@ -86,10 +84,6 @@ void spc_soft_reset();
 
 void spc_enable_rom( int enable );
 void spc_reset_common( int timer_counter_init );
-
-void spc_cpu_write_smp_reg_( int data, int, int addr );
-int spc_cpu_read( int addr, int );
-void spc_cpu_write( int data, int addr, int );
 
 // Runs SPC to end_time and starts a new time frame at 0
 void spc_end_frame( int end_time );

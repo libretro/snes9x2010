@@ -101,11 +101,7 @@ void dsp_run( int clock_count );
 // Saves/loads exact emulator state
 void dsp_copy_state( unsigned char** io, dsp_copy_func_t );
 
-int  dsp_interpolate( dsp_voice_t const* v );
-void dsp_run_envelope( dsp_voice_t* const v );
-
 void dsp_soft_reset_common();
-
 
 typedef struct
 {
@@ -173,34 +169,6 @@ extern dsp_state_t dsp_m;
 
 typedef BOOST::int8_t   int8_t;
 typedef BOOST::int16_t int16_t;
-
-// Writes DSP registers. For accuracy, you must first call run()
-// to catch the DSP up to present.
-inline void dsp_write( int addr, int data )
-{
-	dsp_m.regs [addr] = (uint8_t) data;
-	switch ( addr & 0x0F )
-	{
-		case V_ENVX:
-			dsp_m.envx_buf = (uint8_t) data;
-			break;
-
-		case V_OUTX:
-			dsp_m.outx_buf = (uint8_t) data;
-			break;
-
-		case 0x0C:
-			if ( addr == R_KON )
-				dsp_m.new_kon = (uint8_t) data;
-
-			if ( addr == R_ENDX ) // always cleared, regardless of data written
-			{
-				dsp_m.endx_buf = 0;
-				dsp_m.regs [R_ENDX] = 0;
-			}
-			break;
-	}
-}
 
 #if !SPC_NO_COPY_STATE_FUNCS
 

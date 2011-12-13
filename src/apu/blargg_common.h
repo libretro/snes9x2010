@@ -15,22 +15,6 @@
 #ifndef BLARGG_COMMON_H
 #define BLARGG_COMMON_H
 
-#ifndef BLARGG_DISABLE_NOTHROW
-	// throw spec mandatory in ISO C++ if operator new can return NULL
-	#if __cplusplus >= 199711 || defined (__GNUC__)
-		#define BLARGG_THROWS( spec ) throw spec
-	#else
-		#define BLARGG_THROWS( spec )
-	#endif
-	#define BLARGG_DISABLE_NOTHROW \
-		void* operator new ( size_t s ) BLARGG_THROWS(()) { return malloc( s ); }\
-		void operator delete ( void* p ) { free( p ); }
-	#define BLARGG_NEW new
-#else
-	#include <new>
-	#define BLARGG_NEW new (std::nothrow)
-#endif
-
 // BLARGG_COMPILER_HAS_BOOL: If 0, provides bool support for old compiler. If 1,
 // compiler is assumed to support bool. If undefined, availability is determined.
 #ifndef BLARGG_COMPILER_HAS_BOOL

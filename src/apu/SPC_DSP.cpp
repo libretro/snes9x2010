@@ -176,7 +176,7 @@ static unsigned const counter_offsets [32] =
 
 //// Envelope
 
-inline void dsp_run_envelope( dsp_voice_t* const v )
+static inline void dsp_run_envelope( dsp_voice_t* const v )
 {
 	int env = v->env;
 	if ( v->env_mode == ENV_RELEASE ) // 60%

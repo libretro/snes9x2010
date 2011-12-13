@@ -29,7 +29,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define TIMER_DIV( t, n ) ((n) >> t->prescaler)
 #define TIMER_MUL( t, n ) ((n) << t->prescaler)
 
-Timer* spc_run_timer_( Timer* t, int time )
+static Timer* spc_run_timer_( Timer* t, int time )
 {
 	int elapsed = TIMER_DIV( t, time - t->next_time ) + 1;
 	t->next_time += TIMER_MUL( t, elapsed );
@@ -85,7 +85,36 @@ void spc_enable_rom( int enable )
 		dsp_run( clock_count ); \
 	}
 
-inline void spc_dsp_write( int data, int time )
+// Writes DSP registers. For accuracy, you must first call run()
+// to catch the DSP up to present.
+
+static inline void dsp_write( int addr, int data )
+{
+	dsp_m.regs [addr] = (uint8_t) data;
+	switch ( addr & 0x0F )
+	{
+		case V_ENVX:
+			dsp_m.envx_buf = (uint8_t) data;
+			break;
+
+		case V_OUTX:
+			dsp_m.outx_buf = (uint8_t) data;
+			break;
+
+		case 0x0C:
+			if ( addr == R_KON )
+				dsp_m.new_kon = (uint8_t) data;
+
+			if ( addr == R_ENDX ) // always cleared, regardless of data written
+			{
+				dsp_m.endx_buf = 0;
+				dsp_m.regs [R_ENDX] = 0;
+			}
+			break;
+	}
+}
+
+static inline void spc_dsp_write( int data, int time )
 {
 	RUN_DSP(time, reg_times [m.smp_regs[0][R_DSPADDR]] )
 	
@@ -107,7 +136,7 @@ inline void spc_dsp_write( int data, int time )
 #define NO_READ_BEFORE_WRITE			8192
 #define NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO	4096 
 
-void spc_cpu_write_smp_reg_( int data, int time, int addr )
+static void spc_cpu_write_smp_reg_( int data, int time, int addr )
 {
 	switch ( addr )
 	{
@@ -188,7 +217,7 @@ void spc_cpu_write_smp_reg_( int data, int time, int addr )
 
 int const bits_in_int = CHAR_BIT * sizeof (int);
 
-void spc_cpu_write( int data, int addr, int time )
+static void spc_cpu_write( int data, int addr, int time )
 {
 	// RAM
 	m.ram.ram[addr] = (uint8_t) data;
@@ -235,7 +264,7 @@ void spc_cpu_write( int data, int addr, int time )
 
 //// CPU read
 
-int spc_cpu_read( int addr, int time )
+static int spc_cpu_read( int addr, int time )
 {
 	// RAM
 	int result = m.ram.ram[addr];
