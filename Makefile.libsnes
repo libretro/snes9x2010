@@ -26,18 +26,23 @@ else ifeq ($(platform), osx)
    SHARED := -dynamiclib
 else ifeq ($(platform), ps3)
    TARGET := libsnes.a
-   SHARED := -shared, -Wl, --version-script=libsnes/link.T
    CC = ppu-lv2-gcc
    CXX = ppu-lv2-g++
    AR = ppu-lv2-ar
 else ifeq ($(platform), xenon)
    TARGET := libsnes.a
-   SHARED := -shared, -Wl, --version-script=libsnes/link.T
    CC = xenon-gcc
    CXX = xenon-g++
    AR = xenon-ar
    CFLAGS += -D__LIBXENON__ -m32
    CXXFLAGS += -D__LIBXENON__ -m32
+else ifeq ($(platform), wii)
+   TARGET := libsnes.a
+   CC = powerpc-eabi-gcc
+   CXX = powerpc-eabi-g++
+   AR = powerpc-eabi-ar
+   CFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+   CXXFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 else
    TARGET := snes.dll
    CC = gcc
@@ -73,10 +78,11 @@ ifeq ($(platform), ps3)
 	$(AR) rcs $@ $(OBJECTS)
 else ifeq ($(platform), xenon)
 	$(AR) rcs $@ $(OBJECTS)
+else ifeq ($(platform), wii)
+	$(AR) rcs $@ $(OBJECTS)
 else
 	$(CXX) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) -lm
 endif
-
 
 %.o: %.cpp 
 	$(CXX) $(INCLUDES) $(CXXFLAGS) -c -o $@ $<
@@ -86,3 +92,6 @@ endif
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)
+
+.PHONY: clean
+
