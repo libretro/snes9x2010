@@ -78,7 +78,6 @@ PPU_SRCS		+= $(SNES9X_API_DIR)/tile.cpp \
 			$(SNES9X_API_DIR)/dsp4.cpp \
 			$(SNES9X_API_DIR)/globals.cpp \
 			$(SNES9X_API_DIR)/obc1.cpp \
-			$(SNES9X_API_DIR)/reader.cpp \
 			$(SNES9X_API_DIR)/sdd1.cpp \
 			$(SNES9X_API_DIR)/sdd1emu.cpp \
 			$(SNES9X_API_DIR)/seta.cpp \

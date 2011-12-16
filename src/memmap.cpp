@@ -191,7 +191,6 @@
 #include "srtc.h"
 #include "controls.h"
 #include "cheats.h"
-#include "reader.h"
 #include "display.h"
 
 #ifndef max
@@ -4124,13 +4123,13 @@ static uint32 ReadUPSPointer (const uint8 *data, uint32 &addr, unsigned size)
 //no-header patching errors that result in IPS patches having a 50/50 chance of
 //being applied correctly.
 
-bool8 ReadUPSPatch (Reader *r, long, int32 &rom_size)
+bool8 ReadUPSPatch (STREAM r, long, int32 &rom_size)
 {
 	//Reader lacks size() and rewind(), so we need to read in the file to get its size
 	uint8 *data = new uint8[8 * 1024 * 1024];  //allocate a lot of memory, better safe than sorry ...
 	uint32 size = 0;
 	while(true) {
-		int value = r->get_char();
+		int value = fgetc(r);
 		if(value == EOF) break;
 		data[size++] = value;
 		if(size >= 8 * 1024 * 1024) {
@@ -4202,31 +4201,32 @@ bool8 ReadUPSPatch (Reader *r, long, int32 &rom_size)
 	}
 }
 
-static long ReadInt (Reader *r, unsigned nbytes)
+static long ReadInt (STREAM r, unsigned nbytes)
 {
 	long	v = 0;
 
 	while (nbytes--)
 	{
-		int	c = r->get_char();
+		int	c = fgetc(r);
 		if (c == EOF)
-			return (-1);
+			return -1;
 		v = (v << 8) | (c & 0xFF);
 	}
 
 	return (v);
 }
 
-bool8 ReadIPSPatch (Reader *r, long offset, int32 &rom_size)
+#define IPS_EOF 0x00454F46l
+
+bool8 ReadIPSPatch (STREAM r, long offset, int32 &rom_size)
 {
-	const int32	IPS_EOF = 0x00454F46l;
 	int32		ofs;
 	char		fname[6];
 
 	fname[5] = 0;
 	for (int i = 0; i < 5; i++)
 	{
-		int	c = r->get_char();
+		int	c = fgetc(r);
 		if (c == EOF)
 			return (0);
 		fname[i] = (char) c;
@@ -4260,7 +4260,7 @@ bool8 ReadIPSPatch (Reader *r, long offset, int32 &rom_size)
 
 			while (len--)
 			{
-				rchar = r->get_char();
+				rchar = fgetc(r);
 				if (rchar == EOF)
 					return (0);
 				Memory.ROM[ofs++] = (uint8) rchar;
@@ -4275,7 +4275,7 @@ bool8 ReadIPSPatch (Reader *r, long offset, int32 &rom_size)
 			if (rlen == -1)
 				return (0);
 
-			rchar = r->get_char();
+			rchar = fgetc(r);
 			if (rchar == EOF)
 				return (0);
 
@@ -4296,40 +4296,6 @@ bool8 ReadIPSPatch (Reader *r, long offset, int32 &rom_size)
 
 	return (1);
 }
-
-#ifdef UNZIP_SUPPORT
-static int unzFindExtension (unzFile &file, const char *ext, bool restart, bool print)
-{
-	unz_file_info	info;
-	int				port, l = strlen(ext);
-
-	if (restart)
-		port = unzGoToFirstFile(file);
-	else
-		port = unzGoToNextFile(file);
-
-	while (port == UNZ_OK)
-	{
-		int		len;
-		char	name[132];
-
-		unzGetCurrentFileInfo(file, &info, name, 128, NULL, 0, NULL, 0);
-		len = strlen(name);
-
-		if (len >= l + 1 && name[len - l - 1] == '.' && strcasecmp(name + len - l, ext) == 0 && unzOpenCurrentFile(file) == UNZ_OK)
-		{
-			if (print)
-				printf("Using IPS or UPS patch %s", name);
-
-			return (port);
-		}
-
-		port = unzGoToNextFile(file);
-	}
-
-	return (port);
-}
-#endif
 
 void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom_size)
 {
@@ -4356,7 +4322,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 	{
 		printf("Using UPS patch %s", fname);
 
-		ret = ReadUPSPatch(new fReader(patch_file), 0, rom_size);
+		ret = ReadUPSPatch(patch_file, 0, rom_size);
 		CLOSE_STREAM(patch_file);
 
 		if (ret)
@@ -4368,36 +4334,13 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 			printf(" failed!\n");
 	}
 
-#ifdef UNZIP_SUPPORT
-	if (!strcasecmp(ext, "zip") || !strcasecmp(ext, ".zip"))
-	{
-		unzFile	file = unzOpen(rom_filename);
-		if (file)
-		{
-			int	port = unzFindExtension(file, "ups", TRUE, TRUE);
-			if (port == UNZ_OK)
-			{
-				printf(" in %s", rom_filename);
-
-				ret = ReadUPSPatch(new unzReader(file), offset, rom_size);
-				unzCloseCurrentFile(file);
-
-				if (ret)
-					printf("!\n");
-				else
-					printf(" failed!\n");
-			}
-		}
-	}
-#endif
-
 	n = S9xGetFilename(".ups", IPS_DIR);
 
 	if ((patch_file = OPEN_STREAM(n, "rb")) != NULL)
 	{
 		printf("Using UPS patch %s", n);
 
-		ret = ReadUPSPatch(new fReader(patch_file), 0, rom_size);
+		ret = ReadUPSPatch(patch_file, 0, rom_size);
 		CLOSE_STREAM(patch_file);
 
 		if (ret)
@@ -4418,7 +4361,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 	{
 		printf("Using IPS patch %s", fname);
 
-		ret = ReadIPSPatch(new fReader(patch_file), offset, rom_size);
+		ret = ReadIPSPatch(patch_file, offset, rom_size);
 		CLOSE_STREAM(patch_file);
 
 		if (ret)
@@ -4445,7 +4388,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 
 			printf("Using IPS patch %s", fname);
 
-			ret = ReadIPSPatch(new fReader(patch_file), offset, rom_size);
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
 			CLOSE_STREAM(patch_file);
 
 			if (ret)
@@ -4481,7 +4424,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 
 			printf("Using IPS patch %s", fname);
 
-			ret = ReadIPSPatch(new fReader(patch_file), offset, rom_size);
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
 			CLOSE_STREAM(patch_file);
 
 			if (ret)
@@ -4515,7 +4458,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 
 			printf("Using IPS patch %s", fname);
 
-			ret = ReadIPSPatch(new fReader(patch_file), offset, rom_size);
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
 			CLOSE_STREAM(patch_file);
 
 			if (ret)
@@ -4534,142 +4477,13 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 			return;
 	}
 
-#ifdef UNZIP_SUPPORT
-	if (!strcasecmp(ext, "zip") || !strcasecmp(ext, ".zip"))
-	{
-		unzFile	file = unzOpen(rom_filename);
-		if (file)
-		{
-			int	port = unzFindExtension(file, "ips", TRUE, TRUE);
-			while (port == UNZ_OK)
-			{
-				printf(" in %s", rom_filename);
-
-				ret = ReadIPSPatch(new unzReader(file), offset, rom_size);
-				unzCloseCurrentFile(file);
-
-				if (ret)
-				{
-					printf("!\n");
-					flag = true;
-				}
-				else
-					printf(" failed!\n");
-
-				port = unzFindExtension(file, "ips", false, TRUE);
-			}
-
-			if (!flag)
-			{
-				i = 0;
-
-				do
-				{
-					snprintf(ips, 8, "%03d.ips", i);
-
-					if (unzFindExtension(file, ips, TRUE, TRUE) != UNZ_OK)
-						break;
-
-					printf(" in %s", rom_filename);
-
-					ret = ReadIPSPatch(new unzReader(file), offset, rom_size);
-					unzCloseCurrentFile(file);
-
-					if (ret)
-					{
-						printf("!\n");
-						flag = true;
-					}
-					else
-					{
-						printf(" failed!\n");
-						break;
-					}
-
-					if (unzFindExtension(file, ips, false, false) == UNZ_OK)
-						printf("WARNING: Ignoring extra .%s files!\n", ips);
-				} while (++i < 1000);
-			}
-
-			if (!flag)
-			{
-				i = 0;
-
-				do
-				{
-					snprintf(ips, _MAX_EXT + 2, "ips%d", i);
-					if (strlen(ips) > _MAX_EXT)
-						break;
-
-					if (unzFindExtension(file, ips, TRUE, TRUE) != UNZ_OK)
-						break;
-
-					printf(" in %s", rom_filename);
-
-					ret = ReadIPSPatch(new unzReader(file), offset, rom_size);
-					unzCloseCurrentFile(file);
-
-					if (ret)
-					{
-						printf("!\n");
-						flag = true;
-					}
-					else
-					{
-						printf(" failed!\n");
-						break;
-					}
-
-					if (unzFindExtension(file, ips, false, false) == UNZ_OK)
-						printf("WARNING: Ignoring extra .%s files!\n", ips);
-				} while (++i != 0);
-			}
-
-			if (!flag)
-			{
-				i = 0;
-
-				do
-				{
-					snprintf(ips, 4, "ip%d", i);
-
-					if (unzFindExtension(file, ips, TRUE, TRUE) != UNZ_OK)
-						break;
-
-					printf(" in %s", rom_filename);
-
-					ret = ReadIPSPatch(new unzReader(file), offset, rom_size);
-					unzCloseCurrentFile(file);
-
-					if (ret)
-					{
-						printf("!\n");
-						flag = true;
-					}
-					else
-					{
-						printf(" failed!\n");
-						break;
-					}
-
-					if (unzFindExtension(file, ips, false, false) == UNZ_OK)
-						printf("WARNING: Ignoring extra .%s files!\n", ips);
-				} while (++i < 10);
-			}
-
-			if (flag)
-				return;
-		}
-	}
-#endif
-
 	n = S9xGetFilename(".ips", IPS_DIR);
 
 	if ((patch_file = OPEN_STREAM(n, "rb")) != NULL)
 	{
 		printf("Using IPS patch %s", n);
 
-		ret = ReadIPSPatch(new fReader(patch_file), offset, rom_size);
+		ret = ReadIPSPatch(patch_file, offset, rom_size);
 		CLOSE_STREAM(patch_file);
 
 		if (ret)
@@ -4696,7 +4510,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 
 			printf("Using IPS patch %s", n);
 
-			ret = ReadIPSPatch(new fReader(patch_file), offset, rom_size);
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
 			CLOSE_STREAM(patch_file);
 
 			if (ret)
@@ -4732,7 +4546,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 
 			printf("Using IPS patch %s", n);
 
-			ret = ReadIPSPatch(new fReader(patch_file), offset, rom_size);
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
 			CLOSE_STREAM(patch_file);
 
 			if (ret)
@@ -4766,7 +4580,7 @@ void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &r
 
 			printf("Using IPS patch %s", n);
 
-			ret = ReadIPSPatch(new fReader(patch_file), offset, rom_size);
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
 			CLOSE_STREAM(patch_file);
 
 			if (ret)
