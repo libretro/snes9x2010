@@ -622,9 +622,9 @@ static bool8 is_SameGame_Add_On (uint8 *data, uint32 size)
 		return (FALSE);
 }
 
-int CMemory::ScoreHiROM (bool8 skip_header, int32 romoff)
+static int ScoreHiROM (uint32 calculated_size, uint8 * rom,  bool8 skip_header, int32 romoff)
 {
-	uint8	*buf = ROM + 0xff00 + romoff + (skip_header ? 0x200 : 0);
+	uint8	*buf = rom + 0xff00 + romoff + (skip_header ? 0x200 : 0);
 	int		score = 0;
 
 	if (buf[0xd5] & 0x1)
@@ -656,7 +656,7 @@ int CMemory::ScoreHiROM (bool8 skip_header, int32 romoff)
 	if ((buf[0xfc] + (buf[0xfd] << 8)) > 0xffb0)
 		score -= 2; // reduced after looking at a scan by Cowering
 
-	if (CalculatedSize > 1024 * 1024 * 3)
+	if (calculated_size > 1024 * 1024 * 3)
 		score += 4;
 
 	if ((1 << (buf[0xd7] - 7)) > 48)
@@ -671,9 +671,9 @@ int CMemory::ScoreHiROM (bool8 skip_header, int32 romoff)
 	return (score);
 }
 
-int CMemory::ScoreLoROM (bool8 skip_header, int32 romoff)
+static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, int32 romoff)
 {
-	uint8	*buf = ROM + 0x7f00 + romoff + (skip_header ? 0x200 : 0);
+	uint8	*buf = rom + 0x7f00 + romoff + (skip_header ? 0x200 : 0);
 	int		score = 0;
 
 	if (!(buf[0xd5] & 0x1))
@@ -702,7 +702,7 @@ int CMemory::ScoreLoROM (bool8 skip_header, int32 romoff)
 	if ((buf[0xfc] + (buf[0xfd] << 8)) > 0xffb0)
 		score -= 2; // reduced per Cowering suggestion
 
-	if (CalculatedSize <= 1024 * 1024 * 16)
+	if (calculated_size <= 1024 * 1024 * 16)
 		score += 2;
 
 	if ((1 << (buf[0xd7] - 7)) > 48)
@@ -982,6 +982,516 @@ uint32 CMemory::FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	return ((uint32) totalSize);
 }
 
+static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
+{
+	for (uint32 i = 0; i < size; i++)
+		crc32 = ((crc32 >> 8) & 0x00FFFFFF) ^ crc32Table[(crc32 ^ array[i]) & 0xFF];
+
+	return (~crc32);
+}
+
+// UPS % IPS
+
+static uint32 ReadUPSPointer (const uint8 *data, uint32 &addr, unsigned size)
+{
+	uint32 offset = 0, shift = 1;
+	while(addr < size) {
+		uint8 x = data[addr++];
+		offset += (x & 0x7f) * shift;
+		if(x & 0x80) break;
+		shift <<= 7;
+		offset += shift;
+	}
+	return offset;
+}
+
+//NOTE: UPS patches are *never* created against a headered ROM!
+//this is per the UPS file specification. however, do note that it is
+//technically possible for a non-compliant patcher to ignore this requirement.
+//therefore, it is *imperative* that no emulator support such patches.
+//thusly, we ignore the "long offset" parameter below. failure to do so would
+//completely invalidate the purpose of UPS; which is to avoid header vs
+//no-header patching errors that result in IPS patches having a 50/50 chance of
+//being applied correctly.
+
+static bool8 ReadUPSPatch (STREAM r, long, int32 &rom_size)
+{
+	//Reader lacks size() and rewind(), so we need to read in the file to get its size
+	uint8 *data = new uint8[8 * 1024 * 1024];  //allocate a lot of memory, better safe than sorry ...
+	uint32 size = 0;
+	while(true) {
+		int value = fgetc(r);
+		if(value == EOF) break;
+		data[size++] = value;
+		if(size >= 8 * 1024 * 1024) {
+			//prevent buffer overflow: SNES-made UPS patches should never be this big anyway ...
+			delete[] data;
+			return false;
+		}
+	}
+
+	//4-byte header + 1-byte input size + 1-byte output size + 4-byte patch CRC32 + 4-byte unpatched CRC32 + 4-byte patched CRC32
+	if(size < 18) { delete[] data; return false; }  //patch is too small
+
+	uint32 addr = 0;
+	if(data[addr++] != 'U') { delete[] data; return false; }  //patch has an invalid header
+	if(data[addr++] != 'P') { delete[] data; return false; }  //...
+	if(data[addr++] != 'S') { delete[] data; return false; }  //...
+	if(data[addr++] != '1') { delete[] data; return false; }  //...
+
+	uint32 patch_crc32 = caCRC32(data, size - 4, 0xffffffff);  //don't include patch CRC32 itself in CRC32 calculation
+	uint32 rom_crc32 = caCRC32(Memory.ROM, rom_size, 0xffffffff);
+	uint32 px_crc32 = (data[size - 12] << 0) + (data[size - 11] << 8) + (data[size - 10] << 16) + (data[size -  9] << 24);
+	uint32 py_crc32 = (data[size -  8] << 0) + (data[size -  7] << 8) + (data[size -  6] << 16) + (data[size -  5] << 24);
+	uint32 pp_crc32 = (data[size -  4] << 0) + (data[size -  3] << 8) + (data[size -  2] << 16) + (data[size -  1] << 24);
+	if(patch_crc32 != pp_crc32) { delete[] data; return false; }  //patch is corrupted
+	if((rom_crc32 != px_crc32) && (rom_crc32 != py_crc32)) { delete[] data; return false; }  //patch is for a different ROM
+
+	uint32 px_size = ReadUPSPointer(data, addr, size);
+	uint32 py_size = ReadUPSPointer(data, addr, size);
+	uint32 out_size = ((uint32) rom_size == px_size) ? py_size : px_size;
+	if(out_size > MAX_ROM_SIZE) { delete[] data; return false; }  //applying this patch will overflow Memory.ROM buffer
+
+	//fill expanded area with 0x00s; so that XORing works as expected below.
+	//note that this is needed (and works) whether output ROM is larger or smaller than pre-patched ROM
+	for(unsigned i = min((uint32) rom_size, out_size); i < max((uint32) rom_size, out_size); i++) {
+		Memory.ROM[i] = 0x00;
+	}
+
+	uint32 relative = 0;
+	while(addr < size - 12) {
+		relative += ReadUPSPointer(data, addr, size);
+		while(addr < size - 12) {
+			uint8 x = data[addr++];
+			Memory.ROM[relative++] ^= x;
+			if(!x) break;
+		}
+	}
+
+	rom_size = out_size;
+	delete[] data;
+
+	uint32 out_crc32 = caCRC32(Memory.ROM, rom_size, 0xffffffff);
+	if(((rom_crc32 == px_crc32) && (out_crc32 == py_crc32))
+	|| ((rom_crc32 == py_crc32) && (out_crc32 == px_crc32))
+	) {
+		return true;
+	} else {
+		//technically, reaching here means that patching has failed.
+		//we should return false, but unfortunately Memory.ROM has already
+		//been modified above and cannot be undone. to do this properly, we
+		//would need to make a copy of Memory.ROM, apply the patch, and then
+		//copy that back to Memory.ROM.
+		//
+		//however, the only way for this case to happen is if the UPS patch file
+		//itself is corrupted, which should be detected by the patch CRC32 check
+		//above anyway. errors due to the wrong ROM or patch file being used are
+		//already caught above.
+		fprintf(stderr, "WARNING: UPS patching appears to have failed.\nGame may not be playable.\n");
+		return true;
+	}
+}
+
+static long ReadInt (STREAM r, unsigned nbytes)
+{
+	long	v = 0;
+
+	while (nbytes--)
+	{
+		int	c = fgetc(r);
+		if (c == EOF)
+			return -1;
+		v = (v << 8) | (c & 0xFF);
+	}
+
+	return (v);
+}
+
+#define IPS_EOF 0x00454F46l
+
+static bool8 ReadIPSPatch (STREAM r, long offset, int32 &rom_size)
+{
+	int32		ofs;
+	char		fname[6];
+
+	fname[5] = 0;
+	for (int i = 0; i < 5; i++)
+	{
+		int	c = fgetc(r);
+		if (c == EOF)
+			return (0);
+		fname[i] = (char) c;
+	}
+
+	if (strncmp(fname, "PATCH", 5))
+		return (0);
+
+	for (;;)
+	{
+		long	len, rlen;
+		int		rchar;
+
+		ofs = ReadInt(r, 3);
+		if (ofs == -1)
+			return (0);
+
+		if (ofs == IPS_EOF)
+			break;
+
+		ofs -= offset;
+
+		len = ReadInt(r, 2);
+		if (len == -1)
+			return (0);
+
+		if (len)
+		{
+			if (ofs + len > MAX_ROM_SIZE)
+				return (0);
+
+			while (len--)
+			{
+				rchar = fgetc(r);
+				if (rchar == EOF)
+					return (0);
+				Memory.ROM[ofs++] = (uint8) rchar;
+			}
+
+			if (ofs > rom_size)
+				rom_size = ofs;
+		}
+		else
+		{
+			rlen = ReadInt(r, 2);
+			if (rlen == -1)
+				return (0);
+
+			rchar = fgetc(r);
+			if (rchar == EOF)
+				return (0);
+
+			if (ofs + rlen > MAX_ROM_SIZE)
+				return (0);
+
+			while (rlen--)
+				Memory.ROM[ofs++] = (uint8) rchar;
+
+			if (ofs > rom_size)
+				rom_size = ofs;
+		}
+	}
+
+	ofs = ReadInt(r, 3);
+	if (ofs != -1 && ofs - offset < rom_size)
+		rom_size = ofs - offset;
+
+	return (1);
+}
+
+static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom_size)
+{
+	if (Settings.NoPatch)
+		return;
+
+#ifdef CUSTOM_FILE_HANDLING
+	CustomCheckForAnyPatch(header, rom_size);
+#else
+	STREAM		patch_file  = NULL;
+	uint32		i;
+	long		offset = header ? 512 : 0;
+	int			ret;
+	bool		flag;
+	char		dir[_MAX_DIR + 1], drive[_MAX_DRIVE + 1], name[_MAX_FNAME + 1], ext[_MAX_EXT + 1], ips[_MAX_EXT + 3], fname[PATH_MAX + 1];
+	const char	*n;
+
+	// UPS
+
+	_splitpath(rom_filename, drive, dir, name, ext);
+	_makepath(fname, drive, dir, name, "ups");
+
+	if ((patch_file = OPEN_STREAM(fname, "rb")) != NULL)
+	{
+		printf("Using UPS patch %s", fname);
+
+		ret = ReadUPSPatch(patch_file, 0, rom_size);
+		CLOSE_STREAM(patch_file);
+
+		if (ret)
+		{
+			printf("!\n");
+			return;
+		}
+		else
+			printf(" failed!\n");
+	}
+
+	n = S9xGetFilename(".ups", IPS_DIR);
+
+	if ((patch_file = OPEN_STREAM(n, "rb")) != NULL)
+	{
+		printf("Using UPS patch %s", n);
+
+		ret = ReadUPSPatch(patch_file, 0, rom_size);
+		CLOSE_STREAM(patch_file);
+
+		if (ret)
+		{
+			printf("!\n");
+			return;
+		}
+		else
+			printf(" failed!\n");
+	}
+
+	// IPS
+
+	_splitpath(rom_filename, drive, dir, name, ext);
+	_makepath(fname, drive, dir, name, "ips");
+
+	if ((patch_file = OPEN_STREAM(fname, "rb")) != NULL)
+	{
+		printf("Using IPS patch %s", fname);
+
+		ret = ReadIPSPatch(patch_file, offset, rom_size);
+		CLOSE_STREAM(patch_file);
+
+		if (ret)
+		{
+			printf("!\n");
+			return;
+		}
+		else
+			printf(" failed!\n");
+	}
+
+	if (_MAX_EXT > 6)
+	{
+		i = 0;
+		flag = false;
+
+		do
+		{
+			snprintf(ips, 8, "%03d.ips", i);
+			_makepath(fname, drive, dir, name, ips);
+
+			if (!(patch_file = OPEN_STREAM(fname, "rb")))
+				break;
+
+			printf("Using IPS patch %s", fname);
+
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
+			CLOSE_STREAM(patch_file);
+
+			if (ret)
+			{
+				printf("!\n");
+				flag = true;
+			}
+			else
+			{
+				printf(" failed!\n");
+				break;
+			}
+		} while (++i < 1000);
+
+		if (flag)
+			return;
+	}
+
+	if (_MAX_EXT > 3)
+	{
+		i = 0;
+		flag = false;
+
+		do
+		{
+			snprintf(ips, _MAX_EXT + 2, "ips%d", i);
+			if (strlen(ips) > _MAX_EXT)
+				break;
+			_makepath(fname, drive, dir, name, ips);
+
+			if (!(patch_file = OPEN_STREAM(fname, "rb")))
+				break;
+
+			printf("Using IPS patch %s", fname);
+
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
+			CLOSE_STREAM(patch_file);
+
+			if (ret)
+			{
+				printf("!\n");
+				flag = true;
+			}
+			else
+			{
+				printf(" failed!\n");
+				break;
+			}
+		} while (++i != 0);
+
+		if (flag)
+			return;
+	}
+
+	if (_MAX_EXT > 2)
+	{
+		i = 0;
+		flag = false;
+
+		do
+		{
+			snprintf(ips, 4, "ip%d", i);
+			_makepath(fname, drive, dir, name, ips);
+
+			if (!(patch_file = OPEN_STREAM(fname, "rb")))
+				break;
+
+			printf("Using IPS patch %s", fname);
+
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
+			CLOSE_STREAM(patch_file);
+
+			if (ret)
+			{
+				printf("!\n");
+				flag = true;
+			}
+			else
+			{
+				printf(" failed!\n");
+				break;
+			}
+		} while (++i < 10);
+
+		if (flag)
+			return;
+	}
+
+	n = S9xGetFilename(".ips", IPS_DIR);
+
+	if ((patch_file = OPEN_STREAM(n, "rb")) != NULL)
+	{
+		printf("Using IPS patch %s", n);
+
+		ret = ReadIPSPatch(patch_file, offset, rom_size);
+		CLOSE_STREAM(patch_file);
+
+		if (ret)
+		{
+			printf("!\n");
+			return;
+		}
+		else
+			printf(" failed!\n");
+	}
+
+	if (_MAX_EXT > 6)
+	{
+		i = 0;
+		flag = false;
+
+		do
+		{
+			snprintf(ips, 9, ".%03d.ips", i);
+			n = S9xGetFilename(ips, IPS_DIR);
+
+			if (!(patch_file = OPEN_STREAM(n, "rb")))
+				break;
+
+			printf("Using IPS patch %s", n);
+
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
+			CLOSE_STREAM(patch_file);
+
+			if (ret)
+			{
+				printf("!\n");
+				flag = true;
+			}
+			else
+			{
+				printf(" failed!\n");
+				break;
+			}
+		} while (++i < 1000);
+
+		if (flag)
+			return;
+	}
+
+	if (_MAX_EXT > 3)
+	{
+		i = 0;
+		flag = false;
+
+		do
+		{
+			snprintf(ips, _MAX_EXT + 3, ".ips%d", i);
+			if (strlen(ips) > _MAX_EXT + 1)
+				break;
+			n = S9xGetFilename(ips, IPS_DIR);
+
+			if (!(patch_file = OPEN_STREAM(n, "rb")))
+				break;
+
+			printf("Using IPS patch %s", n);
+
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
+			CLOSE_STREAM(patch_file);
+
+			if (ret)
+			{
+				printf("!\n");
+				flag = true;
+			}
+			else
+			{
+				printf(" failed!\n");
+				break;
+			}
+		} while (++i != 0);
+
+		if (flag)
+			return;
+	}
+
+	if (_MAX_EXT > 2)
+	{
+		i = 0;
+		flag = false;
+
+		do
+		{
+			snprintf(ips, 5, ".ip%d", i);
+			n = S9xGetFilename(ips, IPS_DIR);
+
+			if (!(patch_file = OPEN_STREAM(n, "rb")))
+				break;
+
+			printf("Using IPS patch %s", n);
+
+			ret = ReadIPSPatch(patch_file, offset, rom_size);
+			CLOSE_STREAM(patch_file);
+
+			if (ret)
+			{
+				printf("!\n");
+				flag = true;
+			}
+			else
+			{
+				printf(" failed!\n");
+				break;
+			}
+		} while (++i < 10);
+
+		if (flag)
+			return;
+	}
+#endif
+}
+
 bool8 CMemory::LoadROM (const char *filename)
 {
 	int	retry_count = 0;
@@ -1011,19 +1521,19 @@ again:
 
 	int	hi_score, lo_score;
 
-	hi_score = ScoreHiROM(FALSE, 0);
-	lo_score = ScoreLoROM(FALSE, 0);
+	hi_score = ScoreHiROM(CalculatedSize, ROM, FALSE, 0);
+	lo_score = ScoreLoROM(CalculatedSize, ROM, FALSE, 0);
 
 	if (HeaderCount == 0 && !Settings.ForceNoHeader &&
-		((hi_score >  lo_score && ScoreHiROM(TRUE, 0) > hi_score) ||
-		 (hi_score <= lo_score && ScoreLoROM(TRUE, 0) > lo_score)))
+		((hi_score >  lo_score && ScoreHiROM(CalculatedSize, ROM, TRUE, 0) > hi_score) ||
+		 (hi_score <= lo_score && ScoreLoROM(CalculatedSize, ROM, TRUE, 0) > lo_score)))
 	{
 		memmove(ROM, ROM + 512, totalFileSize - 512);
 		totalFileSize -= 512;
 		S9xMessage(S9X_INFO, S9X_HEADER_WARNING, "Try 'force no-header' option if the game doesn't work");
 		// modifying ROM, so we need to rescore
-		hi_score = ScoreHiROM(FALSE, 0);
-		lo_score = ScoreLoROM(FALSE, 0);
+		hi_score = ScoreHiROM(CalculatedSize, ROM, FALSE, 0);
+		lo_score = ScoreLoROM(CalculatedSize, ROM, FALSE, 0);
 	}
 
 	CalculatedSize = (totalFileSize / 0x2000) * 0x2000;
@@ -1045,8 +1555,8 @@ again:
 	}
 
 	// CalculatedSize is now set, so rescore
-	hi_score = ScoreHiROM(FALSE, 0);
-	lo_score = ScoreLoROM(FALSE, 0);
+	hi_score = ScoreHiROM(CalculatedSize, ROM, FALSE, 0);
+	lo_score = ScoreLoROM(CalculatedSize, ROM, FALSE, 0);
 
 	uint8	*RomHeader = ROM;
 
@@ -1054,8 +1564,8 @@ again:
 	{
 		int	swappedhirom, swappedlorom;
 
-		swappedhirom = ScoreHiROM(FALSE, 0x400000);
-		swappedlorom = ScoreLoROM(FALSE, 0x400000);
+		swappedhirom = ScoreHiROM(CalculatedSize, ROM, FALSE, 0x400000);
+		swappedlorom = ScoreLoROM(CalculatedSize, ROM, FALSE, 0x400000);
 
 		// set swapped here
 		if (max(swappedlorom, swappedhirom) >= max(lo_score, hi_score))
@@ -1163,8 +1673,8 @@ again:
 			S9xDeinterleaveType1(CalculatedSize, ROM);
 		}
 
-		hi_score = ScoreHiROM(FALSE, 0);
-		lo_score = ScoreLoROM(FALSE, 0);
+		hi_score = ScoreHiROM(CalculatedSize, ROM, FALSE, 0);
+		lo_score = ScoreLoROM(CalculatedSize, ROM, FALSE, 0);
 
 		if ((HiROM && (lo_score >= hi_score || hi_score < 0)) ||
 			(LoROM && (hi_score >  lo_score || lo_score < 0)))
@@ -1539,15 +2049,15 @@ bool8 CMemory::SaveSRAM (const char *filename)
 		{
 			fwrite((char *) Multi.sramB, size, 1, file);
 			fclose(file);
-		#if defined(__linux) && !defined(__LIBXENON__)
+#if defined(__linux) && !defined(__LIBXENON__)
 			chown(name, getuid(), getgid());
-		#endif
+#endif
 		}
 
 		strcpy(ROMFilename, temp);
-    }
+	}
 
-    size = SRAMSize ? (1 << (SRAMSize + 3)) * 128 : 0;
+	size = SRAMSize ? (1 << (SRAMSize + 3)) * 128 : 0;
 	if (size > 0x20000)
 		size = 0x20000;
 
@@ -1558,9 +2068,9 @@ bool8 CMemory::SaveSRAM (const char *filename)
 		{
 			fwrite((char *) SRAM, size, 1, file);
 			fclose(file);
-		#if defined(__linux) && !defined(__LIBXENON__)
+#if defined(__linux) && !defined(__LIBXENON__)
 			chown(sramName, getuid(), getgid());
-		#endif
+#endif
 
 			if (Settings.SRTC || Settings.SPC7110RTC)
 				SaveSRTC();
@@ -1570,64 +2080,6 @@ bool8 CMemory::SaveSRAM (const char *filename)
 	}
 
 	return (FALSE);
-}
-
-// initialization
-
-static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
-{
-	for (uint32 i = 0; i < size; i++)
-		crc32 = ((crc32 >> 8) & 0x00FFFFFF) ^ crc32Table[(crc32 ^ array[i]) & 0xFF];
-
-	return (~crc32);
-}
-
-
-void CMemory::ParseSNESHeader (uint8 *RomHeader)
-{
-	bool8	bs = Settings.BS & !Settings.BSXItself;
-
-	strncpy(ROMName, (char *) &RomHeader[0x10], ROM_NAME_LEN - 1);
-	if (bs)
-		memset(ROMName + 16, 0x20, ROM_NAME_LEN - 17);
-
-	if (bs)
-	{
-		if (!(((RomHeader[0x29] & 0x20) && CalculatedSize <  0x100000) ||
-			 (!(RomHeader[0x29] & 0x20) && CalculatedSize == 0x100000)))
-			printf("BS: Size mismatch\n");
-
-		// FIXME
-		int	p = 0;
-		while ((1 << p) < (int) CalculatedSize)
-			p++;
-		ROMSize = p - 10;
-	}
-	else
-		ROMSize = RomHeader[0x27];
-
-	SRAMSize  = bs ? 5 /* BS-X */    : RomHeader[0x28];
-	ROMSpeed  = bs ? RomHeader[0x28] : RomHeader[0x25];
-	ROMType   = bs ? 0xE5 /* BS-X */ : RomHeader[0x26];
-	ROMRegion = bs ? 0               : RomHeader[0x29];
-
-	ROMChecksum           = RomHeader[0x2E] + (RomHeader[0x2F] << 8);
-	ROMComplementChecksum = RomHeader[0x2C] + (RomHeader[0x2D] << 8);
-
-	memmove(ROMId, &RomHeader[0x02], 4);
-
-	if (RomHeader[0x2A] != 0x33)
-		CompanyId = ((RomHeader[0x2A] >> 4) & 0x0F) * 36 + (RomHeader[0x2A] & 0x0F);
-	else
-	if (isalnum(RomHeader[0x00]) && isalnum(RomHeader[0x01]))
-	{
-		int	l, r, l2, r2;
-		l = toupper(RomHeader[0x00]);
-		r = toupper(RomHeader[0x01]);
-		l2 = (l > '9') ? l - '7' : l - '0';
-		r2 = (r > '9') ? r - '7' : r - '0';
-		CompanyId = l2 * 36 + r2;
-	}
 }
 
 #define MAP_INITIALIZE() \
@@ -1723,6 +2175,18 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 		} \
 	}
 
+#define MAP_SPACE(bank_s, bank_e, addr_s, addr_e, data) \
+	for (uint32 x = bank_s; x <= bank_e; x++) \
+	{ \
+		for (uint32 i = addr_s; i <= addr_e; i += 0x1000) \
+		{ \
+			uint32 p = (x << 4) | (i >> 12); \
+			Map[p] = data; \
+			BlockIsROM[p] = FALSE; \
+			BlockIsRAM[p] = TRUE; \
+		} \
+	}
+
 #define MAP_LOROM_OFFSET(bank_s, bank_e, addr_s, addr_e, size, offset) \
 	for (uint32 c = bank_s; c <= bank_e; c++) \
 	{ \
@@ -1755,13 +2219,33 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 
 #define MAP_WRAM() \
 	/* will overwrite others */ \
-	map_space(0x7e, 0x7e, 0x0000, 0xffff, RAM); \
-	map_space(0x7f, 0x7f, 0x0000, 0xffff, RAM + 0x10000);
+	MAP_SPACE(0x7e, 0x7e, 0x0000, 0xffff, RAM); \
+	MAP_SPACE(0x7f, 0x7f, 0x0000, 0xffff, RAM + 0x10000);
+
+#define MAP_SYSTEM() \
+	/* will be overwritten */ \
+	MAP_SPACE(0x00, 0x3f, 0x0000, 0x1fff, RAM); \
+	MAP_INDEX(0x00, 0x3f, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O); \
+	MAP_INDEX(0x00, 0x3f, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O); \
+	MAP_SPACE(0x80, 0xbf, 0x0000, 0x1fff, RAM); \
+	MAP_INDEX(0x80, 0xbf, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O); \
+	MAP_INDEX(0x80, 0xbf, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O);
+
+void CMemory::map_WriteProtectROM (void)
+{
+	memmove((void *) WriteMap, (void *) Map, sizeof(Map));
+
+	for (int c = 0; c < 0x1000; c++)
+	{
+		if (BlockIsROM[c])
+			WriteMap[c] = (uint8 *) MAP_NONE;
+	}
+}
 
 #define MAP_JUMBOLOROMMAP() \
 	/* XXX: Which game uses this? */ \
 	printf("Map_JumboLoROMMap\n"); \
-	map_System(); \
+	MAP_SYSTEM(); \
 	MAP_LOROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize - 0x400000, 0x400000); \
 	MAP_LOROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize - 0x400000, 0x400000); \
 	MAP_LOROM_OFFSET(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0); \
@@ -1785,15 +2269,15 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 
 #define MAP_SRAM512KLOROMMAP() \
 	printf("Map_SRAM512KLoROMMap\n"); \
-	map_System(); \
+	MAP_SYSTEM(); \
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize); \
 	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize); \
 	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize); \
 	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize); \
-	map_space(0x70, 0x70, 0x0000, 0xffff, SRAM); \
-	map_space(0x71, 0x71, 0x0000, 0xffff, SRAM + 0x8000); \
-	map_space(0x72, 0x72, 0x0000, 0xffff, SRAM + 0x10000); \
-	map_space(0x73, 0x73, 0x0000, 0xffff, SRAM + 0x18000); \
+	MAP_SPACE(0x70, 0x70, 0x0000, 0xffff, SRAM); \
+	MAP_SPACE(0x71, 0x71, 0x0000, 0xffff, SRAM + 0x8000); \
+	MAP_SPACE(0x72, 0x72, 0x0000, 0xffff, SRAM + 0x10000); \
+	MAP_SPACE(0x73, 0x73, 0x0000, 0xffff, SRAM + 0x18000); \
 	MAP_WRAM(); \
 	map_WriteProtectROM();
 
@@ -1827,7 +2311,53 @@ void CMemory::InitROM (void)
 
 	S9xInitBSX(); // Set BS header before parsing
 
-	ParseSNESHeader(RomHeader);
+	//Parse SNES Header
+
+	bool8	bs = Settings.BS & !Settings.BSXItself;
+
+	strncpy(ROMName, (char *) &RomHeader[0x10], ROM_NAME_LEN - 1);
+	if (bs)
+		memset(ROMName + 16, 0x20, ROM_NAME_LEN - 17);
+
+	if (bs)
+	{
+		if (!(((RomHeader[0x29] & 0x20) && CalculatedSize <  0x100000) ||
+			 (!(RomHeader[0x29] & 0x20) && CalculatedSize == 0x100000)))
+			printf("BS: Size mismatch\n");
+
+		// FIXME
+		int	p = 0;
+		while ((1 << p) < (int) CalculatedSize)
+			p++;
+		ROMSize = p - 10;
+	}
+	else
+		ROMSize = RomHeader[0x27];
+
+	SRAMSize  = bs ? 5 /* BS-X */    : RomHeader[0x28];
+	ROMSpeed  = bs ? RomHeader[0x28] : RomHeader[0x25];
+	ROMType   = bs ? 0xE5 /* BS-X */ : RomHeader[0x26];
+	ROMRegion = bs ? 0               : RomHeader[0x29];
+
+	ROMChecksum           = RomHeader[0x2E] + (RomHeader[0x2F] << 8);
+	ROMComplementChecksum = RomHeader[0x2C] + (RomHeader[0x2D] << 8);
+
+	memmove(ROMId, &RomHeader[0x02], 4);
+
+	if (RomHeader[0x2A] != 0x33)
+		CompanyId = ((RomHeader[0x2A] >> 4) & 0x0F) * 36 + (RomHeader[0x2A] & 0x0F);
+	else
+	if (isalnum(RomHeader[0x00]) && isalnum(RomHeader[0x01]))
+	{
+		int	l, r, l2, r2;
+		l = toupper(RomHeader[0x00]);
+		r = toupper(RomHeader[0x01]);
+		l2 = (l > '9') ? l - '7' : l - '0';
+		r2 = (r > '9') ? r - '7' : r - '0';
+		CompanyId = l2 * 36 + r2;
+	}
+
+	// End of Parse SNES Header
 
 	//// Detect and initialize chips
 	//// detection codes are compatible with NSRT
@@ -2770,79 +3300,41 @@ void CMemory::InitROM (void)
 	S9xVerifyControllers();
 }
 
-// memory map
-
-
-
-void CMemory::map_space (uint32 bank_s, uint32 bank_e, uint32 addr_s, uint32 addr_e, uint8 *data)
-{
-	uint32	c, i, p;
-
-	for (c = bank_s; c <= bank_e; c++)
-	{
-		for (i = addr_s; i <= addr_e; i += 0x1000)
-		{
-			p = (c << 4) | (i >> 12);
-			Map[p] = data;
-			BlockIsROM[p] = FALSE;
-			BlockIsRAM[p] = TRUE;
-		}
-	}
-}
-
-
-void CMemory::map_System (void)
-{
-	// will be overwritten
-	map_space(0x00, 0x3f, 0x0000, 0x1fff, RAM);
-	MAP_INDEX(0x00, 0x3f, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O);
-	MAP_INDEX(0x00, 0x3f, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O);
-	map_space(0x80, 0xbf, 0x0000, 0x1fff, RAM);
-	MAP_INDEX(0x80, 0xbf, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O);
-	MAP_INDEX(0x80, 0xbf, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O);
-}
 
 #define MAP_HIROMSRAM() \
 	MAP_INDEX(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM); \
 	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
 
-void CMemory::map_DSP (void)
-{
-	switch (DSP0.maptype)
-	{
-		case M_DSP1_LOROM_S:
-			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
-			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
-			break;
-
-		case M_DSP1_LOROM_L:
-			MAP_INDEX(0x60, 0x6f, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
-			MAP_INDEX(0xe0, 0xef, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
-			break;
-
-		case M_DSP1_HIROM:
-			MAP_INDEX(0x00, 0x1f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
-			MAP_INDEX(0x80, 0x9f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
-			break;
-
-		case M_DSP2_LOROM:
-			MAP_INDEX(0x20, 0x3f, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O);
-			MAP_INDEX(0x20, 0x3f, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O);
-			MAP_INDEX(0xa0, 0xbf, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O);
-			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O);
-			break;
-
-		case M_DSP3_LOROM:
-			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
-			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
-			break;
-
-		case M_DSP4_LOROM:
-			MAP_INDEX(0x30, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
-			MAP_INDEX(0xb0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
-			break;
+#define MAP_DSP_() \
+	switch (DSP0.maptype) \
+	{ \
+		case M_DSP1_LOROM_S: \
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+		case M_DSP1_LOROM_L: \
+			MAP_INDEX(0x60, 0x6f, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xe0, 0xef, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+		case M_DSP1_HIROM: \
+			MAP_INDEX(0x00, 0x1f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0x80, 0x9f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+		case M_DSP2_LOROM: \
+			MAP_INDEX(0x20, 0x3f, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xa0, 0xbf, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+		case M_DSP3_LOROM: \
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+		case M_DSP4_LOROM: \
+			MAP_INDEX(0x30, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xb0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
 	}
-}
 
 #define MAP_C4_() \
 	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O); \
@@ -2865,22 +3357,12 @@ void CMemory::map_DSP (void)
 	/* ST-0010: */ \
 	/* MAP_INDEX(0x68, 0x6f, 0x0000, 0x0fff, MAP_SETA_DSP, ?); */
 
-void CMemory::map_WriteProtectROM (void)
-{
-	memmove((void *) WriteMap, (void *) Map, sizeof(Map));
-
-	for (int c = 0; c < 0x1000; c++)
-	{
-		if (BlockIsROM[c])
-			WriteMap[c] = (uint8 *) MAP_NONE;
-	}
-}
 
 
 void CMemory::Map_LoROMMap (void)
 {
 	printf("Map_LoROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
 	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
@@ -2888,7 +3370,9 @@ void CMemory::Map_LoROMMap (void)
 	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
 
 	if (Settings.DSP)
-		map_DSP();
+	{
+		MAP_DSP_();
+	}
 	else
 	if (Settings.C4)
 	{
@@ -2914,7 +3398,7 @@ void CMemory::Map_LoROMMap (void)
 void CMemory::Map_NoMAD1LoROMMap (void)
 {
 	printf("Map_NoMAD1LoROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
 	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
@@ -2934,7 +3418,7 @@ void CMemory::Map_ROM24MBSLoROMMap (void)
 {
 	// PCB: BSC-1A5M-01, BSC-1A7M-10
 	printf("Map_ROM24MBSLoROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x100000, 0);
 	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, 0x100000, 0x100000);
@@ -2951,7 +3435,7 @@ void CMemory::Map_ROM24MBSLoROMMap (void)
 void CMemory::Map_SufamiTurboLoROMMap (void)
 {
 	printf("Map_SufamiTurboLoROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0);
 	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
@@ -2981,7 +3465,7 @@ void CMemory::Map_SufamiTurboPseudoLoROMMap (void)
 {
 	// for combined images
 	printf("Map_SufamiTurboPseudoLoROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0);
 	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, 0x100000, 0x100000);
@@ -2991,10 +3475,10 @@ void CMemory::Map_SufamiTurboPseudoLoROMMap (void)
 	MAP_LOROM_OFFSET(0xc0, 0xdf, 0x8000, 0xffff, 0x100000, 0x200000);
 
 	// I don't care :P
-	map_space(0x60, 0x63, 0x8000, 0xffff, SRAM - 0x8000);
-	map_space(0xe0, 0xe3, 0x8000, 0xffff, SRAM - 0x8000);
-	map_space(0x70, 0x73, 0x8000, 0xffff, SRAM + 0x4000 - 0x8000);
-	map_space(0xf0, 0xf3, 0x8000, 0xffff, SRAM + 0x4000 - 0x8000);
+	MAP_SPACE(0x60, 0x63, 0x8000, 0xffff, SRAM - 0x8000);
+	MAP_SPACE(0xe0, 0xe3, 0x8000, 0xffff, SRAM - 0x8000);
+	MAP_SPACE(0x70, 0x73, 0x8000, 0xffff, SRAM + 0x4000 - 0x8000);
+	MAP_SPACE(0xf0, 0xf3, 0x8000, 0xffff, SRAM + 0x4000 - 0x8000);
 
 	MAP_WRAM();
 
@@ -3004,7 +3488,7 @@ void CMemory::Map_SufamiTurboPseudoLoROMMap (void)
 void CMemory::Map_SuperFXLoROMMap (void)
 {
 	printf("Map_SuperFXLoROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	// Replicate the first 2Mb of the ROM at ROM + 2MB such that each 32K
 	// block is repeated twice in each 64K block.
@@ -3020,10 +3504,10 @@ void CMemory::Map_SuperFXLoROMMap (void)
 	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize, 0);
 	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize, 0);
 
-	map_space(0x00, 0x3f, 0x6000, 0x7fff, SRAM - 0x6000);
-	map_space(0x80, 0xbf, 0x6000, 0x7fff, SRAM - 0x6000);
-	map_space(0x70, 0x70, 0x0000, 0xffff, SRAM);
-	map_space(0x71, 0x71, 0x0000, 0xffff, SRAM + 0x10000);
+	MAP_SPACE(0x00, 0x3f, 0x6000, 0x7fff, SRAM - 0x6000);
+	MAP_SPACE(0x80, 0xbf, 0x6000, 0x7fff, SRAM - 0x6000);
+	MAP_SPACE(0x70, 0x70, 0x0000, 0xffff, SRAM);
+	MAP_SPACE(0x71, 0x71, 0x0000, 0xffff, SRAM + 0x10000);
 
 	MAP_WRAM();
 
@@ -3033,7 +3517,7 @@ void CMemory::Map_SuperFXLoROMMap (void)
 void CMemory::Map_SetaDSPLoROMMap (void)
 {
 	printf("Map_SetaDSPLoROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
 	MAP_LOROM(0x40, 0x7f, 0x8000, 0xffff, CalculatedSize);
@@ -3051,7 +3535,7 @@ void CMemory::Map_SetaDSPLoROMMap (void)
 void CMemory::Map_SDD1LoROMMap (void)
 {
 	printf("Map_SDD1LoROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
 	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
@@ -3069,20 +3553,22 @@ void CMemory::Map_SDD1LoROMMap (void)
 void CMemory::Map_SA1LoROMMap (void)
 {
 	printf("Map_SA1LoROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
 	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
 
 	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize, 0);
 
-	map_space(0x00, 0x3f, 0x3000, 0x3fff, FillRAM);
-	map_space(0x80, 0xbf, 0x3000, 0x3fff, FillRAM);
+	MAP_SPACE(0x00, 0x3f, 0x3000, 0x3fff, FillRAM);
+	MAP_SPACE(0x80, 0xbf, 0x3000, 0x3fff, FillRAM);
 	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_BWRAM, MAP_TYPE_I_O);
 	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_BWRAM, MAP_TYPE_I_O);
 
 	for (int c = 0x40; c < 0x80; c++)
-		map_space(c, c, 0x0000, 0xffff, SRAM + (c & 1) * 0x10000);
+	{
+		MAP_SPACE(c, c, 0x0000, 0xffff, SRAM + (c & 1) * 0x10000);
+	}
 
 	MAP_WRAM();
 
@@ -3111,7 +3597,7 @@ void CMemory::Map_SA1LoROMMap (void)
 void CMemory::Map_HiROMMap (void)
 {
 	printf("Map_HiROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_HIROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
 	MAP_HIROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
@@ -3119,7 +3605,9 @@ void CMemory::Map_HiROMMap (void)
 	MAP_HIROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
 
 	if (Settings.DSP)
-		map_DSP();
+	{
+		MAP_DSP_();
+	}
 
 	MAP_HIROMSRAM();
 	MAP_WRAM();
@@ -3130,7 +3618,7 @@ void CMemory::Map_HiROMMap (void)
 void CMemory::Map_ExtendedHiROMMap (void)
 {
 	printf("Map_ExtendedHiROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_HIROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize - 0x400000, 0x400000);
 	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize - 0x400000, 0x400000);
@@ -3146,7 +3634,7 @@ void CMemory::Map_ExtendedHiROMMap (void)
 void CMemory::Map_SameGameHiROMMap (void)
 {
 	printf("Map_SameGameHiROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_HIROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
 	MAP_HIROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
@@ -3166,7 +3654,7 @@ void CMemory::Map_SameGameHiROMMap (void)
 void CMemory::Map_SPC7110HiROMMap (void)
 {
 	printf("Map_SPC7110HiROMMap\n");
-	map_System();
+	MAP_SYSTEM();
 
 	MAP_INDEX(0x00, 0x00, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
 	MAP_HIROM(0x00, 0x0f, 0x8000, 0xffff, CalculatedSize);	
@@ -3180,10 +3668,6 @@ void CMemory::Map_SPC7110HiROMMap (void)
 
 	map_WriteProtectROM();
 }
-
-// checksum
-
-
 
 // information
 
@@ -3273,506 +3757,3 @@ static const char * KartContents (uint8 ROMType)
 }
 
 #endif
-
-
-// UPS % IPS
-
-static uint32 ReadUPSPointer (const uint8 *data, uint32 &addr, unsigned size)
-{
-	uint32 offset = 0, shift = 1;
-	while(addr < size) {
-		uint8 x = data[addr++];
-		offset += (x & 0x7f) * shift;
-		if(x & 0x80) break;
-		shift <<= 7;
-		offset += shift;
-	}
-	return offset;
-}
-
-//NOTE: UPS patches are *never* created against a headered ROM!
-//this is per the UPS file specification. however, do note that it is
-//technically possible for a non-compliant patcher to ignore this requirement.
-//therefore, it is *imperative* that no emulator support such patches.
-//thusly, we ignore the "long offset" parameter below. failure to do so would
-//completely invalidate the purpose of UPS; which is to avoid header vs
-//no-header patching errors that result in IPS patches having a 50/50 chance of
-//being applied correctly.
-
-bool8 ReadUPSPatch (STREAM r, long, int32 &rom_size)
-{
-	//Reader lacks size() and rewind(), so we need to read in the file to get its size
-	uint8 *data = new uint8[8 * 1024 * 1024];  //allocate a lot of memory, better safe than sorry ...
-	uint32 size = 0;
-	while(true) {
-		int value = fgetc(r);
-		if(value == EOF) break;
-		data[size++] = value;
-		if(size >= 8 * 1024 * 1024) {
-			//prevent buffer overflow: SNES-made UPS patches should never be this big anyway ...
-			delete[] data;
-			return false;
-		}
-	}
-
-	//4-byte header + 1-byte input size + 1-byte output size + 4-byte patch CRC32 + 4-byte unpatched CRC32 + 4-byte patched CRC32
-	if(size < 18) { delete[] data; return false; }  //patch is too small
-
-	uint32 addr = 0;
-	if(data[addr++] != 'U') { delete[] data; return false; }  //patch has an invalid header
-	if(data[addr++] != 'P') { delete[] data; return false; }  //...
-	if(data[addr++] != 'S') { delete[] data; return false; }  //...
-	if(data[addr++] != '1') { delete[] data; return false; }  //...
-
-	uint32 patch_crc32 = caCRC32(data, size - 4, 0xffffffff);  //don't include patch CRC32 itself in CRC32 calculation
-	uint32 rom_crc32 = caCRC32(Memory.ROM, rom_size, 0xffffffff);
-	uint32 px_crc32 = (data[size - 12] << 0) + (data[size - 11] << 8) + (data[size - 10] << 16) + (data[size -  9] << 24);
-	uint32 py_crc32 = (data[size -  8] << 0) + (data[size -  7] << 8) + (data[size -  6] << 16) + (data[size -  5] << 24);
-	uint32 pp_crc32 = (data[size -  4] << 0) + (data[size -  3] << 8) + (data[size -  2] << 16) + (data[size -  1] << 24);
-	if(patch_crc32 != pp_crc32) { delete[] data; return false; }  //patch is corrupted
-	if((rom_crc32 != px_crc32) && (rom_crc32 != py_crc32)) { delete[] data; return false; }  //patch is for a different ROM
-
-	uint32 px_size = ReadUPSPointer(data, addr, size);
-	uint32 py_size = ReadUPSPointer(data, addr, size);
-	uint32 out_size = ((uint32) rom_size == px_size) ? py_size : px_size;
-	if(out_size > MAX_ROM_SIZE) { delete[] data; return false; }  //applying this patch will overflow Memory.ROM buffer
-
-	//fill expanded area with 0x00s; so that XORing works as expected below.
-	//note that this is needed (and works) whether output ROM is larger or smaller than pre-patched ROM
-	for(unsigned i = min((uint32) rom_size, out_size); i < max((uint32) rom_size, out_size); i++) {
-		Memory.ROM[i] = 0x00;
-	}
-
-	uint32 relative = 0;
-	while(addr < size - 12) {
-		relative += ReadUPSPointer(data, addr, size);
-		while(addr < size - 12) {
-			uint8 x = data[addr++];
-			Memory.ROM[relative++] ^= x;
-			if(!x) break;
-		}
-	}
-
-	rom_size = out_size;
-	delete[] data;
-
-	uint32 out_crc32 = caCRC32(Memory.ROM, rom_size, 0xffffffff);
-	if(((rom_crc32 == px_crc32) && (out_crc32 == py_crc32))
-	|| ((rom_crc32 == py_crc32) && (out_crc32 == px_crc32))
-	) {
-		return true;
-	} else {
-		//technically, reaching here means that patching has failed.
-		//we should return false, but unfortunately Memory.ROM has already
-		//been modified above and cannot be undone. to do this properly, we
-		//would need to make a copy of Memory.ROM, apply the patch, and then
-		//copy that back to Memory.ROM.
-		//
-		//however, the only way for this case to happen is if the UPS patch file
-		//itself is corrupted, which should be detected by the patch CRC32 check
-		//above anyway. errors due to the wrong ROM or patch file being used are
-		//already caught above.
-		fprintf(stderr, "WARNING: UPS patching appears to have failed.\nGame may not be playable.\n");
-		return true;
-	}
-}
-
-static long ReadInt (STREAM r, unsigned nbytes)
-{
-	long	v = 0;
-
-	while (nbytes--)
-	{
-		int	c = fgetc(r);
-		if (c == EOF)
-			return -1;
-		v = (v << 8) | (c & 0xFF);
-	}
-
-	return (v);
-}
-
-#define IPS_EOF 0x00454F46l
-
-bool8 ReadIPSPatch (STREAM r, long offset, int32 &rom_size)
-{
-	int32		ofs;
-	char		fname[6];
-
-	fname[5] = 0;
-	for (int i = 0; i < 5; i++)
-	{
-		int	c = fgetc(r);
-		if (c == EOF)
-			return (0);
-		fname[i] = (char) c;
-	}
-
-	if (strncmp(fname, "PATCH", 5))
-		return (0);
-
-	for (;;)
-	{
-		long	len, rlen;
-		int		rchar;
-
-		ofs = ReadInt(r, 3);
-		if (ofs == -1)
-			return (0);
-
-		if (ofs == IPS_EOF)
-			break;
-
-		ofs -= offset;
-
-		len = ReadInt(r, 2);
-		if (len == -1)
-			return (0);
-
-		if (len)
-		{
-			if (ofs + len > MAX_ROM_SIZE)
-				return (0);
-
-			while (len--)
-			{
-				rchar = fgetc(r);
-				if (rchar == EOF)
-					return (0);
-				Memory.ROM[ofs++] = (uint8) rchar;
-			}
-
-			if (ofs > rom_size)
-				rom_size = ofs;
-		}
-		else
-		{
-			rlen = ReadInt(r, 2);
-			if (rlen == -1)
-				return (0);
-
-			rchar = fgetc(r);
-			if (rchar == EOF)
-				return (0);
-
-			if (ofs + rlen > MAX_ROM_SIZE)
-				return (0);
-
-			while (rlen--)
-				Memory.ROM[ofs++] = (uint8) rchar;
-
-			if (ofs > rom_size)
-				rom_size = ofs;
-		}
-	}
-
-	ofs = ReadInt(r, 3);
-	if (ofs != -1 && ofs - offset < rom_size)
-		rom_size = ofs - offset;
-
-	return (1);
-}
-
-void CMemory::CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom_size)
-{
-	if (Settings.NoPatch)
-		return;
-
-#ifdef CUSTOM_FILE_HANDLING
-	CustomCheckForAnyPatch(header, rom_size);
-#else
-	STREAM		patch_file  = NULL;
-	uint32		i;
-	long		offset = header ? 512 : 0;
-	int			ret;
-	bool		flag;
-	char		dir[_MAX_DIR + 1], drive[_MAX_DRIVE + 1], name[_MAX_FNAME + 1], ext[_MAX_EXT + 1], ips[_MAX_EXT + 3], fname[PATH_MAX + 1];
-	const char	*n;
-
-	// UPS
-
-	_splitpath(rom_filename, drive, dir, name, ext);
-	_makepath(fname, drive, dir, name, "ups");
-
-	if ((patch_file = OPEN_STREAM(fname, "rb")) != NULL)
-	{
-		printf("Using UPS patch %s", fname);
-
-		ret = ReadUPSPatch(patch_file, 0, rom_size);
-		CLOSE_STREAM(patch_file);
-
-		if (ret)
-		{
-			printf("!\n");
-			return;
-		}
-		else
-			printf(" failed!\n");
-	}
-
-	n = S9xGetFilename(".ups", IPS_DIR);
-
-	if ((patch_file = OPEN_STREAM(n, "rb")) != NULL)
-	{
-		printf("Using UPS patch %s", n);
-
-		ret = ReadUPSPatch(patch_file, 0, rom_size);
-		CLOSE_STREAM(patch_file);
-
-		if (ret)
-		{
-			printf("!\n");
-			return;
-		}
-		else
-			printf(" failed!\n");
-	}
-
-	// IPS
-
-	_splitpath(rom_filename, drive, dir, name, ext);
-	_makepath(fname, drive, dir, name, "ips");
-
-	if ((patch_file = OPEN_STREAM(fname, "rb")) != NULL)
-	{
-		printf("Using IPS patch %s", fname);
-
-		ret = ReadIPSPatch(patch_file, offset, rom_size);
-		CLOSE_STREAM(patch_file);
-
-		if (ret)
-		{
-			printf("!\n");
-			return;
-		}
-		else
-			printf(" failed!\n");
-	}
-
-	if (_MAX_EXT > 6)
-	{
-		i = 0;
-		flag = false;
-
-		do
-		{
-			snprintf(ips, 8, "%03d.ips", i);
-			_makepath(fname, drive, dir, name, ips);
-
-			if (!(patch_file = OPEN_STREAM(fname, "rb")))
-				break;
-
-			printf("Using IPS patch %s", fname);
-
-			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
-
-			if (ret)
-			{
-				printf("!\n");
-				flag = true;
-			}
-			else
-			{
-				printf(" failed!\n");
-				break;
-			}
-		} while (++i < 1000);
-
-		if (flag)
-			return;
-	}
-
-	if (_MAX_EXT > 3)
-	{
-		i = 0;
-		flag = false;
-
-		do
-		{
-			snprintf(ips, _MAX_EXT + 2, "ips%d", i);
-			if (strlen(ips) > _MAX_EXT)
-				break;
-			_makepath(fname, drive, dir, name, ips);
-
-			if (!(patch_file = OPEN_STREAM(fname, "rb")))
-				break;
-
-			printf("Using IPS patch %s", fname);
-
-			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
-
-			if (ret)
-			{
-				printf("!\n");
-				flag = true;
-			}
-			else
-			{
-				printf(" failed!\n");
-				break;
-			}
-		} while (++i != 0);
-
-		if (flag)
-			return;
-	}
-
-	if (_MAX_EXT > 2)
-	{
-		i = 0;
-		flag = false;
-
-		do
-		{
-			snprintf(ips, 4, "ip%d", i);
-			_makepath(fname, drive, dir, name, ips);
-
-			if (!(patch_file = OPEN_STREAM(fname, "rb")))
-				break;
-
-			printf("Using IPS patch %s", fname);
-
-			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
-
-			if (ret)
-			{
-				printf("!\n");
-				flag = true;
-			}
-			else
-			{
-				printf(" failed!\n");
-				break;
-			}
-		} while (++i < 10);
-
-		if (flag)
-			return;
-	}
-
-	n = S9xGetFilename(".ips", IPS_DIR);
-
-	if ((patch_file = OPEN_STREAM(n, "rb")) != NULL)
-	{
-		printf("Using IPS patch %s", n);
-
-		ret = ReadIPSPatch(patch_file, offset, rom_size);
-		CLOSE_STREAM(patch_file);
-
-		if (ret)
-		{
-			printf("!\n");
-			return;
-		}
-		else
-			printf(" failed!\n");
-	}
-
-	if (_MAX_EXT > 6)
-	{
-		i = 0;
-		flag = false;
-
-		do
-		{
-			snprintf(ips, 9, ".%03d.ips", i);
-			n = S9xGetFilename(ips, IPS_DIR);
-
-			if (!(patch_file = OPEN_STREAM(n, "rb")))
-				break;
-
-			printf("Using IPS patch %s", n);
-
-			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
-
-			if (ret)
-			{
-				printf("!\n");
-				flag = true;
-			}
-			else
-			{
-				printf(" failed!\n");
-				break;
-			}
-		} while (++i < 1000);
-
-		if (flag)
-			return;
-	}
-
-	if (_MAX_EXT > 3)
-	{
-		i = 0;
-		flag = false;
-
-		do
-		{
-			snprintf(ips, _MAX_EXT + 3, ".ips%d", i);
-			if (strlen(ips) > _MAX_EXT + 1)
-				break;
-			n = S9xGetFilename(ips, IPS_DIR);
-
-			if (!(patch_file = OPEN_STREAM(n, "rb")))
-				break;
-
-			printf("Using IPS patch %s", n);
-
-			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
-
-			if (ret)
-			{
-				printf("!\n");
-				flag = true;
-			}
-			else
-			{
-				printf(" failed!\n");
-				break;
-			}
-		} while (++i != 0);
-
-		if (flag)
-			return;
-	}
-
-	if (_MAX_EXT > 2)
-	{
-		i = 0;
-		flag = false;
-
-		do
-		{
-			snprintf(ips, 5, ".ip%d", i);
-			n = S9xGetFilename(ips, IPS_DIR);
-
-			if (!(patch_file = OPEN_STREAM(n, "rb")))
-				break;
-
-			printf("Using IPS patch %s", n);
-
-			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
-
-			if (ret)
-			{
-				printf("!\n");
-				flag = true;
-			}
-			else
-			{
-				printf(" failed!\n");
-				break;
-			}
-		} while (++i < 10);
-
-		if (flag)
-			return;
-	}
-#endif
-}

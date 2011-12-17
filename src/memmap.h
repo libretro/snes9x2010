@@ -263,8 +263,6 @@ struct CMemory
 	bool8	Init (void);
 	void	Deinit (void);
 
-	int	ScoreHiROM (bool8, int32 romoff);
-	int	ScoreLoROM (bool8, int32 romoff);
 	uint32	HeaderRemove (uint32, int32 &, uint8 *);
 	uint32	FileLoader (uint8 *, const char *, int32);
 	bool8	LoadROM (const char *);
@@ -274,12 +272,8 @@ struct CMemory
 	bool8	LoadSRAM (const char *);
 	bool8	SaveSRAM (const char *);
 
-	void	ParseSNESHeader (uint8 *);
 	void	InitROM (void);
 
-	void	map_space (uint32, uint32, uint32, uint32, uint8 *);
-	void	map_System (void);
-	void	map_DSP (void);
 	void	map_WriteProtectROM (void);
 	void	Map_LoROMMap (void);
 	void	Map_NoMAD1LoROMMap (void);
@@ -294,8 +288,6 @@ struct CMemory
 	void	Map_ExtendedHiROMMap (void);
 	void	Map_SameGameHiROMMap (void);
 	void	Map_SPC7110HiROMMap (void);
-
-	void	CheckForAnyPatch (const char *, bool8, int32 &);
 
 	const char *	StaticRAMSize (void);
 	const char *	Size (void);
