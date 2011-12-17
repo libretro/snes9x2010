@@ -4111,15 +4111,14 @@ static void fx_sm_r15 (void)
 }
 
 // GSU executions functions
+// NOTE: no use to return anything here
 
-uint32 fx_run (uint32 nInstructions)
+void fx_run (uint32 nInstructions)
 {
 	GSU.vCounter = nInstructions;
 	READR14;
 	while (TF(G) && (GSU.vCounter-- > 0))
 		FX_STEP;
-
-	return (nInstructions - GSU.vInstCount);
 }
 
 // Special table for the different plot configurations

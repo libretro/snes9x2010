@@ -330,30 +330,24 @@ void S9xResetSuperFX (void)
 }
 
 // Update RamBankReg and RAM Bank pointer
-static void fx_updateRamBank (uint8 byte)
-{
-	// Update BankReg and Bank pointer
-	GSU.vRamBankReg = (uint32) byte & (FX_RAM_BANKS - 1);
+#define FX_UPDATE_RAM_BANK(byte) \
+	/* Update BankReg and Bank pointer */ \
+	GSU.vRamBankReg = (uint32) byte & (FX_RAM_BANKS - 1); \
 	GSU.pvRamBank = GSU.apvRamBank[byte & 0x3];
-}
 
 // SCBR write seen. We need to update our cached screen pointers
 #define fx_dirtySCBR() GSU.vSCBRDirty = TRUE;
 
 // Write access to the cache
-static void FxCacheWriteAccess (uint16 vAddress)
-{
-	if ((vAddress & 0x00f) == 0x00f)
+#define FX_CACHE_WRITE_ACCESS(vAddress) \
+	if ((vAddress & 0x00f) == 0x00f) \
 		GSU.vCacheFlags |= 1 << ((vAddress & 0x1f0) >> 4);
-}
 
-static void FxFlushCache (void)
-{
-	GSU.vCacheFlags = 0;
-	GSU.vCacheBaseReg = 0;
-	GSU.bCacheActive = FALSE;
-	//GSU.vPipe = 0x1;
-}
+#define FX_FLUSH_CACHE() \
+	GSU.vCacheFlags = 0; \
+	GSU.vCacheBaseReg = 0; \
+	GSU.bCacheActive = FALSE; \
+	/* GSU.vPipe = 0x1; */
 
 void S9xSetSuperFX (uint8 byte, uint16 address)
 {
@@ -372,7 +366,9 @@ void S9xSetSuperFX (uint8 byte, uint16 address)
 					}
 				}
 				else
-					FxFlushCache();
+				{
+					FX_FLUSH_CACHE();
+				}
 			}
 			else
 				Memory.FillRAM[0x3030] = byte;
@@ -417,7 +413,7 @@ void S9xSetSuperFX (uint8 byte, uint16 address)
 
 		case 0x303c:
 			Memory.FillRAM[0x303c] = byte;
-			fx_updateRamBank(byte);
+			FX_UPDATE_RAM_BANK(byte);
 			break;
 
 		case 0x303f:
@@ -438,7 +434,9 @@ void S9xSetSuperFX (uint8 byte, uint16 address)
 		default:
 			Memory.FillRAM[address] = byte;
 			if (address >= 0x3100)
-				FxCacheWriteAccess(address);
+			{
+				FX_CACHE_WRITE_ACCESS(address);
+			}
 
 			break;
 	}
@@ -464,18 +462,13 @@ static bool8 fx_checkStartAddress (void)
 	if (GSU.bCacheActive && R15 >= GSU.vCacheBaseReg && R15 < (GSU.vCacheBaseReg + 512))
 		return (TRUE);
 
-	if (GSU.vPrgBankReg >= 0x60 && GSU.vPrgBankReg <= 0x6f)
-		return (FALSE);
-
-	if (GSU.vPrgBankReg >= 0x74)
-		return (FALSE);
-
 	// Check if we're in RAM and the RAN flag is not set
-	if (GSU.vPrgBankReg >= 0x70 && GSU.vPrgBankReg <= 0x73 && !(SCMR & (1 << 3)))
-		return (FALSE);
+	bool condition1 = GSU.vPrgBankReg >= 0x60 && GSU.vPrgBankReg <= 0x6f;
+	bool condition2 = GSU.vPrgBankReg >= 0x74;
+	bool condition3 = GSU.vPrgBankReg >= 0x70 && GSU.vPrgBankReg <= 0x73 && !(SCMR & 8);
+	bool condition4 = !(SCMR & 16);
 
-	// If not, we're in ROM, so check if the RON flag is set
-	if (!(SCMR & (1 << 4)))
+	if (condition1 | condition2 | condition3 | condition4)
 		return (FALSE);
 
 	return (TRUE);
@@ -523,43 +516,34 @@ static void fx_writeRegisterSpace (void)
 	p[GSU_CBR + 1] = (uint8) (GSU.vCacheBaseReg >> 8);
 }
 
-// Execute until the next stop instruction
-static uint32 FxEmulate (uint32 nInstructions)
-{
-	uint32	vCount;
-
-	// Read registers and initialize GSU session
-	fx_readRegisterSpace();
-
-	// Check if the start address is valid
-	if (!fx_checkStartAddress())
-	{
-		CF(G);
-		fx_writeRegisterSpace();
-
-		return (0);
-	}
-
-	// Execute GSU session
-	CF(IRQ);
-
-	vCount = fx_run(nInstructions);
-
-	// Store GSU registers
-	fx_writeRegisterSpace();
-
-	// Check for error code
-	if (GSU.vErrorCode)
-		return (GSU.vErrorCode);
-	else
-		return (vCount);
-}
-
 void S9xSuperFXExec (void)
 {
 	if ((Memory.FillRAM[0x3000 + GSU_SFR] & FLG_G) && (Memory.FillRAM[0x3000 + GSU_SCMR] & 0x18) == 0x18)
 	{
-		FxEmulate((Memory.FillRAM[0x3000 + GSU_CLSR] & 1) ? SuperFX.speedPerLine * 2 : SuperFX.speedPerLine);
+		// EMULATE FX CHIP
+		// Execute until the next stop instruction
+		uint32 nInstructions = (Memory.FillRAM[0x3000 + GSU_CLSR] & 1) ? SuperFX.speedPerLine * 2 : SuperFX.speedPerLine;
+
+		// Read registers and initialize GSU session
+		fx_readRegisterSpace();
+
+		// Check if the start address is valid
+		if (fx_checkStartAddress())
+		{
+			// Execute GSU session
+			CF(IRQ);
+
+			fx_run(nInstructions);
+
+			// Store GSU registers
+			fx_writeRegisterSpace();
+		}
+		else
+		{
+			CF(G);
+			fx_writeRegisterSpace();
+		}
+		// EOF EMULATE FX CHIP
 
 		uint16 GSUStatus = Memory.FillRAM[0x3000 + GSU_SFR] | (Memory.FillRAM[0x3000 + GSU_SFR + 1] << 8);
 		if ((GSUStatus & (FLG_G | FLG_IRQ)) == FLG_IRQ)
@@ -590,48 +574,19 @@ void fx_computeScreenPointers (void)
 			case 192:
 				{
 					uint32 tempvalue[32];
-					for(int i = 0; i < 32; i++)
+					uint32 vmode_mul = 0;
+					for(uint32 i = 0; i < 32; i++)
 					{
 						tempvalue[i] = incrementvalue * i * vmode;
 						GSU.x[i] = tempvalue[i];
+						GSU.apvScreen[i] = pvScreenBase + (vmode_mul * vmode);
+						vmode_mul += 16
 					}
-
-					GSU.apvScreen[0] = pvScreenBase;
-					GSU.apvScreen[1] = pvScreenBase + (16 * vmode);
-					GSU.apvScreen[2] = pvScreenBase + (32 * vmode);
-					GSU.apvScreen[3] = pvScreenBase + (48 * vmode);
-					GSU.apvScreen[4] = pvScreenBase + (64 * vmode);
-					GSU.apvScreen[5] = pvScreenBase + (80 * vmode);
-					GSU.apvScreen[6] = pvScreenBase + (96 * vmode);
-					GSU.apvScreen[7] = pvScreenBase + (112 * vmode);
-					GSU.apvScreen[8] = pvScreenBase + (128 * vmode);
-					GSU.apvScreen[9] = pvScreenBase + (144 * vmode);
-					GSU.apvScreen[10] = pvScreenBase + (160 * vmode);
-					GSU.apvScreen[11] = pvScreenBase + (176 * vmode);
-					GSU.apvScreen[12] = pvScreenBase + (192 * vmode);
-					GSU.apvScreen[13] = pvScreenBase + (208 * vmode);
-					GSU.apvScreen[14] = pvScreenBase + (224 * vmode);
-					GSU.apvScreen[15] = pvScreenBase + (240 * vmode);
-					GSU.apvScreen[16] = pvScreenBase + (256 * vmode);
-					GSU.apvScreen[17] = pvScreenBase + (272 * vmode);
-					GSU.apvScreen[18] = pvScreenBase + (288 * vmode);
-					GSU.apvScreen[19] = pvScreenBase + (304 * vmode);
-					GSU.apvScreen[20] = pvScreenBase + (320 * vmode);
-					GSU.apvScreen[21] = pvScreenBase + (336 * vmode);
-					GSU.apvScreen[22] = pvScreenBase + (352 * vmode);
-					GSU.apvScreen[23] = pvScreenBase + (368 * vmode);
-					GSU.apvScreen[24] = pvScreenBase + (384 * vmode);
-					GSU.apvScreen[25] = pvScreenBase + (400 * vmode);
-					GSU.apvScreen[26] = pvScreenBase + (416 * vmode);
-					GSU.apvScreen[27] = pvScreenBase + (432 * vmode);
-					GSU.apvScreen[28] = pvScreenBase + (448 * vmode);
-					GSU.apvScreen[29] = pvScreenBase + (464 * vmode);
-					GSU.apvScreen[30] = pvScreenBase + (480 * vmode);
-					GSU.apvScreen[31] = pvScreenBase + (496 * vmode);
 				}
 				break;
 			case 256:
 				const uint32 mul_8192 = vmode << 13;
+				const uint32 mul_4096 = vmode << 12;
 
 				GSU.apvScreen[0] = GSU.apvScreen[16] = pvScreenBase;
 				GSU.apvScreen[1] = GSU.apvScreen[17] = pvScreenBase + (256 * vmode);
@@ -666,7 +621,6 @@ void fx_computeScreenPointers (void)
 				GSU.apvScreen[30] += mul_8192;
 				GSU.apvScreen[31] += mul_8192;
 
-				const uint32 mul_4096 = vmode << 12;
 				GSU.x[0] = GSU.x[16] = 0; 
 				GSU.x[1] = GSU.x[17] = 16 * vmode;
 				GSU.x[2] = GSU.x[18] = 32 * vmode;
