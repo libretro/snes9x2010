@@ -273,30 +273,17 @@ struct CMemory
 	bool8	LoadSameGame (const char *, const char *);
 	bool8	LoadSRAM (const char *);
 	bool8	SaveSRAM (const char *);
-	void	ClearSRAM (void);
-	bool8	LoadSRTC (void);
-	bool8	SaveSRTC (void);
 
-	char *	Safe (const char *);
-	char *	SafeANK (const char *);
 	void	ParseSNESHeader (uint8 *);
 	void	InitROM (void);
 
-	uint32	map_mirror (uint32, uint32);
-	void	map_lorom (uint32, uint32, uint32, uint32, uint32);
-	void	map_hirom (uint32, uint32, uint32, uint32, uint32);
-	void	map_lorom_offset (uint32, uint32, uint32, uint32, uint32, uint32);
-	void	map_hirom_offset (uint32, uint32, uint32, uint32, uint32, uint32);
 	void	map_space (uint32, uint32, uint32, uint32, uint8 *);
-	void	map_index (uint32, uint32, uint32, uint32, int, int);
 	void	map_System (void);
 	void	map_DSP (void);
 	void	map_WriteProtectROM (void);
 	void	Map_LoROMMap (void);
 	void	Map_NoMAD1LoROMMap (void);
-	void	Map_JumboLoROMMap (void);
 	void	Map_ROM24MBSLoROMMap (void);
-	void	Map_SRAM512KLoROMMap (void);
 	void	Map_SufamiTurboLoROMMap (void);
 	void	Map_SufamiTurboPseudoLoROMMap (void);
 	void	Map_SuperFXLoROMMap (void);
@@ -308,13 +295,10 @@ struct CMemory
 	void	Map_SameGameHiROMMap (void);
 	void	Map_SPC7110HiROMMap (void);
 
-	uint16	checksum_mirror_sum (uint8 *, uint32 &, uint32 mask);
-
 	void	CheckForAnyPatch (const char *, bool8, int32 &);
 
 	const char *	StaticRAMSize (void);
 	const char *	Size (void);
-	const char *	KartContents (void);
 };
 
 struct SMulti

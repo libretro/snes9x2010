@@ -448,7 +448,46 @@ bool8 CMemory::Init (void)
 	return (TRUE);
 }
 
-char * CMemory::SafeANK (const char *s)
+static char * Safe (const char *s)
+{
+	static char	*safe = NULL;
+	static int	safe_len = 0;
+
+	if (s == NULL)
+	{
+		if (safe)
+		{
+			free(safe);
+			safe = NULL;
+		}
+
+		return (NULL);
+	}
+
+	int	len = strlen(s);
+	if (!safe || len + 1 > safe_len)
+	{
+		if (safe)
+			free(safe);
+
+		safe_len = len + 1;
+		safe = (char *) malloc(safe_len);
+	}
+
+	for (int i = 0; i < len; i++)
+	{
+		if (s[i] >= 32 && s[i] < 127)
+			safe[i] = s[i];
+		else
+			safe[i] = '_';
+	}
+
+	safe[len] = 0;
+
+	return (safe);
+}
+
+static char * SafeANK (uint8 ROMRegion, const char *s)
 {
 	static char	*safe = NULL;
 	static int	safe_len = 0;
@@ -533,7 +572,7 @@ void CMemory::Deinit (void)
 	}
 
 	Safe(NULL);
-	SafeANK(NULL);
+	SafeANK(ROMRegion, NULL);
 }
 
 // file management and ROM detection
@@ -1361,7 +1400,7 @@ bool8 CMemory::LoadSameGame (const char *cartA, const char *cartB)
 	return (TRUE);
 }
 
-bool8 CMemory::LoadSRTC (void)
+static bool8 LoadSRTC (void)
 {
 	FILE	*fp = fopen(S9xGetFilename(".rtc", SRAM_DIR), "rb");
 	if (!fp)
@@ -1373,7 +1412,7 @@ bool8 CMemory::LoadSRTC (void)
 	return (TRUE);
 }
 
-bool8 CMemory::SaveSRTC (void)
+static bool8 SaveSRTC (void)
 {
 	FILE	*fp = fopen(S9xGetFilename(".rtc", SRAM_DIR), "wb");
 	if (!fp)
@@ -1385,11 +1424,6 @@ bool8 CMemory::SaveSRTC (void)
 	return (TRUE);
 }
 
-void CMemory::ClearSRAM (void)
-{
-	memset(SRAM, SNESGameFixes.SRAMInitialValue, 0x20000);
-}
-
 bool8 CMemory::LoadSRAM (const char *filename)
 {
 	FILE	*file;
@@ -1398,7 +1432,8 @@ bool8 CMemory::LoadSRAM (const char *filename)
 
 	strcpy(sramName, filename);
 
-	ClearSRAM();
+	// Clear SRAM
+	memset(SRAM, SNESGameFixes.SRAMInitialValue, 0x20000);
 
 	if (Multi.cartType && Multi.sramSizeB)
 	{
@@ -1547,45 +1582,6 @@ static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
 	return (~crc32);
 }
 
-char * CMemory::Safe (const char *s)
-{
-	static char	*safe = NULL;
-	static int	safe_len = 0;
-
-	if (s == NULL)
-	{
-		if (safe)
-		{
-			free(safe);
-			safe = NULL;
-		}
-
-		return (NULL);
-	}
-
-	int	len = strlen(s);
-	if (!safe || len + 1 > safe_len)
-	{
-		if (safe)
-			free(safe);
-
-		safe_len = len + 1;
-		safe = (char *) malloc(safe_len);
-	}
-
-	for (int i = 0; i < len; i++)
-	{
-		if (s[i] >= 32 && s[i] < 127)
-			safe[i] = s[i];
-		else
-			safe[i] = '_';
-	}
-
-	safe[len] = 0;
-
-	return (safe);
-}
-
 
 void CMemory::ParseSNESHeader (uint8 *RomHeader)
 {
@@ -1653,10 +1649,153 @@ static uint16 checksum_calc_sum (uint8 *data, uint32 length)
 	return (sum);
 }
 
+static uint16 checksum_mirror_sum (uint8 *start, uint32 &length, uint32 mask)
+{
+	// from NSRT
+	while (!(length & mask))
+		mask >>= 1;
+
+	uint16	part1 = checksum_calc_sum(start, mask);
+	uint16	part2 = 0;
+
+	uint32	next_length = length - mask;
+	if (next_length)
+	{
+		part2 = checksum_mirror_sum(start + mask, next_length, mask >> 1);
+
+		while (next_length < mask)
+		{
+			next_length += next_length;
+			part2 += part2;
+		}
+
+		length = mask + mask;
+	}
+
+	return (part1 + part2);
+}
+
+static uint32 map_mirror (uint32 size, uint32 pos)
+{
+	// from bsnes
+	if (size == 0)
+		return (0);
+	if (pos < size)
+		return (pos);
+
+	uint32	mask = 1 << 31;
+	while (!(pos & mask))
+		mask >>= 1;
+
+	if (size <= (pos & mask))
+		return (map_mirror(size, pos - mask));
+	else
+		return (mask + map_mirror(size - mask, pos - mask));
+}
+
 #define MATCH_NA(str) (strcmp(ROMName, str) == 0)
 #define MATCH_NN(str) (strncmp(ROMName, str, strlen(str)) == 0)
 #define MATCH_NC(str) (strncasecmp(ROMName, str, strlen(str)) == 0)
 #define MATCH_ID(str) (strncmp(ROMId, str, strlen(str)) == 0)
+
+#define MAP_HIROM(bank_s, bank_e, addr_s, addr_e, size) \
+	for (uint32 c = bank_s; c <= bank_e; c++) \
+	{ \
+		for (uint32 i = addr_s; i <= addr_e; i += 0x1000) \
+		{ \
+			uint32 p = (c << 4) | (i >> 12); \
+			uint32 addr = c << 16; \
+			Map[p] = ROM + map_mirror(size, addr); \
+			BlockIsROM[p] = TRUE; \
+			BlockIsRAM[p] = FALSE; \
+		} \
+	}
+
+#define MAP_INDEX(bank_s, bank_e, addr_s, addr_e, index, type) \
+	for (uint32 c = bank_s; c <= bank_e; c++) \
+	{ \
+		for (uint32 i = addr_s; i <= addr_e; i += 0x1000) \
+		{ \
+			uint32 p = (c << 4) | (i >> 12); \
+			Map[p] = (uint8 *) index; \
+			BlockIsROM[p] = ((type == MAP_TYPE_I_O) || (type == MAP_TYPE_RAM)) ? FALSE : TRUE; \
+			BlockIsRAM[p] = ((type == MAP_TYPE_I_O) || (type == MAP_TYPE_ROM)) ? FALSE : TRUE; \
+		} \
+	}
+
+#define MAP_LOROM_OFFSET(bank_s, bank_e, addr_s, addr_e, size, offset) \
+	for (uint32 c = bank_s; c <= bank_e; c++) \
+	{ \
+		for (uint32 i = addr_s; i <= addr_e; i += 0x1000) \
+		{ \
+			uint32 p = (c << 4) | (i >> 12); \
+			uint32 addr = ((c - bank_s) & 0x7f) * 0x8000; \
+			Map[p] = ROM + offset + map_mirror(size, addr) - (i & 0x8000); \
+			BlockIsROM[p] = TRUE; \
+			BlockIsRAM[p] = FALSE; \
+		} \
+	}
+
+#define MAP_HIROM_OFFSET(bank_s, bank_e, addr_s, addr_e, size, offset) \
+	for (uint32 c = bank_s; c <= bank_e; c++) \
+	{ \
+		for (uint32 i = addr_s; i <= addr_e; i += 0x1000) \
+		{ \
+			uint32 p = (c << 4) | (i >> 12); \
+			uint32 addr = (c - bank_s) << 16; \
+			Map[p] = ROM + offset + map_mirror(size, addr); \
+			BlockIsROM[p] = TRUE; \
+			BlockIsRAM[p] = FALSE; \
+		} \
+	}
+
+#define MAP_LOROMSRAM() \
+	MAP_INDEX(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM); \
+	MAP_INDEX(0xf0, 0xff, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+
+#define MAP_WRAM() \
+	/* will overwrite others */ \
+	map_space(0x7e, 0x7e, 0x0000, 0xffff, RAM); \
+	map_space(0x7f, 0x7f, 0x0000, 0xffff, RAM + 0x10000);
+
+#define MAP_JUMBOLOROMMAP() \
+	/* XXX: Which game uses this? */ \
+	printf("Map_JumboLoROMMap\n"); \
+	map_System(); \
+	MAP_LOROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize - 0x400000, 0x400000); \
+	MAP_LOROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize - 0x400000, 0x400000); \
+	MAP_LOROM_OFFSET(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0); \
+	MAP_LOROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0x200000); \
+	MAP_LOROMSRAM(); \
+	MAP_WRAM(); \
+	map_WriteProtectROM();
+
+#define MAP_LOROM(bank_s, bank_e, addr_s, addr_e, size) \
+	for (uint32 c = bank_s; c <= bank_e; c++) \
+	{ \
+		for (uint32 i = addr_s; i <= addr_e; i += 0x1000) \
+		{ \
+			uint32 p = (c << 4) | (i >> 12); \
+			uint32 addr = (c & 0x7f) * 0x8000; \
+			Map[p] = ROM + map_mirror(size, addr) - (i & 0x8000); \
+			BlockIsROM[p] = TRUE; \
+			BlockIsRAM[p] = FALSE; \
+		} \
+	}
+
+#define MAP_SRAM512KLOROMMAP() \
+	printf("Map_SRAM512KLoROMMap\n"); \
+	map_System(); \
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize); \
+	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize); \
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize); \
+	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize); \
+	map_space(0x70, 0x70, 0x0000, 0xffff, SRAM); \
+	map_space(0x71, 0x71, 0x0000, 0xffff, SRAM + 0x8000); \
+	map_space(0x72, 0x72, 0x0000, 0xffff, SRAM + 0x10000); \
+	map_space(0x73, 0x73, 0x0000, 0xffff, SRAM + 0x18000); \
+	MAP_WRAM(); \
+	map_WriteProtectROM();
 
 void CMemory::InitROM (void)
 {
@@ -1887,7 +2026,9 @@ void CMemory::InitROM (void)
 							Map_SDD1LoROMMap();
 						else
 							if (ExtendedFormat != NOPE)
-								Map_JumboLoROMMap();
+							{
+								MAP_JUMBOLOROMMAP();
+							}
 							else
 								if (strncmp(ROMName, "WANDERERS FROM YS", 17) == 0)
 									Map_NoMAD1LoROMMap();
@@ -1898,7 +2039,9 @@ void CMemory::InitROM (void)
 									else
 										if (strncmp(ROMName, "THOROUGHBRED BREEDER3", 21) == 0 ||
 												strncmp(ROMName, "RPG-TCOOL 2", 11) == 0)
-											Map_SRAM512KLoROMMap();
+										{
+											MAP_SRAM512KLOROMMAP();
+										}
 										else
 											if (strncmp(ROMName, "ADD-ON BASE CASSETE", 19) == 0)
 											{
@@ -2597,7 +2740,7 @@ void CMemory::InitROM (void)
 	char displayName[ROM_NAME_LEN];
 
 	strcpy(RawROMName, ROMName);
-	sprintf(displayName, "%s", SafeANK(ROMName));
+	sprintf(displayName, "%s", SafeANK(ROMRegion, ROMName));
 	sprintf(ROMName, "%s", Safe(ROMName));
 	sprintf(ROMId, "%s", Safe(ROMId));
 
@@ -2609,7 +2752,7 @@ void CMemory::InitROM (void)
 	#else
 	sprintf(String, "\"%s\" [%s] %s, %s, %s, %s, SRAM:%s, ID:%s, CRC32:%08X",
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
-		(HiROM ? ((ExtendedFormat != NOPE) ? "ExHiROM": "HiROM") : "LoROM"), Size(), KartContents(), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), ROMId, ROMCRC32);
+		(HiROM ? ((ExtendedFormat != NOPE) ? "ExHiROM": "HiROM") : "LoROM"), Size(), KartContents(ROMType), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), ROMId, ROMCRC32);
 	#endif
 	S9xMessage(S9X_INFO, S9X_ROM_INFO, String);
 
@@ -2629,91 +2772,7 @@ void CMemory::InitROM (void)
 
 // memory map
 
-uint32 CMemory::map_mirror (uint32 size, uint32 pos)
-{
-	// from bsnes
-	if (size == 0)
-		return (0);
-	if (pos < size)
-		return (pos);
 
-	uint32	mask = 1 << 31;
-	while (!(pos & mask))
-		mask >>= 1;
-
-	if (size <= (pos & mask))
-		return (map_mirror(size, pos - mask));
-	else
-		return (mask + map_mirror(size - mask, pos - mask));
-}
-
-void CMemory::map_lorom (uint32 bank_s, uint32 bank_e, uint32 addr_s, uint32 addr_e, uint32 size)
-{
-	uint32	c, i, p, addr;
-
-	for (c = bank_s; c <= bank_e; c++)
-	{
-		for (i = addr_s; i <= addr_e; i += 0x1000)
-		{
-			p = (c << 4) | (i >> 12);
-			addr = (c & 0x7f) * 0x8000;
-			Map[p] = ROM + map_mirror(size, addr) - (i & 0x8000);
-			BlockIsROM[p] = TRUE;
-			BlockIsRAM[p] = FALSE;
-		}
-	}
-}
-
-void CMemory::map_hirom (uint32 bank_s, uint32 bank_e, uint32 addr_s, uint32 addr_e, uint32 size)
-{
-	uint32	c, i, p, addr;
-
-	for (c = bank_s; c <= bank_e; c++)
-	{
-		for (i = addr_s; i <= addr_e; i += 0x1000)
-		{
-			p = (c << 4) | (i >> 12);
-			addr = c << 16;
-			Map[p] = ROM + map_mirror(size, addr);
-			BlockIsROM[p] = TRUE;
-			BlockIsRAM[p] = FALSE;
-		}
-	}
-}
-
-void CMemory::map_lorom_offset (uint32 bank_s, uint32 bank_e, uint32 addr_s, uint32 addr_e, uint32 size, uint32 offset)
-{
-	uint32	c, i, p, addr;
-
-	for (c = bank_s; c <= bank_e; c++)
-	{
-		for (i = addr_s; i <= addr_e; i += 0x1000)
-		{
-			p = (c << 4) | (i >> 12);
-			addr = ((c - bank_s) & 0x7f) * 0x8000;
-			Map[p] = ROM + offset + map_mirror(size, addr) - (i & 0x8000);
-			BlockIsROM[p] = TRUE;
-			BlockIsRAM[p] = FALSE;
-		}
-	}
-}
-
-void CMemory::map_hirom_offset (uint32 bank_s, uint32 bank_e, uint32 addr_s, uint32 addr_e, uint32 size, uint32 offset)
-{
-	uint32	c, i, p, addr;
-
-	for (c = bank_s; c <= bank_e; c++)
-	{
-		for (i = addr_s; i <= addr_e; i += 0x1000)
-		{
-			p = (c << 4) | (i >> 12);
-			addr = (c - bank_s) << 16;
-			Map[p] = ROM + offset + map_mirror(size, addr);
-			BlockIsROM[p] = TRUE;
-			BlockIsRAM[p] = FALSE;
-		}
-	}
-}
 
 void CMemory::map_space (uint32 bank_s, uint32 bank_e, uint32 addr_s, uint32 addr_e, uint8 *data)
 {
@@ -2731,108 +2790,80 @@ void CMemory::map_space (uint32 bank_s, uint32 bank_e, uint32 addr_s, uint32 add
 	}
 }
 
-void CMemory::map_index (uint32 bank_s, uint32 bank_e, uint32 addr_s, uint32 addr_e, int index, int type)
-{
-	uint32	c, i, p;
-	bool8	isROM, isRAM;
-
-	isROM = ((type == MAP_TYPE_I_O) || (type == MAP_TYPE_RAM)) ? FALSE : TRUE;
-	isRAM = ((type == MAP_TYPE_I_O) || (type == MAP_TYPE_ROM)) ? FALSE : TRUE;
-
-	for (c = bank_s; c <= bank_e; c++)
-	{
-		for (i = addr_s; i <= addr_e; i += 0x1000)
-		{
-			p = (c << 4) | (i >> 12);
-			Map[p] = (uint8 *) index;
-			BlockIsROM[p] = isROM;
-			BlockIsRAM[p] = isRAM;
-		}
-	}
-}
 
 void CMemory::map_System (void)
 {
 	// will be overwritten
 	map_space(0x00, 0x3f, 0x0000, 0x1fff, RAM);
-	map_index(0x00, 0x3f, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O);
-	map_index(0x00, 0x3f, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O);
+	MAP_INDEX(0x00, 0x3f, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O);
+	MAP_INDEX(0x00, 0x3f, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O);
 	map_space(0x80, 0xbf, 0x0000, 0x1fff, RAM);
-	map_index(0x80, 0xbf, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O);
-	map_index(0x80, 0xbf, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O);
+	MAP_INDEX(0x80, 0xbf, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O);
+	MAP_INDEX(0x80, 0xbf, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O);
 }
 
-#define MAP_WRAM() \
-	/* will overwrite others */ \
-	map_space(0x7e, 0x7e, 0x0000, 0xffff, RAM); \
-	map_space(0x7f, 0x7f, 0x0000, 0xffff, RAM + 0x10000);
-
-#define MAP_LOROMSRAM() \
-	map_index(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM); \
-	map_index(0xf0, 0xff, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
-
 #define MAP_HIROMSRAM() \
-	map_index(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM); \
-	map_index(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
+	MAP_INDEX(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM); \
+	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
 
 void CMemory::map_DSP (void)
 {
 	switch (DSP0.maptype)
 	{
 		case M_DSP1_LOROM_S:
-			map_index(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
-			map_index(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
 			break;
 
 		case M_DSP1_LOROM_L:
-			map_index(0x60, 0x6f, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
-			map_index(0xe0, 0xef, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0x60, 0x6f, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0xe0, 0xef, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
 			break;
 
 		case M_DSP1_HIROM:
-			map_index(0x00, 0x1f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
-			map_index(0x80, 0x9f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0x00, 0x1f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0x80, 0x9f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O);
 			break;
 
 		case M_DSP2_LOROM:
-			map_index(0x20, 0x3f, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O);
-			map_index(0x20, 0x3f, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O);
-			map_index(0xa0, 0xbf, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O);
-			map_index(0xa0, 0xbf, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0x20, 0x3f, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0xa0, 0xbf, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O);
 			break;
 
 		case M_DSP3_LOROM:
-			map_index(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
-			map_index(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
 			break;
 
 		case M_DSP4_LOROM:
-			map_index(0x30, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
-			map_index(0xb0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0x30, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
+			MAP_INDEX(0xb0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O);
 			break;
 	}
 }
 
 #define MAP_C4_() \
-	map_index(0x00, 0x3f, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O); \
-	map_index(0x80, 0xbf, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O);
+	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O); \
+	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O);
 
 #define MAP_OBC1() \
-	map_index(0x00, 0x3f, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O); \
-	map_index(0x80, 0xbf, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O);
+	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O); \
+	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O);
 
 #define MAP_SETARISC() \
-	map_index(0x00, 0x3f, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O); \
-	map_index(0x80, 0xbf, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O);
+	MAP_INDEX(0x00, 0x3f, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O); \
+	MAP_INDEX(0x80, 0xbf, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O);
 
 #define MAP_SETADSP() \
 	/* where does the SETA chip access, anyway? */ \
 	/* please confirm this? */ \
-	map_index(0x68, 0x6f, 0x0000, 0x7fff, MAP_SETA_DSP, MAP_TYPE_RAM); \
+	MAP_INDEX(0x68, 0x6f, 0x0000, 0x7fff, MAP_SETA_DSP, MAP_TYPE_RAM); \
 	/* and this! */ \
-	map_index(0x60, 0x67, 0x0000, 0x3fff, MAP_SETA_DSP, MAP_TYPE_I_O); \
+	MAP_INDEX(0x60, 0x67, 0x0000, 0x3fff, MAP_SETA_DSP, MAP_TYPE_I_O); \
 	/* ST-0010: */ \
-	/* map_index(0x68, 0x6f, 0x0000, 0x0fff, MAP_SETA_DSP, ?); */
+	/* MAP_INDEX(0x68, 0x6f, 0x0000, 0x0fff, MAP_SETA_DSP, ?); */
 
 void CMemory::map_WriteProtectROM (void)
 {
@@ -2851,10 +2882,10 @@ void CMemory::Map_LoROMMap (void)
 	printf("Map_LoROMMap\n");
 	map_System();
 
-	map_lorom(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
-	map_lorom(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
 
 	if (Settings.DSP)
 		map_DSP();
@@ -2885,35 +2916,19 @@ void CMemory::Map_NoMAD1LoROMMap (void)
 	printf("Map_NoMAD1LoROMMap\n");
 	map_System();
 
-	map_lorom(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
-	map_lorom(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
 
-	map_index(0x70, 0x7f, 0x0000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
-	map_index(0xf0, 0xff, 0x0000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+	MAP_INDEX(0x70, 0x7f, 0x0000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+	MAP_INDEX(0xf0, 0xff, 0x0000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
 
 	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
 
-void CMemory::Map_JumboLoROMMap (void)
-{
-	// XXX: Which game uses this?
-	printf("Map_JumboLoROMMap\n");
-	map_System();
-
-	map_lorom_offset(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize - 0x400000, 0x400000);
-	map_lorom_offset(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize - 0x400000, 0x400000);
-	map_lorom_offset(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0);
-	map_lorom_offset(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0x200000);
-
-	MAP_LOROMSRAM();
-	MAP_WRAM();
-
-	map_WriteProtectROM();
-}
 
 void CMemory::Map_ROM24MBSLoROMMap (void)
 {
@@ -2921,10 +2936,10 @@ void CMemory::Map_ROM24MBSLoROMMap (void)
 	printf("Map_ROM24MBSLoROMMap\n");
 	map_System();
 
-	map_lorom_offset(0x00, 0x1f, 0x8000, 0xffff, 0x100000, 0);
-	map_lorom_offset(0x20, 0x3f, 0x8000, 0xffff, 0x100000, 0x100000);
-	map_lorom_offset(0x80, 0x9f, 0x8000, 0xffff, 0x100000, 0x200000);
-	map_lorom_offset(0xa0, 0xbf, 0x8000, 0xffff, 0x100000, 0x100000);
+	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x100000, 0);
+	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, 0x100000, 0x100000);
+	MAP_LOROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, 0x100000, 0x200000);
+	MAP_LOROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, 0x100000, 0x100000);
 
 	MAP_LOROMSRAM();
 	MAP_WRAM();
@@ -2932,48 +2947,29 @@ void CMemory::Map_ROM24MBSLoROMMap (void)
 	map_WriteProtectROM();
 }
 
-void CMemory::Map_SRAM512KLoROMMap (void)
-{
-	printf("Map_SRAM512KLoROMMap\n");
-	map_System();
-
-	map_lorom(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
-	map_lorom(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
-
-	map_space(0x70, 0x70, 0x0000, 0xffff, SRAM);
-	map_space(0x71, 0x71, 0x0000, 0xffff, SRAM + 0x8000);
-	map_space(0x72, 0x72, 0x0000, 0xffff, SRAM + 0x10000);
-	map_space(0x73, 0x73, 0x0000, 0xffff, SRAM + 0x18000);
-
-	MAP_WRAM();
-
-	map_WriteProtectROM();
-}
 
 void CMemory::Map_SufamiTurboLoROMMap (void)
 {
 	printf("Map_SufamiTurboLoROMMap\n");
 	map_System();
 
-	map_lorom_offset(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0);
-	map_lorom_offset(0x20, 0x3f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	map_lorom_offset(0x40, 0x5f, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
-	map_lorom_offset(0x80, 0x9f, 0x8000, 0xffff, 0x40000, 0);
-	map_lorom_offset(0xa0, 0xbf, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	map_lorom_offset(0xc0, 0xdf, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
+	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0);
+	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
+	MAP_LOROM_OFFSET(0x40, 0x5f, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
+	MAP_LOROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, 0x40000, 0);
+	MAP_LOROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
+	MAP_LOROM_OFFSET(0xc0, 0xdf, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
 
 	if (Multi.sramSizeA)
 	{
-		map_index(0x60, 0x63, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
-		map_index(0xe0, 0xe3, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+		MAP_INDEX(0x60, 0x63, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+		MAP_INDEX(0xe0, 0xe3, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
 	}
 
 	if (Multi.sramSizeB)
 	{
-		map_index(0x70, 0x73, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM);
-		map_index(0xf0, 0xf3, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM);
+		MAP_INDEX(0x70, 0x73, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM);
+		MAP_INDEX(0xf0, 0xf3, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM);
 	}
 
 	MAP_WRAM();
@@ -2987,12 +2983,12 @@ void CMemory::Map_SufamiTurboPseudoLoROMMap (void)
 	printf("Map_SufamiTurboPseudoLoROMMap\n");
 	map_System();
 
-	map_lorom_offset(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0);
-	map_lorom_offset(0x20, 0x3f, 0x8000, 0xffff, 0x100000, 0x100000);
-	map_lorom_offset(0x40, 0x5f, 0x8000, 0xffff, 0x100000, 0x200000);
-	map_lorom_offset(0x80, 0x9f, 0x8000, 0xffff, 0x40000, 0);
-	map_lorom_offset(0xa0, 0xbf, 0x8000, 0xffff, 0x100000, 0x100000);
-	map_lorom_offset(0xc0, 0xdf, 0x8000, 0xffff, 0x100000, 0x200000);
+	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0);
+	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, 0x100000, 0x100000);
+	MAP_LOROM_OFFSET(0x40, 0x5f, 0x8000, 0xffff, 0x100000, 0x200000);
+	MAP_LOROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, 0x40000, 0);
+	MAP_LOROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, 0x100000, 0x100000);
+	MAP_LOROM_OFFSET(0xc0, 0xdf, 0x8000, 0xffff, 0x100000, 0x200000);
 
 	// I don't care :P
 	map_space(0x60, 0x63, 0x8000, 0xffff, SRAM - 0x8000);
@@ -3018,11 +3014,11 @@ void CMemory::Map_SuperFXLoROMMap (void)
 		memmove(&ROM[0x208000 + c * 0x10000], &ROM[c * 0x8000], 0x8000);
 	}
 
-	map_lorom(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
 
-	map_hirom_offset(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize, 0);
-	map_hirom_offset(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize, 0);
+	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize, 0);
+	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize, 0);
 
 	map_space(0x00, 0x3f, 0x6000, 0x7fff, SRAM - 0x6000);
 	map_space(0x80, 0xbf, 0x6000, 0x7fff, SRAM - 0x6000);
@@ -3039,10 +3035,10 @@ void CMemory::Map_SetaDSPLoROMMap (void)
 	printf("Map_SetaDSPLoROMMap\n");
 	map_System();
 
-	map_lorom(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0x40, 0x7f, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0xc0, 0xff, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x40, 0x7f, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0xc0, 0xff, 0x8000, 0xffff, CalculatedSize);
 
 	MAP_SETADSP();
 	
@@ -3057,13 +3053,13 @@ void CMemory::Map_SDD1LoROMMap (void)
 	printf("Map_SDD1LoROMMap\n");
 	map_System();
 
-	map_lorom(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
 
-	map_hirom_offset(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize, 0);
-	map_hirom_offset(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize, 0); // will be overwritten dynamically
+	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize, 0);
+	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize, 0); // will be overwritten dynamically
 
-	map_index(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+	MAP_INDEX(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
 
 	MAP_WRAM();
 
@@ -3075,15 +3071,15 @@ void CMemory::Map_SA1LoROMMap (void)
 	printf("Map_SA1LoROMMap\n");
 	map_System();
 
-	map_lorom(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
-	map_lorom(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
 
-	map_hirom_offset(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize, 0);
+	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize, 0);
 
 	map_space(0x00, 0x3f, 0x3000, 0x3fff, FillRAM);
 	map_space(0x80, 0xbf, 0x3000, 0x3fff, FillRAM);
-	map_index(0x00, 0x3f, 0x6000, 0x7fff, MAP_BWRAM, MAP_TYPE_I_O);
-	map_index(0x80, 0xbf, 0x6000, 0x7fff, MAP_BWRAM, MAP_TYPE_I_O);
+	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_BWRAM, MAP_TYPE_I_O);
+	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_BWRAM, MAP_TYPE_I_O);
 
 	for (int c = 0x40; c < 0x80; c++)
 		map_space(c, c, 0x0000, 0xffff, SRAM + (c & 1) * 0x10000);
@@ -3117,10 +3113,10 @@ void CMemory::Map_HiROMMap (void)
 	printf("Map_HiROMMap\n");
 	map_System();
 
-	map_hirom(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
-	map_hirom(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
-	map_hirom(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
-	map_hirom(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
+	MAP_HIROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
+	MAP_HIROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
+	MAP_HIROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
+	MAP_HIROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
 
 	if (Settings.DSP)
 		map_DSP();
@@ -3136,10 +3132,10 @@ void CMemory::Map_ExtendedHiROMMap (void)
 	printf("Map_ExtendedHiROMMap\n");
 	map_System();
 
-	map_hirom_offset(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize - 0x400000, 0x400000);
-	map_hirom_offset(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize - 0x400000, 0x400000);
-	map_hirom_offset(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0);
-	map_hirom_offset(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0);
+	MAP_HIROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize - 0x400000, 0x400000);
+	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize - 0x400000, 0x400000);
+	MAP_HIROM_OFFSET(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0);
+	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0);
 
 	MAP_HIROMSRAM();
 	MAP_WRAM();
@@ -3152,14 +3148,14 @@ void CMemory::Map_SameGameHiROMMap (void)
 	printf("Map_SameGameHiROMMap\n");
 	map_System();
 
-	map_hirom_offset(0x00, 0x1f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	map_hirom_offset(0x20, 0x3f, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
-	map_hirom_offset(0x40, 0x5f, 0x0000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	map_hirom_offset(0x60, 0x7f, 0x0000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
-	map_hirom_offset(0x80, 0x9f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	map_hirom_offset(0xa0, 0xbf, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
-	map_hirom_offset(0xc0, 0xdf, 0x0000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	map_hirom_offset(0xe0, 0xff, 0x0000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
+	MAP_HIROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
+	MAP_HIROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
+	MAP_HIROM_OFFSET(0x40, 0x5f, 0x0000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
+	MAP_HIROM_OFFSET(0x60, 0x7f, 0x0000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
+	MAP_HIROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
+	MAP_HIROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
+	MAP_HIROM_OFFSET(0xc0, 0xdf, 0x0000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
+	MAP_HIROM_OFFSET(0xe0, 0xff, 0x0000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
 
 	MAP_HIROMSRAM();
 	MAP_WRAM();
@@ -3172,13 +3168,13 @@ void CMemory::Map_SPC7110HiROMMap (void)
 	printf("Map_SPC7110HiROMMap\n");
 	map_System();
 
-	map_index(0x00, 0x00, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
-	map_hirom(0x00, 0x0f, 0x8000, 0xffff, CalculatedSize);	
-	map_index(0x30, 0x30, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
-	map_index(0x50, 0x50, 0x0000, 0xffff, MAP_SPC7110_DRAM, MAP_TYPE_ROM);
-	map_hirom(0x80, 0x8f, 0x8000, 0xffff, CalculatedSize);
-	map_hirom_offset(0xc0, 0xcf, 0x0000, 0xffff, CalculatedSize, 0);
-	map_index(0xd0, 0xff, 0x0000, 0xffff, MAP_SPC7110_ROM,  MAP_TYPE_ROM);
+	MAP_INDEX(0x00, 0x00, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
+	MAP_HIROM(0x00, 0x0f, 0x8000, 0xffff, CalculatedSize);	
+	MAP_INDEX(0x30, 0x30, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
+	MAP_INDEX(0x50, 0x50, 0x0000, 0xffff, MAP_SPC7110_DRAM, MAP_TYPE_ROM);
+	MAP_HIROM(0x80, 0x8f, 0x8000, 0xffff, CalculatedSize);
+	MAP_HIROM_OFFSET(0xc0, 0xcf, 0x0000, 0xffff, CalculatedSize, 0);
+	MAP_INDEX(0xd0, 0xff, 0x0000, 0xffff, MAP_SPC7110_ROM,  MAP_TYPE_ROM);
 
 	MAP_WRAM();
 
@@ -3188,31 +3184,6 @@ void CMemory::Map_SPC7110HiROMMap (void)
 // checksum
 
 
-uint16 CMemory::checksum_mirror_sum (uint8 *start, uint32 &length, uint32 mask)
-{
-	// from NSRT
-	while (!(length & mask))
-		mask >>= 1;
-
-	uint16	part1 = checksum_calc_sum(start, mask);
-	uint16	part2 = 0;
-
-	uint32	next_length = length - mask;
-	if (next_length)
-	{
-		part2 = checksum_mirror_sum(start + mask, next_length, mask >> 1);
-
-		while (next_length < mask)
-		{
-			next_length += next_length;
-			part2 += part2;
-		}
-
-		length = mask + mask;
-	}
-
-	return (part1 + part2);
-}
 
 // information
 
@@ -3243,7 +3214,9 @@ const char * CMemory::Size (void)
 	return (str);
 }
 
-const char * CMemory::KartContents (void)
+#ifdef __LIBSNES__
+
+static const char * KartContents (uint8 ROMType)
 {
 	static char			str[64];
 	static const char	*contents[3] = { "ROM", "ROM+RAM", "ROM+RAM+BAT" };
@@ -3298,6 +3271,8 @@ const char * CMemory::KartContents (void)
 
 	return (str);
 }
+
+#endif
 
 
 // UPS % IPS
