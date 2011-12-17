@@ -275,7 +275,6 @@ struct CMemory
 	void	InitROM (void);
 
 	void	map_WriteProtectROM (void);
-	void	Map_LoROMMap (void);
 	void	Map_NoMAD1LoROMMap (void);
 	void	Map_ROM24MBSLoROMMap (void);
 	void	Map_SufamiTurboLoROMMap (void);
@@ -284,7 +283,6 @@ struct CMemory
 	void	Map_SetaDSPLoROMMap (void);
 	void	Map_SDD1LoROMMap (void);
 	void	Map_SA1LoROMMap (void);
-	void	Map_HiROMMap (void);
 	void	Map_ExtendedHiROMMap (void);
 	void	Map_SameGameHiROMMap (void);
 	void	Map_SPC7110HiROMMap (void);

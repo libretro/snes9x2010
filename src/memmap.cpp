@@ -730,7 +730,7 @@ uint32 CMemory::HeaderRemove (uint32 size, int32 &headerCount, uint8 *buf)
 		{
 			if (NSRTHead[28] == 22)
 			{
-				if (((std::accumulate(NSRTHead, NSRTHead + sizeof(NSRTHeader), 0) & 0xFF) == NSRTHead[30]) &&
+				if ((((*NSRTHead + *NSRTHead + sizeof(NSRTHeader)) & 0xFF) == NSRTHead[30]) &&
 					(NSRTHead[30] + NSRTHead[31] == 255) && ((NSRTHead[0] & 0x0F) <= 13) &&
 					(((NSRTHead[0] & 0xF0) >> 4) <= 3) && ((NSRTHead[0] & 0xF0) >> 4))
 					memcpy(NSRTHeader, NSRTHead, sizeof(NSRTHeader));
@@ -2281,6 +2281,97 @@ void CMemory::map_WriteProtectROM (void)
 	MAP_WRAM(); \
 	map_WriteProtectROM();
 
+#define MAP_DSP_() \
+	switch (DSP0.maptype) \
+	{ \
+		case M_DSP1_LOROM_S: \
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+		case M_DSP1_LOROM_L: \
+			MAP_INDEX(0x60, 0x6f, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xe0, 0xef, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+		case M_DSP1_HIROM: \
+			MAP_INDEX(0x00, 0x1f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0x80, 0x9f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+		case M_DSP2_LOROM: \
+			MAP_INDEX(0x20, 0x3f, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xa0, 0xbf, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+		case M_DSP3_LOROM: \
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+		case M_DSP4_LOROM: \
+			MAP_INDEX(0x30, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0xb0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			break; \
+	}
+
+#define MAP_C4_() \
+	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O); \
+	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O);
+
+#define MAP_OBC1() \
+	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O); \
+	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O);
+
+#define MAP_SETARISC() \
+	MAP_INDEX(0x00, 0x3f, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O); \
+	MAP_INDEX(0x80, 0xbf, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O);
+
+#define MAP_LOROMMAP() \
+	printf("Map_LoROMMap\n"); \
+	MAP_SYSTEM(); \
+	\
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize); \
+	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize); \
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize); \
+	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize); \
+	if (Settings.DSP) \
+	{ \
+		MAP_DSP_(); \
+	} \
+	else if (Settings.C4) \
+	{ \
+		MAP_C4_(); \
+	} \
+	else if (Settings.OBC1) \
+	{ \
+		MAP_OBC1(); \
+	} \
+	else if (Settings.SETA == ST_018) \
+	{ \
+		MAP_SETARISC(); \
+	} \
+	MAP_LOROMSRAM(); \
+	MAP_WRAM(); \
+	map_WriteProtectROM();
+
+#define MAP_HIROMSRAM() \
+	MAP_INDEX(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM); \
+	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
+
+#define MAP_HIROMMAP() \
+	printf("Map_HiROMMap\n"); \
+	MAP_SYSTEM(); \
+	MAP_HIROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize); \
+	MAP_HIROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize); \
+	MAP_HIROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize); \
+	MAP_HIROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize); \
+	\
+	if (Settings.DSP) \
+	{ \
+		MAP_DSP_(); \
+	} \
+	MAP_HIROMSRAM(); \
+	MAP_WRAM(); \
+	map_WriteProtectROM();
+
 void CMemory::InitROM (void)
 {
 	Settings.SuperFX = FALSE;
@@ -2536,7 +2627,9 @@ void CMemory::InitROM (void)
 					if (Multi.cartType == 3)
 						Map_SameGameHiROMMap();
 					else
-						Map_HiROMMap();
+					{
+						MAP_HIROMMAP();
+					}
 	}
 	else
 	{
@@ -2587,7 +2680,9 @@ void CMemory::InitROM (void)
 												}
 											}
 											else
-												Map_LoROMMap();
+											{
+												MAP_LOROMMAP();
+											}
 	}
 
 	// from NSRT
@@ -3301,52 +3396,10 @@ void CMemory::InitROM (void)
 }
 
 
-#define MAP_HIROMSRAM() \
-	MAP_INDEX(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM); \
-	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
 
-#define MAP_DSP_() \
-	switch (DSP0.maptype) \
-	{ \
-		case M_DSP1_LOROM_S: \
-			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
-			break; \
-		case M_DSP1_LOROM_L: \
-			MAP_INDEX(0x60, 0x6f, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xe0, 0xef, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
-			break; \
-		case M_DSP1_HIROM: \
-			MAP_INDEX(0x00, 0x1f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0x80, 0x9f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
-			break; \
-		case M_DSP2_LOROM: \
-			MAP_INDEX(0x20, 0x3f, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0x20, 0x3f, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xa0, 0xbf, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O); \
-			break; \
-		case M_DSP3_LOROM: \
-			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
-			break; \
-		case M_DSP4_LOROM: \
-			MAP_INDEX(0x30, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xb0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
-			break; \
-	}
 
-#define MAP_C4_() \
-	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O); \
-	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O);
 
-#define MAP_OBC1() \
-	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O); \
-	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O);
 
-#define MAP_SETARISC() \
-	MAP_INDEX(0x00, 0x3f, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O); \
-	MAP_INDEX(0x80, 0xbf, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O);
 
 #define MAP_SETADSP() \
 	/* where does the SETA chip access, anyway? */ \
@@ -3357,43 +3410,6 @@ void CMemory::InitROM (void)
 	/* ST-0010: */ \
 	/* MAP_INDEX(0x68, 0x6f, 0x0000, 0x0fff, MAP_SETA_DSP, ?); */
 
-
-
-void CMemory::Map_LoROMMap (void)
-{
-	printf("Map_LoROMMap\n");
-	MAP_SYSTEM();
-
-	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
-	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
-	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
-	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
-
-	if (Settings.DSP)
-	{
-		MAP_DSP_();
-	}
-	else
-	if (Settings.C4)
-	{
-		MAP_C4_();
-	}
-	else
-	if (Settings.OBC1)
-	{
-		MAP_OBC1();
-	}
-	else
-	if (Settings.SETA == ST_018)
-	{
-		MAP_SETARISC();
-	}
-		
-	MAP_LOROMSRAM();
-	MAP_WRAM();
-
-	map_WriteProtectROM();
-}
 
 void CMemory::Map_NoMAD1LoROMMap (void)
 {
@@ -3594,26 +3610,6 @@ void CMemory::Map_SA1LoROMMap (void)
 	BWRAM = SRAM;
 }
 
-void CMemory::Map_HiROMMap (void)
-{
-	printf("Map_HiROMMap\n");
-	MAP_SYSTEM();
-
-	MAP_HIROM(0x00, 0x3f, 0x8000, 0xffff, CalculatedSize);
-	MAP_HIROM(0x40, 0x7f, 0x0000, 0xffff, CalculatedSize);
-	MAP_HIROM(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
-	MAP_HIROM(0xc0, 0xff, 0x0000, 0xffff, CalculatedSize);
-
-	if (Settings.DSP)
-	{
-		MAP_DSP_();
-	}
-
-	MAP_HIROMSRAM();
-	MAP_WRAM();
-
-	map_WriteProtectROM();
-}
 
 void CMemory::Map_ExtendedHiROMMap (void)
 {
