@@ -190,13 +190,13 @@ struct SGFX
 	uint8	*DB;
 	uint16	*X2;
 	uint16	*ZERO;
-	uint32	RealPPL;			// true PPL of Screen buffer
-	uint32	PPL;				// number of pixels on each of Screen buffer
+	uint32	RealPPL;		// true PPL of Screen buffer
+	uint32	PPL;			// number of pixels on each of Screen buffer
 	uint32	LinesPerTile;		// number of lines in 1 tile (4 or 8 due to interlace)
 	uint16	*ScreenColors;		// screen colors for rendering main
 	uint16	*RealScreenColors;	// screen colors, ignoring color window clipping
-	uint8	Z1;					// depth for comparison
-	uint8	Z2;					// depth to save
+	uint8	Z1;			// depth for comparison
+	uint8	Z2;			// depth to save
 	uint32	FixedColour;
 	uint8	DoInterlace;
 	uint8	InterlaceFrame;
@@ -296,10 +296,9 @@ extern struct SGFX	GFX;
 	((C1) & (C2) & RGB_LOW_BITS_MASK)) | ALPHA_BITS_MASK)
 
 #define COLOR_ADD(C1, C2) \
-	(GFX.X2[((((C1) & RGB_REMOVE_LOW_BITS_MASK) + \
+	GFX.X2 [((((C1) & RGB_REMOVE_LOW_BITS_MASK) + \
 	((C2) & RGB_REMOVE_LOW_BITS_MASK)) >> 1) + \
-	((C1) & (C2) & RGB_LOW_BITS_MASK)] | \
-	(((C1) ^ (C2)) & RGB_LOW_BITS_MASK))
+	((C1) & (C2) & RGB_LOW_BITS_MASK)]
 
 #define COLOR_SUB1_2(C1, C2) \
 	GFX.ZERO[(((C1) | RGB_HI_BITS_MASKx2) - \
