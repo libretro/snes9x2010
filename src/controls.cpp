@@ -197,7 +197,6 @@
 #define MAP_UNKNOWN			(-1)
 #define MAP_NONE			0
 #define MAP_BUTTON			1
-#define MAP_AXIS			2
 #define MAP_POINTER			3
 
 #define FLAG_IOBIT0			(Memory.FillRAM[0x4213] & 0x40)

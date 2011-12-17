@@ -183,45 +183,43 @@
 #define MEMMAP_SHIFT		(12)
 #define MEMMAP_MASK		(MEMMAP_BLOCK_SIZE - 1)
 
- enum
-{
-	MAP_CPU,
-	MAP_PPU,
-	MAP_LOROM_SRAM,
-	MAP_LOROM_SRAM_B,
-	MAP_HIROM_SRAM,
-	MAP_DSP,
-	MAP_SA1RAM,
-	MAP_BWRAM,
-	MAP_BWRAM_BITMAP,
-	MAP_BWRAM_BITMAP2,
-	MAP_SPC7110_ROM,
-	MAP_SPC7110_DRAM,
-	MAP_RONLY_SRAM,
-	MAP_C4,
-	MAP_OBC_RAM,
-	MAP_SETA_DSP,
-	MAP_SETA_RISC,
-	MAP_BSX,
-	MAP_NONE,
-	MAP_LAST
-};
+#define MAP_CPU			0
+#define MAP_PPU			1
+#define MAP_LOROM_SRAM		2
+#define MAP_LOROM_SRAM_B	3
+#define MAP_HIROM_SRAM		4
+#define MAP_DSP			5
+#define MAP_SA1RAM		6
+#define MAP_BWRAM		7
+#define MAP_BWRAM_BITMAP	8
+#define MAP_BWRAM_BITMAP2	9
+#define MAP_SPC7110_ROM		10
+#define MAP_SPC7110_DRAM	11
+#define MAP_RONLY_SRAM		12
+#define MAP_C4			13
+#define MAP_OBC_RAM		14
+#define MAP_SETA_DSP		15
+#define MAP_SETA_RISC		16
+#define MAP_BSX			17
+#define MAP_NONE		18
+#define MAP_LAST		19
 
 #define MAX_ROM_SIZE 0x800000
 
+#define FILE_ZIP 0
+#define FILE_DEFAULT 1
+
+#define NOPE 0
+#define YEAH 1
+#define BIGFIRST 2
+#define SMALLFIRST 3
+
+#define MAP_TYPE_I_O 0
+#define MAP_TYPE_ROM 1
+#define MAP_TYPE_RAM 2
+
 struct CMemory
 {
-
-	enum file_formats
-	{ FILE_ZIP, FILE_DEFAULT };
-
-	enum
-	{ NOPE, YEAH, BIGFIRST, SMALLFIRST };
-
-	enum
-	{ MAP_TYPE_I_O, MAP_TYPE_ROM, MAP_TYPE_RAM };
-
-
 	uint8	NSRTHeader[32];
 	int32	HeaderCount;
 
@@ -254,7 +252,6 @@ struct CMemory
 	uint32	ROMChecksum;
 	uint32	ROMComplementChecksum;
 	uint32	ROMCRC32;
-	int32	ROMFramesPerSecond;
 
 	bool8	HiROM;
 	bool8	LoROM;
@@ -293,16 +290,8 @@ struct CMemory
 	void	map_space (uint32, uint32, uint32, uint32, uint8 *);
 	void	map_index (uint32, uint32, uint32, uint32, int, int);
 	void	map_System (void);
-	void	map_WRAM (void);
-	void	map_LoROMSRAM (void);
-	void	map_HiROMSRAM (void);
 	void	map_DSP (void);
-	void	map_C4 (void);
-	void	map_OBC1 (void);
-	void	map_SetaRISC (void);
-	void	map_SetaDSP (void);
 	void	map_WriteProtectROM (void);
-	void	Map_Initialize (void);
 	void	Map_LoROMMap (void);
 	void	Map_NoMAD1LoROMMap (void);
 	void	Map_JumboLoROMMap (void);
@@ -319,26 +308,13 @@ struct CMemory
 	void	Map_SameGameHiROMMap (void);
 	void	Map_SPC7110HiROMMap (void);
 
-	uint16	checksum_calc_sum (uint8 *, uint32);
 	uint16	checksum_mirror_sum (uint8 *, uint32 &, uint32 mask);
-	void	Checksum_Calculate (void);
 
-	bool8	match_na (const char *);
-	bool8	match_nn (const char *);
-	bool8	match_nc (const char *);
-	bool8	match_id (const char *);
-	void	ApplyROMFixes (void);
 	void	CheckForAnyPatch (const char *, bool8, int32 &);
 
-	void	MakeRomInfoText (char *);
-
-	const char *	MapType (void);
 	const char *	StaticRAMSize (void);
 	const char *	Size (void);
-	const char *	Revision (void);
 	const char *	KartContents (void);
-	const char *	Country (void);
-	const char *	PublishingCompany (void);
 };
 
 struct SMulti

@@ -319,7 +319,11 @@ static void FxReset (struct FxInfo_s *psFxInfo)
 void S9xResetSuperFX (void)
 {
 	// FIXME: Snes9x can't execute CPU and SuperFX at a time. Don't ask me what is 0.417 :P
-	SuperFX.speedPerLine = (uint32) (0.417 * 10.5e6 * ((1.0 / (float) Memory.ROMFramesPerSecond) / ((float) (Timings.V_Max))));
+	float frames_per_second = 60.0f;
+	if (Settings.PAL)
+		frames_per_second = 50.0f;
+
+	SuperFX.speedPerLine = (uint32) (0.417 * 10.5e6 * ((1.0f / frames_per_second) / ((float) (Timings.V_Max))));
 	SuperFX.oneLineDone = FALSE;
 	SuperFX.vFlags = 0;
 	FxReset(&SuperFX);

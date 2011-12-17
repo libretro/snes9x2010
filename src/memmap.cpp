@@ -201,677 +201,6 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-// from NSRT
-static const char	*nintendo_licensees[] =
-{
-	"Unlicensed",
-	"Nintendo",
-	"Rocket Games/Ajinomoto",
-	"Imagineer-Zoom",
-	"Gray Matter",
-	"Zamuse",
-	"Falcom",
-	NULL,
-	"Capcom",
-	"Hot B Co.",
-	"Jaleco",
-	"Coconuts Japan",
-	"Coconuts Japan/G.X.Media",
-	"Micronet",
-	"Technos",
-	"Mebio Software",
-	"Shouei System",
-	"Starfish",
-	NULL,
-	"Mitsui Fudosan/Dentsu",
-	NULL,
-	"Warashi Inc.",
-	NULL,
-	"Nowpro",
-	NULL,
-	"Game Village",
-	"IE Institute",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Banarex",
-	"Starfish",
-	"Infocom",
-	"Electronic Arts Japan",
-	NULL,
-	"Cobra Team",
-	"Human/Field",
-	"KOEI",
-	"Hudson Soft",
-	"S.C.P./Game Village",
-	"Yanoman",
-	NULL,
-	"Tecmo Products",
-	"Japan Glary Business",
-	"Forum/OpenSystem",
-	"Virgin Games (Japan)",
-	"SMDE",
-	"Yojigen",
-	NULL,
-	"Daikokudenki",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Creatures Inc.",
-	"TDK Deep Impresion",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Destination Software/KSS",
-	"Sunsoft/Tokai Engineering",
-	"POW (Planning Office Wada)/VR 1 Japan",
-	"Micro World",
-	NULL,
-	"San-X",
-	"Enix",
-	"Loriciel/Electro Brain",
-	"Kemco Japan",
-	"Seta Co.,Ltd.",
-	"Culture Brain",
-	"Irem Corp.",
-	"Palsoft",
-	"Visit Co., Ltd.",
-	"Intec",
-	"System Sacom",
-	"Poppo",
-	"Ubisoft Japan",
-	NULL,
-	"Media Works",
-	"NEC InterChannel",
-	"Tam",
-	"Gajin/Jordan",
-	"Smilesoft",
-	NULL,
-	NULL,
-	"Mediakite",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Viacom",
-	"Carrozzeria",
-	"Dynamic",
-	NULL,
-	"Magifact",
-	"Hect",
-	"Codemasters",
-	"Taito/GAGA Communications",
-	"Laguna",
-	"Telstar Fun & Games/Event/Taito",
-	NULL,
-	"Arcade Zone Ltd.",
-	"Entertainment International/Empire Software",
-	"Loriciel",
-	"Gremlin Graphics",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Seika Corp.",
-	"UBI SOFT Entertainment Software",
-	"Sunsoft US",
-	NULL,
-	"Life Fitness",
-	NULL,
-	"System 3",
-	"Spectrum Holobyte",
-	NULL,
-	"Irem",
-	NULL,
-	"Raya Systems",
-	"Renovation Products",
-	"Malibu Games",
-	NULL,
-	"Eidos/U.S. Gold",
-	"Playmates Interactive",
-	NULL,
-	NULL,
-	"Fox Interactive",
-	"Time Warner Interactive",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Disney Interactive",
-	NULL,
-	"Black Pearl",
-	NULL,
-	"Advanced Productions",
-	NULL,
-	NULL,
-	"GT Interactive",
-	"RARE",
-	"Crave Entertainment",
-	"Absolute Entertainment",
-	"Acclaim",
-	"Activision",
-	"American Sammy",
-	"Take 2/GameTek",
-	"Hi Tech",
-	"LJN Ltd.",
-	NULL,
-	"Mattel",
-	NULL,
-	"Mindscape/Red Orb Entertainment",
-	"Romstar",
-	"Taxan",
-	"Midway/Tradewest",
-	NULL,
-	"American Softworks Corp.",
-	"Majesco Sales Inc.",
-	"3DO",
-	NULL,
-	NULL,
-	"Hasbro",
-	"NewKidCo",
-	"Telegames",
-	"Metro3D",
-	NULL,
-	"Vatical Entertainment",
-	"LEGO Media",
-	NULL,
-	"Xicat Interactive",
-	"Cryo Interactive",
-	NULL,
-	NULL,
-	"Red Storm Entertainment",
-	"Microids",
-	NULL,
-	"Conspiracy/Swing",
-	"Titus",
-	"Virgin Interactive",
-	"Maxis",
-	NULL,
-	"LucasArts Entertainment",
-	NULL,
-	NULL,
-	"Ocean",
-	NULL,
-	"Electronic Arts",
-	NULL,
-	"Laser Beam",
-	NULL,
-	NULL,
-	"Elite Systems",
-	"Electro Brain",
-	"The Learning Company",
-	"BBC",
-	NULL,
-	"Software 2000",
-	NULL,
-	"BAM! Entertainment",
-	"Studio 3",
-	NULL,
-	NULL,
-	NULL,
-	"Classified Games",
-	NULL,
-	"TDK Mediactive",
-	NULL,
-	"DreamCatcher",
-	"JoWood Produtions",
-	"SEGA",
-	"Wannado Edition",
-	"LSP (Light & Shadow Prod.)",
-	"ITE Media",
-	"Infogrames",
-	"Interplay",
-	"JVC (US)",
-	"Parker Brothers",
-	NULL,
-	"SCI (Sales Curve Interactive)/Storm",
-	NULL,
-	NULL,
-	"THQ Software",
-	"Accolade Inc.",
-	"Triffix Entertainment",
-	NULL,
-	"Microprose Software",
-	"Universal Interactive/Sierra/Simon & Schuster",
-	NULL,
-	"Kemco",
-	"Rage Software",
-	"Encore",
-	NULL,
-	"Zoo",
-	"Kiddinx",
-	"Simon & Schuster Interactive",
-	"Asmik Ace Entertainment Inc./AIA",
-	"Empire Interactive",
-	NULL,
-	NULL,
-	"Jester Interactive",
-	NULL,
-	"Rockstar Games",
-	"Scholastic",
-	"Ignition Entertainment",
-	"Summitsoft",
-	"Stadlbauer",
-	NULL,
-	NULL,
-	NULL,
-	"Misawa",
-	"Teichiku",
-	"Namco Ltd.",
-	"LOZC",
-	"KOEI",
-	NULL,
-	"Tokuma Shoten Intermedia",
-	"Tsukuda Original",
-	"DATAM-Polystar",
-	NULL,
-	NULL,
-	"Bullet-Proof Software",
-	"Vic Tokai Inc.",
-	NULL,
-	"Character Soft",
-	"I'Max",
-	"Saurus",
-	NULL,
-	NULL,
-	"General Entertainment",
-	NULL,
-	NULL,
-	"I'Max",
-	"Success",
-	NULL,
-	"SEGA Japan",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Takara",
-	"Chun Soft",
-	"Video System Co., Ltd./McO'River",
-	"BEC",
-	NULL,
-	"Varie",
-	"Yonezawa/S'pal",
-	"Kaneko",
-	NULL,
-	"Victor Interactive Software/Pack-in-Video",
-	"Nichibutsu/Nihon Bussan",
-	"Tecmo",
-	"Imagineer",
-	NULL,
-	NULL,
-	"Nova",
-	"Den'Z",
-	"Bottom Up",
-	NULL,
-	"TGL (Technical Group Laboratory)",
-	NULL,
-	"Hasbro Japan",
-	NULL,
-	"Marvelous Entertainment",
-	NULL,
-	"Keynet Inc.",
-	"Hands-On Entertainment",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Telenet",
-	"Hori",
-	NULL,
-	NULL,
-	"Konami",
-	"K.Amusement Leasing Co.",
-	"Kawada",
-	"Takara",
-	NULL,
-	"Technos Japan Corp.",
-	"JVC (Europe/Japan)/Victor Musical Industries",
-	NULL,
-	"Toei Animation",
-	"Toho",
-	NULL,
-	"Namco",
-	"Media Rings Corp.",
-	"J-Wing",
-	NULL,
-	"Pioneer LDC",
-	"KID",
-	"Mediafactory",
-	NULL,
-	NULL,
-	NULL,
-	"Infogrames Hudson",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Acclaim Japan",
-	"ASCII Co./Nexoft",
-	"Bandai",
-	NULL,
-	"Enix",
-	NULL,
-	"HAL Laboratory/Halken",
-	"SNK",
-	NULL,
-	"Pony Canyon Hanbai",
-	"Culture Brain",
-	"Sunsoft",
-	"Toshiba EMI",
-	"Sony Imagesoft",
-	NULL,
-	"Sammy",
-	"Magical",
-	"Visco",
-	NULL,
-	"Compile",
-	NULL,
-	"MTO Inc.",
-	NULL,
-	"Sunrise Interactive",
-	NULL,
-	"Global A Entertainment",
-	"Fuuki",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Taito",
-	NULL,
-	"Kemco",
-	"Square",
-	"Tokuma Shoten",
-	"Data East",
-	"Tonkin House",
-	NULL,
-	"KOEI",
-	NULL,
-	"Konami/Ultra/Palcom",
-	"NTVIC/VAP",
-	"Use Co., Ltd.",
-	"Meldac",
-	"Pony Canyon (Japan)/FCI (US)",
-	"Angel/Sotsu Agency/Sunrise",
-	"Yumedia/Aroma Co., Ltd.",
-	NULL,
-	NULL,
-	"Boss",
-	"Axela/Crea-Tech",
-	"Sekaibunka-Sha/Sumire kobo/Marigul Management Inc.",
-	"Konami Computer Entertainment Osaka",
-	NULL,
-	NULL,
-	"Enterbrain",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Taito/Disco",
-	"Sofel",
-	"Quest Corp.",
-	"Sigma",
-	"Ask Kodansha",
-	NULL,
-	"Naxat",
-	"Copya System",
-	"Capcom Co., Ltd.",
-	"Banpresto",
-	"TOMY",
-	"Acclaim/LJN Japan",
-	NULL,
-	"NCS",
-	"Human Entertainment",
-	"Altron",
-	"Jaleco",
-	"Gaps Inc.",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Elf",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Jaleco",
-	NULL,
-	"Yutaka",
-	"Varie",
-	"T&ESoft",
-	"Epoch Co., Ltd.",
-	NULL,
-	"Athena",
-	"Asmik",
-	"Natsume",
-	"King Records",
-	"Atlus",
-	"Epic/Sony Records (Japan)",
-	NULL,
-	"IGS (Information Global Service)",
-	NULL,
-	"Chatnoir",
-	"Right Stuff",
-	NULL,
-	"NTT COMWARE",
-	NULL,
-	"Spike",
-	"Konami Computer Entertainment Tokyo",
-	"Alphadream Corp.",
-	NULL,
-	"Sting",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"A Wave",
-	"Motown Software",
-	"Left Field Entertainment",
-	"Extreme Entertainment Group",
-	"TecMagik",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Cybersoft",
-	NULL,
-	"Psygnosis",
-	NULL,
-	NULL,
-	"Davidson/Western Tech.",
-	"Unlicensed",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"The Game Factory Europe",
-	"Hip Games",
-	"Aspyr",
-	NULL,
-	NULL,
-	"Mastiff",
-	"iQue",
-	"Digital Tainment Pool",
-	"XS Games",
-	"Daiwon",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"PCCW Japan",
-	NULL,
-	NULL,
-	"KiKi Co. Ltd.",
-	"Open Sesame Inc.",
-	"Sims",
-	"Broccoli",
-	"Avex",
-	"D3 Publisher",
-	NULL,
-	"Konami Computer Entertainment Japan",
-	NULL,
-	"Square-Enix",
-	"KSG",
-	"Micott & Basara Inc.",
-	NULL,
-	"Orbital Media",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"The Game Factory USA",
-	NULL,
-	NULL,
-	"Treasure",
-	"Aruze",
-	"Ertain",
-	"SNK Playmore",
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	"Yojigen"
-};
-
 static const uint32	crc32Table[256] =
 {
 	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
@@ -1018,10 +347,10 @@ static void S9xDeinterleaveGD24 (int size, uint8 *base)
 
 bool8 CMemory::Init (void)
 {
-    RAM	 = (uint8 *) malloc(0x20000);
-    SRAM = (uint8 *) malloc(0x20000);
-    VRAM = (uint8 *) malloc(0x10000);
-    ROM  = (uint8 *) malloc(MAX_ROM_SIZE + 0x200 + 0x8000);
+	RAM	 = (uint8 *) malloc(0x20000);
+	SRAM = (uint8 *) malloc(0x20000);
+	VRAM = (uint8 *) malloc(0x10000);
+	ROM  = (uint8 *) malloc(MAX_ROM_SIZE + 0x200 + 0x8000);
 
 	IPPU.TileCache[TILE_2BIT]       = (uint8 *) malloc(MAX_2BIT_TILES * 64);
 	IPPU.TileCache[TILE_4BIT]       = (uint8 *) malloc(MAX_4BIT_TILES * 64);
@@ -1045,24 +374,24 @@ bool8 CMemory::Init (void)
 	PPU.FullClipping = true;
 
 	if (!RAM || !SRAM || !VRAM || !ROM ||
-		!IPPU.TileCache[TILE_2BIT]       ||
-		!IPPU.TileCache[TILE_4BIT]       ||
-		!IPPU.TileCache[TILE_8BIT]       ||
-		!IPPU.TileCache[TILE_2BIT_EVEN]  ||
-		!IPPU.TileCache[TILE_2BIT_ODD]   ||
-		!IPPU.TileCache[TILE_4BIT_EVEN]  ||
-		!IPPU.TileCache[TILE_4BIT_ODD]   ||
-		!IPPU.TileCached[TILE_2BIT]      ||
-		!IPPU.TileCached[TILE_4BIT]      ||
-		!IPPU.TileCached[TILE_8BIT]      ||
-		!IPPU.TileCached[TILE_2BIT_EVEN] ||
-		!IPPU.TileCached[TILE_2BIT_ODD]  ||
-		!IPPU.TileCached[TILE_4BIT_EVEN] ||
-		!IPPU.TileCached[TILE_4BIT_ODD])
-    {
+			!IPPU.TileCache[TILE_2BIT]       ||
+			!IPPU.TileCache[TILE_4BIT]       ||
+			!IPPU.TileCache[TILE_8BIT]       ||
+			!IPPU.TileCache[TILE_2BIT_EVEN]  ||
+			!IPPU.TileCache[TILE_2BIT_ODD]   ||
+			!IPPU.TileCache[TILE_4BIT_EVEN]  ||
+			!IPPU.TileCache[TILE_4BIT_ODD]   ||
+			!IPPU.TileCached[TILE_2BIT]      ||
+			!IPPU.TileCached[TILE_4BIT]      ||
+			!IPPU.TileCached[TILE_8BIT]      ||
+			!IPPU.TileCached[TILE_2BIT_EVEN] ||
+			!IPPU.TileCached[TILE_2BIT_ODD]  ||
+			!IPPU.TileCached[TILE_4BIT_EVEN] ||
+			!IPPU.TileCached[TILE_4BIT_ODD])
+	{
 		Deinit();
 		return (FALSE);
-    }
+	}
 
 	ZeroMemory(RAM,  0x20000);
 	ZeroMemory(SRAM, 0x20000);
@@ -1101,9 +430,9 @@ bool8 CMemory::Init (void)
 	BSRAM   = ROM + 0x400000; // BS
 
 #if defined(ZSNES_FX) || defined(ZSNES_C4)
-    ::ROM    = ROM;
-    ::SRAM   = SRAM;
-    ::RegRAM = FillRAM;
+	::ROM    = ROM;
+	::SRAM   = SRAM;
+	::RegRAM = FillRAM;
 #endif
 
 #ifdef ZSNES_FX
@@ -1117,6 +446,48 @@ bool8 CMemory::Init (void)
 #endif
 
 	return (TRUE);
+}
+
+char * CMemory::SafeANK (const char *s)
+{
+	static char	*safe = NULL;
+	static int	safe_len = 0;
+
+	if (s == NULL)
+	{
+		if (safe)
+		{
+			free(safe);
+			safe = NULL;
+		}
+
+		return (NULL);
+	}
+
+	int	len = strlen(s);
+	if (!safe || len + 1 > safe_len)
+	{
+		if (safe)
+			free(safe);
+
+		safe_len = len + 1;
+		safe = (char *) malloc(safe_len);
+	}
+
+	for (int i = 0; i < len; i++)
+	{
+		if (s[i] >= 32 && s[i] < 127) // ASCII
+			safe [i] = s[i];
+		else
+		if (ROMRegion == 0 && ((uint8) s[i] >= 0xa0 && (uint8) s[i] < 0xe0)) // JIS X 201 - Katakana
+			safe [i] = s[i];
+		else
+			safe [i] = '_';
+	}
+
+	safe [len] = 0;
+
+	return (safe);
 }
 
 void CMemory::Deinit (void)
@@ -2215,47 +1586,6 @@ char * CMemory::Safe (const char *s)
 	return (safe);
 }
 
-char * CMemory::SafeANK (const char *s)
-{
-	static char	*safe = NULL;
-	static int	safe_len = 0;
-
-	if (s == NULL)
-	{
-		if (safe)
-		{
-			free(safe);
-			safe = NULL;
-		}
-
-		return (NULL);
-	}
-
-	int	len = strlen(s);
-	if (!safe || len + 1 > safe_len)
-	{
-		if (safe)
-			free(safe);
-
-		safe_len = len + 1;
-		safe = (char *) malloc(safe_len);
-	}
-
-	for (int i = 0; i < len; i++)
-	{
-		if (s[i] >= 32 && s[i] < 127) // ASCII
-			safe [i] = s[i];
-		else
-		if (ROMRegion == 0 && ((uint8) s[i] >= 0xa0 && (uint8) s[i] < 0xe0)) // JIS X 201 - Katakana
-			safe [i] = s[i];
-		else
-			safe [i] = '_';
-	}
-
-	safe [len] = 0;
-
-	return (safe);
-}
 
 void CMemory::ParseSNESHeader (uint8 *RomHeader)
 {
@@ -2303,6 +1633,30 @@ void CMemory::ParseSNESHeader (uint8 *RomHeader)
 		CompanyId = l2 * 36 + r2;
 	}
 }
+
+#define MAP_INITIALIZE() \
+	for (int c = 0; c < 0x1000; c++) \
+	{ \
+		Map[c]      = (uint8 *) MAP_NONE; \
+		WriteMap[c] = (uint8 *) MAP_NONE; \
+		BlockIsROM[c] = FALSE; \
+		BlockIsRAM[c] = FALSE; \
+	}
+
+static uint16 checksum_calc_sum (uint8 *data, uint32 length)
+{
+	uint16	sum = 0;
+
+	for (uint32 i = 0; i < length; i++)
+		sum += data[i];
+
+	return (sum);
+}
+
+#define MATCH_NA(str) (strcmp(ROMName, str) == 0)
+#define MATCH_NN(str) (strncmp(ROMName, str, strlen(str)) == 0)
+#define MATCH_NC(str) (strncasecmp(ROMName, str, strlen(str)) == 0)
+#define MATCH_ID(str) (strncmp(ROMId, str, strlen(str)) == 0)
 
 void CMemory::InitROM (void)
 {
@@ -2496,74 +1850,97 @@ void CMemory::InitROM (void)
 
 	//// Map memory and calculate checksum
 
-	Map_Initialize();
+	MAP_INITIALIZE();
 	CalculatedChecksum = 0;
 
 	if (HiROM)
-    {
+	{
 		if (Settings.BS)
 			/* Do nothing */;
 		else
-		if (Settings.SPC7110)
-			Map_SPC7110HiROMMap();
-		else
-		if (ExtendedFormat != NOPE)
-			Map_ExtendedHiROMMap();
-		else
-		if (Multi.cartType == 3)
-			Map_SameGameHiROMMap();
-		else
-			Map_HiROMMap();
-    }
-    else
-    {
-		if (Settings.BS)
-			/* Do nothing */;
-		else
-		if (Settings.SETA && Settings.SETA != ST_018)
-			Map_SetaDSPLoROMMap();
-		else
-		if (Settings.SuperFX)
-			Map_SuperFXLoROMMap();
-		else
-		if (Settings.SA1)
-			Map_SA1LoROMMap();
-		else
-		if (Settings.SDD1)
-			Map_SDD1LoROMMap();
-		else
-		if (ExtendedFormat != NOPE)
-			Map_JumboLoROMMap();
-		else
-		if (strncmp(ROMName, "WANDERERS FROM YS", 17) == 0)
-			Map_NoMAD1LoROMMap();
-		else
-		if (strncmp(ROMName, "SOUND NOVEL-TCOOL", 17) == 0 ||
-			strncmp(ROMName, "DERBY STALLION 96", 17) == 0)
-			Map_ROM24MBSLoROMMap();
-		else
-		if (strncmp(ROMName, "THOROUGHBRED BREEDER3", 21) == 0 ||
-			strncmp(ROMName, "RPG-TCOOL 2", 11) == 0)
-			Map_SRAM512KLoROMMap();
-		else
-		if (strncmp(ROMName, "ADD-ON BASE CASSETE", 19) == 0)
-		{
-			if (Multi.cartType == 4)
-			{
-				SRAMSize = Multi.sramSizeA;
-				Map_SufamiTurboLoROMMap();
-			}
+			if (Settings.SPC7110)
+				Map_SPC7110HiROMMap();
 			else
-			{
-				SRAMSize = 5;
-				Map_SufamiTurboPseudoLoROMMap();
-			}
-		}
+				if (ExtendedFormat != NOPE)
+					Map_ExtendedHiROMMap();
+				else
+					if (Multi.cartType == 3)
+						Map_SameGameHiROMMap();
+					else
+						Map_HiROMMap();
+	}
+	else
+	{
+		if (Settings.BS)
+			/* Do nothing */;
 		else
-			Map_LoROMMap();
-    }
+			if (Settings.SETA && Settings.SETA != ST_018)
+				Map_SetaDSPLoROMMap();
+			else
+				if (Settings.SuperFX)
+					Map_SuperFXLoROMMap();
+				else
+					if (Settings.SA1)
+						Map_SA1LoROMMap();
+					else
+						if (Settings.SDD1)
+							Map_SDD1LoROMMap();
+						else
+							if (ExtendedFormat != NOPE)
+								Map_JumboLoROMMap();
+							else
+								if (strncmp(ROMName, "WANDERERS FROM YS", 17) == 0)
+									Map_NoMAD1LoROMMap();
+								else
+									if (strncmp(ROMName, "SOUND NOVEL-TCOOL", 17) == 0 ||
+											strncmp(ROMName, "DERBY STALLION 96", 17) == 0)
+										Map_ROM24MBSLoROMMap();
+									else
+										if (strncmp(ROMName, "THOROUGHBRED BREEDER3", 21) == 0 ||
+												strncmp(ROMName, "RPG-TCOOL 2", 11) == 0)
+											Map_SRAM512KLoROMMap();
+										else
+											if (strncmp(ROMName, "ADD-ON BASE CASSETE", 19) == 0)
+											{
+												if (Multi.cartType == 4)
+												{
+													SRAMSize = Multi.sramSizeA;
+													Map_SufamiTurboLoROMMap();
+												}
+												else
+												{
+													SRAMSize = 5;
+													Map_SufamiTurboPseudoLoROMMap();
+												}
+											}
+											else
+												Map_LoROMMap();
+	}
 
-	Checksum_Calculate();
+	// from NSRT
+	uint16	sum = 0;
+
+	if (Settings.BS && !Settings.BSXItself)
+		sum = checksum_calc_sum(ROM, CalculatedSize) - checksum_calc_sum(ROM + (HiROM ? 0xffb0 : 0x7fb0), 48);
+	else
+	if (Settings.SPC7110)
+	{
+		sum = checksum_calc_sum(ROM, CalculatedSize);
+		if (CalculatedSize == 0x300000)
+			sum += sum;
+	}
+	else
+	{
+		if (CalculatedSize & 0x7fff)
+			sum = checksum_calc_sum(ROM, CalculatedSize);
+		else
+		{
+			uint32	length = CalculatedSize;
+			sum = checksum_mirror_sum(ROM, length, 0x800000);
+		}
+	}
+
+	CalculatedChecksum = sum;
 
 	bool8 isChecksumOK = (ROMChecksum + ROMComplementChecksum == 0xffff) &
 						 (ROMChecksum == CalculatedChecksum);
@@ -2600,11 +1977,6 @@ void CMemory::InitROM (void)
 		Settings.PAL = TRUE;
 	else
 		Settings.PAL = FALSE;
-
-	if (Settings.PAL)
-		ROMFramesPerSecond = 50;
-	else
-		ROMFramesPerSecond = 60;
 
 	// truncate cart name
 	ROMName[ROM_NAME_LEN - 1] = 0;
@@ -2656,7 +2028,570 @@ void CMemory::InitROM (void)
 
 	//// Hack games
 
-	ApplyROMFixes();
+	Settings.BlockInvalidVRAMAccess = Settings.BlockInvalidVRAMAccessMaster;
+
+	//// Warnings
+
+	// Reject strange hacked games
+	if ((ROMCRC32 == 0x6810aa95) ||
+		(ROMCRC32 == 0x340f23e5) ||
+		(ROMCRC32 == 0x77fd806a) ||
+		(MATCH_NN("HIGHWAY BATTLE 2")) ||
+		(MATCH_NA("FX SKIING NINTENDO 96") && (ROM[0x7fda] == 0)) ||
+		(MATCH_NN("HONKAKUHA IGO GOSEI")   && (ROM[0xffd5] != 0x31)))
+	{
+	}
+
+	//// APU timing hacks :(
+
+	Timings.APUSpeedup = 0;
+	Timings.APUAllowTimeOverflow = FALSE;
+
+	if (!Settings.DisableGameSpecificHacks)
+	{
+		if (MATCH_ID("AVCJ"))                                      // Rendering Ranger R2
+			Timings.APUSpeedup = 4;
+
+		if (MATCH_NA("GAIA GENSOUKI 1 JPN")                     || // Gaia Gensouki
+			MATCH_ID("JG  ")                                    || // Illusion of Gaia
+			MATCH_ID("CQ  ")                                    || // Stunt Race FX
+			MATCH_NA("SOULBLADER - 1")                          || // Soul Blader
+			MATCH_NA("SOULBLAZER - 1 USA")                      || // Soul Blazer
+			MATCH_NA("SLAP STICK 1 JPN")                        || // Slap Stick
+			MATCH_ID("E9 ")                                     || // Robotrek
+			MATCH_NN("ACTRAISER")                               || // Actraiser
+			MATCH_NN("ActRaiser-2")                             || // Actraiser 2
+			MATCH_ID("AQT")                                     || // Tenchi Souzou, Terranigma
+			MATCH_ID("ATV")                                     || // Tales of Phantasia
+			MATCH_ID("ARF")                                     || // Star Ocean
+			MATCH_ID("APR")                                     || // Zen-Nippon Pro Wrestling 2 - 3-4 Budoukan
+			MATCH_ID("A4B")                                     || // Super Bomberman 4
+			MATCH_ID("Y7 ")                                     || // U.F.O. Kamen Yakisoban - Present Ban
+			MATCH_ID("Y9 ")                                     || // U.F.O. Kamen Yakisoban - Shihan Ban
+			MATCH_ID("APB")                                     || // Super Bomberman - Panic Bomber W
+			MATCH_NA("DARK KINGDOM")                            || // Dark Kingdom
+			MATCH_NA("ZAN3 SFC")                                || // Zan III Spirits
+			MATCH_NA("HIOUDEN")                                 || // Hiouden - Mamono-tachi Tono Chikai
+			MATCH_NA("\xC3\xDD\xBC\xC9\xB3\xC0")                || // Tenshi no Uta
+			MATCH_NA("FORTUNE QUEST")                           || // Fortune Quest - Dice wo Korogase
+			MATCH_NA("FISHING TO BASSING")                      || // Shimono Masaki no Fishing To Bassing
+			MATCH_NA("OHMONO BLACKBASS")                        || // Oomono Black Bass Fishing - Jinzouko Hen
+			MATCH_NA("MASTERS")                                 || // Harukanaru Augusta 2 - Masters
+			MATCH_NA("SFC \xB6\xD2\xDD\xD7\xB2\xC0\xDE\xB0")    || // Kamen Rider
+			MATCH_NA("ZENKI TENCHIMEIDOU")					    || // Kishin Douji Zenki - Tenchi Meidou
+			MATCH_NN("TokyoDome '95Battle 7")                   || // Shin Nippon Pro Wrestling Kounin '95 - Tokyo Dome Battle 7
+			MATCH_NN("SWORD WORLD SFC")                         || // Sword World SFC/2
+			MATCH_NN("LETs PACHINKO(")                          || // BS Lets Pachinko Nante Gindama 1/2/3/4
+			MATCH_NN("THE FISHING MASTER")                      || // Mark Davis The Fishing Master
+			MATCH_NN("Parlor")                                  || // Parlor mini/2/3/4/5/6/7, Parlor Parlor!/2/3/4/5
+			MATCH_NA("HEIWA Parlor!Mini8")                      || // Parlor mini 8
+			MATCH_NN("SANKYO Fever! \xCC\xA8\xB0\xCA\xDE\xB0!"))   // SANKYO Fever! Fever!
+			Timings.APUSpeedup = 1;
+
+		if (MATCH_NA ("EARTHWORM JIM 2")			|| // Earthworm Jim 2
+			MATCH_NA ("NBA Hangtime")			|| // NBA Hang Time
+			MATCH_NA ("MSPACMAN")				|| // Ms Pacman
+			MATCH_NA ("THE MASK")				|| // The Mask
+			MATCH_NA ("PRIMAL RAGE")			|| // Primal Rage
+			MATCH_NA ("DOOM TROOPERS")			|| // Doom Troopers
+			MATCH_NA ("PORKY PIGS HAUNTED")			|| // Porky Pig's Haunted Holiday
+			MATCH_NA ("Big Sky Trooper")			|| // Big Sky Trooper
+			MATCH_NA ("A35"))				// Mechwarrior 3050/Battle Tech 3050
+			Timings.APUAllowTimeOverflow = TRUE;
+
+		//We don't want Seiken Densetsu 3/Romancing Saga 3 unbearably slow in
+		//hi-res mosaic mode - no difference with these games between normal
+		//hi-res renderer and mosaic version - only double the FPS
+		if (
+				MATCH_NN("SeikenDensetsu3") ||
+				MATCH_NA("SeikenDensetsu3Sample1") ||	// Seiken Densetsu 3
+				MATCH_NA("ROMANCING SAGA3"))		// Romancing Saga 3
+			PPU.DisableMosaicHack = false;
+		else
+			PPU.DisableMosaicHack = true;
+
+		//Speedup hack for Star Fox 2/Vortex
+		if (
+				MATCH_NA("VORTEX") ||			// Vortex
+				MATCH_NA("Super Street Fighter21") ||	// Super Street Fighter II
+				MATCH_NA("STAR FOX 2"))			// Star Fox 2
+					PPU.SFXSpeedupHack = true;
+				else
+					PPU.SFXSpeedupHack = false;
+
+		#ifdef __LIBSNES__
+		fprintf(stderr, "PPU.SFXSpeedupHack = %d\n", PPU.SFXSpeedupHack);
+		#endif
+
+		// Check if Chrono Trigger is loaded, if so, we need to set a variable to true
+		// to get rid of an annoying mid-frame resolution switch to 256x239 which can cause
+		// an undesirable flicker/breakup of the screen for a split second - this happens
+		// whenever the game switches from normal mode to battle mode and vice versa
+		if(	MATCH_NC("CHRONO TRIGGER") ||			// Chrono Trigger
+			MATCH_ID("ACT") ||
+			MATCH_ID("AC9J")					// Chrono Trigger (Sample)
+		  )
+			Settings.ChronoTriggerFrameHack = 1;
+		else
+			Settings.ChronoTriggerFrameHack = 0;
+
+		// Don't render subscreen for games that don't switch to high-res mode in-game or
+		// don't use hi-res at all - and yet still need to do stuff with the subscreen
+		// FPS improvement ranges from 7/10fps to 20/25fps depending on the game ( +25/30fps in
+		// some occassions - benchmarked on PC)
+		if(
+			MATCH_NA("Super Metroid") 	// Super Metroid
+			|| MATCH_ID("ATVE")		// Tales of Phantasia (EN) (DeJap)
+			|| MATCH_NA("SECRET OF EVERMORE") 	// Secret of Evermore
+			|| MATCH_ID("AKL")		// Killer Instinct
+			|| MATCH_NA("FINAL FANTASY 6")	// Final Fantasy VI (JP)
+			|| MATCH_NA("FINAL FANTASY 3")	// Final Fantasy III (US)
+			|| MATCH_NA("ILLUSION OF GAIA USA") // Illusion of Gaia (US)
+			|| MATCH_NA("GAIA GENSOUKI 1 JPN")	// Gaia Gensouki (JPN)
+			|| MATCH_ID("AEJ") 		// Earthworm Jim
+			|| MATCH_ID("YI")		// Yoshi's Island
+			|| MATCH_NA("SUPER MARIOWORLD")	// Super Mario World
+			|| MATCH_NA("THE LEGEND OF ZELDA")	// Zelda 3
+			|| MATCH_NA("LA LEGENDE DE ZELDA")	// Zelda 3 (FR)
+			|| MATCH_NA("ZELDANODENSETSU")		// Zelda 3 (JPN)
+			|| MATCH_NA("SPARKSTER")		// Sparkster
+			|| MATCH_NA("PLOK")		// Plok!
+			|| MATCH_NA("GS MIKAMI")		// GS Mikami - Joreishi wa Nice Body
+			|| MATCH_ID("AJOJ")		// Jikkyou Oshaberi Parodius
+			|| MATCH_NA("RISE OF THE ROBOTS")	// Rise Of The Robots
+			|| MATCH_NA("MORTAL KOMBAT II")	// Mortal Kombat II
+			|| MATCH_NA("STAR FOX")		// Star Fox (US/JP)
+			|| MATCH_NA("STAR WING")		// Star Wing (EU)
+			|| MATCH_ID("3Z")		// Demon's Crest
+			|| MATCH_NA("AXELAY")		// Axelay
+			|| MATCH_NA("ZOMBIES")		// Zombies (EU)
+			|| MATCH_NA("ZOMBIES ATE MY NEIGHB")	// Zombies Ate My Neighbors
+			|| MATCH_NA("UNIRACERS")		// Uniracers
+			|| MATCH_NA("UNIRALLY")		// Unirally
+			|| MATCH_NA("CHRONO TRIGGER")	// Chrono Trigger
+			|| MATCH_NA("JURASSIC PARK")	// Jurassic Park
+			|| MATCH_NA("THE MAGICAL QUEST")	// The Magical Quest
+			|| MATCH_NA("SOULBLAZER - 1 USA")	// Soul Blazer (US)
+			|| MATCH_NA("SOULBLAZER - 1 ENG")	// Soul Blazer (PAL)
+			|| MATCH_NA("SOULBLADER - 1")		// Soul Blader
+			|| MATCH_NA("GOKUJYOU PARODIUS")		// Gokujou Parodius
+			|| MATCH_ID("ABT")		// Adventures of Batman and Robin
+			|| MATCH_ID("A3C")		// Donkey Kong Country 3
+			|| MATCH_ID("5M")		// Mario All-Stars + World
+			|| MATCH_NA("SUPER MARIO ALL_STARS") // Super Mario All-Stars (EU/US)
+			|| MATCH_NA("SUPERMARIO COLLECTION") // Super Mario Collection (JP)
+			|| MATCH_ID("4Q")		// Super Punch-Out
+			|| MATCH_NA("HARVEST MOON")	// Harvest Moon
+			|| MATCH_ID("ADZ")		// Dracula X
+			|| MATCH_ID("A3M")		// Mortal Kombat 3
+			|| MATCH_ID("AM4J")		// Do-Re-Mi Fantasy - Milon no Dokidoki Daibouken
+			|| MATCH_NA("BT IN BATTLEMANIACS")	// Battletoads in Battlemaniacs
+			|| MATCH_NA("SPACE MEGAFORCE")	// Space Megaforce (US)
+			|| MATCH_NA("SUPER ALESTE")	// Super Aleste (EU/JP)
+			|| MATCH_NA("VALKEN")		// Assault Suits Valken (JP)
+			|| MATCH_NA("CYBERNATOR")	// Cybernator (EU/US)
+			|| MATCH_NA("SUPER BOMBERMAN")	// Super Bomberman 1
+			|| MATCH_NA("SUPER BOMBERMAN2")	// Super Bomberman 2
+			|| MATCH_ID("AS6")		// Super Bomberman 3
+			|| MATCH_ID("A4B")		// Super Bomberman 4
+			|| MATCH_ID("AYL")		// Tetris Attack
+			|| MATCH_NA("POCKY ROCKY")	// Pocky & Rocky (US/EU)
+			|| MATCH_NA("KIKIKAIKAI")	// Kiki Kaikai (JP)
+			|| MATCH_ID("ANI")		// Lufia 2 / Estpolis Denki 2
+			|| MATCH_ID("AQT")		// Terranigma
+			|| MATCH_NA("twinbee")		// Twinbee Rainbow Bell Adventures
+			|| MATCH_ID("AO7")		// Tactics Ogre
+			|| MATCH_NA("Ogre Battle USA")	// Ogre Battle (US)
+			|| MATCH_ID("AQ3")		// Dragon Quest 3
+			|| MATCH_NA("DRAGONQUEST5")	// Dragon Quest 5
+			|| MATCH_ID("AQ6J")		// Dragon Quest 6
+			|| MATCH_NA("DARIUS FORCE")	// Darius Force
+			|| MATCH_ID("AGC")		// Front Mission
+			|| MATCH_ID("AZGJ")		// Front Mission Gun Hazard
+			|| MATCH_NA("GANBARE GOEMON")	// Ganbare Goemon (JP)
+			|| MATCH_NA("GANBARE GOEMON 2")	// Ganbare Goemon 2
+			|| MATCH_NA("mystical ninja")	// Legend of Mystical Ninja (US/EU)
+			|| MATCH_NA("NOSFERATU")		// Nosferatu
+			|| MATCH_NA("PAC ATTACK")	// Pac Attack
+			|| MATCH_NA("PARODIUS")		// Parodius 1
+			|| MATCH_NA("PRINCE OF PERSIA")	// Prince of Persia
+			|| MATCH_NA("FINAL FANTASY 5")	// Final Fantasy 5
+			|| MATCH_NA("OUT OF THIS WORLD") // Out Of This World (US)
+			|| MATCH_NA("OUTER WORLD")	// Outer World (JP)
+			|| MATCH_NA("ANOTHER WORLD")	// Another World (EU)
+			|| MATCH_ID("ABZE")		// Ballz 3D
+			|| MATCH_ID("AXSP")		// Winter Gold
+			|| MATCH_ID("APJJ")		// Wonder Project J
+			|| MATCH_NA("KRUSTYS SUPER FUNHOUSE")	// Krustys Super Fun House
+			|| MATCH_NA("KRUSTYS SUPERFUNHOUSE")	// Krustys Super Fun House
+			|| MATCH_NA("LEMMINGS")		// Lemmings 1
+			|| MATCH_ID("A3Z")		// Ultimate Mortal Kombat 3
+			|| MATCH_ID("ARFJ")		// Star Ocean
+			|| MATCH_ID("AXBE")		// Bahamut Lagoon
+			|| MATCH_ID("AC6J")		// Cu-On-Pa
+			|| MATCH_ID("ASR")		// Street Racer
+			|| MATCH_NA("SUPER WIDGET")	// Super Widget
+			|| MATCH_NA("R-TYPE 3")		// R-Type 3
+			|| MATCH_ID("ARW")		// Super Mario RPG
+			|| MATCH_NA("SHVC FIREEMBLEM")	// Fire Emblem - Monshou no Nazo
+			|| MATCH_ID("BFRJ")		// Fire Emblem - Thracia 776
+			|| MATCH_ID("A32J")		// Fire Emblem - Seisen no Keifu
+			|| MATCH_ID("AR9")		// Primal Rage
+			|| MATCH_ID("APUE")		// Prehistorik Man
+			|| MATCH_ID("ALSJ")		// Lady Stalker
+			|| MATCH_NA("ROCKMAN&FORTE")	// Rockman & Forte
+			|| MATCH_NA("SUPER SWIV")	// Super SWIV
+			|| MATCH_NA("CONTRA3 THE ALIEN WARS")	// Contra 3 The Alien Wars
+			|| MATCH_NA("EARTHWORM JIM 2")	// Earthworm Jim 2
+			|| MATCH_NA("CHOHMAKAIMURA")	// Chou Makai Mura
+			|| MATCH_NA("SUPER GHOULS'N GHOSTS")	// Super Ghouls 'n Ghosts
+			|| MATCH_NA("X-KALIBER 2097")	// X-Kaliber 2097
+			|| MATCH_NA("FINAL FIGHT 2")	// Final Fight 2
+			|| MATCH_NA("SUPER TURRICAN 2")	// Super Turrican 2
+			|| MATCH_NA("DUNGEON MASTER")	// Dungeon Master
+			|| MATCH_NA("DOOM TROOPERS")	// Doom Troopers
+			|| MATCH_NA("XAK 1")		// Xak 1
+			|| MATCH_NA("XARDION")		// Xardion
+		  )
+		  	PPU.RenderSub = false;
+		else
+			PPU.RenderSub = true;
+
+		#ifdef __LIBSNES__
+		fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
+		#endif
+
+		// Clipping hack - gains around 5-7 extra fps - only use it for specific
+		// games where nothing breaks with this hack on
+
+		if(
+			MATCH_NA("FINAL FANTASY 6")	// Final Fantasy VI (JP)
+			|| MATCH_NA("FINAL FANTASY 3")	// Final Fantasy III (US)
+		)
+			PPU.FullClipping = false;
+		else
+			PPU.FullClipping = true;
+
+		#ifdef __LIBSNES__
+		fprintf(stderr, "PPU.FullClipping = %d\n", PPU.FullClipping);
+		#endif
+	}
+
+	if (Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
+	{
+		//multitap
+		if(
+				MATCH_NN("BARKLEY") ||				// Barkley Shut Up and Jam!
+				MATCH_ID("ABCJ") ||				// Battle Cross
+				MATCH_NA("Bill Walsh College FB1") ||		// Bill Walsh College Football
+				MATCH_ID("ANYE") ||				// College Slam
+				MATCH_ID("AC3J") ||				// Crystal Beans from Dungeon Explorer
+				MATCH_NC("Bruce Lee") ||				// Dragon - Bruce Lee Story
+				MATCH_ID("AVS") ||				// Fever Pitch Soccer (EU) (*)
+				// Head-On Soccer (US) (*)
+				MATCH_NA("FURI-FURI GIRLS") ||			// Furi-Furi Girls
+				MATCH_NA("HAT TRICK HERO 2") ||			// Hat Trick Hero 2
+				MATCH_NA("HEBEREKE NO PUZZLE") ||		// Hebereke no Oishii Puzzle wa Irimasenka
+				MATCH_ID("AWJ") ||				// International Superstar Soccer Deluxe (EU/US) (*)
+				// Jikkyou World Soccer 2 - Fighting Eleven (JP) (*)
+				MATCH_NA("J-LEAGUE SUPER SOCCER0") ||		// J-League Super Soccer (JP)
+				// Virtual Soccer (EU)
+				MATCH_NA("JIGSAW PARTY") ||			// Jigsaw Party (US) (*)
+				// Pieces (JP)
+				MATCH_NA("JIMMY CONNORS TENNIS") ||		// Jimmy Connors Pro Tennis Tour
+				MATCH_NA("LAS VEGAS DREAM") ||			// Las Vegas Dream in Golden Paradise (JP) (*)
+				// Vegas Stakes (EU/US)
+				MATCH_ID("ALT") ||				// Looney Tunes B-Ball (US) (*)
+				// Looney Tunes Basketball (EU) (*)
+				MATCH_ID("AYHJ") ||				// Mizuki Shigeru no Youkai Hyakkiyakou
+				MATCH_ID("A3VJ") ||				// Multi Play Volleyball
+				MATCH_NA("MUSCLE BOMBER") ||			// Muscle Bomber: The Body Explosion (JP) (*)
+				// Saturday Night Slam Masters (US)
+				MATCH_ID("CHAMP WRESTLING") ||			// Natsume Championship Wrestling
+				MATCH_ID("ANJ") || 				// NBA Give 'n Go
+				MATCH_ID("AXG") || 				// NBA Hangtime
+				MATCH_ID("AJT") || 				// NBA Jam Tournament Edition (EU/US/JP)
+				MATCH_NA("NBA JAM")   || 			// NBA Jam
+				MATCH_ID("AFIE") ||				// NCAA Final Four Basketball
+				MATCH_ID("AFBE") ||				// NCAA Football
+				MATCH_ID("Q9") ||				// NFL Quarterback Club / NFL Quarterback Club '95
+				MATCH_ID("AQB") ||				// NFL Quarterback Club '96
+				MATCH_NA("PIECES") ||
+				MATCH_ID("Z5") ||				// Pieces (JP) (*)
+				// Jigsaw Party (US)
+				MATCH_ID("ARVE") ||				// Rap Jam - Volume One
+				MATCH_NA("RUSHING BEAT SYURA") ||		// Rushing Beat Shura (JP) (*)
+				// The Peace Keepers (US)
+				MATCH_NA("S.Night SLAM MASTERS") ||		// Saturday Night Slam Masters (US) (*)
+				// Muscle Bomber: The Body Explosion (JP)
+				MATCH_NA("Secret of MANA") ||			// Secret of Mana (EU/US) (*)
+				// Seiken Densetsu 2 (JP)
+				MATCH_NA("SeikenDensetsu 2") ||			// Seiken Densetsu 2 (JP) (*) / 
+				// Secret of Mana (EU/US)
+				MATCH_NN("SeikenDensetsu3") ||			// Seiken Densetsu 3 (in case you use
+				// 3-player IPS patch)
+				MATCH_NA("SMASH TENNIS") ||			// Smash Tennis (EU) (*) / 
+				// Super Family Tennis (JP)
+				//FIXME: TODO - Add CRC32 for Super Family Tennis - CRC32: 2BCBFF26
+				MATCH_ID("ASR") ||				// Street Racer
+				MATCH_NA("SUGOI HEBEREKE") ||			// Sugoi Hebereke
+				MATCH_NA("Sugoro Quest++") ||			// Sugoro Quest++: Dicenics
+				MATCH_ID("AO9") ||				// Summer Olympics
+				MATCH_ID("AS6") ||				// Super Bomberman 3
+				MATCH_ID("A4BJ") || 				// Super Bomberman 4
+				MATCH_ID("APBJ") ||				// Super Bomberman Panic Bomber W
+				MATCH_ID("AF5J") ||				// Super Fire Pro Wrestling X
+				MATCH_ID("AP4J") ||				// Super Fire Pro Wrestling Special
+				MATCH_ID("AQQJ") ||				// Super Fire Pro Wrestling - Queen's Special
+				MATCH_ID("A7PJ") ||				// Super Puyo Puyo Tsuu Remix
+				MATCH_ID("AT3J") ||				// Super Tetris 3
+				MATCH_ID("AFY") ||				// Syndicate
+				MATCH_NA("THE PEACE KEEPERS") ||			// The Peace Keepers (US) (*)
+				// Rushing Beat Shura (JP)
+				MATCH_NA("Tiny Toon Sports") ||			// Tiny Toon Adventures: Dotabata Daiundoukai (JP) (*)
+				// Tiny Toon Adventures: Wacky Sports Challenge (US) (*)
+				// Tiny Toon Adventures: Wild & Wacky Sports (EU) (*)
+				MATCH_ID("A3T") ||				// Top Gear 3000 (EU/US) (*)
+				// Planet's Champ TG 3000 (JP) (*)
+				MATCH_NA("VEGAS STAKES") ||			// Vegas Stakes (EU/US) (*)
+				// Las Vegas Dream in Golden Paradise (JP)
+				MATCH_NA("Virtual Soccer") ||			// Virtual Soccer (EU) (*)
+				// J-League Super Soccer (JP)
+				MATCH_ID("AWF") ||				// WWF RAW
+
+				//Catch-alls
+				MATCH_NC("SUPER BOMBERMAN") ||			// All Bomberman games (FIXME: remove
+				// individual two Bomberman entries if this works)
+				MATCH_NC("FIFA") ||				// All FIFA games
+				MATCH_NN("NHL") ||				// All NHL games
+				MATCH_NC("MADDEN") ||				// All Madden games
+				MATCH_NC("MICRO MACHINES") ||			// All Micro Machines games
+				MATCH_ID("Q4")					// ?
+				)
+				Settings.CurrentROMisMultitapCompatible = true;
+		else
+			Settings.CurrentROMisMultitapCompatible = false;
+
+		//mouse
+		if	(
+				MATCH_NC("ACME ANIMATION FACTOR") ||	// ACME Animation Factory
+				MATCH_ID("ACM") ||
+				MATCH_NC("ALICE PAINT") ||		// Alice no Paint Adventure
+				MATCH_ID("AALJ") ||
+				MATCH_NC("ARKANOID DOH IT AGAIN0") ||	// Arkanoid: Doh It Again
+				MATCH_ID("A6") ||
+				MATCH_NA("SFC SAILORMOON S") ||	// Bishojou Senshi Sailor Moon S: Kondowa Puzzle de
+				// Oshiokiyo!
+				MATCH_NA("BRANDISH2 EXPERT") ||		// Brandish 2: Expert
+				MATCH_ID("AQIJ") ||				
+				MATCH_NA("BREAKTRHU!") ||		// BreakThru!
+				MATCH_ID("ABXE") ||
+				MATCH_NA("CIVILIZATION") ||		// Civilization
+				MATCH_ID("EQ") ||
+				MATCH_NA("CAMELTRY") ||			// Cameltry (JP) (*)
+				// On The Ball (EU/US)
+				MATCH_NA("CANNON FODDER") ||		// Cannon Fodder
+				MATCH_ID("ACNP") ||				
+				MATCH_ID("M Ve") ||			// Dai-3-ji Super Robot Taisen
+				MATCH_ID("AR4J") ||				// Dai-4-ji Super Robot Taisen
+				MATCH_NA("SUPER ROBOT WARS 4") ||
+				MATCH_NA("DOOM") ||			// Doom
+				MATCH_ID("AD8") ||				
+				MATCH_ID("A88J") ||			// Doukyuusei 2 (JP) (NP)
+				MATCH_NA("DRAGON KNIGHT 4") ||		// Dragon Knight 4
+				MATCH_ID("A87J") ||				
+				MATCH_NA("Eye of the Beholder") ||	// Eye of the Beholder
+				MATCH_NA("FARLANDSTORY2") ||		// Farland Story 2
+				MATCH_ID("A2FJ") ||
+				MATCH_NA("Fun 'N Games") ||		// Fun 'N Games (EU/US)
+				MATCH_NA("GALAXY ROBO") ||		// Galaxy Robo
+				MATCH_NA("HIOUDEN") ||			// Hiouden: Mamono-tachi tono Chikai
+				MATCH_NA("JIGSAW PARTY") ||		// Jigsaw Party (US) (*)
+				// Pieces (JP)
+				//MATCH_NA("JURASSIC PARK") ||		// Jurassic Park
+				MATCH_NA("King Arthurs World") ||	// King Arthur's World (EU/US) (*)
+				// Royal Conquest (JP)
+				MATCH_NA("KOUTETSU-NO KISHI") ||		// Koutetsu No Kishi
+				MATCH_NA("KOUTETSU-NO KISHI 2") ||	// Koutetsu No Kishi 2
+				MATCH_NA("KOUTETSU-NO KISHI 3") ||	// Koutetsu No Kishi 3
+				MATCH_ID("APZJ") ||
+				MATCH_NA("LAMBORGHINI AMERICAN") ||	// Lamborghini American Challenge (EU/US)
+				MATCH_NA("LAS VEGAS DREAM") ||		// Las Vegas Dream in Golden Paradise (JP) (*)
+				// Vegas Stakes (EU/US)
+				MATCH_NA("Lemmings 2,The Tribes") ||	// Lemmings 2: The Tribes
+				MATCH_ID("L2") ||
+				MATCH_NA("LORD MONARCH") ||		// Lord Monarch
+				MATCH_NA("Mario&Wario") ||		// Mario & Wario
+				MATCH_NA("SUPER PICROSS") ||		// Mario no Super Picross
+				MATCH_ID("ACXJ") ||
+				MATCH_NC("MARIOPAINT") ||		// Mario Paint
+				MATCH_NA("MEY  Preschool Fun") ||	// Mario's Early Years: Preschool Fun
+				MATCH_ID("AMEE") ||
+				MATCH_NA("MEGA LO MANIA") ||		// Mega-Lo Mania
+				MATCH_NA("MIGHT  AND MAGIC III") ||	// Might And Magic III - Isles of Terra
+				MATCH_NA("WONDER KITCHEN") ||		// Motoko-chan no Wonder Kitchen
+				MATCH_NA("Nobunaga's Ambition") ||	// Nobunaga's Ambition (US) (*)
+				// Super Nobunaga no Yabou: Zenkokuban (JP)
+				MATCH_NA("ON THE BALL") ||		// On The Ball (EU/US) (*)
+				// Cameltry (JP)
+				MATCH_NA("OPERATION THUNDERBOLT1") ||	// Operation Thunderbolt
+				MATCH_NA("PIECES") ||
+				MATCH_ID("Z5") ||			// Pieces (JP) (*)
+				// Jigsaw Party (US)
+				MATCH_NC("POPULOUS II") ||		// Populous II
+				MATCH_NA("POWERMONGER") ||		// Power Monger
+				MATCH_NA("Revolution X") ||		// Revolution X
+				MATCH_ID("AXR") ||
+				MATCH_NA("Royal Conquest") ||		// Royal Conquest (JP) (*)
+				// King Arthur's World (EU/US)
+				MATCH_NA("TENBU SPIRIT") ||		// San Goku Shi Seishi: Tenbu Spirits
+				MATCH_NA("SHIEN THE BLADE CHASE0") ||	// Shien The Blade Chaser (JP) (*)
+				MATCH_NA("SHIEN'S REVENGE") ||		// Shien's Revenge (*)
+				MATCH_NC("SimAnt") ||			// SimAnt
+				MATCH_NA("SNOOPY CONCERT") ||		// Snoopy Concert
+				MATCH_NA("SUPER CAESARS PALACE") ||	// Super Caesar's Palace
+				MATCH_NA("SUPER CASTLES") ||		// Super Castles
+				MATCH_ID("AVIJ") ||
+				//FIXME: TODO: Super Noah's Ark 3D: - bad checksum - CRC32: A2315A14
+				MATCH_NA("SuperPachiSlotMahjong") ||	// Super Pachi Slot Mahjong
+				MATCH_NA("SUPER SOLITAIRE") ||		// Super Solitaire
+				MATCH_NA("SUPER ZENKOKUBAN") ||		// Super Nobunaga no Yabou: Zenkokuban (JP) (*)
+				// Nobunaga's Ambition (US)
+				MATCH_NA("TERMINATOR2 THE MOVIE0") ||	// Terminator 2: The Arcade Game
+				MATCH_NA("TINSTAR") ||			// Tin Star
+				MATCH_ID("9N") ||
+				MATCH_NA("TOKIMEKI MEMORIAL") ||		// Tokimeki Memorial
+				MATCH_ID("AM8J") ||
+				MATCH_NA("Troddlers") ||			// Troddlers
+				MATCH_NA("UTOPIA") ||			// Utopia
+				MATCH_NA("VEGAS STAKES") ||		// Vegas Stakes (EU/US) (*)
+				// Las Vegas Dream in Golden Paradise (JP)
+				MATCH_NC("WOLFENSTEIN 3D") ||		// Wolfenstein 3D
+				MATCH_NA("WONDERPROJECT J") ||		// Wonder Project J
+				MATCH_ID("APJJ") ||				
+				MATCH_NA("ZAN2 SPIRITS") ||		// Zan 2: Spirits
+				MATCH_NA("ZAN3 SFC")			// Zan 3: Spirits
+				)
+				Settings.CurrentROMisMouseCompatible = true;
+		else
+			Settings.CurrentROMisMouseCompatible = false;
+
+		//super scope
+		if	(
+				MATCH_NA("BATTLE CLASH") ||		// Battle Clash (EU/US) (*)
+										// Space Bazooka (JP)
+				MATCH_NA("SPACE BAZOOKA") ||		// Space Bazooka (JP) (*)
+										// Battle Clash (EU/US)
+				//FIXME: TODO: Add The Hunt for Red October - used for bonus game
+				//FIXME: TODO: Add Lamborghini American Challenge - if needed
+				MATCH_NA("METAL COMBAT") ||		// Metal Combat: Falcon's Revenge
+				MATCH_NA("OPERATION THUNDERBOLT1") ||	// Operation Thunderbolt
+				MATCH_NA("SUPER SCOPE 6") ||		// Super Scope 6
+				//MATCH_NA("TERMINATOR2 THE MOVIE0") ||	// Terminator 2: The Arcade Game
+				MATCH_NA("TINSTAR") ||			// Tin Star
+				MATCH_ID("9N") ||
+				MATCH_NA("X ZONE") ||			// X-Zone
+				//FIXME: TODO: Add Yoshi no Road Hunting - CRC32: 52948F3C
+				MATCH_NA("YOSHI'S SAFARI")		// Yoshi's Safari
+			)
+			Settings.CurrentROMisSuperScopeCompatible = true;
+		else
+			Settings.CurrentROMisSuperScopeCompatible = false;
+	}
+
+	S9xAPUTimingSetSpeedup(Timings.APUSpeedup);
+	S9xAPUAllowTimeOverflow(Timings.APUAllowTimeOverflow);
+
+	//// Other timing hacks :(
+
+	Timings.HDMAStart   = SNES_HDMA_START_HC + Settings.HDMATimingHack - 100;
+	Timings.HBlankStart = SNES_HBLANK_START_HC + Timings.HDMAStart - SNES_HDMA_START_HC;
+
+	if (!Settings.DisableGameSpecificHacks)
+	{
+		// The delay to sync CPU and DMA which Snes9x cannot emulate.
+		// Some games need really severe delay timing...
+		if (MATCH_NA("BATTLE GRANDPRIX")) // Battle Grandprix
+		{
+			Timings.DMACPUSync = 20;
+			printf("DMA sync: %d\n", Timings.DMACPUSync);
+		}
+	}
+
+	if (!Settings.DisableGameSpecificHacks)
+	{
+		// Opcode-based emulators cannot escape from "reading $4211/BPL" infinite loop...
+		// The true IRQ can be triggered inside an opcode.
+		if (MATCH_NA("TRAVERSE")) // Traverse - Starlight & Prairie
+		{
+			Timings.IRQPendCount = 1;
+			printf("IRQ count hack: %d\n", Timings.IRQPendCount);
+		}
+
+		// An infinite loop reads $4212 and waits V-blank end, whereas VIRQ is set V=0.
+		// If Snes9x succeeds to escape from the loop before jumping into the IRQ handler, the game goes further.
+		// If Snes9x jumps into the IRQ handler before escaping from the loop,
+		// Snes9x cannot escape from the loop permanently because the RTI is in the next V-blank.
+		if (MATCH_NA("Aero the AcroBat 2"))
+		{
+			Timings.IRQPendCount = 2;
+			printf("IRQ count hack: %d\n", Timings.IRQPendCount);
+		}
+
+		if (MATCH_NA("BATTLE BLAZE"))
+		{
+			Timings.IRQPendCount = 1;
+			printf("IRQ count hack: %d\n", Timings.IRQPendCount);
+		}
+	}
+
+	if (!Settings.DisableGameSpecificHacks)
+	{
+		// XXX: What's happening?
+		if (MATCH_NA("X-MEN")) // Spider-Man and the X-Men
+		{
+			Settings.BlockInvalidVRAMAccess = FALSE;
+			printf("Invalid VRAM access hack\n");
+		}
+	}
+
+	//// SRAM initial value
+
+	if (!Settings.DisableGameSpecificHacks)
+	{
+		if (MATCH_NA("HITOMI3"))
+		{
+			SRAMSize = 1;
+			SRAMMask = ((1 << (SRAMSize + 3)) * 128) - 1;
+		}
+
+		// SRAM value fixes
+		if (MATCH_NA("SUPER DRIFT OUT")      || // Super Drift Out
+			MATCH_NA("SATAN IS OUR FATHER!") ||
+			MATCH_NA("goemon 4"))               // Ganbare Goemon Kirakira Douchuu
+			SNESGameFixes.SRAMInitialValue = 0x00;
+
+		// Additional game fixes by sanmaiwashi ...
+		// XXX: unnecessary?
+		if (MATCH_NA("SFX \xC5\xB2\xC4\xB6\xDE\xDD\xC0\xDE\xD1\xD3\xC9\xB6\xDE\xC0\xD8 1")) // SD Gundam Gaiden - Knight Gundam Monogatari
+			SNESGameFixes.SRAMInitialValue = 0x6b;
+
+		// others: BS and ST-01x games are 0x00.
+	}
+
+	//// OAM hacks :(
+
+	if (!Settings.DisableGameSpecificHacks)
+	{
+		// OAM hacks because we don't fully understand the behavior of the SNES.
+		// Totally wacky display in 2P mode...
+		// seems to need a disproven behavior, so we're definitely overlooking some other bug?
+		if (MATCH_NN("UNIRACERS")) // Uniracers
+		{
+			SNESGameFixes.Uniracers = TRUE;
+			printf("Applied Uniracers hack.\n");
+		}
+	}
 
 	//// Show ROM information
 	char displayName[ROM_NAME_LEN];
@@ -2674,7 +2609,7 @@ void CMemory::InitROM (void)
 	#else
 	sprintf(String, "\"%s\" [%s] %s, %s, %s, %s, SRAM:%s, ID:%s, CRC32:%08X",
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
-		MapType(), Size(), KartContents(), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), ROMId, ROMCRC32);
+		(HiROM ? ((ExtendedFormat != NOPE) ? "ExHiROM": "HiROM") : "LoROM"), Size(), KartContents(), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), ROMId, ROMCRC32);
 	#endif
 	S9xMessage(S9X_INFO, S9X_ROM_INFO, String);
 
@@ -2827,24 +2762,18 @@ void CMemory::map_System (void)
 	map_index(0x80, 0xbf, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O);
 }
 
-void CMemory::map_WRAM (void)
-{
-	// will overwrite others
-	map_space(0x7e, 0x7e, 0x0000, 0xffff, RAM);
+#define MAP_WRAM() \
+	/* will overwrite others */ \
+	map_space(0x7e, 0x7e, 0x0000, 0xffff, RAM); \
 	map_space(0x7f, 0x7f, 0x0000, 0xffff, RAM + 0x10000);
-}
 
-void CMemory::map_LoROMSRAM (void)
-{
-	map_index(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+#define MAP_LOROMSRAM() \
+	map_index(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM); \
 	map_index(0xf0, 0xff, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
-}
 
-void CMemory::map_HiROMSRAM (void)
-{
-	map_index(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
+#define MAP_HIROMSRAM() \
+	map_index(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM); \
 	map_index(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
-}
 
 void CMemory::map_DSP (void)
 {
@@ -2884,35 +2813,26 @@ void CMemory::map_DSP (void)
 	}
 }
 
-void CMemory::map_C4 (void)
-{
-	map_index(0x00, 0x3f, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O);
+#define MAP_C4_() \
+	map_index(0x00, 0x3f, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O); \
 	map_index(0x80, 0xbf, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O);
-}
 
-void CMemory::map_OBC1 (void)
-{
-	map_index(0x00, 0x3f, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O);
+#define MAP_OBC1() \
+	map_index(0x00, 0x3f, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O); \
 	map_index(0x80, 0xbf, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O);
-}
 
-void CMemory::map_SetaRISC (void)
-{
-	map_index(0x00, 0x3f, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O);
+#define MAP_SETARISC() \
+	map_index(0x00, 0x3f, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O); \
 	map_index(0x80, 0xbf, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O);
-}
 
-void CMemory::map_SetaDSP (void)
-{
-	// where does the SETA chip access, anyway?
-	// please confirm this?
-	map_index(0x68, 0x6f, 0x0000, 0x7fff, MAP_SETA_DSP, MAP_TYPE_RAM);
-	// and this!
-	map_index(0x60, 0x67, 0x0000, 0x3fff, MAP_SETA_DSP, MAP_TYPE_I_O);
-
-	// ST-0010:
-	// map_index(0x68, 0x6f, 0x0000, 0x0fff, MAP_SETA_DSP, ?);
-}
+#define MAP_SETADSP() \
+	/* where does the SETA chip access, anyway? */ \
+	/* please confirm this? */ \
+	map_index(0x68, 0x6f, 0x0000, 0x7fff, MAP_SETA_DSP, MAP_TYPE_RAM); \
+	/* and this! */ \
+	map_index(0x60, 0x67, 0x0000, 0x3fff, MAP_SETA_DSP, MAP_TYPE_I_O); \
+	/* ST-0010: */ \
+	/* map_index(0x68, 0x6f, 0x0000, 0x0fff, MAP_SETA_DSP, ?); */
 
 void CMemory::map_WriteProtectROM (void)
 {
@@ -2925,16 +2845,6 @@ void CMemory::map_WriteProtectROM (void)
 	}
 }
 
-void CMemory::Map_Initialize (void)
-{
-	for (int c = 0; c < 0x1000; c++)
-	{
-		Map[c]      = (uint8 *) MAP_NONE;
-		WriteMap[c] = (uint8 *) MAP_NONE;
-		BlockIsROM[c] = FALSE;
-		BlockIsRAM[c] = FALSE;
-	}
-}
 
 void CMemory::Map_LoROMMap (void)
 {
@@ -2950,16 +2860,22 @@ void CMemory::Map_LoROMMap (void)
 		map_DSP();
 	else
 	if (Settings.C4)
-		map_C4();
+	{
+		MAP_C4_();
+	}
 	else
 	if (Settings.OBC1)
-		map_OBC1();
+	{
+		MAP_OBC1();
+	}
 	else
 	if (Settings.SETA == ST_018)
-		map_SetaRISC();
-
-    map_LoROMSRAM();
-	map_WRAM();
+	{
+		MAP_SETARISC();
+	}
+		
+	MAP_LOROMSRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -2977,7 +2893,7 @@ void CMemory::Map_NoMAD1LoROMMap (void)
 	map_index(0x70, 0x7f, 0x0000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
 	map_index(0xf0, 0xff, 0x0000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
 
-	map_WRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -2993,8 +2909,8 @@ void CMemory::Map_JumboLoROMMap (void)
 	map_lorom_offset(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0);
 	map_lorom_offset(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0x200000);
 
-	map_LoROMSRAM();
-	map_WRAM();
+	MAP_LOROMSRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3010,8 +2926,8 @@ void CMemory::Map_ROM24MBSLoROMMap (void)
 	map_lorom_offset(0x80, 0x9f, 0x8000, 0xffff, 0x100000, 0x200000);
 	map_lorom_offset(0xa0, 0xbf, 0x8000, 0xffff, 0x100000, 0x100000);
 
-	map_LoROMSRAM();
-	map_WRAM();
+	MAP_LOROMSRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3031,7 +2947,7 @@ void CMemory::Map_SRAM512KLoROMMap (void)
 	map_space(0x72, 0x72, 0x0000, 0xffff, SRAM + 0x10000);
 	map_space(0x73, 0x73, 0x0000, 0xffff, SRAM + 0x18000);
 
-	map_WRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3060,7 +2976,7 @@ void CMemory::Map_SufamiTurboLoROMMap (void)
 		map_index(0xf0, 0xf3, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM);
 	}
 
-	map_WRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3084,7 +3000,7 @@ void CMemory::Map_SufamiTurboPseudoLoROMMap (void)
 	map_space(0x70, 0x73, 0x8000, 0xffff, SRAM + 0x4000 - 0x8000);
 	map_space(0xf0, 0xf3, 0x8000, 0xffff, SRAM + 0x4000 - 0x8000);
 
-	map_WRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3113,7 +3029,7 @@ void CMemory::Map_SuperFXLoROMMap (void)
 	map_space(0x70, 0x70, 0x0000, 0xffff, SRAM);
 	map_space(0x71, 0x71, 0x0000, 0xffff, SRAM + 0x10000);
 
-	map_WRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3128,10 +3044,10 @@ void CMemory::Map_SetaDSPLoROMMap (void)
 	map_lorom(0x80, 0xbf, 0x8000, 0xffff, CalculatedSize);
 	map_lorom(0xc0, 0xff, 0x8000, 0xffff, CalculatedSize);
 
-	map_SetaDSP();
-
-    map_LoROMSRAM();
-	map_WRAM();
+	MAP_SETADSP();
+	
+	MAP_LOROMSRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3149,7 +3065,7 @@ void CMemory::Map_SDD1LoROMMap (void)
 
 	map_index(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
 
-	map_WRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3172,7 +3088,7 @@ void CMemory::Map_SA1LoROMMap (void)
 	for (int c = 0x40; c < 0x80; c++)
 		map_space(c, c, 0x0000, 0xffff, SRAM + (c & 1) * 0x10000);
 
-	map_WRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 
@@ -3209,8 +3125,8 @@ void CMemory::Map_HiROMMap (void)
 	if (Settings.DSP)
 		map_DSP();
 
-	map_HiROMSRAM();
-	map_WRAM();
+	MAP_HIROMSRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3225,8 +3141,8 @@ void CMemory::Map_ExtendedHiROMMap (void)
 	map_hirom_offset(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0);
 	map_hirom_offset(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0);
 
-	map_HiROMSRAM();
-	map_WRAM();
+	MAP_HIROMSRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3245,8 +3161,8 @@ void CMemory::Map_SameGameHiROMMap (void)
 	map_hirom_offset(0xc0, 0xdf, 0x0000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
 	map_hirom_offset(0xe0, 0xff, 0x0000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
 
-	map_HiROMSRAM();
-	map_WRAM();
+	MAP_HIROMSRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
@@ -3264,22 +3180,13 @@ void CMemory::Map_SPC7110HiROMMap (void)
 	map_hirom_offset(0xc0, 0xcf, 0x0000, 0xffff, CalculatedSize, 0);
 	map_index(0xd0, 0xff, 0x0000, 0xffff, MAP_SPC7110_ROM,  MAP_TYPE_ROM);
 
-	map_WRAM();
+	MAP_WRAM();
 
 	map_WriteProtectROM();
 }
 
 // checksum
 
-uint16 CMemory::checksum_calc_sum (uint8 *data, uint32 length)
-{
-	uint16	sum = 0;
-
-	for (uint32 i = 0; i < length; i++)
-		sum += data[i];
-
-	return (sum);
-}
 
 uint16 CMemory::checksum_mirror_sum (uint8 *start, uint32 &length, uint32 mask)
 {
@@ -3307,40 +3214,7 @@ uint16 CMemory::checksum_mirror_sum (uint8 *start, uint32 &length, uint32 mask)
 	return (part1 + part2);
 }
 
-void CMemory::Checksum_Calculate (void)
-{
-	// from NSRT
-	uint16	sum = 0;
-
-	if (Settings.BS && !Settings.BSXItself)
-		sum = checksum_calc_sum(ROM, CalculatedSize) - checksum_calc_sum(ROM + (HiROM ? 0xffb0 : 0x7fb0), 48);
-	else
-	if (Settings.SPC7110)
-	{
-		sum = checksum_calc_sum(ROM, CalculatedSize);
-		if (CalculatedSize == 0x300000)
-			sum += sum;
-	}
-	else
-	{
-		if (CalculatedSize & 0x7fff)
-			sum = checksum_calc_sum(ROM, CalculatedSize);
-		else
-		{
-			uint32	length = CalculatedSize;
-			sum = checksum_mirror_sum(ROM, length, 0x800000);
-		}
-	}
-
-	CalculatedChecksum = sum;
-}
-
 // information
-
-const char * CMemory::MapType (void)
-{
-	return (HiROM ? ((ExtendedFormat != NOPE) ? "ExHiROM": "HiROM") : "LoROM");
-}
 
 const char * CMemory::StaticRAMSize (void)
 {
@@ -3365,15 +3239,6 @@ const char * CMemory::Size (void)
 		strcpy(str, "Corrupt");
 	else
 		sprintf(str, "%dMbits", 1 << (ROMSize - 7));
-
-	return (str);
-}
-
-const char * CMemory::Revision (void)
-{
-	static char	str[20];
-
-	sprintf(str, "1.%d", HiROM ? ((ExtendedFormat != NOPE) ? ROM[0x40ffdb] : ROM[0xffdb]) : ROM[0x7fdb]);
 
 	return (str);
 }
@@ -3434,670 +3299,6 @@ const char * CMemory::KartContents (void)
 	return (str);
 }
 
-const char * CMemory::Country (void)
-{
-	switch (ROMRegion)
-	{
-		case 0:		return("Japan");
-		case 1:		return("USA and Canada");
-		case 2:		return("Oceania, Europe and Asia");
-		case 3:		return("Sweden");
-		case 4:		return("Finland");
-		case 5:		return("Denmark");
-		case 6:		return("France");
-		case 7:		return("Holland");
-		case 8:		return("Spain");
-		case 9:		return("Germany, Austria and Switzerland");
-		case 10:	return("Italy");
-		case 11:	return("Hong Kong and China");
-		case 12:	return("Indonesia");
-		case 13:	return("South Korea");
-		default:	return("Unknown");
-	}
-}
-
-const char * CMemory::PublishingCompany (void)
-{
-	if (CompanyId >= (int) (sizeof(nintendo_licensees) / sizeof(nintendo_licensees[0])) || CompanyId < 0)
-		return ("Unknown");
-
-	if (nintendo_licensees[CompanyId] == NULL)
-		return ("Unknown");
-
-	return (nintendo_licensees[CompanyId]);
-}
-
-void CMemory::MakeRomInfoText (char *romtext)
-{
-	char	temp[256];
-
-	romtext[0] = 0;
-
-	sprintf(temp,   "            Cart Name: %s", ROMName);
-	strcat(romtext, temp);
-	sprintf(temp, "\n            Game Code: %s", ROMId);
-	strcat(romtext, temp);
-	sprintf(temp, "\n             Contents: %s", KartContents());
-	strcat(romtext, temp);
-	sprintf(temp, "\n                  Map: %s", MapType());
-	strcat(romtext, temp);
-	sprintf(temp, "\n                Speed: 0x%02X (%s)", ROMSpeed, (ROMSpeed & 0x10) ? "FastROM" : "SlowROM");
-	strcat(romtext, temp);
-	sprintf(temp, "\n                 Type: 0x%02X", ROMType);
-	strcat(romtext, temp);
-	sprintf(temp, "\n    Size (calculated): %dMbits", CalculatedSize / 0x20000);
-	strcat(romtext, temp);
-	sprintf(temp, "\n        Size (header): %s", Size());
-	strcat(romtext, temp);
-	sprintf(temp, "\n            SRAM size: %s", StaticRAMSize());
-	strcat(romtext, temp);
-	sprintf(temp, "\nChecksum (calculated): 0x%04X", CalculatedChecksum);
-	strcat(romtext, temp);
-	sprintf(temp, "\n    Checksum (header): 0x%04X", ROMChecksum);
-	strcat(romtext, temp);
-	sprintf(temp, "\n  Complement (header): 0x%04X", ROMComplementChecksum);
-	strcat(romtext, temp);
-	sprintf(temp, "\n         Video Output: %s", (ROMRegion > 12 || ROMRegion < 2) ? "NTSC 60Hz" : "PAL 50Hz");
-	strcat(romtext, temp);
-	sprintf(temp, "\n             Revision: %s", Revision());
-	strcat(romtext, temp);
-	sprintf(temp, "\n             Licensee: %s", PublishingCompany());
-	strcat(romtext, temp);
-	sprintf(temp, "\n               Region: %s", Country());
-	strcat(romtext, temp);
-	sprintf(temp, "\n                CRC32: 0x%08X", ROMCRC32);
-	strcat(romtext, temp);
-}
-
-// hack
-
-bool8 CMemory::match_na (const char *str)
-{
-	return (strcmp(ROMName, str) == 0);
-}
-
-bool8 CMemory::match_nn (const char *str)
-{
-	return (strncmp(ROMName, str, strlen(str)) == 0);
-}
-
-bool8 CMemory::match_nc (const char *str)
-{
-	return (strncasecmp(ROMName, str, strlen(str)) == 0);
-}
-
-bool8 CMemory::match_id (const char *str)
-{
-	return (strncmp(ROMId, str, strlen(str)) == 0);
-}
-
-void CMemory::ApplyROMFixes (void)
-{
-	Settings.BlockInvalidVRAMAccess = Settings.BlockInvalidVRAMAccessMaster;
-
-	//// Warnings
-
-	// Reject strange hacked games
-	if ((ROMCRC32 == 0x6810aa95) ||
-		(ROMCRC32 == 0x340f23e5) ||
-		(ROMCRC32 == 0x77fd806a) ||
-		(match_nn("HIGHWAY BATTLE 2")) ||
-		(match_na("FX SKIING NINTENDO 96") && (ROM[0x7fda] == 0)) ||
-		(match_nn("HONKAKUHA IGO GOSEI")   && (ROM[0xffd5] != 0x31)))
-	{
-	}
-
-	//// APU timing hacks :(
-
-	Timings.APUSpeedup = 0;
-	Timings.APUAllowTimeOverflow = FALSE;
-
-	if (!Settings.DisableGameSpecificHacks)
-	{
-		if (match_id("AVCJ"))                                      // Rendering Ranger R2
-			Timings.APUSpeedup = 4;
-
-		if (match_na("GAIA GENSOUKI 1 JPN")                     || // Gaia Gensouki
-			match_id("JG  ")                                    || // Illusion of Gaia
-			match_id("CQ  ")                                    || // Stunt Race FX
-			match_na("SOULBLADER - 1")                          || // Soul Blader
-			match_na("SOULBLAZER - 1 USA")                      || // Soul Blazer
-			match_na("SLAP STICK 1 JPN")                        || // Slap Stick
-			match_id("E9 ")                                     || // Robotrek
-			match_nn("ACTRAISER")                               || // Actraiser
-			match_nn("ActRaiser-2")                             || // Actraiser 2
-			match_id("AQT")                                     || // Tenchi Souzou, Terranigma
-			match_id("ATV")                                     || // Tales of Phantasia
-			match_id("ARF")                                     || // Star Ocean
-			match_id("APR")                                     || // Zen-Nippon Pro Wrestling 2 - 3-4 Budoukan
-			match_id("A4B")                                     || // Super Bomberman 4
-			match_id("Y7 ")                                     || // U.F.O. Kamen Yakisoban - Present Ban
-			match_id("Y9 ")                                     || // U.F.O. Kamen Yakisoban - Shihan Ban
-			match_id("APB")                                     || // Super Bomberman - Panic Bomber W
-			match_na("DARK KINGDOM")                            || // Dark Kingdom
-			match_na("ZAN3 SFC")                                || // Zan III Spirits
-			match_na("HIOUDEN")                                 || // Hiouden - Mamono-tachi Tono Chikai
-			match_na("\xC3\xDD\xBC\xC9\xB3\xC0")                || // Tenshi no Uta
-			match_na("FORTUNE QUEST")                           || // Fortune Quest - Dice wo Korogase
-			match_na("FISHING TO BASSING")                      || // Shimono Masaki no Fishing To Bassing
-			match_na("OHMONO BLACKBASS")                        || // Oomono Black Bass Fishing - Jinzouko Hen
-			match_na("MASTERS")                                 || // Harukanaru Augusta 2 - Masters
-			match_na("SFC \xB6\xD2\xDD\xD7\xB2\xC0\xDE\xB0")    || // Kamen Rider
-			match_na("ZENKI TENCHIMEIDOU")					    || // Kishin Douji Zenki - Tenchi Meidou
-			match_nn("TokyoDome '95Battle 7")                   || // Shin Nippon Pro Wrestling Kounin '95 - Tokyo Dome Battle 7
-			match_nn("SWORD WORLD SFC")                         || // Sword World SFC/2
-			match_nn("LETs PACHINKO(")                          || // BS Lets Pachinko Nante Gindama 1/2/3/4
-			match_nn("THE FISHING MASTER")                      || // Mark Davis The Fishing Master
-			match_nn("Parlor")                                  || // Parlor mini/2/3/4/5/6/7, Parlor Parlor!/2/3/4/5
-			match_na("HEIWA Parlor!Mini8")                      || // Parlor mini 8
-			match_nn("SANKYO Fever! \xCC\xA8\xB0\xCA\xDE\xB0!"))   // SANKYO Fever! Fever!
-			Timings.APUSpeedup = 1;
-
-		if (match_na ("EARTHWORM JIM 2")			|| // Earthworm Jim 2
-			match_na ("NBA Hangtime")			|| // NBA Hang Time
-			match_na ("MSPACMAN")				|| // Ms Pacman
-			match_na ("THE MASK")				|| // The Mask
-			match_na ("PRIMAL RAGE")			|| // Primal Rage
-			match_na ("DOOM TROOPERS")			|| // Doom Troopers
-			match_na ("PORKY PIGS HAUNTED")			|| // Porky Pig's Haunted Holiday
-			match_na ("Big Sky Trooper")			|| // Big Sky Trooper
-			match_na ("A35"))				// Mechwarrior 3050/Battle Tech 3050
-			Timings.APUAllowTimeOverflow = TRUE;
-
-		//We don't want Seiken Densetsu 3/Romancing Saga 3 unbearably slow in
-		//hi-res mosaic mode - no difference with these games between normal
-		//hi-res renderer and mosaic version - only double the FPS
-		if (
-				match_nn("SeikenDensetsu3") ||
-				match_na("SeikenDensetsu3Sample1") ||	// Seiken Densetsu 3
-				match_na("ROMANCING SAGA3"))		// Romancing Saga 3
-			PPU.DisableMosaicHack = false;
-		else
-			PPU.DisableMosaicHack = true;
-
-		//Speedup hack for Star Fox 2/Vortex
-		if (
-				match_na("VORTEX") ||			// Vortex
-				match_na("Super Street Fighter21") ||	// Super Street Fighter II
-				match_na("STAR FOX 2"))			// Star Fox 2
-					PPU.SFXSpeedupHack = true;
-				else
-					PPU.SFXSpeedupHack = false;
-
-		#ifdef __LIBSNES__
-		fprintf(stderr, "PPU.SFXSpeedupHack = %d\n", PPU.SFXSpeedupHack);
-		#endif
-
-		// Check if Chrono Trigger is loaded, if so, we need to set a variable to true
-		// to get rid of an annoying mid-frame resolution switch to 256x239 which can cause
-		// an undesirable flicker/breakup of the screen for a split second - this happens
-		// whenever the game switches from normal mode to battle mode and vice versa
-		if(	Memory.match_nc("CHRONO TRIGGER") ||			// Chrono Trigger
-			Memory.match_id("ACT") ||
-			Memory.match_id("AC9J")					// Chrono Trigger (Sample)
-		  )
-			Settings.ChronoTriggerFrameHack = 1;
-		else
-			Settings.ChronoTriggerFrameHack = 0;
-
-		// Don't render subscreen for games that don't switch to high-res mode in-game or
-		// don't use hi-res at all - and yet still need to do stuff with the subscreen
-		// FPS improvement ranges from 7/10fps to 20/25fps depending on the game ( +25/30fps in
-		// some occassions - benchmarked on PC)
-		if(
-			Memory.match_na("Super Metroid") 	// Super Metroid
-			|| Memory.match_id("ATVE")		// Tales of Phantasia (EN) (DeJap)
-			|| Memory.match_na("SECRET OF EVERMORE") 	// Secret of Evermore
-			|| Memory.match_id("AKL")		// Killer Instinct
-			|| Memory.match_na("FINAL FANTASY 6")	// Final Fantasy VI (JP)
-			|| Memory.match_na("FINAL FANTASY 3")	// Final Fantasy III (US)
-			|| Memory.match_na("ILLUSION OF GAIA USA") // Illusion of Gaia (US)
-			|| Memory.match_na("GAIA GENSOUKI 1 JPN")	// Gaia Gensouki (JPN)
-			|| Memory.match_id("AEJ") 		// Earthworm Jim
-			|| Memory.match_id("YI")		// Yoshi's Island
-			|| Memory.match_na("SUPER MARIOWORLD")	// Super Mario World
-			|| Memory.match_na("THE LEGEND OF ZELDA")	// Zelda 3
-			|| Memory.match_na("LA LEGENDE DE ZELDA")	// Zelda 3 (FR)
-			|| Memory.match_na("ZELDANODENSETSU")		// Zelda 3 (JPN)
-			|| Memory.match_na("SPARKSTER")		// Sparkster
-			|| Memory.match_na("PLOK")		// Plok!
-			|| Memory.match_na("GS MIKAMI")		// GS Mikami - Joreishi wa Nice Body
-			|| Memory.match_id("AJOJ")		// Jikkyou Oshaberi Parodius
-			|| Memory.match_na("RISE OF THE ROBOTS")	// Rise Of The Robots
-			|| Memory.match_na("MORTAL KOMBAT II")	// Mortal Kombat II
-			|| Memory.match_na("STAR FOX")		// Star Fox (US/JP)
-			|| Memory.match_na("STAR WING")		// Star Wing (EU)
-			|| Memory.match_id("3Z")		// Demon's Crest
-			|| Memory.match_na("AXELAY")		// Axelay
-			|| Memory.match_na("ZOMBIES")		// Zombies (EU)
-			|| Memory.match_na("ZOMBIES ATE MY NEIGHB")	// Zombies Ate My Neighbors
-			|| Memory.match_na("UNIRACERS")		// Uniracers
-			|| Memory.match_na("UNIRALLY")		// Unirally
-			|| Memory.match_na("CHRONO TRIGGER")	// Chrono Trigger
-			|| Memory.match_na("JURASSIC PARK")	// Jurassic Park
-			|| Memory.match_na("THE MAGICAL QUEST")	// The Magical Quest
-			|| Memory.match_na("SOULBLAZER - 1 USA")	// Soul Blazer (US)
-			|| Memory.match_na("SOULBLAZER - 1 ENG")	// Soul Blazer (PAL)
-			|| Memory.match_na("SOULBLADER - 1")		// Soul Blader
-			|| Memory.match_na("GOKUJYOU PARODIUS")		// Gokujou Parodius
-			|| Memory.match_id("ABT")		// Adventures of Batman and Robin
-			|| Memory.match_id("A3C")		// Donkey Kong Country 3
-			|| Memory.match_id("5M")		// Mario All-Stars + World
-			|| Memory.match_na("SUPER MARIO ALL_STARS") // Super Mario All-Stars (EU/US)
-			|| Memory.match_na("SUPERMARIO COLLECTION") // Super Mario Collection (JP)
-			|| Memory.match_id("4Q")		// Super Punch-Out
-			|| Memory.match_na("HARVEST MOON")	// Harvest Moon
-			|| Memory.match_id("ADZ")		// Dracula X
-			|| Memory.match_id("A3M")		// Mortal Kombat 3
-			|| Memory.match_id("AM4J")		// Do-Re-Mi Fantasy - Milon no Dokidoki Daibouken
-			|| Memory.match_na("BT IN BATTLEMANIACS")	// Battletoads in Battlemaniacs
-			|| Memory.match_na("SPACE MEGAFORCE")	// Space Megaforce (US)
-			|| Memory.match_na("SUPER ALESTE")	// Super Aleste (EU/JP)
-			|| Memory.match_na("VALKEN")		// Assault Suits Valken (JP)
-			|| Memory.match_na("CYBERNATOR")	// Cybernator (EU/US)
-			|| Memory.match_na("SUPER BOMBERMAN")	// Super Bomberman 1
-			|| Memory.match_na("SUPER BOMBERMAN2")	// Super Bomberman 2
-			|| Memory.match_id("AS6")		// Super Bomberman 3
-			|| Memory.match_id("A4B")		// Super Bomberman 4
-			|| Memory.match_id("AYL")		// Tetris Attack
-			|| Memory.match_na("POCKY ROCKY")	// Pocky & Rocky (US/EU)
-			|| Memory.match_na("KIKIKAIKAI")	// Kiki Kaikai (JP)
-			|| Memory.match_id("ANI")		// Lufia 2 / Estpolis Denki 2
-			|| Memory.match_id("AQT")		// Terranigma
-			|| Memory.match_na("twinbee")		// Twinbee Rainbow Bell Adventures
-			|| Memory.match_id("AO7")		// Tactics Ogre
-			|| Memory.match_na("Ogre Battle USA")	// Ogre Battle (US)
-			|| Memory.match_id("AQ3")		// Dragon Quest 3
-			|| Memory.match_na("DRAGONQUEST5")	// Dragon Quest 5
-			|| Memory.match_id("AQ6J")		// Dragon Quest 6
-			|| Memory.match_na("DARIUS FORCE")	// Darius Force
-			|| Memory.match_id("AGC")		// Front Mission
-			|| Memory.match_id("AZGJ")		// Front Mission Gun Hazard
-			|| Memory.match_na("GANBARE GOEMON")	// Ganbare Goemon (JP)
-			|| Memory.match_na("GANBARE GOEMON 2")	// Ganbare Goemon 2
-			|| Memory.match_na("mystical ninja")	// Legend of Mystical Ninja (US/EU)
-			|| Memory.match_na("NOSFERATU")		// Nosferatu
-			|| Memory.match_na("PAC ATTACK")	// Pac Attack
-			|| Memory.match_na("PARODIUS")		// Parodius 1
-			|| Memory.match_na("PRINCE OF PERSIA")	// Prince of Persia
-			|| Memory.match_na("FINAL FANTASY 5")	// Final Fantasy 5
-			|| Memory.match_na("OUT OF THIS WORLD") // Out Of This World (US)
-			|| Memory.match_na("OUTER WORLD")	// Outer World (JP)
-			|| Memory.match_na("ANOTHER WORLD")	// Another World (EU)
-			|| Memory.match_id("ABZE")		// Ballz 3D
-			|| Memory.match_id("AXSP")		// Winter Gold
-			|| Memory.match_id("APJJ")		// Wonder Project J
-			|| Memory.match_na("KRUSTYS SUPER FUNHOUSE")	// Krustys Super Fun House
-			|| Memory.match_na("KRUSTYS SUPERFUNHOUSE")	// Krustys Super Fun House
-			|| Memory.match_na("LEMMINGS")		// Lemmings 1
-			|| Memory.match_id("A3Z")		// Ultimate Mortal Kombat 3
-			|| Memory.match_id("ARFJ")		// Star Ocean
-			|| Memory.match_id("AXBE")		// Bahamut Lagoon
-			|| Memory.match_id("AC6J")		// Cu-On-Pa
-			|| Memory.match_id("ASR")		// Street Racer
-			|| Memory.match_na("SUPER WIDGET")	// Super Widget
-			|| Memory.match_na("R-TYPE 3")		// R-Type 3
-			|| Memory.match_id("ARW")		// Super Mario RPG
-			|| Memory.match_na("SHVC FIREEMBLEM")	// Fire Emblem - Monshou no Nazo
-			|| Memory.match_id("BFRJ")		// Fire Emblem - Thracia 776
-			|| Memory.match_id("A32J")		// Fire Emblem - Seisen no Keifu
-			|| Memory.match_id("AR9")		// Primal Rage
-			|| Memory.match_id("APUE")		// Prehistorik Man
-			|| Memory.match_id("ALSJ")		// Lady Stalker
-			|| Memory.match_na("ROCKMAN&FORTE")	// Rockman & Forte
-			|| Memory.match_na("SUPER SWIV")	// Super SWIV
-			|| Memory.match_na("CONTRA3 THE ALIEN WARS")	// Contra 3 The Alien Wars
-			|| Memory.match_na("EARTHWORM JIM 2")	// Earthworm Jim 2
-			|| Memory.match_na("CHOHMAKAIMURA")	// Chou Makai Mura
-			|| Memory.match_na("SUPER GHOULS'N GHOSTS")	// Super Ghouls 'n Ghosts
-			|| Memory.match_na("X-KALIBER 2097")	// X-Kaliber 2097
-			|| Memory.match_na("FINAL FIGHT 2")	// Final Fight 2
-			|| Memory.match_na("SUPER TURRICAN 2")	// Super Turrican 2
-			|| Memory.match_na("DUNGEON MASTER")	// Dungeon Master
-			|| Memory.match_na("DOOM TROOPERS")	// Doom Troopers
-			|| Memory.match_na("XAK 1")		// Xak 1
-			|| Memory.match_na("XARDION")		// Xardion
-		  )
-		  	PPU.RenderSub = false;
-		else
-			PPU.RenderSub = true;
-
-		#ifdef __LIBSNES__
-		fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
-		#endif
-
-		// Clipping hack - gains around 5-7 extra fps - only use it for specific
-		// games where nothing breaks with this hack on
-
-		if(
-			Memory.match_na("FINAL FANTASY 6")	// Final Fantasy VI (JP)
-			|| Memory.match_na("FINAL FANTASY 3")	// Final Fantasy III (US)
-		)
-			PPU.FullClipping = false;
-		else
-			PPU.FullClipping = true;
-
-		#ifdef __LIBSNES__
-		fprintf(stderr, "PPU.FullClipping = %d\n", PPU.FullClipping);
-		#endif
-	}
-
-	if (Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
-	{
-		//multitap
-		if(
-				Memory.match_nn("BARKLEY") ||				// Barkley Shut Up and Jam!
-				Memory.match_id("ABCJ") ||				// Battle Cross
-				Memory.match_na("Bill Walsh College FB1") ||		// Bill Walsh College Football
-				Memory.match_id("ANYE") ||				// College Slam
-				Memory.match_id("AC3J") ||				// Crystal Beans from Dungeon Explorer
-				Memory.match_nc("Bruce Lee") ||				// Dragon - Bruce Lee Story
-				Memory.match_id("AVS") ||				// Fever Pitch Soccer (EU) (*)
-				// Head-On Soccer (US) (*)
-				Memory.match_na("FURI-FURI GIRLS") ||			// Furi-Furi Girls
-				Memory.match_na("HAT TRICK HERO 2") ||			// Hat Trick Hero 2
-				Memory.match_na("HEBEREKE NO PUZZLE") ||		// Hebereke no Oishii Puzzle wa Irimasenka
-				Memory.match_id("AWJ") ||				// International Superstar Soccer Deluxe (EU/US) (*)
-				// Jikkyou World Soccer 2 - Fighting Eleven (JP) (*)
-				Memory.match_na("J-LEAGUE SUPER SOCCER0") ||		// J-League Super Soccer (JP)
-				// Virtual Soccer (EU)
-				Memory.match_na("JIGSAW PARTY") ||			// Jigsaw Party (US) (*)
-				// Pieces (JP)
-				Memory.match_na("JIMMY CONNORS TENNIS") ||		// Jimmy Connors Pro Tennis Tour
-				Memory.match_na("LAS VEGAS DREAM") ||			// Las Vegas Dream in Golden Paradise (JP) (*)
-				// Vegas Stakes (EU/US)
-				Memory.match_id("ALT") ||				// Looney Tunes B-Ball (US) (*)
-				// Looney Tunes Basketball (EU) (*)
-				Memory.match_id("AYHJ") ||				// Mizuki Shigeru no Youkai Hyakkiyakou
-				Memory.match_id("A3VJ") ||				// Multi Play Volleyball
-				Memory.match_na("MUSCLE BOMBER") ||			// Muscle Bomber: The Body Explosion (JP) (*)
-				// Saturday Night Slam Masters (US)
-				Memory.match_id("CHAMP WRESTLING") ||			// Natsume Championship Wrestling
-				Memory.match_id("ANJ") || 				// NBA Give 'n Go
-				Memory.match_id("AXG") || 				// NBA Hangtime
-				Memory.match_id("AJT") || 				// NBA Jam Tournament Edition (EU/US/JP)
-				Memory.match_na("NBA JAM")   || 			// NBA Jam
-				Memory.match_id("AFIE") ||				// NCAA Final Four Basketball
-				Memory.match_id("AFBE") ||				// NCAA Football
-				Memory.match_id("Q9") ||				// NFL Quarterback Club / NFL Quarterback Club '95
-				Memory.match_id("AQB") ||				// NFL Quarterback Club '96
-				Memory.match_na("PIECES") ||
-				Memory.match_id("Z5") ||				// Pieces (JP) (*)
-				// Jigsaw Party (US)
-				Memory.match_id("ARVE") ||				// Rap Jam - Volume One
-				Memory.match_na("RUSHING BEAT SYURA") ||		// Rushing Beat Shura (JP) (*)
-				// The Peace Keepers (US)
-				Memory.match_na("S.Night SLAM MASTERS") ||		// Saturday Night Slam Masters (US) (*)
-				// Muscle Bomber: The Body Explosion (JP)
-				Memory.match_na("Secret of MANA") ||			// Secret of Mana (EU/US) (*)
-				// Seiken Densetsu 2 (JP)
-				Memory.match_na("SeikenDensetsu 2") ||			// Seiken Densetsu 2 (JP) (*) / 
-				// Secret of Mana (EU/US)
-				Memory.match_nn("SeikenDensetsu3") ||			// Seiken Densetsu 3 (in case you use
-				// 3-player IPS patch)
-				Memory.match_na("SMASH TENNIS") ||			// Smash Tennis (EU) (*) / 
-				// Super Family Tennis (JP)
-				//FIXME: TODO - Add CRC32 for Super Family Tennis - CRC32: 2BCBFF26
-				Memory.match_id("ASR") ||				// Street Racer
-				Memory.match_na("SUGOI HEBEREKE") ||			// Sugoi Hebereke
-				Memory.match_na("Sugoro Quest++") ||			// Sugoro Quest++: Dicenics
-				Memory.match_id("AO9") ||				// Summer Olympics
-				Memory.match_id("AS6") ||				// Super Bomberman 3
-				Memory.match_id("A4BJ") || 				// Super Bomberman 4
-				Memory.match_id("APBJ") ||				// Super Bomberman Panic Bomber W
-				Memory.match_id("AF5J") ||				// Super Fire Pro Wrestling X
-				Memory.match_id("AP4J") ||				// Super Fire Pro Wrestling Special
-				Memory.match_id("AQQJ") ||				// Super Fire Pro Wrestling - Queen's Special
-				Memory.match_id("A7PJ") ||				// Super Puyo Puyo Tsuu Remix
-				Memory.match_id("AT3J") ||				// Super Tetris 3
-				Memory.match_id("AFY") ||				// Syndicate
-				Memory.match_na("THE PEACE KEEPERS") ||			// The Peace Keepers (US) (*)
-				// Rushing Beat Shura (JP)
-				Memory.match_na("Tiny Toon Sports") ||			// Tiny Toon Adventures: Dotabata Daiundoukai (JP) (*)
-				// Tiny Toon Adventures: Wacky Sports Challenge (US) (*)
-				// Tiny Toon Adventures: Wild & Wacky Sports (EU) (*)
-				Memory.match_id("A3T") ||				// Top Gear 3000 (EU/US) (*)
-				// Planet's Champ TG 3000 (JP) (*)
-				Memory.match_na("VEGAS STAKES") ||			// Vegas Stakes (EU/US) (*)
-				// Las Vegas Dream in Golden Paradise (JP)
-				Memory.match_na("Virtual Soccer") ||			// Virtual Soccer (EU) (*)
-				// J-League Super Soccer (JP)
-				Memory.match_id("AWF") ||				// WWF RAW
-
-				//Catch-alls
-				Memory.match_nc("SUPER BOMBERMAN") ||			// All Bomberman games (FIXME: remove
-				// individual two Bomberman entries if this works)
-				Memory.match_nc("FIFA") ||				// All FIFA games
-				Memory.match_nn("NHL") ||				// All NHL games
-				Memory.match_nc("MADDEN") ||				// All Madden games
-				Memory.match_nc("MICRO MACHINES") ||			// All Micro Machines games
-				Memory.match_id("Q4")					// ?
-				)
-				Settings.CurrentROMisMultitapCompatible = true;
-		else
-			Settings.CurrentROMisMultitapCompatible = false;
-
-		//mouse
-		if	(
-				Memory.match_nc("ACME ANIMATION FACTOR") ||	// ACME Animation Factory
-				Memory.match_id("ACM") ||
-				Memory.match_nc("ALICE PAINT") ||		// Alice no Paint Adventure
-				Memory.match_id("AALJ") ||
-				Memory.match_nc("ARKANOID DOH IT AGAIN0") ||	// Arkanoid: Doh It Again
-				Memory.match_id("A6") ||
-				Memory.match_na("SFC SAILORMOON S") ||	// Bishojou Senshi Sailor Moon S: Kondowa Puzzle de
-				// Oshiokiyo!
-				Memory.match_na("BRANDISH2 EXPERT") ||		// Brandish 2: Expert
-				Memory.match_id("AQIJ") ||				
-				Memory.match_na("BREAKTRHU!") ||		// BreakThru!
-				Memory.match_id("ABXE") ||
-				Memory.match_na("CIVILIZATION") ||		// Civilization
-				Memory.match_id("EQ") ||
-				Memory.match_na("CAMELTRY") ||			// Cameltry (JP) (*)
-				// On The Ball (EU/US)
-				Memory.match_na("CANNON FODDER") ||		// Cannon Fodder
-				Memory.match_id("ACNP") ||				
-				Memory.match_id("M Ve") ||			// Dai-3-ji Super Robot Taisen
-				Memory.match_id("AR4J") ||				// Dai-4-ji Super Robot Taisen
-				Memory.match_na("SUPER ROBOT WARS 4") ||
-				Memory.match_na("DOOM") ||			// Doom
-				Memory.match_id("AD8") ||				
-				Memory.match_id("A88J") ||			// Doukyuusei 2 (JP) (NP)
-				Memory.match_na("DRAGON KNIGHT 4") ||		// Dragon Knight 4
-				Memory.match_id("A87J") ||				
-				Memory.match_na("Eye of the Beholder") ||	// Eye of the Beholder
-				Memory.match_na("FARLANDSTORY2") ||		// Farland Story 2
-				Memory.match_id("A2FJ") ||
-				Memory.match_na("Fun 'N Games") ||		// Fun 'N Games (EU/US)
-				Memory.match_na("GALAXY ROBO") ||		// Galaxy Robo
-				Memory.match_na("HIOUDEN") ||			// Hiouden: Mamono-tachi tono Chikai
-				Memory.match_na("JIGSAW PARTY") ||		// Jigsaw Party (US) (*)
-				// Pieces (JP)
-				//Memory.match_na("JURASSIC PARK") ||		// Jurassic Park
-				Memory.match_na("King Arthurs World") ||	// King Arthur's World (EU/US) (*)
-				// Royal Conquest (JP)
-				Memory.match_na("KOUTETSU-NO KISHI") ||		// Koutetsu No Kishi
-				Memory.match_na("KOUTETSU-NO KISHI 2") ||	// Koutetsu No Kishi 2
-				Memory.match_na("KOUTETSU-NO KISHI 3") ||	// Koutetsu No Kishi 3
-				Memory.match_id("APZJ") ||
-				Memory.match_na("LAMBORGHINI AMERICAN") ||	// Lamborghini American Challenge (EU/US)
-				Memory.match_na("LAS VEGAS DREAM") ||		// Las Vegas Dream in Golden Paradise (JP) (*)
-				// Vegas Stakes (EU/US)
-				Memory.match_na("Lemmings 2,The Tribes") ||	// Lemmings 2: The Tribes
-				Memory.match_id("L2") ||
-				Memory.match_na("LORD MONARCH") ||		// Lord Monarch
-				Memory.match_na("Mario&Wario") ||		// Mario & Wario
-				Memory.match_na("SUPER PICROSS") ||		// Mario no Super Picross
-				Memory.match_id("ACXJ") ||
-				Memory.match_nc("MARIOPAINT") ||		// Mario Paint
-				Memory.match_na("MEY  Preschool Fun") ||	// Mario's Early Years: Preschool Fun
-				Memory.match_id("AMEE") ||
-				Memory.match_na("MEGA LO MANIA") ||		// Mega-Lo Mania
-				Memory.match_na("MIGHT  AND MAGIC III") ||	// Might And Magic III - Isles of Terra
-				Memory.match_na("WONDER KITCHEN") ||		// Motoko-chan no Wonder Kitchen
-				Memory.match_na("Nobunaga's Ambition") ||	// Nobunaga's Ambition (US) (*)
-				// Super Nobunaga no Yabou: Zenkokuban (JP)
-				Memory.match_na("ON THE BALL") ||		// On The Ball (EU/US) (*)
-				// Cameltry (JP)
-				Memory.match_na("OPERATION THUNDERBOLT1") ||	// Operation Thunderbolt
-				Memory.match_na("PIECES") ||
-				Memory.match_id("Z5") ||			// Pieces (JP) (*)
-				// Jigsaw Party (US)
-				Memory.match_nc("POPULOUS II") ||		// Populous II
-				Memory.match_na("POWERMONGER") ||		// Power Monger
-				Memory.match_na("Revolution X") ||		// Revolution X
-				Memory.match_id("AXR") ||
-				Memory.match_na("Royal Conquest") ||		// Royal Conquest (JP) (*)
-				// King Arthur's World (EU/US)
-				Memory.match_na("TENBU SPIRIT") ||		// San Goku Shi Seishi: Tenbu Spirits
-				Memory.match_na("SHIEN THE BLADE CHASE0") ||	// Shien The Blade Chaser (JP) (*)
-				Memory.match_na("SHIEN'S REVENGE") ||		// Shien's Revenge (*)
-				Memory.match_nc("SimAnt") ||			// SimAnt
-				Memory.match_na("SNOOPY CONCERT") ||		// Snoopy Concert
-				Memory.match_na("SUPER CAESARS PALACE") ||	// Super Caesar's Palace
-				Memory.match_na("SUPER CASTLES") ||		// Super Castles
-				Memory.match_id("AVIJ") ||
-				//FIXME: TODO: Super Noah's Ark 3D: - bad checksum - CRC32: A2315A14
-				Memory.match_na("SuperPachiSlotMahjong") ||	// Super Pachi Slot Mahjong
-				Memory.match_na("SUPER SOLITAIRE") ||		// Super Solitaire
-				Memory.match_na("SUPER ZENKOKUBAN") ||		// Super Nobunaga no Yabou: Zenkokuban (JP) (*)
-				// Nobunaga's Ambition (US)
-				Memory.match_na("TERMINATOR2 THE MOVIE0") ||	// Terminator 2: The Arcade Game
-				Memory.match_na("TINSTAR") ||			// Tin Star
-				Memory.match_id("9N") ||
-				Memory.match_na("TOKIMEKI MEMORIAL") ||		// Tokimeki Memorial
-				Memory.match_id("AM8J") ||
-				Memory.match_na("Troddlers") ||			// Troddlers
-				Memory.match_na("UTOPIA") ||			// Utopia
-				Memory.match_na("VEGAS STAKES") ||		// Vegas Stakes (EU/US) (*)
-				// Las Vegas Dream in Golden Paradise (JP)
-				Memory.match_nc("WOLFENSTEIN 3D") ||		// Wolfenstein 3D
-				Memory.match_na("WONDERPROJECT J") ||		// Wonder Project J
-				Memory.match_id("APJJ") ||				
-				Memory.match_na("ZAN2 SPIRITS") ||		// Zan 2: Spirits
-				Memory.match_na("ZAN3 SFC")			// Zan 3: Spirits
-				)
-				Settings.CurrentROMisMouseCompatible = true;
-		else
-			Settings.CurrentROMisMouseCompatible = false;
-
-		//super scope
-		if	(
-				Memory.match_na("BATTLE CLASH") ||		// Battle Clash (EU/US) (*)
-										// Space Bazooka (JP)
-				Memory.match_na("SPACE BAZOOKA") ||		// Space Bazooka (JP) (*)
-										// Battle Clash (EU/US)
-				//FIXME: TODO: Add The Hunt for Red October - used for bonus game
-				//FIXME: TODO: Add Lamborghini American Challenge - if needed
-				Memory.match_na("METAL COMBAT") ||		// Metal Combat: Falcon's Revenge
-				Memory.match_na("OPERATION THUNDERBOLT1") ||	// Operation Thunderbolt
-				Memory.match_na("SUPER SCOPE 6") ||		// Super Scope 6
-				//Memory.match_na("TERMINATOR2 THE MOVIE0") ||	// Terminator 2: The Arcade Game
-				Memory.match_na("TINSTAR") ||			// Tin Star
-				Memory.match_id("9N") ||
-				Memory.match_na("X ZONE") ||			// X-Zone
-				//FIXME: TODO: Add Yoshi no Road Hunting - CRC32: 52948F3C
-				Memory.match_na("YOSHI'S SAFARI")		// Yoshi's Safari
-			)
-			Settings.CurrentROMisSuperScopeCompatible = true;
-		else
-			Settings.CurrentROMisSuperScopeCompatible = false;
-	}
-
-	S9xAPUTimingSetSpeedup(Timings.APUSpeedup);
-	S9xAPUAllowTimeOverflow(Timings.APUAllowTimeOverflow);
-
-	//// Other timing hacks :(
-
-	Timings.HDMAStart   = SNES_HDMA_START_HC + Settings.HDMATimingHack - 100;
-	Timings.HBlankStart = SNES_HBLANK_START_HC + Timings.HDMAStart - SNES_HDMA_START_HC;
-
-	if (!Settings.DisableGameSpecificHacks)
-	{
-		// The delay to sync CPU and DMA which Snes9x cannot emulate.
-		// Some games need really severe delay timing...
-		if (match_na("BATTLE GRANDPRIX")) // Battle Grandprix
-		{
-			Timings.DMACPUSync = 20;
-			printf("DMA sync: %d\n", Timings.DMACPUSync);
-		}
-	}
-
-	if (!Settings.DisableGameSpecificHacks)
-	{
-		// Opcode-based emulators cannot escape from "reading $4211/BPL" infinite loop...
-		// The true IRQ can be triggered inside an opcode.
-		if (match_na("TRAVERSE")) // Traverse - Starlight & Prairie
-		{
-			Timings.IRQPendCount = 1;
-			printf("IRQ count hack: %d\n", Timings.IRQPendCount);
-		}
-
-		// An infinite loop reads $4212 and waits V-blank end, whereas VIRQ is set V=0.
-		// If Snes9x succeeds to escape from the loop before jumping into the IRQ handler, the game goes further.
-		// If Snes9x jumps into the IRQ handler before escaping from the loop,
-		// Snes9x cannot escape from the loop permanently because the RTI is in the next V-blank.
-		if (match_na("Aero the AcroBat 2"))
-		{
-			Timings.IRQPendCount = 2;
-			printf("IRQ count hack: %d\n", Timings.IRQPendCount);
-		}
-
-		if (match_na("BATTLE BLAZE"))
-		{
-			Timings.IRQPendCount = 1;
-			printf("IRQ count hack: %d\n", Timings.IRQPendCount);
-		}
-	}
-
-	if (!Settings.DisableGameSpecificHacks)
-	{
-		// XXX: What's happening?
-		if (match_na("X-MEN")) // Spider-Man and the X-Men
-		{
-			Settings.BlockInvalidVRAMAccess = FALSE;
-			printf("Invalid VRAM access hack\n");
-		}
-	}
-
-	//// SRAM initial value
-
-	if (!Settings.DisableGameSpecificHacks)
-	{
-		if (match_na("HITOMI3"))
-		{
-			SRAMSize = 1;
-			SRAMMask = ((1 << (SRAMSize + 3)) * 128) - 1;
-		}
-
-		// SRAM value fixes
-		if (match_na("SUPER DRIFT OUT")      || // Super Drift Out
-			match_na("SATAN IS OUR FATHER!") ||
-			match_na("goemon 4"))               // Ganbare Goemon Kirakira Douchuu
-			SNESGameFixes.SRAMInitialValue = 0x00;
-
-		// Additional game fixes by sanmaiwashi ...
-		// XXX: unnecessary?
-		if (match_na("SFX \xC5\xB2\xC4\xB6\xDE\xDD\xC0\xDE\xD1\xD3\xC9\xB6\xDE\xC0\xD8 1")) // SD Gundam Gaiden - Knight Gundam Monogatari
-			SNESGameFixes.SRAMInitialValue = 0x6b;
-
-		// others: BS and ST-01x games are 0x00.
-	}
-
-	//// OAM hacks :(
-
-	if (!Settings.DisableGameSpecificHacks)
-	{
-		// OAM hacks because we don't fully understand the behavior of the SNES.
-		// Totally wacky display in 2P mode...
-		// seems to need a disproven behavior, so we're definitely overlooking some other bug?
-		if (match_nn("UNIRACERS")) // Uniracers
-		{
-			SNESGameFixes.Uniracers = TRUE;
-			printf("Applied Uniracers hack.\n");
-		}
-	}
-}
 
 // UPS % IPS
 
