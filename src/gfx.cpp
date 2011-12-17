@@ -284,52 +284,31 @@ void S9xGraphicsDeinit (void)
 	if (GFX.SubZBuffer) { free(GFX.SubZBuffer); GFX.SubZBuffer = NULL; }
 }
 
+static int objsize_array[8][4] = {
+	{8,	8,	16,	16}, //0
+	{8,	8,	32,	32}, //1
+	{8,	8,	64,	64}, //2
+	{16,	16,	32,	32}, //3
+	{16,	16,	64,	64}, //4
+	{32,	32,	64,	64}, //5
+	{16,	32,	32,	64}, //6
+	{16,	32,	32,	32}, //7
+};
+
 static void SetupOBJ (void)
 {
-	int	SmallWidth, SmallHeight, LargeWidth, LargeHeight;
+	// default
+	int	SmallWidth	= objsize_array[4][0];
+	int	SmallHeight	= objsize_array[4][1];
+	int	LargeWidth	= objsize_array[4][2];
+	int	LargeHeight	= objsize_array[4][3];
 
-	switch (PPU.OBJSizeSelect)
+	if(PPU.OBJSizeSelect < 8)
 	{
-		case 0:
-			SmallWidth = SmallHeight = 8;
-			LargeWidth = LargeHeight = 16;
-			break;
-
-		case 1:
-			SmallWidth = SmallHeight = 8;
-			LargeWidth = LargeHeight = 32;
-			break;
-
-		case 2:
-			SmallWidth = SmallHeight = 8;
-			LargeWidth = LargeHeight = 64;
-			break;
-
-		case 3:
-			SmallWidth = SmallHeight = 16;
-			LargeWidth = LargeHeight = 32;
-			break;
-
-		case 4:
-			SmallWidth = SmallHeight = 16;
-			LargeWidth = LargeHeight = 64;
-			break;
-
-		case 5:
-		default:
-			SmallWidth = SmallHeight = 32;
-			LargeWidth = LargeHeight = 64;
-			break;
-
-		case 6:
-			SmallWidth = 16; SmallHeight = 32;
-			LargeWidth = 32; LargeHeight = 64;
-			break;
-
-		case 7:
-			SmallWidth = 16; SmallHeight = 32;
-			LargeWidth = LargeHeight = 32;
-			break;
+		SmallWidth	= objsize_array[PPU.OBJSizeSelect][0];
+		SmallHeight	= objsize_array[PPU.OBJSizeSelect][1];
+		LargeWidth	= objsize_array[PPU.OBJSizeSelect][2];
+		LargeHeight	= objsize_array[PPU.OBJSizeSelect][3];
 	}
 
 	int	inc = IPPU.InterlaceOBJ ? 2 : 1;
@@ -817,16 +796,13 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 	}
 }
 
-static inline void DrawBackdrop_NoMath(void)
-{
-	uint32	Offset = GFX.StartY * GFX.PPL;
-
-	for (int clip = 0; clip < GFX.Clip[5].Count; clip++)
-	{
-		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1);
-		GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]);
+#define DRAW_BACKDROP_NO_MATH() \
+	uint32	Offset = GFX.StartY * GFX.PPL; \
+	for (int clip = 0; clip < GFX.Clip[5].Count; clip++) \
+	{ \
+		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1); \
+		GFX.DrawBackdropNomath(Offset, GFX.Clip[5].Left[clip], GFX.Clip[5].Right[clip]); \
 	}
-}
 
 #define DrawBackdrop() \
 	uint32	Offset = GFX.StartY * GFX.PPL; \
@@ -2268,7 +2244,7 @@ void S9xUpdateScreen (void)
 					#ifdef REPORT_MODES
 					fprintf(stderr, "Subscreen drawing: Frame #%d\n", counter++);
 					#endif
-					DrawBackdrop_NoMath();
+					DRAW_BACKDROP_NO_MATH();
 				}
 			}
 
