@@ -425,6 +425,86 @@ static void S9xStartScreenRefresh (void)
 	ZeroMemory(GFX.SubZBuffer, GFX.ScreenSize);
 }
 
+static inline void S9xReschedule (void)
+{
+	uint8	next = 0;
+	int32	hpos = 0;
+
+	switch (CPU.WhichEvent)
+	{
+		case HC_HBLANK_START_EVENT:
+		case HC_IRQ_1_3_EVENT:
+			next = HC_HDMA_START_EVENT;
+			hpos = Timings.HDMAStart;
+			break;
+
+		case HC_HDMA_START_EVENT:
+		case HC_IRQ_3_5_EVENT:
+			next = HC_HCOUNTER_MAX_EVENT;
+			hpos = Timings.H_Max;
+			break;
+
+		case HC_HCOUNTER_MAX_EVENT:
+		case HC_IRQ_5_7_EVENT:
+			next = HC_HDMA_INIT_EVENT;
+			hpos = Timings.HDMAInit;
+			break;
+
+		case HC_HDMA_INIT_EVENT:
+		case HC_IRQ_7_9_EVENT:
+			next = HC_RENDER_EVENT;
+			hpos = Timings.RenderPos;
+			break;
+
+		case HC_RENDER_EVENT:
+		case HC_IRQ_9_A_EVENT:
+			next = HC_WRAM_REFRESH_EVENT;
+			hpos = Timings.WRAMRefreshPos;
+			break;
+
+		case HC_WRAM_REFRESH_EVENT:
+		case HC_IRQ_A_1_EVENT:
+			next = HC_HBLANK_START_EVENT;
+			hpos = Timings.HBlankStart;
+			break;
+	}
+
+	if (((int32) PPU.HTimerPosition > CPU.NextEvent) && ((int32) PPU.HTimerPosition < hpos))
+	{
+		hpos = (int32) PPU.HTimerPosition;
+
+		switch (next)
+		{
+			case HC_HDMA_START_EVENT:
+				next = HC_IRQ_1_3_EVENT;
+				break;
+
+			case HC_HCOUNTER_MAX_EVENT:
+				next = HC_IRQ_3_5_EVENT;
+				break;
+
+			case HC_HDMA_INIT_EVENT:
+				next = HC_IRQ_5_7_EVENT;
+				break;
+
+			case HC_RENDER_EVENT:
+				next = HC_IRQ_7_9_EVENT;
+				break;
+
+			case HC_WRAM_REFRESH_EVENT:
+				next = HC_IRQ_9_A_EVENT;
+				break;
+
+			case HC_HBLANK_START_EVENT:
+				next = HC_IRQ_A_1_EVENT;
+				break;
+		}
+	}
+
+	CPU.NextEvent  = hpos;
+	CPU.WhichEvent = next;
+}
+
 void S9xDoHEventProcessing (void)
 {
 	switch (CPU.WhichEvent)
@@ -457,7 +537,7 @@ void S9xDoHEventProcessing (void)
 			S9xSuperFXExec();
 		#endif
 
-			S9xAPUEndScanline();
+			S9xAPUExecute();
 			CPU.Cycles -= Timings.H_Max;
 			S9xAPUSetReferenceTime(CPU.Cycles);
 

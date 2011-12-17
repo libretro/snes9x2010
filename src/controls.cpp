@@ -279,7 +279,6 @@ static int maptype (int t)
 		case S9xButtonMouse:
 		case S9xButtonSuperscope:
 		case S9xButtonJustifier:
-		case S9xButtonCommand:
 			return (MAP_BUTTON);
 		case S9xPointer:
 			return (MAP_POINTER);

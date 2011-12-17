@@ -363,19 +363,11 @@ extern uint8	*RegRAM;
 }
 #endif
 
-bool8 LoadZip(const char *, int32 *, int32 *, uint8 *);
-
 enum s9xwrap_t
 {
 	WRAP_NONE,
 	WRAP_BANK,
 	WRAP_PAGE
-};
-
-enum s9xwriteorder_t
-{
-	WRITE_01,
-	WRITE_10
 };
 
 #include "getset.h"

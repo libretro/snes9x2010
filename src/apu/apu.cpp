@@ -397,16 +397,15 @@ int S9xGetSampleCount (void)
 
 void S9xFinalizeSamples (void)
 {
-	if (!resampler_push((short *) landing_buffer, spc_sample_count()))
+	bool ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
+	sound_in_sync = FALSE;
+
+	if (!ret)
 	{
 		/* We weren't able to process the entire buffer. Potential overrun. */
-		sound_in_sync = FALSE;
-
 		if (Settings.SoundSync)
 			return;
 	}
-
-	sound_in_sync = FALSE;
 
 	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED()))
 		sound_in_sync = TRUE;
@@ -522,28 +521,19 @@ void S9xDeinitAPU (void)
 	}
 }
 
-static inline int S9xAPUGetClock (int32 cpucycles)
-{
-	return (ratio_numerator * (cpucycles - reference_time) + spc_remainder) /
-			ratio_denominator;
-}
-
-static inline int S9xAPUGetClockRemainder (int32 cpucycles)
-{
-	return (ratio_numerator * (cpucycles - reference_time) + spc_remainder) %
-			ratio_denominator;
-}
+#define S9X_APU_GET_CLOCK(cpucycles)		((ratio_numerator * (cpucycles - reference_time) + spc_remainder) / ratio_denominator)
+#define S9X_APU_GET_CLOCK_REMAINDER(cpucycles)	((ratio_numerator * (cpucycles - reference_time) + spc_remainder) % ratio_denominator)
 
 uint8 S9xAPUReadPort (int port)
 {
 	// Emulated port read at specified time
-	return ((uint8) spc_run_until_(S9xAPUGetClock(CPU.Cycles))[port]);
+	return ((uint8) spc_run_until_(S9X_APU_GET_CLOCK(CPU.Cycles))[port]);
 }
 
 void S9xAPUWritePort (int port, uint8 byte)
 {
 	// Emulated port write at specified time
-	spc_run_until_( S9xAPUGetClock(CPU.Cycles) ) [0x10 + port] = byte;
+	spc_run_until_( S9X_APU_GET_CLOCK(CPU.Cycles) ) [0x10 + port] = byte;
 	m.ram.ram [0xF4 + port] = byte;
 }
 
@@ -555,18 +545,13 @@ void S9xAPUSetReferenceTime (int32 cpucycles)
 void S9xAPUExecute (void)
 {
 	/* Accumulate partial APU cycles */
-	spc_end_frame(S9xAPUGetClock(CPU.Cycles));
+	spc_end_frame(S9X_APU_GET_CLOCK(CPU.Cycles));
 
-	spc_remainder = S9xAPUGetClockRemainder(CPU.Cycles);
+	spc_remainder = S9X_APU_GET_CLOCK_REMAINDER(CPU.Cycles);
 
 	S9xAPUSetReferenceTime(CPU.Cycles);
-}
 
-void S9xAPUEndScanline (void)
-{
-	S9xAPUExecute();
-
-	if (spc_sample_count() >= APU_MINIMUM_SAMPLE_BLOCK || !sound_in_sync)
+	if (SPC_SAMPLE_COUNT() >= APU_MINIMUM_SAMPLE_BLOCK || !sound_in_sync)
 		S9xLandSamples();
 }
 

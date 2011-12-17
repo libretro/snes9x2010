@@ -82,7 +82,6 @@ void spc_set_output( short* out, int out_size );
 // you must call set_output() after this.
 void spc_soft_reset();
 
-void spc_enable_rom( int enable );
 void spc_reset_common( int timer_counter_init );
 
 // Runs SPC to end_time and starts a new time frame at 0
@@ -145,7 +144,7 @@ typedef struct
 extern spc_state_t m;
 
 // Number of samples written to output since last set
-#define spc_sample_count() ((m.extra_clocks >> 5) * 2)
+#define SPC_SAMPLE_COUNT() ((m.extra_clocks >> 5) * 2)
 
 #endif
 

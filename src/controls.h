@@ -183,15 +183,7 @@
 #define S9xButtonMouse			2
 #define S9xButtonSuperscope		3
 #define S9xButtonJustifier		4
-#define S9xButtonCommand		5
 #define S9xPointer			8
-#define S9xButtonPseudopointer		254
-
-// These are automatically kicked out to the S9xHandlePortCommand function.
-// If your port wants to define port-specific commands or whatever, use these values for the s9xcommand_t type field.
-
-#define S9xButtonPort			251
-#define S9xPointerPort			249
 
 #define S9xBadMapping			255
 #define InvalidControlID		((uint32) -1)
@@ -287,7 +279,7 @@ enum controllers
 	CTL_JOYPAD,		// use id1 to specify 0-7
 	CTL_MOUSE,		// use id1 to specify 0-1
 	CTL_SUPERSCOPE,
-	CTL_JUSTIFIER,	// use id1: 0=one justifier, 1=two justifiers
+	CTL_JUSTIFIER,		// use id1: 0=one justifier, 1=two justifiers
 	CTL_MP5			// use id1-id4 to specify pad 0-7 (or -1)
 };
 
@@ -298,7 +290,7 @@ void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2
 
 bool S9xVerifyControllers (void);
 
-// Functions for translation s9xcommand_t's into strings, and vice versa.
+// Functions for translating s9xcommand_t's into strings, and vice versa.
 // free() the returned string after you're done with it.
 
 s9xcommand_t S9xGetCommandT (const char *name);

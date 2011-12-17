@@ -179,7 +179,6 @@
 #include "ppu.h"
 #include "tile.h"
 #include "crosshairs.h"
-//#include "font.h"
 #include "display.h"
 
 extern struct SLineData			LineData[240];

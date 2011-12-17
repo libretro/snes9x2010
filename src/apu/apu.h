@@ -192,7 +192,6 @@ void S9xSoftResetAPU (void);
 uint8 S9xAPUReadPort (int);
 void S9xAPUWritePort (int, uint8);
 void S9xAPUExecute (void);
-void S9xAPUEndScanline (void);
 void S9xAPUSetReferenceTime (int32);
 void S9xAPUTimingSetSpeedup (int);
 void S9xAPUAllowTimeOverflow (bool);

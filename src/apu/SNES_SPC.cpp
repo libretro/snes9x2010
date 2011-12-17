@@ -348,7 +348,7 @@ void spc_end_frame( int end_time )
 		// Copy any extra samples at these ends into extra_buf
 		short* out = m.extra_buf;
 		short const* in;
-		for ( in = m.buf_begin + spc_sample_count(); in < main_end; in++ )
+		for ( in = m.buf_begin + SPC_SAMPLE_COUNT(); in < main_end; in++ )
 			*out++ = *in;
 		for ( in = dsp_m.extra; in < dsp_end ; in++ )
 			*out++ = *in;
