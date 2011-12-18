@@ -569,8 +569,6 @@ static FreezeData	SnapTimings[] =
 	INT_ENTRY(6, APUSpeedup)
 };
 
-#ifndef ZSNES_FX
-
 #undef STRUCT
 #define STRUCT	struct FxRegs_s
 
@@ -631,8 +629,6 @@ static FreezeData	SnapFX[] =
 	INT_ENTRY(6, vInstCount),
 	INT_ENTRY(6, vSCBRDirty)
 };
-
-#endif
 
 #undef STRUCT
 #define STRUCT	struct SSA1
@@ -1146,11 +1142,6 @@ void S9xFreezeToStream (STREAM stream)
 {
 	char	buffer[1024];
 
-#ifdef ZSNES_FX
-	if (Settings.SuperFX)
-		S9xSuperFXPreSaveState();
-#endif
-
 	sprintf(buffer, "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
 	WRITE_STREAM(buffer, strlen(buffer), stream);
 
@@ -1186,13 +1177,11 @@ void S9xFreezeToStream (STREAM stream)
 
 	FreezeStruct(stream, "TIM", &Timings, SnapTimings, COUNT(SnapTimings));
 
-#ifndef ZSNES_FX
 	if (Settings.SuperFX)
 	{
 		GSU.avRegAddr = (uint8 *) &GSU.avReg;
 		FreezeStruct(stream, "SFX", &GSU, SnapFX, COUNT(SnapFX));
 	}
-#endif
 
 	if (Settings.SA1)
 	{
@@ -1211,11 +1200,7 @@ void S9xFreezeToStream (STREAM stream)
 		FreezeStruct(stream, "DP4", &DSP4, SnapDSP4, COUNT(SnapDSP4));
 
 	if (Settings.C4)
-#ifndef ZSNES_C4
 		FreezeBlock (stream, "CX4", Memory.C4RAM, 8192);
-#else
-		FreezeBlock (stream, "CX4", C4Ram, 8192);
-#endif
 
 	if (Settings.SETA == ST_010)
 		FreezeStruct(stream, "ST0", &ST010, SnapST010, COUNT(SnapST010));
@@ -1243,11 +1228,6 @@ void S9xFreezeToStream (STREAM stream)
 
 	if (Settings.BS)
 		FreezeStruct(stream, "BSX", &BSX, SnapBSX, COUNT(SnapBSX));
-
-#ifdef ZSNES_FX
-	if (Settings.SuperFX)
-		S9xSuperFXPostSaveState();
-#endif
 }
 
 int S9xUnfreezeFromStream (STREAM stream)
@@ -1343,11 +1323,9 @@ int S9xUnfreezeFromStream (STREAM stream)
 		if (result != SUCCESS)
 			break;
 
-	#ifndef ZSNES_FX
 		result = UnfreezeStructCopy(stream, "SFX", &local_superfx, SnapFX, COUNT(SnapFX), version);
 		if (result != SUCCESS && Settings.SuperFX)
 			break;
-	#endif
 
 		result = UnfreezeStructCopy(stream, "SA1", &local_sa1, SnapSA1, COUNT(SnapSA1), version);
 		if (result != SUCCESS && Settings.SA1)
@@ -1435,13 +1413,11 @@ int S9xUnfreezeFromStream (STREAM stream)
 
 		UnfreezeStructFromCopy(&Timings, SnapTimings, COUNT(SnapTimings), local_timing_data, version);
 
-	#ifndef ZSNES_FX
 		if (local_superfx)
 		{
 			GSU.avRegAddr = (uint8 *) &GSU.avReg;
 			UnfreezeStructFromCopy(&GSU, SnapFX, COUNT(SnapFX), local_superfx, version);
 		}
-	#endif
 
 		if (local_sa1)
 			UnfreezeStructFromCopy(&SA1, SnapSA1, COUNT(SnapSA1), local_sa1, version);
@@ -1459,11 +1435,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 			UnfreezeStructFromCopy(&DSP4, SnapDSP4, COUNT(SnapDSP4), local_dsp4, version);
 
 		if (local_cx4_data)
-	#ifndef ZSNES_C4
 			memcpy(Memory.C4RAM, local_cx4_data, 8192);
-	#else
-			memcpy(C4Ram, local_cx4_data, 8192);
-	#endif
 
 		if (local_st010)
 			UnfreezeStructFromCopy(&ST010, SnapST010, COUNT(SnapST010), local_st010, version);
@@ -1506,11 +1478,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 		S9xSetCPU(hdma_byte, 0x420c);
 
 		S9xControlPostLoadState(&ctl_snap);
-
-	#ifdef ZSNES_FX
-		if (Settings.SuperFX)
-			S9xSuperFXPostLoadState();
-	#endif
 
 		if (local_sa1 && local_sa1_registers)
 		{

@@ -305,14 +305,6 @@ struct SMulti
 extern CMemory	Memory;
 extern SMulti	Multi;
 
-#if defined(ZSNES_FX) || defined(ZSNES_C4)
-extern "C" {
-extern uint8	*ROM;
-extern uint8	*SRAM;
-extern uint8	*RegRAM;
-}
-#endif
-
 enum s9xwrap_t
 {
 	WRAP_NONE,

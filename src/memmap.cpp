@@ -429,21 +429,11 @@ bool8 CMemory::Init (void)
 	BIOSROM = ROM + 0x300000; // BS
 	BSRAM   = ROM + 0x400000; // BS
 
-#if defined(ZSNES_FX) || defined(ZSNES_C4)
-	::ROM    = ROM;
-	::SRAM   = SRAM;
-	::RegRAM = FillRAM;
-#endif
-
-#ifdef ZSNES_FX
-	SFXPlotTable = ROM + 0x400000;
-#else
 	SuperFX.pvRegisters = FillRAM + 0x3000;
 	SuperFX.nRamBanks   = 2; // Most only use 1.  1=64KB=512Mb, 2=128KB=1024Mb
 	SuperFX.pvRam       = SRAM;
 	SuperFX.nRomBanks   = (2 * 1024 * 1024) / (32 * 1024);
 	SuperFX.pvRom       = (uint8 *) ROM;
-#endif
 
 	return (TRUE);
 }
@@ -2385,9 +2375,7 @@ void CMemory::InitROM (void)
 	Settings.SETA = 0;
 	Settings.SRTC = FALSE;
 	Settings.BS = FALSE;
-#ifndef ZSNES_FX
 	SuperFX.nRomBanks = CalculatedSize >> 15;
-#endif
 
 	//// Parse ROM header and read ROM informatoin
 
@@ -2559,9 +2547,7 @@ void CMemory::InitROM (void)
 		case 0x1520:
 		case 0x1A20:
 			Settings.SuperFX = TRUE;
-		#ifndef ZSNES_FX
 			S9xInitSuperFX();
-		#endif
 			if (ROM[0x7FDA] == 0x33)
 				SRAMSize = ROM[0x7FBD];
 			else

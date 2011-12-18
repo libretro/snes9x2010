@@ -215,23 +215,12 @@ struct SSettings		Settings;
 struct SSNESGameFixes		SNESGameFixes;
 struct SCheatData		Cheat;
 struct Watch			watches[16];
-#ifndef ZSNES_FX
 struct FxRegs_s			GSU;
 struct FxInfo_s			SuperFX;
-#endif
 CMemory				Memory;
 
 uint8	OpenBus = 0;
 uint8	*HDMAMemPointers[8];
-
-#if defined(ZSNES_FX) || defined(ZSNES_C4)
-uint8	*ROM    = NULL;
-uint8	*SRAM   = NULL;
-uint8	*RegRAM = NULL;
-#endif
-#ifdef ZSNES_FX
-uint8	*SFXPlotTable = NULL;
-#endif
 
 uint8 mul_brightness[16][32] =
 {

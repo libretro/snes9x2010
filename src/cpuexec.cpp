@@ -526,16 +526,12 @@ void S9xDoHEventProcessing (void)
 			break;
 
 		case HC_HCOUNTER_MAX_EVENT:
-		#ifndef ZSNES_FX
 			if (Settings.SuperFX)
 			{
 				if (!SuperFX.oneLineDone)
 					S9xSuperFXExec();
 				SuperFX.oneLineDone = FALSE;
 			}
-		#else
-			S9xSuperFXExec();
-		#endif
 
 			S9xAPUExecute();
 			CPU.Cycles -= Timings.H_Max;
