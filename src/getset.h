@@ -348,23 +348,26 @@ inline uint16 S9xGetWord (uint32 Address, uint32 w)
 		PC_t	a;
 
 		OpenBus = S9xGetByte(Address);
+		uint32 addr_tmp = 0;
 
 		switch (w)
 		{
 			case WRAP_PAGE:
 				a.xPBPC = Address;
 				a.B.xPCl++;
-				return (OpenBus | (S9xGetByte(a.xPBPC) << 8));
-
+				addr_tmp = a.xPBPC;
+				break;
 			case WRAP_BANK:
 				a.xPBPC = Address;
 				a.W.xPC++;
-				return (OpenBus | (S9xGetByte(a.xPBPC) << 8));
-
+				addr_tmp = a.xPBPC;
+				break;
 			case WRAP_NONE:
 			default:
-				return (OpenBus | (S9xGetByte(Address + 1) << 8));
+				addr_tmp = Address + 1;
+				break;
 		}
+		return (OpenBus | (S9xGetByte(addr_tmp) << 8));
 	}
 
 	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
@@ -605,30 +608,28 @@ inline void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 		PC_t	a;
 
 		S9xSetByte((uint8) Word, Address);
+		uint32 addr_tmp = 0;
 
 		switch (w)
 		{
 			case WRAP_PAGE:
 				a.xPBPC = Address;
 				a.B.xPCl++;
-				S9xSetByte(Word >> 8, a.xPBPC);
+				addr_tmp = a.xPBPC;
 				break;
-
 			case WRAP_BANK:
 				a.xPBPC = Address;
 				a.W.xPC++;
-				S9xSetByte(Word >> 8, a.xPBPC);
+				addr_tmp = a.xPBPC;
 				break;
-
 			case WRAP_NONE:
 			default:
-				S9xSetByte(Word >> 8, Address + 1);
+				addr_tmp = Address + 1;
 				break;
 		}
-
-		return;
+		
+		S9xSetByte(Word >> 8, addr_tmp);
 	}
-
 
 	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
 	uint8	*SetAddress = Memory.WriteMap[block];
@@ -768,27 +769,26 @@ inline void S9xSetWord_Write1(uint16 Word, uint32 Address, uint32 w)
 	if ((Address & (MEMMAP_MASK & w)) == (MEMMAP_MASK & w))
 	{
 		PC_t	a;
+		uint32_t addr_tmp = 0;
 
 		switch (w)
 		{
 			case WRAP_PAGE:
 				a.xPBPC = Address;
 				a.B.xPCl++;
-				S9xSetByte(Word >> 8, a.xPBPC);
+				addr_tmp = a.xPBPC;
 				break;
-
 			case WRAP_BANK:
 				a.xPBPC = Address;
 				a.W.xPC++;
-				S9xSetByte(Word >> 8, a.xPBPC);
+				addr_tmp =a.xPBPC;
 				break;
-
 			case WRAP_NONE:
 			default:
-				S9xSetByte(Word >> 8, Address + 1);
+				addr_tmp = Address + 1;
 				break;
 		}
-
+		S9xSetByte(Word >> 8, addr_tmp);
 		S9xSetByte((uint8) Word, Address);
 
 		return;
