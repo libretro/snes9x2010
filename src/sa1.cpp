@@ -831,7 +831,7 @@ uint8 S9xSA1GetByte (uint32 address)
 	if (GetAddress >= (uint8 *) MAP_LAST)
 		return (*(GetAddress + (address & 0xffff)));
 
-	switch ((pint) GetAddress)
+	switch ((intptr_t) GetAddress)
 	{
 		case MAP_PPU:
 			return (S9xGetSA1(address & 0xffff));
@@ -896,7 +896,7 @@ void S9xSA1SetByte (uint8 byte, uint32 address)
 		return;
 	}
 
-	switch ((pint) SetAddress)
+	switch ((intptr_t) SetAddress)
 	{
 		case MAP_PPU:
 			S9xSetSA1(byte, address & 0xffff);
@@ -1017,7 +1017,7 @@ void S9xSA1SetPCBase (uint32 address)
 		return;
 	}
 
-	switch ((pint) GetAddress)
+	switch ((intptr_t) GetAddress)
 	{
 		case MAP_LOROM_SRAM:
 			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)

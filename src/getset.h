@@ -252,7 +252,7 @@ inline uint8 S9xGetByte (uint32 Address)
 		return (byte);
 	}
 
-	switch ((pint) GetAddress)
+	switch ((intptr_t) GetAddress)
 	{
 		case MAP_CPU:
 			byte = S9xGetCPU(Address & 0xffff);
@@ -382,7 +382,7 @@ inline uint16 S9xGetWord (uint32 Address, uint32 w)
 		return (word);
 	}
 
-	switch ((pint) GetAddress)
+	switch ((intptr_t) GetAddress)
 	{
 		case MAP_CPU:
 			word  = S9xGetCPU(Address & 0xffff);
@@ -516,7 +516,7 @@ inline void S9xSetByte (uint8 Byte, uint32 Address)
 		return;
 	}
 
-	switch ((pint) SetAddress)
+	switch ((intptr_t) SetAddress)
 	{
 		case MAP_CPU:
 			S9xSetCPU(Byte, Address & 0xffff);
@@ -642,7 +642,7 @@ inline void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 		return;
 	}
 
-	switch ((pint) SetAddress)
+	switch ((intptr_t) SetAddress)
 	{
 		case MAP_CPU:
 				S9xSetCPU((uint8) Word, Address & 0xffff);
@@ -806,7 +806,7 @@ inline void S9xSetWord_Write1(uint16 Word, uint32 Address, uint32 w)
 		return;
 	}
 
-	switch ((pint) SetAddress)
+	switch ((intptr_t) SetAddress)
 	{
 		case MAP_CPU:
 			S9xSetCPU(Word >> 8, (Address + 1) & 0xffff);
@@ -946,7 +946,7 @@ inline void S9xSetPCBase (uint32 Address)
 		return;
 	}
 
-	switch ((pint) GetAddress)
+	switch ((intptr_t) GetAddress)
 	{
 		case MAP_LOROM_SRAM:
 			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)
@@ -1007,7 +1007,7 @@ inline uint8 * S9xGetBasePointer (uint32 Address)
 	if (GetAddress >= (uint8 *) MAP_LAST)
 		return (GetAddress);
 
-	switch ((pint) GetAddress)
+	switch ((intptr_t) GetAddress)
 	{
 		case MAP_LOROM_SRAM:
 			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)
@@ -1052,7 +1052,7 @@ inline uint8 * S9xGetMemPointer (uint32 Address)
 	if (GetAddress >= (uint8 *) MAP_LAST)
 		return (GetAddress + (Address & 0xffff));
 
-	switch ((pint) GetAddress)
+	switch ((intptr_t) GetAddress)
 	{
 		case MAP_LOROM_SRAM:
 			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)

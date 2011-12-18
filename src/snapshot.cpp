@@ -1579,13 +1579,13 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 		// determine real address of indirect-type fields
 		// (where the structure contains a pointer to an array rather than the array itself)
 		if (fields[i].type == uint8_INDIR_ARRAY_V || fields[i].type == uint16_INDIR_ARRAY_V || fields[i].type == uint32_INDIR_ARRAY_V)
-			addr = (uint8 *) (*((pint *) addr));
+			addr = (uint8 *) (*((intptr_t *) addr));
 
 		// convert pointer-type saves from absolute to relative pointers
 		if (fields[i].type == POINTER_V)
 		{
-			uint8	*pointer    = (uint8 *) *((pint *) ((uint8 *) base + fields[i].offset));
-			uint8	*relativeTo = (uint8 *) *((pint *) ((uint8 *) base + fields[i].offset2));
+			uint8	*pointer    = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset));
+			uint8	*relativeTo = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset2));
 			relativeAddr = pointer - relativeTo;
 			addr = (uint8 *) &relativeAddr;
 		}
@@ -1798,7 +1798,7 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 		addr = (uint8 *) base + fields[i].offset;
 
 		if (fields[i].type == uint8_INDIR_ARRAY_V || fields[i].type == uint16_INDIR_ARRAY_V || fields[i].type == uint32_INDIR_ARRAY_V)
-			addr = (uint8 *) (*((pint *) addr));
+			addr = (uint8 *) (*((intptr_t *) addr));
 
 		switch (fields[i].type)
 		{
@@ -1913,9 +1913,9 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 
 		if (fields[i].type == POINTER_V)
 		{
-			relativeAddr = (int) *((pint *) ((uint8 *) base + fields[i].offset));
-			uint8	*relativeTo = (uint8 *) *((pint *) ((uint8 *) base + fields[i].offset2));
-			*((pint *) (addr)) = (pint) (relativeTo + relativeAddr);
+			relativeAddr = (int) *((intptr_t *) ((uint8 *) base + fields[i].offset));
+			uint8	*relativeTo = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset2));
+			*((intptr_t *) (addr)) = (intptr_t) (relativeTo + relativeAddr);
 		}
 	}
 }

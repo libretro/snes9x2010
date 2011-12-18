@@ -212,7 +212,6 @@
 typedef unsigned char		bool8;
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
-typedef intptr_t		pint;
 typedef int8_t			int8;
 typedef uint8_t			uint8;
 typedef int16_t			int16;
@@ -222,15 +221,6 @@ typedef uint32_t		uint32;
 typedef int64_t			int64;
 typedef uint64_t		uint64;
 #else	// HAVE_STDINT_H
-#ifdef __WIN32__
-typedef intptr_t		pint;
-#else	// __WIN32__
-#ifdef PTR_NOT_INT
-typedef long			pint;
-#else
-typedef int			pint;
-#endif
-#endif	// __WIN32__
 #ifdef __WIN32__
 #ifdef __BORLANDC__
 #include <systypes.h>
