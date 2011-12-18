@@ -525,10 +525,14 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 
 		case 0x2201:
 			if (((byte ^ Memory.FillRAM[0x2201]) & 0x80) && (Memory.FillRAM[0x2300] & byte & 0x80))
-				S9xSetIRQ(SA1_IRQ_SOURCE);
+			{
+				S9X_SET_IRQ(SA1_IRQ_SOURCE);
+			}
 
 			if (((byte ^ Memory.FillRAM[0x2201]) & 0x20) && (Memory.FillRAM[0x2300] & byte & 0x20))
-				S9xSetIRQ(SA1_DMA_IRQ_SOURCE);
+			{
+				S9X_SET_IRQ(SA1_DMA_IRQ_SOURCE);
+			}
 
 			break;
 
@@ -536,13 +540,13 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 			if (byte & 0x80)
 			{
 				Memory.FillRAM[0x2300] &= ~0x80;
-				S9xClearIRQ(SA1_IRQ_SOURCE);
+				S9X_CLEAR_IRQ(SA1_IRQ_SOURCE);
 			}
 
 			if (byte & 0x20)
 			{
 				Memory.FillRAM[0x2300] &= ~0x20;
-				S9xClearIRQ(SA1_DMA_IRQ_SOURCE);
+				S9X_CLEAR_IRQ(SA1_DMA_IRQ_SOURCE);
 			}
 
 			break;
@@ -567,7 +571,9 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 				Memory.FillRAM[0x2300] |= 0x80;
 
 			if (byte & Memory.FillRAM[0x2201] & 0x80)
-				S9xSetIRQ(SA1_IRQ_SOURCE);
+			{
+				S9X_SET_IRQ(SA1_IRQ_SOURCE);
+			}
 
 			break;
 
@@ -700,7 +706,9 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 			{
 				Memory.FillRAM[0x2300] |= 0x20;
 				if (Memory.FillRAM[0x2201] & 0x20)
-					S9xSetIRQ(SA1_DMA_IRQ_SOURCE);
+				{
+					S9X_SET_IRQ(SA1_DMA_IRQ_SOURCE);
+				}
 				SA1.in_char_dma = TRUE;
 			}
 

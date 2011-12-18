@@ -247,10 +247,13 @@ static void S9xCheckMissingHTimerRange (int32 hc_from, int32 range)
 	if ((PPU.HTimerPosition >= hc_from) && (PPU.HTimerPosition < (hc_from + range)))
 	{
 		if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
-			S9xSetIRQ(PPU_IRQ_SOURCE);
-		else
-		if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
-			S9xSetIRQ(PPU_IRQ_SOURCE);
+		{
+			S9X_SET_IRQ(PPU_IRQ_SOURCE);
+		}
+		else if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
+		{
+			S9X_SET_IRQ(PPU_IRQ_SOURCE);
+		}
 	}
 }
 
@@ -1327,7 +1330,7 @@ static uint8 S9xGetSuperFX (uint16 address)
 	uint8	byte = Memory.FillRAM[address];
 	if (address == 0x3031)
 	{
-		S9xClearIRQ(GSU_IRQ_SOURCE);
+		S9X_CLEAR_IRQ(GSU_IRQ_SOURCE);
 		Memory.FillRAM[0x3031] = byte & 0x7f;
 	}
 
@@ -2869,7 +2872,7 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 				S9xCheckMissingHTimerRange(CPU.PrevCycles, CPU.Cycles - CPU.PrevCycles);
 
 				if (!(Byte & 0x30))
-				S9xClearIRQ(PPU_IRQ_SOURCE);
+				S9X_CLEAR_IRQ(PPU_IRQ_SOURCE);
 
 				// NMI can trigger immediately during VBlank as long as NMI_read ($4210) wasn't cleard.
 				if ((Byte & 0x80) && !(Memory.FillRAM[0x4200] & 0x80) &&
@@ -3122,7 +3125,7 @@ uint8 S9xGetCPU (uint16 Address)
 
 			case 0x4211: // TIMEUP
 				byte = (CPU.IRQActive & PPU_IRQ_SOURCE) ? 0x80 : 0;
-				S9xClearIRQ(PPU_IRQ_SOURCE);
+				S9X_CLEAR_IRQ(PPU_IRQ_SOURCE);
 				return (byte | (OpenBus & 0x7f));
 
 			case 0x4212: // HVBJOY

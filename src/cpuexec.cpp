@@ -287,39 +287,16 @@ void S9xMainLoop (void)
 	}
 }
 
-void S9xSetIRQ (uint32 source)
-{
-	CPU.IRQActive |= source;
-	CPU.IRQPending = Timings.IRQPendCount;
-	CPU.Flags |= IRQ_FLAG;
-
-	if (CPU.WaitingForInterrupt)
-	{
-		// Force IRQ to trigger immediately after WAI -
-		// Final Fantasy Mystic Quest crashes without this.
-		CPU.WaitingForInterrupt = FALSE;
-		Registers.PCw++;
-	}
-	
-}
-
-void S9xClearIRQ (uint32 source)
-{
-	CPU.IRQActive &= ~source;
-	if (!CPU.IRQActive)
-		CPU.Flags &= ~IRQ_FLAG;
-
-}
 
 static void S9xCheckMissingHTimerPosition (int32 hc)
 {
-	if (PPU.HTimerPosition == hc)
+	if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
 	{
-		if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
-			S9xSetIRQ(PPU_IRQ_SOURCE);
-		else
-		if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
-			S9xSetIRQ(PPU_IRQ_SOURCE);
+		S9X_SET_IRQ(PPU_IRQ_SOURCE);
+	}
+	else if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
+	{
+		S9X_SET_IRQ(PPU_IRQ_SOURCE);
 	}
 }
 
@@ -511,12 +488,14 @@ void S9xDoHEventProcessing (void)
 	switch (CPU.WhichEvent)
 	{
 		case HC_HBLANK_START_EVENT:
-			S9xCheckMissingHTimerPosition(Timings.HBlankStart);
+			if (PPU.HTimerPosition == Timings.HBlankStart)
+				S9xCheckMissingHTimerPosition(Timings.HBlankStart);
 			S9xReschedule();
 			break;
 
 		case HC_HDMA_START_EVENT:
-			S9xCheckMissingHTimerPosition(Timings.HDMAStart);
+			if (PPU.HTimerPosition == Timings.HDMAStart)
+				S9xCheckMissingHTimerPosition(Timings.HDMAStart);
 			S9xReschedule();
 
 			if (PPU.HDMA && CPU.V_Counter <= PPU.ScreenHeight)
@@ -593,7 +572,8 @@ void S9xDoHEventProcessing (void)
 					Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE;	// HC=534
 			}
 
-			S9xCheckMissingHTimerPosition(0);
+			if (PPU.HTimerPosition == 0)
+				S9xCheckMissingHTimerPosition(0);
 
 			if (CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE)	// VBlank starts from V=225(240).
 			{
@@ -646,7 +626,8 @@ void S9xDoHEventProcessing (void)
 			break;
 
 		case HC_HDMA_INIT_EVENT:
-			S9xCheckMissingHTimerPosition(Timings.HDMAInit);
+			if (PPU.HTimerPosition == Timings.HDMAInit)
+				S9xCheckMissingHTimerPosition(Timings.HDMAInit);
 			S9xReschedule();
 
 			if (CPU.V_Counter == 0)
@@ -660,7 +641,8 @@ void S9xDoHEventProcessing (void)
 			if (CPU.V_Counter >= FIRST_VISIBLE_LINE && CPU.V_Counter <= PPU.ScreenHeight)
 				RenderLine((uint8) (CPU.V_Counter - FIRST_VISIBLE_LINE));
 
-			S9xCheckMissingHTimerPosition(Timings.RenderPos);
+			if (PPU.HTimerPosition == Timings.RenderPos)
+				S9xCheckMissingHTimerPosition(Timings.RenderPos);
 			S9xReschedule();
 
 			break;
@@ -670,7 +652,8 @@ void S9xDoHEventProcessing (void)
 			S9xCheckMissingHTimerHalt(Timings.WRAMRefreshPos, SNES_WRAM_REFRESH_CYCLES);
 			CPU.Cycles += SNES_WRAM_REFRESH_CYCLES;
 
-			S9xCheckMissingHTimerPosition(Timings.WRAMRefreshPos);
+			if (PPU.HTimerPosition == Timings.WRAMRefreshPos)
+				S9xCheckMissingHTimerPosition(Timings.WRAMRefreshPos);
 			S9xReschedule();
 
 			break;
@@ -682,7 +665,9 @@ void S9xDoHEventProcessing (void)
 		case HC_IRQ_9_A_EVENT:
 		case HC_IRQ_A_1_EVENT:
 			if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)) || PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
-				S9xSetIRQ(PPU_IRQ_SOURCE);
+			{
+				S9X_SET_IRQ(PPU_IRQ_SOURCE);
+			}
 
 			S9xReschedule();
 			break;

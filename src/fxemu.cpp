@@ -4624,7 +4624,9 @@ void S9xSuperFXExec (void)
 
 	uint16 GSUStatus = Memory.FillRAM[0x3000 + GSU_SFR] | (Memory.FillRAM[0x3000 + GSU_SFR + 1] << 8);
 	if ((GSUStatus & (FLG_G | FLG_IRQ)) == FLG_IRQ)
-		S9xSetIRQ(GSU_IRQ_SOURCE);
+	{
+		S9X_SET_IRQ(GSU_IRQ_SOURCE);
+	}
 }
 
 

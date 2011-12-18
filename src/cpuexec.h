@@ -215,10 +215,24 @@ void S9xMainLoop (void);
 void S9xReset (void);
 void S9xSoftReset (void);
 void S9xDoHEventProcessing (void);
-void S9xClearIRQ (uint32);
-void S9xSetIRQ (uint32);
-
 void S9xDeinitUpdate (int, int);
+
+#define S9X_CLEAR_IRQ(source) \
+	CPU.IRQActive &= ~source; \
+	if (!CPU.IRQActive) \
+		CPU.Flags &= ~IRQ_FLAG;
+
+#define S9X_SET_IRQ(source) \
+	CPU.IRQActive |= source; \
+	CPU.IRQPending = Timings.IRQPendCount; \
+	CPU.Flags |= IRQ_FLAG; \
+	if (CPU.WaitingForInterrupt) \
+	{ \
+		/* Force IRQ to trigger immediately after WAI - */ \
+		/* Final Fantasy Mystic Quest crashes without this. */ \
+		CPU.WaitingForInterrupt = FALSE; \
+		Registers.PCw++; \
+	}
 
 #define S9xUnpackStatus() \
 	ICPU._Zero = (Registers.PL & Zero) == 0; \
