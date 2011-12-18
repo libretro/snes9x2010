@@ -180,6 +180,7 @@
 #include "dma.h"
 #include "apu/apu.h"
 #include "fxemu.h"
+#include "fxinst.h"
 #include "sdd1.h"
 #include "srtc.h"
 #include "controls.h"
@@ -600,6 +601,96 @@ static inline void REGISTER_2104 (uint8 Byte)
 				IPPU.OBJChanged = TRUE;
 			}
 		}
+}
+
+static void S9xSetSuperFX (uint8 byte, uint16 address)
+{
+	switch (address)
+	{
+		case 0x3030:
+			if ((Memory.FillRAM[0x3030] ^ byte) & FLG_G)
+			{
+				Memory.FillRAM[0x3030] = byte;
+				if (byte & FLG_G)
+				{
+					if (!SuperFX.oneLineDone)
+					{
+						if(CHECK_EXEC_SUPERFX())
+							S9xSuperFXExec();
+						SuperFX.oneLineDone = TRUE;
+					}
+				}
+				else
+				{
+					//FX Flush cache
+					GSU.vCacheFlags = 0;
+					GSU.vCacheBaseReg = 0;
+					GSU.bCacheActive = FALSE;
+				}
+			}
+			else
+				Memory.FillRAM[0x3030] = byte;
+
+			break;
+
+		case 0x3031:
+		case 0x3033:
+			Memory.FillRAM[address] = byte;
+			break;
+		case 0x3034:
+		case 0x3036:
+			Memory.FillRAM[address] = byte & 0x7f;
+			break;
+		case 0x3037:
+			Memory.FillRAM[0x3037] = byte;
+			break;
+		case 0x3038:
+			Memory.FillRAM[0x3038] = byte;
+			// SCBR write seen. We need to update our cached screen pointers
+			GSU.vSCBRDirty = TRUE;
+			break;
+
+		case 0x3039:
+		case 0x303a:
+			Memory.FillRAM[address] = byte;
+			break;
+		case 0x303b:
+			break;
+
+		case 0x303c:
+			Memory.FillRAM[0x303c] = byte;
+			/* Update BankReg and Bank pointer */
+			GSU.vRamBankReg = (uint32) byte & (FX_RAM_BANKS - 1);
+			GSU.pvRamBank = GSU.apvRamBank[byte & 0x3];
+			break;
+
+		case 0x303f:
+			Memory.FillRAM[0x303f] = byte;
+			break;
+
+		case 0x301f:
+			Memory.FillRAM[0x301f] = byte;
+			Memory.FillRAM[0x3000 + GSU_SFR] |= FLG_G;
+			if (!SuperFX.oneLineDone)
+			{
+				if(CHECK_EXEC_SUPERFX())
+					S9xSuperFXExec();
+				SuperFX.oneLineDone = TRUE;
+			}
+
+			break;
+
+		default:
+			Memory.FillRAM[address] = byte;
+			if (address >= 0x3100)
+			{
+				// Write access to the cache
+				if ((address & 0x00f) == 0x00f)
+					GSU.vCacheFlags |= 1 << ((address & 0x1f0) >> 4);
+			}
+
+			break;
+	}
 }
 
 void S9xSetPPU (uint8 Byte, uint16 Address)
@@ -1229,6 +1320,18 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 	}
 
 	Memory.FillRAM[Address] = Byte;
+}
+
+static uint8 S9xGetSuperFX (uint16 address)
+{
+	uint8	byte = Memory.FillRAM[address];
+	if (address == 0x3031)
+	{
+		S9xClearIRQ(GSU_IRQ_SOURCE);
+		Memory.FillRAM[0x3031] = byte & 0x7f;
+	}
+
+	return (byte);
 }
 
 uint8 S9xGetPPU (uint16 Address)

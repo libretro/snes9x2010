@@ -191,11 +191,9 @@ struct FxInfo_s
 	bool8	oneLineDone;
 };
 
-extern struct FxInfo_s	SuperFX;
+#define CHECK_EXEC_SUPERFX() ((Memory.FillRAM[0x3000 + GSU_SFR] & FLG_G) && (Memory.FillRAM[0x3000 + GSU_SCMR] & 0x18) == 0x18)
 
-void S9xInitSuperFX (void);
-void S9xSetSuperFX (uint8, uint16);
-uint8 S9xGetSuperFX (uint16);
+extern struct FxInfo_s	SuperFX;
 
 void S9xResetSuperFX (void);
 void S9xSuperFXExec (void);

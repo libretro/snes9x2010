@@ -186,6 +186,7 @@
 #include "snes9x.h"
 #include "memmap.h"
 #include "apu/apu.h"
+#include "fxinst.h"
 #include "fxemu.h"
 #include "sdd1.h"
 #include "srtc.h"
@@ -2547,7 +2548,7 @@ void CMemory::InitROM (void)
 		case 0x1520:
 		case 0x1A20:
 			Settings.SuperFX = TRUE;
-			S9xInitSuperFX();
+			memset((uint8 *) &GSU, 0, sizeof(struct FxRegs_s));
 			if (ROM[0x7FDA] == 0x33)
 				SRAMSize = ROM[0x7FBD];
 			else

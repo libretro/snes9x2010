@@ -4382,13 +4382,6 @@ static void (*fx_OpcodeTable[]) (void) =
 	&fx_lm_r8,     &fx_lm_r9,     &fx_lm_r10,    &fx_lm_r11,    &fx_lm_r12,    &fx_lm_r13,    &fx_lm_r14,    &fx_lm_r15
 };
 
-
-
-void S9xInitSuperFX (void)
-{
-	memset((uint8 *) &GSU, 0, sizeof(struct FxRegs_s));
-}
-
 static void fx_readRegisterSpace (void)
 {
 	static uint32	avHeight[] = { 128, 160, 192, 256 };
@@ -4531,108 +4524,6 @@ void S9xResetSuperFX (void)
 	FxReset(&SuperFX);
 }
 
-void S9xSetSuperFX (uint8 byte, uint16 address)
-{
-	switch (address)
-	{
-		case 0x3030:
-			if ((Memory.FillRAM[0x3030] ^ byte) & FLG_G)
-			{
-				Memory.FillRAM[0x3030] = byte;
-				if (byte & FLG_G)
-				{
-					if (!SuperFX.oneLineDone)
-					{
-						S9xSuperFXExec();
-						SuperFX.oneLineDone = TRUE;
-					}
-				}
-				else
-				{
-					//FX Flush cache
-					GSU.vCacheFlags = 0;
-					GSU.vCacheBaseReg = 0;
-					GSU.bCacheActive = FALSE;
-				}
-			}
-			else
-				Memory.FillRAM[0x3030] = byte;
-
-			break;
-
-		case 0x3031:
-		case 0x3033:
-			Memory.FillRAM[address] = byte;
-			break;
-		case 0x3034:
-		case 0x3036:
-			Memory.FillRAM[address] = byte & 0x7f;
-			break;
-		case 0x3037:
-			Memory.FillRAM[0x3037] = byte;
-			break;
-		case 0x3038:
-			Memory.FillRAM[0x3038] = byte;
-			// SCBR write seen. We need to update our cached screen pointers
-			GSU.vSCBRDirty = TRUE;
-			break;
-
-		case 0x3039:
-		case 0x303a:
-			Memory.FillRAM[address] = byte;
-			break;
-		case 0x303b:
-			break;
-
-		case 0x303c:
-			Memory.FillRAM[0x303c] = byte;
-			/* Update BankReg and Bank pointer */
-			GSU.vRamBankReg = (uint32) byte & (FX_RAM_BANKS - 1);
-			GSU.pvRamBank = GSU.apvRamBank[byte & 0x3];
-			break;
-
-		case 0x303f:
-			Memory.FillRAM[0x303f] = byte;
-			break;
-
-		case 0x301f:
-			Memory.FillRAM[0x301f] = byte;
-			Memory.FillRAM[0x3000 + GSU_SFR] |= FLG_G;
-			if (!SuperFX.oneLineDone)
-			{
-				S9xSuperFXExec();
-				SuperFX.oneLineDone = TRUE;
-			}
-
-			break;
-
-		default:
-			Memory.FillRAM[address] = byte;
-			if (address >= 0x3100)
-			{
-				// Write access to the cache
-				if ((address & 0x00f) == 0x00f)
-					GSU.vCacheFlags |= 1 << ((address & 0x1f0) >> 4);
-			}
-
-			break;
-	}
-}
-
-uint8 S9xGetSuperFX (uint16 address)
-{
-	uint8	byte;
-
-	byte = Memory.FillRAM[address];
-	if (address == 0x3031)
-	{
-		S9xClearIRQ(GSU_IRQ_SOURCE);
-		Memory.FillRAM[0x3031] = byte & 0x7f;
-	}
-
-	return (byte);
-}
-
 static bool8 fx_checkStartAddress (void)
 {
 	// Check if we start inside the cache
@@ -4697,46 +4588,43 @@ static void fx_writeRegisterSpace (void)
 
 void S9xSuperFXExec (void)
 {
-	if ((Memory.FillRAM[0x3000 + GSU_SFR] & FLG_G) && (Memory.FillRAM[0x3000 + GSU_SCMR] & 0x18) == 0x18)
+	// EMULATE FX CHIP
+	// Execute until the next stop instruction
+	uint32 nInstructions = (Memory.FillRAM[0x3000 + GSU_CLSR] & 1) ? SuperFX.speedPerLine * 2 : SuperFX.speedPerLine;
+
+	// Read registers and initialize GSU session
+	fx_readRegisterSpace();
+
+	// Check if the start address is valid
+	bool address_valid = fx_checkStartAddress();
+	if (address_valid)
 	{
-		// EMULATE FX CHIP
-		// Execute until the next stop instruction
-		uint32 nInstructions = (Memory.FillRAM[0x3000 + GSU_CLSR] & 1) ? SuperFX.speedPerLine * 2 : SuperFX.speedPerLine;
+		// Execute GSU session
+		CF(IRQ);
 
-		// Read registers and initialize GSU session
-		fx_readRegisterSpace();
-
-		// Check if the start address is valid
-		bool address_valid = fx_checkStartAddress();
-		if (address_valid)
+		// GSU executions functions
+		GSU.vCounter = nInstructions;
+		READR14;
+		while (TF(G) && (GSU.vCounter-- > 0))
 		{
-			// Execute GSU session
-			CF(IRQ);
-
-			// GSU executions functions
-			GSU.vCounter = nInstructions;
-			READR14;
-			while (TF(G) && (GSU.vCounter-- > 0))
-			{
-				// Execute instruction from the pipe, and fetch next byte to the pipe
-				uint32	vOpcode = (uint32) PIPE;
-				FETCHPIPE;
-				(*fx_OpcodeTable[(GSU.vStatusReg & 0x300) | vOpcode])();
-			}
+			// Execute instruction from the pipe, and fetch next byte to the pipe
+			uint32	vOpcode = (uint32) PIPE;
+			FETCHPIPE;
+			(*fx_OpcodeTable[(GSU.vStatusReg & 0x300) | vOpcode])();
 		}
-		else
-		{
-			CF(G);
-		}
-
-		// Store GSU registers
-		fx_writeRegisterSpace();
-		// EOF EMULATE FX CHIP
-
-		uint16 GSUStatus = Memory.FillRAM[0x3000 + GSU_SFR] | (Memory.FillRAM[0x3000 + GSU_SFR + 1] << 8);
-		if ((GSUStatus & (FLG_G | FLG_IRQ)) == FLG_IRQ)
-			S9xSetIRQ(GSU_IRQ_SOURCE);
 	}
+	else
+	{
+		CF(G);
+	}
+
+	// Store GSU registers
+	fx_writeRegisterSpace();
+	// EOF EMULATE FX CHIP
+
+	uint16 GSUStatus = Memory.FillRAM[0x3000 + GSU_SFR] | (Memory.FillRAM[0x3000 + GSU_SFR + 1] << 8);
+	if ((GSUStatus & (FLG_G | FLG_IRQ)) == FLG_IRQ)
+		S9xSetIRQ(GSU_IRQ_SOURCE);
 }
 
 

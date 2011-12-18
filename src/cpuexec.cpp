@@ -180,6 +180,7 @@
 #include "cpuops.h"
 #include "dma.h"
 #include "apu/apu.h"
+#include "fxinst.h"
 #include "fxemu.h"
 #include "controls.h"
 #include "cheats.h"
@@ -528,7 +529,7 @@ void S9xDoHEventProcessing (void)
 		case HC_HCOUNTER_MAX_EVENT:
 			if (Settings.SuperFX)
 			{
-				if (!SuperFX.oneLineDone)
+				if (!SuperFX.oneLineDone && CHECK_EXEC_SUPERFX())
 					S9xSuperFXExec();
 				SuperFX.oneLineDone = FALSE;
 			}
