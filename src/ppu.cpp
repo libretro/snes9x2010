@@ -224,36 +224,21 @@ static inline void S9xLatchCounters (bool force)
 		PPU.GunVLatch = 1000;
 }
 
-static inline void S9xTryGunLatch (bool force)
-{
-	if (CPU.V_Counter >  PPU.GunVLatch || (CPU.V_Counter == PPU.GunVLatch && CPU.Cycles >= PPU.GunHLatch * ONE_DOT_CYCLE))
-	{
-		if (force || (Memory.FillRAM[0x4213] & 0x80))
-		{
-
-			PPU.HVBeamCounterLatched = 1;
-			PPU.VBeamPosLatched = (uint16) PPU.GunVLatch;
-			PPU.HBeamPosLatched = (uint16) PPU.GunHLatch;
-
-			Memory.FillRAM[0x213f] |= 0x40;
-		}
-
-		PPU.GunVLatch = 1000;
-	}
-}
+#define S9X_TRY_GUN_LATCH() \
+	PPU.HVBeamCounterLatched = 1; \
+	PPU.VBeamPosLatched = (uint16) PPU.GunVLatch; \
+	PPU.HBeamPosLatched = (uint16) PPU.GunHLatch; \
+	Memory.FillRAM[0x213f] |= 0x40;
 
 static void S9xCheckMissingHTimerRange (int32 hc_from, int32 range)
 {
-	if ((PPU.HTimerPosition >= hc_from) && (PPU.HTimerPosition < (hc_from + range)))
+	if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
 	{
-		if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
-		{
-			S9X_SET_IRQ(PPU_IRQ_SOURCE);
-		}
-		else if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
-		{
-			S9X_SET_IRQ(PPU_IRQ_SOURCE);
-		}
+		S9X_SET_IRQ(PPU_IRQ_SOURCE);
+	}
+	else if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
+	{
+		S9X_SET_IRQ(PPU_IRQ_SOURCE);
 	}
 }
 
@@ -734,8 +719,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 	if ((Address & 0xffc0) == 0x2140) // APUIO0, APUIO1, APUIO2, APUIO3
 		// write_port will run the APU until given clock before writing value
 		S9xAPUWritePort(Address & 3, Byte);
-	else
-	if (Address <= 0x2183)
+	else if (Address <= 0x2183)
 	{
 		switch (Address)
 		{
@@ -1305,8 +1289,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 			S9xSetSuperFX(Byte, Address);
 			return;
 		}
-		else
-		if (Settings.SA1     && Address >= 0x2200)
+		else if (Settings.SA1     && Address >= 0x2200)
 		{
 			if (Address <= 0x23ff)
 				S9xSetSA1(Byte, Address);
@@ -1314,11 +1297,9 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 				Memory.FillRAM[Address] = Byte;
 			return;
 		}
-		else
-		if (Settings.BS      && Address >= 0x2188 && Address <= 0x219f)
+		else if (Settings.BS      && Address >= 0x2188 && Address <= 0x219f)
 			S9xSetBSXPPU(Byte, Address);
-		else
-		if (Settings.SRTC    && Address == 0x2801)
+		else if (Settings.SRTC    && Address == 0x2801)
 			S9xSetSRTC(Byte, Address);
 	}
 
@@ -1370,11 +1351,9 @@ uint8 S9xGetPPU (uint16 Address)
 	}
 
 	if ((Address & 0xffc0) == 0x2140) // APUIO0, APUIO1, APUIO2, APUIO3
-		// read_port will run the APU until given APU time before reading value
-		return (S9xAPUReadPort(Address & 3));
-	else
-	if (Address <= 0x2183)
-    {
+		return (S9xAPUReadPort(Address & 3));	// read_port will run the APU until given APU time before reading value
+	else if (Address <= 0x2183)
+	{
 		uint8	byte;
 
 		switch (Address)
@@ -1452,7 +1431,7 @@ uint8 S9xGetPPU (uint16 Address)
 				return (PPU.OpenBus1 = byte);
 
 			case 0x2139: // VMDATALREAD
-			#ifdef CORRECT_VRAM_READS
+#ifdef CORRECT_VRAM_READS
 				byte = IPPU.VRAMReadBuffer & 0xff;
 				if (!PPU.VMA.High)
 				{
@@ -1468,30 +1447,30 @@ uint8 S9xGetPPU (uint16 Address)
 
 					PPU.VMA.Address += PPU.VMA.Increment;
 				}
-			#else
+#else
 				if (IPPU.FirstVRAMRead)
 					byte = Memory.VRAM[(PPU.VMA.Address << 1) & 0xffff];
 				else
-				if (PPU.VMA.FullGraphicCount)
-				{
-					uint32 addr = PPU.VMA.Address - 1;
-					uint32 rem = addr & PPU.VMA.Mask1;
-					uint32 address = (addr & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3);
-					byte = Memory.VRAM[((address << 1) - 2) & 0xffff];
-				}
-				else
-					byte = Memory.VRAM[((PPU.VMA.Address << 1) - 2) & 0xffff];
+					if (PPU.VMA.FullGraphicCount)
+					{
+						uint32 addr = PPU.VMA.Address - 1;
+						uint32 rem = addr & PPU.VMA.Mask1;
+						uint32 address = (addr & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3);
+						byte = Memory.VRAM[((address << 1) - 2) & 0xffff];
+					}
+					else
+						byte = Memory.VRAM[((PPU.VMA.Address << 1) - 2) & 0xffff];
 
 				if (!PPU.VMA.High)
 				{
 					PPU.VMA.Address += PPU.VMA.Increment;
 					IPPU.FirstVRAMRead = FALSE;
 				}
-			#endif
+#endif
 				return (PPU.OpenBus1 = byte);
 
 			case 0x213a: // VMDATAHREAD
-			#ifdef CORRECT_VRAM_READS
+#ifdef CORRECT_VRAM_READS
 				byte = (IPPU.VRAMReadBuffer >> 8) & 0xff;
 				if (PPU.VMA.High)
 				{
@@ -1507,26 +1486,26 @@ uint8 S9xGetPPU (uint16 Address)
 
 					PPU.VMA.Address += PPU.VMA.Increment;
 				}
-			#else
+#else
 				if (IPPU.FirstVRAMRead)
 					byte = Memory.VRAM[((PPU.VMA.Address << 1) + 1) & 0xffff];
 				else
-				if (PPU.VMA.FullGraphicCount)
-				{
-					uint32 addr = PPU.VMA.Address - 1;
-					uint32 rem = addr & PPU.VMA.Mask1;
-					uint32 address = (addr & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3);
-					byte = Memory.VRAM[((address << 1) - 1) & 0xffff];
-				}
-				else
-					byte = Memory.VRAM[((PPU.VMA.Address << 1) - 1) & 0xffff];
+					if (PPU.VMA.FullGraphicCount)
+					{
+						uint32 addr = PPU.VMA.Address - 1;
+						uint32 rem = addr & PPU.VMA.Mask1;
+						uint32 address = (addr & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3);
+						byte = Memory.VRAM[((address << 1) - 1) & 0xffff];
+					}
+					else
+						byte = Memory.VRAM[((PPU.VMA.Address << 1) - 1) & 0xffff];
 
 				if (PPU.VMA.High)
 				{
 					PPU.VMA.Address += PPU.VMA.Increment;
 					IPPU.FirstVRAMRead = FALSE;
 				}
-			#endif
+#endif
 				return (PPU.OpenBus1 = byte);
 
 			case 0x213b: // CGDATAREAD
@@ -1538,7 +1517,14 @@ uint8 S9xGetPPU (uint16 Address)
 				return (PPU.OpenBus2 = byte);
 
 			case 0x213c: // OPHCT
-				S9xTryGunLatch(false);
+				if (CPU.V_Counter >  PPU.GunVLatch || (CPU.V_Counter == PPU.GunVLatch && CPU.Cycles >= PPU.GunHLatch * ONE_DOT_CYCLE))
+				{
+					if ((Memory.FillRAM[0x4213] & 0x80))
+					{
+						S9X_TRY_GUN_LATCH();
+					}
+					PPU.GunVLatch = 1000;
+				}
 				if (PPU.HBeamFlip)
 					byte = (PPU.OpenBus2 & 0xfe) | ((PPU.HBeamPosLatched >> 8) & 0x01);
 				else
@@ -1547,7 +1533,14 @@ uint8 S9xGetPPU (uint16 Address)
 				return (PPU.OpenBus2 = byte);
 
 			case 0x213d: // OPVCT
-				S9xTryGunLatch(false);
+				if (CPU.V_Counter >  PPU.GunVLatch || (CPU.V_Counter == PPU.GunVLatch && CPU.Cycles >= PPU.GunHLatch * ONE_DOT_CYCLE))
+				{
+					if ((Memory.FillRAM[0x4213] & 0x80))
+					{
+						S9X_TRY_GUN_LATCH();
+					}
+					PPU.GunVLatch = 1000;
+				}
 				if (PPU.VBeamFlip)
 					byte = (PPU.OpenBus2 & 0xfe) | ((PPU.VBeamPosLatched >> 8) & 0x01);
 				else
@@ -1561,7 +1554,14 @@ uint8 S9xGetPPU (uint16 Address)
 				return (PPU.OpenBus1 = byte);
 
 			case 0x213f: // STAT78
-				S9xTryGunLatch(false);
+				if (CPU.V_Counter >  PPU.GunVLatch || (CPU.V_Counter == PPU.GunVLatch && CPU.Cycles >= PPU.GunHLatch * ONE_DOT_CYCLE))
+				{
+					if ((Memory.FillRAM[0x4213] & 0x80))
+					{
+						S9X_TRY_GUN_LATCH();
+					}
+					PPU.GunVLatch = 1000;
+				}
 				PPU.VBeamFlip = PPU.HBeamFlip = 0;
 				byte = (PPU.OpenBus2 & 0x20) | (Memory.FillRAM[0x213f] & 0xc0) | (Settings.PAL ? 0x10 : 0) | MAX_5C78_VERSION;
 				Memory.FillRAM[0x213f] &= ~0x40;
@@ -1582,33 +1582,32 @@ uint8 S9xGetPPU (uint16 Address)
 		}
 	}
 	else
-    {
+	{
 		if (Settings.SuperFX && Address >= 0x3000 && Address <= 0x32ff)
 			return (S9xGetSuperFX(Address));
 		else
-		if (Settings.SA1     && Address >= 0x2200)
-			return (S9xGetSA1(Address));
-		else
-		if (Settings.BS      && Address >= 0x2188 && Address <= 0x219f)
-			return (S9xGetBSXPPU(Address));
-		else	
-		if (Settings.SRTC    && Address == 0x2800)
-			return (S9xGetSRTC(Address));
-		else
-				return (OpenBus);
+			if (Settings.SA1     && Address >= 0x2200)
+				return (S9xGetSA1(Address));
+			else
+				if (Settings.BS      && Address >= 0x2188 && Address <= 0x219f)
+					return (S9xGetBSXPPU(Address));
+				else	
+					if (Settings.SRTC    && Address == 0x2800)
+						return (S9xGetSRTC(Address));
+					else
+						return (OpenBus);
 	}
 }
 
 extern SPC7110	s7emu;
 static uint8	sdd1_decode_buffer[0x10000];
 
-#define ADD_CYCLES(n)	CPU.Cycles += (n)
-
 static inline bool8 addCyclesInDMA (uint8 dma_channel)
 {
 	// Add 8 cycles per byte, sync APU, and do HC related events.
 	// If HDMA was done in S9xDoHEventProcessing(), check if it used the same channel as DMA.
-	ADD_CYCLES(SLOW_ONE_CYCLE);
+	CPU.Cycles += SLOW_ONE_CYCLE;
+
 	while (CPU.Cycles >= CPU.NextEvent)
 		S9xDoHEventProcessing();
 
@@ -1749,7 +1748,8 @@ static bool8 S9xDoDMA (uint8 Channel)
 			c = 0x10000;
 
 		// 8 cycles per channel
-		ADD_CYCLES(SLOW_ONE_CYCLE);
+		CPU.Cycles += SLOW_ONE_CYCLE;
+
 		// 8 cycles per byte
 		do
 		{
@@ -1972,7 +1972,7 @@ static bool8 S9xDoDMA (uint8 Channel)
 	uint8	Work;
 
 	// 8 cycles per channel
-	ADD_CYCLES(SLOW_ONE_CYCLE);
+	CPU.Cycles += SLOW_ONE_CYCLE;
 
 	if (!d->ReverseTransfer)
 	{
@@ -2869,10 +2869,13 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 
 				// The case that IRQ will trigger in an instruction such as STA $4200.
 				// FIXME: not true but good enough for Snes9x, I think.
-				S9xCheckMissingHTimerRange(CPU.PrevCycles, CPU.Cycles - CPU.PrevCycles);
+				if ((PPU.HTimerPosition >= CPU.PrevCycles) && (PPU.HTimerPosition < (CPU.PrevCycles + (CPU.Cycles - CPU.PrevCycles))))
+					S9xCheckMissingHTimerRange(CPU.PrevCycles, CPU.Cycles - CPU.PrevCycles);
 
 				if (!(Byte & 0x30))
-				S9X_CLEAR_IRQ(PPU_IRQ_SOURCE);
+				{
+					S9X_CLEAR_IRQ(PPU_IRQ_SOURCE);
+				}
 
 				// NMI can trigger immediately during VBlank as long as NMI_read ($4210) wasn't cleard.
 				if ((Byte & 0x80) && !(Memory.FillRAM[0x4200] & 0x80) &&
@@ -2889,8 +2892,15 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 			case 0x4201: // WRIO
 				if ((Byte & 0x80) == 0 && (Memory.FillRAM[0x4213] & 0x80) == 0x80)
 					S9xLatchCounters(1);
-				else
-					S9xTryGunLatch((Byte & 0x80) ? true : false);
+				else if (CPU.V_Counter >  PPU.GunVLatch || (CPU.V_Counter == PPU.GunVLatch && CPU.Cycles >= PPU.GunHLatch * ONE_DOT_CYCLE))
+				{
+					bool force = (Byte & 0x80) ? true : false;
+					if (force || (Memory.FillRAM[0x4213] & 0x80))
+					{
+						S9X_TRY_GUN_LATCH();
+					}
+					PPU.GunVLatch = 1000;
+				}
 				Memory.FillRAM[0x4201] = Memory.FillRAM[0x4213] = Byte;
 				break;
 
@@ -3127,19 +3137,15 @@ uint8 S9xGetCPU (uint16 Address)
 				byte = (CPU.IRQActive & PPU_IRQ_SOURCE) ? 0x80 : 0;
 				S9X_CLEAR_IRQ(PPU_IRQ_SOURCE);
 				return (byte | (OpenBus & 0x7f));
-
 			case 0x4212: // HVBJOY
 				return (REGISTER_4212() | (OpenBus & 0x3e));
-
 			case 0x4213: // RDIO
 				return (Memory.FillRAM[0x4213]);
-
 			case 0x4214: // RDDIVL
 			case 0x4215: // RDDIVH
 			case 0x4216: // RDMPYL
 			case 0x4217: // RDMPYH
 				return (Memory.FillRAM[Address]);
-
 			case 0x4218: // JOY1L
 			case 0x4219: // JOY1H
 			case 0x421a: // JOY2L
