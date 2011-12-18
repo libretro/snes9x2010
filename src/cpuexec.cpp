@@ -215,8 +215,7 @@ void S9xMainLoop (void)
 			if (CPU.Flags & IRQ_FLAG)
 			{
 				if (CPU.IRQPending)
-					// FIXME: In case of IRQ during WRAM refresh
-					CPU.IRQPending--;
+					CPU.IRQPending--;	// FIXME: In case of IRQ during WRAM refresh
 				else
 				{
 					if (CPU.WaitingForInterrupt)
@@ -300,16 +299,12 @@ static void S9xCheckMissingHTimerPosition (int32 hc)
 	}
 }
 
-static void S9xCheckMissingHTimerHalt (int32 hc_from, int32 range)
+static void S9xCheckMissingHTimerHalt(void)
 {
-	if ((PPU.HTimerPosition >= hc_from) && (PPU.HTimerPosition < (hc_from + range)))
-	{
-		if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
-			CPU.IRQPending = 1;
-		else
-		if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
-			CPU.IRQPending = 1;
-	}
+	if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
+		CPU.IRQPending = 1;
+	else if (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
+		CPU.IRQPending = 1;
 }
 
 static void S9xEndScreenRefresh (void)
@@ -649,7 +644,8 @@ void S9xDoHEventProcessing (void)
 
 		case HC_WRAM_REFRESH_EVENT:
 
-			S9xCheckMissingHTimerHalt(Timings.WRAMRefreshPos, SNES_WRAM_REFRESH_CYCLES);
+			if ((PPU.HTimerPosition >= Timings.WRAMRefreshPos) && (PPU.HTimerPosition < (Timings.WRAMRefreshPos + SNES_WRAM_REFRESH_CYCLES)))
+				S9xCheckMissingHTimerHalt();
 			CPU.Cycles += SNES_WRAM_REFRESH_CYCLES;
 
 			if (PPU.HTimerPosition == Timings.WRAMRefreshPos)
@@ -674,3 +670,5 @@ void S9xDoHEventProcessing (void)
 	}
 
 }
+
+#include "cpuops_.h"

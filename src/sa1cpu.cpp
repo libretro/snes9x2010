@@ -226,8 +226,7 @@
 
 #define SA1_OPCODES
 
-#include "cpuops.cpp"
-
+#include "cpuops_.h"
 
 void S9xSA1MainLoop (void)
 {

@@ -195,7 +195,7 @@
 #define JUSTIFIER_SELECT		0x08
 
 #define MAP_UNKNOWN			(-1)
-#define MAP_NONE			0
+#define MAP_UNMAPPED			0
 #define MAP_BUTTON			1
 #define MAP_POINTER			3
 
@@ -631,7 +631,7 @@ static const char * maptypename (int t)
 {
 	switch (t)
 	{
-		case MAP_NONE:		return ("unmapped");
+		case MAP_UNMAPPED:	return ("unmapped");
 		case MAP_BUTTON:	return ("button");
 		case MAP_POINTER:	return ("pointer");
 		default:			return ("unknown");

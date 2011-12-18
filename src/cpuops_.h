@@ -174,9 +174,6 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
-#include "snes9x.h"
-#include "memmap.h"
 #include "apu/apu.h"
 
 // for "Magic WDM" features

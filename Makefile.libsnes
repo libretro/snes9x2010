@@ -62,7 +62,7 @@ CXXFLAGS += -O3
 endif
 
 
-OBJECTS    = ./src/apu/apu.o ./src/apu/SNES_SPC.o ./src/apu/SPC_DSP.o ./src/bsx.o ./src/c4emu.o ./src/cheats.o ./src/controls.o ./src/cpu.o ./src/cpuexec.o ./src/cpuops.o ./src/crosshairs.o ./src/dma.o ./src/dsp.o ./src/dsp1.o ./src/dsp2.o ./src/dsp3.o ./src/dsp4.o ./src/fxemu.o ./src/gfx.o ./src/globals.o ./src/memmap.o ./src/obc1.o ./src/ppu.o ./src/reader.o ./src/sa1.o ./src/sa1cpu.o ./src/sdd1.o ./src/sdd1emu.o ./src/seta.o ./src/seta010.o ./src/seta011.o ./src/seta018.o ./src/snapshot.o ./src/spc7110.o ./src/srtc.o ./src/tile.o libsnes/libsnes.o libsnes/memstream.o
+OBJECTS    = ./src/apu/apu.o ./src/apu/SNES_SPC.o ./src/apu/SPC_DSP.o ./src/bsx.o ./src/c4emu.o ./src/cheats.o ./src/controls.o ./src/cpu.o ./src/cpuexec.o ./src/crosshairs.o ./src/dma.o ./src/dsp.o ./src/dsp1.o ./src/dsp2.o ./src/dsp3.o ./src/dsp4.o ./src/fxemu.o ./src/gfx.o ./src/globals.o ./src/memmap.o ./src/obc1.o ./src/ppu.o ./src/reader.o ./src/sa1.o ./src/sa1cpu.o ./src/sdd1.o ./src/sdd1emu.o ./src/seta.o ./src/seta010.o ./src/seta011.o ./src/seta018.o ./src/snapshot.o ./src/spc7110.o ./src/srtc.o ./src/tile.o libsnes/libsnes.o libsnes/memstream.o
 
 INCLUDES   = -I. -I.. -I../apu/
 DEFINES    = -DHAVE_STRINGS_H -DHAVE_STDINT_H -DHAVE_INTTYPES_H -D__LIBSNES__ -DRIGHTSHIFT_IS_SAR
