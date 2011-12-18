@@ -178,9 +178,6 @@
 #ifndef _blit_h_
 #define _blit_h_
 
-#include "2xsai.h"
-#include "epx.h"
-#include "hq2x.h"
 #include "snes_ntsc.h"
 
 bool8 S9xBlitFilterInit (void);
@@ -196,13 +193,6 @@ void S9xBlitPixScaledTV16 (uint8 *, int, uint8 *, int, int, int);
 void S9xBlitPixHiResTV16 (uint8 *, int, uint8 *, int, int, int);
 void S9xBlitPixHiResMixedTV16 (uint8 *, int, uint8 *, int, int, int);
 void S9xBlitPixSmooth16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixSuperEagle16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPix2xSaI16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixSuper2xSaI16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixEPX16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixHQ2x16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixHQ3x16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixHQ4x16 (uint8 *, int, uint8 *, int, int, int);
 void S9xBlitPixNTSC16 (uint8 *, int, uint8 *, int, int, int);
 void S9xBlitPixHiResNTSC16 (uint8 *, int, uint8 *, int, int, int);
 
