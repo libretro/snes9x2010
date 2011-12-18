@@ -428,7 +428,7 @@ static inline void AND8(uint8 Work8)
 	SetZN8(Registers.AL);
 }
 
-static inline void ASL16 (uint32 OpAddress, s9xwrap_t w)
+static inline void ASL16 (uint32 OpAddress, uint32 w)
 {
 	uint16	Work16 = S9xGetWord(OpAddress, w);
 	ICPU._Carry = (Work16 & 0x8000) != 0;
@@ -512,7 +512,7 @@ static inline void CPY8(uint8 val)
 	SetZN8(Int8);
 }
 
-static inline void DEC16 (uint32 OpAddress, s9xwrap_t w)
+static inline void DEC16 (uint32 OpAddress, uint32 w)
 {
 	uint16	Work16 = S9xGetWord(OpAddress, w) - 1;
 	AddCycles(ONE_CYCLE);
@@ -542,7 +542,7 @@ static inline void EOR8(uint8 val)
 	SetZN8(Registers.AL);
 }
 
-static inline void INC16 (uint32 OpAddress, s9xwrap_t w)
+static inline void INC16 (uint32 OpAddress, uint32 w)
 {
 	uint16	Work16 = S9xGetWord(OpAddress, w) + 1;
 	AddCycles(ONE_CYCLE);
@@ -596,7 +596,7 @@ static inline void LDY8(uint8 val)
 	SetZN8(Registers.YL);
 }
 
-static inline void LSR16 (uint32 OpAddress, s9xwrap_t w)
+static inline void LSR16 (uint32 OpAddress, uint32 w)
 {
 	uint16	Work16 = S9xGetWord(OpAddress, w);
 	ICPU._Carry = Work16 & 1;
@@ -630,7 +630,7 @@ static inline void ORA8(uint8 val)
 	SetZN8(Registers.AL);
 }
 
-static inline void ROL16 (uint32 OpAddress, s9xwrap_t w)
+static inline void ROL16 (uint32 OpAddress, uint32 w)
 {
 	uint32	Work32 = (((uint32) S9xGetWord(OpAddress, w)) << 1) | CheckCarry();
 	ICPU._Carry = Work32 >= 0x10000;
@@ -650,7 +650,7 @@ static inline void ROL8 (uint32 OpAddress)
 	SetZN8((uint8) Work16);
 }
 
-static inline void ROR16 (uint32 OpAddress, s9xwrap_t w)
+static inline void ROR16 (uint32 OpAddress, uint32 w)
 {
 	uint32	Work32 = ((uint32) S9xGetWord(OpAddress, w)) | (((uint32) CheckCarry()) << 16);
 	ICPU._Carry = Work32 & 1;
@@ -798,7 +798,7 @@ static inline void SBC8(uint8 Work8)
 	SetZN8(Registers.AL);
 }
 
-static inline void STA16 (uint32 OpAddress, enum s9xwrap_t w)
+static inline void STA16 (uint32 OpAddress, uint32 w)
 {
 	S9xSetWord_Write0(Registers.A.W, OpAddress, w);
 	OpenBus = Registers.AH;
@@ -810,7 +810,7 @@ static inline void STA8 (uint32 OpAddress)
 	OpenBus = Registers.AL;
 }
 
-static inline void STX16 (uint32 OpAddress, enum s9xwrap_t w)
+static inline void STX16 (uint32 OpAddress, uint32 w)
 {
 	S9xSetWord_Write0(Registers.X.W, OpAddress, w);
 	OpenBus = Registers.XH;
@@ -822,7 +822,7 @@ static inline void STX8 (uint32 OpAddress)
 	OpenBus = Registers.XL;
 }
 
-static inline void STY16 (uint32 OpAddress, enum s9xwrap_t w)
+static inline void STY16 (uint32 OpAddress, uint32 w)
 {
 	S9xSetWord_Write0(Registers.Y.W, OpAddress, w);
 	OpenBus = Registers.YH;
@@ -834,7 +834,7 @@ static inline void STY8 (uint32 OpAddress)
 	OpenBus = Registers.YL;
 }
 
-static inline void STZ16 (uint32 OpAddress, enum s9xwrap_t w)
+static inline void STZ16 (uint32 OpAddress, uint32 w)
 {
 	S9xSetWord_Write0(0, OpAddress, w);
 	OpenBus = 0;
@@ -846,7 +846,7 @@ static inline void STZ8 (uint32 OpAddress)
 	OpenBus = 0;
 }
 
-static inline void TSB16 (uint32 OpAddress, enum s9xwrap_t w)
+static inline void TSB16 (uint32 OpAddress, uint32 w)
 {
 	uint16	Work16 = S9xGetWord(OpAddress, w);
 	ICPU._Zero = (Work16 & Registers.A.W) != 0;
@@ -866,7 +866,7 @@ static inline void TSB8 (uint32 OpAddress)
 	OpenBus = Work8;
 }
 
-static inline void TRB16 (uint32 OpAddress, enum s9xwrap_t w)
+static inline void TRB16 (uint32 OpAddress, uint32 w)
 {
 	uint16	Work16 = S9xGetWord(OpAddress, w);
 	ICPU._Zero = (Work16 & Registers.A.W) != 0;

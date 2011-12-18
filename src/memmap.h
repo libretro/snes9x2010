@@ -304,12 +304,9 @@ struct SMulti
 extern CMemory	Memory;
 extern SMulti	Multi;
 
-enum s9xwrap_t
-{
-	WRAP_NONE,
-	WRAP_BANK,
-	WRAP_PAGE
-};
+#define WRAP_PAGE 0xFF
+#define WRAP_BANK 0xFFFF
+#define WRAP_NONE 0xFFFFFF
 
 #include "getset.h"
 

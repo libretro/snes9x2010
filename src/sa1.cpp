@@ -862,7 +862,7 @@ uint8 S9xSA1GetByte (uint32 address)
 	}
 }
 
-uint16 S9xSA1GetWord (uint32 address, s9xwrap_t w)
+uint16 S9xSA1GetWord (uint32 address, uint32 w)
 {
 	PC_t	a;
 
@@ -950,7 +950,7 @@ void S9xSA1SetByte (uint8 byte, uint32 address)
 	}
 }
 
-void S9xSA1SetWord_Write0(uint16 Word, uint32 address, enum s9xwrap_t w)
+void S9xSA1SetWord_Write0(uint16 Word, uint32 address, uint32 w)
 {
 	PC_t	a;
 
@@ -977,7 +977,7 @@ void S9xSA1SetWord_Write0(uint16 Word, uint32 address, enum s9xwrap_t w)
 	}
 }
 
-void S9xSA1SetWord_Write1(uint16 Word, uint32 address, enum s9xwrap_t w)
+void S9xSA1SetWord_Write1(uint16 Word, uint32 address, uint32 w)
 {
 	PC_t	a;
 

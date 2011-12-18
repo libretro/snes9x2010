@@ -248,9 +248,9 @@ extern uint8			S9xOpLengthsM0X0[256];
 
 uint8 S9xSA1GetByte (uint32);
 void S9xSA1SetByte (uint8, uint32);
-uint16 S9xSA1GetWord (uint32, enum s9xwrap_t w);
-void S9xSA1SetWord_Write0(uint16, uint32, enum s9xwrap_t w);
-void S9xSA1SetWord_Write1(uint16, uint32, enum s9xwrap_t w);
+uint16 S9xSA1GetWord (uint32, uint32 w);
+void S9xSA1SetWord_Write0(uint16, uint32, uint32 w);
+void S9xSA1SetWord_Write1(uint16, uint32, uint32 w);
 void S9xSA1SetPCBase (uint32);
 uint8 S9xGetSA1 (uint32);
 void S9xSetSA1 (uint8, uint32);

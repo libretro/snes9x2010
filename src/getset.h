@@ -341,10 +341,9 @@ inline uint8 S9xGetByte (uint32 Address)
 	}
 }
 
-inline uint16 S9xGetWord (uint32 Address, enum s9xwrap_t w)
+inline uint16 S9xGetWord (uint32 Address, uint32 w)
 {
-	uint32	mask = MEMMAP_MASK & (w == WRAP_PAGE ? 0xff : (w == WRAP_BANK ? 0xffff : 0xffffff));
-	if ((Address & mask) == mask)
+	if ((Address & (MEMMAP_MASK & w)) == (MEMMAP_MASK & w))
 	{
 		PC_t	a;
 
@@ -599,10 +598,9 @@ inline void S9xSetByte (uint8 Byte, uint32 Address)
 	}
 }
 
-inline void S9xSetWord_Write0(uint16 Word, uint32 Address, enum s9xwrap_t w)
+inline void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 {
-	uint32	mask = MEMMAP_MASK & (w == WRAP_PAGE ? 0xff : (w == WRAP_BANK ? 0xffff : 0xffffff));
-	if ((Address & mask) == mask)
+	if ((Address & (MEMMAP_MASK & w)) == (MEMMAP_MASK & w))
 	{
 		PC_t	a;
 
@@ -765,10 +763,9 @@ inline void S9xSetWord_Write0(uint16 Word, uint32 Address, enum s9xwrap_t w)
 	}
 }
 
-inline void S9xSetWord_Write1(uint16 Word, uint32 Address, enum s9xwrap_t w)
+inline void S9xSetWord_Write1(uint16 Word, uint32 Address, uint32 w)
 {
-	uint32	mask = MEMMAP_MASK & (w == WRAP_PAGE ? 0xff : (w == WRAP_BANK ? 0xffff : 0xffffff));
-	if ((Address & mask) == mask)
+	if ((Address & (MEMMAP_MASK & w)) == (MEMMAP_MASK & w))
 	{
 		PC_t	a;
 
