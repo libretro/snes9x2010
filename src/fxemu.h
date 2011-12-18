@@ -196,12 +196,6 @@ extern struct FxInfo_s	SuperFX;
 void S9xInitSuperFX (void);
 void S9xSetSuperFX (uint8, uint16);
 uint8 S9xGetSuperFX (uint16);
-void fx_flushCache (void);
-void fx_computeScreenPointers (void);
-void fx_run (uint32);
-
-#define FX_BREAKPOINT			(-1)
-#define FX_ERROR_ILLEGAL_ADDRESS	(-2)
 
 void S9xResetSuperFX (void);
 void S9xSuperFXExec (void);

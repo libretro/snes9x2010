@@ -519,15 +519,4 @@ extern struct FxRegs_s	GSU;
 #define CFGR			USEX8(GSU.pvRegisters[GSU_CFGR])
 #define CLSR			USEX8(GSU.pvRegisters[GSU_CLSR])
 
-// Execute instruction from the pipe, and fetch next byte to the pipe
-#define FX_STEP \
-{ \
-	uint32	vOpcode = (uint32) PIPE; \
-	FETCHPIPE; \
-	(*fx_OpcodeTable[(GSU.vStatusReg & 0x300) | vOpcode])(); \
-}
-
-extern void (*fx_PlotTable[]) (void);
-extern void (*fx_OpcodeTable[]) (void);
-
 #endif
