@@ -712,22 +712,8 @@ uint32 CMemory::HeaderRemove (uint32 size, int32 &headerCount, uint8 *buf)
 {
 	uint32	calc_size = (size / 0x2000) * 0x2000;
 
-	if ((size - calc_size == 512 && !Settings.ForceNoHeader) || Settings.ForceHeader)
+	if (size - calc_size == 512)
 	{
-		uint8	*NSRTHead = buf + 0x1D0; // NSRT Header Location
-
-		// detect NSRT header
-		if (!strncmp("NSRT", (char *) &NSRTHead[24], 4))
-		{
-			if (NSRTHead[28] == 22)
-			{
-				if ((((*NSRTHead + *NSRTHead + sizeof(NSRTHeader)) & 0xFF) == NSRTHead[30]) &&
-					(NSRTHead[30] + NSRTHead[31] == 255) && ((NSRTHead[0] & 0x0F) <= 13) &&
-					(((NSRTHead[0] & 0xF0) >> 4) <= 3) && ((NSRTHead[0] & 0xF0) >> 4))
-					memcpy(NSRTHeader, NSRTHead, sizeof(NSRTHeader));
-			}
-		}
-
 		memmove(buf, buf + 512, calc_size);
 		headerCount++;
 		size -= 512;
@@ -883,7 +869,6 @@ uint32 CMemory::FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 
 	ext = &exts[0];
 
-	memset(NSRTHeader, 0, sizeof(NSRTHeader));
 	HeaderCount = 0;
 
 	_splitpath(filename, drive, dir, name, exts);

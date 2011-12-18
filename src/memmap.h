@@ -220,7 +220,6 @@
 
 struct CMemory
 {
-	uint8	NSRTHeader[32];
 	int32	HeaderCount;
 
 	uint8	*RAM;
