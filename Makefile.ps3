@@ -65,10 +65,8 @@ PPU_SRCS		+= $(SNES9X_API_DIR)/tile.cpp \
 			$(SNES9X_API_DIR)/apu/SNES_SPC.cpp \
 			$(SNES9X_API_DIR)/apu/SPC_DSP.cpp \
 			$(SNES9X_API_DIR)/bsx.cpp \
-			$(SNES9X_API_DIR)/c4.cpp \
 			$(SNES9X_API_DIR)/c4emu.cpp \
 			$(SNES9X_API_DIR)/cheats.cpp \
-			$(SNES9X_API_DIR)/cheats2.cpp \
 			$(SNES9X_API_DIR)/controls.cpp \
 			$(SNES9X_API_DIR)/crosshairs.cpp \
 			$(SNES9X_API_DIR)/dsp.cpp \

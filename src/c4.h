@@ -174,7 +174,6 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
 #ifndef _C4_H_
 #define _C4_H_
 
@@ -191,22 +190,11 @@ extern int16	C41FAngleRes;
 extern int16	C41FDist;
 extern int16	C41FDistVal;
 
-void C4TransfWireFrame (void);
-void C4TransfWireFrame2 (void);
-void C4CalcWireFrame (void);
-void C4Op0D (void);
-void C4Op15 (void);
-void C4Op1F (void);
 void S9xInitC4 (void);
 void S9xSetC4 (uint8, uint16);
 uint8 S9xGetC4 (uint16);
 
 uint8 * S9xGetBasePointerC4 (uint16);
 uint8 * S9xGetMemPointerC4 (uint16);
-
-static inline uint8 * C4GetMemPointer (uint32 Address)
-{
-	return (Memory.ROM + ((Address & 0xff0000) >> 1) + (Address & 0x7fff));
-}
 
 #endif
