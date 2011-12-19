@@ -381,6 +381,7 @@ void S9xSetPPU (uint8, uint16);
 uint8 S9xGetPPU (uint16);
 void S9xSetCPU (uint8, uint16);
 uint8 S9xGetCPU (uint16);
+uint8 S9xGetCPU_Alt (uint16);
 void S9xFixColourBrightness (void);
 void S9xDoAutoJoypad (void);
 

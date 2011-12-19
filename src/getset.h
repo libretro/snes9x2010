@@ -187,6 +187,8 @@
 #include "seta.h"
 #include "bsx.h"
 
+extern uint8	OpenBus;
+
 #if (S9X_ACCURACY_LEVEL >= 2)
 
 #define addCyclesInMemoryAccess \
@@ -240,10 +242,16 @@
 		else \
 			retval = OpenBus; \
 	} \
+	else if ((addr_tmp & 0xff80) == 0x4300) \
+	{ \
+		if (CPU.InDMAorHDMA) \
+			retval = OpenBus; \
+		else \
+			retval = S9xGetCPU(addr_tmp); \
+	} \
 	else \
-		retval = S9xGetCPU(addr_tmp);
+		retval = S9xGetCPU_Alt(addr_tmp);
 
-extern uint8	OpenBus;
 
 static inline int32 memory_speed (uint32 address)
 {

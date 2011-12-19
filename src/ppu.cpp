@@ -3042,104 +3042,99 @@ static inline uint8 REGISTER_4212 (void)
 
 uint8 S9xGetCPU (uint16 Address)
 {
-	if ((Address & 0xff80) == 0x4300)
+	int	d = (Address >> 4) & 0x7;
+
+	switch (Address & 0xf)
 	{
-		if (CPU.InDMAorHDMA)
+		case 0x0: // 0x43x0: DMAPx
+			return ((DMA[d].ReverseTransfer        ? 0x80 : 0) |
+					(DMA[d].HDMAIndirectAddressing ? 0x40 : 0) |
+					(DMA[d].UnusedBit43x0          ? 0x20 : 0) |
+					(DMA[d].AAddressDecrement      ? 0x10 : 0) |
+					(DMA[d].AAddressFixed          ? 0x08 : 0) |
+					(DMA[d].TransferMode & 7));
+
+		case 0x1: // 0x43x1: BBADx
+			return (DMA[d].BAddress);
+
+		case 0x2: // 0x43x2: A1TxL
+			return (DMA[d].AAddress & 0xff);
+
+		case 0x3: // 0x43x3: A1TxH
+			return (DMA[d].AAddress >> 8);
+
+		case 0x4: // 0x43x4: A1Bx
+			return (DMA[d].ABank);
+
+		case 0x5: // 0x43x5: DASxL
+			return (DMA[d].DMACount_Or_HDMAIndirectAddress & 0xff);
+
+		case 0x6: // 0x43x6: DASxH
+			return (DMA[d].DMACount_Or_HDMAIndirectAddress >> 8);
+
+		case 0x7: // 0x43x7: DASBx
+			return (DMA[d].IndirectBank);
+
+		case 0x8: // 0x43x8: A2AxL
+			return (DMA[d].Address & 0xff);
+
+		case 0x9: // 0x43x9: A2AxH
+			return (DMA[d].Address >> 8);
+
+		case 0xa: // 0x43xa: NLTRx
+			return (DMA[d].LineCount ^ (DMA[d].Repeat ? 0x00 : 0x80));
+
+		case 0xb: // 0x43xb: ????x
+		case 0xf: // 0x43xf: mirror of 0x43xb
+			return (DMA[d].UnknownByte);
+
+		default:
 			return (OpenBus);
-
-		int	d = (Address >> 4) & 0x7;
-
-		switch (Address & 0xf)
-		{
-			case 0x0: // 0x43x0: DMAPx
-				return ((DMA[d].ReverseTransfer        ? 0x80 : 0) |
-						(DMA[d].HDMAIndirectAddressing ? 0x40 : 0) |
-						(DMA[d].UnusedBit43x0          ? 0x20 : 0) |
-						(DMA[d].AAddressDecrement      ? 0x10 : 0) |
-						(DMA[d].AAddressFixed          ? 0x08 : 0) |
-						(DMA[d].TransferMode & 7));
-
-			case 0x1: // 0x43x1: BBADx
-				return (DMA[d].BAddress);
-
-			case 0x2: // 0x43x2: A1TxL
-				return (DMA[d].AAddress & 0xff);
-
-			case 0x3: // 0x43x3: A1TxH
-				return (DMA[d].AAddress >> 8);
-
-			case 0x4: // 0x43x4: A1Bx
-				return (DMA[d].ABank);
-
-			case 0x5: // 0x43x5: DASxL
-				return (DMA[d].DMACount_Or_HDMAIndirectAddress & 0xff);
-
-			case 0x6: // 0x43x6: DASxH
-				return (DMA[d].DMACount_Or_HDMAIndirectAddress >> 8);
-
-			case 0x7: // 0x43x7: DASBx
-				return (DMA[d].IndirectBank);
-
-			case 0x8: // 0x43x8: A2AxL
-				return (DMA[d].Address & 0xff);
-
-			case 0x9: // 0x43x9: A2AxH
-				return (DMA[d].Address >> 8);
-
-			case 0xa: // 0x43xa: NLTRx
-				return (DMA[d].LineCount ^ (DMA[d].Repeat ? 0x00 : 0x80));
-
-			case 0xb: // 0x43xb: ????x
-			case 0xf: // 0x43xf: mirror of 0x43xb
-				return (DMA[d].UnknownByte);
-
-			default:
-				return (OpenBus);
-		}
 	}
-	else
+}
+
+uint8 S9xGetCPU_Alt(uint16 Address)
+{
+	uint8	byte;
+
+	switch (Address)
 	{
-		uint8	byte;
+		case 0x4210: // RDNMI
+			byte = Memory.FillRAM[0x4210];
+			Memory.FillRAM[0x4210] = MAX_5A22_VERSION;
+			return ((byte & 0x80) | (OpenBus & 0x70) | MAX_5A22_VERSION);
 
-		switch (Address)
-		{
-			case 0x4210: // RDNMI
-				byte = Memory.FillRAM[0x4210];
-				Memory.FillRAM[0x4210] = MAX_5A22_VERSION;
-				return ((byte & 0x80) | (OpenBus & 0x70) | MAX_5A22_VERSION);
+		case 0x4211: // TIMEUP
+			byte = (CPU.IRQActive & PPU_IRQ_SOURCE) ? 0x80 : 0;
+			S9X_CLEAR_IRQ(PPU_IRQ_SOURCE);
+			return (byte | (OpenBus & 0x7f));
+		case 0x4212: // HVBJOY
+			return (REGISTER_4212() | (OpenBus & 0x3e));
+		case 0x4213: // RDIO
+			return (Memory.FillRAM[0x4213]);
+		case 0x4214: // RDDIVL
+		case 0x4215: // RDDIVH
+		case 0x4216: // RDMPYL
+		case 0x4217: // RDMPYH
+			return (Memory.FillRAM[Address]);
+		case 0x4218: // JOY1L
+		case 0x4219: // JOY1H
+		case 0x421a: // JOY2L
+		case 0x421b: // JOY2H
+		case 0x421c: // JOY3L
+		case 0x421d: // JOY3H
+		case 0x421e: // JOY4L
+		case 0x421f: // JOY4H
+			if (Memory.FillRAM[0x4200] & 1)
+				pad_read = TRUE;
+			return (Memory.FillRAM[Address]);
 
-			case 0x4211: // TIMEUP
-				byte = (CPU.IRQActive & PPU_IRQ_SOURCE) ? 0x80 : 0;
-				S9X_CLEAR_IRQ(PPU_IRQ_SOURCE);
-				return (byte | (OpenBus & 0x7f));
-			case 0x4212: // HVBJOY
-				return (REGISTER_4212() | (OpenBus & 0x3e));
-			case 0x4213: // RDIO
-				return (Memory.FillRAM[0x4213]);
-			case 0x4214: // RDDIVL
-			case 0x4215: // RDDIVH
-			case 0x4216: // RDMPYL
-			case 0x4217: // RDMPYH
+		default:
+			if (Settings.SPC7110 && Address >= 0x4800)
+				return (S9xGetSPC7110(Address));
+			if (Settings.SDD1 && Address >= 0x4800 && Address <= 0x4807)
 				return (Memory.FillRAM[Address]);
-			case 0x4218: // JOY1L
-			case 0x4219: // JOY1H
-			case 0x421a: // JOY2L
-			case 0x421b: // JOY2H
-			case 0x421c: // JOY3L
-			case 0x421d: // JOY3H
-			case 0x421e: // JOY4L
-			case 0x421f: // JOY4H
-				if (Memory.FillRAM[0x4200] & 1)
-					pad_read = TRUE;
-				return (Memory.FillRAM[Address]);
-
-			default:
-				if (Settings.SPC7110 && Address >= 0x4800)
-					return (S9xGetSPC7110(Address));
-				if (Settings.SDD1 && Address >= 0x4800 && Address <= 0x4807)
-					return (Memory.FillRAM[Address]);
-				return (OpenBus);
-		}
+			return (OpenBus);
 	}
 }
 
