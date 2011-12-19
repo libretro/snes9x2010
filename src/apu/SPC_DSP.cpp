@@ -115,8 +115,7 @@ static inline int dsp_interpolate( dsp_voice_t const* v )
 	short const* rev = gauss       + offset; // mirror left half of gaussian
 	
 	int const* in = &v->buf [(v->interp_pos >> 12) + v->buf_pos];
-	int out;
-	out  = (fwd [  0] * in [0]) >> 11;
+	int out  = (fwd [  0] * in [0]) >> 11;
 	out += (fwd [256] * in [1]) >> 11;
 	out += (rev [256] * in [2]) >> 11;
 	out = (int16_t) out;

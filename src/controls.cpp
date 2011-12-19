@@ -350,7 +350,7 @@ void S9xUnmapAllControls (void)
 		superscope.crosshair.bg  = 1;
 }
 
-void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2, int8 id3, int8 id4)
+void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 id3, int8 id4)
 {
 	switch (controller)
 	{

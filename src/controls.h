@@ -273,17 +273,14 @@ void S9xUnmapAllControls (void);
 
 // Setting which controllers are plugged in.
 
-enum controllers
-{
-	CTL_NONE,		// all ids ignored
-	CTL_JOYPAD,		// use id1 to specify 0-7
-	CTL_MOUSE,		// use id1 to specify 0-1
-	CTL_SUPERSCOPE,
-	CTL_JUSTIFIER,		// use id1: 0=one justifier, 1=two justifiers
-	CTL_MP5			// use id1-id4 to specify pad 0-7 (or -1)
-};
+#define CTL_NONE 0		// all ids ignored
+#define CTL_JOYPAD 1		// use id1 to specify 0-7
+#define CTL_MOUSE 2		// use id1 to specify 0-1
+#define CTL_SUPERSCOPE 3
+#define CTL_JUSTIFIER 4		// use id1: 0=one justifier, 1=two justifiers
+#define CTL_MP5 5		// use id1-id4 to specify pad 0-7 (or -1)
 
-void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2, int8 id3, int8 id4); // port=0-1
+void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 id3, int8 id4); // port=0-1
 
 // Call this when you're done with S9xSetController, or if you change any of the controller Settings.*Master flags. 
 // Returns true if something was disabled.

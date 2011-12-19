@@ -150,13 +150,13 @@ static void emulator_save_current_save_state_slot(void)
 
 /* emulator-specific */
 
-#define S9xReportButton(id, action, pressed) \
+#define S9xReportButton(i, id, action, pressed) \
       if(keymap[id].type == S9xButtonJoypad) \
-      joypad[keymap[id].button.joypad.idx] = ((joypad[keymap[id].button.joypad.idx] | keymap[id].button.joypad.buttons) & (((pressed) | -(pressed)) >> 31)) | ((joypad[keymap[id].button.joypad.idx] & ~keymap[id].button.joypad.buttons) & ~(((pressed) | -(pressed)) >> 31)); \
+      joypad[i] = ((joypad[i] | keymap[id].button.joypad.buttons) & (((pressed) | -(pressed)) >> 31)) | ((joypad[i] & ~keymap[id].button.joypad.buttons) & ~(((pressed) | -(pressed)) >> 31)); \
       else if(pressed) \
          special_action_to_execute = action;
 
-void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
+static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdata)
 {
 	(void) param;
 	(void) userdata;
@@ -538,12 +538,29 @@ static void special_actions(uint64_t number)
 	}
 }
 
-static void emulator_implementation_input_loop_mouse(int snes_device)
+static void emulator_implementation_input_loop_mouse(unsigned port, unsigned snes_device)
 {
 	const uint32_t pads_connected = cell_pad_input_pads_connected();
 
-	const uint64_t state = cell_pad_input_poll_device(0);
-	const uint64_t pad = 1;
+	static uint64_t old_state;
+	uint64_t pad;
+	uint64_t state;
+	if(snes_device == CTL_SUPERSCOPE)
+	{
+		state = cell_pad_input_poll_device(0);
+		pad = 1;
+		port = 0;
+	}
+	else
+	{
+		state = cell_pad_input_poll_device(port);
+		pad = port + 1;
+	}
+
+	const uint64_t button_was_pressed = old_state & (old_state ^ state);
+	const uint64_t button_was_held = old_state & state;
+	const uint64_t button_was_not_held = ~(old_state & state);
+	const uint64_t button_was_not_pressed = ~(state);
 	uint64_t special_action_to_execute = 0;
 	static uint8_t old_mouse_buttons;
 	static int mouse_old_x;
@@ -556,7 +573,7 @@ static void emulator_implementation_input_loop_mouse(int snes_device)
 	//USB/Bluetooth mouse
 	if(Settings.AccessoryType)
 	{
-		const CellMouseData mouse_state = cell_mouse_input_poll_device(0);
+		const CellMouseData mouse_state = cell_mouse_input_poll_device(port);
 		const uint64_t new_state_mouse_button_1 = (mouse_state.buttons & CELL_MOUSE_BUTTON_1);
 		const uint64_t new_state_mouse_button_2 = (mouse_state.buttons & CELL_MOUSE_BUTTON_2);
 		const uint64_t new_state_mouse_button_3 = (mouse_state.buttons & CELL_MOUSE_BUTTON_3);
@@ -599,6 +616,9 @@ static void emulator_implementation_input_loop_mouse(int snes_device)
 				mouse_old_x += mouse_state.x_axis;
 				mouse_old_y += mouse_state.y_axis;
 			}
+
+			S9xApplyCommand(keymap[BTN_POINTER1], mouse_old_x, mouse_old_y);
+			S9xApplyCommand(keymap[BTN_SCOPE_POINTER], mouse_old_x, mouse_old_y);
 		}
 		else
 		{
@@ -610,57 +630,31 @@ static void emulator_implementation_input_loop_mouse(int snes_device)
 		}
 
 		//five mouse buttons hooked up - report them
-		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[0][CTRL_SQUARE_DEF])], (used_mouse_button_1), 0);
-		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[0][CTRL_TRIANGLE_DEF])], (used_mouse_button_2), 0);
-		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[0][CTRL_CIRCLE_DEF])], (used_mouse_button_3), 0);
-		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[0][CTRL_CROSS_DEF])], (used_mouse_button_4), 0);
-		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[0][CTRL_START_DEF])], (used_mouse_button_5), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_SQUARE_DEF])], (used_mouse_button_1), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_TRIANGLE_DEF])], (used_mouse_button_2), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_CIRCLE_DEF])], (used_mouse_button_3), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_CROSS_DEF])], (used_mouse_button_4), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_START_DEF])], (used_mouse_button_5), 0);
 
-
-		S9xApplyCommand(keymap[BTN_POINTER1], mouse_old_x, mouse_old_y);
-		S9xApplyCommand(keymap[BTN_SCOPE_POINTER], mouse_old_x, mouse_old_y);
 	}
-	else
+	else	//Mapped to joystick analog
 	{
 		int16 x = CTRL_AXIS_LSTICK_X(state);
 		int16 y = CTRL_AXIS_LSTICK_Y(state);
 
-
 		if(first)
 		{
-			if(snes_device == CTL_MOUSE)
-			{
-				//Mouse
-				x = 128;
-				y = 128;
-				first = false;
-			}
-			else
-			{
-				//Super Scope
-
-				_x += (x - 128) / 15;
-				_y += (y - 128) / 15;
-				x = _x;
-				y = _y;
-			}
+			x = 128;
+			y = 128;
+			first = false;
 		}
 		else
 		{
-			if(snes_device == CTL_MOUSE)
-			{
-				//Mouse
-				x = 128;
-				y = 128;
-				first = false;
-			}
-			else
+			_x += (x - 128) / 15;
+			_y += (y - 128) / 15;
+			if(snes_device == CTL_SUPERSCOPE)
 			{
 				//Super Scope
-
-				_x += (x - 128) / 15;
-				_y += (y - 128) / 15;
-
 				if(_x > 277)
 					_x = 255;
 				else if(_x < -16)
@@ -670,14 +664,57 @@ static void emulator_implementation_input_loop_mouse(int snes_device)
 					_y = 255;
 				else if(_y < -16)
 					_y = 0;
-
-				x = _x;
-				y = _y;
 			}
+			x = _x;
+			y = _y;
 		}
 		S9xApplyCommand(keymap[BTN_POINTER1], x, y);
 		S9xApplyCommand(keymap[BTN_SCOPE_POINTER], x, y);
+		//five mouse buttons hooked up - report them
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_SQUARE_DEF])], (int16)(CTRL_SQUARE(state)), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_TRIANGLE_DEF])], (int16)(CTRL_TRIANGLE(state)), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_CIRCLE_DEF])], (int16)(CTRL_CIRCLE(state)), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_CROSS_DEF])], (int16)(CTRL_CROSS(state)), 0);
+		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_START_DEF])], (int16)(CTRL_START(state)), 0);
+
 	}
+
+	if(snes_device == CTL_MOUSE)
+	{
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_CIRCLE_DEF]), control_binds[0][CTRL_CIRCLE_DEF], (CTRL_CIRCLE(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_CROSS_DEF]), control_binds[0][CTRL_CROSS_DEF], (CTRL_CROSS(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_TRIANGLE_DEF]), control_binds[0][CTRL_TRIANGLE_DEF], (CTRL_TRIANGLE(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_SQUARE_DEF]), control_binds[0][CTRL_SQUARE_DEF], (CTRL_SQUARE(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_SELECT_DEF]), control_binds[0][CTRL_SELECT_DEF], (CTRL_SELECT(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_START_DEF]), control_binds[0][CTRL_START_DEF], (CTRL_START(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_L1_DEF]), control_binds[0][CTRL_L1_DEF], (CTRL_L1(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_L2_DEF]), control_binds[0][CTRL_L2_DEF], (CTRL_L2(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_R1_DEF]), control_binds[0][CTRL_R1_DEF], (CTRL_R1(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_R2_DEF]), control_binds[0][CTRL_R2_DEF], (CTRL_R2(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_UP_DEF]), control_binds[0][CTRL_UP_DEF], (CTRL_UP(state) | CTRL_LSTICK_UP(state)) != 0);
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_DOWN_DEF]), control_binds[0][CTRL_DOWN_DEF], (CTRL_DOWN(state) | CTRL_LSTICK_DOWN(state)) != 0);
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_LEFT_DEF]), control_binds[0][CTRL_LEFT_DEF], (CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state)) != 0);
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_RIGHT_DEF]), control_binds[0][CTRL_RIGHT_DEF], (CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state)) != 0);
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_R2_R3_DEF]), control_binds[0][CTRL_R2_R3_DEF], (CTRL_R2(state) && CTRL_R3(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_L2_R3_DEF]), control_binds[0][CTRL_L2_R3_DEF], (CTRL_L2(state) && CTRL_R3(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_L2_L3_DEF]), control_binds[0][CTRL_L2_L3_DEF], (CTRL_L2(state) && CTRL_L3(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_L3_DEF]), control_binds[0][CTRL_L3_DEF], (CTRL_L3(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_R3_DEF]), control_binds[0][CTRL_R3_DEF], (CTRL_R3(state)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_RSTICK_RIGHT_DEF]), control_binds[0][CTRL_RSTICK_RIGHT_DEF], CTRL_RSTICK_RIGHT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_RSTICK_LEFT_DEF]), control_binds[0][CTRL_RSTICK_LEFT_DEF], CTRL_RSTICK_LEFT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_RSTICK_UP_DEF]), control_binds[0][CTRL_RSTICK_UP_DEF], CTRL_RSTICK_UP(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_RSTICK_DOWN_DEF]), control_binds[0][CTRL_RSTICK_DOWN_DEF], CTRL_RSTICK_DOWN(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_L2_RSTICK_LEFT_DEF]), control_binds[0][CTRL_L2_RSTICK_LEFT_DEF], (CTRL_L2(button_was_held) && CTRL_RSTICK_LEFT(button_was_pressed)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_L2_RSTICK_UP_DEF]), control_binds[0][CTRL_L2_RSTICK_UP_DEF], (CTRL_L2(state) && CTRL_RSTICK_UP(button_was_pressed)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_L2_RSTICK_DOWN_DEF]), control_binds[0][CTRL_L2_RSTICK_DOWN_DEF], (CTRL_L2(state) && CTRL_R2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_L2_RSTICK_RIGHT_DEF]), control_binds[0][CTRL_L2_RSTICK_RIGHT_DEF], (CTRL_L2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_R2_RSTICK_LEFT_DEF]), control_binds[0][CTRL_R2_RSTICK_LEFT_DEF], (CTRL_R2(state) && CTRL_RSTICK_LEFT(button_was_pressed)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_R2_RSTICK_RIGHT_DEF]), control_binds[0][CTRL_R2_RSTICK_RIGHT_DEF], (CTRL_R2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_R2_RSTICK_UP_DEF]), control_binds[0][CTRL_R2_RSTICK_UP_DEF], (CTRL_R2(state) && CTRL_RSTICK_UP(button_was_pressed)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_R2_RSTICK_DOWN_DEF]), control_binds[0][CTRL_R2_RSTICK_DOWN_DEF], (CTRL_R2(state) && CTRL_L2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
+		S9xReportButton(0, MAKE_BUTTON(pad, control_binds[0][CTRL_R3_L3_DEF]), control_binds[0][CTRL_R3_L3_DEF], (CTRL_R3(state) && CTRL_L3(state)));
+	}
+	old_state = state;
 
 	if(special_action_to_execute)
 	{
@@ -700,38 +737,38 @@ static void emulator_implementation_input_loop()
 		const uint64_t pad = i + 1;
 		uint64_t special_action_to_execute = 0;
 
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_CIRCLE_DEF]), control_binds[i][CTRL_CIRCLE_DEF], (CTRL_CIRCLE(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_CROSS_DEF]), control_binds[i][CTRL_CROSS_DEF], (CTRL_CROSS(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_TRIANGLE_DEF]), control_binds[i][CTRL_TRIANGLE_DEF], (CTRL_TRIANGLE(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_SQUARE_DEF]), control_binds[i][CTRL_SQUARE_DEF], (CTRL_SQUARE(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_SELECT_DEF]), control_binds[i][CTRL_SELECT_DEF], (CTRL_SELECT(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_START_DEF]), control_binds[i][CTRL_START_DEF], (CTRL_START(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_L1_DEF]), control_binds[i][CTRL_L1_DEF], (CTRL_L1(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_L2_DEF]), control_binds[i][CTRL_L2_DEF], (CTRL_L2(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_R1_DEF]), control_binds[i][CTRL_R1_DEF], (CTRL_R1(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_R2_DEF]), control_binds[i][CTRL_R2_DEF], (CTRL_R2(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_UP_DEF]), control_binds[i][CTRL_UP_DEF], (CTRL_UP(state) | CTRL_LSTICK_UP(state)) != 0);
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_DOWN_DEF]), control_binds[i][CTRL_DOWN_DEF], (CTRL_DOWN(state) | CTRL_LSTICK_DOWN(state)) != 0);
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_LEFT_DEF]), control_binds[i][CTRL_LEFT_DEF], (CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state)) != 0);
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_RIGHT_DEF]), control_binds[i][CTRL_RIGHT_DEF], (CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state)) != 0);
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_R2_R3_DEF]), control_binds[i][CTRL_R2_R3_DEF], (CTRL_R2(state) && CTRL_R3(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_L2_R3_DEF]), control_binds[i][CTRL_L2_R3_DEF], (CTRL_L2(state) && CTRL_R3(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_L2_L3_DEF]), control_binds[i][CTRL_L2_L3_DEF], (CTRL_L2(state) && CTRL_L3(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_L3_DEF]), control_binds[i][CTRL_L3_DEF], (CTRL_L3(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_R3_DEF]), control_binds[i][CTRL_R3_DEF], (CTRL_R3(state)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_RSTICK_RIGHT_DEF]), control_binds[i][CTRL_RSTICK_RIGHT_DEF], CTRL_RSTICK_RIGHT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_RSTICK_LEFT_DEF]), control_binds[i][CTRL_RSTICK_LEFT_DEF], CTRL_RSTICK_LEFT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_RSTICK_UP_DEF]), control_binds[i][CTRL_RSTICK_UP_DEF], CTRL_RSTICK_UP(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_RSTICK_DOWN_DEF]), control_binds[i][CTRL_RSTICK_DOWN_DEF], CTRL_RSTICK_DOWN(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_L2_RSTICK_LEFT_DEF]), control_binds[i][CTRL_L2_RSTICK_LEFT_DEF], (CTRL_L2(button_was_held) && CTRL_RSTICK_LEFT(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_L2_RSTICK_UP_DEF]), control_binds[i][CTRL_L2_RSTICK_UP_DEF], (CTRL_L2(state) && CTRL_RSTICK_UP(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_L2_RSTICK_DOWN_DEF]), control_binds[i][CTRL_L2_RSTICK_DOWN_DEF], (CTRL_L2(state) && CTRL_R2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_L2_RSTICK_RIGHT_DEF]), control_binds[i][CTRL_L2_RSTICK_RIGHT_DEF], (CTRL_L2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_R2_RSTICK_LEFT_DEF]), control_binds[i][CTRL_R2_RSTICK_LEFT_DEF], (CTRL_R2(state) && CTRL_RSTICK_LEFT(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_R2_RSTICK_RIGHT_DEF]), control_binds[i][CTRL_R2_RSTICK_RIGHT_DEF], (CTRL_R2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_R2_RSTICK_UP_DEF]), control_binds[i][CTRL_R2_RSTICK_UP_DEF], (CTRL_R2(state) && CTRL_RSTICK_UP(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_R2_RSTICK_DOWN_DEF]), control_binds[i][CTRL_R2_RSTICK_DOWN_DEF], (CTRL_R2(state) && CTRL_L2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
-		S9xReportButton(MAKE_BUTTON(pad, control_binds[i][CTRL_R3_L3_DEF]), control_binds[i][CTRL_R3_L3_DEF], (CTRL_R3(state) && CTRL_L3(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_CIRCLE_DEF]), control_binds[i][CTRL_CIRCLE_DEF], (CTRL_CIRCLE(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_CROSS_DEF]), control_binds[i][CTRL_CROSS_DEF], (CTRL_CROSS(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_TRIANGLE_DEF]), control_binds[i][CTRL_TRIANGLE_DEF], (CTRL_TRIANGLE(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_SQUARE_DEF]), control_binds[i][CTRL_SQUARE_DEF], (CTRL_SQUARE(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_SELECT_DEF]), control_binds[i][CTRL_SELECT_DEF], (CTRL_SELECT(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_START_DEF]), control_binds[i][CTRL_START_DEF], (CTRL_START(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_L1_DEF]), control_binds[i][CTRL_L1_DEF], (CTRL_L1(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_L2_DEF]), control_binds[i][CTRL_L2_DEF], (CTRL_L2(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_R1_DEF]), control_binds[i][CTRL_R1_DEF], (CTRL_R1(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_R2_DEF]), control_binds[i][CTRL_R2_DEF], (CTRL_R2(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_UP_DEF]), control_binds[i][CTRL_UP_DEF], (CTRL_UP(state) | CTRL_LSTICK_UP(state)) != 0);
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_DOWN_DEF]), control_binds[i][CTRL_DOWN_DEF], (CTRL_DOWN(state) | CTRL_LSTICK_DOWN(state)) != 0);
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_LEFT_DEF]), control_binds[i][CTRL_LEFT_DEF], (CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state)) != 0);
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_RIGHT_DEF]), control_binds[i][CTRL_RIGHT_DEF], (CTRL_RIGHT(state) | CTRL_LSTICK_RIGHT(state)) != 0);
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_R2_R3_DEF]), control_binds[i][CTRL_R2_R3_DEF], (CTRL_R2(state) && CTRL_R3(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_L2_R3_DEF]), control_binds[i][CTRL_L2_R3_DEF], (CTRL_L2(state) && CTRL_R3(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_L2_L3_DEF]), control_binds[i][CTRL_L2_L3_DEF], (CTRL_L2(state) && CTRL_L3(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_L3_DEF]), control_binds[i][CTRL_L3_DEF], (CTRL_L3(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_R3_DEF]), control_binds[i][CTRL_R3_DEF], (CTRL_R3(state)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_RSTICK_RIGHT_DEF]), control_binds[i][CTRL_RSTICK_RIGHT_DEF], CTRL_RSTICK_RIGHT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_RSTICK_LEFT_DEF]), control_binds[i][CTRL_RSTICK_LEFT_DEF], CTRL_RSTICK_LEFT(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_RSTICK_UP_DEF]), control_binds[i][CTRL_RSTICK_UP_DEF], CTRL_RSTICK_UP(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_RSTICK_DOWN_DEF]), control_binds[i][CTRL_RSTICK_DOWN_DEF], CTRL_RSTICK_DOWN(state) && CTRL_R2(button_was_not_held) && CTRL_L2(button_was_not_held));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_L2_RSTICK_LEFT_DEF]), control_binds[i][CTRL_L2_RSTICK_LEFT_DEF], (CTRL_L2(button_was_held) && CTRL_RSTICK_LEFT(button_was_pressed)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_L2_RSTICK_UP_DEF]), control_binds[i][CTRL_L2_RSTICK_UP_DEF], (CTRL_L2(state) && CTRL_RSTICK_UP(button_was_pressed)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_L2_RSTICK_DOWN_DEF]), control_binds[i][CTRL_L2_RSTICK_DOWN_DEF], (CTRL_L2(state) && CTRL_R2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_L2_RSTICK_RIGHT_DEF]), control_binds[i][CTRL_L2_RSTICK_RIGHT_DEF], (CTRL_L2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_R2_RSTICK_LEFT_DEF]), control_binds[i][CTRL_R2_RSTICK_LEFT_DEF], (CTRL_R2(state) && CTRL_RSTICK_LEFT(button_was_pressed)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_R2_RSTICK_RIGHT_DEF]), control_binds[i][CTRL_R2_RSTICK_RIGHT_DEF], (CTRL_R2(state) && CTRL_RSTICK_RIGHT(button_was_pressed)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_R2_RSTICK_UP_DEF]), control_binds[i][CTRL_R2_RSTICK_UP_DEF], (CTRL_R2(state) && CTRL_RSTICK_UP(button_was_pressed)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_R2_RSTICK_DOWN_DEF]), control_binds[i][CTRL_R2_RSTICK_DOWN_DEF], (CTRL_R2(state) && CTRL_L2(button_was_not_pressed) && CTRL_RSTICK_DOWN(button_was_pressed)));
+		S9xReportButton(i, MAKE_BUTTON(pad, control_binds[i][CTRL_R3_L3_DEF]), control_binds[i][CTRL_R3_L3_DEF], (CTRL_R3(state) && CTRL_L3(state)));
 
 		if(special_action_to_execute)
 		{
@@ -916,8 +953,8 @@ static bool emulator_init_system(void)
 			S9xSetController(0, CTL_MOUSE,		0,	0,	0,	0);
 			S9xSetController(1, CTL_JOYPAD,		1,	0,	0,	0);
 
-			snes_devices[0] = CTL_JOYPAD;
-			snes_devices[1] = CTL_MP5;
+			snes_devices[0] = CTL_MOUSE;
+			snes_devices[1] = CTL_JOYPAD;
 			break;
 		case SUPERSCOPE:
 			S9xSetController(0, CTL_JOYPAD,		0,	0,	0,	0);
@@ -1678,9 +1715,15 @@ static void emulator_start(void)
 		S9xMainLoop();
 		if(pad_read_last)
 		{
-			emulator_implementation_input_loop();
-			if( (snes_devices[1] == CTL_MOUSE) || (snes_devices[1] == CTL_SUPERSCOPE) )
-				emulator_implementation_input_loop_mouse(snes_devices[1]);
+			// Port 1
+			if(snes_devices[0] == CTL_JOYPAD)
+					emulator_implementation_input_loop();
+			else if(snes_devices[0] == CTL_MOUSE)
+					emulator_implementation_input_loop_mouse(0, snes_devices[0]);
+
+			// Port 2
+			if(snes_devices[1] == CTL_MOUSE || snes_devices[1] == CTL_SUPERSCOPE)
+					emulator_implementation_input_loop_mouse(1, snes_devices[1]);
 		}
 		cell_console_poll();
 		cellSysutilCheckCallback();

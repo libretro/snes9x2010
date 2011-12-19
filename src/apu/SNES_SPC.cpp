@@ -85,41 +85,37 @@ void spc_enable_rom( int enable )
 		dsp_run( clock_count ); \
 	}
 
-// Writes DSP registers. For accuracy, you must first call run()
-// to catch the DSP up to present.
-
-static inline void dsp_write( int addr, int data )
-{
-	dsp_m.regs [addr] = (uint8_t) data;
-	switch ( addr & 0x0F )
-	{
-		case V_ENVX:
-			dsp_m.envx_buf = (uint8_t) data;
-			break;
-
-		case V_OUTX:
-			dsp_m.outx_buf = (uint8_t) data;
-			break;
-
-		case 0x0C:
-			if ( addr == R_KON )
-				dsp_m.new_kon = (uint8_t) data;
-
-			if ( addr == R_ENDX ) // always cleared, regardless of data written
-			{
-				dsp_m.endx_buf = 0;
-				dsp_m.regs [R_ENDX] = 0;
-			}
-			break;
-	}
-}
-
 static inline void spc_dsp_write( int data, int time )
 {
 	RUN_DSP(time, reg_times [m.smp_regs[0][R_DSPADDR]] )
 	
 	if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
-		dsp_write(m.smp_regs[0][R_DSPADDR], data );
+	{
+		// Writes DSP registers. For accuracy, you must first call run()
+		// to catch the DSP up to present.
+		int addr = m.smp_regs[0][R_DSPADDR];
+		dsp_m.regs [addr] = (uint8_t) data;
+		switch ( addr & 0x0F )
+		{
+			case V_ENVX:
+				dsp_m.envx_buf = (uint8_t) data;
+				break;
+
+			case V_OUTX:
+				dsp_m.outx_buf = (uint8_t) data;
+				break;
+			case 0x0C:
+				if ( addr == R_KON )
+					dsp_m.new_kon = (uint8_t) data;
+
+				if ( addr == R_ENDX ) // always cleared, regardless of data written
+				{
+					dsp_m.endx_buf = 0;
+					dsp_m.regs [R_ENDX] = 0;
+				}
+				break;
+		}
+	}
 	//dprintf( "SPC wrote to DSP register > $7F\n" );
 }
 
