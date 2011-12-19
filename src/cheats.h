@@ -248,6 +248,8 @@ void S9xInitCheatData (void);
 void S9xInitWatchedAddress (void);
 bool8 S9xLoadCheatFile (const char *);
 bool8 S9xSaveCheatFile (const char *);
+bool8 S9xCheatEnabled (uint32);
+const char * S9xGetCheatName(uint8 cheat_no);
 
 void S9xStartCheatSearch (SCheatData *);
 void S9xSearchForChange (SCheatData *, S9xCheatComparisonType, S9xCheatDataSize, bool8, bool8);

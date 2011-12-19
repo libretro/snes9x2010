@@ -628,6 +628,11 @@ void S9xAddCheat (bool8 enable, bool8 save_current_value, uint32 address, uint8 
 	}
 }
 
+const char * S9xGetCheatName(uint8 cheat_no)
+{
+	return Cheat.c[cheat_no].name;
+}
+
 void S9xDeleteCheat (uint32 which1)
 {
 	if (which1 < Cheat.num_cheats)
@@ -679,6 +684,11 @@ void S9xEnableCheat (uint32 which1)
 	}
 }
 
+bool8 S9xCheatEnabled (uint32 which1)
+{
+	return Cheat.c[which1].enabled;
+}
+
 void S9xDisableCheat (uint32 which1)
 {
 	if (which1 < Cheat.num_cheats && Cheat.c[which1].enabled)
@@ -728,7 +738,7 @@ bool8 S9xLoadCheatFile (const char *filename)
 	if (!fs)
 		return (FALSE);
 
-	while (fread((void *) data, 1, 28, fs) == 28)
+	while (fread((void *) data, 1, 28, fs) == 28 && Cheat.num_cheats < MAX_CHEATS)
 	{
 		Cheat.c[Cheat.num_cheats].enabled = (data[0] & 4) == 0;
 		Cheat.c[Cheat.num_cheats].byte = data[1];
