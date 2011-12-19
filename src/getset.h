@@ -221,15 +221,10 @@ extern uint8	OpenBus;
 
 static inline int32 memory_speed (uint32 address)
 {
-	if (address & 0x408000)
-	{
-		if (address & 0x800000)
-			return (CPU.FastROMSpeed);
+	if (address & 0x808000)
+		return (CPU.FastROMSpeed);
 
-		return (SLOW_ONE_CYCLE);
-	}
-
-	if ((address + 0x6000) & 0x4000)
+	if (address & 0x408000 || ((address + 0x6000) & 0x4000))
 		return (SLOW_ONE_CYCLE);
 
 	if ((address - 0x4000) & 0x7e00)

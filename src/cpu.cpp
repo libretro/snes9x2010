@@ -261,7 +261,7 @@ void S9xReset (void)
 
 	S9xResetCPU();
 	S9xResetPPU();
-	S9xResetDMA();
+	S9X_RESET_DMA();
 	S9xResetAPU();
 
 	if (Settings.DSP)
@@ -293,7 +293,7 @@ void S9xSoftReset (void)
 
 	S9xSoftResetCPU();
 	S9xSoftResetPPU();
-	S9xResetDMA();
+	S9X_RESET_DMA();
 	S9xSoftResetAPU();
 
 	if (Settings.DSP)

@@ -188,10 +188,11 @@
 
 extern struct SLineData		LineData[240];
 extern struct SLineMatrixData	LineMatrixData[240];
+extern uint8	*HDMAMemPointers[8];
 
 void S9xMainLoop (void)
 {
-	for (;;)
+	do
 	{
 		if (CPU.Flags)
 		{
@@ -276,7 +277,7 @@ void S9xMainLoop (void)
 		while (CPU.Cycles >= CPU.NextEvent)
 			S9xDoHEventProcessing();
 	#endif
-	}
+	}while(1);
 
 	S9xPackStatus();
 
@@ -287,7 +288,7 @@ void S9xMainLoop (void)
 }
 
 
-static void S9xCheckMissingHTimerPosition (int32 hc)
+static void S9xCheckMissingHTimerPosition (void)
 {
 	if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)))
 	{
@@ -478,19 +479,478 @@ static inline void S9xReschedule (void)
 	CPU.WhichEvent = next;
 }
 
+
+static inline bool8 HDMAReadLineCount (int d)
+{
+	// CPU.InDMA is set, so S9xGetXXX() / S9xSetXXX() incur no charges.
+
+	uint8	line;
+
+	line = S9xGetByte((DMA[d].ABank << 16) + DMA[d].Address);
+	CPU.Cycles += SLOW_ONE_CYCLE;
+
+	if (!line)
+	{
+		DMA[d].Repeat = FALSE;
+		DMA[d].LineCount = 128;
+
+		if (DMA[d].HDMAIndirectAddressing)
+		{
+			if (PPU.HDMA & (0xfe << d))
+			{
+				DMA[d].Address++;
+				CPU.Cycles += (SLOW_ONE_CYCLE << 1);
+			}
+			else
+				CPU.Cycles += SLOW_ONE_CYCLE;
+
+			DMA[d].IndirectAddress = S9xGetWord((DMA[d].ABank << 16) + DMA[d].Address, WRAP_NONE);
+			DMA[d].Address++;
+		}
+
+		DMA[d].Address++;
+		HDMAMemPointers[d] = NULL;
+
+		return (FALSE);
+	}
+	else
+	if (line == 0x80)
+	{
+		DMA[d].Repeat = TRUE;
+		DMA[d].LineCount = 128;
+	}
+	else
+	{
+		DMA[d].Repeat = !(line & 0x80);
+		DMA[d].LineCount = line & 0x7f;
+	}
+
+	DMA[d].Address++;
+	DMA[d].DoTransfer = TRUE;
+
+	if (DMA[d].HDMAIndirectAddressing)
+	{
+		CPU.Cycles += (SLOW_ONE_CYCLE << 1);
+		DMA[d].IndirectAddress = S9xGetWord((DMA[d].ABank << 16) + DMA[d].Address, WRAP_NONE);
+		DMA[d].Address += 2;
+		HDMAMemPointers[d] = S9xGetMemPointer((DMA[d].IndirectBank << 16) + DMA[d].IndirectAddress);
+	}
+	else
+		HDMAMemPointers[d] = S9xGetMemPointer((DMA[d].ABank << 16) + DMA[d].Address);
+
+	return (TRUE);
+}
+
+static void S9xStartHDMA (void)
+{
+	PPU.HDMA = Memory.FillRAM[0x420c];
+	PPU.HDMAEnded = 0;
+
+	CPU.InHDMA = TRUE;
+	CPU.InDMAorHDMA = TRUE;
+	int32 tmpch = CPU.CurrentDMAorHDMAChannel;
+
+	// XXX: Not quite right...
+	if (PPU.HDMA != 0)
+		CPU.Cycles += Timings.DMACPUSync;
+
+	for (uint8 i = 0; i < 8; i++)
+	{
+		if (PPU.HDMA & (1 << i))
+		{
+			CPU.CurrentDMAorHDMAChannel = i;
+
+			DMA[i].Address = DMA[i].AAddress;
+
+			if (!HDMAReadLineCount(i))
+			{
+				PPU.HDMA &= ~(1 << i);
+				PPU.HDMAEnded |= (1 << i);
+			}
+		}
+		else
+			DMA[i].DoTransfer = FALSE;
+	}
+
+	CPU.InHDMA = FALSE;
+	CPU.InDMAorHDMA = CPU.InDMA;
+	CPU.HDMARanInDMA = CPU.InDMA ? PPU.HDMA : 0;
+	CPU.CurrentDMAorHDMAChannel = tmpch;
+}
+
+static int HDMA_ModeByteCounts[8] =
+{
+	1, 2, 2, 4, 4, 4, 2, 4
+};
+
+
+
+static uint8 S9xDoHDMA (uint8 byte)
+{
+	struct SDMA	*p = &DMA[0];
+
+	uint32	ShiftedIBank;
+	uint16	IAddr;
+	bool8	temp;
+	int32	tmpch;
+	int		d = 0;
+
+	CPU.InHDMA = TRUE;
+	CPU.InDMAorHDMA = TRUE;
+	CPU.HDMARanInDMA = CPU.InDMA ? byte : 0;
+	temp = CPU.InWRAMDMAorHDMA;
+	tmpch = CPU.CurrentDMAorHDMAChannel;
+
+	// XXX: Not quite right...
+	CPU.Cycles += Timings.DMACPUSync;
+
+	for (uint8 mask = 1; mask; mask <<= 1, p++, d++)
+	{
+		if (byte & mask)
+		{
+			CPU.InWRAMDMAorHDMA = FALSE;
+			CPU.CurrentDMAorHDMAChannel = d;
+
+			if (p->HDMAIndirectAddressing)
+			{
+				ShiftedIBank = (p->IndirectBank << 16);
+				IAddr = p->IndirectAddress;
+			}
+			else
+			{
+				ShiftedIBank = (p->ABank << 16);
+				IAddr = p->Address;
+			}
+
+			if (!HDMAMemPointers[d])
+				HDMAMemPointers[d] = S9xGetMemPointer(ShiftedIBank + IAddr);
+
+			if (p->DoTransfer)
+			{
+				// XXX: Hack for Uniracers, because we don't understand
+				// OAM Address Invalidation
+				if (p->BAddress == 0x04)
+				{
+					if (SNESGameFixes.Uniracers)
+					{
+						PPU.OAMAddr = 0x10c;
+						PPU.OAMFlip = 0;
+					}
+				}
+
+
+				if (!p->ReverseTransfer)
+				{
+					if ((IAddr & MEMMAP_MASK) + HDMA_ModeByteCounts[p->TransferMode] >= MEMMAP_BLOCK_SIZE)
+					{
+						// HDMA REALLY-SLOW PATH
+						HDMAMemPointers[d] = NULL;
+
+						#define DOBYTE(Addr, RegOff) \
+							CPU.InWRAMDMAorHDMA = (ShiftedIBank == 0x7e0000 || ShiftedIBank == 0x7f0000 || \
+								(!(ShiftedIBank & 0x400000) && ((uint16) (Addr)) < 0x2000)); \
+							S9xSetPPU(S9xGetByte(ShiftedIBank + ((uint16) (Addr))), 0x2100 + p->BAddress + (RegOff));
+
+						switch (p->TransferMode)
+						{
+							case 0:
+								DOBYTE(IAddr, 0);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								break;
+
+							case 5:
+								DOBYTE(IAddr + 0, 0);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 1, 1);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 2, 0);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 3, 1);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								break;
+
+							case 1:
+								DOBYTE(IAddr + 0, 0);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 1, 1);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								break;
+
+							case 2:
+							case 6:
+								DOBYTE(IAddr + 0, 0);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 1, 0);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								break;
+
+							case 3:
+							case 7:
+								DOBYTE(IAddr + 0, 0);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 1, 0);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 2, 1);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 3, 1);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								break;
+
+							case 4:
+								DOBYTE(IAddr + 0, 0);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 1, 1);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 2, 2);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								DOBYTE(IAddr + 3, 3);
+								CPU.Cycles += SLOW_ONE_CYCLE;
+								break;
+						}
+
+						#undef DOBYTE
+					}
+					else
+					{
+						CPU.InWRAMDMAorHDMA = (ShiftedIBank == 0x7e0000 || ShiftedIBank == 0x7f0000 ||
+							(!(ShiftedIBank & 0x400000) && IAddr < 0x2000));
+
+						if (!HDMAMemPointers[d])
+						{
+							// HDMA SLOW PATH
+							uint32	Addr = ShiftedIBank + IAddr;
+
+							switch (p->TransferMode)
+							{
+								case 0:
+									S9xSetPPU(S9xGetByte(Addr), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									break;
+
+								case 5:
+									S9xSetPPU(S9xGetByte(Addr + 0), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(S9xGetByte(Addr + 1), 0x2101 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									Addr += 2;
+									/* fall through */
+								case 1:
+									S9xSetPPU(S9xGetByte(Addr + 0), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(S9xGetByte(Addr + 1), 0x2101 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									break;
+
+								case 2:
+								case 6:
+									S9xSetPPU(S9xGetByte(Addr + 0), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(S9xGetByte(Addr + 1), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									break;
+
+								case 3:
+								case 7:
+									S9xSetPPU(S9xGetByte(Addr + 0), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(S9xGetByte(Addr + 1), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(S9xGetByte(Addr + 2), 0x2101 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(S9xGetByte(Addr + 3), 0x2101 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									break;
+
+								case 4:
+									S9xSetPPU(S9xGetByte(Addr + 0), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(S9xGetByte(Addr + 1), 0x2101 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(S9xGetByte(Addr + 2), 0x2102 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(S9xGetByte(Addr + 3), 0x2103 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									break;
+							}
+						}
+						else
+						{
+							// HDMA FAST PATH
+							switch (p->TransferMode)
+							{
+								case 0:
+									S9xSetPPU(*HDMAMemPointers[d]++, 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									break;
+
+								case 5:
+									S9xSetPPU(*(HDMAMemPointers[d] + 0), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(*(HDMAMemPointers[d] + 1), 0x2101 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									HDMAMemPointers[d] += 2;
+									/* fall through */
+								case 1:
+									S9xSetPPU(*(HDMAMemPointers[d] + 0), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(*(HDMAMemPointers[d] + 1), 0x2101 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									HDMAMemPointers[d] += 2;
+									break;
+
+								case 2:
+								case 6:
+									S9xSetPPU(*(HDMAMemPointers[d] + 0), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(*(HDMAMemPointers[d] + 1), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									HDMAMemPointers[d] += 2;
+									break;
+
+								case 3:
+								case 7:
+									S9xSetPPU(*(HDMAMemPointers[d] + 0), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(*(HDMAMemPointers[d] + 1), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(*(HDMAMemPointers[d] + 2), 0x2101 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(*(HDMAMemPointers[d] + 3), 0x2101 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									HDMAMemPointers[d] += 4;
+									break;
+
+								case 4:
+									S9xSetPPU(*(HDMAMemPointers[d] + 0), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(*(HDMAMemPointers[d] + 1), 0x2101 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(*(HDMAMemPointers[d] + 2), 0x2102 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									S9xSetPPU(*(HDMAMemPointers[d] + 3), 0x2103 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
+									HDMAMemPointers[d] += 4;
+									break;
+							}
+						}
+					}
+				}
+				else
+				{
+					// REVERSE HDMA REALLY-SLOW PATH
+					// anomie says: Since this is apparently never used
+					// (otherwise we would have noticed before now), let's not bother with faster paths.
+					HDMAMemPointers[d] = NULL;
+
+					#define DOBYTE(Addr, RegOff) \
+						CPU.InWRAMDMAorHDMA = (ShiftedIBank == 0x7e0000 || ShiftedIBank == 0x7f0000 || \
+							(!(ShiftedIBank & 0x400000) && ((uint16) (Addr)) < 0x2000)); \
+						S9xSetByte(S9xGetPPU(0x2100 + p->BAddress + (RegOff)), ShiftedIBank + ((uint16) (Addr)));
+
+					switch (p->TransferMode)
+					{
+						case 0:
+							DOBYTE(IAddr, 0);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							break;
+
+						case 5:
+							DOBYTE(IAddr + 0, 0);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 1, 1);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 2, 0);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 3, 1);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							break;
+
+						case 1:
+							DOBYTE(IAddr + 0, 0);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 1, 1);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							break;
+
+						case 2:
+						case 6:
+							DOBYTE(IAddr + 0, 0);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 1, 0);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							break;
+
+						case 3:
+						case 7:
+							DOBYTE(IAddr + 0, 0);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 1, 0);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 2, 1);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 3, 1);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							break;
+
+						case 4:
+							DOBYTE(IAddr + 0, 0);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 1, 1);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 2, 2);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							DOBYTE(IAddr + 3, 3);
+							CPU.Cycles += SLOW_ONE_CYCLE;
+							break;
+					}
+
+					#undef DOBYTE
+				}
+
+				if (p->HDMAIndirectAddressing)
+					p->IndirectAddress += HDMA_ModeByteCounts[p->TransferMode];
+				else
+					p->Address += HDMA_ModeByteCounts[p->TransferMode];
+			}
+
+			p->DoTransfer = !p->Repeat;
+
+			if (!--p->LineCount)
+			{
+				if (!HDMAReadLineCount(d))
+				{
+					byte &= ~mask;
+					PPU.HDMAEnded |= mask;
+					p->DoTransfer = FALSE;
+					continue;
+				}
+			}
+			else
+				CPU.Cycles += SLOW_ONE_CYCLE;
+		}
+	}
+
+	CPU.InHDMA = FALSE;
+	CPU.InDMAorHDMA = CPU.InDMA;
+	CPU.InWRAMDMAorHDMA = temp;
+	CPU.CurrentDMAorHDMAChannel = tmpch;
+
+	return (byte);
+}
+
 void S9xDoHEventProcessing (void)
 {
 	switch (CPU.WhichEvent)
 	{
 		case HC_HBLANK_START_EVENT:
 			if (PPU.HTimerPosition == Timings.HBlankStart)
-				S9xCheckMissingHTimerPosition(Timings.HBlankStart);
+				S9xCheckMissingHTimerPosition();
 			S9xReschedule();
 			break;
 
 		case HC_HDMA_START_EVENT:
 			if (PPU.HTimerPosition == Timings.HDMAStart)
-				S9xCheckMissingHTimerPosition(Timings.HDMAStart);
+				S9xCheckMissingHTimerPosition();
 			S9xReschedule();
 
 			if (PPU.HDMA && CPU.V_Counter <= PPU.ScreenHeight)
@@ -568,7 +1028,7 @@ void S9xDoHEventProcessing (void)
 			}
 
 			if (PPU.HTimerPosition == 0)
-				S9xCheckMissingHTimerPosition(0);
+				S9xCheckMissingHTimerPosition();
 
 			if (CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE)	// VBlank starts from V=225(240).
 			{
@@ -622,13 +1082,11 @@ void S9xDoHEventProcessing (void)
 
 		case HC_HDMA_INIT_EVENT:
 			if (PPU.HTimerPosition == Timings.HDMAInit)
-				S9xCheckMissingHTimerPosition(Timings.HDMAInit);
+				S9xCheckMissingHTimerPosition();
 			S9xReschedule();
 
 			if (CPU.V_Counter == 0)
-			{
 				S9xStartHDMA();
-			}
 
 			break;
 
@@ -637,7 +1095,7 @@ void S9xDoHEventProcessing (void)
 				RenderLine((uint8) (CPU.V_Counter - FIRST_VISIBLE_LINE));
 
 			if (PPU.HTimerPosition == Timings.RenderPos)
-				S9xCheckMissingHTimerPosition(Timings.RenderPos);
+				S9xCheckMissingHTimerPosition();
 			S9xReschedule();
 
 			break;
@@ -649,7 +1107,7 @@ void S9xDoHEventProcessing (void)
 			CPU.Cycles += SNES_WRAM_REFRESH_CYCLES;
 
 			if (PPU.HTimerPosition == Timings.WRAMRefreshPos)
-				S9xCheckMissingHTimerPosition(Timings.WRAMRefreshPos);
+				S9xCheckMissingHTimerPosition();
 			S9xReschedule();
 
 			break;

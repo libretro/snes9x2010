@@ -177,19 +177,6 @@
 #ifndef _C4_H_
 #define _C4_H_
 
-extern int16	C4WFXVal;
-extern int16	C4WFYVal;
-extern int16	C4WFZVal;
-extern int16	C4WFX2Val;
-extern int16	C4WFY2Val;
-extern int16	C4WFDist;
-extern int16	C4WFScale;
-extern int16	C41FXVal;
-extern int16	C41FYVal;
-extern int16	C41FAngleRes;
-extern int16	C41FDist;
-extern int16	C41FDistVal;
-
 void S9xInitC4 (void);
 void S9xSetC4 (uint8, uint16);
 uint8 S9xGetC4 (uint16);

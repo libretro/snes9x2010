@@ -198,7 +198,6 @@
 #define RIGHTSHIFT_int8_IS_SAR
 #define RIGHTSHIFT_int16_IS_SAR
 #define RIGHTSHIFT_int32_IS_SAR
-#define SNES_JOY_READ_CALLBACKS
 #endif
 
 #ifdef GEKKO

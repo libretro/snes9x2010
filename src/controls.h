@@ -188,7 +188,7 @@
 #define S9xBadMapping			255
 #define InvalidControlID		((uint32) -1)
 
-#define NONE				(-2)
+#define CONTROLS_NONE			(-2)
 #define MP5				(-1)
 #define JOYPAD0				0
 #define JOYPAD1				1

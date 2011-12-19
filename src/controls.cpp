@@ -245,8 +245,8 @@ static struct
 static int8 mp5[2][4];
 s9xcommand_t			keymap[1024];
 static bool8				FLAG_LATCH = FALSE;
-static int32				curcontrollers[2] = { NONE,    NONE };
-static int32				newcontrollers[2] = { JOYPAD0, NONE };
+static int32				curcontrollers[2] = { CONTROLS_NONE,    CONTROLS_NONE };
+static int32				newcontrollers[2] = { JOYPAD0, CONTROLS_NONE };
 static char				buf[256];
 uint16 joypad[8];
 
@@ -392,10 +392,10 @@ void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2
 				break;
 
 			newcontrollers[port] = MP5;
-			mp5[port][0] = (id1 < 0) ? NONE : JOYPAD0 + id1;
-			mp5[port][1] = (id2 < 0) ? NONE : JOYPAD0 + id2;
-			mp5[port][2] = (id3 < 0) ? NONE : JOYPAD0 + id3;
-			mp5[port][3] = (id4 < 0) ? NONE : JOYPAD0 + id4;
+			mp5[port][0] = (id1 < 0) ? CONTROLS_NONE : JOYPAD0 + id1;
+			mp5[port][1] = (id2 < 0) ? CONTROLS_NONE : JOYPAD0 + id2;
+			mp5[port][2] = (id3 < 0) ? CONTROLS_NONE : JOYPAD0 + id3;
+			mp5[port][3] = (id4 < 0) ? CONTROLS_NONE : JOYPAD0 + id4;
 			return;
 
 		default:
@@ -403,7 +403,7 @@ void S9xSetController (int port, enum controllers controller, int8 id1, int8 id2
 			break;
 	}
 
-	newcontrollers[port] = NONE;
+	newcontrollers[port] = CONTROLS_NONE;
 }
 
 bool S9xVerifyControllers (void)
@@ -423,7 +423,7 @@ bool S9xVerifyControllers (void)
 				{
 					snprintf(buf, sizeof(buf), "Mouse%d used more than once! Disabling extra instances", i - MOUSE0 + 1);
 					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
-					newcontrollers[port] = NONE;
+					newcontrollers[port] = CONTROLS_NONE;
 					ret = true;
 					break;
 				}
@@ -436,7 +436,7 @@ bool S9xVerifyControllers (void)
 				{
 					snprintf(buf, sizeof(buf), "Superscope used more than once! Disabling extra instances");
 					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
-					newcontrollers[port] = NONE;
+					newcontrollers[port] = CONTROLS_NONE;
 					ret = true;
 					break;
 				}
@@ -450,7 +450,7 @@ bool S9xVerifyControllers (void)
 				{
 					snprintf(buf, sizeof(buf), "Justifier used more than once! Disabling extra instances");
 					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
-					newcontrollers[port] = NONE;
+					newcontrollers[port] = CONTROLS_NONE;
 					ret = true;
 					break;
 				}
@@ -461,13 +461,13 @@ bool S9xVerifyControllers (void)
 
 				for (i = 0; i < 4; i++)
 				{
-					if (mp5[port][i] != NONE)
+					if (mp5[port][i] != CONTROLS_NONE)
 					{
 						if (used[mp5[port][i] - JOYPAD0]++ > 0)
 						{
 							snprintf(buf, sizeof(buf), "Joypad%d used more than once! Disabling extra instances", mp5[port][i] - JOYPAD0 + 1);
 							S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
-							mp5[port][i] = NONE;
+							mp5[port][i] = CONTROLS_NONE;
 							ret = true;
 							break;
 						}
@@ -488,7 +488,7 @@ bool S9xVerifyControllers (void)
 				{
 					snprintf(buf, sizeof(buf), "Joypad%d used more than once! Disabling extra instances", i - JOYPAD0 + 1);
 					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
-					newcontrollers[port] = NONE;
+					newcontrollers[port] = CONTROLS_NONE;
 					ret = true;
 					break;
 				}
@@ -1036,7 +1036,7 @@ uint8 S9xReadJOYSERn (int n)
 
 				for (i = 0; i < 2; i++, j++)
 				{
-					if (mp5[n][j] == NONE)
+					if (mp5[n][j] == CONTROLS_NONE)
 						continue;
 					if (r >= 16)
 						bits |= 1 << i;
@@ -1139,7 +1139,7 @@ void S9xDoAutoJoypad (void)
 				j = FLAG_IOBIT(n) ? 0 : 2;
 				for (i = 0; i < 2; i++, j++)
 				{
-					if (mp5[n][j] == NONE)
+					if (mp5[n][j] == CONTROLS_NONE)
 						WRITE_WORD(Memory.FillRAM + 0x4218 + n * 2 + i * 4, 0);
 					else
 						WRITE_WORD(Memory.FillRAM + 0x4218 + n * 2 + i * 4, joypad[mp5[n][j] - JOYPAD0]);

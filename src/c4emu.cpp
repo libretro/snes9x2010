@@ -182,18 +182,18 @@
 
 #define	C4_PI	3.14159265
 
-int16	C4WFXVal;
-int16	C4WFYVal;
-int16	C4WFZVal;
-int16	C4WFX2Val;
-int16	C4WFY2Val;
-int16	C4WFDist;
-int16	C4WFScale;
-int16	C41FXVal;
-int16	C41FYVal;
-int16	C41FAngleRes;
-int16	C41FDist;
-int16	C41FDistVal;
+static int16	C4WFXVal;
+static int16	C4WFYVal;
+static int16	C4WFZVal;
+static int16	C4WFX2Val;
+static int16	C4WFY2Val;
+static int16	C4WFDist;
+static int16	C4WFScale;
+static int16	C41FXVal;
+static int16	C41FYVal;
+static int16	C41FAngleRes;
+static int16	C41FDist;
+static int16	C41FDistVal;
 
 static double	tanval;
 static double	c4x, c4y, c4z;
