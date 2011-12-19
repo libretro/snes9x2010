@@ -184,11 +184,6 @@
   1.15.00 * 1.00.15 = 2.15.15 -> 1.15.15 (DSP) -> 1.15.16 (LSB is '0')
 */
 
-
-#include "snes9x.h"
-#include "memmap.h"
-#include "getset.h"
-
 #define DSP4_CLEAR_OUT() \
 	{ DSP4.out_count = 0; DSP4.out_index = 0; }
 
@@ -215,28 +210,6 @@
 
 // 1.15.0 -> 1.15.16
 #define SEX16(a)	(((int32) ((int16) (a))) << 16)
-
-static int16 DSP4_READ_WORD (void);
-static int32 DSP4_READ_DWORD (void);
-static int16 DSP4_Inverse (int16);
-static void DSP4_Multiply (int16, int16, int32 *);
-static void DSP4_OP01 (void);
-static void DSP4_OP03 (void);
-static void DSP4_OP05 (void);
-static void DSP4_OP06 (void);
-static void DSP4_OP07 (void);
-static void DSP4_OP08 (void);
-static void DSP4_OP09 (void);
-static void DSP4_OP0A (int16, int16 *, int16 *, int16 *, int16 *);
-static void DSP4_OP0B (bool8 *, int16, int16, int16, bool8, bool8);
-static void DSP4_OP0D (void);
-static void DSP4_OP0E (void);
-static void DSP4_OP0F (void);
-static void DSP4_OP10 (void);
-static void DSP4_OP11 (int16, int16, int16, int16, int16 *);
-static void DSP4_SetByte (void);
-static void DSP4_GetByte (void);
-
 
 static int16 DSP4_READ_WORD (void)
 {
@@ -1001,6 +974,81 @@ static void DSP4_OP08 (void)
 	DSP4.waiting4command = TRUE;
 }
 
+static void DSP4_OP0B (bool8 *draw, int16 sp_x, int16 sp_y, int16 sp_attr, bool8 size, bool8 stop)
+{
+	int16	Row1, Row2;
+
+	// SR = 0x00
+
+	// align to nearest 8-pixel row
+	Row1 = (sp_y >> 3) & 0x1f;
+	Row2 = (Row1 + 1)  & 0x1f;
+
+	// check boundaries
+	if (!((sp_y < 0) || ((sp_y & 0x01ff) < 0x00eb)))
+		*draw = 0;
+
+	if (size)
+	{
+		if (DSP4.OAM_Row[Row1] + 1 >= DSP4.OAM_RowMax)
+			*draw = 0;
+		if (DSP4.OAM_Row[Row2] + 1 >= DSP4.OAM_RowMax)
+			*draw = 0;
+	}
+	else
+	{
+		if (DSP4.OAM_Row[Row1] >= DSP4.OAM_RowMax)
+			*draw = 0;
+	}
+
+	// emulator fail-safe (unknown if this really exists)
+	if (DSP4.sprite_count >= 128)
+		*draw = 0;
+
+	// SR = 0x80
+
+	if (*draw)
+	{
+		// Row tiles
+		if (size)
+		{
+			DSP4.OAM_Row[Row1] += 2;
+			DSP4.OAM_Row[Row2] += 2;
+		}
+		else
+			DSP4.OAM_Row[Row1]++;
+
+		// yield OAM output
+		DSP4_WRITE_WORD(1);
+
+		// pack OAM data: x, y, name, attr
+		DSP4_WRITE_BYTE(sp_x & 0xff);
+		DSP4_WRITE_BYTE(sp_y & 0xff);
+		DSP4_WRITE_WORD(sp_attr);
+
+		DSP4.sprite_count++;
+
+		// OAM: size, msb data
+		// save post-oam table data for future retrieval
+		DSP4.OAM_attr[DSP4.OAM_index] |= ((sp_x < 0 || sp_x > 255) << DSP4.OAM_bits);
+		DSP4.OAM_bits++;
+
+		DSP4.OAM_attr[DSP4.OAM_index] |= (size << DSP4.OAM_bits);
+		DSP4.OAM_bits++;
+
+		// move to next byte in buffer
+		if (DSP4.OAM_bits == 16)
+		{
+			DSP4.OAM_bits = 0;
+			DSP4.OAM_index++;
+		}
+	}
+	else
+	if (stop)
+		// yield no OAM output
+		DSP4_WRITE_WORD(0);
+}
+
 static void DSP4_OP09 (void)
 {
 	DSP4.waiting4command = FALSE;
@@ -1263,80 +1311,6 @@ static void DSP4_OP0A (int16 n2, int16 *o1, int16 *o2, int16 *o3, int16 *o4)
 	*o1 = OP0A_Values[(n2 & 0xf000) >> 12];
 }
 
-static void DSP4_OP0B (bool8 *draw, int16 sp_x, int16 sp_y, int16 sp_attr, bool8 size, bool8 stop)
-{
-	int16	Row1, Row2;
-
-	// SR = 0x00
-
-	// align to nearest 8-pixel row
-	Row1 = (sp_y >> 3) & 0x1f;
-	Row2 = (Row1 + 1)  & 0x1f;
-
-	// check boundaries
-	if (!((sp_y < 0) || ((sp_y & 0x01ff) < 0x00eb)))
-		*draw = 0;
-
-	if (size)
-	{
-		if (DSP4.OAM_Row[Row1] + 1 >= DSP4.OAM_RowMax)
-			*draw = 0;
-		if (DSP4.OAM_Row[Row2] + 1 >= DSP4.OAM_RowMax)
-			*draw = 0;
-	}
-	else
-	{
-		if (DSP4.OAM_Row[Row1] >= DSP4.OAM_RowMax)
-			*draw = 0;
-	}
-
-	// emulator fail-safe (unknown if this really exists)
-	if (DSP4.sprite_count >= 128)
-		*draw = 0;
-
-	// SR = 0x80
-
-	if (*draw)
-	{
-		// Row tiles
-		if (size)
-		{
-			DSP4.OAM_Row[Row1] += 2;
-			DSP4.OAM_Row[Row2] += 2;
-		}
-		else
-			DSP4.OAM_Row[Row1]++;
-
-		// yield OAM output
-		DSP4_WRITE_WORD(1);
-
-		// pack OAM data: x, y, name, attr
-		DSP4_WRITE_BYTE(sp_x & 0xff);
-		DSP4_WRITE_BYTE(sp_y & 0xff);
-		DSP4_WRITE_WORD(sp_attr);
-
-		DSP4.sprite_count++;
-
-		// OAM: size, msb data
-		// save post-oam table data for future retrieval
-		DSP4.OAM_attr[DSP4.OAM_index] |= ((sp_x < 0 || sp_x > 255) << DSP4.OAM_bits);
-		DSP4.OAM_bits++;
-
-		DSP4.OAM_attr[DSP4.OAM_index] |= (size << DSP4.OAM_bits);
-		DSP4.OAM_bits++;
-
-		// move to next byte in buffer
-		if (DSP4.OAM_bits == 16)
-		{
-			DSP4.OAM_bits = 0;
-			DSP4.OAM_index++;
-		}
-	}
-	else
-	if (stop)
-		// yield no OAM output
-		DSP4_WRITE_WORD(0);
-}
 
 static void DSP4_OP0D (void)
 {

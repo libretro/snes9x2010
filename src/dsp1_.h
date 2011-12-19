@@ -194,11 +194,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-#include "snes9x.h"
-#include "memmap.h"
-#include "getset.h"
-
 static const uint16	DSP1ROM[1024] =
 {
 	 0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000,

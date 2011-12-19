@@ -174,11 +174,6 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
-#include "snes9x.h"
-#include "memmap.h"
-#include "getset.h"
-
 // convert bitmap to bitplane tile
 static void DSP2_Op01 (void)
 {

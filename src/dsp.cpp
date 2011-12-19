@@ -210,3 +210,8 @@ void S9xSetDSP (uint8 byte, uint16 address)
 
 	(*SetDSP)(byte, address);
 }
+
+#include "dsp1_.h"
+#include "dsp2_.h"
+#include "dsp3_.h"
+#include "dsp4_.h"

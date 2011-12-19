@@ -174,11 +174,6 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
-#include "snes9x.h"
-#include "memmap.h"
-#include "getset.h"
-
 static void (*SetDSP3) (void);
 
 static const uint16	DSP3_DataROM[1024] =
