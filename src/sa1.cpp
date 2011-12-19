@@ -201,6 +201,93 @@ void S9xSA1Init (void)
 	SA1.S9xOpcodes = NULL;
 }
 
+static void S9xSA1SetPCBase (uint32 address)
+{
+	SA1Registers.PBPC = address & 0xffffff;
+	SA1.ShiftedPB = address & 0xff0000;
+
+	uint8	*GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
+
+	if (GetAddress >= (uint8 *) MAP_LAST)
+	{
+		SA1.PCBase = GetAddress;
+		return;
+	}
+
+	switch ((intptr_t) GetAddress)
+	{
+		case MAP_LOROM_SRAM:
+			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)
+				SA1.PCBase = NULL;
+			else
+				SA1.PCBase = (Memory.SRAM + ((((address & 0xff0000) >> 1) | (address & 0x7fff)) & Memory.SRAMMask)) - (address & 0xffff);
+			return;
+
+		case MAP_HIROM_SRAM:
+			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)
+				SA1.PCBase = NULL;
+			else
+				SA1.PCBase = (Memory.SRAM + (((address & 0x7fff) - 0x6000 + ((address & 0xf0000) >> 3)) & Memory.SRAMMask)) - (address & 0xffff);
+			return;
+
+		case MAP_BWRAM:
+			SA1.PCBase = SA1.BWRAM - 0x6000 - (address & 0x8000);
+			return;
+
+		case MAP_SA1RAM:
+			SA1.PCBase = Memory.SRAM;
+			return;
+
+		default:
+			SA1.PCBase = NULL;
+			return;
+	}
+}
+
+static inline void S9xSA1UnpackStatus (void)
+{
+	SA1._Zero = (SA1Registers.PL & Zero) == 0;
+	SA1._Negative = (SA1Registers.PL & Negative);
+	SA1._Carry = (SA1Registers.PL & Carry);
+	SA1._Overflow = (SA1Registers.PL & Overflow) >> 6;
+}
+
+static inline void S9xSA1FixCycles (void)
+{
+	if (SA1CheckEmulation())
+	{
+		SA1.S9xOpcodes = S9xSA1OpcodesM1X1;
+		SA1.S9xOpLengths = S9xOpLengthsM1X1;
+	}
+	else
+	if (SA1CheckMemory())
+	{
+		if (SA1CheckIndex())
+		{
+			SA1.S9xOpcodes = S9xSA1OpcodesM1X1;
+			SA1.S9xOpLengths = S9xOpLengthsM1X1;
+		}
+		else
+		{
+			SA1.S9xOpcodes = S9xSA1OpcodesM1X0;
+			SA1.S9xOpLengths = S9xOpLengthsM1X0;
+		}
+	}
+	else
+	{
+		if (SA1CheckIndex())
+		{
+			SA1.S9xOpcodes = S9xSA1OpcodesM0X1;
+			SA1.S9xOpLengths = S9xOpLengthsM0X1;
+		}
+		else
+		{
+			SA1.S9xOpcodes = S9xSA1OpcodesM0X0;
+			SA1.S9xOpLengths = S9xOpLengthsM0X0;
+		}
+	}
+}
+
 static void S9xSA1Reset (void)
 {
 	SA1Registers.PBPC = 0;
@@ -292,6 +379,68 @@ static void S9xSetSA1MemMap (uint32 which1, uint8 map)
 		uint8	*block = &Memory.ROM[(map & 7) * 0x100000 + (c << 11) - 0x8000];
 		for (int i = c + 8; i < c + 16; i++)
 			Memory.Map[start2 + i] = SA1.Map[start2 + i] = block;
+	}
+}
+
+static uint8 S9xSA1GetByte (uint32 address)
+{
+	uint8	*GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
+
+	if (GetAddress >= (uint8 *) MAP_LAST)
+		return (*(GetAddress + (address & 0xffff)));
+
+	switch ((intptr_t) GetAddress)
+	{
+		case MAP_PPU:
+			return (S9xGetSA1(address & 0xffff));
+
+		case MAP_LOROM_SRAM:
+		case MAP_SA1RAM:
+			return (*(Memory.SRAM + (address & 0xffff)));
+
+		case MAP_BWRAM:
+			return (*(SA1.BWRAM + ((address & 0x7fff) - 0x6000)));
+
+		case MAP_BWRAM_BITMAP:
+			address -= 0x600000;
+			if (SA1.VirtualBitmapFormat == 2)
+				return ((Memory.SRAM[(address >> 2) & 0xffff] >> ((address & 3) << 1)) &  3);
+			else
+				return ((Memory.SRAM[(address >> 1) & 0xffff] >> ((address & 1) << 2)) & 15);
+
+		case MAP_BWRAM_BITMAP2:
+			address = (address & 0xffff) - 0x6000;
+			if (SA1.VirtualBitmapFormat == 2)
+				return ((SA1.BWRAM[(address >> 2) & 0xffff] >> ((address & 3) << 1)) &  3);
+			else
+				return ((SA1.BWRAM[(address >> 1) & 0xffff] >> ((address & 1) << 2)) & 15);
+
+		default:
+			return (SA1OpenBus);
+	}
+}
+
+static uint16 S9xSA1GetWord (uint32 address, uint32 w)
+{
+	PC_t	a;
+
+	SA1OpenBus = S9xSA1GetByte(address);
+
+	switch (w)
+	{
+		case WRAP_PAGE:
+			a.xPBPC = address;
+			a.B.xPCl++;
+			return (SA1OpenBus | (S9xSA1GetByte(a.xPBPC) << 8));
+
+		case WRAP_BANK:
+			a.xPBPC = address;
+			a.W.xPC++;
+			return (SA1OpenBus | (S9xSA1GetByte(a.xPBPC) << 8));
+
+		case WRAP_NONE:
+		default:
+			return (SA1OpenBus | (S9xSA1GetByte(address + 1) << 8));
 	}
 }
 
@@ -832,70 +981,7 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 
 
 
-
-uint8 S9xSA1GetByte (uint32 address)
-{
-	uint8	*GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
-
-	if (GetAddress >= (uint8 *) MAP_LAST)
-		return (*(GetAddress + (address & 0xffff)));
-
-	switch ((intptr_t) GetAddress)
-	{
-		case MAP_PPU:
-			return (S9xGetSA1(address & 0xffff));
-
-		case MAP_LOROM_SRAM:
-		case MAP_SA1RAM:
-			return (*(Memory.SRAM + (address & 0xffff)));
-
-		case MAP_BWRAM:
-			return (*(SA1.BWRAM + ((address & 0x7fff) - 0x6000)));
-
-		case MAP_BWRAM_BITMAP:
-			address -= 0x600000;
-			if (SA1.VirtualBitmapFormat == 2)
-				return ((Memory.SRAM[(address >> 2) & 0xffff] >> ((address & 3) << 1)) &  3);
-			else
-				return ((Memory.SRAM[(address >> 1) & 0xffff] >> ((address & 1) << 2)) & 15);
-
-		case MAP_BWRAM_BITMAP2:
-			address = (address & 0xffff) - 0x6000;
-			if (SA1.VirtualBitmapFormat == 2)
-				return ((SA1.BWRAM[(address >> 2) & 0xffff] >> ((address & 3) << 1)) &  3);
-			else
-				return ((SA1.BWRAM[(address >> 1) & 0xffff] >> ((address & 1) << 2)) & 15);
-
-		default:
-			return (SA1OpenBus);
-	}
-}
-
-uint16 S9xSA1GetWord (uint32 address, uint32 w)
-{
-	PC_t	a;
-
-	SA1OpenBus = S9xSA1GetByte(address);
-
-	switch (w)
-	{
-		case WRAP_PAGE:
-			a.xPBPC = address;
-			a.B.xPCl++;
-			return (SA1OpenBus | (S9xSA1GetByte(a.xPBPC) << 8));
-
-		case WRAP_BANK:
-			a.xPBPC = address;
-			a.W.xPC++;
-			return (SA1OpenBus | (S9xSA1GetByte(a.xPBPC) << 8));
-
-		case WRAP_NONE:
-		default:
-			return (SA1OpenBus | (S9xSA1GetByte(address + 1) << 8));
-	}
-}
-
-void S9xSA1SetByte (uint8 byte, uint32 address)
+static void S9xSA1SetByte (uint8 byte, uint32 address)
 {
 	uint8	*SetAddress = SA1.WriteMap[(address & 0xffffff) >> MEMMAP_SHIFT];
 
@@ -959,7 +1045,7 @@ void S9xSA1SetByte (uint8 byte, uint32 address)
 	}
 }
 
-void S9xSA1SetWord_Write0(uint16 Word, uint32 address, uint32 w)
+static void S9xSA1SetWord_Write0(uint16 Word, uint32 address, uint32 w)
 {
 	PC_t	a;
 
@@ -986,7 +1072,7 @@ void S9xSA1SetWord_Write0(uint16 Word, uint32 address, uint32 w)
 	}
 }
 
-void S9xSA1SetWord_Write1(uint16 Word, uint32 address, uint32 w)
+static void S9xSA1SetWord_Write1(uint16 Word, uint32 address, uint32 w)
 {
 	PC_t	a;
 
@@ -1013,47 +1099,5 @@ void S9xSA1SetWord_Write1(uint16 Word, uint32 address, uint32 w)
 	S9xSA1SetByte((uint8) Word, address);
 }
 
-void S9xSA1SetPCBase (uint32 address)
-{
-	SA1Registers.PBPC = address & 0xffffff;
-	SA1.ShiftedPB = address & 0xff0000;
-
-	uint8	*GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
-
-	if (GetAddress >= (uint8 *) MAP_LAST)
-	{
-		SA1.PCBase = GetAddress;
-		return;
-	}
-
-	switch ((intptr_t) GetAddress)
-	{
-		case MAP_LOROM_SRAM:
-			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)
-				SA1.PCBase = NULL;
-			else
-				SA1.PCBase = (Memory.SRAM + ((((address & 0xff0000) >> 1) | (address & 0x7fff)) & Memory.SRAMMask)) - (address & 0xffff);
-			return;
-
-		case MAP_HIROM_SRAM:
-			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)
-				SA1.PCBase = NULL;
-			else
-				SA1.PCBase = (Memory.SRAM + (((address & 0x7fff) - 0x6000 + ((address & 0xf0000) >> 3)) & Memory.SRAMMask)) - (address & 0xffff);
-			return;
-
-		case MAP_BWRAM:
-			SA1.PCBase = SA1.BWRAM - 0x6000 - (address & 0x8000);
-			return;
-
-		case MAP_SA1RAM:
-			SA1.PCBase = Memory.SRAM;
-			return;
-
-		default:
-			SA1.PCBase = NULL;
-			return;
-	}
-}
 
 #include "sa1cpu_.h"

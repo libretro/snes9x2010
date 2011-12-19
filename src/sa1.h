@@ -245,71 +245,20 @@ extern uint8			S9xOpLengthsM1X0[256];
 extern uint8			S9xOpLengthsM0X1[256];
 extern uint8			S9xOpLengthsM0X0[256];
 
-uint8 S9xSA1GetByte (uint32);
-void S9xSA1SetByte (uint8, uint32);
-uint16 S9xSA1GetWord (uint32, uint32 w);
-void S9xSA1SetWord_Write0(uint16, uint32, uint32 w);
-void S9xSA1SetWord_Write1(uint16, uint32, uint32 w);
-void S9xSA1SetPCBase (uint32);
 uint8 S9xGetSA1 (uint32);
 void S9xSetSA1 (uint8, uint32);
 void S9xSA1Init (void);
 void S9xSA1MainLoop (void);
-void S9xSA1ExecuteDuringSleep (void);
 void S9xSA1PostLoadState (void);
 
-#define SNES_IRQ_SOURCE		(1 << 7)
-#define TIMER_IRQ_SOURCE	(1 << 6)
-#define DMA_IRQ_SOURCE		(1 << 5)
-
-static inline void S9xSA1UnpackStatus (void)
-{
-	SA1._Zero = (SA1Registers.PL & Zero) == 0;
-	SA1._Negative = (SA1Registers.PL & Negative);
-	SA1._Carry = (SA1Registers.PL & Carry);
-	SA1._Overflow = (SA1Registers.PL & Overflow) >> 6;
-}
+#define DMA_IRQ_SOURCE		32
+#define TIMER_IRQ_SOURCE	64
+#define SNES_IRQ_SOURCE		128
 
 static inline void S9xSA1PackStatus (void)
 {
 	SA1Registers.PL &= ~(Zero | Negative | Carry | Overflow);
 	SA1Registers.PL |= SA1._Carry | ((SA1._Zero == 0) << 1) | (SA1._Negative & 0x80) | (SA1._Overflow << 6);
-}
-
-static inline void S9xSA1FixCycles (void)
-{
-	if (SA1CheckEmulation())
-	{
-		SA1.S9xOpcodes = S9xSA1OpcodesM1X1;
-		SA1.S9xOpLengths = S9xOpLengthsM1X1;
-	}
-	else
-	if (SA1CheckMemory())
-	{
-		if (SA1CheckIndex())
-		{
-			SA1.S9xOpcodes = S9xSA1OpcodesM1X1;
-			SA1.S9xOpLengths = S9xOpLengthsM1X1;
-		}
-		else
-		{
-			SA1.S9xOpcodes = S9xSA1OpcodesM1X0;
-			SA1.S9xOpLengths = S9xOpLengthsM1X0;
-		}
-	}
-	else
-	{
-		if (SA1CheckIndex())
-		{
-			SA1.S9xOpcodes = S9xSA1OpcodesM0X1;
-			SA1.S9xOpLengths = S9xOpLengthsM0X1;
-		}
-		else
-		{
-			SA1.S9xOpcodes = S9xSA1OpcodesM0X0;
-			SA1.S9xOpLengths = S9xOpLengthsM0X0;
-		}
-	}
 }
 
 #endif
