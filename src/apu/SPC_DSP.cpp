@@ -179,80 +179,72 @@ static unsigned const counter_offsets [32] =
 static inline void dsp_run_envelope( dsp_voice_t* const v )
 {
 	int env = v->env;
-	if ( v->env_mode == ENV_RELEASE ) // 60%
+
+	int rate;
+	int env_data = v->regs[V_ADSR1];
+	if ( dsp_m.t_adsr0 & 0x80 ) // 99% ADSR
 	{
-		if ( (env -= 0x8) < 0 )
-			env = 0;
-		v->env = env;
-	}
-	else
-	{
-		int rate;
-		int env_data = v->regs[V_ADSR1];
-		if ( dsp_m.t_adsr0 & 0x80 ) // 99% ADSR
+		if ( v->env_mode >= ENV_DECAY ) // 99%
 		{
-			if ( v->env_mode >= ENV_DECAY ) // 99%
+			env--;
+			env -= env >> 8;
+			rate = env_data & 0x1F;
+			if ( v->env_mode == ENV_DECAY ) // 1%
+				rate = (dsp_m.t_adsr0 >> 3 & 0x0E) + 0x10;
+		}
+		else // ENV_ATTACK
+		{
+			rate = (dsp_m.t_adsr0 & 0x0F) * 2 + 1;
+			env += rate < 31 ? 0x20 : 0x400;
+		}
+	}
+	else // GAIN
+	{
+		int mode;
+		env_data = v->regs[V_GAIN];
+		mode = env_data >> 5;
+		if ( mode < 4 ) // direct
+		{
+			env = env_data * 0x10;
+			rate = 31;
+		}
+		else
+		{
+			rate = env_data & 0x1F;
+			if ( mode == 4 ) // 4: linear decrease
+			{
+				env -= 0x20;
+			}
+			else if ( mode < 6 ) // 5: exponential decrease
 			{
 				env--;
 				env -= env >> 8;
-				rate = env_data & 0x1F;
-				if ( v->env_mode == ENV_DECAY ) // 1%
-					rate = (dsp_m.t_adsr0 >> 3 & 0x0E) + 0x10;
 			}
-			else // ENV_ATTACK
+			else // 6,7: linear increase
 			{
-				rate = (dsp_m.t_adsr0 & 0x0F) * 2 + 1;
-				env += rate < 31 ? 0x20 : 0x400;
+				env += 0x20;
+				if ( mode > 6 && (unsigned) v->hidden_env >= 0x600 )
+					env += 0x8 - 0x20; // 7: two-slope linear increase
 			}
 		}
-		else // GAIN
-		{
-			int mode;
-			env_data = v->regs[V_GAIN];
-			mode = env_data >> 5;
-			if ( mode < 4 ) // direct
-			{
-				env = env_data * 0x10;
-				rate = 31;
-			}
-			else
-			{
-				rate = env_data & 0x1F;
-				if ( mode == 4 ) // 4: linear decrease
-				{
-					env -= 0x20;
-				}
-				else if ( mode < 6 ) // 5: exponential decrease
-				{
-					env--;
-					env -= env >> 8;
-				}
-				else // 6,7: linear increase
-				{
-					env += 0x20;
-					if ( mode > 6 && (unsigned) v->hidden_env >= 0x600 )
-						env += 0x8 - 0x20; // 7: two-slope linear increase
-				}
-			}
-		}
-		
-		// Sustain level
-		if ( (env >> 8) == (env_data >> 5) && v->env_mode == ENV_DECAY )
-			v->env_mode = ENV_SUSTAIN;
-		
-		v->hidden_env = env;
-		
-		// unsigned cast because linear decrease going negative also triggers this
-		if ( (unsigned) env > 0x7FF )
-		{
-			env = (env < 0 ? 0 : 0x7FF);
-			if ( v->env_mode == ENV_ATTACK )
-				v->env_mode = ENV_DECAY;
-		}
-		
-		if (!READ_COUNTER( rate ))
-			v->env = env; // nothing else is controlled by the counter
 	}
+
+	// Sustain level
+	if ( (env >> 8) == (env_data >> 5) && v->env_mode == ENV_DECAY )
+		v->env_mode = ENV_SUSTAIN;
+
+	v->hidden_env = env;
+
+	// unsigned cast because linear decrease going negative also triggers this
+	if ( (unsigned) env > 0x7FF )
+	{
+		env = (env < 0 ? 0 : 0x7FF);
+		if ( v->env_mode == ENV_ATTACK )
+			v->env_mode = ENV_DECAY;
+	}
+
+	if (!READ_COUNTER( rate ))
+		v->env = env; // nothing else is controlled by the counter
 }
 
 
@@ -445,7 +437,19 @@ static void dsp_voice_V3c( dsp_voice_t* const v )
 	
 	// Run envelope for next sample
 	if ( !v->kon_delay )
-		dsp_run_envelope( v );
+	{
+		int env = v->env;
+		if ( v->env_mode == ENV_RELEASE ) // 60%
+		{
+			if ( (env -= 0x8) < 0 )
+				env = 0;
+			v->env = env;
+		}
+		else
+		{
+			dsp_run_envelope( v );
+		}
+	}
 }
 
 static inline void dsp_voice_output( dsp_voice_t const* v, int ch )
