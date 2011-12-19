@@ -709,7 +709,7 @@ static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, i
 	return (score);
 }
 
-uint32 CMemory::HeaderRemove (uint32 size, int32 &headerCount, uint8 *buf)
+static uint32 HeaderRemove (uint32 size, int32 &headerCount, uint8 *buf)
 {
 	uint32	calc_size = (size / 0x2000) * 0x2000;
 
@@ -811,7 +811,7 @@ static bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers,
 			return (FALSE);
 		}
 
-		FileSize = (int) Memory.HeaderRemove((uint32) FileSize, *headers, ptr);
+		FileSize = (int)HeaderRemove((uint32) FileSize, *headers, ptr);
 		ptr += FileSize;
 		*TotalFileSize += FileSize;
 

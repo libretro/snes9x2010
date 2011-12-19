@@ -231,15 +231,6 @@ static inline void S9xLatchCounters (bool force)
 	PPU.HBeamPosLatched = (uint16) PPU.GunHLatch; \
 	Memory.FillRAM[0x213f] |= 0x40;
 
-static void S9xCheckMissingHTimerRange (void)
-{
-	bool v_counter_eq_vtimer_pos = (CPU.V_Counter == PPU.VTimerPosition);
-	if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || v_counter_eq_vtimer_pos) || PPU.VTimerEnabled && v_counter_eq_vtimer_pos)
-	{
-		S9X_SET_IRQ(PPU_IRQ_SOURCE);
-	}
-}
-
 static void S9xUpdateHVTimerPosition (void)
 {
 	if (PPU.HTimerEnabled)
@@ -2868,7 +2859,14 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 				// The case that IRQ will trigger in an instruction such as STA $4200.
 				// FIXME: not true but good enough for Snes9x, I think.
 				if ((PPU.HTimerPosition >= CPU.PrevCycles) && (PPU.HTimerPosition < (CPU.PrevCycles + (CPU.Cycles - CPU.PrevCycles))))
-					S9xCheckMissingHTimerRange();
+				{
+					//Check Missing H Timer Range
+					bool v_counter_eq_vtimer_pos = (CPU.V_Counter == PPU.VTimerPosition);
+					if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || v_counter_eq_vtimer_pos) || PPU.VTimerEnabled && v_counter_eq_vtimer_pos)
+					{
+						S9X_SET_IRQ(PPU_IRQ_SOURCE);
+					}
+				}
 
 				if (!(Byte & 0x30))
 				{
