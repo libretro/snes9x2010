@@ -2741,22 +2741,6 @@ static bool8 S9xDoDMA (uint8 Channel)
 
 void S9xSetCPU (uint8 Byte, uint16 Address)
 {
-	if (Address < 0x4200)
-	{
-		switch (Address)
-		{
-			case 0x4016: // JOYSER0
-				S9xSetJoypadLatch(Byte & 1);
-				break;
-
-			case 0x4017: // JOYSER1
-				return;
-
-			default:
-				break;
-		}
-	}
-	else
 	if ((Address & 0xff80) == 0x4300)
 	{
 		if (CPU.InDMAorHDMA)

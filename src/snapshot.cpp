@@ -1476,7 +1476,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 		IPPU.OBJChanged = TRUE;
 
 		uint8 hdma_byte = Memory.FillRAM[0x420c];
-		S9xSetCPU(hdma_byte, 0x420c);
+		S9X_SET_CPU_PREAMBLE(0x420c, hdma_byte);
 
 		S9xControlPostLoadState(&ctl_snap);
 

@@ -458,4 +458,7 @@ extern struct SCPUState			CPU;
 extern struct STimings			Timings;
 extern struct SSNESGameFixes	SNESGameFixes;
 
+// Use when writing to $4016.
+extern void S9xSetJoypadLatch (bool latch);
+
 #endif

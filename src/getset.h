@@ -217,6 +217,17 @@
 
 #endif
 
+#define S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp) \
+			if (addr_tmp < 0x4200) \
+			{ \
+				if(addr_tmp == 0x4016) /* JOYSER0 */ \
+					S9xSetJoypadLatch(byte_tmp & 1); \
+				if(addr_tmp != 0x4017) /* JOYSER1 */ \
+					Memory.FillRAM[addr_tmp] = byte_tmp; \
+			} \
+			else \
+				S9xSetCPU(byte_tmp, addr_tmp);
+
 extern uint8	OpenBus;
 
 static inline int32 memory_speed (uint32 address)
@@ -514,10 +525,13 @@ inline void S9xSetByte (uint8 Byte, uint32 Address)
 	switch ((intptr_t) SetAddress)
 	{
 		case MAP_CPU:
-			S9xSetCPU(Byte, Address & 0xffff);
+		{
+			uint16 addr_tmp = Address & 0xffff;
+			uint8 byte_tmp = Byte;
+			S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp);
 			addCyclesInMemoryAccess;
 			return;
-
+		}
 		case MAP_PPU:
 			if (CPU.InDMAorHDMA && (Address & 0xff00) == 0x2100)
 				return;
@@ -640,11 +654,19 @@ inline void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 	switch ((intptr_t) SetAddress)
 	{
 		case MAP_CPU:
-				S9xSetCPU((uint8) Word, Address & 0xffff);
+		{
+				uint16 addr_tmp = Address & 0xffff;
+				uint8 byte_tmp = (uint8)Word;
+				S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp);
 				addCyclesInMemoryAccess;
-				S9xSetCPU(Word >> 8, (Address + 1) & 0xffff);
+				
+				addr_tmp = (Address + 1) & 0xffff;
+				byte_tmp = Word >> 8;
+				S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp);
+
 				addCyclesInMemoryAccess;
 				return;
+		}
 		case MAP_PPU:
 			if (CPU.InDMAorHDMA)
 			{
@@ -759,6 +781,7 @@ inline void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 	}
 }
 
+
 inline void S9xSetWord_Write1(uint16 Word, uint32 Address, uint32 w)
 {
 	if ((Address & (MEMMAP_MASK & w)) == (MEMMAP_MASK & w))
@@ -804,12 +827,20 @@ inline void S9xSetWord_Write1(uint16 Word, uint32 Address, uint32 w)
 	switch ((intptr_t) SetAddress)
 	{
 		case MAP_CPU:
-			S9xSetCPU(Word >> 8, (Address + 1) & 0xffff);
+		{
+			uint16 addr_tmp = (Address + 1) & 0xffff;
+			uint8 byte_tmp = Word >> 8;
+			S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp);
+
 			addCyclesInMemoryAccess;
-			S9xSetCPU((uint8) Word, Address & 0xffff);
+
+			addr_tmp = Address & 0xffff;
+			byte_tmp = (uint8)Word;
+			S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp);
+
 			addCyclesInMemoryAccess;
 			return;
-
+		}
 		case MAP_PPU:
 			if (CPU.InDMAorHDMA)
 			{
