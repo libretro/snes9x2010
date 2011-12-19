@@ -204,7 +204,6 @@ static bool8		resampler      = false;
 static int32		reference_time;
 static uint32		spc_remainder;
 
-static const int	timing_hack_numerator   = TEMPO_UNIT;
 static int		timing_hack_denominator = TEMPO_UNIT;
 /* Set these to NTSC for now. Will change to PAL in S9xAPUTimingSetSpeedup
    if necessary on game load. */
@@ -413,14 +412,6 @@ void S9xFinalizeSamples (void)
 	spc_set_output(landing_buffer, buffer_size >> 1);
 }
 
-void S9xLandSamples (void)
-{
-	if (sa_callback != NULL)
-		sa_callback();
-	else
-		S9xFinalizeSamples();
-}
-
 void S9xClearSamples (void)
 {
 	resampler_clear();
@@ -432,7 +423,10 @@ bool8 S9xSyncSound (void)
 	if (!Settings.SoundSync || sound_in_sync)
 		return (TRUE);
 
-	S9xLandSamples();
+	if (sa_callback != NULL)
+		sa_callback();
+	else
+		S9xFinalizeSamples();
 
 	return (sound_in_sync);
 }
@@ -447,7 +441,7 @@ static void UpdatePlaybackRate (void)
 	if (Settings.SoundInputRate == 0)
 		Settings.SoundInputRate = APU_DEFAULT_INPUT_RATE;
 
-	double time_ratio = (double) Settings.SoundInputRate * timing_hack_numerator / (Settings.SoundPlaybackRate * timing_hack_denominator);
+	double time_ratio = (double) Settings.SoundInputRate * TEMPO_UNIT / (Settings.SoundPlaybackRate * timing_hack_denominator);
 	resampler_time_ratio(time_ratio);
 }
 
@@ -524,11 +518,8 @@ void S9xDeinitAPU (void)
 #define S9X_APU_GET_CLOCK(cpucycles)		((ratio_numerator * (cpucycles - reference_time) + spc_remainder) / ratio_denominator)
 #define S9X_APU_GET_CLOCK_REMAINDER(cpucycles)	((ratio_numerator * (cpucycles - reference_time) + spc_remainder) % ratio_denominator)
 
-uint8 S9xAPUReadPort (int port)
-{
-	// Emulated port read at specified time
-	return ((uint8) spc_run_until_(S9X_APU_GET_CLOCK(CPU.Cycles))[port]);
-}
+// Emulated port read at specified time
+uint8 S9xAPUReadPort (int port)	{ return ((uint8) spc_run_until_(S9X_APU_GET_CLOCK(CPU.Cycles))[port]); }
 
 void S9xAPUWritePort (int port, uint8 byte)
 {
@@ -548,11 +539,15 @@ void S9xAPUExecute (void)
 	spc_end_frame(S9X_APU_GET_CLOCK(CPU.Cycles));
 
 	spc_remainder = S9X_APU_GET_CLOCK_REMAINDER(CPU.Cycles);
-
-	S9xAPUSetReferenceTime(CPU.Cycles);
+	reference_time = CPU.Cycles;
 
 	if (SPC_SAMPLE_COUNT() >= APU_MINIMUM_SAMPLE_BLOCK || !sound_in_sync)
-		S9xLandSamples();
+	{
+		if (sa_callback != NULL)
+			sa_callback();
+		else
+			S9xFinalizeSamples();
+	}
 }
 
 void S9xAPUTimingSetSpeedup (int ticks)
@@ -565,7 +560,7 @@ void S9xAPUTimingSetSpeedup (int ticks)
 
 	ratio_numerator = Settings.PAL ? APU_NUMERATOR_PAL : APU_NUMERATOR_NTSC;
 	ratio_denominator = Settings.PAL ? APU_DENOMINATOR_PAL : APU_DENOMINATOR_NTSC;
-	ratio_denominator = ratio_denominator * timing_hack_denominator / timing_hack_numerator;
+	ratio_denominator = ratio_denominator * timing_hack_denominator / TEMPO_UNIT;
 
 	UpdatePlaybackRate();
 }
