@@ -215,7 +215,6 @@ struct SMulti			Multi;
 struct SSettings		Settings;
 struct SSNESGameFixes		SNESGameFixes;
 struct SCheatData		Cheat;
-struct Watch			watches[16];
 struct FxRegs_s			GSU;
 struct FxInfo_s			SuperFX;
 CMemory				Memory;
