@@ -179,7 +179,7 @@
 #include "memmap.h"
 #include "getset.h"
 
-uint8	SA1OpenBus;
+static uint8	SA1OpenBus;
 
 void S9xSA1Init (void)
 {
@@ -1055,3 +1055,5 @@ void S9xSA1SetPCBase (uint32 address)
 			return;
 	}
 }
+
+#include "sa1cpu_.h"

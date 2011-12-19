@@ -420,6 +420,11 @@ static inline void REGISTER_2122 (uint8 Byte)
 	PPU.CGFLIP ^= 1;
 }
 
+// This code is correct, however due to Snes9x's inaccurate timings, some games might be broken by this chage. :(
+#define CHECK_INBLANK() \
+	if (Settings.BlockInvalidVRAMAccess && !PPU.ForcedBlanking && CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE) \
+		return;
+
 static inline void REGISTER_2118 (uint8 Byte)
 {
 	CHECK_INBLANK();
@@ -669,6 +674,10 @@ static void S9xSetSuperFX (uint8 byte, uint16 address)
 			break;
 	}
 }
+
+#define REGISTER_2180(Byte) \
+	Memory.RAM[PPU.WRAM++] = Byte; \
+	PPU.WRAM &= 0x1ffff;
 
 void S9xSetPPU (uint8 Byte, uint16 Address)
 {

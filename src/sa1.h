@@ -236,7 +236,6 @@ struct SSA1
 
 extern struct SSA1Registers	SA1Registers;
 extern struct SSA1		SA1;
-extern uint8			SA1OpenBus;
 extern struct SOpcodes		S9xSA1OpcodesM1X1[256];
 extern struct SOpcodes		S9xSA1OpcodesM1X0[256];
 extern struct SOpcodes		S9xSA1OpcodesM0X1[256];
