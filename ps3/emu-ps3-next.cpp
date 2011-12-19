@@ -284,9 +284,8 @@ void emulator_change_cheat_description(uint32 cheatposition, const char *descrip
 	Cheat.c[cheatposition].saved = TRUE;
 }
 
-const char * emulator_input_cheatlabel(void)
+static void emulator_input_cheatlabel(char * msg)
 {
-	const char * newlabel = new char[22];
 	// (1) Let the user enter a label name for currently selected cheat code
 
 	oskutil_write_initial_message(&oskutil_handle, L"");
@@ -302,18 +301,21 @@ const char * emulator_input_cheatlabel(void)
 	}
 
 	if(oskutil_handle.text_can_be_fetched)
-		newlabel = strdup(OUTPUT_TEXT_STRING(oskutil_handle));
+		strncpy(msg, OUTPUT_TEXT_STRING(oskutil_handle), sizeof(msg));
 	else
-		newlabel = "";
+		strncpy(msg, "", sizeof(msg));
 
 	// (2) add cheat label
-	emulator_change_cheat_description(Settings.CurrentCheatPosition, newlabel);
-
-	// (3) Return message text string
-	return "Cheat label added.";	
+	emulator_change_cheat_description(Settings.CurrentCheatPosition, msg);
 }
 
-const char * emulator_input_cheat(void)
+#define GAME_GENIE_CODE_ADDED 0
+#define PRO_ACTION_REPLAY_CODE_ADDED 1
+#define GOLD_FINGER_CODE_ADDED 2
+#define CODE_ADDED_INCORRECT 3
+#define CODE_INPUT_CANCELLED 4
+
+static uint32_t emulator_input_cheat()
 {
 	// (1) Let the user enter his cheat code
 	oskutil_write_initial_message(&oskutil_handle, L"");
@@ -329,11 +331,11 @@ const char * emulator_input_cheat(void)
 	}
 
 	// (2) Save the code to a char variable
-	const char * newcode = new char[128];
+	char newcode[128];
 
 	if(oskutil_handle.text_can_be_fetched)
 	{
-		newcode = strdup(OUTPUT_TEXT_STRING(oskutil_handle));
+		strncpy(newcode, OUTPUT_TEXT_STRING(oskutil_handle), sizeof(newcode));
 		// (3) Check the cheat format of the cheat code
 		uint32 address;
 		uint8 byte;
@@ -369,16 +371,16 @@ const char * emulator_input_cheat(void)
 		switch(cheatformat)
 		{
 			case 1:  //Game Genie
-				return "Game Genie code added.";	
+				return GAME_GENIE_CODE_ADDED;
 			case 2:  //Action Replay
-				return "Pro Action Replay code added.";	
+				return PRO_ACTION_REPLAY_CODE_ADDED;
 			case 3:  //Gold Finger
-				return "Gold Finger code added.";	
+				return GOLD_FINGER_CODE_ADDED;
 			case 4:  //else
-				return "ERROR: Code entered was incorrect.";
+				return CODE_ADDED_INCORRECT;
 		}
 	}
-	return "ERROR: Code input canceled.";
+	return CODE_INPUT_CANCELLED;
 }
 
 void emulator_toggle_sound(uint64_t soundmode)
@@ -473,6 +475,43 @@ static void special_actions(uint64_t number)
 {
 	switch (number)
 	{
+		case BTN_QUICKSAVE:
+			{
+				emulator_save_current_save_state_slot();
+			}
+			break;
+		case BTN_QUICKLOAD:
+			{
+				emulator_load_current_save_state_slot();
+			}
+			break;
+		case BTN_INCREMENTSAVE:
+			{
+				emulator_increment_current_save_state_slot();
+			}
+			break;
+		case BTN_DECREMENTSAVE:
+			{
+				emulator_decrement_current_save_state_slot();
+			}
+			break;
+		case BTN_INCREMENTCHEAT:
+			{
+				char msg[512];
+				Settings.CurrentCheatPosition++;
+				snprintf(msg, sizeof(msg), "Cheat pos. changed to: %d", Settings.CurrentSaveStateSlot);
+				set_text_message(msg, 60);
+			}
+			break;
+		case BTN_DECREMENTCHEAT:
+			{
+				char msg[512];
+				if(Settings.CurrentCheatPosition > 0)
+					Settings.CurrentCheatPosition--;
+				snprintf(msg, sizeof(msg), "Cheat pos. changed to: %d", Settings.CurrentSaveStateSlot);
+				set_text_message(msg, 60);
+			}
+			break;
 		case BTN_EXITTOMENU:
 		{
 			if(frame_count < special_action_msg_expired)
@@ -486,6 +525,81 @@ static void special_actions(uint64_t number)
 			}
 			break;
 		}
+		case BTN_CHEATTOGGLE:
+			{
+				char msg[512];
+
+				if(S9xCheatEnabled(Settings.CurrentCheatPosition))
+					S9xDisableCheat(Settings.CurrentCheatPosition);
+				else
+					S9xEnableCheat(Settings.CurrentCheatPosition);
+
+				Cheat.c[Settings.CurrentCheatPosition].saved = TRUE;
+				S9xApplyCheats();
+
+				sprintf(msg, "%s cheat: %d", S9xCheatEnabled(Settings.CurrentCheatPosition) ? "Enabled" : "Disabled", Settings.CurrentCheatPosition);
+				set_text_message(msg, 60);
+			}
+			break;
+		case BTN_SOFTRESET:
+			S9xSoftReset();
+			break;
+		case BTN_RESET:
+			S9xReset();
+			break;
+		case BTN_FASTFORWARD:
+			{
+				if(frame_count < special_action_msg_expired)
+				{
+				}
+				else
+				{
+					Settings.Throttled = !Settings.Throttled;
+					emulator_toggle_throttle(Settings.Throttled);
+				}
+			}
+			break;
+		case BTN_SRAM_WRITEPROTECT:
+			{
+				if(frame_count < special_action_msg_expired)
+				{
+				}
+				else
+				{
+					char msg[512];
+					Settings.SRAMWriteProtect = !Settings.SRAMWriteProtect;
+					snprintf(msg, sizeof(msg), "SRAM write protect turned %s", Settings.SRAMWriteProtect ? "on" : "off");
+					set_text_message(msg, 60);
+				}
+			}
+			break;
+		case BTN_CHEATINPUT:
+			{
+				char msg[512];
+				int ret;
+				ret = emulator_input_cheat();
+
+				switch(ret)
+				{
+					case GAME_GENIE_CODE_ADDED:
+						strncpy(msg, "Game Genie code added.", sizeof(msg));	
+						break;
+					case PRO_ACTION_REPLAY_CODE_ADDED:
+						strncpy(msg, "Pro Action Replay code added.", sizeof(msg));
+						break;
+					case GOLD_FINGER_CODE_ADDED:
+						strncpy(msg, "Gold Finger code added.", sizeof(msg));
+						break;
+					case CODE_ADDED_INCORRECT:
+						strncpy(msg, "ERROR: Code entered was incorrect.", sizeof(msg));
+						break;
+					case CODE_INPUT_CANCELLED:
+						strncpy(msg, "ERROR: Code input cancelled.", sizeof(msg));
+						break;
+				}
+				set_text_message(msg, 60);
+			}
+			break;
 		case BTN_INGAME_MENU:
 			if(frame_count < special_action_msg_expired)
 			{
@@ -495,44 +609,6 @@ static void special_actions(uint64_t number)
 				ingame_menu_enable(1);
 			}
 			break;
-		case BTN_RESET:
-			S9xReset();
-			break;
-		case BTN_SOFTRESET:
-			S9xSoftReset();
-			break;
-		case BTN_FASTFORWARD:
-		{
-			if(frame_count < special_action_msg_expired)
-			{
-			}
-			else
-			{
-				Settings.Throttled = !Settings.Throttled;
-				emulator_toggle_throttle(Settings.Throttled);
-			}
-		}
-			break;
-		case BTN_QUICKLOAD:
-		{
-			emulator_load_current_save_state_slot();
-			break;
-		}
-		case BTN_INCREMENTSAVE:
-		{
-			emulator_increment_current_save_state_slot();
-			break;
-		}
-		case BTN_DECREMENTSAVE:
-		{
-			emulator_decrement_current_save_state_slot();
-			break;
-		}
-		case BTN_QUICKSAVE:
-		{
-			emulator_save_current_save_state_slot();
-			break;
-		}
 		default:
 			break;
 	}
@@ -1297,9 +1373,9 @@ uint32_t default_control_binds[] = {
 	BTN_DECREMENTSAVE,		// CTRL_R2_RSTICK_LEFT_DEF
 	BTN_QUICKLOAD,			// CTRL_R2_RSTICK_UP_DEF
 	BTN_QUICKSAVE,			// CTRL_R2_RSTICK_DOWN_DEF
-	BTN_SRAM_WRITEPROTECT,		// CTRL_R2_R3_DEF
+	BTN_NONE,			// CTRL_R2_R3_DEF
 	BTN_EXITTOMENU,			// CTRL_R3_L3_DEF
-	BTN_NONE,			// CTRL_RSTICK_UP_DEF
+	BTN_SRAM_WRITEPROTECT,		// CTRL_RSTICK_UP_DEF
 	BTN_FASTFORWARD,		// CTRL_RSTICK_DOWN_DEF
 	BTN_NONE,			// CTRL_RSTICK_LEFT_DEF
 	BTN_NONE			// CTRL_RSTICK_RIGHT_DEF
@@ -2195,7 +2271,7 @@ static void ingame_menu(void)
 	}while(is_ingame_menu_running);
 }
 
-void get_path_settings(bool multiman_support)
+static void get_path_settings(bool multiman_support)
 {
 	unsigned int get_type;
 	unsigned int get_attributes;
@@ -2248,7 +2324,6 @@ void get_path_settings(bool multiman_support)
 		snprintf(SYS_CONFIG_FILE, sizeof(SYS_CONFIG_FILE), "%s/snes9x.conf", usrDirPath);
 	}
 }
-
 
 int main(int argc, char **argv)
 {

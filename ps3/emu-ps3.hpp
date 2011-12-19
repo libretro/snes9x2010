@@ -76,8 +76,6 @@ enum {
 #define PAD_5           5
 
 void emulator_implementation_set_texture (const char * fname);
-const char * emulator_input_cheat(void);
-const char * emulator_input_cheatlabel(void);
 void emulator_set_controls(const char * config_file, int mapping_enum, const char * title);
 void emulator_toggle_sound(uint64_t soundmode);
 void emulator_implementation_set_shader_preset(const char * fname);
