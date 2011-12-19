@@ -177,6 +177,7 @@
 
 #include "snes9x.h"
 #include "memmap.h"
+#include "getset.h"
 #include "dma.h"
 #include "apu/apu.h"
 #include "fxinst.h"

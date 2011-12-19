@@ -273,14 +273,14 @@
 #define SNES_Y_MASK			16384
 #define SNES_B_MASK			32768
 
-#define DEBUG_MODE_FLAG			(1 <<  0)	// debugger
-#define TRACE_FLAG			(1 <<  1)	// debugger
-#define SINGLE_STEP_FLAG		(1 <<  2)	// debugger
-#define BREAK_FLAG			(1 <<  3)	// debugger
-#define NMI_FLAG			(1 <<  7)	// CPU
-#define IRQ_FLAG			(1 << 11)	// CPU
-#define SCAN_KEYS_FLAG			(1 <<  4)	// CPU
-#define HALTED_FLAG			(1 << 12)	// APU
+#define DEBUG_MODE_FLAG			1	// debugger
+#define TRACE_FLAG			2	// debugger
+#define SINGLE_STEP_FLAG		4	// debugger
+#define BREAK_FLAG			8	// debugger
+#define SCAN_KEYS_FLAG			16	// CPU
+#define NMI_FLAG			128	// CPU
+#define IRQ_FLAG			2048	// CPU
+#define HALTED_FLAG			4096	// APU
 
 #define ROM_NAME_LEN	23
 

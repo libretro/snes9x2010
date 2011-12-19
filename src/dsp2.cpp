@@ -177,14 +177,7 @@
 
 #include "snes9x.h"
 #include "memmap.h"
-
-static void DSP2_Op01 (void);
-static void DSP2_Op03 (void);
-static void DSP2_Op05 (void);
-static void DSP2_Op06 (void);
-static void DSP2_Op09 (void);
-static void DSP2_Op0D (void);
-
+#include "getset.h"
 
 // convert bitmap to bitplane tile
 static void DSP2_Op01 (void)

@@ -300,6 +300,7 @@
 #define FX_RAM_BANKS	4
 
 // Emulate proper R14 ROM access (slower, but safer)
+// Without this, Doom has garbled graphics
 #define FX_DO_ROMBUFFER
 
 // Address checking (definately slow)
@@ -401,21 +402,21 @@ extern struct FxRegs_s	GSU;
 #define GSU_VCR			0x03b
 #define GSU_RAMBR		0x03c
 #define GSU_CBR			0x03e
-#define GSU_CACHERAM	0x100
+#define GSU_CACHERAM		0x100
 
 // SFR flags
-#define FLG_Z			(1 <<  1)
-#define FLG_CY			(1 <<  2)
-#define FLG_S			(1 <<  3)
-#define FLG_OV			(1 <<  4)
-#define FLG_G			(1 <<  5)
-#define FLG_R			(1 <<  6)
-#define FLG_ALT1		(1 <<  8)
-#define FLG_ALT2		(1 <<  9)
-#define FLG_IL			(1 << 10)
-#define FLG_IH			(1 << 11)
-#define FLG_B			(1 << 12)
-#define FLG_IRQ			(1 << 15)
+#define FLG_Z			2
+#define FLG_CY			4
+#define FLG_S			8
+#define FLG_OV			16
+#define FLG_G			32
+#define FLG_R			64
+#define FLG_ALT1		256
+#define FLG_ALT2		512
+#define FLG_IL			1024
+#define FLG_IH			2048
+#define FLG_B			4096
+#define FLG_IRQ			32768
 
 // Test flag
 #define TF(a)			(GSU.vStatusReg &   FLG_##a)
@@ -489,33 +490,33 @@ extern struct FxRegs_s	GSU;
 #endif
 
 // Access to registers
-#define R0				GSU.avReg[0]
-#define R1				GSU.avReg[1]
-#define R2				GSU.avReg[2]
-#define R3				GSU.avReg[3]
-#define R4				GSU.avReg[4]
-#define R5				GSU.avReg[5]
-#define R6				GSU.avReg[6]
-#define R7				GSU.avReg[7]
-#define R8				GSU.avReg[8]
-#define R9				GSU.avReg[9]
-#define R10				GSU.avReg[10]
-#define R11				GSU.avReg[11]
-#define R12				GSU.avReg[12]
-#define R13				GSU.avReg[13]
-#define R14				GSU.avReg[14]
-#define R15				GSU.avReg[15]
-#define SFR				GSU.vStatusReg
-#define PBR				GSU.vPrgBankReg
+#define R0			GSU.avReg[0]
+#define R1			GSU.avReg[1]
+#define R2			GSU.avReg[2]
+#define R3			GSU.avReg[3]
+#define R4			GSU.avReg[4]
+#define R5			GSU.avReg[5]
+#define R6			GSU.avReg[6]
+#define R7			GSU.avReg[7]
+#define R8			GSU.avReg[8]
+#define R9			GSU.avReg[9]
+#define R10			GSU.avReg[10]
+#define R11			GSU.avReg[11]
+#define R12			GSU.avReg[12]
+#define R13			GSU.avReg[13]
+#define R14			GSU.avReg[14]
+#define R15			GSU.avReg[15]
+#define SFR			GSU.vStatusReg
+#define PBR			GSU.vPrgBankReg
 #define ROMBR			GSU.vRomBankReg
 #define RAMBR			GSU.vRamBankReg
-#define CBR				GSU.vCacheBaseReg
+#define CBR			GSU.vCacheBaseReg
 #define SCBR			USEX8(GSU.pvRegisters[GSU_SCBR])
 #define SCMR			USEX8(GSU.pvRegisters[GSU_SCMR])
 #define COLR			GSU.vColorReg
-#define POR				GSU.vPlotOptionReg
+#define POR			GSU.vPlotOptionReg
 #define BRAMR			USEX8(GSU.pvRegisters[GSU_BRAMR])
-#define VCR				USEX8(GSU.pvRegisters[GSU_VCR])
+#define VCR			USEX8(GSU.pvRegisters[GSU_VCR])
 #define CFGR			USEX8(GSU.pvRegisters[GSU_CFGR])
 #define CLSR			USEX8(GSU.pvRegisters[GSU_CLSR])
 

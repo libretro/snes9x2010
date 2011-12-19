@@ -178,9 +178,11 @@
 // Large thanks to John Weidman for all his initial research
 // Thanks to Seph3 for his modem notes
 
+#include <time.h>
 
 #include "snes9x.h"
 #include "memmap.h"
+#include "getset.h"
 #include "display.h"
 
 //#define BSX_DEBUG
@@ -189,10 +191,10 @@
 #define FLASH_SIZE	0x200000
 #define PSRAM_SIZE	0x80000
 
-#define Map			Memory.Map
+#define Map		Memory.Map
 #define BlockIsRAM	Memory.BlockIsRAM
 #define BlockIsROM	Memory.BlockIsROM
-#define RAM			Memory.RAM
+#define RAM		Memory.RAM
 #define SRAM		Memory.SRAM
 #define PSRAM		Memory.BSRAM
 #define BIOSROM		Memory.BIOSROM

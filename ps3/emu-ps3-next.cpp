@@ -26,6 +26,7 @@
 #include <sys/synchronization.h>
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
+#include "../src/cpuexec.h"
 #include "../src/apu/apu.h"
 #include "../src/ppu.h"
 #include "../src/controls.h"

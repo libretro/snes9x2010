@@ -178,6 +178,7 @@
 #include <ctype.h>
 #include "snes9x.h"
 #include "memmap.h"
+#include "getset.h"
 #include "cheats.h"
 
 #define WRAM_BITS	ALL_BITS

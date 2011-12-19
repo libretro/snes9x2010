@@ -197,12 +197,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #include "snes9x.h"
 #include "memmap.h"
-
-
-#ifdef DebugDSP1
-#include <stdarg.h>
-static FILE	*LogFile = NULL;
-#endif
+#include "getset.h"
 
 static const uint16	DSP1ROM[1024] =
 {
@@ -409,46 +404,10 @@ static const int16	DSP1_SinTable[256] =
 };
 
 
-#ifdef DebugDSP1
-
-static void Log_Message (const char *Message, ...)
-{
-	char	Msg[400];
-	va_list	ap;
-	size_t	ignore;
-
-	va_start(ap, Message);
-	vsprintf(Msg, Message, ap);
-	va_end(ap);
-
-	strcat(Msg, "\r\n\0");
-	ignore = fwrite(Msg, strlen(Msg), 1, LogFile);
-	fflush(LogFile);
-}
-
-static void Start_Log (void)
-{
-	LogFile = fopen("dsp1emu.log", "wb");
-}
-
-static void Stop_Log (void)
-{
-	if (LogFile)
-	{
-		fclose(LogFile);
-		LogFile = NULL;
-	}
-}
-
-#endif
-
 static void DSP1_Op00 (void)
 {
 	DSP1.Op00Result = DSP1.Op00Multiplicand * DSP1.Op00Multiplier >> 15;
 
-#ifdef DebugDSP1
-	Log_Message("OP00 MULT %d*%d/32768=%d", DSP1.Op00Multiplicand, DSP1.Op00Multiplier, DSP1.Op00Result);
-#endif
 }
 
 static void DSP1_Op20 (void)
@@ -456,9 +415,6 @@ static void DSP1_Op20 (void)
 	DSP1.Op20Result = DSP1.Op20Multiplicand * DSP1.Op20Multiplier >> 15;
 	DSP1.Op20Result++;
 
-#ifdef DebugDSP1
-	Log_Message("OP20 MULT %d*%d/32768=%d", DSP1.Op20Multiplicand, DSP1.Op20Multiplier, DSP1.Op20Result);
-#endif
 }
 
 static void DSP1_Inverse (int16 Coefficient, int16 Exponent, int16 *iCoefficient, int16 *iExponent)
@@ -520,9 +476,6 @@ static void DSP1_Op10 (void)
 {
 	DSP1_Inverse(DSP1.Op10Coefficient, DSP1.Op10Exponent, &DSP1.Op10CoefficientR, &DSP1.Op10ExponentR);
 
-#ifdef DebugDSP1
-	Log_Message("OP10 INV %d*2^%d = %d*2^%d", DSP1.Op10Coefficient, DSP1.Op10Exponent, DSP1.Op10CoefficientR, DSP1.Op10ExponentR);
-#endif
 }
 
 static int16 DSP1_Sin (int16 Angle)
@@ -1009,9 +962,6 @@ static void DSP1_Op0D (void)
 	DSP1.Op0DL = (DSP1.Op0DX * DSP1.matrixA[1][0] >> 15) + (DSP1.Op0DY * DSP1.matrixA[1][1] >> 15) + (DSP1.Op0DZ * DSP1.matrixA[1][2] >> 15);
 	DSP1.Op0DU = (DSP1.Op0DX * DSP1.matrixA[2][0] >> 15) + (DSP1.Op0DY * DSP1.matrixA[2][1] >> 15) + (DSP1.Op0DZ * DSP1.matrixA[2][2] >> 15);
 
-#ifdef DebugDSP1
-	Log_Message("OP0D X: %d Y: %d Z: %d / F: %d L: %d U: %d", DSP1.Op0DX, DSP1.Op0DY, DSP1.Op0DZ, DSP1.Op0DF, DSP1.Op0DL, DSP1.Op0DU);
-#endif
 }
 
 static void DSP1_Op1D (void)
@@ -1020,9 +970,6 @@ static void DSP1_Op1D (void)
 	DSP1.Op1DL = (DSP1.Op1DX * DSP1.matrixB[1][0] >> 15) + (DSP1.Op1DY * DSP1.matrixB[1][1] >> 15) + (DSP1.Op1DZ * DSP1.matrixB[1][2] >> 15);
 	DSP1.Op1DU = (DSP1.Op1DX * DSP1.matrixB[2][0] >> 15) + (DSP1.Op1DY * DSP1.matrixB[2][1] >> 15) + (DSP1.Op1DZ * DSP1.matrixB[2][2] >> 15);
 
-#ifdef DebugDSP1
-	Log_Message("OP1D X: %d Y: %d Z: %d / F: %d L: %d U: %d", DSP1.Op1DX, DSP1.Op1DY, DSP1.Op1DZ, DSP1.Op1DF, DSP1.Op1DL, DSP1.Op1DU);
-#endif
 }
 
 static void DSP1_Op2D (void)
@@ -1031,9 +978,6 @@ static void DSP1_Op2D (void)
 	DSP1.Op2DL = (DSP1.Op2DX * DSP1.matrixC[1][0] >> 15) + (DSP1.Op2DY * DSP1.matrixC[1][1] >> 15) + (DSP1.Op2DZ * DSP1.matrixC[1][2] >> 15);
 	DSP1.Op2DU = (DSP1.Op2DX * DSP1.matrixC[2][0] >> 15) + (DSP1.Op2DY * DSP1.matrixC[2][1] >> 15) + (DSP1.Op2DZ * DSP1.matrixC[2][2] >> 15);
 
-#ifdef DebugDSP1
-	Log_Message("OP2D X: %d Y: %d Z: %d / F: %d L: %d U: %d", DSP1.Op2DX, DSP1.Op2DY, DSP1.Op2DZ, DSP1.Op2DF, DSP1.Op2DL, DSP1.Op2DU);
-#endif
 }
 
 static void DSP1_Op03 (void)
@@ -1042,9 +986,6 @@ static void DSP1_Op03 (void)
 	DSP1.Op03Y = (DSP1.Op03F * DSP1.matrixA[0][1] >> 15) + (DSP1.Op03L * DSP1.matrixA[1][1] >> 15) + (DSP1.Op03U * DSP1.matrixA[2][1] >> 15);
 	DSP1.Op03Z = (DSP1.Op03F * DSP1.matrixA[0][2] >> 15) + (DSP1.Op03L * DSP1.matrixA[1][2] >> 15) + (DSP1.Op03U * DSP1.matrixA[2][2] >> 15);
 
-#ifdef DebugDSP1
-	Log_Message("OP03 F: %d L: %d U: %d / X: %d Y: %d Z: %d", DSP1.Op03F, DSP1.Op03L, DSP1.Op03U, DSP1.Op03X, DSP1.Op03Y, DSP1.Op03Z);
-#endif
 }
 
 static void DSP1_Op13 (void)
@@ -1053,9 +994,6 @@ static void DSP1_Op13 (void)
 	DSP1.Op13Y = (DSP1.Op13F * DSP1.matrixB[0][1] >> 15) + (DSP1.Op13L * DSP1.matrixB[1][1] >> 15) + (DSP1.Op13U * DSP1.matrixB[2][1] >> 15);
 	DSP1.Op13Z = (DSP1.Op13F * DSP1.matrixB[0][2] >> 15) + (DSP1.Op13L * DSP1.matrixB[1][2] >> 15) + (DSP1.Op13U * DSP1.matrixB[2][2] >> 15);
 
-#ifdef DebugDSP1
-	Log_Message("OP13 F: %d L: %d U: %d / X: %d Y: %d Z: %d", DSP1.Op13F, DSP1.Op13L, DSP1.Op13U, DSP1.Op13X, DSP1.Op13Y, DSP1.Op13Z);
-#endif
 }
 
 static void DSP1_Op23 (void)
@@ -1064,9 +1002,6 @@ static void DSP1_Op23 (void)
 	DSP1.Op23Y = (DSP1.Op23F * DSP1.matrixC[0][1] >> 15) + (DSP1.Op23L * DSP1.matrixC[1][1] >> 15) + (DSP1.Op23U * DSP1.matrixC[2][1] >> 15);
 	DSP1.Op23Z = (DSP1.Op23F * DSP1.matrixC[0][2] >> 15) + (DSP1.Op23L * DSP1.matrixC[1][2] >> 15) + (DSP1.Op23U * DSP1.matrixC[2][2] >> 15);
 
-#ifdef DebugDSP1
-	Log_Message("OP23 F: %d L: %d U: %d / X: %d Y: %d Z: %d", DSP1.Op23F, DSP1.Op23L, DSP1.Op23U, DSP1.Op23X, DSP1.Op23Y, DSP1.Op23Z);
-#endif
 }
 
 static void DSP1_Op14 (void)
@@ -1139,28 +1074,18 @@ static void DSP1_Op0B (void)
 {
 	DSP1.Op0BS = (DSP1.Op0BX * DSP1.matrixA[0][0] + DSP1.Op0BY * DSP1.matrixA[0][1] + DSP1.Op0BZ * DSP1.matrixA[0][2]) >> 15;
 
-#ifdef DebugDSP1
-	Log_Message("OP0B");
-#endif
 }
 
 static void DSP1_Op1B (void)
 {
 	DSP1.Op1BS = (DSP1.Op1BX * DSP1.matrixB[0][0] + DSP1.Op1BY * DSP1.matrixB[0][1] + DSP1.Op1BZ * DSP1.matrixB[0][2]) >> 15;
 
-#ifdef DebugDSP1
-	Log_Message("OP1B X: %d Y: %d Z: %d S: %d", DSP1.Op1BX, DSP1.Op1BY, DSP1.Op1BZ, DSP1.Op1BS);
-	Log_Message("     MX: %d MY: %d MZ: %d Scale: %d", (int16) (DSP1.matrixB[0][0] * 100), (int16) (DSP1.matrixB[0][1] * 100), (int16) (DSP1.matrixB[0][2] * 100), (int16) (DSP1.Op1BS * 100));
-#endif
 }
 
 static void DSP1_Op2B (void)
 {
 	DSP1.Op2BS = (DSP1.Op2BX * DSP1.matrixC[0][0] + DSP1.Op2BY * DSP1.matrixC[0][1] + DSP1.Op2BZ * DSP1.matrixC[0][2]) >> 15;
 
-#ifdef DebugDSP1
-	Log_Message("OP2B");
-#endif
 }
 
 static void DSP1_Op08 (void)
@@ -1169,19 +1094,12 @@ static void DSP1_Op08 (void)
 	DSP1.Op08Ll =  op08Size        & 0xffff;
 	DSP1.Op08Lh = (op08Size >> 16) & 0xffff;
 
-#ifdef DebugDSP1
-	Log_Message("OP08 %d,%d,%d", DSP1.Op08X, DSP1.Op08Y, DSP1.Op08Z);
-	Log_Message("OP08 ((OP08X^2)+(OP08Y^2)+(OP08Z^2))=%x", op08Size);
-#endif
 }
 
 static void DSP1_Op18 (void)
 {
 	DSP1.Op18D = (DSP1.Op18X * DSP1.Op18X + DSP1.Op18Y * DSP1.Op18Y + DSP1.Op18Z * DSP1.Op18Z - DSP1.Op18R * DSP1.Op18R) >> 15;
 
-#ifdef DebugDSP1
-	Log_Message("OP18 X: %d Y: %d Z: %d R: %D DIFF %d", DSP1.Op18X, DSP1.Op18Y, DSP1.Op38Z, DSP1.Op18D);
-#endif
 }
 
 static void DSP1_Op38 (void)
@@ -1189,9 +1107,6 @@ static void DSP1_Op38 (void)
 	DSP1.Op38D = (DSP1.Op38X * DSP1.Op38X + DSP1.Op38Y * DSP1.Op38Y + DSP1.Op38Z * DSP1.Op38Z - DSP1.Op38R * DSP1.Op38R) >> 15;
 	DSP1.Op38D++;
 
-#ifdef DebugDSP1
-	Log_Message("OP38 X: %d Y: %d Z: %d R: %D DIFF %d", DSP1.Op38X, DSP1.Op38Y, DSP1.Op38Z, DSP1.Op38D);
-#endif
 }
 
 static void DSP1_Op28 (void)
@@ -1217,10 +1132,6 @@ static void DSP1_Op28 (void)
 		DSP1.Op28R >>= (E >> 1);
 	}
 
-#ifdef DebugDSP1
-	Log_Message("OP28 X:%d Y:%d Z:%d", DSP1.Op28X, DSP1.Op28Y, DSP1.Op28Z);
-	Log_Message("OP28 Vector Length %d", DSP1.Op28R);
-#endif
 }
 
 static void DSP1_Op1C (void)
@@ -1243,18 +1154,12 @@ static void DSP1_Op1C (void)
 	DSP1.Op1CYAR = DSP1.Op1CY1;
 	DSP1.Op1CZAR = DSP1.Op1CZ1;
 
-#ifdef DebugDSP1
-	Log_Message("OP1C Apply Matrix CX:%d CY:%d CZ", DSP1.Op1CXAR, DSP1.Op1CYAR, DSP1.Op1CZAR);
-#endif
 }
 
 static void DSP1_Op0F (void)
 {
 	DSP1.Op0FPass = 0x0000;
 
-#ifdef DebugDSP1
-	Log_Message("OP0F RAM Test Pass:%d", DSP1.Op0FPass);
-#endif
 }
 
 static void DSP1_Op2F (void)

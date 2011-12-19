@@ -177,6 +177,7 @@
 
 #include "snes9x.h"
 #include "memmap.h"
+#include "getset.h"
 
 #define CPU								SA1
 #define ICPU							SA1

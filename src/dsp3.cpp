@@ -177,6 +177,7 @@
 
 #include "snes9x.h"
 #include "memmap.h"
+#include "getset.h"
 
 static void (*SetDSP3) (void);
 
@@ -312,10 +313,6 @@ static const uint16	DSP3_DataROM[1024] =
 	0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
 };
 
-static bool8 DSP3_GetBits (uint8);
-//static void DSP3_MemorySize (void);
-static void DSP3_TestMemory (void);
-static void DSP3_DumpDataROM (void);
 static void DSP3_MemoryDump (void);
 static void DSP3_Coordinate (void);
 static void DSP3_Command (void);
@@ -360,14 +357,6 @@ void DSP3_Reset (void)
 	DSP3.SR = 0x0084;
 	SetDSP3 = &DSP3_Command;
 }
-
-/*
-static void DSP3_MemorySize (void)
-{
-	DSP3.DR = 0x0300;
-	SetDSP3 = &DSP3_Reset;
-}
-*/
 
 static void DSP3_TestMemory (void)
 {

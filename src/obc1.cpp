@@ -177,7 +177,7 @@
 
 #include "snes9x.h"
 #include "memmap.h"
-
+#include "getset.h"
 
 uint8 S9xGetOBC1 (uint16 Address)
 {

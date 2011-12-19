@@ -197,14 +197,11 @@ const char * S9xGetCrosshair (int idx);
 // You may also prefix a 't' (e.g. tBlue) for a 50%-transparent version.
 // Use idx = -1 or fg/bg = NULL to keep the current setting.
 
-enum crosscontrols
-{
-	X_MOUSE1,
-	X_MOUSE2,
-	X_SUPERSCOPE,
-	X_JUSTIFIER1,
-	X_JUSTIFIER2
-};
+#define X_MOUSE1 0
+#define X_MOUSE2 1
+#define X_SUPERSCOPE 2
+#define X_JUSTIFIER1 3
+#define X_JUSTIFIER2 4
 
 // In gfx.cpp, much like S9xDisplayChar() except it takes the parameters
 // listed and looks up GFX.Screen.

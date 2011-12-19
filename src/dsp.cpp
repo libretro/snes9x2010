@@ -177,6 +177,7 @@
 
 #include "snes9x.h"
 #include "memmap.h"
+#include "getset.h"
 
 uint8	(*GetDSP) (uint16)        = NULL;
 void	(*SetDSP) (uint8, uint16) = NULL;

@@ -186,7 +186,6 @@
 #else
 #include <memory.h>
 #endif
-#include <time.h>
 #include <string.h>
 #if defined(HAVE_STRINGS_H) && !defined(__CELLOS_LV2__) && !defined(__LIBXENON__)
 #include <strings.h>
@@ -194,7 +193,6 @@
 #include <sys/types.h>
 
 #ifdef __WIN32__
-//#define RIGHTSHIFT_IS_SAR
 #define RIGHTSHIFT_int8_IS_SAR
 #define RIGHTSHIFT_int16_IS_SAR
 #define RIGHTSHIFT_int32_IS_SAR
@@ -206,8 +204,6 @@
 #define PIXEL_FORMAT RGB555
 #endif
 
-#ifndef snes9x_types_defined
-#define snes9x_types_defined
 typedef unsigned char		bool8;
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
@@ -253,7 +249,6 @@ typedef long long		int64;
 typedef unsigned long long	uint64;
 #endif	//  __WIN32__
 #endif	// HAVE_STDINT_H
-#endif	// snes9x_types_defined
 
 #ifndef TRUE
 #define TRUE	1
@@ -305,9 +300,6 @@ void _makepath (char *, const char *, const char *, const char *, const char *);
 #define WRITE_3WORD(s, d)	*(uint8 *) (s) = (uint8) (d), *((uint8 *) (s) + 1) = (uint8) ((d) >> 8), *((uint8 *) (s) + 2) = (uint8) ((d) >> 16)
 #define WRITE_DWORD(s, d)	*(uint8 *) (s) = (uint8) (d), *((uint8 *) (s) + 1) = (uint8) ((d) >> 8), *((uint8 *) (s) + 2) = (uint8) ((d) >> 16), *((uint8 *) (s) + 3) = (uint8) ((d) >> 24)
 #endif
-
-#define SWAP_WORD(s)		(s) = (((s) & 0xff) <<  8) | (((s) & 0xff00) >> 8)
-#define SWAP_DWORD(s)		(s) = (((s) & 0xff) << 24) | (((s) & 0xff00) << 8) | (((s) & 0xff0000) >> 8) | (((s) & 0xff000000) >> 24)
 
 #include "pixform.h"
 

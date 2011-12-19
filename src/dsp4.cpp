@@ -187,6 +187,7 @@
 
 #include "snes9x.h"
 #include "memmap.h"
+#include "getset.h"
 
 #define DSP4_CLEAR_OUT() \
 	{ DSP4.out_count = 0; DSP4.out_index = 0; }

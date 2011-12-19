@@ -193,9 +193,11 @@
 
 
 #include <limits>
+#include <time.h>
 
 #include "snes9x.h"
 #include "memmap.h"
+#include "getset.h"
 #include "srtc.h"
 #include "display.h"
 

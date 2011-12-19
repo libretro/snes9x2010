@@ -308,6 +308,4 @@ extern SMulti	Multi;
 #define WRAP_BANK 0xFFFF
 #define WRAP_NONE 0xFFFFFF
 
-#include "getset.h"
-
 #endif

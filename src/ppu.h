@@ -178,6 +178,7 @@
 #ifndef _PPU_H_
 #define _PPU_H_
 
+
 #define FIRST_VISIBLE_LINE	1
 
 #define TILE_2BIT		0
@@ -197,10 +198,10 @@
 #define CLIP_XOR		2
 #define CLIP_XNOR		3
 
-#define PPU_IRQ_SOURCE		(1 << 1)
-#define GSU_IRQ_SOURCE		(1 << 2)
-#define SA1_IRQ_SOURCE		(1 << 7)
-#define SA1_DMA_IRQ_SOURCE	(1 << 5)
+#define PPU_IRQ_SOURCE		2
+#define GSU_IRQ_SOURCE		4
+#define SA1_DMA_IRQ_SOURCE	32
+#define SA1_IRQ_SOURCE		128
 
 struct ClipData
 {
