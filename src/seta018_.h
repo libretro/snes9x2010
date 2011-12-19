@@ -174,20 +174,10 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
-#include "snes9x.h"
-#include "memmap.h"
-#include "seta.h"
-
-static int	line;	// line counter
-
-
 uint8 S9xGetST018 (uint32 Address)
 {
 	uint8	t       = 0;
 	uint16	address = (uint16) Address & 0xFFFF;
-
-	line++;
 
 	// these roles may be flipped
 	// op output
@@ -216,9 +206,6 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 {
 	static bool	reset   = false;
 	uint16		address = (uint16) Address & 0xFFFF;
-
-
-	line++;
 
 	if (!reset)
 	{

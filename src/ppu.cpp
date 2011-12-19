@@ -2862,7 +2862,7 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 				{
 					//Check Missing H Timer Range
 					bool v_counter_eq_vtimer_pos = (CPU.V_Counter == PPU.VTimerPosition);
-					if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || v_counter_eq_vtimer_pos) || PPU.VTimerEnabled && v_counter_eq_vtimer_pos)
+					if ((PPU.HTimerEnabled && (!PPU.VTimerEnabled || v_counter_eq_vtimer_pos)) || (PPU.VTimerEnabled && v_counter_eq_vtimer_pos))
 					{
 						S9X_SET_IRQ(PPU_IRQ_SOURCE);
 					}

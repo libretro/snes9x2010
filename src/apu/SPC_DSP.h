@@ -187,6 +187,4 @@ void spc_copier_extra(spc_state_copy_t * copier);
 }
 
 #endif
-
 #endif
-

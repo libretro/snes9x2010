@@ -174,8 +174,9 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
+#include <math.h>
 #include "snes9x.h"
+#include "memmap.h"
 #include "seta.h"
 
 uint8	(*GetSETA) (uint32)        = &S9xGetST010;
@@ -191,3 +192,7 @@ void S9xSetSetaDSP (uint8 Byte, uint32 Address)
 {
 	SetSETA (Address, Byte);
 }
+
+#include "seta010_.h"
+#include "seta011_.h"
+#include "seta018_.h"

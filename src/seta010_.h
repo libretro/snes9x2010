@@ -174,12 +174,6 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
-#include <math.h>
-#include "snes9x.h"
-#include "memmap.h"
-#include "seta.h"
-
 static const int16	ST010_SinTable[256] =
 {
 	 0x0000,  0x0324,  0x0648,  0x096a,  0x0c8c,  0x0fab,  0x12c8,  0x15e2,
@@ -316,7 +310,6 @@ static const int16	ST010_M7Scale[176] =
 #endif
 
 #define ST010_WORD(offset)	(Memory.SRAM[offset + 1] << 8) | Memory.SRAM[offset]
-
 
 static int16 ST010_Sin (int16 Theta)
 {

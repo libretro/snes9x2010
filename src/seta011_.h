@@ -174,21 +174,12 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
-#include "snes9x.h"
-#include "memmap.h"
-#include "seta.h"
-
 static uint8	board[9][9];	// shougi playboard
-static int		line = 0;		// line counter
-
 
 uint8 S9xGetST011 (uint32 Address)
 {
 	uint8	t;
 	uint16	address = (uint16) Address & 0xFFFF;
-
-	line++;
 
 	// status check
 	if (address == 0x01)
@@ -203,8 +194,6 @@ void S9xSetST011 (uint32 Address, uint8 Byte)
 {
 	static bool	reset   = false;
 	uint16		address = (uint16) Address & 0xFFFF;
-
-	line++;
 
 	if (!reset)
 	{

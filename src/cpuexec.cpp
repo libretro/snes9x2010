@@ -1119,7 +1119,7 @@ void S9xDoHEventProcessing (void)
 		case HC_IRQ_7_9_EVENT:
 		case HC_IRQ_9_A_EVENT:
 		case HC_IRQ_A_1_EVENT:
-			if (PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition)) || PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition))
+			if ((PPU.HTimerEnabled && (!PPU.VTimerEnabled || (CPU.V_Counter == PPU.VTimerPosition))) || (PPU.VTimerEnabled && (CPU.V_Counter == PPU.VTimerPosition)))
 			{
 				S9X_SET_IRQ(PPU_IRQ_SOURCE);
 			}
