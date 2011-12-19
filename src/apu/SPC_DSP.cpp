@@ -713,9 +713,6 @@ static inline void dsp_echo_29()
 	dsp_m.t_echo_enabled = dsp_m.regs [R_FLG];
 }
 
-#define ECHO_30() \
-	ECHO_WRITE(1);
-
 //// Timing
 
 // Execute clock for a particular voice
@@ -879,7 +876,7 @@ loop:
 		case 30:
 		dsp_misc_30();
 		dsp_voice_V3c( &dsp_m.voices [0] );
-		ECHO_30();
+		ECHO_WRITE(1);
 		if ( 31 && !--clocks_remain )
 			break;
 		case 31:

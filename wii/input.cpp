@@ -478,9 +478,9 @@ static void decodepad (int chan)
 				|| ( (exp_type == WPAD_EXP_CLASSIC) && (wp & btnmap[CTRL_PAD][CTRLR_CLASSIC][i]) )	// classic controller
 				|| ( (exp_type == WPAD_EXP_NUNCHUK) && (wp & btnmap[CTRL_PAD][CTRLR_NUNCHUK][i]) )	// nunchuk + wiimote
 		   )
-			S9xApplyCommand(keymap[offset + i], true, 0);
+			S9xApplyCommand(keymap[offset + i], true, chan);
 		else
-			S9xApplyCommand(keymap[offset + i], false, 0);
+			S9xApplyCommand(keymap[offset + i], false, chan);
 	}
 
 	/*** Superscope ***/
@@ -500,19 +500,19 @@ static void decodepad (int chan)
 					if((i == 3 && scopeTurbo == 1) || // turbo ON already, don't change
 						(i == 4 && scopeTurbo == 0)) // turbo OFF already, don't change
 					{
-						S9xApplyCommand(keymap[offset + i], false, 0);
+						S9xApplyCommand(keymap[offset + i], false, chan);
 					}
 					else // turbo changed to ON or OFF
 					{
 						scopeTurbo = 4-i;
-						S9xApplyCommand(keymap[offset + i], true, 0);
+						S9xApplyCommand(keymap[offset + i], true, chan);
 					}
 				}
 				else
-					S9xApplyCommand(keymap[offset + i], true, 0);
+					S9xApplyCommand(keymap[offset + i], true, chan);
 			}
 			else
-				S9xApplyCommand(keymap[offset + i], false, 0);
+				S9xApplyCommand(keymap[offset + i], false, chan);
 		}
 		// pointer
 		offset = 0x80;
@@ -529,9 +529,9 @@ static void decodepad (int chan)
 			if (jp & btnmap[CTRL_MOUSE][CTRLR_GCPAD][i]
 			|| wp & btnmap[CTRL_MOUSE][CTRLR_WIIMOTE][i]
 			)
-				S9xApplyCommand(keymap[offset + i], true, 0);
+				S9xApplyCommand(keymap[offset + i], true, chan);
 			else
-				S9xApplyCommand(keymap[offset + i], false, 0);
+				S9xApplyCommand(keymap[offset + i], false, chan);
 		}
 		// pointer
 		offset = 0x81;
@@ -549,9 +549,9 @@ static void decodepad (int chan)
 			if (jp & btnmap[CTRL_JUST][CTRLR_GCPAD][i]
 			|| wp & btnmap[CTRL_JUST][CTRLR_WIIMOTE][i]
 			)
-				S9xApplyCommand(keymap[offset + i], true, 0);
+				S9xApplyCommand(keymap[offset + i], true, chan);
 			else
-				S9xApplyCommand(keymap[offset + i], false, 0);
+				S9xApplyCommand(keymap[offset + i], false, chan);
 		}
 		// pointer
 		offset = 0x83;

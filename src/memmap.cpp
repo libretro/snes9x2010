@@ -991,7 +991,7 @@ static uint32 ReadUPSPointer (const uint8 *data, uint32 &addr, unsigned size)
 //no-header patching errors that result in IPS patches having a 50/50 chance of
 //being applied correctly.
 
-static bool8 ReadUPSPatch (STREAM r, long, int32 &rom_size)
+static bool8 ReadUPSPatch (FILE * r, long, int32 &rom_size)
 {
 	//Reader lacks size() and rewind(), so we need to read in the file to get its size
 	uint8 *data = new uint8[8 * 1024 * 1024];  //allocate a lot of memory, better safe than sorry ...
@@ -1069,7 +1069,7 @@ static bool8 ReadUPSPatch (STREAM r, long, int32 &rom_size)
 	}
 }
 
-static long ReadInt (STREAM r, unsigned nbytes)
+static long ReadInt (FILE * r, unsigned nbytes)
 {
 	long	v = 0;
 
@@ -1086,7 +1086,7 @@ static long ReadInt (STREAM r, unsigned nbytes)
 
 #define IPS_EOF 0x00454F46l
 
-static bool8 ReadIPSPatch (STREAM r, long offset, int32 &rom_size)
+static bool8 ReadIPSPatch (FILE * r, long offset, int32 &rom_size)
 {
 	int32		ofs;
 	char		fname[6];
@@ -1173,7 +1173,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 #ifdef CUSTOM_FILE_HANDLING
 	CustomCheckForAnyPatch(header, rom_size);
 #else
-	STREAM		patch_file  = NULL;
+	FILE *		patch_file  = NULL;
 	uint32		i;
 	long		offset = header ? 512 : 0;
 	int			ret;
@@ -1186,12 +1186,12 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 	_splitpath(rom_filename, drive, dir, name, ext);
 	_makepath(fname, drive, dir, name, "ups");
 
-	if ((patch_file = OPEN_STREAM(fname, "rb")) != NULL)
+	if ((patch_file = fopen(fname, "rb")) != NULL)
 	{
 		printf("Using UPS patch %s", fname);
 
 		ret = ReadUPSPatch(patch_file, 0, rom_size);
-		CLOSE_STREAM(patch_file);
+		fclose(patch_file);
 
 		if (ret)
 		{
@@ -1204,12 +1204,12 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 
 	n = S9xGetFilename(".ups", IPS_DIR);
 
-	if ((patch_file = OPEN_STREAM(n, "rb")) != NULL)
+	if ((patch_file = fopen(n, "rb")) != NULL)
 	{
 		printf("Using UPS patch %s", n);
 
 		ret = ReadUPSPatch(patch_file, 0, rom_size);
-		CLOSE_STREAM(patch_file);
+		fclose(patch_file);
 
 		if (ret)
 		{
@@ -1225,12 +1225,12 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 	_splitpath(rom_filename, drive, dir, name, ext);
 	_makepath(fname, drive, dir, name, "ips");
 
-	if ((patch_file = OPEN_STREAM(fname, "rb")) != NULL)
+	if ((patch_file = fopen(fname, "rb")) != NULL)
 	{
 		printf("Using IPS patch %s", fname);
 
 		ret = ReadIPSPatch(patch_file, offset, rom_size);
-		CLOSE_STREAM(patch_file);
+		fclose(patch_file);
 
 		if (ret)
 		{
@@ -1251,13 +1251,13 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 			snprintf(ips, 8, "%03d.ips", i);
 			_makepath(fname, drive, dir, name, ips);
 
-			if (!(patch_file = OPEN_STREAM(fname, "rb")))
+			if (!(patch_file = fopen(fname, "rb")))
 				break;
 
 			printf("Using IPS patch %s", fname);
 
 			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
+			fclose(patch_file);
 
 			if (ret)
 			{
@@ -1287,13 +1287,13 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 				break;
 			_makepath(fname, drive, dir, name, ips);
 
-			if (!(patch_file = OPEN_STREAM(fname, "rb")))
+			if (!(patch_file = fopen(fname, "rb")))
 				break;
 
 			printf("Using IPS patch %s", fname);
 
 			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
+			fclose(patch_file);
 
 			if (ret)
 			{
@@ -1321,13 +1321,13 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 			snprintf(ips, 4, "ip%d", i);
 			_makepath(fname, drive, dir, name, ips);
 
-			if (!(patch_file = OPEN_STREAM(fname, "rb")))
+			if (!(patch_file = fopen(fname, "rb")))
 				break;
 
 			printf("Using IPS patch %s", fname);
 
 			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
+			fclose(patch_file);
 
 			if (ret)
 			{
@@ -1347,12 +1347,12 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 
 	n = S9xGetFilename(".ips", IPS_DIR);
 
-	if ((patch_file = OPEN_STREAM(n, "rb")) != NULL)
+	if ((patch_file = fopen(n, "rb")) != NULL)
 	{
 		printf("Using IPS patch %s", n);
 
 		ret = ReadIPSPatch(patch_file, offset, rom_size);
-		CLOSE_STREAM(patch_file);
+		fclose(patch_file);
 
 		if (ret)
 		{
@@ -1373,13 +1373,13 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 			snprintf(ips, 9, ".%03d.ips", i);
 			n = S9xGetFilename(ips, IPS_DIR);
 
-			if (!(patch_file = OPEN_STREAM(n, "rb")))
+			if (!(patch_file = fopen(n, "rb")))
 				break;
 
 			printf("Using IPS patch %s", n);
 
 			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
+			fclose(patch_file);
 
 			if (ret)
 			{
@@ -1409,13 +1409,13 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 				break;
 			n = S9xGetFilename(ips, IPS_DIR);
 
-			if (!(patch_file = OPEN_STREAM(n, "rb")))
+			if (!(patch_file = fopen(n, "rb")))
 				break;
 
 			printf("Using IPS patch %s", n);
 
 			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
+			fclose(patch_file);
 
 			if (ret)
 			{
@@ -1443,13 +1443,13 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 			snprintf(ips, 5, ".ip%d", i);
 			n = S9xGetFilename(ips, IPS_DIR);
 
-			if (!(patch_file = OPEN_STREAM(n, "rb")))
+			if (!(patch_file = fopen(n, "rb")))
 				break;
 
 			printf("Using IPS patch %s", n);
 
 			ret = ReadIPSPatch(patch_file, offset, rom_size);
-			CLOSE_STREAM(patch_file);
+			fclose(patch_file);
 
 			if (ret)
 			{
@@ -2348,6 +2348,66 @@ void CMemory::map_WriteProtectROM (void)
 	MAP_HIROMSRAM(); \
 	MAP_WRAM(); \
 	map_WriteProtectROM();
+
+#ifdef __LIBSNES__
+
+static const char * KartContents (uint8 ROMType)
+{
+	static char			str[64];
+	static const char	*contents[3] = { "ROM", "ROM+RAM", "ROM+RAM+BAT" };
+
+	char	chip[16];
+
+	if (ROMType == 0 && !Settings.BS)
+		return ("ROM");
+
+	if (Settings.BS)
+		strcpy(chip, "+BS");
+	else
+	if (Settings.SuperFX)
+		strcpy(chip, "+Super FX");
+	else
+	if (Settings.SDD1)
+		strcpy(chip, "+S-DD1");
+	else
+	if (Settings.OBC1)
+		strcpy(chip, "+OBC1");
+	else
+	if (Settings.SA1)
+		strcpy(chip, "+SA-1");
+	else
+	if (Settings.SPC7110RTC)
+		strcpy(chip, "+SPC7110+RTC");
+	else
+	if (Settings.SPC7110)
+		strcpy(chip, "+SPC7110");
+	else
+	if (Settings.SRTC)
+		strcpy(chip, "+S-RTC");
+	else
+	if (Settings.C4)
+		strcpy(chip, "+C4");
+	else
+	if (Settings.SETA == ST_010)
+		strcpy(chip, "+ST-010");
+	else
+	if (Settings.SETA == ST_011)
+		strcpy(chip, "+ST-011");
+	else
+	if (Settings.SETA == ST_018)
+		strcpy(chip, "+ST-018");
+	else
+	if (Settings.DSP)
+		sprintf(chip, "+DSP-%d", Settings.DSP);
+	else
+		strcpy(chip, "");
+
+	sprintf(str, "%s%s", contents[(ROMType & 0xf) % 3], chip);
+
+	return (str);
+}
+
+#endif
 
 void CMemory::InitROM (void)
 {
@@ -3667,62 +3727,3 @@ const char * CMemory::Size (void)
 	return (str);
 }
 
-#ifdef __LIBSNES__
-
-static const char * KartContents (uint8 ROMType)
-{
-	static char			str[64];
-	static const char	*contents[3] = { "ROM", "ROM+RAM", "ROM+RAM+BAT" };
-
-	char	chip[16];
-
-	if (ROMType == 0 && !Settings.BS)
-		return ("ROM");
-
-	if (Settings.BS)
-		strcpy(chip, "+BS");
-	else
-	if (Settings.SuperFX)
-		strcpy(chip, "+Super FX");
-	else
-	if (Settings.SDD1)
-		strcpy(chip, "+S-DD1");
-	else
-	if (Settings.OBC1)
-		strcpy(chip, "+OBC1");
-	else
-	if (Settings.SA1)
-		strcpy(chip, "+SA-1");
-	else
-	if (Settings.SPC7110RTC)
-		strcpy(chip, "+SPC7110+RTC");
-	else
-	if (Settings.SPC7110)
-		strcpy(chip, "+SPC7110");
-	else
-	if (Settings.SRTC)
-		strcpy(chip, "+S-RTC");
-	else
-	if (Settings.C4)
-		strcpy(chip, "+C4");
-	else
-	if (Settings.SETA == ST_010)
-		strcpy(chip, "+ST-010");
-	else
-	if (Settings.SETA == ST_011)
-		strcpy(chip, "+ST-011");
-	else
-	if (Settings.SETA == ST_018)
-		strcpy(chip, "+ST-018");
-	else
-	if (Settings.DSP)
-		sprintf(chip, "+DSP-%d", Settings.DSP);
-	else
-		strcpy(chip, "");
-
-	sprintf(str, "%s%s", contents[(ROMType & 0xf) % 3], chip);
-
-	return (str);
-}
-
-#endif

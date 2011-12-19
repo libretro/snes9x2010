@@ -213,11 +213,7 @@ typedef struct
 	{
 		union
 		{
-			struct
-			{
-				uint8	idx:3;				// Pad number 0-7
-				uint16	buttons;			// Which buttons to actuate. Use SNES_*_MASK constants from snes9x.h
-			}	joypad;
+			uint16 joypad;	// Which buttons to actuate. Use SNES_*_MASK constants from snes9x.h
 
 			struct
 			{

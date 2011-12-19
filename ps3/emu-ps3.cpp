@@ -152,7 +152,7 @@ static void emulator_save_current_save_state_slot(void)
 
 #define S9xReportButton(i, id, action, pressed) \
       if(keymap[id].type == S9xButtonJoypad) \
-      joypad[i] = ((joypad[i] | keymap[id].button.joypad.buttons) & (((pressed) | -(pressed)) >> 31)) | ((joypad[i] & ~keymap[id].button.joypad.buttons) & ~(((pressed) | -(pressed)) >> 31)); \
+      joypad[i] = ((joypad[i] | keymap[id].button.joypad) & (((pressed) | -(pressed)) >> 31)) | ((joypad[i] & ~keymap[id].button.joypad) & ~(((pressed) | -(pressed)) >> 31)); \
       else if(pressed) \
          special_action_to_execute = action;
 

@@ -516,7 +516,6 @@ s9xcommand_t S9xGetCommandT (const char *name)
 		if (name[6] < '1' || name[6] > '8' || name[7] != ' ')
 			return (cmd);
 
-		cmd.button.joypad.idx = name[6] - '1';
 		s = name + 8;
 		i = 0;
 
@@ -547,7 +546,7 @@ s9xcommand_t S9xGetCommandT (const char *name)
 		if (i == 0 || *s != 0 || *(s - 1) == '+')
 			return (cmd);
 
-		cmd.button.joypad.buttons = i;
+		cmd.button.joypad = i;
 
 		cmd.type = S9xButtonJoypad;
 	}
@@ -744,12 +743,12 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 		#ifdef GEKKO
 		case S9xButtonJoypad:
 			{
-				uint16 r = cmd.button.joypad.buttons;
+				uint16 r = cmd.button.joypad;
 
 				if (data1)
-					joypad[cmd.button.joypad.idx] |= r;
+					joypad[data2] |= r;
 				else
-					joypad[cmd.button.joypad.idx] &= ~r;
+					joypad[data2] &= ~r;
 			}
 			return;
 		#endif

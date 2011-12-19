@@ -9,6 +9,7 @@
 
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
+#include "../src/cpuexec.h"
 #include "../src/srtc.h"
 #include "../src/apu/apu.h"
 #include "../src/gfx.h"
@@ -376,13 +377,13 @@ static void report_buttons()
 				for (int i = BTN_FIRST; i <= BTN_LAST; i++)
 				{
 					s9xcommand_t cmd = keymap[MAKE_BUTTON(port + 1, i)];
-					uint16 r = cmd.button.joypad.buttons;
+					uint16 r = cmd.button.joypad;
 					bool pressed = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JOYPAD, 0, i);
 
 					if (pressed)
-						joypad[cmd.button.joypad.idx] |= r;
+						joypad[port] |= r;
 					else
-						joypad[cmd.button.joypad.idx] &= ~r;
+						joypad[port] &= ~r;
 				}
 				break;
 			case SNES_DEVICE_MULTITAP:
@@ -391,13 +392,13 @@ static void report_buttons()
 					for (int i = BTN_FIRST; i <= BTN_LAST; i++)
 					{
 						s9xcommand_t cmd = keymap[MAKE_BUTTON(j + 2, i)];
-						uint16 r = cmd.button.joypad.buttons;
+						uint16 r = cmd.button.joypad;
 						bool pressed = s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MULTITAP, j, i);
 
 						if (pressed)
-							joypad[cmd.button.joypad.idx] |= r;
+							joypad[j] |= r;
 						else
-							joypad[cmd.button.joypad.idx] &= ~r;
+							joypad[j] &= ~r;
 					}
 				}
 				break;
