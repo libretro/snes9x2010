@@ -228,6 +228,21 @@
 			else \
 				S9xSetCPU(byte_tmp, addr_tmp);
 
+#define S9X_GET_CPU_PREAMBLE(retval, addr_tmp) \
+	if (addr_tmp < 0x4200) \
+	{ \
+		/*JOYSER0 - JOYSER1 */ \
+		if (addr_tmp == 0x4016 || addr_tmp == 0x4017) \
+		{ \
+			pad_read = TRUE; \
+			retval = S9xReadJOYSERn(addr_tmp); \
+		} \
+		else \
+			retval = OpenBus; \
+	} \
+	else \
+		retval = S9xGetCPU(addr_tmp);
+
 extern uint8	OpenBus;
 
 static inline int32 memory_speed (uint32 address)
@@ -261,10 +276,12 @@ inline uint8 S9xGetByte (uint32 Address)
 	switch ((intptr_t) GetAddress)
 	{
 		case MAP_CPU:
-			byte = S9xGetCPU(Address & 0xffff);
+		{
+			uint16 addr_tmp = Address & 0xffff;
+			S9X_GET_CPU_PREAMBLE(byte, addr_tmp);
 			addCyclesInMemoryAccess;
 			return (byte);
-
+		}
 		case MAP_PPU:
 			if (CPU.InDMAorHDMA && (Address & 0xff00) == 0x2100)
 				return (OpenBus);
@@ -391,12 +408,17 @@ inline uint16 S9xGetWord (uint32 Address, uint32 w)
 	switch ((intptr_t) GetAddress)
 	{
 		case MAP_CPU:
-			word  = S9xGetCPU(Address & 0xffff);
-			addCyclesInMemoryAccess;
-			word |= S9xGetCPU((Address + 1) & 0xffff) << 8;
-			addCyclesInMemoryAccess;
-			return (word);
-
+			{
+				uint16 addr_tmp = Address & 0xffff;
+				S9X_GET_CPU_PREAMBLE(word, addr_tmp);
+				addCyclesInMemoryAccess;
+				uint16 temp_result = 0;
+				addr_tmp = (Address + 1) & 0xffff;
+				S9X_GET_CPU_PREAMBLE(temp_result, addr_tmp);
+				word |= temp_result << 8;
+				addCyclesInMemoryAccess;
+				return (word);
+			}
 		case MAP_PPU:
 			if (CPU.InDMAorHDMA)
 			{

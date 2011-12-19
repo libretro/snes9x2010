@@ -3026,8 +3026,6 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 	Memory.FillRAM[Address] = Byte;
 }
 
-extern bool8 pad_read;
-
 static inline uint8 REGISTER_4212 (void)
 {
 	uint8	byte = 0;
@@ -3044,18 +3042,6 @@ static inline uint8 REGISTER_4212 (void)
 
 uint8 S9xGetCPU (uint16 Address)
 {
-	if (Address < 0x4200)
-	{
-		//JOYSER0 - JOYSER1
-		if (Address == 0x4016 || Address == 0x4017)
-		{
-			pad_read = TRUE;
-			return S9xReadJOYSERn(Address);
-		}
-		else
-			return OpenBus;
-	}
-	else
 	if ((Address & 0xff80) == 0x4300)
 	{
 		if (CPU.InDMAorHDMA)

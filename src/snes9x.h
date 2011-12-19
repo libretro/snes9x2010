@@ -461,4 +461,9 @@ extern struct SSNESGameFixes	SNESGameFixes;
 // Use when writing to $4016.
 extern void S9xSetJoypadLatch (bool latch);
 
+// Use when reading $4016/7 (JOYSER0 and JOYSER1).
+extern uint8 S9xReadJOYSERn (int n);
+
+extern bool8 pad_read;
+
 #endif

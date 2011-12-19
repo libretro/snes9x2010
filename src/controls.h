@@ -326,10 +326,6 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2);
 void S9xControlsReset (void);
 void S9xControlsSoftReset (void);
 
-// Use when reading $4016/7 (JOYSER0 and JOYSER1).
-
-uint8 S9xReadJOYSERn (int n);
-
 // End-Of-Frame processing. Sets gun latch variables and tries to draw crosshairs
 
 void S9xControlEOF (void);
