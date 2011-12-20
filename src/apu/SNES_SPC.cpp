@@ -484,16 +484,16 @@ void spc_set_tempo( int t )
 	m.timers [0].prescaler = timer2_shift + other_shift;
 }
 
-#define reset_buf() \
-	/* Start with half extra buffer of silence */ \
-	short* out = m.extra_buf; \
-	while ( out < &m.extra_buf [EXTRA_SIZE_DIV_2] ) \
-		*out++ = 0; \
-	\
-	m.extra_pos = out; \
-	m.buf_begin = 0; \
-	\
+static void spc_reset_buffer(void)
+{
+	/* Start with half extra buffer of silence */
+	short* out = m.extra_buf;
+	while ( out < &m.extra_buf [EXTRA_SIZE_DIV_2] )
+		*out++ = 0;
+	m.extra_pos = out;
+	m.buf_begin = 0;
 	dsp_set_output( 0, 0 );
+}
 
 void spc_reset_common( int timer_counter_init )
 {
@@ -538,7 +538,7 @@ void spc_reset_common( int timer_counter_init )
 	spc_set_tempo( m.tempo );
 	
 	m.extra_clocks = 0;
-	reset_buf();
+	spc_reset_buffer();
 }
 
 void spc_soft_reset()
@@ -553,36 +553,28 @@ void spc_soft_reset()
 
 void spc_set_output( short* out, int size )
 {
-	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-	if ( out )
+	short const* out_end = out + size;
+	m.buf_begin = out;
+	m.buf_end   = out_end;
+
+	// Copy extra to output
+	short const* in = m.extra_buf;
+	while ( in < m.extra_pos && out < out_end )
+		*out++ = *in++;
+
+	// Handle output being full already
+	if ( out >= out_end )
 	{
-		short const* out_end = out + size;
-		m.buf_begin = out;
-		m.buf_end   = out_end;
-		
-		// Copy extra to output
-		short const* in = m.extra_buf;
-		while ( in < m.extra_pos && out < out_end )
+		// Have DSP write to remaining extra space
+		out     = dsp_m.extra; 
+		out_end = &dsp_m.extra[EXTRA_SIZE];
+
+		// Copy any remaining extra samples as if DSP wrote them
+		while ( in < m.extra_pos )
 			*out++ = *in++;
-		
-		// Handle output being full already
-		if ( out >= out_end )
-		{
-			// Have DSP write to remaining extra space
-			out     = dsp_m.extra; 
-			out_end = &dsp_m.extra[EXTRA_SIZE];
-			
-			// Copy any remaining extra samples as if DSP wrote them
-			while ( in < m.extra_pos )
-				*out++ = *in++;
-		}
-		
-		dsp_set_output( out, out_end - out );
 	}
-	else
-	{
-		reset_buf();
-	}
+
+	dsp_set_output( out, out_end - out );
 }
 
 #if !SPC_NO_COPY_STATE_FUNCS
@@ -791,10 +783,9 @@ inc_pc_loop:
 	pc++;
 loop:
 	{
-		unsigned opcode;
+		unsigned opcode = *pc;
 		unsigned data;
 
-		opcode = *pc;
 		if (allow_time_overflow && rel_time >= 0 )
 			goto stop;
 		if ( (rel_time += m.cycle_table [opcode]) > 0 && !allow_time_overflow)

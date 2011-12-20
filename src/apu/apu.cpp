@@ -402,6 +402,7 @@ void S9xFinalizeSamples (void)
 	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED()))
 		sound_in_sync = TRUE;
 
+	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	spc_set_output(landing_buffer, buffer_size >> 1);
 }
 
@@ -474,6 +475,7 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	else
 		resampler_resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
 
+	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	spc_set_output(landing_buffer, buffer_size >> 1);
 
 	UpdatePlaybackRate();
@@ -560,6 +562,9 @@ void S9xResetAPU (void)
 	reference_time = 0;
 	spc_remainder = 0;
 	spc_reset();
+
+	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
+
 	spc_set_output(landing_buffer, buffer_size >> 1);
 
 	resampler_clear();
@@ -570,6 +575,8 @@ void S9xSoftResetAPU (void)
 	reference_time = 0;
 	spc_remainder = 0;
 	spc_soft_reset();
+
+	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	spc_set_output(landing_buffer, buffer_size >> 1);
 
 	resampler_clear();
