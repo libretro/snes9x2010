@@ -1708,6 +1708,7 @@ static inline void REGISTER_2119_tile (uint8 Byte)
 }
 
 static uint8 dma_channels_to_be_used[8] = {0};
+static bool special_chips_active = false;
 
 static void S9xDoDMA (void)
 {
@@ -1781,184 +1782,183 @@ static void S9xDoDMA (void)
 			count = 0x10000;
 
 		// Prepare for custom chip DMA
-
-		// S-DD1
-
 		uint8	*in_sdd1_dma = NULL;
-
-		if (Settings.SDD1)
-		{
-			if (d->AAddressFixed && Memory.FillRAM[0x4801] > 0)
-			{
-				// XXX: Should probably verify that we're DMAing from ROM?
-				// And somewhere we should make sure we're not running across a mapping boundary too.
-				// Hacky support for pre-decompressed S-DD1 data
-				inc = !d->AAddressDecrement ? 1 : -1;
-
-				uint8	*in_ptr = S9xGetBasePointer(((d->ABank << 16) | d->AAddress));
-				if (in_ptr)
-				{
-					in_ptr += d->AAddress;
-					SDD1_decompress(sdd1_decode_buffer, in_ptr, d->TransferBytes);
-				}
-
-				in_sdd1_dma = sdd1_decode_buffer;
-			}
-
-			Memory.FillRAM[0x4801] = 0;
-		}
-
-		// SPC7110
-
 		uint8	*spc7110_dma = NULL;
-
-		if (Settings.SPC7110)
-		{
-			if (d->AAddress == 0x4800 || d->ABank == 0x50)
-			{
-				spc7110_dma = new uint8[d->TransferBytes];
-				for (int i = 0; i < d->TransferBytes; i++)
-					spc7110_dma[i] = s7emu.decomp.read();
-
-				int32	icount = s7emu.r4809 | (s7emu.r480a << 8);
-				icount -= d->TransferBytes;
-				s7emu.r4809 =  icount & 0x00ff;
-				s7emu.r480a = (icount & 0xff00) >> 8;
-
-				inc = 1;
-				d->AAddress -= count;
-			}
-		}
-
-		// SA-1
-
 		bool8	in_sa1_dma = FALSE;
 
-		if (Settings.SA1)
+		// S-DD1
+		if(special_chips_active)
 		{
-			if (SA1.in_char_dma && d->BAddress == 0x18 && (d->ABank & 0xf0) == 0x40)
+			if (Settings.SDD1)
 			{
-				// Perform packed bitmap to PPU character format conversion on the data
-				// before transmitting it to V-RAM via-DMA.
-				int32	num_chars = 1 << ((Memory.FillRAM[0x2231] >> 2) & 7);
-				int32	depth = (Memory.FillRAM[0x2231] & 3) == 0 ? 8 : (Memory.FillRAM[0x2231] & 3) == 1 ? 4 : 2;
-				int32	bytes_per_char = 8 * depth;
-				int32	bytes_per_line = depth * num_chars;
-				int32	char_line_bytes = bytes_per_char * num_chars;
-				uint32	addr = (d->AAddress / char_line_bytes) * char_line_bytes;
-
-				uint8	*base = S9xGetBasePointer((d->ABank << 16) + addr);
-				if (!base)
+				if (d->AAddressFixed && Memory.FillRAM[0x4801] > 0)
 				{
-					//"SA-1: DMA from non-block address $%02X:%04X", d->ABank, addr
-					base = Memory.ROM;
+					// XXX: Should probably verify that we're DMAing from ROM?
+					// And somewhere we should make sure we're not running across a mapping boundary too.
+					// Hacky support for pre-decompressed S-DD1 data
+					inc = !d->AAddressDecrement ? 1 : -1;
+
+					uint8	*in_ptr = S9xGetBasePointer(((d->ABank << 16) | d->AAddress));
+					if (in_ptr)
+					{
+						in_ptr += d->AAddress;
+						SDD1_decompress(sdd1_decode_buffer, in_ptr, d->TransferBytes);
+					}
+
+					in_sdd1_dma = sdd1_decode_buffer;
 				}
 
-				base += addr;
+				Memory.FillRAM[0x4801] = 0;
+			}
 
-				uint8	*buffer = &Memory.ROM[MAX_ROM_SIZE - 0x10000];
-				uint8	*p = buffer;
-				uint32	inc_sa1 = char_line_bytes - (d->AAddress % char_line_bytes);
-				uint32	char_count = inc_sa1 / bytes_per_char;
+			// SPC7110
 
-				in_sa1_dma = TRUE;
 
-				switch (depth)
+			if (Settings.SPC7110)
+			{
+				if (d->AAddress == 0x4800 || d->ABank == 0x50)
 				{
-					case 2:
-						for (int32 i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
-						{
-							uint8	*line = base + (num_chars - char_count) * 2;
-							for (uint32 j = 0; j < char_count && p - buffer < count; j++, line += 2)
-							{
-								uint8	*q = line;
-								for (int32 l = 0; l < 8; l++, q += bytes_per_line)
-								{
-									for (int32 b = 0; b < 2; b++)
-									{
-										uint8	r = *(q + b);
-										*(p + 0) = (*(p + 0) << 1) | ((r >> 0) & 1);
-										*(p + 1) = (*(p + 1) << 1) | ((r >> 1) & 1);
-										*(p + 0) = (*(p + 0) << 1) | ((r >> 2) & 1);
-										*(p + 1) = (*(p + 1) << 1) | ((r >> 3) & 1);
-										*(p + 0) = (*(p + 0) << 1) | ((r >> 4) & 1);
-										*(p + 1) = (*(p + 1) << 1) | ((r >> 5) & 1);
-										*(p + 0) = (*(p + 0) << 1) | ((r >> 6) & 1);
-										*(p + 1) = (*(p + 1) << 1) | ((r >> 7) & 1);
-									}
+					spc7110_dma = new uint8[d->TransferBytes];
+					for (int i = 0; i < d->TransferBytes; i++)
+						spc7110_dma[i] = s7emu.decomp.read();
 
-									p += 2;
+					int32	icount = s7emu.r4809 | (s7emu.r480a << 8);
+					icount -= d->TransferBytes;
+					s7emu.r4809 =  icount & 0x00ff;
+					s7emu.r480a = (icount & 0xff00) >> 8;
+
+					inc = 1;
+					d->AAddress -= count;
+				}
+			}
+
+			// SA-1
+
+			if (Settings.SA1)
+			{
+				if (SA1.in_char_dma && d->BAddress == 0x18 && (d->ABank & 0xf0) == 0x40)
+				{
+					// Perform packed bitmap to PPU character format conversion on the data
+					// before transmitting it to V-RAM via-DMA.
+					int32	num_chars = 1 << ((Memory.FillRAM[0x2231] >> 2) & 7);
+					int32	depth = (Memory.FillRAM[0x2231] & 3) == 0 ? 8 : (Memory.FillRAM[0x2231] & 3) == 1 ? 4 : 2;
+					int32	bytes_per_char = 8 * depth;
+					int32	bytes_per_line = depth * num_chars;
+					int32	char_line_bytes = bytes_per_char * num_chars;
+					uint32	addr = (d->AAddress / char_line_bytes) * char_line_bytes;
+
+					uint8	*base = S9xGetBasePointer((d->ABank << 16) + addr);
+					if (!base)
+					{
+						//"SA-1: DMA from non-block address $%02X:%04X", d->ABank, addr
+						base = Memory.ROM;
+					}
+
+					base += addr;
+
+					uint8	*buffer = &Memory.ROM[MAX_ROM_SIZE - 0x10000];
+					uint8	*p = buffer;
+					uint32	inc_sa1 = char_line_bytes - (d->AAddress % char_line_bytes);
+					uint32	char_count = inc_sa1 / bytes_per_char;
+
+					in_sa1_dma = TRUE;
+
+					switch (depth)
+					{
+						case 2:
+							for (int32 i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
+							{
+								uint8	*line = base + (num_chars - char_count) * 2;
+								for (uint32 j = 0; j < char_count && p - buffer < count; j++, line += 2)
+								{
+									uint8	*q = line;
+									for (int32 l = 0; l < 8; l++, q += bytes_per_line)
+									{
+										for (int32 b = 0; b < 2; b++)
+										{
+											uint8	r = *(q + b);
+											*(p + 0) = (*(p + 0) << 1) | ((r >> 0) & 1);
+											*(p + 1) = (*(p + 1) << 1) | ((r >> 1) & 1);
+											*(p + 0) = (*(p + 0) << 1) | ((r >> 2) & 1);
+											*(p + 1) = (*(p + 1) << 1) | ((r >> 3) & 1);
+											*(p + 0) = (*(p + 0) << 1) | ((r >> 4) & 1);
+											*(p + 1) = (*(p + 1) << 1) | ((r >> 5) & 1);
+											*(p + 0) = (*(p + 0) << 1) | ((r >> 6) & 1);
+											*(p + 1) = (*(p + 1) << 1) | ((r >> 7) & 1);
+										}
+
+										p += 2;
+									}
 								}
 							}
-						}
 
-						break;
+							break;
 
-					case 4:
-						for (int32 i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
-						{
-							uint8	*line = base + (num_chars - char_count) * 4;
-							for (uint32 j = 0; j < char_count && p - buffer < count; j++, line += 4)
+						case 4:
+							for (int32 i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
 							{
-								uint8	*q = line;
-								for (int32 l = 0; l < 8; l++, q += bytes_per_line)
+								uint8	*line = base + (num_chars - char_count) * 4;
+								for (uint32 j = 0; j < char_count && p - buffer < count; j++, line += 4)
 								{
-									for (int32 b = 0; b < 4; b++)
+									uint8	*q = line;
+									for (int32 l = 0; l < 8; l++, q += bytes_per_line)
 									{
-										uint8	r = *(q + b);
-										*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
-										*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
-										*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
-										*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
-										*(p +  0) = (*(p +  0) << 1) | ((r >> 4) & 1);
-										*(p +  1) = (*(p +  1) << 1) | ((r >> 5) & 1);
-										*(p + 16) = (*(p + 16) << 1) | ((r >> 6) & 1);
-										*(p + 17) = (*(p + 17) << 1) | ((r >> 7) & 1);
+										for (int32 b = 0; b < 4; b++)
+										{
+											uint8	r = *(q + b);
+											*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
+											*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
+											*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
+											*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
+											*(p +  0) = (*(p +  0) << 1) | ((r >> 4) & 1);
+											*(p +  1) = (*(p +  1) << 1) | ((r >> 5) & 1);
+											*(p + 16) = (*(p + 16) << 1) | ((r >> 6) & 1);
+											*(p + 17) = (*(p + 17) << 1) | ((r >> 7) & 1);
+										}
+
+										p += 2;
 									}
 
-									p += 2;
+									p += 32 - 16;
 								}
-
-								p += 32 - 16;
 							}
-						}
 
-						break;
+							break;
 
-					case 8:
-						for (int32 i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
-						{
-							uint8	*line = base + (num_chars - char_count) * 8;
-							for (uint32 j = 0; j < char_count && p - buffer < count; j++, line += 8)
+						case 8:
+							for (int32 i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
 							{
-								uint8	*q = line;
-								for (int32 l = 0; l < 8; l++, q += bytes_per_line)
+								uint8	*line = base + (num_chars - char_count) * 8;
+								for (uint32 j = 0; j < char_count && p - buffer < count; j++, line += 8)
 								{
-									for (int32 b = 0; b < 8; b++)
+									uint8	*q = line;
+									for (int32 l = 0; l < 8; l++, q += bytes_per_line)
 									{
-										uint8	r = *(q + b);
-										*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
-										*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
-										*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
-										*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
-										*(p + 32) = (*(p + 32) << 1) | ((r >> 4) & 1);
-										*(p + 33) = (*(p + 33) << 1) | ((r >> 5) & 1);
-										*(p + 48) = (*(p + 48) << 1) | ((r >> 6) & 1);
-										*(p + 49) = (*(p + 49) << 1) | ((r >> 7) & 1);
+										for (int32 b = 0; b < 8; b++)
+										{
+											uint8	r = *(q + b);
+											*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
+											*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
+											*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
+											*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
+											*(p + 32) = (*(p + 32) << 1) | ((r >> 4) & 1);
+											*(p + 33) = (*(p + 33) << 1) | ((r >> 5) & 1);
+											*(p + 48) = (*(p + 48) << 1) | ((r >> 6) & 1);
+											*(p + 49) = (*(p + 49) << 1) | ((r >> 7) & 1);
+										}
+
+										p += 2;
 									}
 
-									p += 2;
+									p += 64 - 16;
 								}
-
-								p += 64 - 16;
 							}
-						}
 
-						break;
+							break;
+					}
 				}
 			}
 		}
-
 
 		// Do Transfer
 
@@ -1979,29 +1979,32 @@ static void S9xDoDMA (void)
 			count = d->AAddressFixed ? rem : (d->AAddressDecrement ? ((p & MEMMAP_MASK) + 1) : (MEMMAP_BLOCK_SIZE - (p & MEMMAP_MASK)));
 
 			// Settings for custom chip DMA
-			if (in_sa1_dma)
+			if(special_chips_active)
 			{
-				base = &Memory.ROM[MAX_ROM_SIZE - 0x10000];
-				p = 0;
-				count = rem;
-			}
-			else
-				if (in_sdd1_dma)
+				if (in_sa1_dma)
 				{
-					base = in_sdd1_dma;
+					base = &Memory.ROM[MAX_ROM_SIZE - 0x10000];
 					p = 0;
 					count = rem;
 				}
 				else
-					if (spc7110_dma)
+					if (in_sdd1_dma)
+					{
+						base = in_sdd1_dma;
+						p = 0;
+						count = rem;
+					}
+					else if (spc7110_dma)
 					{
 						base = spc7110_dma;
 						p = 0;
 						count = rem;
 					}
+			}
 
-			bool8 inWRAM_DMA = ((!in_sa1_dma && !in_sdd1_dma && !spc7110_dma) &&
-					(d->ABank == 0x7e || d->ABank == 0x7f || (!(d->ABank & 0x40) && d->AAddress < 0x2000)));
+				bool8 inWRAM_DMA = ((!in_sa1_dma && !in_sdd1_dma && !spc7110_dma) &&
+						(d->ABank == 0x7e || d->ABank == 0x7f || (!(d->ABank & 0x40) && d->AAddress < 0x2000)));
+
 
 			// 8 cycles per byte
 #define	UPDATE_COUNTERS \
@@ -2958,6 +2961,11 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 					CPU.Cycles += Timings.DMACPUSync;
 
 				memset(dma_channels_to_be_used, 0, 8 * sizeof(uint8));
+
+				if (Settings.SPC7110 || Settings.SDD1 || Settings.SA1)
+					special_chips_active = true;
+				else
+					special_chips_active = false;
 
 				if (Byte & 0x01)
 					dma_channels_to_be_used[0] = 1;
