@@ -1842,8 +1842,6 @@ static void emulator_shutdown(void)
 	if(return_to_MM)
 	{
 		audio_active = false;
-		pthread_mutex_unlock(&audio_lock);
-
 		if(audio_handle)
 		{
 			audio_driver->free(audio_handle);
@@ -2435,7 +2433,7 @@ int main(int argc, char **argv)
 				break;
 #ifdef MULTIMAN_SUPPORT
 			case MODE_MULTIMAN_STARTUP:
-				Emulator_StartROMRunning();
+				Emulator_StartROMRunning(1);
 				Emulator_RequestLoadROM(MULTIMAN_GAME_TO_BOOT);
 				break;
 #endif
