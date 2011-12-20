@@ -942,9 +942,7 @@ void S9xDoHEventProcessing (void)
 			S9xReschedule();
 
 			if (PPU.HDMA && CPU.V_Counter <= PPU.ScreenHeight)
-			{
 				PPU.HDMA = S9xDoHDMA(PPU.HDMA);
-			}
 
 			break;
 
@@ -1009,10 +1007,10 @@ void S9xDoHEventProcessing (void)
 
 			if (CPU.V_Counter != 240 || IPPU.Interlace || !Timings.InterlaceField)	// V=240
 			{
-				if (Timings.WRAMRefreshPos == SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE)	// HC=534
+				if (Timings.WRAMRefreshPos == SNES_WRAM_REFRESH_HC_v2_MIN_ONE_DOT_CYCLE)	// HC=534
 					Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2;					// HC=538
 				else
-					Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE;	// HC=534
+					Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2_MIN_ONE_DOT_CYCLE;	// HC=534
 			}
 
 			if (PPU.HTimerPosition == 0)

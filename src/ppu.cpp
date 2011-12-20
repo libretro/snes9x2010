@@ -191,38 +191,32 @@
 
 extern uint8	*HDMAMemPointers[8];
 
-static inline void S9xLatchCounters (bool force)
+static inline void S9xLatchCounters (void)
 {
-	if (force || (Memory.FillRAM[0x4213] & 0x80))
+	// Latch h and v counters, like the gun
+
+	PPU.HVBeamCounterLatched = 1;
+	PPU.VBeamPosLatched = (uint16) CPU.V_Counter;
+
+	// From byuu:
+	// All dots are 4 cycles long, except dots 322 and 326. dots 322 and 326 are 6 cycles long.
+	// This holds true for all scanlines except scanline 240 on non-interlace odd frames.
+	// The reason for this is because this scanline is only 1360 cycles long,
+	// instead of 1364 like all other scanlines.
+	// This makes the effective range of hscan_pos 0-339 at all times.
+	int32	hc = CPU.Cycles;
+
+	if (Timings.H_Max == Timings.H_Max_Master) // 1364
 	{
-		// Latch h and v counters, like the gun
-
-		PPU.HVBeamCounterLatched = 1;
-		PPU.VBeamPosLatched = (uint16) CPU.V_Counter;
-
-		// From byuu:
-		// All dots are 4 cycles long, except dots 322 and 326. dots 322 and 326 are 6 cycles long.
-		// This holds true for all scanlines except scanline 240 on non-interlace odd frames.
-		// The reason for this is because this scanline is only 1360 cycles long,
-		// instead of 1364 like all other scanlines.
-		// This makes the effective range of hscan_pos 0-339 at all times.
-		int32	hc = CPU.Cycles;
-
-		if (Timings.H_Max == Timings.H_Max_Master) // 1364
-		{
-			if (hc >= 1292)
-				hc -= (ONE_DOT_CYCLE / 2);
-			if (hc >= 1308)
-				hc -= (ONE_DOT_CYCLE / 2);
-		}
-
-		PPU.HBeamPosLatched = (uint16) (hc / ONE_DOT_CYCLE);
-
-		Memory.FillRAM[0x213f] |= 0x40;
+		if (hc >= 1292)
+			hc -= ONE_DOT_CYCLE_DIV_2;
+		if (hc >= 1308)
+			hc -= ONE_DOT_CYCLE_DIV_2;
 	}
 
-	if (CPU.V_Counter >  PPU.GunVLatch || (CPU.V_Counter == PPU.GunVLatch && CPU.Cycles >= PPU.GunHLatch * ONE_DOT_CYCLE))
-		PPU.GunVLatch = 1000;
+	PPU.HBeamPosLatched = (uint16) (hc / ONE_DOT_CYCLE);
+
+	Memory.FillRAM[0x213f] |= 0x40;
 }
 
 #define S9X_TRY_GUN_LATCH() \
@@ -242,9 +236,9 @@ static void S9xUpdateHVTimerPosition (void)
 			if (Timings.H_Max == Timings.H_Max_Master)	// 1364
 			{
 				if (PPU.IRQHBeamPos > 322)
-					PPU.HTimerPosition += (ONE_DOT_CYCLE / 2);
+					PPU.HTimerPosition += (ONE_DOT_CYCLE_DIV_2);
 				if (PPU.IRQHBeamPos > 326)
-					PPU.HTimerPosition += (ONE_DOT_CYCLE / 2);
+					PPU.HTimerPosition += (ONE_DOT_CYCLE_DIV_2);
 			}
 
 			// Add 14 to HTimerPosition
@@ -526,57 +520,56 @@ static inline void REGISTER_2104 (uint8 Byte)
 				IPPU.OBJChanged = TRUE;
 		}
 	}
+	else if (!(PPU.OAMFlip & 1))
+	{
+		PPU.OAMWriteRegister &= 0xff00;
+		PPU.OAMWriteRegister |= Byte;
+		PPU.OAMFlip |= 1;
+		if (PPU.OAMPriorityRotation && (PPU.OAMAddr & 1))
+			IPPU.OBJChanged = TRUE;
+	}
 	else
-		if (!(PPU.OAMFlip & 1))
-		{
-			PPU.OAMWriteRegister &= 0xff00;
-			PPU.OAMWriteRegister |= Byte;
-			PPU.OAMFlip |= 1;
-			if (PPU.OAMPriorityRotation && (PPU.OAMAddr & 1))
-				IPPU.OBJChanged = TRUE;
-		}
-		else
-		{
-			PPU.OAMWriteRegister &= 0x00ff;
-			uint8 lowbyte = (uint8) (PPU.OAMWriteRegister);
-			uint8 highbyte = Byte;
-			PPU.OAMWriteRegister |= Byte << 8;
+	{
+		PPU.OAMWriteRegister &= 0x00ff;
+		uint8 lowbyte = (uint8) (PPU.OAMWriteRegister);
+		uint8 highbyte = Byte;
+		PPU.OAMWriteRegister |= Byte << 8;
 
-			int addr = (PPU.OAMAddr << 1);
-			if (lowbyte != PPU.OAMData[addr] || highbyte != PPU.OAMData[addr + 1])
+		int addr = (PPU.OAMAddr << 1);
+		if (lowbyte != PPU.OAMData[addr] || highbyte != PPU.OAMData[addr + 1])
+		{
+			FLUSH_REDRAW();
+			PPU.OAMData[addr] = lowbyte;
+			PPU.OAMData[addr + 1] = highbyte;
+			IPPU.OBJChanged = TRUE;
+			if (addr & 2)
 			{
-				FLUSH_REDRAW();
-				PPU.OAMData[addr] = lowbyte;
-				PPU.OAMData[addr + 1] = highbyte;
-				IPPU.OBJChanged = TRUE;
-				if (addr & 2)
-				{
-					// Tile
-					PPU.OBJ[addr = PPU.OAMAddr >> 1].Name = PPU.OAMWriteRegister & 0x1ff;
-					// priority, h and v flip.
-					PPU.OBJ[addr].Palette  = (highbyte >> 1) & 7;
-					PPU.OBJ[addr].Priority = (highbyte >> 4) & 3;
-					PPU.OBJ[addr].HFlip    = (highbyte >> 6) & 1;
-					PPU.OBJ[addr].VFlip    = (highbyte >> 7) & 1;
-				}
-				else
-				{
-					// X position (low)
-					PPU.OBJ[addr = PPU.OAMAddr >> 1].HPos &= 0xff00;
-					PPU.OBJ[addr].HPos |= lowbyte;
-					// Sprite Y position
-					PPU.OBJ[addr].VPos = highbyte;
-				}
+				// Tile
+				PPU.OBJ[addr = PPU.OAMAddr >> 1].Name = PPU.OAMWriteRegister & 0x1ff;
+				// priority, h and v flip.
+				PPU.OBJ[addr].Palette  = (highbyte >> 1) & 7;
+				PPU.OBJ[addr].Priority = (highbyte >> 4) & 3;
+				PPU.OBJ[addr].HFlip    = (highbyte >> 6) & 1;
+				PPU.OBJ[addr].VFlip    = (highbyte >> 7) & 1;
 			}
-
-			PPU.OAMFlip &= ~1;
-			++PPU.OAMAddr;
-			if (PPU.OAMPriorityRotation && PPU.FirstSprite != (PPU.OAMAddr >> 1))
+			else
 			{
-				PPU.FirstSprite = (PPU.OAMAddr & 0xfe) >> 1;
-				IPPU.OBJChanged = TRUE;
+				// X position (low)
+				PPU.OBJ[addr = PPU.OAMAddr >> 1].HPos &= 0xff00;
+				PPU.OBJ[addr].HPos |= lowbyte;
+				// Sprite Y position
+				PPU.OBJ[addr].VPos = highbyte;
 			}
 		}
+
+		PPU.OAMFlip &= ~1;
+		++PPU.OAMAddr;
+		if (PPU.OAMPriorityRotation && PPU.FirstSprite != (PPU.OAMAddr >> 1))
+		{
+			PPU.FirstSprite = (PPU.OAMAddr & 0xfe) >> 1;
+			IPPU.OBJChanged = TRUE;
+		}
+	}
 }
 
 static void S9xSetSuperFX (uint8 byte, uint16 address)
@@ -1386,7 +1379,10 @@ uint8 S9xGetPPU (uint16 Address)
 				return (PPU.OpenBus1 = Memory.FillRAM[Address]);
 
 			case 0x2137: // SLHV
-				S9xLatchCounters(0);
+				if ((Memory.FillRAM[0x4213] & 0x80))
+					S9xLatchCounters();
+				if (CPU.V_Counter >  PPU.GunVLatch || (CPU.V_Counter == PPU.GunVLatch && CPU.Cycles >= PPU.GunHLatch * ONE_DOT_CYCLE))
+					PPU.GunVLatch = 1000;
 				return (OpenBus);
 
 			case 0x2138: // OAMDATAREAD
@@ -2883,7 +2879,11 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 
 			case 0x4201: // WRIO
 				if ((Byte & 0x80) == 0 && (Memory.FillRAM[0x4213] & 0x80) == 0x80)
-					S9xLatchCounters(1);
+				{
+					S9xLatchCounters();
+					if (CPU.V_Counter >  PPU.GunVLatch || (CPU.V_Counter == PPU.GunVLatch && CPU.Cycles >= PPU.GunHLatch * ONE_DOT_CYCLE))
+						PPU.GunVLatch = 1000;
+				}
 				else if (CPU.V_Counter >  PPU.GunVLatch || (CPU.V_Counter == PPU.GunVLatch && CPU.Cycles >= PPU.GunHLatch * ONE_DOT_CYCLE))
 				{
 					bool force = (Byte & 0x80) ? true : false;
