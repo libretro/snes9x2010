@@ -184,9 +184,9 @@
 #define DECOMPOSE_PIXEL_RGB565(PIX, R, G, B)	{ (R) = (PIX) >> 11; (G) = ((PIX) >> 6) & 0x1f; (B) = (PIX) & 0x1f; }
 #define SPARE_RGB_BIT_MASK_RGB565			(1 << 5)
 
-#define MAX_RED_RGB565				31
-#define MAX_GREEN_RGB565			63
-#define MAX_BLUE_RGB565				31
+#define MAX_RED_RGB565			31
+#define MAX_GREEN_RGB565		63
+#define MAX_BLUE_RGB565			31
 #define RED_LOW_BIT_MASK_RGB565		0x0800
 #define GREEN_LOW_BIT_MASK_RGB565	0x0020
 #define BLUE_LOW_BIT_MASK_RGB565	0x0001
@@ -204,9 +204,9 @@
 #define DECOMPOSE_PIXEL_RGB555(PIX, R, G, B)	{ (R) = (PIX) >> 10; (G) = ((PIX) >> 5) & 0x1f; (B) = (PIX) & 0x1f; }
 #define SPARE_RGB_BIT_MASK_RGB555			(1 << 15)
 
-#define MAX_RED_RGB555				31
-#define MAX_GREEN_RGB555			31
-#define MAX_BLUE_RGB555				31
+#define MAX_RED_RGB555			31
+#define MAX_GREEN_RGB555		31
+#define MAX_BLUE_RGB555			31
 #define RED_LOW_BIT_MASK_RGB555		0x0400
 #define GREEN_LOW_BIT_MASK_RGB555	0x0020
 #define BLUE_LOW_BIT_MASK_RGB555	0x0001
@@ -224,9 +224,9 @@
 #define DECOMPOSE_PIXEL_BGR565(PIX, R, G, B)	{ (B) = (PIX) >> 11; (G) = ((PIX) >> 6) & 0x1f; (R) = (PIX) & 0x1f; }
 #define SPARE_RGB_BIT_MASK_BGR565			(1 << 5)
 
-#define MAX_RED_BGR565				31
-#define MAX_GREEN_BGR565			63
-#define MAX_BLUE_BGR565				31
+#define MAX_RED_BGR565			31
+#define MAX_GREEN_BGR565		63
+#define MAX_BLUE_BGR565			31
 #define RED_LOW_BIT_MASK_BGR565		0x0001
 #define GREEN_LOW_BIT_MASK_BGR565	0x0040
 #define BLUE_LOW_BIT_MASK_BGR565	0x0800
@@ -244,9 +244,9 @@
 #define DECOMPOSE_PIXEL_BGR555(PIX, R, G, B)	{ (B) = (PIX) >> 10; (G) = ((PIX) >> 5) & 0x1f; (R) = (PIX) & 0x1f; }
 #define SPARE_RGB_BIT_MASK_BGR555			(1 << 15)
 
-#define MAX_RED_BGR555				31
-#define MAX_GREEN_BGR555			31
-#define MAX_BLUE_BGR555				31
+#define MAX_RED_BGR555			31
+#define MAX_GREEN_BGR555		31
+#define MAX_BLUE_BGR555			31
 #define RED_LOW_BIT_MASK_BGR555		0x0001
 #define GREEN_LOW_BIT_MASK_BGR555	0x0020
 #define BLUE_LOW_BIT_MASK_BGR555	0x0400
@@ -304,9 +304,9 @@
 #define DECOMPOSE_PIXEL_RGB5551(PIX, R, G, B)	{ (R) = (PIX) >> 11; (G) = ((PIX) >> 6) & 0x1f; (B) = ((PIX) >> 1) & 0x1f; }
 #define SPARE_RGB_BIT_MASK_RGB5551				(1)
 
-#define MAX_RED_RGB5551				31
-#define MAX_GREEN_RGB5551			31
-#define MAX_BLUE_RGB5551			31
+#define MAX_RED_RGB5551			31
+#define MAX_GREEN_RGB5551		31
+#define MAX_BLUE_RGB5551		31
 #define RED_LOW_BIT_MASK_RGB5551	0x0800
 #define GREEN_LOW_BIT_MASK_RGB5551	0x0040
 #define BLUE_LOW_BIT_MASK_RGB5551	0x0002

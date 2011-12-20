@@ -19,35 +19,36 @@
 #ifndef _SPC7110DEC_H_
 #define _SPC7110DEC_H_
 
-class SPC7110Decomp {
-public:
-  uint8 read();
-  void init(unsigned mode, unsigned offset, unsigned index);
-  void reset();
+class SPC7110Decomp
+{
+	public:
+		uint8 read();
+		void init(unsigned mode, unsigned offset, unsigned index);
+		void reset();
 
-  SPC7110Decomp();
-  ~SPC7110Decomp();
+		SPC7110Decomp();
+		~SPC7110Decomp();
 
-  unsigned decomp_mode;
-  unsigned decomp_offset;
+		unsigned decomp_mode;
+		unsigned decomp_offset;
 
-  //read() will spool chunks half the size of SPC7110_DECOMP_BUFFER_SIZE
-  uint8 *decomp_buffer;
-  unsigned decomp_buffer_rdoffset;
-  unsigned decomp_buffer_wroffset;
-  unsigned decomp_buffer_length;
+		//read() will spool chunks half the size of SPC7110_DECOMP_BUFFER_SIZE
+		uint8 *decomp_buffer;
+		unsigned decomp_buffer_rdoffset;
+		unsigned decomp_buffer_wroffset;
+		unsigned decomp_buffer_length;
 
-  void write(uint8 data);
-  uint8 dataread();
+		void write(uint8 data);
+		uint8 dataread();
 
-  void mode0(bool init);
-  void mode1(bool init);
-  void mode2(bool init);
+		void mode0(bool init);
+		void mode1(bool init);
+		void mode2(bool init);
 
-  struct ContextState {
-    uint8 index;
-    uint8 invert;
-  } context[32];
+		struct ContextState {
+			uint8 index;
+			uint8 invert;
+		} context[32];
 };
 
 #endif

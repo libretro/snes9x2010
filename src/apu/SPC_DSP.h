@@ -181,10 +181,7 @@ void spc_copier_copy(spc_state_copy_t * copier, void* state, size_t size );
 int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size);
 void spc_copier_extra(spc_state_copy_t * copier);
 
-#define SPC_COPY( type, state )\
-{\
-	state = (BOOST::type) spc_copier_copy_int(&copier, state, sizeof (BOOST::type) );\
-}
+#define SPC_COPY( type, state ) state = (BOOST::type) spc_copier_copy_int(&copier, state, sizeof (BOOST::type) );
 
 #endif
 #endif

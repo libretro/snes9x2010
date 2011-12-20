@@ -291,7 +291,7 @@ struct CMemory
 
 struct SMulti
 {
-	int		cartType;
+	int	cartType;
 	int32	cartSizeA, cartSizeB;
 	int32	sramSizeA, sramSizeB;
 	uint32	sramMaskA, sramMaskB;

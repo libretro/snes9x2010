@@ -201,15 +201,1304 @@
 #include "srtc.h"
 #include "display.h"
 
-#define memory_cartrom_size()		Memory.CalculatedSize
 #define memory_cartrom_read(a)		Memory.ROM[(a)]
 #define memory_cartrtc_read(a)		RTCData.reg[(a)]
 #define memory_cartrtc_write(a, b)	{ RTCData.reg[(a)] = (b); }
-#define cartridge_info_spc7110rtc	Settings.SPC7110RTC
-#define cpu_regs_mdr				OpenBus
 
 #include "spc7110emu.h"
-#include "spc7110emu_.h"
+
+static unsigned morton16[2][256];
+static unsigned morton32[4][256];
+
+static const uint8 evolution_table[53][4] =
+{
+	//{ prob, nextlps, nextmps, toggle invert },
+
+	{ 0x5a,  1,  1, 1 },
+	{ 0x25,  6,  2, 0 },
+	{ 0x11,  8,  3, 0 },
+	{ 0x08, 10,  4, 0 },
+	{ 0x03, 12,  5, 0 },
+	{ 0x01, 15,  5, 0 },
+
+	{ 0x5a,  7,  7, 1 },
+	{ 0x3f, 19,  8, 0 },
+	{ 0x2c, 21,  9, 0 },
+	{ 0x20, 22, 10, 0 },
+	{ 0x17, 23, 11, 0 },
+	{ 0x11, 25, 12, 0 },
+	{ 0x0c, 26, 13, 0 },
+	{ 0x09, 28, 14, 0 },
+	{ 0x07, 29, 15, 0 },
+	{ 0x05, 31, 16, 0 },
+	{ 0x04, 32, 17, 0 },
+	{ 0x03, 34, 18, 0 },
+	{ 0x02, 35,  5, 0 },
+
+	{ 0x5a, 20, 20, 1 },
+	{ 0x48, 39, 21, 0 },
+	{ 0x3a, 40, 22, 0 },
+	{ 0x2e, 42, 23, 0 },
+	{ 0x26, 44, 24, 0 },
+	{ 0x1f, 45, 25, 0 },
+	{ 0x19, 46, 26, 0 },
+	{ 0x15, 25, 27, 0 },
+	{ 0x11, 26, 28, 0 },
+	{ 0x0e, 26, 29, 0 },
+	{ 0x0b, 27, 30, 0 },
+	{ 0x09, 28, 31, 0 },
+	{ 0x08, 29, 32, 0 },
+	{ 0x07, 30, 33, 0 },
+	{ 0x05, 31, 34, 0 },
+	{ 0x04, 33, 35, 0 },
+	{ 0x04, 33, 36, 0 },
+	{ 0x03, 34, 37, 0 },
+	{ 0x02, 35, 38, 0 },
+	{ 0x02, 36,  5, 0 },
+
+	{ 0x58, 39, 40, 1 },
+	{ 0x4d, 47, 41, 0 },
+	{ 0x43, 48, 42, 0 },
+	{ 0x3b, 49, 43, 0 },
+	{ 0x34, 50, 44, 0 },
+	{ 0x2e, 51, 45, 0 },
+	{ 0x29, 44, 46, 0 },
+	{ 0x25, 45, 24, 0 },
+
+	{ 0x56, 47, 48, 1 },
+	{ 0x4f, 47, 49, 0 },
+	{ 0x47, 48, 50, 0 },
+	{ 0x41, 49, 51, 0 },
+	{ 0x3c, 50, 52, 0 },
+	{ 0x37, 51, 43, 0 },
+};
+
+const uint8 mode2_context_table[32][2] = {
+//{ next 0, next 1 },
+
+  {  1,  2 },
+
+  {  3,  8 },
+  { 13, 14 },
+
+  { 15, 16 },
+  { 17, 18 },
+  { 19, 20 },
+  { 21, 22 },
+  { 23, 24 },
+  { 25, 26 },
+  { 25, 26 },
+  { 25, 26 },
+  { 25, 26 },
+  { 25, 26 },
+  { 27, 28 },
+  { 29, 30 },
+
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+  { 31, 31 },
+
+  { 31, 31 },
+};
+
+//reverse morton lookup: de-interleave two 8-bit values
+//15, 13, 11,  9,  7,  5,  3,  1 -> 15- 8
+//14, 12, 10,  8,  6,  4,  2,  0 ->  7- 0
+#define MORTON_2X8(data) (morton16[0][(data >>  0) & 255] + morton16[1][(data >>  8) & 255])
+
+//reverse morton lookup: de-interleave four 8-bit values
+//31, 27, 23, 19, 15, 11,  7,  3 -> 31-24
+//30, 26, 22, 18, 14, 10,  6,  2 -> 23-16
+//29, 25, 21, 17, 13,  9,  5,  1 -> 15- 8
+//28, 24, 20, 16, 12,  8,  4,  0 ->  7- 0
+#define MORTON_4X8(data) (morton32[0][(data >>  0) & 255] + morton32[1][(data >>  8) & 255] + morton32[2][(data >> 16) & 255] + morton32[3][(data >> 24) & 255])
+
+#define PROBABILITY(n) (evolution_table[context[n].index][0])
+#define NEXT_LPS(n) (evolution_table[context[n].index][1])
+#define NEXT_MPS(n) (evolution_table[context[n].index][2])
+#define TOGGLE_INVERT(n) (evolution_table[context[n].index][3])
+
+uint8 SPC7110Decomp::read()
+{
+	if(decomp_buffer_length == 0)
+	{
+		//decompress at least (SPC7110_DECOMP_BUFFER_SIZE / 2) bytes to the buffer
+		switch(decomp_mode)
+		{
+			case 0:
+				mode0(false);
+				break;
+			case 1:
+				mode1(false);
+				break;
+			case 2:
+				mode2(false);
+				break;
+			default:
+				return 0x00;
+		}
+	}
+
+	uint8 data = decomp_buffer[decomp_buffer_rdoffset++];
+	decomp_buffer_rdoffset &= SPC7110_DECOMP_BUFFER_SIZE - 1;
+	decomp_buffer_length--;
+	return data;
+}
+
+void SPC7110Decomp::write(uint8 data)
+{
+	decomp_buffer[decomp_buffer_wroffset++] = data;
+	decomp_buffer_wroffset &= SPC7110_DECOMP_BUFFER_SIZE - 1;
+	decomp_buffer_length++;
+}
+
+uint8 SPC7110Decomp::dataread()
+{
+	unsigned size = Memory.CalculatedSize - 0x100000;
+	while(decomp_offset >= size)
+		decomp_offset -= size;
+	return memory_cartrom_read(0x100000 + decomp_offset++);
+}
+
+void SPC7110Decomp::init(unsigned mode, unsigned offset, unsigned index)
+{
+	decomp_mode = mode;
+	decomp_offset = offset;
+
+	decomp_buffer_rdoffset = 0;
+	decomp_buffer_wroffset = 0;
+	decomp_buffer_length   = 0;
+
+	//reset context states
+	for(unsigned i = 0; i < 32; i++)
+	{
+		context[i].index  = 0;
+		context[i].invert = 0;
+	}
+
+	switch(decomp_mode)
+	{
+		case 0:
+			mode0(true);
+			break;
+		case 1:
+			mode1(true);
+			break;
+		case 2:
+			mode2(true);
+			break;
+	}
+
+	//decompress up to requested output data index
+	while(index--)
+		read();
+}
+
+void SPC7110Decomp::mode0(bool init)
+{
+	static uint8 val, in, span;
+	static int out, inverts, lps, in_count;
+
+	if(init == true)
+	{
+		out = inverts = lps = 0;
+		span = 0xff;
+		val = dataread();
+		in = dataread();
+		in_count = 8;
+		return;
+	}
+
+	while(decomp_buffer_length < (SPC7110_DECOMP_BUFFER_SIZE >> 1))
+	{
+		for(unsigned bit = 0; bit < 8; bit++)
+		{
+			//get context
+			uint8 mask = (1 << (bit & 3)) - 1;
+			uint8 con = mask + ((inverts & mask) ^ (lps & mask));
+			if(bit > 3) con += 15;
+
+			//get prob and mps
+			unsigned prob = PROBABILITY(con);
+			unsigned mps = (((out >> 15) & 1) ^ context[con].invert);
+
+			//get bit
+			unsigned flag_lps;
+			if(val <= span - prob) { //mps
+				span = span - prob;
+				out = (out << 1) + mps;
+				flag_lps = 0;
+			} else { //lps
+				val = val - (span - (prob - 1));
+				span = prob - 1;
+				out = (out << 1) + 1 - mps;
+				flag_lps = 1;
+			}
+
+			//renormalize
+			unsigned shift = 0;
+			while(span < 0x7f) {
+				shift++;
+
+				span = (span << 1) + 1;
+				val = (val << 1) + (in >> 7);
+
+				in <<= 1;
+				if(--in_count == 0) {
+					in = dataread();
+					in_count = 8;
+				}
+			}
+
+			//update processing info
+			lps = (lps << 1) + flag_lps;
+			inverts = (inverts << 1) + context[con].invert;
+
+			//update context state
+			if(flag_lps & TOGGLE_INVERT(con))
+				context[con].invert ^= 1;
+			if(flag_lps)
+				context[con].index = NEXT_LPS(con);
+			else if(shift)
+				context[con].index = NEXT_MPS(con);
+		}
+
+		//save byte
+		write(out);
+	}
+}
+
+void SPC7110Decomp::mode1(bool init)
+{
+	static unsigned pixelorder[4], realorder[4];
+	static uint8 in, val, span;
+	static int out, inverts, lps, in_count;
+
+	if(init == true)
+	{
+		for(unsigned i = 0; i < 4; i++) pixelorder[i] = i;
+		out = inverts = lps = 0;
+		span = 0xff;
+		val = dataread();
+		in = dataread();
+		in_count = 8;
+		return;
+	}
+
+	while(decomp_buffer_length < (SPC7110_DECOMP_BUFFER_SIZE >> 1))
+	{
+		for(unsigned pixel = 0; pixel < 8; pixel++)
+		{
+			//get first symbol context
+			unsigned a = ((out >> (1 * 2)) & 3);
+			unsigned b = ((out >> (7 * 2)) & 3);
+			unsigned c = ((out >> (8 * 2)) & 3);
+			unsigned con = (a == b) ? (b != c) : (b == c) ? 2 : 4 - (a == c);
+
+			//update pixel order
+			unsigned m, n;
+			for(m = 0; m < 4; m++) if(pixelorder[m] == a) break;
+			for(n = m; n > 0; n--) pixelorder[n] = pixelorder[n - 1];
+			pixelorder[0] = a;
+
+			//calculate the real pixel order
+			for(m = 0; m < 4; m++) realorder[m] = pixelorder[m];
+
+			//rotate reference pixel c value to top
+			for(m = 0; m < 4; m++) if(realorder[m] == c) break;
+			for(n = m; n > 0; n--) realorder[n] = realorder[n - 1];
+			realorder[0] = c;
+
+			//rotate reference pixel b value to top
+			for(m = 0; m < 4; m++) if(realorder[m] == b) break;
+			for(n = m; n > 0; n--) realorder[n] = realorder[n - 1];
+			realorder[0] = b;
+
+			//rotate reference pixel a value to top
+			for(m = 0; m < 4; m++) if(realorder[m] == a) break;
+			for(n = m; n > 0; n--) realorder[n] = realorder[n - 1];
+			realorder[0] = a;
+
+			//get 2 symbols
+			for(unsigned bit = 0; bit < 2; bit++) {
+				//get prob
+				unsigned prob = PROBABILITY(con);
+
+				//get symbol
+				unsigned flag_lps;
+				if(val <= span - prob) { //mps
+					span = span - prob;
+					flag_lps = 0;
+				} else { //lps
+					val = val - (span - (prob - 1));
+					span = prob - 1;
+					flag_lps = 1;
+				}
+
+				//renormalize
+				unsigned shift = 0;
+				while(span < 0x7f) {
+					shift++;
+
+					span = (span << 1) + 1;
+					val = (val << 1) + (in >> 7);
+
+					in <<= 1;
+					if(--in_count == 0) {
+						in = dataread();
+						in_count = 8;
+					}
+				}
+
+				//update processing info
+				lps = (lps << 1) + flag_lps;
+				inverts = (inverts << 1) + context[con].invert;
+
+				//update context state
+				if(flag_lps & TOGGLE_INVERT(con)) context[con].invert ^= 1;
+				if(flag_lps) context[con].index = NEXT_LPS(con);
+				else if(shift) context[con].index = NEXT_MPS(con);
+
+				//get next context
+				con = 5 + (con << 1) + ((lps ^ inverts) & 1);
+			}
+
+			//get pixel
+			b = realorder[(lps ^ inverts) & 3];
+			out = (out << 2) + b;
+		}
+
+		//turn pixel data into bitplanes
+		unsigned data = MORTON_2X8(out);
+		write(data >> 8);
+		write(data >> 0);
+	}
+}
+
+void SPC7110Decomp::mode2(bool init)
+{
+	static unsigned pixelorder[16], realorder[16];
+	static uint8 bitplanebuffer[16], buffer_index;
+	static uint8 in, val, span;
+	static int out0, out1, inverts, lps, in_count;
+
+	if(init == true)
+	{
+		for(unsigned i = 0; i < 16; i++) pixelorder[i] = i;
+		buffer_index = 0;
+		out0 = out1 = inverts = lps = 0;
+		span = 0xff;
+		val = dataread();
+		in = dataread();
+		in_count = 8;
+		return;
+	}
+
+	while(decomp_buffer_length < (SPC7110_DECOMP_BUFFER_SIZE >> 1))
+	{
+		for(unsigned pixel = 0; pixel < 8; pixel++)
+		{
+			//get first symbol context
+			unsigned a = ((out0 >> (0 * 4)) & 15);
+			unsigned b = ((out0 >> (7 * 4)) & 15);
+			unsigned c = ((out1 >> (0 * 4)) & 15);
+			unsigned con = 0;
+			unsigned refcon = (a == b) ? (b != c) : (b == c) ? 2 : 4 - (a == c);
+
+			//update pixel order
+			unsigned m, n;
+			for(m = 0; m < 16; m++)
+				if(pixelorder[m] == a)
+					break;
+			for(n = m; n >  0; n--)
+				pixelorder[n] = pixelorder[n - 1];
+			pixelorder[0] = a;
+
+			//calculate the real pixel order
+			for(m = 0; m < 16; m++)
+				realorder[m] = pixelorder[m];
+
+			//rotate reference pixel c value to top
+			for(m = 0; m < 16; m++)
+				if(realorder[m] == c)
+					break;
+			for(n = m; n >  0; n--) realorder[n] = realorder[n - 1];
+			realorder[0] = c;
+
+			//rotate reference pixel b value to top
+			for(m = 0; m < 16; m++) if(realorder[m] == b) break;
+			for(n = m; n >  0; n--) realorder[n] = realorder[n - 1];
+			realorder[0] = b;
+
+			//rotate reference pixel a value to top
+			for(m = 0; m < 16; m++) if(realorder[m] == a) break;
+			for(n = m; n >  0; n--) realorder[n] = realorder[n - 1];
+			realorder[0] = a;
+
+			//get 4 symbols
+			for(unsigned bit = 0; bit < 4; bit++) {
+				//get prob
+				unsigned prob = PROBABILITY(con);
+
+				//get symbol
+				unsigned flag_lps;
+				if(val <= span - prob) { //mps
+					span = span - prob;
+					flag_lps = 0;
+				} else { //lps
+					val = val - (span - (prob - 1));
+					span = prob - 1;
+					flag_lps = 1;
+				}
+
+				//renormalize
+				unsigned shift = 0;
+				while(span < 0x7f) {
+					shift++;
+
+					span = (span << 1) + 1;
+					val = (val << 1) + (in >> 7);
+
+					in <<= 1;
+					if(--in_count == 0) {
+						in = dataread();
+						in_count = 8;
+					}
+				}
+
+				//update processing info
+				lps = (lps << 1) + flag_lps;
+				unsigned invertbit = context[con].invert;
+				inverts = (inverts << 1) + invertbit;
+
+				//update context state
+				if(flag_lps & TOGGLE_INVERT(con)) context[con].invert ^= 1;
+				if(flag_lps) context[con].index = NEXT_LPS(con);
+				else if(shift) context[con].index = NEXT_MPS(con);
+
+				//get next context
+				con = mode2_context_table[con][flag_lps ^ invertbit] + (con == 1 ? refcon : 0);
+			}
+
+			//get pixel
+			b = realorder[(lps ^ inverts) & 0x0f];
+			out1 = (out1 << 4) + ((out0 >> 28) & 0x0f);
+			out0 = (out0 << 4) + b;
+		}
+
+		//convert pixel data into bitplanes
+		unsigned data = MORTON_4X8(out0);
+		write(data >> 24);
+		write(data >> 16);
+		bitplanebuffer[buffer_index++] = data >> 8;
+		bitplanebuffer[buffer_index++] = data >> 0;
+
+		if(buffer_index == 16)
+		{
+			for(unsigned i = 0; i < 16; i++)
+				write(bitplanebuffer[i]);
+			buffer_index = 0;
+		}
+	}
+}
+
+void SPC7110Decomp::reset()
+{
+	//mode 3 is invalid; this is treated as a special case to always return 0x00
+	//set to mode 3 so that reading decomp port before starting first decomp will return 0x00
+	decomp_mode = 3;
+
+	decomp_buffer_rdoffset = 0;
+	decomp_buffer_wroffset = 0;
+	decomp_buffer_length   = 0;
+}
+
+SPC7110Decomp::SPC7110Decomp()
+{
+	decomp_buffer = new uint8_t[SPC7110_DECOMP_BUFFER_SIZE];
+	reset();
+
+	//initialize reverse morton lookup tables
+	for(unsigned i = 0; i < 256; i++)
+	{
+#define map(x, y) (((i >> x) & 1) << y)
+		//2x8-bit
+		morton16[1][i] = map(7, 15) + map(6,  7) + map(5, 14) + map(4,  6)
+			+ map(3, 13) + map(2,  5) + map(1, 12) + map(0,  4);
+		morton16[0][i] = map(7, 11) + map(6,  3) + map(5, 10) + map(4,  2)
+			+ map(3,  9) + map(2,  1) + map(1,  8) + map(0,  0);
+		//4x8-bit
+		morton32[3][i] = map(7, 31) + map(6, 23) + map(5, 15) + map(4,  7)
+			+ map(3, 30) + map(2, 22) + map(1, 14) + map(0,  6);
+		morton32[2][i] = map(7, 29) + map(6, 21) + map(5, 13) + map(4,  5)
+			+ map(3, 28) + map(2, 20) + map(1, 12) + map(0,  4);
+		morton32[1][i] = map(7, 27) + map(6, 19) + map(5, 11) + map(4,  3)
+			+ map(3, 26) + map(2, 18) + map(1, 10) + map(0,  2);
+		morton32[0][i] = map(7, 25) + map(6, 17) + map(5,  9) + map(4,  1)
+			+ map(3, 24) + map(2, 16) + map(1,  8) + map(0,  0);
+#undef map
+	}
+}
+
+SPC7110Decomp::~SPC7110Decomp()
+{
+	delete[] decomp_buffer;
+}
+
+static const unsigned months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+void SPC7110::power()
+{
+	r4801 = 0x00;
+	r4802 = 0x00;
+	r4803 = 0x00;
+	r4804 = 0x00;
+	r4805 = 0x00;
+	r4806 = 0x00;
+	r4807 = 0x00;
+	r4808 = 0x00;
+	r4809 = 0x00;
+	r480a = 0x00;
+	r480b = 0x00;
+	r480c = 0x00;
+
+	decomp.reset();
+
+	r4811 = 0x00;
+	r4812 = 0x00;
+	r4813 = 0x00;
+	r4814 = 0x00;
+	r4815 = 0x00;
+	r4816 = 0x00;
+	r4817 = 0x00;
+	r4818 = 0x00;
+
+	r481x = 0x00;
+	r4814_latch = false;
+	r4815_latch = false;
+
+	r4820 = 0x00;
+	r4821 = 0x00;
+	r4822 = 0x00;
+	r4823 = 0x00;
+	r4824 = 0x00;
+	r4825 = 0x00;
+	r4826 = 0x00;
+	r4827 = 0x00;
+	r4828 = 0x00;
+	r4829 = 0x00;
+	r482a = 0x00;
+	r482b = 0x00;
+	r482c = 0x00;
+	r482d = 0x00;
+	r482e = 0x00;
+	r482f = 0x00;
+
+	r4830 = 0x00;
+	mmio_write(0x4831, 0);
+	mmio_write(0x4832, 1);
+	mmio_write(0x4833, 2);
+	r4834 = 0x00;
+
+	r4840 = 0x00;
+	r4841 = 0x00;
+	r4842 = 0x00;
+
+	if(Settings.SPC7110RTC)
+	{
+		rtc_state = RTCS_INACTIVE;
+		rtc_mode  = RTCM_LINEAR;
+		rtc_index = 0;
+	}
+}
+
+unsigned SPC7110::datarom_addr(unsigned addr)
+{
+	unsigned size = Memory.CalculatedSize - 0x100000;
+	while(addr >= size)
+		addr -= size;
+	return addr + 0x100000;
+}
+
+unsigned SPC7110::data_pointer()   { return r4811 + (r4812 << 8) + (r4813 << 16); }
+unsigned SPC7110::data_adjust()    { return r4814 + (r4815 << 8); }
+unsigned SPC7110::data_increment() { return r4816 + (r4817 << 8); }
+void SPC7110::set_data_pointer(unsigned addr) { r4811 = addr; r4812 = addr >> 8; r4813 = addr >> 16; }
+void SPC7110::set_data_adjust(unsigned addr)  { r4814 = addr; r4815 = addr >> 8; }
+
+void SPC7110::update_time(int offset)
+{
+	time_t rtc_time = (memory_cartrtc_read(16) <<  0)
+		| (memory_cartrtc_read(17) <<  8)
+		| (memory_cartrtc_read(18) << 16)
+		| (memory_cartrtc_read(19) << 24);
+	time_t current_time = time(0) - offset;
+
+	//sizeof(time_t) is platform-dependent; though memory::cartrtc needs to be platform-agnostic.
+	//yet platforms with 32-bit signed time_t will overflow every ~68 years. handle this by
+	//accounting for overflow at the cost of 1-bit precision (to catch underflow). this will allow
+	//memory::cartrtc timestamp to remain valid for up to ~34 years from the last update, even if
+	//time_t overflows. calculation should be valid regardless of number representation, time_t size,
+	//or whether time_t is signed or unsigned.
+	time_t diff = (current_time >= rtc_time)
+		? (current_time - rtc_time)
+		: (std::numeric_limits<time_t>::max() - rtc_time + current_time + 1);  //compensate for overflow
+	if(diff > std::numeric_limits<time_t>::max() / 2)
+		diff = 0;            //compensate for underflow
+
+	bool update = true;
+	if(memory_cartrtc_read(13) & 1)
+		update = false;  //do not update if CR0 timer disable flag is set
+	if(memory_cartrtc_read(15) & 3)
+		update = false;  //do not update if CR2 timer disable flags are set
+
+	if(diff > 0 && update == true)
+	{
+		unsigned second  = memory_cartrtc_read( 0) + memory_cartrtc_read( 1) * 10;
+		unsigned minute  = memory_cartrtc_read( 2) + memory_cartrtc_read( 3) * 10;
+		unsigned hour    = memory_cartrtc_read( 4) + memory_cartrtc_read( 5) * 10;
+		unsigned day     = memory_cartrtc_read( 6) + memory_cartrtc_read( 7) * 10;
+		unsigned month   = memory_cartrtc_read( 8) + memory_cartrtc_read( 9) * 10;
+		unsigned year    = memory_cartrtc_read(10) + memory_cartrtc_read(11) * 10;
+		unsigned weekday = memory_cartrtc_read(12);
+
+		day--;
+		month--;
+		year += (year >= 90) ? 1900 : 2000;  //range = 1990-2089
+
+		second += diff;
+		while(second >= 60)
+		{
+			second -= 60;
+
+			minute++;
+			if(minute < 60)
+				continue;
+			minute = 0;
+
+			hour++;
+			if(hour < 24)
+				continue;
+			hour = 0;
+
+			day++;
+			weekday = (weekday + 1) % 7;
+			unsigned days = months[month % 12];
+			if(days == 28)
+			{
+				bool leapyear = false;
+				if((year % 4) == 0)
+				{
+					leapyear = true;
+					if((year % 100) == 0 && (year % 400) != 0)
+						leapyear = false;
+				}
+				if(leapyear) days++;
+			}
+			if(day < days)
+				continue;
+			day = 0;
+
+			month++;
+			if(month < 12)
+				continue;
+			month = 0;
+
+			year++;
+		}
+
+		day++;
+		month++;
+		year %= 100;
+
+		memory_cartrtc_write( 0, second % 10);
+		memory_cartrtc_write( 1, second / 10);
+		memory_cartrtc_write( 2, minute % 10);
+		memory_cartrtc_write( 3, minute / 10);
+		memory_cartrtc_write( 4, hour % 10);
+		memory_cartrtc_write( 5, hour / 10);
+		memory_cartrtc_write( 6, day % 10);
+		memory_cartrtc_write( 7, day / 10);
+		memory_cartrtc_write( 8, month % 10);
+		memory_cartrtc_write( 9, month / 10);
+		memory_cartrtc_write(10, year % 10);
+		memory_cartrtc_write(11, (year / 10) % 10);
+		memory_cartrtc_write(12, weekday % 7);
+	}
+
+	memory_cartrtc_write(16, current_time >>  0);
+	memory_cartrtc_write(17, current_time >>  8);
+	memory_cartrtc_write(18, current_time >> 16);
+	memory_cartrtc_write(19, current_time >> 24);
+}
+
+uint8 SPC7110::mmio_read(unsigned addr)
+{
+	addr &= 0xffff;
+
+	switch(addr)
+	{
+		//==================
+		//decompression unit
+		//==================
+
+		case 0x4800:
+			{
+				uint16 counter = (r4809 + (r480a << 8));
+				counter--;
+				r4809 = counter;
+				r480a = counter >> 8;
+				return decomp.read();
+			}
+		case 0x4801:
+			return r4801;
+		case 0x4802:
+			return r4802;
+		case 0x4803:
+			return r4803;
+		case 0x4804:
+			return r4804;
+		case 0x4805:
+			return r4805;
+		case 0x4806:
+			return r4806;
+		case 0x4807:
+			return r4807;
+		case 0x4808:
+			return r4808;
+		case 0x4809:
+			return r4809;
+		case 0x480a:
+			return r480a;
+		case 0x480b:
+			return r480b;
+		case 0x480c:
+			{
+				uint8 status = r480c;
+				r480c &= 0x7f;
+				return status;
+			}
+
+			//==============
+			//data port unit
+			//==============
+		case 0x4810:
+			{
+				if(r481x != 0x07)
+					return 0x00;
+
+				unsigned addr = data_pointer();
+				unsigned adjust = data_adjust();
+				if(r4818 & 8) adjust = (int16)adjust;  //16-bit sign extend
+
+				unsigned adjustaddr = addr;
+				if(r4818 & 2) {
+					adjustaddr += adjust;
+					set_data_adjust(adjust + 1);
+				}
+
+				uint8 data = memory_cartrom_read(datarom_addr(adjustaddr));
+				if(!(r4818 & 2))
+				{
+					unsigned increment = (r4818 & 1) ? data_increment() : 1;
+					if(r4818 & 4)
+						increment = (int16)increment;  //16-bit sign extend
+
+					if((r4818 & 16) == 0)
+						set_data_pointer(addr + increment);
+					else
+						set_data_adjust(adjust + increment);
+				}
+
+				return data;
+			}
+		case 0x4811:
+			return r4811;
+		case 0x4812:
+			return r4812;
+		case 0x4813:
+			return r4813;
+		case 0x4814:
+			return r4814;
+		case 0x4815:
+			return r4815;
+		case 0x4816:
+			return r4816;
+		case 0x4817:
+			return r4817;
+		case 0x4818:
+			return r4818;
+		case 0x481a:
+			{
+				if(r481x != 0x07) return 0x00;
+
+				unsigned addr = data_pointer();
+				unsigned adjust = data_adjust();
+				if(r4818 & 8)
+					adjust = (int16)adjust;  //16-bit sign extend
+
+				uint8 data = memory_cartrom_read(datarom_addr(addr + adjust));
+				if((r4818 & 0x60) == 0x60)
+				{
+					if((r4818 & 16) == 0)
+						set_data_pointer(addr + adjust);
+					else
+						set_data_adjust(adjust + adjust);
+				}
+
+				return data;
+			}
+
+			     //=========
+			     //math unit
+			     //=========
+
+		case 0x4820: return r4820;
+		case 0x4821: return r4821;
+		case 0x4822: return r4822;
+		case 0x4823: return r4823;
+		case 0x4824: return r4824;
+		case 0x4825: return r4825;
+		case 0x4826: return r4826;
+		case 0x4827: return r4827;
+		case 0x4828: return r4828;
+		case 0x4829: return r4829;
+		case 0x482a: return r482a;
+		case 0x482b: return r482b;
+		case 0x482c: return r482c;
+		case 0x482d: return r482d;
+		case 0x482e: return r482e;
+		case 0x482f: {
+				     uint8 status = r482f;
+				     r482f &= 0x7f;
+				     return status;
+			     }
+
+			     //===================
+			     //memory mapping unit
+			     //===================
+
+		case 0x4830: return r4830;
+		case 0x4831: return r4831;
+		case 0x4832: return r4832;
+		case 0x4833: return r4833;
+		case 0x4834: return r4834;
+
+			     //====================
+			     //real-time clock unit
+			     //====================
+
+		case 0x4840: return r4840;
+		case 0x4841:
+			     {
+				     if(rtc_state == RTCS_INACTIVE || rtc_state == RTCS_MODESELECT)
+					     return 0x00;
+
+				     r4842 = 0x80;
+				     uint8 data = memory_cartrtc_read(rtc_index);
+				     rtc_index = (rtc_index + 1) & 15;
+				     return data;
+			     }
+		case 0x4842: {
+				     uint8 status = r4842;
+				     r4842 &= 0x7f;
+				     return status;
+			     }
+	}
+
+	return OpenBus;
+}
+
+void SPC7110::mmio_write(unsigned addr, uint8 data)
+{
+	addr &= 0xffff;
+
+	switch(addr)
+	{
+		//==================
+		//decompression unit
+		//==================
+
+		case 0x4801: r4801 = data; break;
+		case 0x4802: r4802 = data; break;
+		case 0x4803: r4803 = data; break;
+		case 0x4804: r4804 = data; break;
+		case 0x4805: r4805 = data; break;
+		case 0x4806: {
+				     r4806 = data;
+
+				     unsigned table   = (r4801 + (r4802 << 8) + (r4803 << 16));
+				     unsigned index   = (r4804 << 2);
+				     //unsigned length  = (r4809 + (r480a << 8));
+				     unsigned addr    = datarom_addr(table + index);
+				     unsigned mode    = (memory_cartrom_read(addr + 0));
+				     unsigned offset  = (memory_cartrom_read(addr + 1) << 16)
+					     + (memory_cartrom_read(addr + 2) <<  8)
+					     + (memory_cartrom_read(addr + 3) <<  0);
+
+				     decomp.init(mode, offset, (r4805 + (r4806 << 8)) << mode);
+				     r480c = 0x80;
+			     } break;
+
+		case 0x4807: r4807 = data; break;
+		case 0x4808: r4808 = data; break;
+		case 0x4809: r4809 = data; break;
+		case 0x480a: r480a = data; break;
+		case 0x480b: r480b = data; break;
+
+			     //==============
+			     //data port unit
+			     //==============
+
+		case 0x4811:
+			r4811 = data;
+			r481x |= 0x01;
+			break;
+		case 0x4812:
+			r4812 = data;
+			r481x |= 0x02;
+			break;
+		case 0x4813:
+			r4813 = data;
+			r481x |= 0x04;
+			break;
+		case 0x4814:
+			{
+				r4814 = data;
+				r4814_latch = true;
+				if(!r4815_latch)
+					break;
+				if(!(r4818 & 2))
+					break;
+				if(r4818 & 0x10)
+					break;
+
+				if((r4818 & 0x60) == 0x20)
+				{
+					unsigned increment = data_adjust() & 0xff;
+					if(r4818 & 8)
+						increment = (int8)increment;  //8-bit sign extend
+					set_data_pointer(data_pointer() + increment);
+				}
+				else if((r4818 & 0x60) == 0x40)
+				{
+					unsigned increment = data_adjust();
+					if(r4818 & 8)
+						increment = (int16)increment;  //16-bit sign extend
+					set_data_pointer(data_pointer() + increment);
+				}
+			}
+			break;
+		case 0x4815:
+			{
+				r4815 = data;
+				r4815_latch = true;
+				if(!r4814_latch)
+					break;
+				if(!(r4818 & 2))
+					break;
+				if(r4818 & 0x10)
+					break;
+
+				if((r4818 & 0x60) == 0x20)
+				{
+					unsigned increment = data_adjust() & 0xff;
+					if(r4818 & 8) increment = (int8)increment;  //8-bit sign extend
+					set_data_pointer(data_pointer() + increment);
+				}
+				else if((r4818 & 0x60) == 0x40)
+				{
+					unsigned increment = data_adjust();
+					if(r4818 & 8) increment = (int16)increment;  //16-bit sign extend
+					set_data_pointer(data_pointer() + increment);
+				}
+			}
+			break;
+		case 0x4816:
+			r4816 = data;
+			break;
+		case 0x4817:
+			r4817 = data;
+			break;
+		case 0x4818:
+			{
+				if(r481x != 0x07)
+					break;
+
+				r4818 = data;
+				r4814_latch = r4815_latch = false;
+			}
+			break;
+
+			//=========
+			//math unit
+			//=========
+		case 0x4820:
+			r4820 = data;
+			break;
+		case 0x4821:
+			r4821 = data;
+			break;
+		case 0x4822:
+			r4822 = data;
+			break;
+		case 0x4823:
+			r4823 = data;
+			break;
+		case 0x4824:
+			r4824 = data;
+			break;
+		case 0x4825:
+			     {
+				     r4825 = data;
+
+				     if(r482e & 1)
+				     {
+					     //signed 16-bit x 16-bit multiplication
+					     int16 r0 = (int16)(r4824 + (r4825 << 8));
+					     int16 r1 = (int16)(r4820 + (r4821 << 8));
+
+					     signed result = r0 * r1;
+					     r4828 = result;
+					     r4829 = result >> 8;
+					     r482a = result >> 16;
+					     r482b = result >> 24;
+				     }
+				     else
+				     {
+					     //unsigned 16-bit x 16-bit multiplication
+					     uint16 r0 = (uint16)(r4824 + (r4825 << 8));
+					     uint16 r1 = (uint16)(r4820 + (r4821 << 8));
+
+					     unsigned result = r0 * r1;
+					     r4828 = result;
+					     r4829 = result >> 8;
+					     r482a = result >> 16;
+					     r482b = result >> 24;
+				     }
+
+				     r482f = 0x80;
+			     } break;
+		case 0x4826:
+			r4826 = data;
+			break;
+		case 0x4827:
+			{
+				r4827 = data;
+
+				if(r482e & 1)
+				{
+					//signed 32-bit x 16-bit division
+					int32 dividend = (int32)(r4820 + (r4821 << 8) + (r4822 << 16) + (r4823 << 24));
+					int16 divisor  = (int16)(r4826 + (r4827 << 8));
+
+					int32 quotient;
+					int16 remainder;
+
+					if(divisor)
+					{
+						quotient  = (int32)(dividend / divisor);
+						remainder = (int32)(dividend % divisor);
+					}
+					else
+					{
+						//illegal division by zero
+						quotient  = 0;
+						remainder = dividend & 0xffff;
+					}
+
+					r4828 = quotient;
+					r4829 = quotient >> 8;
+					r482a = quotient >> 16;
+					r482b = quotient >> 24;
+
+					r482c = remainder;
+					r482d = remainder >> 8;
+				}
+				else
+				{
+					//unsigned 32-bit x 16-bit division
+					uint32 dividend = (uint32)(r4820 + (r4821 << 8) + (r4822 << 16) + (r4823 << 24));
+					uint16 divisor  = (uint16)(r4826 + (r4827 << 8));
+
+					uint32 quotient;
+					uint16 remainder;
+
+					if(divisor) {
+						quotient  = (uint32)(dividend / divisor);
+						remainder = (uint16)(dividend % divisor);
+					} else {
+						//illegal division by zero
+						quotient  = 0;
+						remainder = dividend & 0xffff;
+					}
+
+					r4828 = quotient;
+					r4829 = quotient >> 8;
+					r482a = quotient >> 16;
+					r482b = quotient >> 24;
+
+					r482c = remainder;
+					r482d = remainder >> 8;
+				}
+
+				r482f = 0x80;
+			}
+			break;
+		case 0x482e:
+			{
+				//reset math unit
+				r4820 = r4821 = r4822 = r4823 = 0;
+				r4824 = r4825 = r4826 = r4827 = 0;
+				r4828 = r4829 = r482a = r482b = 0;
+				r482c = r482d = 0;
+
+				r482e = data;
+			}
+			break;
+			//===================
+			//memory mapping unit
+			//===================
+		case 0x4830:
+			r4830 = data;
+			break;
+		case 0x4831:
+			{
+				r4831 = data;
+				dx_offset = datarom_addr((data & 7) * 0x100000);
+			}
+			break;
+		case 0x4832:
+			{
+				r4832 = data;
+				ex_offset = datarom_addr((data & 7) * 0x100000);
+			}
+			break;
+		case 0x4833:
+			{
+				r4833 = data;
+				fx_offset = datarom_addr((data & 7) * 0x100000);
+			}
+			break;
+		case 0x4834:
+			r4834 = data; break;
+			//====================
+			//real-time clock unit
+			//====================
+		case 0x4840:
+			{
+				r4840 = data;
+				if(!(r4840 & 1))
+				{
+					//disable RTC
+					rtc_state = RTCS_INACTIVE;
+					update_time();
+				}
+				else
+				{
+					//enable RTC
+					r4842 = 0x80;
+					rtc_state = RTCS_MODESELECT;
+				}
+			}
+			break;
+		case 0x4841:
+			     {
+				     r4841 = data;
+
+				     switch(rtc_state)
+				     {
+					     case RTCS_MODESELECT:
+						     {
+							     if(data == RTCM_LINEAR || data == RTCM_INDEXED)
+							     {
+								     r4842 = 0x80;
+								     rtc_state = RTCS_INDEXSELECT;
+								     rtc_mode  = (RTC_Mode)data;
+								     rtc_index = 0;
+							     }
+						     }
+						     break;
+					     case RTCS_INDEXSELECT:
+						     {
+							     r4842 = 0x80;
+							     rtc_index = data & 15;
+							     if(rtc_mode == RTCM_LINEAR)
+								     rtc_state = RTCS_WRITE;
+						     }
+						     break;
+					     case RTCS_WRITE:
+						     {
+							     r4842 = 0x80;
+
+							     //control register 0
+							     if(rtc_index == 13)
+							     {
+								     //increment second counter
+								     if(data & 2) update_time(+1);
+
+								     //round minute counter
+								     if(data & 8) {
+									     update_time();
+
+									     unsigned second = memory_cartrtc_read( 0) + memory_cartrtc_read( 1) * 10;
+									     //clear seconds
+									     memory_cartrtc_write(0, 0);
+									     memory_cartrtc_write(1, 0);
+
+									     if(second >= 30)
+									     	update_time(+60);
+								     }
+							     }
+
+							     //control register 2
+							     if(rtc_index == 15)
+							     {
+								     //disable timer and clear second counter
+								     if((data & 1) && !(memory_cartrtc_read(15) & 1))
+								     {
+									     update_time();
+
+									     //clear seconds
+									     memory_cartrtc_write(0, 0);
+									     memory_cartrtc_write(1, 0);
+								     }
+
+								     //disable timer
+								     if((data & 2) && !(memory_cartrtc_read(15) & 2))
+								     {
+									     update_time();
+								     }
+							     }
+
+							     memory_cartrtc_write(rtc_index, data & 15);
+							     rtc_index = (rtc_index + 1) & 15;
+						     }
+						     break;
+					     case RTCS_INACTIVE:
+						     break;
+				     } //switch(rtc_state)
+			     }
+			     break;
+	}
+}
+
+SPC7110::SPC7110()
+{
+}
 
 SPC7110	s7emu;
 
@@ -272,7 +1561,7 @@ uint8 * S9xGetBasePointerSPC7110 (uint32 address)
 
 uint8 S9xGetSPC7110Byte (uint32 address)
 {
-	uint32	i;
+	uint32	i = 0;
 
 	switch (address & 0xf00000)
 	{
@@ -286,10 +1575,6 @@ uint8 S9xGetSPC7110Byte (uint32 address)
 
 		case 0xf00000:
 			i = s7emu.fx_offset;
-			break;
-
-		default:
-			i = 0;
 			break;
 	}
 
