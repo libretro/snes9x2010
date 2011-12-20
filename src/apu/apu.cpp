@@ -362,11 +362,9 @@ APU
 
 bool8 S9xMixSamples (short *buffer, int sample_count)
 {
-	short	*dest = buffer;
-
 	if (AVAIL() >= (sample_count + lag))
 	{
-		resampler_read(dest, sample_count);
+		resampler_read(buffer, sample_count);
 		if (lag == lag_master)
 			lag = 0;
 	}
@@ -392,12 +390,9 @@ void S9xFinalizeSamples (void)
 	bool ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
 	sound_in_sync = FALSE;
 
-	if (!ret)
-	{
-		/* We weren't able to process the entire buffer. Potential overrun. */
-		if (Settings.SoundSync)
-			return;
-	}
+	/* We weren't able to process the entire buffer. Potential overrun. */
+	if (!ret && Settings.SoundSync)
+		return;
 
 	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED()))
 		sound_in_sync = TRUE;

@@ -326,14 +326,6 @@ struct SDMASnapshot
 	struct SDMA	dma[8];
 };
 
-struct SnapshotScreenshotInfo
-{
-	uint16	Width;
-	uint16	Height;
-	uint8	Interlaced;
-	uint8	Data[MAX_SNES_WIDTH * MAX_SNES_HEIGHT * 3];
-};
-
 static struct Obsolete
 {
 	uint8	reserved;
@@ -1090,13 +1082,6 @@ static FreezeData	SnapBSX[] =
 	ARRAY_ENTRY(6, test2192, 32, uint8_ARRAY_V)
 };
 
-static int UnfreezeBlock (STREAM, const char *, uint8 *, int);
-static int UnfreezeBlockCopy (STREAM, const char *, uint8 **, int);
-static int UnfreezeStructCopy (STREAM, const char *, uint8 **, FreezeData *, int, int);
-static void UnfreezeStructFromCopy (void *, FreezeData *, int, uint8 *, int);
-static void FreezeBlock (STREAM, const char *, uint8 *, int);
-static void FreezeStruct (STREAM, const char *, void *, FreezeData *, int);
-
 static bool8 S9xOpenSnapshotFile(const char* filepath, const char * file_mode, STREAM *file)
 {
 	if((*file = OPEN_STREAM(filepath, file_mode)) != 0)
@@ -1137,6 +1122,168 @@ bool8 S9xUnfreezeGame (const char *filename)
 	}
 
 	return (FALSE);
+}
+
+static void FreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
+{
+	char	buffer[20];
+
+	// check if it fits in 6 digits. (letting it go over and using strlen isn't safe)
+	if (size <= 999999)
+		sprintf(buffer, "%s:%06d:", name, size);
+	else
+	{
+		// to make it fit, pack it in the bytes instead of as digits
+		sprintf(buffer, "%s:------:", name);
+		buffer[6] = (unsigned char) ((unsigned) size >> 24);
+		buffer[7] = (unsigned char) ((unsigned) size >> 16);
+		buffer[8] = (unsigned char) ((unsigned) size >> 8);
+		buffer[9] = (unsigned char) ((unsigned) size >> 0);
+	}
+
+	buffer[11] = 0;
+
+	WRITE_STREAM(buffer, 11, stream);
+	WRITE_STREAM(block, size, stream);
+}
+
+static int FreezeSize (int size, int type)
+{
+	switch (type)
+	{
+		case uint32_ARRAY_V:
+		case uint32_INDIR_ARRAY_V:
+			return (size * 4);
+
+		case uint16_ARRAY_V:
+		case uint16_INDIR_ARRAY_V:
+			return (size * 2);
+
+		default:
+			return (size);
+	}
+}
+
+static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeData *fields, int num_fields)
+{
+	int	len = 0;
+	int	i, j;
+
+	for (i = 0; i < num_fields; i++)
+	{
+		if (SNAPSHOT_VERSION < fields[i].debuted_in)
+		{
+			//fprintf(stderr, "%s[%p]: field has bad debuted_in value %d, > %d.", name, (void *) fields, fields[i].debuted_in, SNAPSHOT_VERSION);
+			continue;
+		}
+
+		if (SNAPSHOT_VERSION < fields[i].deleted_in)
+			len += FreezeSize(fields[i].size, fields[i].type);
+	}
+
+	uint8	*block = new uint8[len];
+	uint8	*ptr = block;
+	uint8	*addr;
+	uint16	word;
+	uint32	dword;
+	int64	qaword;
+	int	relativeAddr;
+
+	for (i = 0; i < num_fields; i++)
+	{
+		if (SNAPSHOT_VERSION >= fields[i].deleted_in || SNAPSHOT_VERSION < fields[i].debuted_in)
+			continue;
+
+		addr = (uint8 *) base + fields[i].offset;
+
+		// determine real address of indirect-type fields
+		// (where the structure contains a pointer to an array rather than the array itself)
+		if (fields[i].type == uint8_INDIR_ARRAY_V || fields[i].type == uint16_INDIR_ARRAY_V || fields[i].type == uint32_INDIR_ARRAY_V)
+			addr = (uint8 *) (*((intptr_t *) addr));
+
+		// convert pointer-type saves from absolute to relative pointers
+		if (fields[i].type == POINTER_V)
+		{
+			uint8	*pointer    = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset));
+			uint8	*relativeTo = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset2));
+			relativeAddr = pointer - relativeTo;
+			addr = (uint8 *) &relativeAddr;
+		}
+
+		switch (fields[i].type)
+		{
+			case INT_V:
+			case POINTER_V:
+				switch (fields[i].size)
+				{
+					case 1:
+						*ptr++ = *(addr);
+						break;
+
+					case 2:
+						word = *((uint16 *) (addr));
+						*ptr++ = (uint8) (word >> 8);
+						*ptr++ = (uint8) word;
+						break;
+
+					case 4:
+						dword = *((uint32 *) (addr));
+						*ptr++ = (uint8) (dword >> 24);
+						*ptr++ = (uint8) (dword >> 16);
+						*ptr++ = (uint8) (dword >> 8);
+						*ptr++ = (uint8) dword;
+						break;
+
+					case 8:
+						qaword = *((int64 *) (addr));
+						*ptr++ = (uint8) (qaword >> 56);
+						*ptr++ = (uint8) (qaword >> 48);
+						*ptr++ = (uint8) (qaword >> 40);
+						*ptr++ = (uint8) (qaword >> 32);
+						*ptr++ = (uint8) (qaword >> 24);
+						*ptr++ = (uint8) (qaword >> 16);
+						*ptr++ = (uint8) (qaword >> 8);
+						*ptr++ = (uint8) qaword;
+						break;
+				}
+
+				break;
+
+			case uint8_ARRAY_V:
+			case uint8_INDIR_ARRAY_V:
+				memmove(ptr, addr, fields[i].size);
+				ptr += fields[i].size;
+
+				break;
+
+			case uint16_ARRAY_V:
+			case uint16_INDIR_ARRAY_V:
+				for (j = 0; j < fields[i].size; j++)
+				{
+					word = *((uint16 *) (addr + j * 2));
+					*ptr++ = (uint8) (word >> 8);
+					*ptr++ = (uint8) word;
+				}
+
+				break;
+
+			case uint32_ARRAY_V:
+			case uint32_INDIR_ARRAY_V:
+				for (j = 0; j < fields[i].size; j++)
+				{
+					dword = *((uint32 *) (addr + j * 4));
+					*ptr++ = (uint8) (dword >> 24);
+					*ptr++ = (uint8) (dword >> 16);
+					*ptr++ = (uint8) (dword >> 8);
+					*ptr++ = (uint8) dword;
+				}
+
+				break;
+		}
+	}
+
+	FreezeBlock(stream, name, block, len);
+	delete [] block;
 }
 
 void S9xFreezeToStream (STREAM stream)
@@ -1229,6 +1376,237 @@ void S9xFreezeToStream (STREAM stream)
 
 	if (Settings.BS)
 		FreezeStruct(stream, "BSX", &BSX, SnapBSX, COUNT(SnapBSX));
+}
+
+static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
+{
+	char	buffer[20];
+	int		len = 0, rem = 0;
+	long	rewind = FIND_STREAM(stream);
+
+	size_t	l = READ_STREAM(buffer, 11, stream);
+	buffer[l] = 0;
+
+	if (l != 11 || strncmp(buffer, name, 3) != 0 || buffer[3] != ':')
+	{
+	err:
+		//fprintf(stdout, "absent: %s(%d); next: '%.11s'\n", name, size, buffer);
+		REVERT_STREAM(stream, FIND_STREAM(stream) - l, 0);
+		return (WRONG_FORMAT);
+	}
+
+	if (buffer[4] == '-')
+	{
+		len = (((unsigned char) buffer[6]) << 24)
+			| (((unsigned char) buffer[7]) << 16)
+			| (((unsigned char) buffer[8]) << 8)
+			| (((unsigned char) buffer[9]) << 0);
+	}
+	else
+		len = atoi(buffer + 4);
+
+	if (len <= 0)
+		goto err;
+
+	if (len > size)
+	{
+		rem = len - size;
+		len = size;
+	}
+
+	ZeroMemory(block, size);
+
+	if (READ_STREAM(block, len, stream) != len)
+	{
+		REVERT_STREAM(stream, rewind, 0);
+		return (WRONG_FORMAT);
+	}
+
+	if (rem)
+	{
+		char	*junk = new char[rem];
+		len = READ_STREAM(junk, rem, stream);
+		delete [] junk;
+		if (len != rem)
+		{
+			REVERT_STREAM(stream, rewind, 0);
+			return (WRONG_FORMAT);
+		}
+	}
+
+	return (SUCCESS);
+}
+
+static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, int size)
+{
+	int	result;
+
+	*block = new uint8[size];
+
+	result = UnfreezeBlock(stream, name, *block, size);
+	if (result != SUCCESS)
+	{
+		delete [] (*block);
+		*block = NULL;
+		return (result);
+	}
+
+	return (SUCCESS);
+}
+
+static int UnfreezeStructCopy (STREAM stream, const char *name, uint8 **block, FreezeData *fields, int num_fields, int version)
+{
+	int	len = 0;
+
+	for (int i = 0; i < num_fields; i++)
+	{
+		if (version >= fields[i].debuted_in && version < fields[i].deleted_in)
+			len += FreezeSize(fields[i].size, fields[i].type);
+	}
+
+	return (UnfreezeBlockCopy(stream, name, block, len));
+}
+
+static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fields, uint8 *block, int version)
+{
+	uint8	*ptr = block;
+	uint16	word;
+	uint32	dword;
+	int64	qaword;
+	uint8	*addr;
+	void	*base;
+	int	relativeAddr;
+	int	i, j;
+
+	for (i = 0; i < num_fields; i++)
+	{
+		if (version < fields[i].debuted_in || version >= fields[i].deleted_in)
+			continue;
+
+		base = (SNAPSHOT_VERSION >= fields[i].deleted_in) ? ((void *) &Obsolete) : sbase;
+		addr = (uint8 *) base + fields[i].offset;
+
+		if (fields[i].type == uint8_INDIR_ARRAY_V || fields[i].type == uint16_INDIR_ARRAY_V || fields[i].type == uint32_INDIR_ARRAY_V)
+			addr = (uint8 *) (*((intptr_t *) addr));
+
+		switch (fields[i].type)
+		{
+			case INT_V:
+			case POINTER_V:
+				switch (fields[i].size)
+				{
+					case 1:
+						if (fields[i].offset < 0)
+						{
+							ptr++; 
+							break;
+						}
+
+						*(addr) = *ptr++;
+						break;
+
+					case 2:
+						if (fields[i].offset < 0)
+						{
+							ptr += 2;
+							break;
+						}
+
+						word  = *ptr++ << 8;
+						word |= *ptr++;
+						*((uint16 *) (addr)) = word;
+						break;
+
+					case 4:
+						if (fields[i].offset < 0)
+						{
+							ptr += 4;
+							break;
+						}
+
+						dword  = *ptr++ << 24;
+						dword |= *ptr++ << 16;
+						dword |= *ptr++ << 8;
+						dword |= *ptr++;
+						*((uint32 *) (addr)) = dword;
+						break;
+
+					case 8:
+						if (fields[i].offset < 0)
+						{
+							ptr += 8;
+							break;
+						}
+
+						qaword  = (int64) *ptr++ << 56;
+						qaword |= (int64) *ptr++ << 48;
+						qaword |= (int64) *ptr++ << 40;
+						qaword |= (int64) *ptr++ << 32;
+						qaword |= (int64) *ptr++ << 24;
+						qaword |= (int64) *ptr++ << 16;
+						qaword |= (int64) *ptr++ << 8;
+						qaword |= (int64) *ptr++;
+						*((int64 *) (addr)) = qaword;
+						break;
+
+					default:
+						break;
+				}
+
+				break;
+
+			case uint8_ARRAY_V:
+			case uint8_INDIR_ARRAY_V:
+				if (fields[i].offset >= 0)
+					memmove(addr, ptr, fields[i].size);
+				ptr += fields[i].size;
+
+				break;
+
+			case uint16_ARRAY_V:
+			case uint16_INDIR_ARRAY_V:
+				if (fields[i].offset < 0)
+				{
+					ptr += fields[i].size * 2;
+					break;
+				}
+
+				for (j = 0; j < fields[i].size; j++)
+				{
+					word  = *ptr++ << 8;
+					word |= *ptr++;
+					*((uint16 *) (addr + j * 2)) = word;
+				}
+
+				break;
+
+			case uint32_ARRAY_V:
+			case uint32_INDIR_ARRAY_V:
+				if (fields[i].offset < 0)
+				{
+					ptr += fields[i].size * 4;
+					break;
+				}
+
+				for (j = 0; j < fields[i].size; j++)
+				{
+					dword  = *ptr++ << 24;
+					dword |= *ptr++ << 16;
+					dword |= *ptr++ << 8;
+					dword |= *ptr++;
+					*((uint32 *) (addr + j * 4)) = dword;
+				}
+
+				break;
+		}
+
+		if (fields[i].type == POINTER_V)
+		{
+			relativeAddr = (int) *((intptr_t *) ((uint8 *) base + fields[i].offset));
+			uint8	*relativeTo = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset2));
+			*((intptr_t *) (addr)) = (intptr_t) (relativeTo + relativeAddr);
+		}
+	}
 }
 
 int S9xUnfreezeFromStream (STREAM stream)
@@ -1528,395 +1906,8 @@ int S9xUnfreezeFromStream (STREAM stream)
 	return (result);
 }
 
-static int FreezeSize (int size, int type)
-{
-	switch (type)
-	{
-		case uint32_ARRAY_V:
-		case uint32_INDIR_ARRAY_V:
-			return (size * 4);
 
-		case uint16_ARRAY_V:
-		case uint16_INDIR_ARRAY_V:
-			return (size * 2);
 
-		default:
-			return (size);
-	}
-}
 
-static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeData *fields, int num_fields)
-{
-	int	len = 0;
-	int	i, j;
 
-	for (i = 0; i < num_fields; i++)
-	{
-		if (SNAPSHOT_VERSION < fields[i].debuted_in)
-		{
-			//fprintf(stderr, "%s[%p]: field has bad debuted_in value %d, > %d.", name, (void *) fields, fields[i].debuted_in, SNAPSHOT_VERSION);
-			continue;
-		}
 
-		if (SNAPSHOT_VERSION < fields[i].deleted_in)
-			len += FreezeSize(fields[i].size, fields[i].type);
-	}
-
-	uint8	*block = new uint8[len];
-	uint8	*ptr = block;
-	uint8	*addr;
-	uint16	word;
-	uint32	dword;
-	int64	qaword;
-	int	relativeAddr;
-
-	for (i = 0; i < num_fields; i++)
-	{
-		if (SNAPSHOT_VERSION >= fields[i].deleted_in || SNAPSHOT_VERSION < fields[i].debuted_in)
-			continue;
-
-		addr = (uint8 *) base + fields[i].offset;
-
-		// determine real address of indirect-type fields
-		// (where the structure contains a pointer to an array rather than the array itself)
-		if (fields[i].type == uint8_INDIR_ARRAY_V || fields[i].type == uint16_INDIR_ARRAY_V || fields[i].type == uint32_INDIR_ARRAY_V)
-			addr = (uint8 *) (*((intptr_t *) addr));
-
-		// convert pointer-type saves from absolute to relative pointers
-		if (fields[i].type == POINTER_V)
-		{
-			uint8	*pointer    = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset));
-			uint8	*relativeTo = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset2));
-			relativeAddr = pointer - relativeTo;
-			addr = (uint8 *) &relativeAddr;
-		}
-
-		switch (fields[i].type)
-		{
-			case INT_V:
-			case POINTER_V:
-				switch (fields[i].size)
-				{
-					case 1:
-						*ptr++ = *(addr);
-						break;
-
-					case 2:
-						word = *((uint16 *) (addr));
-						*ptr++ = (uint8) (word >> 8);
-						*ptr++ = (uint8) word;
-						break;
-
-					case 4:
-						dword = *((uint32 *) (addr));
-						*ptr++ = (uint8) (dword >> 24);
-						*ptr++ = (uint8) (dword >> 16);
-						*ptr++ = (uint8) (dword >> 8);
-						*ptr++ = (uint8) dword;
-						break;
-
-					case 8:
-						qaword = *((int64 *) (addr));
-						*ptr++ = (uint8) (qaword >> 56);
-						*ptr++ = (uint8) (qaword >> 48);
-						*ptr++ = (uint8) (qaword >> 40);
-						*ptr++ = (uint8) (qaword >> 32);
-						*ptr++ = (uint8) (qaword >> 24);
-						*ptr++ = (uint8) (qaword >> 16);
-						*ptr++ = (uint8) (qaword >> 8);
-						*ptr++ = (uint8) qaword;
-						break;
-				}
-
-				break;
-
-			case uint8_ARRAY_V:
-			case uint8_INDIR_ARRAY_V:
-				memmove(ptr, addr, fields[i].size);
-				ptr += fields[i].size;
-
-				break;
-
-			case uint16_ARRAY_V:
-			case uint16_INDIR_ARRAY_V:
-				for (j = 0; j < fields[i].size; j++)
-				{
-					word = *((uint16 *) (addr + j * 2));
-					*ptr++ = (uint8) (word >> 8);
-					*ptr++ = (uint8) word;
-				}
-
-				break;
-
-			case uint32_ARRAY_V:
-			case uint32_INDIR_ARRAY_V:
-				for (j = 0; j < fields[i].size; j++)
-				{
-					dword = *((uint32 *) (addr + j * 4));
-					*ptr++ = (uint8) (dword >> 24);
-					*ptr++ = (uint8) (dword >> 16);
-					*ptr++ = (uint8) (dword >> 8);
-					*ptr++ = (uint8) dword;
-				}
-
-				break;
-		}
-	}
-
-	FreezeBlock(stream, name, block, len);
-	delete [] block;
-}
-
-static void FreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
-{
-	char	buffer[20];
-
-	// check if it fits in 6 digits. (letting it go over and using strlen isn't safe)
-	if (size <= 999999)
-		sprintf(buffer, "%s:%06d:", name, size);
-	else
-	{
-		// to make it fit, pack it in the bytes instead of as digits
-		sprintf(buffer, "%s:------:", name);
-		buffer[6] = (unsigned char) ((unsigned) size >> 24);
-		buffer[7] = (unsigned char) ((unsigned) size >> 16);
-		buffer[8] = (unsigned char) ((unsigned) size >> 8);
-		buffer[9] = (unsigned char) ((unsigned) size >> 0);
-	}
-
-	buffer[11] = 0;
-
-	WRITE_STREAM(buffer, 11, stream);
-	WRITE_STREAM(block, size, stream);
-}
-
-static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
-{
-	char	buffer[20];
-	int		len = 0, rem = 0;
-	long	rewind = FIND_STREAM(stream);
-
-	size_t	l = READ_STREAM(buffer, 11, stream);
-	buffer[l] = 0;
-
-	if (l != 11 || strncmp(buffer, name, 3) != 0 || buffer[3] != ':')
-	{
-	err:
-		//fprintf(stdout, "absent: %s(%d); next: '%.11s'\n", name, size, buffer);
-		REVERT_STREAM(stream, FIND_STREAM(stream) - l, 0);
-		return (WRONG_FORMAT);
-	}
-
-	if (buffer[4] == '-')
-	{
-		len = (((unsigned char) buffer[6]) << 24)
-			| (((unsigned char) buffer[7]) << 16)
-			| (((unsigned char) buffer[8]) << 8)
-			| (((unsigned char) buffer[9]) << 0);
-	}
-	else
-		len = atoi(buffer + 4);
-
-	if (len <= 0)
-		goto err;
-
-	if (len > size)
-	{
-		rem = len - size;
-		len = size;
-	}
-
-	ZeroMemory(block, size);
-
-	if (READ_STREAM(block, len, stream) != len)
-	{
-		REVERT_STREAM(stream, rewind, 0);
-		return (WRONG_FORMAT);
-	}
-
-	if (rem)
-	{
-		char	*junk = new char[rem];
-		len = READ_STREAM(junk, rem, stream);
-		delete [] junk;
-		if (len != rem)
-		{
-			REVERT_STREAM(stream, rewind, 0);
-			return (WRONG_FORMAT);
-		}
-	}
-
-	return (SUCCESS);
-}
-
-static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, int size)
-{
-	int	result;
-
-	*block = new uint8[size];
-
-	result = UnfreezeBlock(stream, name, *block, size);
-	if (result != SUCCESS)
-	{
-		delete [] (*block);
-		*block = NULL;
-		return (result);
-	}
-
-	return (SUCCESS);
-}
-
-static int UnfreezeStructCopy (STREAM stream, const char *name, uint8 **block, FreezeData *fields, int num_fields, int version)
-{
-	int	len = 0;
-
-	for (int i = 0; i < num_fields; i++)
-	{
-		if (version >= fields[i].debuted_in && version < fields[i].deleted_in)
-			len += FreezeSize(fields[i].size, fields[i].type);
-	}
-
-	return (UnfreezeBlockCopy(stream, name, block, len));
-}
-
-static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fields, uint8 *block, int version)
-{
-	uint8	*ptr = block;
-	uint16	word;
-	uint32	dword;
-	int64	qaword;
-	uint8	*addr;
-	void	*base;
-	int	relativeAddr;
-	int	i, j;
-
-	for (i = 0; i < num_fields; i++)
-	{
-		if (version < fields[i].debuted_in || version >= fields[i].deleted_in)
-			continue;
-
-		base = (SNAPSHOT_VERSION >= fields[i].deleted_in) ? ((void *) &Obsolete) : sbase;
-		addr = (uint8 *) base + fields[i].offset;
-
-		if (fields[i].type == uint8_INDIR_ARRAY_V || fields[i].type == uint16_INDIR_ARRAY_V || fields[i].type == uint32_INDIR_ARRAY_V)
-			addr = (uint8 *) (*((intptr_t *) addr));
-
-		switch (fields[i].type)
-		{
-			case INT_V:
-			case POINTER_V:
-				switch (fields[i].size)
-				{
-					case 1:
-						if (fields[i].offset < 0)
-						{
-							ptr++; 
-							break;
-						}
-
-						*(addr) = *ptr++;
-						break;
-
-					case 2:
-						if (fields[i].offset < 0)
-						{
-							ptr += 2;
-							break;
-						}
-
-						word  = *ptr++ << 8;
-						word |= *ptr++;
-						*((uint16 *) (addr)) = word;
-						break;
-
-					case 4:
-						if (fields[i].offset < 0)
-						{
-							ptr += 4;
-							break;
-						}
-
-						dword  = *ptr++ << 24;
-						dword |= *ptr++ << 16;
-						dword |= *ptr++ << 8;
-						dword |= *ptr++;
-						*((uint32 *) (addr)) = dword;
-						break;
-
-					case 8:
-						if (fields[i].offset < 0)
-						{
-							ptr += 8;
-							break;
-						}
-
-						qaword  = (int64) *ptr++ << 56;
-						qaword |= (int64) *ptr++ << 48;
-						qaword |= (int64) *ptr++ << 40;
-						qaword |= (int64) *ptr++ << 32;
-						qaword |= (int64) *ptr++ << 24;
-						qaword |= (int64) *ptr++ << 16;
-						qaword |= (int64) *ptr++ << 8;
-						qaword |= (int64) *ptr++;
-						*((int64 *) (addr)) = qaword;
-						break;
-
-					default:
-						break;
-				}
-
-				break;
-
-			case uint8_ARRAY_V:
-			case uint8_INDIR_ARRAY_V:
-				if (fields[i].offset >= 0)
-					memmove(addr, ptr, fields[i].size);
-				ptr += fields[i].size;
-
-				break;
-
-			case uint16_ARRAY_V:
-			case uint16_INDIR_ARRAY_V:
-				if (fields[i].offset < 0)
-				{
-					ptr += fields[i].size * 2;
-					break;
-				}
-
-				for (j = 0; j < fields[i].size; j++)
-				{
-					word  = *ptr++ << 8;
-					word |= *ptr++;
-					*((uint16 *) (addr + j * 2)) = word;
-				}
-
-				break;
-
-			case uint32_ARRAY_V:
-			case uint32_INDIR_ARRAY_V:
-				if (fields[i].offset < 0)
-				{
-					ptr += fields[i].size * 4;
-					break;
-				}
-
-				for (j = 0; j < fields[i].size; j++)
-				{
-					dword  = *ptr++ << 24;
-					dword |= *ptr++ << 16;
-					dword |= *ptr++ << 8;
-					dword |= *ptr++;
-					*((uint32 *) (addr + j * 4)) = dword;
-				}
-
-				break;
-		}
-
-		if (fields[i].type == POINTER_V)
-		{
-			relativeAddr = (int) *((intptr_t *) ((uint8 *) base + fields[i].offset));
-			uint8	*relativeTo = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset2));
-			*((intptr_t *) (addr)) = (intptr_t) (relativeTo + relativeAddr);
-		}
-	}
-}
