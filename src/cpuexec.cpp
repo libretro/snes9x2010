@@ -358,46 +358,35 @@ static void RenderLine (uint8 C)
 
 static void S9xStartScreenRefresh (void)
 {
-	GFX.InterlaceFrame = !GFX.InterlaceFrame;
-	if (!GFX.DoInterlace || !GFX.InterlaceFrame)
+	if (GFX.DoInterlace)
+		GFX.DoInterlace--;
+
+	IPPU.MaxBrightness = PPU.Brightness;
+
+	IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
+	IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
+	IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
+
+	GFX.RealPPL = GFX.Pitch >> 1;
+	IPPU.RenderedScreenWidth = SNES_WIDTH;
+	IPPU.RenderedScreenHeight = PPU.ScreenHeight;
+	IPPU.DoubleWidthPixels = FALSE;
+	IPPU.DoubleHeightPixels = FALSE;
+
+	if ((PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
 	{
-		if (GFX.DoInterlace)
-			GFX.DoInterlace--;
-
-		IPPU.MaxBrightness = PPU.Brightness;
-
-		IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
-		IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
-		IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
-
-		GFX.RealPPL = GFX.Pitch >> 1;
-		IPPU.RenderedScreenWidth = SNES_WIDTH;
-		IPPU.RenderedScreenHeight = PPU.ScreenHeight;
-		IPPU.DoubleWidthPixels = FALSE;
-		IPPU.DoubleHeightPixels = FALSE;
-
-		if ((PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
-		{
-			IPPU.DoubleWidthPixels = TRUE;
-			IPPU.RenderedScreenWidth += SNES_WIDTH;
-		}
-
-		GFX.PPL = GFX.RealPPL;
-		if (IPPU.Interlace)
-		{
-			GFX.PPL += GFX.RealPPL;
-			IPPU.DoubleHeightPixels = TRUE;
-			IPPU.RenderedScreenHeight += PPU.ScreenHeight;
-			GFX.DoInterlace++;
-		}
+		IPPU.DoubleWidthPixels = TRUE;
+		IPPU.RenderedScreenWidth += SNES_WIDTH;
 	}
 
-	PPU.MosaicStart = 0;
-	PPU.RecomputeClipWindows = TRUE;
-	IPPU.PreviousLine = IPPU.CurrentLine = 0;
-
-	ZeroMemory(GFX.ZBuffer, GFX.ScreenSize);
-	ZeroMemory(GFX.SubZBuffer, GFX.ScreenSize);
+	GFX.PPL = GFX.RealPPL;
+	if (IPPU.Interlace)
+	{
+		GFX.PPL += GFX.RealPPL;
+		IPPU.DoubleHeightPixels = TRUE;
+		IPPU.RenderedScreenHeight += PPU.ScreenHeight;
+		GFX.DoInterlace++;
+	}
 }
 
 static inline void S9xReschedule (void)
@@ -583,8 +572,6 @@ static int HDMA_ModeByteCounts[8] =
 {
 	1, 2, 2, 4, 4, 4, 2, 4
 };
-
-
 
 static uint8 S9xDoHDMA (uint8 byte)
 {
@@ -1074,7 +1061,19 @@ void S9xDoHEventProcessing (void)
 			}
 
 			if (CPU.V_Counter == FIRST_VISIBLE_LINE)	// V=1
-				S9xStartScreenRefresh();
+			{
+				GFX.InterlaceFrame = !GFX.InterlaceFrame;
+
+				if (!GFX.DoInterlace || !GFX.InterlaceFrame)
+					S9xStartScreenRefresh();
+
+				PPU.MosaicStart = 0;
+				PPU.RecomputeClipWindows = TRUE;
+				IPPU.PreviousLine = IPPU.CurrentLine = 0;
+
+				ZeroMemory(GFX.ZBuffer, GFX.ScreenSize);
+				ZeroMemory(GFX.SubZBuffer, GFX.ScreenSize);
+			}
 
 			CPU.NextEvent = -1;
 			S9xReschedule();

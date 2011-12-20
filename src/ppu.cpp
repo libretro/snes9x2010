@@ -420,15 +420,11 @@ static inline void REGISTER_2122 (uint8 Byte)
 	PPU.CGFLIP ^= 1;
 }
 
-// This code is correct, however due to Snes9x's inaccurate timings, some games might be broken by this chage. :(
-#define CHECK_INBLANK() \
-	if (Settings.BlockInvalidVRAMAccess && !PPU.ForcedBlanking && CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE) \
-		return;
+// This code is correct, however due to Snes9x's inaccurate timings, some games might be broken by this change. :(
+#define CHECK_INBLANK !(Settings.BlockInvalidVRAMAccess && !PPU.ForcedBlanking && CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE)
 
 static inline void REGISTER_2118 (uint8 Byte)
 {
-	CHECK_INBLANK();
-
 	uint32	address;
 
 	if (PPU.VMA.FullGraphicCount)
@@ -460,8 +456,6 @@ static inline void REGISTER_2118 (uint8 Byte)
 
 static inline void REGISTER_2119 (uint8 Byte)
 {
-	CHECK_INBLANK();
-
 	uint32	address;
 
 	if (PPU.VMA.FullGraphicCount)
@@ -986,14 +980,16 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 			#ifndef CORRECT_VRAM_READS
 				IPPU.FirstVRAMRead = TRUE;
 			#endif
-				REGISTER_2118(Byte);
+				if(CHECK_INBLANK)
+					REGISTER_2118(Byte);
 				break;
 
 			case 0x2119: // VMDATAH
 			#ifndef CORRECT_VRAM_READS
 				IPPU.FirstVRAMRead = TRUE;
 			#endif
-				REGISTER_2119(Byte);
+				if(CHECK_INBLANK)
+					REGISTER_2119(Byte);
 				break;
 
 			case 0x211a: // M7SEL
@@ -1623,8 +1619,6 @@ static inline bool8 addCyclesInDMA (uint8 dma_channel)
 
 static inline void REGISTER_2119_linear (uint8 Byte)
 {
-	CHECK_INBLANK();
-
 	uint32	address = ((PPU.VMA.Address << 1) + 1) & 0xffff;
 
 	Memory.VRAM[address] = Byte;
@@ -1647,8 +1641,6 @@ static inline void REGISTER_2119_linear (uint8 Byte)
 
 static inline void REGISTER_2118_linear (uint8 Byte)
 {
-	CHECK_INBLANK();
-
 	uint32	address = (PPU.VMA.Address << 1) & 0xffff;
 
 	Memory.VRAM[address] = Byte;
@@ -1671,8 +1663,6 @@ static inline void REGISTER_2118_linear (uint8 Byte)
 
 static inline void REGISTER_2118_tile (uint8 Byte)
 {
-	CHECK_INBLANK();
-
 	uint32 rem = PPU.VMA.Address & PPU.VMA.Mask1;
 	uint32 address = (((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) & 0xffff;
 
@@ -1696,8 +1686,6 @@ static inline void REGISTER_2118_tile (uint8 Byte)
 
 static inline void REGISTER_2119_tile (uint8 Byte)
 {
-	CHECK_INBLANK();
-
 	uint32 rem = PPU.VMA.Address & PPU.VMA.Mask1;
 	uint32 address = ((((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) + 1) & 0xffff;
 
@@ -2199,7 +2187,8 @@ static bool8 S9xDoDMA (uint8 Channel)
 								do
 								{
 									Work = *(base + p);
-									REGISTER_2118_linear(Work);
+									if(CHECK_INBLANK)
+										REGISTER_2118_linear(Work);
 									UPDATE_COUNTERS;
 								} while (--count > 0);
 							}
@@ -2208,7 +2197,8 @@ static bool8 S9xDoDMA (uint8 Channel)
 								do
 								{
 									Work = *(base + p);
-									REGISTER_2118_tile(Work);
+									if(CHECK_INBLANK)
+										REGISTER_2118_tile(Work);
 									UPDATE_COUNTERS;
 								} while (--count > 0);
 							}
@@ -2224,7 +2214,8 @@ static bool8 S9xDoDMA (uint8 Channel)
 								do
 								{
 									Work = *(base + p);
-									REGISTER_2119_linear(Work);
+									if(CHECK_INBLANK)
+										REGISTER_2119_linear(Work);
 									UPDATE_COUNTERS;
 								} while (--count > 0);
 							}
@@ -2233,7 +2224,8 @@ static bool8 S9xDoDMA (uint8 Channel)
 								do
 								{
 									Work = *(base + p);
-									REGISTER_2119_tile(Work);
+									if(CHECK_INBLANK)
+										REGISTER_2119_tile(Work);
 									UPDATE_COUNTERS;
 								} while (--count > 0);
 							}
@@ -2304,7 +2296,8 @@ static bool8 S9xDoDMA (uint8 Channel)
 
 											case 1:
 											Work = *(base + p);
-											REGISTER_2119_linear(Work);
+											if(CHECK_INBLANK)
+												REGISTER_2119_linear(Work);
 											UPDATE_COUNTERS;
 											count--;
 										}
@@ -2334,7 +2327,8 @@ static bool8 S9xDoDMA (uint8 Channel)
 
 											case 1:
 											Work = *(base + p);
-											REGISTER_2119_tile(Work);
+											if(CHECK_INBLANK)
+												REGISTER_2119_tile(Work);
 											UPDATE_COUNTERS;
 											count--;
 										}
