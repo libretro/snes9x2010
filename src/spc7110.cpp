@@ -201,11 +201,91 @@
 #include "srtc.h"
 #include "display.h"
 
+#include "spc7110emu.h"
+
+SPC7110Decomp decomp;
+
 #define memory_cartrom_read(a)		Memory.ROM[(a)]
 #define memory_cartrtc_read(a)		RTCData.reg[(a)]
 #define memory_cartrtc_write(a, b)	{ RTCData.reg[(a)] = (b); }
 
-#include "spc7110emu.h"
+//==================
+//decompression unit
+//==================
+uint8 r4801; //compression table low
+uint8 r4802; //compression table high
+uint8 r4803; //compression table bank
+uint8 r4804; //compression table index
+uint8 r4805; //decompression buffer index low
+uint8 r4806; //decompression buffer index high
+uint8 r4807; //???
+uint8 r4808; //???
+uint8 r4809; //compression length low
+uint8 r480a; //compression length high
+uint8 r480b; //decompression control register
+uint8 r480c; //decompression status
+
+//==============
+//data port unit
+//==============
+uint8 r4811; //data pointer low
+uint8 r4812; //data pointer high
+uint8 r4813; //data pointer bank
+uint8 r4814; //data adjust low
+uint8 r4815; //data adjust high
+uint8 r4816; //data increment low
+uint8 r4817; //data increment high
+uint8 r4818; //data port control register
+
+uint8 r481x;
+
+bool r4814_latch;
+bool r4815_latch;
+
+//=========
+//math unit
+//=========
+uint8 r4820; //16-bit multiplicand B0, 32-bit dividend B0
+uint8 r4821; //16-bit multiplicand B1, 32-bit dividend B1
+uint8 r4822; //32-bit dividend B2
+uint8 r4823; //32-bit dividend B3
+uint8 r4824; //16-bit multiplier B0
+uint8 r4825; //16-bit multiplier B1
+uint8 r4826; //16-bit divisor B0
+uint8 r4827; //16-bit divisor B1
+uint8 r4828; //32-bit product B0, 32-bit quotient B0
+uint8 r4829; //32-bit product B1, 32-bit quotient B1
+uint8 r482a; //32-bit product B2, 32-bit quotient B2
+uint8 r482b; //32-bit product B3, 32-bit quotient B3
+uint8 r482c; //16-bit remainder B0
+uint8 r482d; //16-bit remainder B1
+uint8 r482e; //math control register
+uint8 r482f; //math status
+
+//===================
+//memory mapping unit
+//===================
+uint8 r4830; //SRAM write enable
+uint8 r4831; //$[d0-df]:[0000-ffff] mapping
+uint8 r4832; //$[e0-ef]:[0000-ffff] mapping
+uint8 r4833; //$[f0-ff]:[0000-ffff] mapping
+uint8 r4834; //???
+
+unsigned dx_offset;
+unsigned ex_offset;
+unsigned fx_offset;
+
+//====================
+//real-time clock unit
+//====================
+uint8 r4840; //RTC latch
+uint8 r4841; //RTC index/data port
+uint8 r4842; //RTC status
+
+enum RTC_State { RTCS_INACTIVE, RTCS_MODESELECT, RTCS_INDEXSELECT, RTCS_WRITE } rtc_state;
+enum RTC_Mode  { RTCM_LINEAR = 0x03, RTCM_INDEXED = 0x0c } rtc_mode;
+unsigned rtc_index;
+
 
 static unsigned morton16[2][256];
 static unsigned morton32[4][256];
@@ -758,74 +838,10 @@ SPC7110Decomp::~SPC7110Decomp()
 	delete[] decomp_buffer;
 }
 
+
 static const unsigned months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
-void SPC7110::power()
-{
-	r4801 = 0x00;
-	r4802 = 0x00;
-	r4803 = 0x00;
-	r4804 = 0x00;
-	r4805 = 0x00;
-	r4806 = 0x00;
-	r4807 = 0x00;
-	r4808 = 0x00;
-	r4809 = 0x00;
-	r480a = 0x00;
-	r480b = 0x00;
-	r480c = 0x00;
-
-	decomp.reset();
-
-	r4811 = 0x00;
-	r4812 = 0x00;
-	r4813 = 0x00;
-	r4814 = 0x00;
-	r4815 = 0x00;
-	r4816 = 0x00;
-	r4817 = 0x00;
-	r4818 = 0x00;
-
-	r481x = 0x00;
-	r4814_latch = false;
-	r4815_latch = false;
-
-	r4820 = 0x00;
-	r4821 = 0x00;
-	r4822 = 0x00;
-	r4823 = 0x00;
-	r4824 = 0x00;
-	r4825 = 0x00;
-	r4826 = 0x00;
-	r4827 = 0x00;
-	r4828 = 0x00;
-	r4829 = 0x00;
-	r482a = 0x00;
-	r482b = 0x00;
-	r482c = 0x00;
-	r482d = 0x00;
-	r482e = 0x00;
-	r482f = 0x00;
-
-	r4830 = 0x00;
-	mmio_write(0x4831, 0);
-	mmio_write(0x4832, 1);
-	mmio_write(0x4833, 2);
-	r4834 = 0x00;
-
-	r4840 = 0x00;
-	r4841 = 0x00;
-	r4842 = 0x00;
-
-	if(Settings.SPC7110RTC)
-	{
-		rtc_state = RTCS_INACTIVE;
-		rtc_mode  = RTCM_LINEAR;
-		rtc_index = 0;
-	}
-}
-
-unsigned SPC7110::datarom_addr(unsigned addr)
+unsigned s7_datarom_addr(unsigned addr)
 {
 	unsigned size = Memory.CalculatedSize - 0x100000;
 	while(addr >= size)
@@ -833,13 +849,24 @@ unsigned SPC7110::datarom_addr(unsigned addr)
 	return addr + 0x100000;
 }
 
-unsigned SPC7110::data_pointer()   { return r4811 + (r4812 << 8) + (r4813 << 16); }
-unsigned SPC7110::data_adjust()    { return r4814 + (r4815 << 8); }
-unsigned SPC7110::data_increment() { return r4816 + (r4817 << 8); }
-void SPC7110::set_data_pointer(unsigned addr) { r4811 = addr; r4812 = addr >> 8; r4813 = addr >> 16; }
-void SPC7110::set_data_adjust(unsigned addr)  { r4814 = addr; r4815 = addr >> 8; }
+unsigned s7_data_adjust (void)
+{
+	return r4814 + (r4815 << 8);
+}
 
-void SPC7110::update_time(int offset)
+static unsigned s7_data_pointer (void)
+{
+	return r4811 + (r4812 << 8) + (r4813 << 16);
+}
+
+static void s7_set_data_pointer(unsigned addr)
+{
+	r4811 = addr;
+	r4812 = addr >> 8;
+	r4813 = addr >> 16;
+}
+
+static void s7_update_time(int offset)
 {
 	time_t rtc_time = (memory_cartrtc_read(16) <<  0)
 		| (memory_cartrtc_read(17) <<  8)
@@ -945,184 +972,7 @@ void SPC7110::update_time(int offset)
 	memory_cartrtc_write(19, current_time >> 24);
 }
 
-uint8 SPC7110::mmio_read(unsigned addr)
-{
-	addr &= 0xffff;
-
-	switch(addr)
-	{
-		//==================
-		//decompression unit
-		//==================
-
-		case 0x4800:
-			{
-				uint16 counter = (r4809 + (r480a << 8));
-				counter--;
-				r4809 = counter;
-				r480a = counter >> 8;
-				return decomp.read();
-			}
-		case 0x4801:
-			return r4801;
-		case 0x4802:
-			return r4802;
-		case 0x4803:
-			return r4803;
-		case 0x4804:
-			return r4804;
-		case 0x4805:
-			return r4805;
-		case 0x4806:
-			return r4806;
-		case 0x4807:
-			return r4807;
-		case 0x4808:
-			return r4808;
-		case 0x4809:
-			return r4809;
-		case 0x480a:
-			return r480a;
-		case 0x480b:
-			return r480b;
-		case 0x480c:
-			{
-				uint8 status = r480c;
-				r480c &= 0x7f;
-				return status;
-			}
-
-			//==============
-			//data port unit
-			//==============
-		case 0x4810:
-			{
-				if(r481x != 0x07)
-					return 0x00;
-
-				unsigned addr = data_pointer();
-				unsigned adjust = data_adjust();
-				if(r4818 & 8) adjust = (int16)adjust;  //16-bit sign extend
-
-				unsigned adjustaddr = addr;
-				if(r4818 & 2) {
-					adjustaddr += adjust;
-					set_data_adjust(adjust + 1);
-				}
-
-				uint8 data = memory_cartrom_read(datarom_addr(adjustaddr));
-				if(!(r4818 & 2))
-				{
-					unsigned increment = (r4818 & 1) ? data_increment() : 1;
-					if(r4818 & 4)
-						increment = (int16)increment;  //16-bit sign extend
-
-					if((r4818 & 16) == 0)
-						set_data_pointer(addr + increment);
-					else
-						set_data_adjust(adjust + increment);
-				}
-
-				return data;
-			}
-		case 0x4811:
-			return r4811;
-		case 0x4812:
-			return r4812;
-		case 0x4813:
-			return r4813;
-		case 0x4814:
-			return r4814;
-		case 0x4815:
-			return r4815;
-		case 0x4816:
-			return r4816;
-		case 0x4817:
-			return r4817;
-		case 0x4818:
-			return r4818;
-		case 0x481a:
-			{
-				if(r481x != 0x07) return 0x00;
-
-				unsigned addr = data_pointer();
-				unsigned adjust = data_adjust();
-				if(r4818 & 8)
-					adjust = (int16)adjust;  //16-bit sign extend
-
-				uint8 data = memory_cartrom_read(datarom_addr(addr + adjust));
-				if((r4818 & 0x60) == 0x60)
-				{
-					if((r4818 & 16) == 0)
-						set_data_pointer(addr + adjust);
-					else
-						set_data_adjust(adjust + adjust);
-				}
-
-				return data;
-			}
-
-			     //=========
-			     //math unit
-			     //=========
-
-		case 0x4820: return r4820;
-		case 0x4821: return r4821;
-		case 0x4822: return r4822;
-		case 0x4823: return r4823;
-		case 0x4824: return r4824;
-		case 0x4825: return r4825;
-		case 0x4826: return r4826;
-		case 0x4827: return r4827;
-		case 0x4828: return r4828;
-		case 0x4829: return r4829;
-		case 0x482a: return r482a;
-		case 0x482b: return r482b;
-		case 0x482c: return r482c;
-		case 0x482d: return r482d;
-		case 0x482e: return r482e;
-		case 0x482f: {
-				     uint8 status = r482f;
-				     r482f &= 0x7f;
-				     return status;
-			     }
-
-			     //===================
-			     //memory mapping unit
-			     //===================
-
-		case 0x4830: return r4830;
-		case 0x4831: return r4831;
-		case 0x4832: return r4832;
-		case 0x4833: return r4833;
-		case 0x4834: return r4834;
-
-			     //====================
-			     //real-time clock unit
-			     //====================
-
-		case 0x4840: return r4840;
-		case 0x4841:
-			     {
-				     if(rtc_state == RTCS_INACTIVE || rtc_state == RTCS_MODESELECT)
-					     return 0x00;
-
-				     r4842 = 0x80;
-				     uint8 data = memory_cartrtc_read(rtc_index);
-				     rtc_index = (rtc_index + 1) & 15;
-				     return data;
-			     }
-		case 0x4842: {
-				     uint8 status = r4842;
-				     r4842 &= 0x7f;
-				     return status;
-			     }
-	}
-
-	return OpenBus;
-}
-
-void SPC7110::mmio_write(unsigned addr, uint8 data)
+static void s7_mmio_write(unsigned addr, uint8 data)
 {
 	addr &= 0xffff;
 
@@ -1143,7 +993,7 @@ void SPC7110::mmio_write(unsigned addr, uint8 data)
 				     unsigned table   = (r4801 + (r4802 << 8) + (r4803 << 16));
 				     unsigned index   = (r4804 << 2);
 				     //unsigned length  = (r4809 + (r480a << 8));
-				     unsigned addr    = datarom_addr(table + index);
+				     unsigned addr    = s7_datarom_addr(table + index);
 				     unsigned mode    = (memory_cartrom_read(addr + 0));
 				     unsigned offset  = (memory_cartrom_read(addr + 1) << 16)
 					     + (memory_cartrom_read(addr + 2) <<  8)
@@ -1188,17 +1038,17 @@ void SPC7110::mmio_write(unsigned addr, uint8 data)
 
 				if((r4818 & 0x60) == 0x20)
 				{
-					unsigned increment = data_adjust() & 0xff;
+					unsigned increment = s7_data_adjust() & 0xff;
 					if(r4818 & 8)
 						increment = (int8)increment;  //8-bit sign extend
-					set_data_pointer(data_pointer() + increment);
+					s7_set_data_pointer(s7_data_pointer() + increment);
 				}
 				else if((r4818 & 0x60) == 0x40)
 				{
-					unsigned increment = data_adjust();
+					unsigned increment = s7_data_adjust();
 					if(r4818 & 8)
 						increment = (int16)increment;  //16-bit sign extend
-					set_data_pointer(data_pointer() + increment);
+					s7_set_data_pointer(s7_data_pointer() + increment);
 				}
 			}
 			break;
@@ -1215,15 +1065,16 @@ void SPC7110::mmio_write(unsigned addr, uint8 data)
 
 				if((r4818 & 0x60) == 0x20)
 				{
-					unsigned increment = data_adjust() & 0xff;
+					unsigned increment = s7_data_adjust() & 0xff;
 					if(r4818 & 8) increment = (int8)increment;  //8-bit sign extend
-					set_data_pointer(data_pointer() + increment);
+					s7_set_data_pointer(s7_data_pointer() + increment);
 				}
 				else if((r4818 & 0x60) == 0x40)
 				{
-					unsigned increment = data_adjust();
-					if(r4818 & 8) increment = (int16)increment;  //16-bit sign extend
-					set_data_pointer(data_pointer() + increment);
+					unsigned increment = s7_data_adjust();
+					if(r4818 & 8)
+						increment = (int16)increment;  //16-bit sign extend
+					s7_set_data_pointer(s7_data_pointer() + increment);
 				}
 			}
 			break;
@@ -1378,19 +1229,19 @@ void SPC7110::mmio_write(unsigned addr, uint8 data)
 		case 0x4831:
 			{
 				r4831 = data;
-				dx_offset = datarom_addr((data & 7) * 0x100000);
+				dx_offset = s7_datarom_addr((data & 7) * 0x100000);
 			}
 			break;
 		case 0x4832:
 			{
 				r4832 = data;
-				ex_offset = datarom_addr((data & 7) * 0x100000);
+				ex_offset = s7_datarom_addr((data & 7) * 0x100000);
 			}
 			break;
 		case 0x4833:
 			{
 				r4833 = data;
-				fx_offset = datarom_addr((data & 7) * 0x100000);
+				fx_offset = s7_datarom_addr((data & 7) * 0x100000);
 			}
 			break;
 		case 0x4834:
@@ -1405,7 +1256,7 @@ void SPC7110::mmio_write(unsigned addr, uint8 data)
 				{
 					//disable RTC
 					rtc_state = RTCS_INACTIVE;
-					update_time();
+					s7_update_time(0);
 				}
 				else
 				{
@@ -1448,11 +1299,12 @@ void SPC7110::mmio_write(unsigned addr, uint8 data)
 							     if(rtc_index == 13)
 							     {
 								     //increment second counter
-								     if(data & 2) update_time(+1);
+								     if(data & 2)
+								     	s7_update_time(+1);
 
 								     //round minute counter
 								     if(data & 8) {
-									     update_time();
+									     s7_update_time(0);
 
 									     unsigned second = memory_cartrtc_read( 0) + memory_cartrtc_read( 1) * 10;
 									     //clear seconds
@@ -1460,7 +1312,7 @@ void SPC7110::mmio_write(unsigned addr, uint8 data)
 									     memory_cartrtc_write(1, 0);
 
 									     if(second >= 30)
-									     	update_time(+60);
+									     	s7_update_time(+60);
 								     }
 							     }
 
@@ -1470,7 +1322,7 @@ void SPC7110::mmio_write(unsigned addr, uint8 data)
 								     //disable timer and clear second counter
 								     if((data & 1) && !(memory_cartrtc_read(15) & 1))
 								     {
-									     update_time();
+									     s7_update_time(0);
 
 									     //clear seconds
 									     memory_cartrtc_write(0, 0);
@@ -1480,7 +1332,7 @@ void SPC7110::mmio_write(unsigned addr, uint8 data)
 								     //disable timer
 								     if((data & 2) && !(memory_cartrtc_read(15) & 2))
 								     {
-									     update_time();
+									     s7_update_time(0);
 								     }
 							     }
 
@@ -1496,21 +1348,273 @@ void SPC7110::mmio_write(unsigned addr, uint8 data)
 	}
 }
 
-SPC7110::SPC7110()
+static void s7_power()
 {
+	r4801 = 0x00;
+	r4802 = 0x00;
+	r4803 = 0x00;
+	r4804 = 0x00;
+	r4805 = 0x00;
+	r4806 = 0x00;
+	r4807 = 0x00;
+	r4808 = 0x00;
+	r4809 = 0x00;
+	r480a = 0x00;
+	r480b = 0x00;
+	r480c = 0x00;
+
+	decomp.reset();
+
+	r4811 = 0x00;
+	r4812 = 0x00;
+	r4813 = 0x00;
+	r4814 = 0x00;
+	r4815 = 0x00;
+	r4816 = 0x00;
+	r4817 = 0x00;
+	r4818 = 0x00;
+
+	r481x = 0x00;
+	r4814_latch = false;
+	r4815_latch = false;
+
+	r4820 = 0x00;
+	r4821 = 0x00;
+	r4822 = 0x00;
+	r4823 = 0x00;
+	r4824 = 0x00;
+	r4825 = 0x00;
+	r4826 = 0x00;
+	r4827 = 0x00;
+	r4828 = 0x00;
+	r4829 = 0x00;
+	r482a = 0x00;
+	r482b = 0x00;
+	r482c = 0x00;
+	r482d = 0x00;
+	r482e = 0x00;
+	r482f = 0x00;
+
+	r4830 = 0x00;
+	s7_mmio_write(0x4831, 0);
+	s7_mmio_write(0x4832, 1);
+	s7_mmio_write(0x4833, 2);
+	r4834 = 0x00;
+
+	r4840 = 0x00;
+	r4841 = 0x00;
+	r4842 = 0x00;
+
+	if(Settings.SPC7110RTC)
+	{
+		rtc_state = RTCS_INACTIVE;
+		rtc_mode  = RTCM_LINEAR;
+		rtc_index = 0;
+	}
 }
 
-SPC7110	s7emu;
+
+
+
+static unsigned s7_data_increment()
+{
+	return r4816 + (r4817 << 8);
+}
+
+
+static void s7_set_data_adjust(unsigned addr)
+{
+	r4814 = addr;
+	r4815 = addr >> 8;
+}
+
+
+static uint8 s7_mmio_read(unsigned addr)
+{
+	addr &= 0xffff;
+
+	switch(addr)
+	{
+		//==================
+		//decompression unit
+		//==================
+
+		case 0x4800:
+			{
+				uint16 counter = (r4809 + (r480a << 8));
+				counter--;
+				r4809 = counter;
+				r480a = counter >> 8;
+				return decomp.read();
+			}
+		case 0x4801:
+			return r4801;
+		case 0x4802:
+			return r4802;
+		case 0x4803:
+			return r4803;
+		case 0x4804:
+			return r4804;
+		case 0x4805:
+			return r4805;
+		case 0x4806:
+			return r4806;
+		case 0x4807:
+			return r4807;
+		case 0x4808:
+			return r4808;
+		case 0x4809:
+			return r4809;
+		case 0x480a:
+			return r480a;
+		case 0x480b:
+			return r480b;
+		case 0x480c:
+			{
+				uint8 status = r480c;
+				r480c &= 0x7f;
+				return status;
+			}
+
+			//==============
+			//data port unit
+			//==============
+		case 0x4810:
+			{
+				if(r481x != 0x07)
+					return 0x00;
+
+				unsigned addr = s7_data_pointer();
+				unsigned adjust = s7_data_adjust();
+				if(r4818 & 8) adjust = (int16)adjust;  //16-bit sign extend
+
+				unsigned adjustaddr = addr;
+				if(r4818 & 2) {
+					adjustaddr += adjust;
+					s7_set_data_adjust(adjust + 1);
+				}
+
+				uint8 data = memory_cartrom_read(s7_datarom_addr(adjustaddr));
+				if(!(r4818 & 2))
+				{
+					unsigned increment = (r4818 & 1) ? s7_data_increment() : 1;
+					if(r4818 & 4)
+						increment = (int16)increment;  //16-bit sign extend
+
+					if((r4818 & 16) == 0)
+						s7_set_data_pointer(addr + increment);
+					else
+						s7_set_data_adjust(adjust + increment);
+				}
+
+				return data;
+			}
+		case 0x4811:
+			return r4811;
+		case 0x4812:
+			return r4812;
+		case 0x4813:
+			return r4813;
+		case 0x4814:
+			return r4814;
+		case 0x4815:
+			return r4815;
+		case 0x4816:
+			return r4816;
+		case 0x4817:
+			return r4817;
+		case 0x4818:
+			return r4818;
+		case 0x481a:
+			{
+				if(r481x != 0x07) return 0x00;
+
+				unsigned addr = s7_data_pointer();
+				unsigned adjust = s7_data_adjust();
+				if(r4818 & 8)
+					adjust = (int16)adjust;  //16-bit sign extend
+
+				uint8 data = memory_cartrom_read(s7_datarom_addr(addr + adjust));
+				if((r4818 & 0x60) == 0x60)
+				{
+					if((r4818 & 16) == 0)
+						s7_set_data_pointer(addr + adjust);
+					else
+						s7_set_data_adjust(adjust + adjust);
+				}
+
+				return data;
+			}
+
+			     //=========
+			     //math unit
+			     //=========
+
+		case 0x4820: return r4820;
+		case 0x4821: return r4821;
+		case 0x4822: return r4822;
+		case 0x4823: return r4823;
+		case 0x4824: return r4824;
+		case 0x4825: return r4825;
+		case 0x4826: return r4826;
+		case 0x4827: return r4827;
+		case 0x4828: return r4828;
+		case 0x4829: return r4829;
+		case 0x482a: return r482a;
+		case 0x482b: return r482b;
+		case 0x482c: return r482c;
+		case 0x482d: return r482d;
+		case 0x482e: return r482e;
+		case 0x482f: {
+				     uint8 status = r482f;
+				     r482f &= 0x7f;
+				     return status;
+			     }
+
+			     //===================
+			     //memory mapping unit
+			     //===================
+
+		case 0x4830: return r4830;
+		case 0x4831: return r4831;
+		case 0x4832: return r4832;
+		case 0x4833: return r4833;
+		case 0x4834: return r4834;
+
+			     //====================
+			     //real-time clock unit
+			     //====================
+
+		case 0x4840: return r4840;
+		case 0x4841:
+			     {
+				     if(rtc_state == RTCS_INACTIVE || rtc_state == RTCS_MODESELECT)
+					     return 0x00;
+
+				     r4842 = 0x80;
+				     uint8 data = memory_cartrtc_read(rtc_index);
+				     rtc_index = (rtc_index + 1) & 15;
+				     return data;
+			     }
+		case 0x4842: {
+				     uint8 status = r4842;
+				     r4842 &= 0x7f;
+				     return status;
+			     }
+	}
+
+	return OpenBus;
+}
 
 void S9xInitSPC7110 (void)
 {
-	s7emu.power();
+	s7_power();
 	memset(RTCData.reg, 0, 20);
 }
 
 void S9xResetSPC7110 (void)
 {
-	s7emu.power();
+	s7_power();
 }
 
 static void SetSPC7110SRAMMap (uint8 newstate)
@@ -1538,15 +1642,15 @@ uint8 * S9xGetBasePointerSPC7110 (uint32 address)
 	switch (address & 0xf00000)
 	{
 		case 0xd00000:
-			i = s7emu.dx_offset;
+			i = dx_offset;
 			break;
 			
 		case 0xe00000:
-			i = s7emu.ex_offset;
+			i = ex_offset;
 			break;
 			
 		case 0xf00000:
-			i = s7emu.fx_offset;
+			i = fx_offset;
 			break;
 			
 		default:
@@ -1566,15 +1670,15 @@ uint8 S9xGetSPC7110Byte (uint32 address)
 	switch (address & 0xf00000)
 	{
 		case 0xd00000:
-			i = s7emu.dx_offset;
+			i = dx_offset;
 			break;
 
 		case 0xe00000:
-			i = s7emu.ex_offset;
+			i = ex_offset;
 			break;
 
 		case 0xf00000:
-			i = s7emu.fx_offset;
+			i = fx_offset;
 			break;
 	}
 
@@ -1588,7 +1692,7 @@ uint8 S9xGetSPC7110 (uint16 address)
 	if (!Settings.SPC7110RTC && address > 0x483f)
 		return (OpenBus);
 	
-	return (s7emu.mmio_read(address));
+	return (s7_mmio_read(address));
 }
 
 void S9xSetSPC7110 (uint8 byte, uint16 address)
@@ -1599,169 +1703,169 @@ void S9xSetSPC7110 (uint8 byte, uint16 address)
 	if (address == 0x4830)
 		SetSPC7110SRAMMap(byte);
 
-	s7emu.mmio_write(address, byte);
+	s7_mmio_write(address, byte);
 }
 
 void S9xSPC7110PreSaveState (void)
 {
-	s7snap.r4801 = s7emu.r4801;
-	s7snap.r4802 = s7emu.r4802;
-	s7snap.r4803 = s7emu.r4803;
-	s7snap.r4804 = s7emu.r4804;
-	s7snap.r4805 = s7emu.r4805;
-	s7snap.r4806 = s7emu.r4806;
-	s7snap.r4807 = s7emu.r4807;
-	s7snap.r4808 = s7emu.r4808;
-	s7snap.r4809 = s7emu.r4809;
-	s7snap.r480a = s7emu.r480a;
-	s7snap.r480b = s7emu.r480b;
-	s7snap.r480c = s7emu.r480c;
+	s7snap.r4801 = r4801;
+	s7snap.r4802 = r4802;
+	s7snap.r4803 = r4803;
+	s7snap.r4804 = r4804;
+	s7snap.r4805 = r4805;
+	s7snap.r4806 = r4806;
+	s7snap.r4807 = r4807;
+	s7snap.r4808 = r4808;
+	s7snap.r4809 = r4809;
+	s7snap.r480a = r480a;
+	s7snap.r480b = r480b;
+	s7snap.r480c = r480c;
 
-	s7snap.r4811 = s7emu.r4811;
-	s7snap.r4812 = s7emu.r4812;
-	s7snap.r4813 = s7emu.r4813;
-	s7snap.r4814 = s7emu.r4814;
-	s7snap.r4815 = s7emu.r4815;
-	s7snap.r4816 = s7emu.r4816;
-	s7snap.r4817 = s7emu.r4817;
-	s7snap.r4818 = s7emu.r4818;
+	s7snap.r4811 = r4811;
+	s7snap.r4812 = r4812;
+	s7snap.r4813 = r4813;
+	s7snap.r4814 = r4814;
+	s7snap.r4815 = r4815;
+	s7snap.r4816 = r4816;
+	s7snap.r4817 = r4817;
+	s7snap.r4818 = r4818;
 
-	s7snap.r481x = s7emu.r481x;
+	s7snap.r481x = r481x;
 
-	s7snap.r4814_latch = s7emu.r4814_latch ? TRUE : FALSE;
-	s7snap.r4815_latch = s7emu.r4815_latch ? TRUE : FALSE;
+	s7snap.r4814_latch = r4814_latch ? TRUE : FALSE;
+	s7snap.r4815_latch = r4815_latch ? TRUE : FALSE;
 
-	s7snap.r4820 = s7emu.r4820;
-	s7snap.r4821 = s7emu.r4821;
-	s7snap.r4822 = s7emu.r4822;
-	s7snap.r4823 = s7emu.r4823;
-	s7snap.r4824 = s7emu.r4824;
-	s7snap.r4825 = s7emu.r4825;
-	s7snap.r4826 = s7emu.r4826;
-	s7snap.r4827 = s7emu.r4827;
-	s7snap.r4828 = s7emu.r4828;
-	s7snap.r4829 = s7emu.r4829;
-	s7snap.r482a = s7emu.r482a;
-	s7snap.r482b = s7emu.r482b;
-	s7snap.r482c = s7emu.r482c;
-	s7snap.r482d = s7emu.r482d;
-	s7snap.r482e = s7emu.r482e;
-	s7snap.r482f = s7emu.r482f;
+	s7snap.r4820 = r4820;
+	s7snap.r4821 = r4821;
+	s7snap.r4822 = r4822;
+	s7snap.r4823 = r4823;
+	s7snap.r4824 = r4824;
+	s7snap.r4825 = r4825;
+	s7snap.r4826 = r4826;
+	s7snap.r4827 = r4827;
+	s7snap.r4828 = r4828;
+	s7snap.r4829 = r4829;
+	s7snap.r482a = r482a;
+	s7snap.r482b = r482b;
+	s7snap.r482c = r482c;
+	s7snap.r482d = r482d;
+	s7snap.r482e = r482e;
+	s7snap.r482f = r482f;
 
-	s7snap.r4830 = s7emu.r4830;
-	s7snap.r4831 = s7emu.r4831;
-	s7snap.r4832 = s7emu.r4832;
-	s7snap.r4833 = s7emu.r4833;
-	s7snap.r4834 = s7emu.r4834;
+	s7snap.r4830 = r4830;
+	s7snap.r4831 = r4831;
+	s7snap.r4832 = r4832;
+	s7snap.r4833 = r4833;
+	s7snap.r4834 = r4834;
 
-	s7snap.dx_offset = (uint32) s7emu.dx_offset;
-	s7snap.ex_offset = (uint32) s7emu.ex_offset;
-	s7snap.fx_offset = (uint32) s7emu.fx_offset;
+	s7snap.dx_offset = (uint32) dx_offset;
+	s7snap.ex_offset = (uint32) ex_offset;
+	s7snap.fx_offset = (uint32) fx_offset;
 
-	s7snap.r4840 = s7emu.r4840;
-	s7snap.r4841 = s7emu.r4841;
-	s7snap.r4842 = s7emu.r4842;
+	s7snap.r4840 = r4840;
+	s7snap.r4841 = r4841;
+	s7snap.r4842 = r4842;
 
-	s7snap.rtc_state = (int32)  s7emu.rtc_state;
-	s7snap.rtc_mode  = (int32)  s7emu.rtc_mode;
-	s7snap.rtc_index = (uint32) s7emu.rtc_index;
+	s7snap.rtc_state = (int32)  rtc_state;
+	s7snap.rtc_mode  = (int32)  rtc_mode;
+	s7snap.rtc_index = (uint32) rtc_index;
 
-	s7snap.decomp_mode   = (uint32) s7emu.decomp.decomp_mode;
-	s7snap.decomp_offset = (uint32) s7emu.decomp.decomp_offset;
+	s7snap.decomp_mode   = (uint32) decomp.decomp_mode;
+	s7snap.decomp_offset = (uint32) decomp.decomp_offset;
 
 	for (int i = 0; i < SPC7110_DECOMP_BUFFER_SIZE; i++)
-		s7snap.decomp_buffer[i] = s7emu.decomp.decomp_buffer[i];
+		s7snap.decomp_buffer[i] = decomp.decomp_buffer[i];
 
-	s7snap.decomp_buffer_rdoffset = (uint32) s7emu.decomp.decomp_buffer_rdoffset;
-	s7snap.decomp_buffer_wroffset = (uint32) s7emu.decomp.decomp_buffer_wroffset;
-	s7snap.decomp_buffer_length   = (uint32) s7emu.decomp.decomp_buffer_length;
+	s7snap.decomp_buffer_rdoffset = (uint32) decomp.decomp_buffer_rdoffset;
+	s7snap.decomp_buffer_wroffset = (uint32) decomp.decomp_buffer_wroffset;
+	s7snap.decomp_buffer_length   = (uint32) decomp.decomp_buffer_length;
 
 	for (int i = 0; i < 32; i++)
 	{
-		s7snap.context[i].index  = s7emu.decomp.context[i].index;
-		s7snap.context[i].invert = s7emu.decomp.context[i].invert;
+		s7snap.context[i].index  = decomp.context[i].index;
+		s7snap.context[i].invert = decomp.context[i].invert;
 	}
 }
 
 void S9xSPC7110PostLoadState (int version)
 {
-	s7emu.r4801 = s7snap.r4801;
-	s7emu.r4802 = s7snap.r4802;
-	s7emu.r4803 = s7snap.r4803;
-	s7emu.r4804 = s7snap.r4804;
-	s7emu.r4805 = s7snap.r4805;
-	s7emu.r4806 = s7snap.r4806;
-	s7emu.r4807 = s7snap.r4807;
-	s7emu.r4808 = s7snap.r4808;
-	s7emu.r4809 = s7snap.r4809;
-	s7emu.r480a = s7snap.r480a;
-	s7emu.r480b = s7snap.r480b;
-	s7emu.r480c = s7snap.r480c;
+	r4801 = s7snap.r4801;
+	r4802 = s7snap.r4802;
+	r4803 = s7snap.r4803;
+	r4804 = s7snap.r4804;
+	r4805 = s7snap.r4805;
+	r4806 = s7snap.r4806;
+	r4807 = s7snap.r4807;
+	r4808 = s7snap.r4808;
+	r4809 = s7snap.r4809;
+	r480a = s7snap.r480a;
+	r480b = s7snap.r480b;
+	r480c = s7snap.r480c;
 
-	s7emu.r4811 = s7snap.r4811;
-	s7emu.r4812 = s7snap.r4812;
-	s7emu.r4813 = s7snap.r4813;
-	s7emu.r4814 = s7snap.r4814;
-	s7emu.r4815 = s7snap.r4815;
-	s7emu.r4816 = s7snap.r4816;
-	s7emu.r4817 = s7snap.r4817;
-	s7emu.r4818 = s7snap.r4818;
+	r4811 = s7snap.r4811;
+	r4812 = s7snap.r4812;
+	r4813 = s7snap.r4813;
+	r4814 = s7snap.r4814;
+	r4815 = s7snap.r4815;
+	r4816 = s7snap.r4816;
+	r4817 = s7snap.r4817;
+	r4818 = s7snap.r4818;
 
-	s7emu.r481x = s7snap.r481x;
+	r481x = s7snap.r481x;
 
-	s7emu.r4814_latch = s7snap.r4814_latch ? true : false;
-	s7emu.r4815_latch = s7snap.r4815_latch ? true : false;
+	r4814_latch = s7snap.r4814_latch ? true : false;
+	r4815_latch = s7snap.r4815_latch ? true : false;
 
-	s7emu.r4820 = s7snap.r4820;
-	s7emu.r4821 = s7snap.r4821;
-	s7emu.r4822 = s7snap.r4822;
-	s7emu.r4823 = s7snap.r4823;
-	s7emu.r4824 = s7snap.r4824;
-	s7emu.r4825 = s7snap.r4825;
-	s7emu.r4826 = s7snap.r4826;
-	s7emu.r4827 = s7snap.r4827;
-	s7emu.r4828 = s7snap.r4828;
-	s7emu.r4829 = s7snap.r4829;
-	s7emu.r482a = s7snap.r482a;
-	s7emu.r482b = s7snap.r482b;
-	s7emu.r482c = s7snap.r482c;
-	s7emu.r482d = s7snap.r482d;
-	s7emu.r482e = s7snap.r482e;
-	s7emu.r482f = s7snap.r482f;
+	r4820 = s7snap.r4820;
+	r4821 = s7snap.r4821;
+	r4822 = s7snap.r4822;
+	r4823 = s7snap.r4823;
+	r4824 = s7snap.r4824;
+	r4825 = s7snap.r4825;
+	r4826 = s7snap.r4826;
+	r4827 = s7snap.r4827;
+	r4828 = s7snap.r4828;
+	r4829 = s7snap.r4829;
+	r482a = s7snap.r482a;
+	r482b = s7snap.r482b;
+	r482c = s7snap.r482c;
+	r482d = s7snap.r482d;
+	r482e = s7snap.r482e;
+	r482f = s7snap.r482f;
 
-	s7emu.r4830 = s7snap.r4830;
-	s7emu.r4831 = s7snap.r4831;
-	s7emu.r4832 = s7snap.r4832;
-	s7emu.r4833 = s7snap.r4833;
-	s7emu.r4834 = s7snap.r4834;
+	r4830 = s7snap.r4830;
+	r4831 = s7snap.r4831;
+	r4832 = s7snap.r4832;
+	r4833 = s7snap.r4833;
+	r4834 = s7snap.r4834;
 
-	s7emu.dx_offset = (unsigned) s7snap.dx_offset;
-	s7emu.ex_offset = (unsigned) s7snap.ex_offset;
-	s7emu.fx_offset = (unsigned) s7snap.fx_offset;
+	dx_offset = (unsigned) s7snap.dx_offset;
+	ex_offset = (unsigned) s7snap.ex_offset;
+	fx_offset = (unsigned) s7snap.fx_offset;
 
-	s7emu.r4840 = s7snap.r4840;
-	s7emu.r4841 = s7snap.r4841;
-	s7emu.r4842 = s7snap.r4842;
+	r4840 = s7snap.r4840;
+	r4841 = s7snap.r4841;
+	r4842 = s7snap.r4842;
 
-	s7emu.rtc_state = (SPC7110::RTC_State) s7snap.rtc_state;
-	s7emu.rtc_mode  = (SPC7110::RTC_Mode)  s7snap.rtc_mode;
-	s7emu.rtc_index = (unsigned)           s7snap.rtc_index;
+	rtc_state = (RTC_State) s7snap.rtc_state;
+	rtc_mode  = (RTC_Mode)  s7snap.rtc_mode;
+	rtc_index = (unsigned)           s7snap.rtc_index;
 
-	s7emu.decomp.decomp_mode   = (unsigned) s7snap.decomp_mode;
-	s7emu.decomp.decomp_offset = (unsigned) s7snap.decomp_offset;
+	decomp.decomp_mode   = (unsigned) s7snap.decomp_mode;
+	decomp.decomp_offset = (unsigned) s7snap.decomp_offset;
 
 	for (int i = 0; i < SPC7110_DECOMP_BUFFER_SIZE; i++)
-		s7emu.decomp.decomp_buffer[i] = s7snap.decomp_buffer[i];
+		decomp.decomp_buffer[i] = s7snap.decomp_buffer[i];
 
-	s7emu.decomp.decomp_buffer_rdoffset = (unsigned) s7snap.decomp_buffer_rdoffset;
-	s7emu.decomp.decomp_buffer_wroffset = (unsigned) s7snap.decomp_buffer_wroffset;
-	s7emu.decomp.decomp_buffer_length   = (unsigned) s7snap.decomp_buffer_length;
+	decomp.decomp_buffer_rdoffset = (unsigned) s7snap.decomp_buffer_rdoffset;
+	decomp.decomp_buffer_wroffset = (unsigned) s7snap.decomp_buffer_wroffset;
+	decomp.decomp_buffer_length   = (unsigned) s7snap.decomp_buffer_length;
 
 	for (int i = 0; i < 32; i++)
 	{
-		s7emu.decomp.context[i].index  = s7snap.context[i].index;
-		s7emu.decomp.context[i].invert = s7snap.context[i].invert;
+		decomp.context[i].index  = s7snap.context[i].index;
+		decomp.context[i].invert = s7snap.context[i].invert;
 	}
 
-	s7emu.update_time(0);
+	s7_update_time(0);
 }

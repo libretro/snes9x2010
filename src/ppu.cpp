@@ -1589,7 +1589,6 @@ uint8 S9xGetPPU (uint16 Address)
 	}
 }
 
-extern SPC7110	s7emu;
 static uint8	sdd1_decode_buffer[0x10000];
 
 static inline bool8 addCyclesInDMA (uint8 dma_channel)
@@ -1816,12 +1815,12 @@ static void S9xDoDMA (void)
 				{
 					spc7110_dma = new uint8[d->TransferBytes];
 					for (int i = 0; i < d->TransferBytes; i++)
-						spc7110_dma[i] = s7emu.decomp.read();
+						spc7110_dma[i] = decomp.read();
 
-					int32	icount = s7emu.r4809 | (s7emu.r480a << 8);
+					int32	icount = r4809 | (r480a << 8);
 					icount -= d->TransferBytes;
-					s7emu.r4809 =  icount & 0x00ff;
-					s7emu.r480a = (icount & 0xff00) >> 8;
+					r4809 =  icount & 0x00ff;
+					r480a = (icount & 0xff00) >> 8;
 
 					inc = 1;
 					d->AAddress -= count;
