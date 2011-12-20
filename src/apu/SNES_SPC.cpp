@@ -50,13 +50,6 @@ static Timer* spc_run_timer_( Timer* t, int time )
 	return t;
 }
 
-inline Timer* spc_run_timer( Timer* t, int time )
-{
-	if ( time >= t->next_time )
-		t = spc_run_timer_( t, time );
-	return t;
-}
-
 //// ROM
 
 void spc_enable_rom( int enable )
@@ -87,34 +80,28 @@ void spc_enable_rom( int enable )
 
 static inline void spc_dsp_write( int data, int time )
 {
-	RUN_DSP(time, reg_times [m.smp_regs[0][R_DSPADDR]] )
-	
-	if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
+	// Writes DSP registers.
+	int addr = m.smp_regs[0][R_DSPADDR];
+	dsp_m.regs [addr] = (uint8_t) data;
+	switch ( addr & 0x0F )
 	{
-		// Writes DSP registers. For accuracy, you must first call run()
-		// to catch the DSP up to present.
-		int addr = m.smp_regs[0][R_DSPADDR];
-		dsp_m.regs [addr] = (uint8_t) data;
-		switch ( addr & 0x0F )
-		{
-			case V_ENVX:
-				dsp_m.envx_buf = (uint8_t) data;
-				break;
+		case V_ENVX:
+			dsp_m.envx_buf = (uint8_t) data;
+			break;
 
-			case V_OUTX:
-				dsp_m.outx_buf = (uint8_t) data;
-				break;
-			case 0x0C:
-				if ( addr == R_KON )
-					dsp_m.new_kon = (uint8_t) data;
+		case V_OUTX:
+			dsp_m.outx_buf = (uint8_t) data;
+			break;
+		case 0x0C:
+			if ( addr == R_KON )
+				dsp_m.new_kon = (uint8_t) data;
 
-				if ( addr == R_ENDX ) // always cleared, regardless of data written
-				{
-					dsp_m.endx_buf = 0;
-					dsp_m.regs [R_ENDX] = 0;
-				}
-				break;
-		}
+			if ( addr == R_ENDX ) // always cleared, regardless of data written
+			{
+				dsp_m.endx_buf = 0;
+				dsp_m.regs [R_ENDX] = 0;
+			}
+			break;
 	}
 	//dprintf( "SPC wrote to DSP register > $7F\n" );
 }
@@ -157,7 +144,10 @@ static void spc_cpu_write_smp_reg_( int data, int time, int addr )
 
 				 if ( data < NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO)
 				 {
-					 spc_run_timer( &m.timers [addr - R_T0OUT], time - 1 )->counter = 0;
+					 if ( (time - 1) >= m.timers[addr - R_T0OUT].next_time )
+						 spc_run_timer_( &m.timers [addr - R_T0OUT], time - 1 )->counter = 0;
+					else
+						m.timers[addr - R_T0OUT].counter = 0;
 				 }
 				 break;
 
@@ -231,7 +221,11 @@ static void spc_cpu_write( int data, int addr, int time )
 			if ( ((~0x2F00 << (bits_in_int - 16)) << reg) < 0 ) // 36%
 			{
 				if ( reg == R_DSPDATA ) // 99%
-					spc_dsp_write( data, time );
+				{
+					RUN_DSP(time, reg_times [m.smp_regs[0][R_DSPADDR]] );
+					if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
+						spc_dsp_write( data, time );
+				}
 				else
 					spc_cpu_write_smp_reg_( data, time, reg);
 			}
@@ -321,7 +315,10 @@ void spc_end_frame( int end_time )
 	
 	// Catch timers up to CPU
 	for ( int i = 0; i < TIMER_COUNT; i++ )
-		spc_run_timer( &m.timers [i], 0 );
+	{
+		if ( 0 >= m.timers[i].next_time )
+			spc_run_timer_( &m.timers [i], 0 );
+	}
 	
 	// Catch DSP up to CPU
 	if ( m.dsp_time < 0 )
@@ -868,7 +865,11 @@ loop:
 						  if ( ((~0x2F00 << (bits_in_int - 16)) << i) < 0 ) // 12%
 						  {
 							  if ( i == R_DSPDATA ) // 99%
-								  spc_dsp_write( data, rel_time );
+							  {
+								  RUN_DSP(rel_time, reg_times [m.smp_regs[0][R_DSPADDR]] );
+								  if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
+									  spc_dsp_write( data, rel_time );
+							  }
 							  else
 								  spc_cpu_write_smp_reg_( data, rel_time, i);
 						  }
@@ -888,7 +889,11 @@ loop:
 						  m.smp_regs[0][i] = (uint8_t) a;
 
 						  if ( sel == 1 ) // 51% $F3
-							  spc_dsp_write( a, rel_time );
+						  {
+							  RUN_DSP(rel_time, reg_times [m.smp_regs[0][R_DSPADDR]] );
+							  if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
+								  spc_dsp_write( a, rel_time );
+						  }
 						  else if ( sel > 1 ) // 1% not $F2 or $F3
 							  spc_cpu_write_smp_reg_( a, rel_time, i );
 					  }

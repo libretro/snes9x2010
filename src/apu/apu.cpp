@@ -323,27 +323,23 @@ static void resampler_new(int num_samples)
 	resampler_clear();
 }
 
-static void ring_buffer_push(unsigned char *src, int bytes)
-{
-	int end = (rb_start + rb_size) % rb_buffer_size;
-	int first_write_size = RESAMPLER_MIN(bytes, rb_buffer_size - end);
-
-	memcpy (rb_buffer + end, src, first_write_size);
-
-	if (bytes > first_write_size)
-		memcpy (rb_buffer, src + first_write_size, bytes - first_write_size);
-
-	rb_size += bytes;
-}
-
-
 static inline bool resampler_push(short *src, int num_samples)
 {
 	int bytes = num_samples << 1;
 	if (MAX_WRITE() < num_samples || SPACE_EMPTY() < bytes)
 		return false;
 
-	ring_buffer_push((unsigned char *)src, bytes);
+	// Ring buffer push
+	unsigned char * src_ring = (unsigned char*)src; 
+	int end = (rb_start + rb_size) % rb_buffer_size;
+	int first_write_size = RESAMPLER_MIN(bytes, rb_buffer_size - end);
+
+	memcpy (rb_buffer + end, src_ring, first_write_size);
+
+	if (bytes > first_write_size)
+		memcpy (rb_buffer, src_ring + first_write_size, bytes - first_write_size);
+
+	rb_size += bytes;
 
 	return true;
 }
