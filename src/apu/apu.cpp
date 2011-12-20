@@ -323,7 +323,7 @@ static void resampler_new(int num_samples)
 	resampler_clear();
 }
 
-static bool ring_buffer_push(unsigned char *src, int bytes)
+static void ring_buffer_push(unsigned char *src, int bytes)
 {
 	int end = (rb_start + rb_size) % rb_buffer_size;
 	int first_write_size = RESAMPLER_MIN(bytes, rb_buffer_size - end);
@@ -334,8 +334,6 @@ static bool ring_buffer_push(unsigned char *src, int bytes)
 		memcpy (rb_buffer, src + first_write_size, bytes - first_write_size);
 
 	rb_size += bytes;
-
-	return true;
 }
 
 
@@ -345,7 +343,7 @@ static inline bool resampler_push(short *src, int num_samples)
 	if (MAX_WRITE() < num_samples || SPACE_EMPTY() < bytes)
 		return false;
 
-	!num_samples || ring_buffer_push((unsigned char *)src, bytes);
+	ring_buffer_push((unsigned char *)src, bytes);
 
 	return true;
 }
@@ -422,10 +420,7 @@ bool8 S9xSyncSound (void)
 	if (!Settings.SoundSync || sound_in_sync)
 		return (TRUE);
 
-	if (sa_callback != NULL)
-		sa_callback();
-	else
-		S9xFinalizeSamples();
+	sa_callback();
 
 	return (sound_in_sync);
 }
@@ -541,12 +536,7 @@ void S9xAPUExecute (void)
 	reference_time = CPU.Cycles;
 
 	if (SPC_SAMPLE_COUNT() >= APU_MINIMUM_SAMPLE_BLOCK || !sound_in_sync)
-	{
-		if (sa_callback != NULL)
-			sa_callback();
-		else
-			S9xFinalizeSamples();
-	}
+		sa_callback();
 }
 
 void S9xAPUTimingSetSpeedup (int ticks)
