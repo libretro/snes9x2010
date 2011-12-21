@@ -174,7 +174,6 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
 #include "snes9x.h"
 #include "memmap.h"
 #include "getset.h"
@@ -1181,7 +1180,7 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 			len += FreezeSize(fields[i].size, fields[i].type);
 	}
 
-	uint8	*block = new uint8[len];
+	uint8	*block = (uint8*)malloc(len);
 	uint8	*ptr = block;
 	uint8	*addr;
 	uint16	word;
@@ -1283,7 +1282,7 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 	}
 
 	FreezeBlock(stream, name, block, len);
-	delete [] block;
+	free(block);
 }
 
 void S9xFreezeToStream (STREAM stream)
@@ -1424,9 +1423,9 @@ static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int siz
 
 	if (rem)
 	{
-		char	*junk = new char[rem];
+		char	*junk = (char*)malloc(rem);
 		len = READ_STREAM(junk, rem, stream);
-		delete [] junk;
+		free(junk);
 		if (len != rem)
 		{
 			REVERT_STREAM(stream, rewind, 0);
@@ -1441,12 +1440,12 @@ static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, in
 {
 	int	result;
 
-	*block = new uint8[size];
+	*block = (uint8*)malloc(size);
 
 	result = UnfreezeBlock(stream, name, *block, size);
 	if (result != SUCCESS)
 	{
-		delete [] (*block);
+		free(*block);
 		*block = NULL;
 		return (result);
 	}
@@ -1877,31 +1876,31 @@ int S9xUnfreezeFromStream (STREAM stream)
 			S9xBSXPostLoadState();
 	}
 
-	if (local_cpu)				delete [] local_cpu;
-	if (local_registers)		delete [] local_registers;
-	if (local_ppu)				delete [] local_ppu;
-	if (local_dma)				delete [] local_dma;
-	if (local_vram)				delete [] local_vram;
-	if (local_ram)				delete [] local_ram;
-	if (local_sram)				delete [] local_sram;
-	if (local_fillram)			delete [] local_fillram;
-	if (local_apu_sound)		delete [] local_apu_sound;
-	if (local_control_data)		delete [] local_control_data;
-	if (local_timing_data)		delete [] local_timing_data;
-	if (local_superfx)			delete [] local_superfx;
-	if (local_sa1)				delete [] local_sa1;
-	if (local_sa1_registers)	delete [] local_sa1_registers;
-	if (local_dsp1)				delete [] local_dsp1;
-	if (local_dsp2)				delete [] local_dsp2;
-	if (local_dsp4)				delete [] local_dsp4;
-	if (local_cx4_data)			delete [] local_cx4_data;
-	if (local_st010)			delete [] local_st010;
-	if (local_obc1)				delete [] local_obc1;
-	if (local_obc1_data)		delete [] local_obc1_data;
-	if (local_spc7110)			delete [] local_spc7110;
-	if (local_srtc)				delete [] local_srtc;
-	if (local_rtc_data)			delete [] local_rtc_data;
-	if (local_bsx_data)			delete [] local_bsx_data;
+	if (local_cpu)			free(local_cpu);
+	if (local_registers)		free(local_registers);
+	if (local_ppu)			free(local_ppu);
+	if (local_dma)			free(local_dma);
+	if (local_vram)			free(local_vram);
+	if (local_ram)			free(local_ram);
+	if (local_sram)			free(local_sram);
+	if (local_fillram)		free(local_fillram);
+	if (local_apu_sound)		free(local_apu_sound);
+	if (local_control_data)		free(local_control_data);
+	if (local_timing_data)		free(local_timing_data);
+	if (local_superfx)		free(local_superfx);
+	if (local_sa1)			free(local_sa1);
+	if (local_sa1_registers)	free(local_sa1_registers);
+	if (local_dsp1)			free(local_dsp1);
+	if (local_dsp2)			free(local_dsp2);
+	if (local_dsp4)			free(local_dsp4);
+	if (local_cx4_data)		free(local_cx4_data);
+	if (local_st010)		free(local_st010);
+	if (local_obc1)			free(local_obc1);
+	if (local_obc1_data)		free(local_obc1_data);
+	if (local_spc7110)		free(local_spc7110);
+	if (local_srtc)			free(local_srtc);
+	if (local_rtc_data)		free(local_rtc_data);
+	if (local_bsx_data)		free(local_bsx_data);
 
 	return (result);
 }
