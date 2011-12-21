@@ -180,7 +180,7 @@
 
 #include "snes9x.h"
 
-extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t ); }
+typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t );
 
 #define ECHO_HIST_SIZE		8
 #define ECHO_HIST_SIZE_X2	16
@@ -228,6 +228,21 @@ extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, s
 #define V_ENVX		0x08
 #define V_OUTX		0x09
 
+//// Status flag handling
+
+// Hex value in name to clarify code and bit shifting.
+// Flag stored in indicated variable during emulation
+#define N80 0x80	// nz
+#define V40 0x40	// psw
+#define P20 0x20	// dp
+#define B10 0x10	//psw
+#define H08 0x08	//psw
+#define I04 0x04	// psw
+#define Z02 0x02	// nz
+#define C01 0x01	// c
+
+#define NZ_NEG_MASK 0x880	// either bit set indicates N flag set
+
 #define REGISTER_COUNT 128
 
 #define ENV_RELEASE	0
@@ -250,28 +265,6 @@ typedef struct
 	int hidden_env;         // used by GAIN mode 7, very obscure quirk
 	uint8_t t_envx_out;
 } dsp_voice_t;
-
-// Initializes DSP and has it use the 64K RAM provided
-void dsp_init( void* ram_64k );
-
-// Sets destination for output samples. If out is NULL or out_size is 0,
-// doesn't generate any.
-void dsp_set_output( short* out, int out_size );
-
-// Resets DSP to power-on state
-void dsp_reset();
-
-// Emulates pressing reset switch on SNES
-void dsp_soft_reset();
-
-// Runs DSP for specified number of clocks (~1024000 per second). Every 32 clocks
-// a pair of samples is be generated.
-void dsp_run( int clock_count );
-
-// Saves/loads exact emulator state
-void dsp_copy_state( unsigned char** io, dsp_copy_func_t );
-
-void dsp_soft_reset_common();
 
 typedef struct
 {
@@ -335,18 +328,12 @@ typedef struct
 	short extra [EXTRA_SIZE];
 } dsp_state_t;
 
-extern dsp_state_t dsp_m;
-
 #if !SPC_NO_COPY_STATE_FUNCS
 
 typedef struct {
 	dsp_copy_func_t func;
 	unsigned char** buf;
 } spc_state_copy_t;
-
-void spc_copier_copy(spc_state_copy_t * copier, void* state, size_t size );
-int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size);
-void spc_copier_extra(spc_state_copy_t * copier);
 
 #define SPC_COPY( type, state ) state = (type) spc_copier_copy_int(&copier, state, sizeof (type) );
 
@@ -402,32 +389,6 @@ typedef struct
 	int counter;
 } Timer;
 
-extern bool allow_time_overflow;
-
-uint8_t* spc_run_until_( int end_time );
-
-// Resets SPC to power-on state. This resets your output buffer, so you must
-// call set_output() after this.
-void spc_reset();
-
-// Sets destination for output samples
-void spc_set_output( short* out, int out_size );
-
-// Emulates pressing reset switch on SNES. This resets your output buffer, so
-// you must call set_output() after this.
-void spc_soft_reset();
-
-void spc_reset_common( int timer_counter_init );
-
-// Runs SPC to end_time and starts a new time frame at 0
-void spc_end_frame( int end_time );
-
-// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
-void spc_set_tempo( int );
-
-// Must be called once before using
-void spc_init();
-
 // Support SNES_MEMORY_APURAM
 uint8_t *spc_apuram();
 
@@ -475,8 +436,6 @@ typedef struct
 		uint8_t padding2 [0x100];
 	} ram;
 } spc_state_t;
-
-extern spc_state_t m;
 
 // Number of samples written to output since last set
 #define SPC_SAMPLE_COUNT() ((m.extra_clocks >> 5) * 2)

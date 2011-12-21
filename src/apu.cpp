@@ -174,9 +174,6 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-/***********************************************************************************
- APU
-***********************************************************************************/
 
 #include <math.h>
 #include <string.h>
@@ -192,446 +189,11 @@
 #include "snapshot.h"
 #include "display.h"
 
-#define APU_DEFAULT_INPUT_RATE		32000
-#define APU_MINIMUM_SAMPLE_COUNT	512
-#define APU_MINIMUM_SAMPLE_BLOCK	128
-#define APU_NUMERATOR_NTSC		15664
-#define APU_DENOMINATOR_NTSC		328125
-#define APU_NUMERATOR_PAL		34176
-#define APU_DENOMINATOR_PAL		709379
-
-static apu_callback	sa_callback     = NULL;
-
-static bool8		sound_in_sync   = TRUE;
-
-static int		buffer_size;
-static int		lag_master      = 0;
-static int		lag             = 0;
-
-static short		*landing_buffer = NULL;
-
-static bool8		resampler      = false;
-
-static int32		reference_time;
-static uint32		spc_remainder;
-
-static int		timing_hack_denominator = TEMPO_UNIT;
-/* Set these to NTSC for now. Will change to PAL in S9xAPUTimingSetSpeedup
-   if necessary on game load. */
-static uint32		ratio_numerator = APU_NUMERATOR_NTSC;
-static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
-
-/***********************************************************************************
-	RESAMPLER
-************************************************************************************/
-static int rb_size;
-static int rb_buffer_size;
-static int rb_start;
-static unsigned char *rb_buffer;
-static float r_step;
-static float r_frac;
-static int    r_left[4], r_right[4];
-
-#define SPACE_EMPTY() (rb_buffer_size - rb_size)
-#define SPACE_FILLED() (rb_size)
-#define MAX_WRITE() (SPACE_EMPTY() >> 1)
-#define AVAIL() ((int) floor (((rb_size >> 2) - r_frac) / r_step) * 2)
-
-#define RESAMPLER_MIN(a, b) ((a) < (b) ? (a) : (b))
-#define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
-#define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
-
-static float hermite (float mu1, float a, float b, float c, float d)
-{
-	float mu2, mu3, m0, m1, a0, a1, a2, a3;
-	mu2 = mu1 * mu1;
-	mu3 = mu2 * mu1;
-	m0  = (c - a) * 0.5;
-	m1  = (d - b) * 0.5;
-	a0 = +2 * mu3 - 3 * mu2 + 1;
-	a1 =      mu3 - 2 * mu2 + mu1;
-	a2 =      mu3 -     mu2;
-	a3 = -2 * mu3 + 3 * mu2;
-	return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
-}
-
-static void resampler_clear(void)
-{
-	rb_start = 0;
-	rb_size = 0;
-	memset (rb_buffer,  0, rb_buffer_size);
-
-	r_frac = 1.0;
-	r_left [0] = r_left [1] = r_left [2] = r_left [3] = 0;
-	r_right[0] = r_right[1] = r_right[2] = r_right[3] = 0;
-}
-
-static void resampler_time_ratio(double ratio)
-{
-	r_step = ratio;
-	resampler_clear();
-}
-
-static void resampler_read(short *data, int num_samples)
-{
-	int i_position = rb_start >> 1;
-	short *internal_buffer = (short *)rb_buffer;
-	int o_position = 0;
-	int consumed = 0;
-
-	while (o_position < num_samples && consumed < rb_buffer_size)
-	{
-		int s_left = internal_buffer[i_position];
-		int s_right = internal_buffer[i_position + 1];
-		int max_samples = rb_buffer_size >> 1;
-
-		while (r_frac <= 1.0 && o_position < num_samples)
-		{
-			data[o_position]     = SHORT_CLAMP (hermite(r_frac, r_left [0], r_left [1], r_left [2], r_left [3]));
-			data[o_position + 1] = SHORT_CLAMP (hermite(r_frac, r_right[0], r_right[1], r_right[2], r_right[3]));
-
-			o_position += 2;
-
-			r_frac += r_step;
-		}
-
-		if (r_frac > 1.0)
-		{
-			r_left [0] = r_left [1];
-			r_left [1] = r_left [2];
-			r_left [2] = r_left [3];
-			r_left [3] = s_left;
-
-			r_right[0] = r_right[1];
-			r_right[1] = r_right[2];
-			r_right[2] = r_right[3];
-			r_right[3] = s_right;                    
-
-			r_frac -= 1.0;
-
-			i_position += 2;
-			if (i_position >= max_samples)
-				i_position -= max_samples;
-			consumed += 2;
-		}
-	}
-
-	rb_size -= consumed << 1;
-	rb_start += consumed << 1;
-	if (rb_start >= rb_buffer_size)
-		rb_start -= rb_buffer_size;
-}
-
-static void resampler_new(int num_samples)
-{
-	int new_size = num_samples << 1;
-
-	rb_buffer_size = new_size;
-	rb_buffer = new unsigned char[rb_buffer_size];
-	memset (rb_buffer, 0, rb_buffer_size);
-
-	rb_size = 0;
-	rb_start = 0;
-	resampler_clear();
-}
-
-static inline bool resampler_push(short *src, int num_samples)
-{
-	int bytes = num_samples << 1;
-	if (MAX_WRITE() < num_samples || SPACE_EMPTY() < bytes)
-		return false;
-
-	// Ring buffer push
-	unsigned char * src_ring = (unsigned char*)src; 
-	int end = (rb_start + rb_size) % rb_buffer_size;
-	int first_write_size = RESAMPLER_MIN(bytes, rb_buffer_size - end);
-
-	memcpy (rb_buffer + end, src_ring, first_write_size);
-
-	if (bytes > first_write_size)
-		memcpy (rb_buffer, src_ring + first_write_size, bytes - first_write_size);
-
-	rb_size += bytes;
-
-	return true;
-}
-
-static inline void resampler_resize (int num_samples)
-{
-	int size = num_samples << 1;
-	delete[] rb_buffer;
-	rb_buffer_size = rb_size;
-	rb_buffer = new unsigned char[rb_buffer_size];
-	memset (rb_buffer, 0, rb_buffer_size);
-
-	rb_size = 0;
-	rb_start = 0;
-}
-
-/***********************************************************************************
-	APU
- ***********************************************************************************/
-
-bool8 S9xMixSamples (short *buffer, int sample_count)
-{
-	if (AVAIL() >= (sample_count + lag))
-	{
-		resampler_read(buffer, sample_count);
-		if (lag == lag_master)
-			lag = 0;
-	}
-	else
-	{
-		memset(buffer, 0, (sample_count << 1) >> 0);
-		if (lag == 0)
-			lag = lag_master;
-
-		return (FALSE);
-	}
-
-	return (TRUE);
-}
-
-int S9xGetSampleCount (void)
-{
-	return AVAIL();
-}
-
-void S9xFinalizeSamples (void)
-{
-	bool ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
-	sound_in_sync = FALSE;
-
-	/* We weren't able to process the entire buffer. Potential overrun. */
-	if (!ret && Settings.SoundSync)
-		return;
-
-	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED()))
-		sound_in_sync = TRUE;
-
-	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-	spc_set_output(landing_buffer, buffer_size >> 1);
-}
-
-void S9xClearSamples (void)
-{
-	resampler_clear();
-	lag = lag_master;
-}
-
-bool8 S9xSyncSound (void)
-{
-	if (!Settings.SoundSync || sound_in_sync)
-		return (TRUE);
-
-	sa_callback();
-
-	return (sound_in_sync);
-}
-
-void S9xSetSamplesAvailableCallback (apu_callback callback)
-{
-	sa_callback = callback;
-}
-
-static void UpdatePlaybackRate (void)
-{
-	if (Settings.SoundInputRate == 0)
-		Settings.SoundInputRate = APU_DEFAULT_INPUT_RATE;
-
-	double time_ratio = (double) Settings.SoundInputRate * TEMPO_UNIT / (Settings.SoundPlaybackRate * timing_hack_denominator);
-	resampler_time_ratio(time_ratio);
-}
-
-bool8 S9xInitSound (int buffer_ms, int lag_ms)
-{
-	// buffer_ms : buffer size given in millisecond
-	// lag_ms    : allowable time-lag given in millisecond
-
-	int	sample_count     = buffer_ms * 32000 / 1000;
-	int	lag_sample_count = lag_ms    * 32000 / 1000;
-
-	lag_master = lag_sample_count;
-
-	lag_master <<= 1;
-
-	lag = lag_master;
-
-	if (sample_count < APU_MINIMUM_SAMPLE_COUNT)
-		sample_count = APU_MINIMUM_SAMPLE_COUNT;
-
-	buffer_size = sample_count;
-	buffer_size <<= 1;
-	buffer_size <<= 1;
-
-	printf("Sound buffer size: %d (%d samples)\n", buffer_size, sample_count);
-
-	if (landing_buffer)
-		delete[] landing_buffer;
-	landing_buffer = new short[buffer_size * 2];
-	if (!landing_buffer)
-		return (FALSE);
-
-	/* The resampler and spc unit use samples (16-bit short) as
-	   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
-	if (!resampler)
-	{
-		resampler_new(buffer_size >> (Settings.SoundSync ? 0 : 1));
-		resampler = true;
-	}
-	else
-		resampler_resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
-
-	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-	spc_set_output(landing_buffer, buffer_size >> 1);
-
-	UpdatePlaybackRate();
-
-	return true;
-}
-
-bool8 S9xInitAPU (void)
-{
-	spc_init();
-
-	landing_buffer = NULL;
-
-	return (TRUE);
-}
-
-void S9xDeinitAPU (void)
-{
-	if (resampler)
-	{
-		delete[] rb_buffer;
-		resampler = false;
-	}
-
-	if (landing_buffer)
-	{
-		delete[] landing_buffer;
-		landing_buffer = NULL;
-	}
-}
-
-#define S9X_APU_GET_CLOCK(cpucycles)		((ratio_numerator * (cpucycles - reference_time) + spc_remainder) / ratio_denominator)
-#define S9X_APU_GET_CLOCK_REMAINDER(cpucycles)	((ratio_numerator * (cpucycles - reference_time) + spc_remainder) % ratio_denominator)
-
-// Emulated port read at specified time
-uint8 S9xAPUReadPort (int port)	{ return ((uint8) spc_run_until_(S9X_APU_GET_CLOCK(CPU.Cycles))[port]); }
-
-void S9xAPUWritePort (int port, uint8 byte)
-{
-	// Emulated port write at specified time
-	spc_run_until_( S9X_APU_GET_CLOCK(CPU.Cycles) ) [0x10 + port] = byte;
-	m.ram.ram [0xF4 + port] = byte;
-}
-
-void S9xAPUSetReferenceTime (int32 cpucycles)
-{
-	reference_time = cpucycles;
-}
-
-void S9xAPUExecute (void)
-{
-	/* Accumulate partial APU cycles */
-	spc_end_frame(S9X_APU_GET_CLOCK(CPU.Cycles));
-
-	spc_remainder = S9X_APU_GET_CLOCK_REMAINDER(CPU.Cycles);
-	reference_time = CPU.Cycles;
-
-	if (SPC_SAMPLE_COUNT() >= APU_MINIMUM_SAMPLE_BLOCK || !sound_in_sync)
-		sa_callback();
-}
-
-void S9xAPUTimingSetSpeedup (int ticks)
-{
-	if (ticks != 0)
-		printf("APU speedup hack: %d\n", ticks);
-
-	timing_hack_denominator = TEMPO_UNIT - ticks;
-	spc_set_tempo(timing_hack_denominator);
-
-	ratio_numerator = Settings.PAL ? APU_NUMERATOR_PAL : APU_NUMERATOR_NTSC;
-	ratio_denominator = Settings.PAL ? APU_DENOMINATOR_PAL : APU_DENOMINATOR_NTSC;
-	ratio_denominator = ratio_denominator * timing_hack_denominator / TEMPO_UNIT;
-
-	UpdatePlaybackRate();
-}
-
-void S9xAPUAllowTimeOverflow (bool allow)
-{
-	allow_time_overflow = allow;
-}
-
-void S9xResetAPU (void)
-{
-	reference_time = 0;
-	spc_remainder = 0;
-	spc_reset();
-
-	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-
-	spc_set_output(landing_buffer, buffer_size >> 1);
-
-	resampler_clear();
-}
-
-void S9xSoftResetAPU (void)
-{
-	reference_time = 0;
-	spc_remainder = 0;
-	spc_soft_reset();
-
-	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-	spc_set_output(landing_buffer, buffer_size >> 1);
-
-	resampler_clear();
-}
-
-static void from_apu_to_state (uint8 **buf, void *var, size_t size)
-{
-	memcpy(*buf, var, size);
-	*buf += size;
-}
-
-static void to_apu_from_state (uint8 **buf, void *var, size_t size)
-{
-	memcpy(var, *buf, size);
-	*buf += size;
-}
-
-void S9xAPUSaveState (uint8 *block)
-{
-	uint8	*ptr = block;
-
-	spc_copy_state(&ptr, from_apu_to_state);
-
-	SET_LE32(ptr, reference_time);
-	ptr += sizeof(int32);
-	SET_LE32(ptr, spc_remainder);
-}
-
-void S9xAPULoadState (uint8 *block)
-{
-	uint8	*ptr = block;
-
-	S9xResetAPU();
-
-	spc_copy_state(&ptr, to_apu_from_state);
-
-	reference_time = GET_LE32(ptr);
-	ptr += sizeof(int32);
-	spc_remainder = GET_LE32(ptr);
-}
-
-// snes_spc 0.9.0. http://www.slack.net/~ant/
-
 /***********************************************************************************
 	SPC DSP
 ***********************************************************************************/
 
-dsp_state_t dsp_m;
+static dsp_state_t dsp_m;
 
 /* Copyright (C) 2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -680,17 +242,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 	}\
 }\
 
-void dsp_set_output( short * out, int size )
-{
-	if ( !out )
-	{
-		out  = dsp_m.extra;
-		size = EXTRA_SIZE;
-	}
-	dsp_m.out_begin = out;
-	dsp_m.out       = out;
-	dsp_m.out_end   = out + size;
-}
 
 // Volume registers and efb are signed! Easy to forget int8_t cast.
 // Prefixes are to avoid accidental use of locals with same names.
@@ -790,8 +341,6 @@ static unsigned const counter_offsets [32] =
 	     0,
 	     0
 };
-
-#define INIT_COUNTER() dsp_m.counter = 0;
 
 #define RUN_COUNTERS() \
 	if ( --dsp_m.counter < 0 ) \
@@ -1352,7 +901,10 @@ V(V8_V5_V2,2) -> V(V8,2) V(V5,3) V(V2,4)
 V(V9_V6_V3,2) -> V(V9,2) V(V6,3) V(V3,4) */
 
 // Voice      0      1      2      3      4      5      6      7
-void dsp_run( int clocks_remain )
+
+// Runs DSP for specified number of clocks (~1024000 per second). Every 32 clocks
+// a pair of samples is be generated.
+static void dsp_run( int clocks_remain )
 {
 	int const phase = dsp_m.phase;
 	dsp_m.phase = (phase + clocks_remain) & 31;
@@ -1514,17 +1066,24 @@ loop:
 	}
 }
 
+// Sets destination for output samples. If out is NULL or out_size is 0,
+// doesn't generate any.
+
+static void dsp_set_output( short * out, int size )
+{
+	if ( !out )
+	{
+		out  = dsp_m.extra;
+		size = EXTRA_SIZE;
+	}
+	dsp_m.out_begin = out;
+	dsp_m.out       = out;
+	dsp_m.out_end   = out + size;
+}
 
 //// Setup
 
-void dsp_init( void* ram_64k )
-{
-	dsp_m.ram = (uint8_t*) ram_64k;
-	dsp_set_output( 0, 0 );
-	dsp_reset();
-}
-
-void dsp_soft_reset_common()
+static void dsp_soft_reset_common()
 {
 	dsp_m.noise              = 0x4000;
 	dsp_m.echo_hist_pos      = dsp_m.echo_hist;
@@ -1532,16 +1091,11 @@ void dsp_soft_reset_common()
 	dsp_m.echo_offset        = 0;
 	dsp_m.phase              = 0;
 	
-	INIT_COUNTER();
+	dsp_m.counter = 0;
 }
 
-void dsp_soft_reset()
-{
-	dsp_m.regs[R_FLG] = 0xE0;
-	dsp_soft_reset_common();
-}
-
-void dsp_reset()
+// Resets DSP to power-on state
+static void dsp_reset()
 {
 	uint8_t const initial_regs [REGISTER_COUNT] =
 	{
@@ -1574,16 +1128,32 @@ void dsp_reset()
 	dsp_soft_reset_common();
 }
 
+// Initializes DSP and has it use the 64K RAM provided
+static void dsp_init( void* ram_64k )
+{
+	dsp_m.ram = (uint8_t*) ram_64k;
+	dsp_set_output( 0, 0 );
+	dsp_reset();
+}
+
+// Emulates pressing reset switch on SNES
+static void dsp_soft_reset (void)
+{
+	dsp_m.regs[R_FLG] = 0xE0;
+	dsp_soft_reset_common();
+}
+
+
 //// State save/load
 
 #if !SPC_NO_COPY_STATE_FUNCS
 
-void spc_copier_copy(spc_state_copy_t * copier, void* state, size_t size )
+static void spc_copier_copy(spc_state_copy_t * copier, void* state, size_t size )
 {
 	copier->func(copier->buf, state, size );
 }
 
-int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size )
+static int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size )
 {
 	uint8_t s [2];
 	SET_LE16( s, state );
@@ -1591,7 +1161,7 @@ int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size )
 	return GET_LE16( s );
 }
 
-void spc_copier_extra(spc_state_copy_t * copier)
+static void spc_copier_extra(spc_state_copy_t * copier)
 {
 	int n = 0;
 	n = (uint8_t) spc_copier_copy_int(copier, n, sizeof (uint8_t) );
@@ -1612,7 +1182,8 @@ void spc_copier_extra(spc_state_copy_t * copier)
 	}
 }
 
-void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
+// Saves/loads exact emulator state
+static void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 {
 	spc_state_copy_t copier;
 	copier.func = copy;
@@ -1724,10 +1295,9 @@ void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	SNES SPC
 ***********************************************************************************/
 
-spc_state_t m;
+static spc_state_t m;
 static signed char reg_times [256];
-bool allow_time_overflow;
-
+static bool allow_time_overflow;
 
 /* Copyright (C) 2004-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -2020,344 +1590,6 @@ static int spc_cpu_read( int addr, int time )
 	return result;
 }
 
-void spc_end_frame( int end_time )
-{
-	// Catch CPU up to as close to end as possible. If final instruction
-	// would exceed end, does NOT execute it and leaves m.spc_time < end.
-	if ( end_time > m.spc_time )
-		spc_run_until_( end_time );
-	
-	m.spc_time     -= end_time;
-	m.extra_clocks += end_time;
-	
-	// Catch timers up to CPU
-	for ( int i = 0; i < TIMER_COUNT; i++ )
-	{
-		if ( 0 >= m.timers[i].next_time )
-			spc_run_timer_( &m.timers [i], 0 );
-	}
-	
-	// Catch DSP up to CPU
-	if ( m.dsp_time < 0 )
-	{
-		RUN_DSP( 0, MAX_REG_TIME );
-	}
-	
-	// Save any extra samples beyond what should be generated
-	if ( m.buf_begin )
-	{
-		// Get end pointers
-		short const* main_end = m.buf_end;     // end of data written to buf
-		short const* dsp_end  = dsp_m.out; // end of data written to dsp.extra()
-		if ( m.buf_begin <= dsp_end && dsp_end <= main_end )
-		{
-			main_end = dsp_end;
-			dsp_end  = dsp_m.extra; // nothing in DSP's extra
-		}
-
-		// Copy any extra samples at these ends into extra_buf
-		short* out = m.extra_buf;
-		short const* in;
-		for ( in = m.buf_begin + SPC_SAMPLE_COUNT(); in < main_end; in++ )
-			*out++ = *in;
-		for ( in = dsp_m.extra; in < dsp_end ; in++ )
-			*out++ = *in;
-
-		m.extra_pos = out;
-	}
-}
-
-//Support SNES_MEMORY_APURAM
-uint8_t * spc_apuram()
-{
-	return m.ram.ram;
-}
-
-//// Init
-
-void spc_reset()
-{
-	m.cpu_regs.pc  = 0xFFC0;
-	m.cpu_regs.a   = 0x00;
-	m.cpu_regs.x   = 0x00;
-	m.cpu_regs.y   = 0x00;
-	m.cpu_regs.psw = 0x02;
-	m.cpu_regs.sp  = 0xEF;
-	memset( m.ram.ram, 0x00, 0x10000 );
-
-	// RAM was just loaded from SPC, with $F0-$FF containing SMP registers
-	// and timer counts. Copies these to proper registers.
-	m.rom_enabled = 0;
-
-	// Loads registers from unified 16-byte format
-	memcpy( m.smp_regs[0], &m.ram.ram[0xF0], REG_COUNT );
-	memcpy( m.smp_regs[1], m.smp_regs[0], REG_COUNT );
-	
-	// These always read back as 0
-	m.smp_regs[1][R_TEST    ] = 0;
-	m.smp_regs[1][R_CONTROL ] = 0;
-	m.smp_regs[1][R_T0TARGET] = 0;
-	m.smp_regs[1][R_T1TARGET] = 0;
-	m.smp_regs[1][R_T2TARGET] = 0;
-	
-	// Put STOP instruction around memory to catch PC underflow/overflow
-	memset( m.ram.padding1, CPU_PAD_FILL, sizeof m.ram.padding1 );
-	memset( m.ram.padding2, CPU_PAD_FILL, sizeof m.ram.padding2 );
-
-	spc_reset_common( 0x0F );
-	dsp_reset();
-}
-
-void spc_init()
-{
-	memset( &m, 0, sizeof m );
-	dsp_init( m.ram.ram );
-	
-	m.tempo = TEMPO_UNIT;
-	
-	// Most SPC music doesn't need ROM, and almost all the rest only rely
-	// on these two bytes
-	m.rom [0x3E] = 0xFF;
-	m.rom [0x3F] = 0xC0;
-	
-	static unsigned char const cycle_table [128] =
-	{//   01   23   45   67   89   AB   CD   EF
-	    0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x68, // 0
-	    0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x46, // 1
-	    0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x74, // 2
-	    0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x38, // 3
-	    0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x66, // 4
-	    0x48,0x47,0x45,0x56,0x55,0x45,0x22,0x43, // 5
-	    0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x75, // 6
-	    0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x36, // 7
-	    0x28,0x47,0x34,0x36,0x26,0x54,0x52,0x45, // 8
-	    0x48,0x47,0x45,0x56,0x55,0x55,0x22,0xC5, // 9
-	    0x38,0x47,0x34,0x36,0x26,0x44,0x52,0x44, // A
-	    0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x34, // B
-	    0x38,0x47,0x45,0x47,0x25,0x64,0x52,0x49, // C
-	    0x48,0x47,0x56,0x67,0x45,0x55,0x22,0x83, // D
-	    0x28,0x47,0x34,0x36,0x24,0x53,0x43,0x40, // E
-	    0x48,0x47,0x45,0x56,0x34,0x54,0x22,0x60, // F
-	};
-	
-	// unpack cycle table
-	for ( int i = 0; i < 128; i++ )
-	{
-		int n = cycle_table [i];
-		m.cycle_table [i * 2 + 0] = n >> 4;
-		m.cycle_table [i * 2 + 1] = n & 0x0F;
-	}
-
-	allow_time_overflow = false;
-
-	signed char const reg_times_ [256] =
-	{
-		-1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
-		2,  3,  0,  1,-12,  0,  1,  1,  7,  6, 14, 14, 27, 14, 14, 23,
-		5,  6,  3,  4, -1,  3,  4,  4, 10,  9, 14, 14, 26, -5, 14, 23,
-		8,  9,  6,  7,  2,  6,  7,  7, 13, 12, 14, 14, 27, -4, 14, 24,
-		11, 12,  9, 10,  5,  9, 10, 10, 16, 15, 14, 14, -2, -4, 14, 24,
-		14, 15, 12, 13,  8, 12, 13, 13, 19, 18, 14, 14, -2,-36, 14, 24,
-		17, 18, 15, 16, 11, 15, 16, 16, 22, 21, 14, 14, 28, -3, 14, 25,
-		20, 21, 18, 19, 14, 18, 19, 19, 25, 24, 14, 14, 14, 29, 14, 25,
-
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-	};
-	
-	memcpy( reg_times, reg_times_, sizeof reg_times );
-	
-	spc_reset();
-
-	uint8_t APUROM[64] =
-	{
-		0xCD, 0xEF, 0xBD, 0xE8, 0x00, 0xC6, 0x1D, 0xD0,
-		0xFC, 0x8F, 0xAA, 0xF4, 0x8F, 0xBB, 0xF5, 0x78,
-		0xCC, 0xF4, 0xD0, 0xFB, 0x2F, 0x19, 0xEB, 0xF4,
-		0xD0, 0xFC, 0x7E, 0xF4, 0xD0, 0x0B, 0xE4, 0xF5,
-		0xCB, 0xF4, 0xD7, 0x00, 0xFC, 0xD0, 0xF3, 0xAB,
-		0x01, 0x10, 0xEF, 0x7E, 0xF4, 0x10, 0xEB, 0xBA,
-		0xF6, 0xDA, 0x00, 0xBA, 0xF4, 0xC4, 0xF4, 0xDD,
-		0x5D, 0xD0, 0xDB, 0x1F, 0x00, 0x00, 0xC0, 0xFF
-	};
-
-	memcpy( m.rom, APUROM, sizeof m.rom );
-}
-
-void spc_set_tempo( int t )
-{
-	m.tempo = t;
-	int const timer2_shift = 4; // 64 kHz
-	int const other_shift  = 3; //  8 kHz
-	
-	m.timers [2].prescaler = timer2_shift;
-	m.timers [1].prescaler = timer2_shift + other_shift;
-	m.timers [0].prescaler = timer2_shift + other_shift;
-}
-
-static void spc_reset_buffer(void)
-{
-	/* Start with half extra buffer of silence */
-	short* out = m.extra_buf;
-	while ( out < &m.extra_buf [EXTRA_SIZE_DIV_2] )
-		*out++ = 0;
-	m.extra_pos = out;
-	m.buf_begin = 0;
-	dsp_set_output( 0, 0 );
-}
-
-void spc_reset_common( int timer_counter_init )
-{
-	int i;
-	for ( i = 0; i < TIMER_COUNT; i++ )
-		m.smp_regs[1][R_T0OUT + i] = timer_counter_init;
-	
-	// Run IPL ROM
-	memset( &m.cpu_regs, 0, sizeof m.cpu_regs );
-	m.cpu_regs.pc = ROM_ADDR;
-	
-	m.smp_regs[0][R_TEST   ] = 0x0A;
-	m.smp_regs[0][R_CONTROL] = 0xB0; // ROM enabled, clear ports
-	for ( i = 0; i < PORT_COUNT; i++ )
-		m.smp_regs[1][R_CPUIO0 + i] = 0;
-	
-	// reset time registers
-	m.spc_time      = 0;
-	m.dsp_time      = 0;
-	m.dsp_time = CLOCKS_PER_SAMPLE + 1;
-	
-	for ( int i = 0; i < TIMER_COUNT; i++ )
-	{
-		Timer* t = &m.timers [i];
-		t->next_time = 1;
-		t->divider   = 0;
-	}
-	
-	// Registers were just loaded. Applies these new values.
-	spc_enable_rom( m.smp_regs[0][R_CONTROL] & 0x80 );
-
-	// Timer registers have been loaded. Applies these to the timers. Does not
-	// reset timer prescalers or dividers.
-	for (int i = 0; i < TIMER_COUNT; i++ )
-	{
-		Timer* t = &m.timers [i];
-		t->period  = IF_0_THEN_256( m.smp_regs[0][R_T0TARGET + i] );
-		t->enabled = m.smp_regs[0][R_CONTROL] >> i & 1;
-		t->counter = m.smp_regs[1][R_T0OUT + i] & 0x0F;
-	}
-	
-	spc_set_tempo( m.tempo );
-	
-	m.extra_clocks = 0;
-	spc_reset_buffer();
-}
-
-void spc_soft_reset()
-{
-	spc_reset_common( 0 );
-	dsp_soft_reset();
-}
-
-
-//// Sample output
-
-
-void spc_set_output( short* out, int size )
-{
-	short const* out_end = out + size;
-	m.buf_begin = out;
-	m.buf_end   = out_end;
-
-	// Copy extra to output
-	short const* in = m.extra_buf;
-	while ( in < m.extra_pos && out < out_end )
-		*out++ = *in++;
-
-	// Handle output being full already
-	if ( out >= out_end )
-	{
-		// Have DSP write to remaining extra space
-		out     = dsp_m.extra; 
-		out_end = &dsp_m.extra[EXTRA_SIZE];
-
-		// Copy any remaining extra samples as if DSP wrote them
-		while ( in < m.extra_pos )
-			*out++ = *in++;
-	}
-
-	dsp_set_output( out, out_end - out );
-}
-
-#if !SPC_NO_COPY_STATE_FUNCS
-void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
-{
-	spc_state_copy_t copier;
-	copier.func = copy;
-	copier.buf = io;
-	
-	// Make state data more readable by putting 64K RAM, 16 SMP registers,
-	// then DSP (with its 128 registers) first
-
-	// RAM
-	spc_enable_rom( 0 ); // will get re-enabled if necessary in regs_loaded() below
-	spc_copier_copy(&copier, m.ram.ram, 0x10000 );
-	
-	{
-		// SMP registers
-		uint8_t regs [REG_COUNT];
-		uint8_t regs_in [REG_COUNT];
-
-		memcpy( regs, m.smp_regs[0], REG_COUNT );
-		memcpy( regs_in, m.smp_regs[1], REG_COUNT );
-
-		spc_copier_copy(&copier, regs, sizeof(regs));
-		spc_copier_copy(&copier, regs_in, sizeof(regs_in));
-
-		memcpy( m.smp_regs[0], regs, REG_COUNT);
-		memcpy( m.smp_regs[1], regs_in, REG_COUNT );
-
-		spc_enable_rom( m.smp_regs[0][R_CONTROL] & 0x80 );
-	}
-	
-	// CPU registers
-	SPC_COPY( uint16_t, m.cpu_regs.pc );
-	SPC_COPY(  uint8_t, m.cpu_regs.a );
-	SPC_COPY(  uint8_t, m.cpu_regs.x );
-	SPC_COPY(  uint8_t, m.cpu_regs.y );
-	SPC_COPY(  uint8_t, m.cpu_regs.psw );
-	SPC_COPY(  uint8_t, m.cpu_regs.sp );
-	spc_copier_extra(&copier);
-	
-	SPC_COPY( int16_t, m.spc_time );
-	SPC_COPY( int16_t, m.dsp_time );
-
-	// DSP
-	dsp_copy_state( io, copy );
-	
-	// Timers
-	for ( int i = 0; i < TIMER_COUNT; i++ )
-	{
-		Timer* t = &m.timers [i];
-		t->period  = IF_0_THEN_256( m.smp_regs[0][R_T0TARGET + i] );
-		t->enabled = m.smp_regs[0][R_CONTROL] >> i & 1;
-		SPC_COPY( int16_t, t->next_time );
-		SPC_COPY( uint8_t, t->divider );
-		SPC_COPY( uint8_t, t->counter );
-		spc_copier_extra(&copier);
-	}
-
-	spc_set_tempo( m.tempo );
-
-	spc_copier_extra(&copier);
-}
-#endif
-
 /***********************************************************************************
  SPC CPU
 ***********************************************************************************/
@@ -2401,7 +1633,6 @@ void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	}\
 }
 
-
 #define READ_TIMER( time, addr, out )	CPU_READ_TIMER( rel_time, time, (addr), out )
 #define READ( time, addr )		spc_cpu_read((addr), rel_time + time )
 #define WRITE( time, addr, data )	spc_cpu_write((data), (addr), rel_time + time )
@@ -2434,21 +1665,6 @@ static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
 
 #define MEM_BIT( rel ) spc_CPU_mem_bit( pc, rel_time + rel )
 
-//// Status flag handling
-
-// Hex value in name to clarify code and bit shifting.
-// Flag stored in indicated variable during emulation
-#define N80 0x80	// nz
-#define V40 0x40	// psw
-#define P20 0x20	// dp
-#define B10 0x10	//psw
-#define H08 0x08	//psw
-#define I04 0x04	// psw
-#define Z02 0x02	// nz
-#define C01 0x01	// c
-
-#define NZ_NEG_MASK 0x880	// either bit set indicates N flag set
-
 #define GET_PSW( out )\
 {\
 	out = psw & ~(N80 | P20 | Z02 | C01);\
@@ -2466,7 +1682,7 @@ static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
 	nz  = (in << 4 & 0x800) | (~in & Z02);\
 }
 
-uint8_t* spc_run_until_( int end_time )
+static uint8_t* spc_run_until_( int end_time )
 {
 	int rel_time = m.spc_time - end_time;
 	m.spc_time = end_time;
@@ -3498,3 +2714,793 @@ stop:
 	m.timers [2].next_time -= rel_time;
 	return &m.smp_regs[0][R_CPUIO0];
 }
+
+// Runs SPC to end_time and starts a new time frame at 0
+static void spc_end_frame( int end_time )
+{
+	// Catch CPU up to as close to end as possible. If final instruction
+	// would exceed end, does NOT execute it and leaves m.spc_time < end.
+	if ( end_time > m.spc_time )
+		spc_run_until_( end_time );
+	
+	m.spc_time     -= end_time;
+	m.extra_clocks += end_time;
+	
+	// Catch timers up to CPU
+	for ( int i = 0; i < TIMER_COUNT; i++ )
+	{
+		if ( 0 >= m.timers[i].next_time )
+			spc_run_timer_( &m.timers [i], 0 );
+	}
+	
+	// Catch DSP up to CPU
+	if ( m.dsp_time < 0 )
+	{
+		RUN_DSP( 0, MAX_REG_TIME );
+	}
+	
+	// Save any extra samples beyond what should be generated
+	if ( m.buf_begin )
+	{
+		// Get end pointers
+		short const* main_end = m.buf_end;     // end of data written to buf
+		short const* dsp_end  = dsp_m.out; // end of data written to dsp.extra()
+		if ( m.buf_begin <= dsp_end && dsp_end <= main_end )
+		{
+			main_end = dsp_end;
+			dsp_end  = dsp_m.extra; // nothing in DSP's extra
+		}
+
+		// Copy any extra samples at these ends into extra_buf
+		short* out = m.extra_buf;
+		short const* in;
+		for ( in = m.buf_begin + SPC_SAMPLE_COUNT(); in < main_end; in++ )
+			*out++ = *in;
+		for ( in = dsp_m.extra; in < dsp_end ; in++ )
+			*out++ = *in;
+
+		m.extra_pos = out;
+	}
+}
+
+//Support SNES_MEMORY_APURAM
+uint8_t * spc_apuram()
+{
+	return m.ram.ram;
+}
+
+//// Init
+
+static void spc_reset_buffer(void)
+{
+	/* Start with half extra buffer of silence */
+	short* out = m.extra_buf;
+	while ( out < &m.extra_buf [EXTRA_SIZE_DIV_2] )
+		*out++ = 0;
+	m.extra_pos = out;
+	m.buf_begin = 0;
+	dsp_set_output( 0, 0 );
+}
+
+// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
+static void spc_set_tempo( int t )
+{
+	m.tempo = t;
+	int const timer2_shift = 4; // 64 kHz
+	int const other_shift  = 3; //  8 kHz
+	
+	m.timers [2].prescaler = timer2_shift;
+	m.timers [1].prescaler = timer2_shift + other_shift;
+	m.timers [0].prescaler = timer2_shift + other_shift;
+}
+
+static void spc_reset_common( int timer_counter_init )
+{
+	int i;
+	for ( i = 0; i < TIMER_COUNT; i++ )
+		m.smp_regs[1][R_T0OUT + i] = timer_counter_init;
+	
+	// Run IPL ROM
+	memset( &m.cpu_regs, 0, sizeof m.cpu_regs );
+	m.cpu_regs.pc = ROM_ADDR;
+	
+	m.smp_regs[0][R_TEST   ] = 0x0A;
+	m.smp_regs[0][R_CONTROL] = 0xB0; // ROM enabled, clear ports
+	for ( i = 0; i < PORT_COUNT; i++ )
+		m.smp_regs[1][R_CPUIO0 + i] = 0;
+	
+	// reset time registers
+	m.spc_time      = 0;
+	m.dsp_time      = 0;
+	m.dsp_time = CLOCKS_PER_SAMPLE + 1;
+	
+	for ( int i = 0; i < TIMER_COUNT; i++ )
+	{
+		Timer* t = &m.timers [i];
+		t->next_time = 1;
+		t->divider   = 0;
+	}
+	
+	// Registers were just loaded. Applies these new values.
+	spc_enable_rom( m.smp_regs[0][R_CONTROL] & 0x80 );
+
+	// Timer registers have been loaded. Applies these to the timers. Does not
+	// reset timer prescalers or dividers.
+	for (int i = 0; i < TIMER_COUNT; i++ )
+	{
+		Timer* t = &m.timers [i];
+		t->period  = IF_0_THEN_256( m.smp_regs[0][R_T0TARGET + i] );
+		t->enabled = m.smp_regs[0][R_CONTROL] >> i & 1;
+		t->counter = m.smp_regs[1][R_T0OUT + i] & 0x0F;
+	}
+	
+	spc_set_tempo( m.tempo );
+	
+	m.extra_clocks = 0;
+	spc_reset_buffer();
+}
+
+// Resets SPC to power-on state. This resets your output buffer, so you must
+// call set_output() after this.
+static void spc_reset (void)
+{
+	m.cpu_regs.pc  = 0xFFC0;
+	m.cpu_regs.a   = 0x00;
+	m.cpu_regs.x   = 0x00;
+	m.cpu_regs.y   = 0x00;
+	m.cpu_regs.psw = 0x02;
+	m.cpu_regs.sp  = 0xEF;
+	memset( m.ram.ram, 0x00, 0x10000 );
+
+	// RAM was just loaded from SPC, with $F0-$FF containing SMP registers
+	// and timer counts. Copies these to proper registers.
+	m.rom_enabled = 0;
+
+	// Loads registers from unified 16-byte format
+	memcpy( m.smp_regs[0], &m.ram.ram[0xF0], REG_COUNT );
+	memcpy( m.smp_regs[1], m.smp_regs[0], REG_COUNT );
+	
+	// These always read back as 0
+	m.smp_regs[1][R_TEST    ] = 0;
+	m.smp_regs[1][R_CONTROL ] = 0;
+	m.smp_regs[1][R_T0TARGET] = 0;
+	m.smp_regs[1][R_T1TARGET] = 0;
+	m.smp_regs[1][R_T2TARGET] = 0;
+	
+	// Put STOP instruction around memory to catch PC underflow/overflow
+	memset( m.ram.padding1, CPU_PAD_FILL, sizeof m.ram.padding1 );
+	memset( m.ram.padding2, CPU_PAD_FILL, sizeof m.ram.padding2 );
+
+	spc_reset_common( 0x0F );
+	dsp_reset();
+}
+
+// Must be called once before using
+static void spc_init()
+{
+	memset( &m, 0, sizeof m );
+	dsp_init( m.ram.ram );
+	
+	m.tempo = TEMPO_UNIT;
+	
+	// Most SPC music doesn't need ROM, and almost all the rest only rely
+	// on these two bytes
+	m.rom [0x3E] = 0xFF;
+	m.rom [0x3F] = 0xC0;
+	
+	static unsigned char const cycle_table [128] =
+	{//   01   23   45   67   89   AB   CD   EF
+	    0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x68, // 0
+	    0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x46, // 1
+	    0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x74, // 2
+	    0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x38, // 3
+	    0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x66, // 4
+	    0x48,0x47,0x45,0x56,0x55,0x45,0x22,0x43, // 5
+	    0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x75, // 6
+	    0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x36, // 7
+	    0x28,0x47,0x34,0x36,0x26,0x54,0x52,0x45, // 8
+	    0x48,0x47,0x45,0x56,0x55,0x55,0x22,0xC5, // 9
+	    0x38,0x47,0x34,0x36,0x26,0x44,0x52,0x44, // A
+	    0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x34, // B
+	    0x38,0x47,0x45,0x47,0x25,0x64,0x52,0x49, // C
+	    0x48,0x47,0x56,0x67,0x45,0x55,0x22,0x83, // D
+	    0x28,0x47,0x34,0x36,0x24,0x53,0x43,0x40, // E
+	    0x48,0x47,0x45,0x56,0x34,0x54,0x22,0x60, // F
+	};
+	
+	// unpack cycle table
+	for ( int i = 0; i < 128; i++ )
+	{
+		int n = cycle_table [i];
+		m.cycle_table [i * 2 + 0] = n >> 4;
+		m.cycle_table [i * 2 + 1] = n & 0x0F;
+	}
+
+	allow_time_overflow = false;
+
+	signed char const reg_times_ [256] =
+	{
+		-1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
+		2,  3,  0,  1,-12,  0,  1,  1,  7,  6, 14, 14, 27, 14, 14, 23,
+		5,  6,  3,  4, -1,  3,  4,  4, 10,  9, 14, 14, 26, -5, 14, 23,
+		8,  9,  6,  7,  2,  6,  7,  7, 13, 12, 14, 14, 27, -4, 14, 24,
+		11, 12,  9, 10,  5,  9, 10, 10, 16, 15, 14, 14, -2, -4, 14, 24,
+		14, 15, 12, 13,  8, 12, 13, 13, 19, 18, 14, 14, -2,-36, 14, 24,
+		17, 18, 15, 16, 11, 15, 16, 16, 22, 21, 14, 14, 28, -3, 14, 25,
+		20, 21, 18, 19, 14, 18, 19, 19, 25, 24, 14, 14, 14, 29, 14, 25,
+
+		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	};
+	
+	memcpy( reg_times, reg_times_, sizeof reg_times );
+	
+	spc_reset();
+
+	uint8_t APUROM[64] =
+	{
+		0xCD, 0xEF, 0xBD, 0xE8, 0x00, 0xC6, 0x1D, 0xD0,
+		0xFC, 0x8F, 0xAA, 0xF4, 0x8F, 0xBB, 0xF5, 0x78,
+		0xCC, 0xF4, 0xD0, 0xFB, 0x2F, 0x19, 0xEB, 0xF4,
+		0xD0, 0xFC, 0x7E, 0xF4, 0xD0, 0x0B, 0xE4, 0xF5,
+		0xCB, 0xF4, 0xD7, 0x00, 0xFC, 0xD0, 0xF3, 0xAB,
+		0x01, 0x10, 0xEF, 0x7E, 0xF4, 0x10, 0xEB, 0xBA,
+		0xF6, 0xDA, 0x00, 0xBA, 0xF4, 0xC4, 0xF4, 0xDD,
+		0x5D, 0xD0, 0xDB, 0x1F, 0x00, 0x00, 0xC0, 0xFF
+	};
+
+	memcpy( m.rom, APUROM, sizeof m.rom );
+}
+
+
+// Emulates pressing reset switch on SNES. This resets your output buffer, so
+// you must call set_output() after this.
+static void spc_soft_reset (void)
+{
+	spc_reset_common( 0 );
+	dsp_soft_reset();
+}
+
+
+//// Sample output
+
+
+
+#if !SPC_NO_COPY_STATE_FUNCS
+void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
+{
+	spc_state_copy_t copier;
+	copier.func = copy;
+	copier.buf = io;
+	
+	// Make state data more readable by putting 64K RAM, 16 SMP registers,
+	// then DSP (with its 128 registers) first
+
+	// RAM
+	spc_enable_rom( 0 ); // will get re-enabled if necessary in regs_loaded() below
+	spc_copier_copy(&copier, m.ram.ram, 0x10000 );
+	
+	{
+		// SMP registers
+		uint8_t regs [REG_COUNT];
+		uint8_t regs_in [REG_COUNT];
+
+		memcpy( regs, m.smp_regs[0], REG_COUNT );
+		memcpy( regs_in, m.smp_regs[1], REG_COUNT );
+
+		spc_copier_copy(&copier, regs, sizeof(regs));
+		spc_copier_copy(&copier, regs_in, sizeof(regs_in));
+
+		memcpy( m.smp_regs[0], regs, REG_COUNT);
+		memcpy( m.smp_regs[1], regs_in, REG_COUNT );
+
+		spc_enable_rom( m.smp_regs[0][R_CONTROL] & 0x80 );
+	}
+	
+	// CPU registers
+	SPC_COPY( uint16_t, m.cpu_regs.pc );
+	SPC_COPY(  uint8_t, m.cpu_regs.a );
+	SPC_COPY(  uint8_t, m.cpu_regs.x );
+	SPC_COPY(  uint8_t, m.cpu_regs.y );
+	SPC_COPY(  uint8_t, m.cpu_regs.psw );
+	SPC_COPY(  uint8_t, m.cpu_regs.sp );
+	spc_copier_extra(&copier);
+	
+	SPC_COPY( int16_t, m.spc_time );
+	SPC_COPY( int16_t, m.dsp_time );
+
+	// DSP
+	dsp_copy_state( io, copy );
+	
+	// Timers
+	for ( int i = 0; i < TIMER_COUNT; i++ )
+	{
+		Timer* t = &m.timers [i];
+		t->period  = IF_0_THEN_256( m.smp_regs[0][R_T0TARGET + i] );
+		t->enabled = m.smp_regs[0][R_CONTROL] >> i & 1;
+		SPC_COPY( int16_t, t->next_time );
+		SPC_COPY( uint8_t, t->divider );
+		SPC_COPY( uint8_t, t->counter );
+		spc_copier_extra(&copier);
+	}
+
+	spc_set_tempo( m.tempo );
+
+	spc_copier_extra(&copier);
+}
+#endif
+
+
+/***********************************************************************************
+ APU
+***********************************************************************************/
+
+#define APU_DEFAULT_INPUT_RATE		32000
+#define APU_MINIMUM_SAMPLE_COUNT	512
+#define APU_MINIMUM_SAMPLE_BLOCK	128
+#define APU_NUMERATOR_NTSC		15664
+#define APU_DENOMINATOR_NTSC		328125
+#define APU_NUMERATOR_PAL		34176
+#define APU_DENOMINATOR_PAL		709379
+
+static apu_callback	sa_callback     = NULL;
+
+static bool8		sound_in_sync   = TRUE;
+
+static int		buffer_size;
+static int		lag_master      = 0;
+static int		lag             = 0;
+
+static short		*landing_buffer = NULL;
+
+static bool8		resampler      = false;
+
+static int32		reference_time;
+static uint32		spc_remainder;
+
+static int		timing_hack_denominator = TEMPO_UNIT;
+/* Set these to NTSC for now. Will change to PAL in S9xAPUTimingSetSpeedup
+   if necessary on game load. */
+static uint32		ratio_numerator = APU_NUMERATOR_NTSC;
+static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
+
+/***********************************************************************************
+	RESAMPLER
+************************************************************************************/
+static int rb_size;
+static int rb_buffer_size;
+static int rb_start;
+static unsigned char *rb_buffer;
+static float r_step;
+static float r_frac;
+static int    r_left[4], r_right[4];
+
+#define SPACE_EMPTY() (rb_buffer_size - rb_size)
+#define SPACE_FILLED() (rb_size)
+#define MAX_WRITE() (SPACE_EMPTY() >> 1)
+#define AVAIL() ((int) floor (((rb_size >> 2) - r_frac) / r_step) * 2)
+
+#define RESAMPLER_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+#define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
+
+static float hermite (float mu1, float a, float b, float c, float d)
+{
+	float mu2, mu3, m0, m1, a0, a1, a2, a3;
+	mu2 = mu1 * mu1;
+	mu3 = mu2 * mu1;
+	m0  = (c - a) * 0.5;
+	m1  = (d - b) * 0.5;
+	a0 = +2 * mu3 - 3 * mu2 + 1;
+	a1 =      mu3 - 2 * mu2 + mu1;
+	a2 =      mu3 -     mu2;
+	a3 = -2 * mu3 + 3 * mu2;
+	return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
+}
+
+static void resampler_clear(void)
+{
+	rb_start = 0;
+	rb_size = 0;
+	memset (rb_buffer,  0, rb_buffer_size);
+
+	r_frac = 1.0;
+	r_left [0] = r_left [1] = r_left [2] = r_left [3] = 0;
+	r_right[0] = r_right[1] = r_right[2] = r_right[3] = 0;
+}
+
+static void resampler_time_ratio(double ratio)
+{
+	r_step = ratio;
+	resampler_clear();
+}
+
+static void resampler_read(short *data, int num_samples)
+{
+	int i_position = rb_start >> 1;
+	short *internal_buffer = (short *)rb_buffer;
+	int o_position = 0;
+	int consumed = 0;
+
+	while (o_position < num_samples && consumed < rb_buffer_size)
+	{
+		int s_left = internal_buffer[i_position];
+		int s_right = internal_buffer[i_position + 1];
+		int max_samples = rb_buffer_size >> 1;
+
+		while (r_frac <= 1.0 && o_position < num_samples)
+		{
+			data[o_position]     = SHORT_CLAMP (hermite(r_frac, r_left [0], r_left [1], r_left [2], r_left [3]));
+			data[o_position + 1] = SHORT_CLAMP (hermite(r_frac, r_right[0], r_right[1], r_right[2], r_right[3]));
+
+			o_position += 2;
+
+			r_frac += r_step;
+		}
+
+		if (r_frac > 1.0)
+		{
+			r_left [0] = r_left [1];
+			r_left [1] = r_left [2];
+			r_left [2] = r_left [3];
+			r_left [3] = s_left;
+
+			r_right[0] = r_right[1];
+			r_right[1] = r_right[2];
+			r_right[2] = r_right[3];
+			r_right[3] = s_right;                    
+
+			r_frac -= 1.0;
+
+			i_position += 2;
+			if (i_position >= max_samples)
+				i_position -= max_samples;
+			consumed += 2;
+		}
+	}
+
+	rb_size -= consumed << 1;
+	rb_start += consumed << 1;
+	if (rb_start >= rb_buffer_size)
+		rb_start -= rb_buffer_size;
+}
+
+static void resampler_new(int num_samples)
+{
+	int new_size = num_samples << 1;
+
+	rb_buffer_size = new_size;
+	rb_buffer = new unsigned char[rb_buffer_size];
+	memset (rb_buffer, 0, rb_buffer_size);
+
+	rb_size = 0;
+	rb_start = 0;
+	resampler_clear();
+}
+
+static inline bool resampler_push(short *src, int num_samples)
+{
+	int bytes = num_samples << 1;
+	if (MAX_WRITE() < num_samples || SPACE_EMPTY() < bytes)
+		return false;
+
+	// Ring buffer push
+	unsigned char * src_ring = (unsigned char*)src; 
+	int end = (rb_start + rb_size) % rb_buffer_size;
+	int first_write_size = RESAMPLER_MIN(bytes, rb_buffer_size - end);
+
+	memcpy (rb_buffer + end, src_ring, first_write_size);
+
+	if (bytes > first_write_size)
+		memcpy (rb_buffer, src_ring + first_write_size, bytes - first_write_size);
+
+	rb_size += bytes;
+
+	return true;
+}
+
+static inline void resampler_resize (int num_samples)
+{
+	int size = num_samples << 1;
+	delete[] rb_buffer;
+	rb_buffer_size = rb_size;
+	rb_buffer = new unsigned char[rb_buffer_size];
+	memset (rb_buffer, 0, rb_buffer_size);
+
+	rb_size = 0;
+	rb_start = 0;
+}
+
+/***********************************************************************************
+	APU
+ ***********************************************************************************/
+
+bool8 S9xMixSamples (short *buffer, int sample_count)
+{
+	if (AVAIL() >= (sample_count + lag))
+	{
+		resampler_read(buffer, sample_count);
+		if (lag == lag_master)
+			lag = 0;
+	}
+	else
+	{
+		memset(buffer, 0, (sample_count << 1) >> 0);
+		if (lag == 0)
+			lag = lag_master;
+
+		return (FALSE);
+	}
+
+	return (TRUE);
+}
+
+int S9xGetSampleCount (void)
+{
+	return AVAIL();
+}
+
+
+// Sets destination for output samples
+static void spc_set_output( short* out, int size )
+{
+	short const* out_end = out + size;
+	m.buf_begin = out;
+	m.buf_end   = out_end;
+
+	// Copy extra to output
+	short const* in = m.extra_buf;
+	while ( in < m.extra_pos && out < out_end )
+		*out++ = *in++;
+
+	// Handle output being full already
+	if ( out >= out_end )
+	{
+		// Have DSP write to remaining extra space
+		out     = dsp_m.extra; 
+		out_end = &dsp_m.extra[EXTRA_SIZE];
+
+		// Copy any remaining extra samples as if DSP wrote them
+		while ( in < m.extra_pos )
+			*out++ = *in++;
+	}
+
+	dsp_set_output( out, out_end - out );
+}
+
+void S9xFinalizeSamples (void)
+{
+	bool ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
+	sound_in_sync = FALSE;
+
+	/* We weren't able to process the entire buffer. Potential overrun. */
+	if (!ret && Settings.SoundSync)
+		return;
+
+	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED()))
+		sound_in_sync = TRUE;
+
+	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
+	spc_set_output(landing_buffer, buffer_size >> 1);
+}
+
+void S9xClearSamples (void)
+{
+	resampler_clear();
+	lag = lag_master;
+}
+
+bool8 S9xSyncSound (void)
+{
+	if (!Settings.SoundSync || sound_in_sync)
+		return (TRUE);
+
+	sa_callback();
+
+	return (sound_in_sync);
+}
+
+void S9xSetSamplesAvailableCallback (apu_callback callback)
+{
+	sa_callback = callback;
+}
+
+static void UpdatePlaybackRate (void)
+{
+	if (Settings.SoundInputRate == 0)
+		Settings.SoundInputRate = APU_DEFAULT_INPUT_RATE;
+
+	double time_ratio = (double) Settings.SoundInputRate * TEMPO_UNIT / (Settings.SoundPlaybackRate * timing_hack_denominator);
+	resampler_time_ratio(time_ratio);
+}
+
+bool8 S9xInitSound (int buffer_ms, int lag_ms)
+{
+	// buffer_ms : buffer size given in millisecond
+	// lag_ms    : allowable time-lag given in millisecond
+
+	int	sample_count     = buffer_ms * 32000 / 1000;
+	int	lag_sample_count = lag_ms    * 32000 / 1000;
+
+	lag_master = lag_sample_count;
+
+	lag_master <<= 1;
+
+	lag = lag_master;
+
+	if (sample_count < APU_MINIMUM_SAMPLE_COUNT)
+		sample_count = APU_MINIMUM_SAMPLE_COUNT;
+
+	buffer_size = sample_count;
+	buffer_size <<= 1;
+	buffer_size <<= 1;
+
+	printf("Sound buffer size: %d (%d samples)\n", buffer_size, sample_count);
+
+	if (landing_buffer)
+		delete[] landing_buffer;
+	landing_buffer = new short[buffer_size * 2];
+	if (!landing_buffer)
+		return (FALSE);
+
+	/* The resampler and spc unit use samples (16-bit short) as
+	   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
+	if (!resampler)
+	{
+		resampler_new(buffer_size >> (Settings.SoundSync ? 0 : 1));
+		resampler = true;
+	}
+	else
+		resampler_resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
+
+	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
+	spc_set_output(landing_buffer, buffer_size >> 1);
+
+	UpdatePlaybackRate();
+
+	return true;
+}
+
+bool8 S9xInitAPU (void)
+{
+	spc_init();
+
+	landing_buffer = NULL;
+
+	return (TRUE);
+}
+
+void S9xDeinitAPU (void)
+{
+	if (resampler)
+	{
+		delete[] rb_buffer;
+		resampler = false;
+	}
+
+	if (landing_buffer)
+	{
+		delete[] landing_buffer;
+		landing_buffer = NULL;
+	}
+}
+
+#define S9X_APU_GET_CLOCK(cpucycles)		((ratio_numerator * (cpucycles - reference_time) + spc_remainder) / ratio_denominator)
+#define S9X_APU_GET_CLOCK_REMAINDER(cpucycles)	((ratio_numerator * (cpucycles - reference_time) + spc_remainder) % ratio_denominator)
+
+// Emulated port read at specified time
+uint8 S9xAPUReadPort (int port)	{ return ((uint8) spc_run_until_(S9X_APU_GET_CLOCK(CPU.Cycles))[port]); }
+
+void S9xAPUWritePort (int port, uint8 byte)
+{
+	// Emulated port write at specified time
+	spc_run_until_( S9X_APU_GET_CLOCK(CPU.Cycles) ) [0x10 + port] = byte;
+	m.ram.ram [0xF4 + port] = byte;
+}
+
+void S9xAPUSetReferenceTime (int32 cpucycles)
+{
+	reference_time = cpucycles;
+}
+
+void S9xAPUExecute (void)
+{
+	/* Accumulate partial APU cycles */
+	spc_end_frame(S9X_APU_GET_CLOCK(CPU.Cycles));
+
+	spc_remainder = S9X_APU_GET_CLOCK_REMAINDER(CPU.Cycles);
+	reference_time = CPU.Cycles;
+
+	if (SPC_SAMPLE_COUNT() >= APU_MINIMUM_SAMPLE_BLOCK || !sound_in_sync)
+		sa_callback();
+}
+
+void S9xAPUTimingSetSpeedup (int ticks)
+{
+	if (ticks != 0)
+		printf("APU speedup hack: %d\n", ticks);
+
+	timing_hack_denominator = TEMPO_UNIT - ticks;
+	spc_set_tempo(timing_hack_denominator);
+
+	ratio_numerator = Settings.PAL ? APU_NUMERATOR_PAL : APU_NUMERATOR_NTSC;
+	ratio_denominator = Settings.PAL ? APU_DENOMINATOR_PAL : APU_DENOMINATOR_NTSC;
+	ratio_denominator = ratio_denominator * timing_hack_denominator / TEMPO_UNIT;
+
+	UpdatePlaybackRate();
+}
+
+void S9xAPUAllowTimeOverflow (bool allow)
+{
+	allow_time_overflow = allow;
+}
+
+void S9xResetAPU (void)
+{
+	reference_time = 0;
+	spc_remainder = 0;
+	spc_reset();
+
+	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
+
+	spc_set_output(landing_buffer, buffer_size >> 1);
+
+	resampler_clear();
+}
+
+void S9xSoftResetAPU (void)
+{
+	reference_time = 0;
+	spc_remainder = 0;
+	spc_soft_reset();
+
+	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
+	spc_set_output(landing_buffer, buffer_size >> 1);
+
+	resampler_clear();
+}
+
+static void from_apu_to_state (uint8 **buf, void *var, size_t size)
+{
+	memcpy(*buf, var, size);
+	*buf += size;
+}
+
+static void to_apu_from_state (uint8 **buf, void *var, size_t size)
+{
+	memcpy(var, *buf, size);
+	*buf += size;
+}
+
+void S9xAPUSaveState (uint8 *block)
+{
+	uint8	*ptr = block;
+
+	spc_copy_state(&ptr, from_apu_to_state);
+
+	SET_LE32(ptr, reference_time);
+	ptr += sizeof(int32);
+	SET_LE32(ptr, spc_remainder);
+}
+
+void S9xAPULoadState (uint8 *block)
+{
+	uint8	*ptr = block;
+
+	S9xResetAPU();
+
+	spc_copy_state(&ptr, to_apu_from_state);
+
+	reference_time = GET_LE32(ptr);
+	ptr += sizeof(int32);
+	spc_remainder = GET_LE32(ptr);
+}
+
+// snes_spc 0.9.0. http://www.slack.net/~ant/
+
