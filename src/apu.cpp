@@ -3176,7 +3176,7 @@ static void resampler_new(int num_samples)
 	int new_size = num_samples << 1;
 
 	rb_buffer_size = new_size;
-	rb_buffer = new unsigned char[rb_buffer_size];
+	rb_buffer = (unsigned char*)malloc(rb_buffer_size);
 	memset (rb_buffer, 0, rb_buffer_size);
 
 	rb_size = 0;
@@ -3208,9 +3208,9 @@ static inline bool resampler_push(short *src, int num_samples)
 static inline void resampler_resize (int num_samples)
 {
 	int size = num_samples << 1;
-	delete[] rb_buffer;
+	free(rb_buffer);
 	rb_buffer_size = rb_size;
-	rb_buffer = new unsigned char[rb_buffer_size];
+	rb_buffer = (unsigned char*)malloc(rb_buffer_size);
 	memset (rb_buffer, 0, rb_buffer_size);
 
 	rb_size = 0;
@@ -3344,8 +3344,8 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	printf("Sound buffer size: %d (%d samples)\n", buffer_size, sample_count);
 
 	if (landing_buffer)
-		delete[] landing_buffer;
-	landing_buffer = new short[buffer_size * 2];
+		free(landing_buffer);
+	landing_buffer = (short*)malloc(buffer_size * 2);
 	if (!landing_buffer)
 		return (FALSE);
 
@@ -3380,13 +3380,13 @@ void S9xDeinitAPU (void)
 {
 	if (resampler)
 	{
-		delete[] rb_buffer;
+		free(rb_buffer);
 		resampler = false;
 	}
 
 	if (landing_buffer)
 	{
-		delete[] landing_buffer;
+		free(landing_buffer);
 		landing_buffer = NULL;
 	}
 }
