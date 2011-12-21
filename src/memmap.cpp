@@ -194,6 +194,7 @@
 #include "controls.h"
 #include "cheats.h"
 #include "display.h"
+#include "spc7110dec.h"
 
 #ifndef max
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -369,6 +370,7 @@ bool8 CMemory::Init (void)
 	IPPU.TileCached[TILE_2BIT_ODD]  = (uint8 *) malloc(MAX_2BIT_TILES);
 	IPPU.TileCached[TILE_4BIT_EVEN] = (uint8 *) malloc(MAX_4BIT_TILES);
 	IPPU.TileCached[TILE_4BIT_ODD]  = (uint8 *) malloc(MAX_4BIT_TILES);
+
 
 	// don't render subscreen speed hack - disable this by default by turning the variable (RenderSub - opposite of
 	// don't render sub) on
@@ -1500,6 +1502,9 @@ bool8 CMemory::LoadROM (const char *filename)
 
 	ZeroMemory(ROM, MAX_ROM_SIZE);
 	ZeroMemory(&Multi, sizeof(Multi));
+
+	if (Settings.SPC7110 || Settings.SPC7110RTC)
+		spc7110_decomp_start();
  
 again:
 	CalculatedSize = 0;

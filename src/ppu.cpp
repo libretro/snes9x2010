@@ -3981,7 +3981,7 @@ static void S9xDoDMA (void)
 				{
 					spc7110_dma = (uint8*)malloc(d->TransferBytes);
 					for (int i = 0; i < d->TransferBytes; i++)
-						spc7110_dma[i] = decomp.read();
+						spc7110_dma[i] = spc7110_decomp_read();
 
 					int32	icount = r4809 | (r480a << 8);
 					icount -= d->TransferBytes;

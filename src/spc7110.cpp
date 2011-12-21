@@ -203,7 +203,20 @@
 
 #include "spc7110emu.h"
 
-SPC7110Decomp decomp;
+//read() will spool chunks half the size of SPC7110_DECOMP_BUFFER_SIZE
+static uint8 decomp_buffer[SPC7110_DECOMP_BUFFER_SIZE];
+
+static unsigned decomp_mode;
+static unsigned decomp_offset;
+
+static unsigned decomp_buffer_rdoffset;
+static unsigned decomp_buffer_wroffset;
+static unsigned decomp_buffer_length;
+
+struct ContextState {
+	uint8 index;
+	uint8 invert;
+} context[32];
 
 #define memory_cartrom_read(a)		Memory.ROM[(a)]
 #define memory_cartrtc_read(a)		RTCData.reg[(a)]
@@ -411,41 +424,7 @@ const uint8 mode2_context_table[32][2] = {
 #define NEXT_MPS(n) (evolution_table[context[n].index][2])
 #define TOGGLE_INVERT(n) (evolution_table[context[n].index][3])
 
-uint8 SPC7110Decomp::read()
-{
-	if(decomp_buffer_length == 0)
-	{
-		//decompress at least (SPC7110_DECOMP_BUFFER_SIZE / 2) bytes to the buffer
-		switch(decomp_mode)
-		{
-			case 0:
-				mode0(false);
-				break;
-			case 1:
-				mode1(false);
-				break;
-			case 2:
-				mode2(false);
-				break;
-			default:
-				return 0x00;
-		}
-	}
-
-	uint8 data = decomp_buffer[decomp_buffer_rdoffset++];
-	decomp_buffer_rdoffset &= SPC7110_DECOMP_BUFFER_SIZE - 1;
-	decomp_buffer_length--;
-	return data;
-}
-
-void SPC7110Decomp::write(uint8 data)
-{
-	decomp_buffer[decomp_buffer_wroffset++] = data;
-	decomp_buffer_wroffset &= SPC7110_DECOMP_BUFFER_SIZE - 1;
-	decomp_buffer_length++;
-}
-
-uint8 SPC7110Decomp::dataread()
+static uint8 spc7110_decomp_dataread()
 {
 	unsigned size = Memory.CalculatedSize - 0x100000;
 	while(decomp_offset >= size)
@@ -453,222 +432,14 @@ uint8 SPC7110Decomp::dataread()
 	return memory_cartrom_read(0x100000 + decomp_offset++);
 }
 
-void SPC7110Decomp::init(unsigned mode, unsigned offset, unsigned index)
+void spc7110_decomp_write(uint8 data)
 {
-	decomp_mode = mode;
-	decomp_offset = offset;
-
-	decomp_buffer_rdoffset = 0;
-	decomp_buffer_wroffset = 0;
-	decomp_buffer_length   = 0;
-
-	//reset context states
-	for(unsigned i = 0; i < 32; i++)
-	{
-		context[i].index  = 0;
-		context[i].invert = 0;
-	}
-
-	switch(decomp_mode)
-	{
-		case 0:
-			mode0(true);
-			break;
-		case 1:
-			mode1(true);
-			break;
-		case 2:
-			mode2(true);
-			break;
-	}
-
-	//decompress up to requested output data index
-	while(index--)
-		read();
+	decomp_buffer[decomp_buffer_wroffset++] = data;
+	decomp_buffer_wroffset &= SPC7110_DECOMP_BUFFER_SIZE - 1;
+	decomp_buffer_length++;
 }
 
-void SPC7110Decomp::mode0(bool init)
-{
-	static uint8 val, in, span;
-	static int out, inverts, lps, in_count;
-
-	if(init == true)
-	{
-		out = inverts = lps = 0;
-		span = 0xff;
-		val = dataread();
-		in = dataread();
-		in_count = 8;
-		return;
-	}
-
-	while(decomp_buffer_length < (SPC7110_DECOMP_BUFFER_SIZE >> 1))
-	{
-		for(unsigned bit = 0; bit < 8; bit++)
-		{
-			//get context
-			uint8 mask = (1 << (bit & 3)) - 1;
-			uint8 con = mask + ((inverts & mask) ^ (lps & mask));
-			if(bit > 3) con += 15;
-
-			//get prob and mps
-			unsigned prob = PROBABILITY(con);
-			unsigned mps = (((out >> 15) & 1) ^ context[con].invert);
-
-			//get bit
-			unsigned flag_lps;
-			if(val <= span - prob) { //mps
-				span = span - prob;
-				out = (out << 1) + mps;
-				flag_lps = 0;
-			} else { //lps
-				val = val - (span - (prob - 1));
-				span = prob - 1;
-				out = (out << 1) + 1 - mps;
-				flag_lps = 1;
-			}
-
-			//renormalize
-			unsigned shift = 0;
-			while(span < 0x7f) {
-				shift++;
-
-				span = (span << 1) + 1;
-				val = (val << 1) + (in >> 7);
-
-				in <<= 1;
-				if(--in_count == 0) {
-					in = dataread();
-					in_count = 8;
-				}
-			}
-
-			//update processing info
-			lps = (lps << 1) + flag_lps;
-			inverts = (inverts << 1) + context[con].invert;
-
-			//update context state
-			if(flag_lps & TOGGLE_INVERT(con))
-				context[con].invert ^= 1;
-			if(flag_lps)
-				context[con].index = NEXT_LPS(con);
-			else if(shift)
-				context[con].index = NEXT_MPS(con);
-		}
-
-		//save byte
-		write(out);
-	}
-}
-
-void SPC7110Decomp::mode1(bool init)
-{
-	static unsigned pixelorder[4], realorder[4];
-	static uint8 in, val, span;
-	static int out, inverts, lps, in_count;
-
-	if(init == true)
-	{
-		for(unsigned i = 0; i < 4; i++) pixelorder[i] = i;
-		out = inverts = lps = 0;
-		span = 0xff;
-		val = dataread();
-		in = dataread();
-		in_count = 8;
-		return;
-	}
-
-	while(decomp_buffer_length < (SPC7110_DECOMP_BUFFER_SIZE >> 1))
-	{
-		for(unsigned pixel = 0; pixel < 8; pixel++)
-		{
-			//get first symbol context
-			unsigned a = ((out >> (1 * 2)) & 3);
-			unsigned b = ((out >> (7 * 2)) & 3);
-			unsigned c = ((out >> (8 * 2)) & 3);
-			unsigned con = (a == b) ? (b != c) : (b == c) ? 2 : 4 - (a == c);
-
-			//update pixel order
-			unsigned m, n;
-			for(m = 0; m < 4; m++) if(pixelorder[m] == a) break;
-			for(n = m; n > 0; n--) pixelorder[n] = pixelorder[n - 1];
-			pixelorder[0] = a;
-
-			//calculate the real pixel order
-			for(m = 0; m < 4; m++) realorder[m] = pixelorder[m];
-
-			//rotate reference pixel c value to top
-			for(m = 0; m < 4; m++) if(realorder[m] == c) break;
-			for(n = m; n > 0; n--) realorder[n] = realorder[n - 1];
-			realorder[0] = c;
-
-			//rotate reference pixel b value to top
-			for(m = 0; m < 4; m++) if(realorder[m] == b) break;
-			for(n = m; n > 0; n--) realorder[n] = realorder[n - 1];
-			realorder[0] = b;
-
-			//rotate reference pixel a value to top
-			for(m = 0; m < 4; m++) if(realorder[m] == a) break;
-			for(n = m; n > 0; n--) realorder[n] = realorder[n - 1];
-			realorder[0] = a;
-
-			//get 2 symbols
-			for(unsigned bit = 0; bit < 2; bit++) {
-				//get prob
-				unsigned prob = PROBABILITY(con);
-
-				//get symbol
-				unsigned flag_lps;
-				if(val <= span - prob) { //mps
-					span = span - prob;
-					flag_lps = 0;
-				} else { //lps
-					val = val - (span - (prob - 1));
-					span = prob - 1;
-					flag_lps = 1;
-				}
-
-				//renormalize
-				unsigned shift = 0;
-				while(span < 0x7f) {
-					shift++;
-
-					span = (span << 1) + 1;
-					val = (val << 1) + (in >> 7);
-
-					in <<= 1;
-					if(--in_count == 0) {
-						in = dataread();
-						in_count = 8;
-					}
-				}
-
-				//update processing info
-				lps = (lps << 1) + flag_lps;
-				inverts = (inverts << 1) + context[con].invert;
-
-				//update context state
-				if(flag_lps & TOGGLE_INVERT(con)) context[con].invert ^= 1;
-				if(flag_lps) context[con].index = NEXT_LPS(con);
-				else if(shift) context[con].index = NEXT_MPS(con);
-
-				//get next context
-				con = 5 + (con << 1) + ((lps ^ inverts) & 1);
-			}
-
-			//get pixel
-			b = realorder[(lps ^ inverts) & 3];
-			out = (out << 2) + b;
-		}
-
-		//turn pixel data into bitplanes
-		unsigned data = MORTON_2X8(out);
-		write(data >> 8);
-		write(data >> 0);
-	}
-}
-
-void SPC7110Decomp::mode2(bool init)
+static void spc7110_decomp_mode2(bool init)
 {
 	static unsigned pixelorder[16], realorder[16];
 	static uint8 bitplanebuffer[16], buffer_index;
@@ -681,8 +452,8 @@ void SPC7110Decomp::mode2(bool init)
 		buffer_index = 0;
 		out0 = out1 = inverts = lps = 0;
 		span = 0xff;
-		val = dataread();
-		in = dataread();
+		val = spc7110_decomp_dataread();
+		in = spc7110_decomp_dataread();
 		in_count = 8;
 		return;
 	}
@@ -754,7 +525,7 @@ void SPC7110Decomp::mode2(bool init)
 
 					in <<= 1;
 					if(--in_count == 0) {
-						in = dataread();
+						in = spc7110_decomp_dataread();
 						in_count = 8;
 					}
 				}
@@ -781,21 +552,264 @@ void SPC7110Decomp::mode2(bool init)
 
 		//convert pixel data into bitplanes
 		unsigned data = MORTON_4X8(out0);
-		write(data >> 24);
-		write(data >> 16);
+		spc7110_decomp_write(data >> 24);
+		spc7110_decomp_write(data >> 16);
 		bitplanebuffer[buffer_index++] = data >> 8;
 		bitplanebuffer[buffer_index++] = data >> 0;
 
 		if(buffer_index == 16)
 		{
 			for(unsigned i = 0; i < 16; i++)
-				write(bitplanebuffer[i]);
+				spc7110_decomp_write(bitplanebuffer[i]);
 			buffer_index = 0;
 		}
 	}
 }
 
-void SPC7110Decomp::reset()
+void spc7110_decomp_mode1(bool init)
+{
+	static unsigned pixelorder[4], realorder[4];
+	static uint8 in, val, span;
+	static int out, inverts, lps, in_count;
+
+	if(init == true)
+	{
+		for(unsigned i = 0; i < 4; i++) pixelorder[i] = i;
+		out = inverts = lps = 0;
+		span = 0xff;
+		val = spc7110_decomp_dataread();
+		in = spc7110_decomp_dataread();
+		in_count = 8;
+		return;
+	}
+
+	while(decomp_buffer_length < (SPC7110_DECOMP_BUFFER_SIZE >> 1))
+	{
+		for(unsigned pixel = 0; pixel < 8; pixel++)
+		{
+			//get first symbol context
+			unsigned a = ((out >> (1 * 2)) & 3);
+			unsigned b = ((out >> (7 * 2)) & 3);
+			unsigned c = ((out >> (8 * 2)) & 3);
+			unsigned con = (a == b) ? (b != c) : (b == c) ? 2 : 4 - (a == c);
+
+			//update pixel order
+			unsigned m, n;
+			for(m = 0; m < 4; m++) if(pixelorder[m] == a) break;
+			for(n = m; n > 0; n--) pixelorder[n] = pixelorder[n - 1];
+			pixelorder[0] = a;
+
+			//calculate the real pixel order
+			for(m = 0; m < 4; m++) realorder[m] = pixelorder[m];
+
+			//rotate reference pixel c value to top
+			for(m = 0; m < 4; m++) if(realorder[m] == c) break;
+			for(n = m; n > 0; n--) realorder[n] = realorder[n - 1];
+			realorder[0] = c;
+
+			//rotate reference pixel b value to top
+			for(m = 0; m < 4; m++) if(realorder[m] == b) break;
+			for(n = m; n > 0; n--) realorder[n] = realorder[n - 1];
+			realorder[0] = b;
+
+			//rotate reference pixel a value to top
+			for(m = 0; m < 4; m++) if(realorder[m] == a) break;
+			for(n = m; n > 0; n--) realorder[n] = realorder[n - 1];
+			realorder[0] = a;
+
+			//get 2 symbols
+			for(unsigned bit = 0; bit < 2; bit++) {
+				//get prob
+				unsigned prob = PROBABILITY(con);
+
+				//get symbol
+				unsigned flag_lps;
+				if(val <= span - prob) { //mps
+					span = span - prob;
+					flag_lps = 0;
+				} else { //lps
+					val = val - (span - (prob - 1));
+					span = prob - 1;
+					flag_lps = 1;
+				}
+
+				//renormalize
+				unsigned shift = 0;
+				while(span < 0x7f) {
+					shift++;
+
+					span = (span << 1) + 1;
+					val = (val << 1) + (in >> 7);
+
+					in <<= 1;
+					if(--in_count == 0)
+					{
+						in = spc7110_decomp_dataread();
+						in_count = 8;
+					}
+				}
+
+				//update processing info
+				lps = (lps << 1) + flag_lps;
+				inverts = (inverts << 1) + context[con].invert;
+
+				//update context state
+				if(flag_lps & TOGGLE_INVERT(con)) context[con].invert ^= 1;
+				if(flag_lps) context[con].index = NEXT_LPS(con);
+				else if(shift) context[con].index = NEXT_MPS(con);
+
+				//get next context
+				con = 5 + (con << 1) + ((lps ^ inverts) & 1);
+			}
+
+			//get pixel
+			b = realorder[(lps ^ inverts) & 3];
+			out = (out << 2) + b;
+		}
+
+		//turn pixel data into bitplanes
+		unsigned data = MORTON_2X8(out);
+		spc7110_decomp_write(data >> 8);
+		spc7110_decomp_write(data >> 0);
+	}
+}
+
+static void spc7110_decomp_mode0(bool init)
+{
+	static uint8 val, in, span;
+	static int out, inverts, lps, in_count;
+
+	if(init == true)
+	{
+		out = inverts = lps = 0;
+		span = 0xff;
+		val = spc7110_decomp_dataread();
+		in = spc7110_decomp_dataread();
+		in_count = 8;
+		return;
+	}
+
+	while(decomp_buffer_length < (SPC7110_DECOMP_BUFFER_SIZE >> 1))
+	{
+		for(unsigned bit = 0; bit < 8; bit++)
+		{
+			//get context
+			uint8 mask = (1 << (bit & 3)) - 1;
+			uint8 con = mask + ((inverts & mask) ^ (lps & mask));
+			if(bit > 3) con += 15;
+
+			//get prob and mps
+			unsigned prob = PROBABILITY(con);
+			unsigned mps = (((out >> 15) & 1) ^ context[con].invert);
+
+			//get bit
+			unsigned flag_lps;
+			if(val <= span - prob) { //mps
+				span = span - prob;
+				out = (out << 1) + mps;
+				flag_lps = 0;
+			} else { //lps
+				val = val - (span - (prob - 1));
+				span = prob - 1;
+				out = (out << 1) + 1 - mps;
+				flag_lps = 1;
+			}
+
+			//renormalize
+			unsigned shift = 0;
+			while(span < 0x7f) {
+				shift++;
+
+				span = (span << 1) + 1;
+				val = (val << 1) + (in >> 7);
+
+				in <<= 1;
+				if(--in_count == 0) {
+					in = spc7110_decomp_dataread();
+					in_count = 8;
+				}
+			}
+
+			//update processing info
+			lps = (lps << 1) + flag_lps;
+			inverts = (inverts << 1) + context[con].invert;
+
+			//update context state
+			if(flag_lps & TOGGLE_INVERT(con))
+				context[con].invert ^= 1;
+			if(flag_lps)
+				context[con].index = NEXT_LPS(con);
+			else if(shift)
+				context[con].index = NEXT_MPS(con);
+		}
+
+		//save byte
+		spc7110_decomp_write(out);
+	}
+}
+
+uint8 spc7110_decomp_read (void)
+{
+	if(decomp_buffer_length == 0)
+	{
+		//decompress at least (SPC7110_DECOMP_BUFFER_SIZE / 2) bytes to the buffer
+		switch(decomp_mode)
+		{
+			case 0:
+				spc7110_decomp_mode0(false);
+				break;
+			case 1:
+				spc7110_decomp_mode1(false);
+				break;
+			case 2:
+				spc7110_decomp_mode2(false);
+				break;
+			default:
+				return 0x00;
+		}
+	}
+
+	uint8 data = decomp_buffer[decomp_buffer_rdoffset++];
+	decomp_buffer_rdoffset &= SPC7110_DECOMP_BUFFER_SIZE - 1;
+	decomp_buffer_length--;
+	return data;
+}
+
+static void spc7110_decomp_init(unsigned mode, unsigned offset, unsigned index)
+{
+	decomp_mode = mode;
+	decomp_offset = offset;
+
+	decomp_buffer_rdoffset = 0;
+	decomp_buffer_wroffset = 0;
+	decomp_buffer_length   = 0;
+
+	//reset context states
+	for(unsigned i = 0; i < 32; i++)
+	{
+		context[i].index  = 0;
+		context[i].invert = 0;
+	}
+
+	switch(decomp_mode)
+	{
+		case 0:
+			spc7110_decomp_mode0(true);
+			break;
+		case 1:
+			spc7110_decomp_mode1(true);
+			break;
+		case 2:
+			spc7110_decomp_mode2(true);
+			break;
+	}
+
+	//decompress up to requested output data index
+	while(index--)
+		spc7110_decomp_read();
+}
+
+void spc7110_decomp_reset()
 {
 	//mode 3 is invalid; this is treated as a special case to always return 0x00
 	//set to mode 3 so that reading decomp port before starting first decomp will return 0x00
@@ -806,10 +820,9 @@ void SPC7110Decomp::reset()
 	decomp_buffer_length   = 0;
 }
 
-SPC7110Decomp::SPC7110Decomp()
+void spc7110_decomp_start (void)
 {
-	decomp_buffer = (uint8_t*)malloc(SPC7110_DECOMP_BUFFER_SIZE);
-	reset();
+	spc7110_decomp_reset();
 
 	//initialize reverse morton lookup tables
 	for(unsigned i = 0; i < 256; i++)
@@ -832,12 +845,6 @@ SPC7110Decomp::SPC7110Decomp()
 #undef map
 	}
 }
-
-SPC7110Decomp::~SPC7110Decomp()
-{
-	free(decomp_buffer);
-}
-
 
 static const unsigned months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
@@ -999,7 +1006,7 @@ static void s7_mmio_write(unsigned addr, uint8 data)
 					     + (memory_cartrom_read(addr + 2) <<  8)
 					     + (memory_cartrom_read(addr + 3) <<  0);
 
-				     decomp.init(mode, offset, (r4805 + (r4806 << 8)) << mode);
+				     spc7110_decomp_init(mode, offset, (r4805 + (r4806 << 8)) << mode);
 				     r480c = 0x80;
 			     } break;
 
@@ -1363,7 +1370,7 @@ static void s7_power()
 	r480b = 0x00;
 	r480c = 0x00;
 
-	decomp.reset();
+	spc7110_decomp_reset();
 
 	r4811 = 0x00;
 	r4812 = 0x00;
@@ -1445,7 +1452,7 @@ static uint8 s7_mmio_read(unsigned addr)
 				counter--;
 				r4809 = counter;
 				r480a = counter >> 8;
-				return decomp.read();
+				return spc7110_decomp_read();
 			}
 		case 0x4801:
 			return r4801;
@@ -1770,20 +1777,20 @@ void S9xSPC7110PreSaveState (void)
 	s7snap.rtc_mode  = (int32)  rtc_mode;
 	s7snap.rtc_index = (uint32) rtc_index;
 
-	s7snap.decomp_mode   = (uint32) decomp.decomp_mode;
-	s7snap.decomp_offset = (uint32) decomp.decomp_offset;
+	s7snap.decomp_mode   = (uint32) decomp_mode;
+	s7snap.decomp_offset = (uint32) decomp_offset;
 
 	for (int i = 0; i < SPC7110_DECOMP_BUFFER_SIZE; i++)
-		s7snap.decomp_buffer[i] = decomp.decomp_buffer[i];
+		s7snap.decomp_buffer[i] = decomp_buffer[i];
 
-	s7snap.decomp_buffer_rdoffset = (uint32) decomp.decomp_buffer_rdoffset;
-	s7snap.decomp_buffer_wroffset = (uint32) decomp.decomp_buffer_wroffset;
-	s7snap.decomp_buffer_length   = (uint32) decomp.decomp_buffer_length;
+	s7snap.decomp_buffer_rdoffset = (uint32) decomp_buffer_rdoffset;
+	s7snap.decomp_buffer_wroffset = (uint32) decomp_buffer_wroffset;
+	s7snap.decomp_buffer_length   = (uint32) decomp_buffer_length;
 
 	for (int i = 0; i < 32; i++)
 	{
-		s7snap.context[i].index  = decomp.context[i].index;
-		s7snap.context[i].invert = decomp.context[i].invert;
+		s7snap.context[i].index  = context[i].index;
+		s7snap.context[i].invert = context[i].invert;
 	}
 }
 
@@ -1851,20 +1858,20 @@ void S9xSPC7110PostLoadState (int version)
 	rtc_mode  = (RTC_Mode)  s7snap.rtc_mode;
 	rtc_index = (unsigned)           s7snap.rtc_index;
 
-	decomp.decomp_mode   = (unsigned) s7snap.decomp_mode;
-	decomp.decomp_offset = (unsigned) s7snap.decomp_offset;
+	decomp_mode   = (unsigned) s7snap.decomp_mode;
+	decomp_offset = (unsigned) s7snap.decomp_offset;
 
 	for (int i = 0; i < SPC7110_DECOMP_BUFFER_SIZE; i++)
-		decomp.decomp_buffer[i] = s7snap.decomp_buffer[i];
+		decomp_buffer[i] = s7snap.decomp_buffer[i];
 
-	decomp.decomp_buffer_rdoffset = (unsigned) s7snap.decomp_buffer_rdoffset;
-	decomp.decomp_buffer_wroffset = (unsigned) s7snap.decomp_buffer_wroffset;
-	decomp.decomp_buffer_length   = (unsigned) s7snap.decomp_buffer_length;
+	decomp_buffer_rdoffset = (unsigned) s7snap.decomp_buffer_rdoffset;
+	decomp_buffer_wroffset = (unsigned) s7snap.decomp_buffer_wroffset;
+	decomp_buffer_length   = (unsigned) s7snap.decomp_buffer_length;
 
 	for (int i = 0; i < 32; i++)
 	{
-		decomp.context[i].index  = s7snap.context[i].index;
-		decomp.context[i].invert = s7snap.context[i].invert;
+		context[i].index  = s7snap.context[i].index;
+		context[i].invert = s7snap.context[i].invert;
 	}
 
 	s7_update_time(0);

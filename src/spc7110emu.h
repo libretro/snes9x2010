@@ -20,8 +20,6 @@
 
 #include "spc7110dec.h"
 
-extern SPC7110Decomp decomp;
-
 extern uint8 r4809; //compression length low
 extern uint8 r480a; //compression length high
 
