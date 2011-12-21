@@ -4,8 +4,6 @@
 #ifndef SPC_DSP_H
 #define SPC_DSP_H
 
-#include "blargg_common.h"
-
 extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t ); }
 
 #define ECHO_HIST_SIZE		8
@@ -15,14 +13,12 @@ extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, s
 
 // Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
 // Reduces emulation accuracy.
-#define VOICE_COUNT 8
-
-#define EXTRA_SIZE 16
-#define EXTRA_SIZE_DIV_2 8
-
-#define BRR_BUF_SIZE 12
-#define BRR_BUF_SIZE_X2 24
-#define BRR_BLOCK_SIZE 9
+#define VOICE_COUNT		8
+#define EXTRA_SIZE		16
+#define EXTRA_SIZE_DIV_2	8
+#define BRR_BUF_SIZE		12
+#define BRR_BUF_SIZE_X2		24
+#define BRR_BLOCK_SIZE		9
 
 // DSP register addresses
 
@@ -45,16 +41,16 @@ extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, s
 #define R_FIR	0x0F	// 8 coefficients at 0x0F, 0x1F ... 0x7F
 
 // Voice registers
-#define V_VOLL 0x00
-#define V_VOLR 0x01
-#define V_PITCHL 0x02
-#define V_PITCHH 0x03
-#define V_SRCN 0x04
-#define V_ADSR0 0x05
-#define V_ADSR1 0x06
-#define V_GAIN 0x07
-#define V_ENVX 0x08
-#define V_OUTX 0x09
+#define V_VOLL		0x00
+#define V_VOLR		0x01
+#define V_PITCHL	0x02
+#define V_PITCHH	0x03
+#define V_SRCN		0x04
+#define V_ADSR0		0x05
+#define V_ADSR1		0x06
+#define V_GAIN		0x07
+#define V_ENVX		0x08
+#define V_OUTX		0x09
 
 #define REGISTER_COUNT 128
 
@@ -62,8 +58,6 @@ extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, s
 #define ENV_ATTACK	1
 #define ENV_DECAY	2
 #define ENV_SUSTAIN	3
-
-typedef BOOST::uint8_t uint8_t;
 
 typedef struct
 {
@@ -167,9 +161,6 @@ typedef struct
 
 extern dsp_state_t dsp_m;
 
-typedef BOOST::int8_t   int8_t;
-typedef BOOST::int16_t int16_t;
-
 #if !SPC_NO_COPY_STATE_FUNCS
 
 typedef struct {
@@ -181,7 +172,8 @@ void spc_copier_copy(spc_state_copy_t * copier, void* state, size_t size );
 int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size);
 void spc_copier_extra(spc_state_copy_t * copier);
 
-#define SPC_COPY( type, state ) state = (BOOST::type) spc_copier_copy_int(&copier, state, sizeof (BOOST::type) );
+#define SPC_COPY( type, state ) state = (type) spc_copier_copy_int(&copier, state, sizeof (type) );
 
 #endif
+
 #endif

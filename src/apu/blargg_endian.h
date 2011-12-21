@@ -4,7 +4,55 @@
 #ifndef BLARGG_ENDIAN
 #define BLARGG_ENDIAN
 
-#include "blargg_common.h"
+// Uncomment to enable platform-specific (and possibly non-portable) optimizations
+// FIXME: PS3 doesn't yet work with this, figure out a way - intrinsics instead of inline ASM?
+#ifndef __CELLOS_LV2__
+#define BLARGG_NONPORTABLE 1
+#endif
+
+// Uncomment if automatic byte-order determination doesn't work
+//#define BLARGG_BIG_ENDIAN 1
+
+// Uncomment if you get errors in the bool section of blargg_common.h
+//#define BLARGG_COMPILER_HAS_BOOL 1
+
+// BLARGG_COMPILER_HAS_BOOL: If 0, provides bool support for old compiler. If 1,
+// compiler is assumed to support bool. If undefined, availability is determined.
+#ifndef BLARGG_COMPILER_HAS_BOOL
+	#if defined (__MWERKS__)
+		#if !__option(bool)
+			#define BLARGG_COMPILER_HAS_BOOL 0
+		#endif
+	#elif defined (_MSC_VER)
+		#if _MSC_VER < 1100
+			#define BLARGG_COMPILER_HAS_BOOL 0
+		#endif
+	#elif defined (__GNUC__)
+		// supports bool
+	#elif __cplusplus < 199711
+		#define BLARGG_COMPILER_HAS_BOOL 0
+	#endif
+#endif
+
+#if defined (BLARGG_COMPILER_HAS_BOOL) && !BLARGG_COMPILER_HAS_BOOL
+	typedef int bool;
+	const bool true  = 1;
+	const bool false = 0;
+#endif
+
+#if UINT_MAX < 0xFFFFFFFF || ULONG_MAX == 0xFFFFFFFF
+	typedef unsigned long blargg_ulong;
+#else
+	typedef unsigned blargg_ulong;
+#endif
+
+// HAVE_STDINT_H: If defined, use <stdint.h> for int8_t etc.
+#if defined (HAVE_STDINT_H)
+	#include <stdint.h>
+// HAVE_INTTYPES_H: If defined, use <stdint.h> for int8_t etc.
+#elif defined (HAVE_INTTYPES_H)
+	#include <inttypes.h>
+#endif
 
 // BLARGG_CPU_CISC: Defined if CPU has very few general-purpose registers (< 16)
 #if defined (_M_IX86) || defined (_M_IA64) || defined (__i486__) || \
@@ -82,10 +130,10 @@ inline void set_le32( void* p, blargg_ulong n )
 #if BLARGG_NONPORTABLE
 	// Optimized implementation if byte order is known
 	#if BLARGG_LITTLE_ENDIAN
-		#define GET_LE16( addr )        (*(BOOST::uint16_t*) (addr))
-		#define GET_LE32( addr )        (*(BOOST::uint32_t*) (addr))
-		#define SET_LE16( addr, data )  (void) (*(BOOST::uint16_t*) (addr) = (data))
-		#define SET_LE32( addr, data )  (void) (*(BOOST::uint32_t*) (addr) = (data))
+		#define GET_LE16( addr )        (*(uint16_t*) (addr))
+		#define GET_LE32( addr )        (*(uint32_t*) (addr))
+		#define SET_LE16( addr, data )  (void) (*(uint16_t*) (addr) = (data))
+		#define SET_LE32( addr, data )  (void) (*(uint32_t*) (addr) = (data))
 	#elif BLARGG_BIG_ENDIAN
 		#if BLARGG_CPU_POWERPC
 			// PowerPC has special byte-reversed instructions
@@ -116,10 +164,9 @@ inline void set_le32( void* p, blargg_ulong n )
 
 // auto-selecting versions
 
-inline void set_le( BOOST::uint16_t* p, unsigned     n ) { SET_LE16( p, n ); }
-inline void set_le( BOOST::uint32_t* p, blargg_ulong n ) { SET_LE32( p, n ); }
-inline unsigned     get_le( BOOST::uint16_t* p ) { return GET_LE16( p ); }
-inline blargg_ulong get_le( BOOST::uint32_t* p ) { return GET_LE32( p ); }
+inline void set_le( uint16_t* p, unsigned     n ) { SET_LE16( p, n ); }
+inline void set_le( uint32_t* p, blargg_ulong n ) { SET_LE32( p, n ); }
+inline unsigned     get_le( uint16_t* p ) { return GET_LE16( p ); }
+inline blargg_ulong get_le( uint32_t* p ) { return GET_LE32( p ); }
 
 #endif
-

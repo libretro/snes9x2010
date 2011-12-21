@@ -5,53 +5,42 @@
 #define SNES_SPC_H
 
 #include "SPC_DSP.h"
-#include "blargg_endian.h"
 
-#define REG_COUNT 0x10
-
-#define PORT_COUNT 4
-
-#define TEMPO_UNIT 0x100
-
-#define STATE_SIZE 68 * 1024L // maximum space needed when saving
-
-#define TIMER_COUNT 3
-
-#define ROM_SIZE 0x40
+#define REG_COUNT	0x10
+#define PORT_COUNT	4
+#define TEMPO_UNIT	0x100
+#define STATE_SIZE	68 * 1024L // maximum space needed when saving
+#define TIMER_COUNT	3
+#define ROM_SIZE	0x40
+#define ROM_ADDR	0xFFC0
 
 // 1024000 SPC clocks per second, sample pair every 32 clocks
 #define CLOCKS_PER_SAMPLE 32
 
-#define R_TEST 0x0
-#define R_CONTROL 0x1
-#define R_DSPADDR 0x2
-#define R_DSPDATA 0x3
-#define R_CPUIO0 0x4
-#define R_CPUIO1 0x5
-#define R_CPUIO2 0x6
-#define R_CPUIO3 0x7
-#define R_F8 0x8
-#define R_F9 0x9
-#define R_T0TARGET 0xA
-#define R_T1TARGET 0xB
-#define R_T2TARGET 0xC
-#define R_T0OUT 0xD
-#define R_T1OUT 0xE
-#define R_T2OUT 0xF
-
-#define ROM_ADDR 0xFFC0
+#define R_TEST		0x0
+#define R_CONTROL	0x1
+#define R_DSPADDR	0x2
+#define R_DSPDATA	0x3
+#define R_CPUIO0	0x4
+#define R_CPUIO1	0x5
+#define R_CPUIO2	0x6
+#define R_CPUIO3	0x7
+#define R_F8		0x8
+#define R_F9		0x9
+#define R_T0TARGET	0xA
+#define R_T1TARGET	0xB
+#define R_T2TARGET	0xC
+#define R_T0OUT		0xD
+#define R_T1OUT		0xE
+#define R_T2OUT		0xF
 
 // Value that padding should be filled with
 #define CPU_PAD_FILL 0xFF
-
-typedef BOOST::uint8_t uint8_t;
 
 #if !SPC_NO_COPY_STATE_FUNCS
 	// Saves/loads state
 	void spc_copy_state( unsigned char** io, dsp_copy_func_t );
 #endif
-
-typedef BOOST::uint16_t uint16_t;
 
 // rel_time_t - Time relative to m_spc_time. Speeds up code a bit by eliminating need to
 // constantly add m_spc_time to time from CPU. CPU uses time that ends at
