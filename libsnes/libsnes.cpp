@@ -331,9 +331,9 @@ void snes_init()
 
 	CPU.Flags = 0;
 
-	if (!Memory.Init() || !S9xInitAPU())
+	if (!Init() || !S9xInitAPU())
 	{
-		Memory.Deinit();
+		Deinit();
 		S9xDeinitAPU();
 		fprintf(stderr, "[libsnes]: Failed to init Memory or APU.\n");
 		exit(1);
@@ -442,7 +442,7 @@ bool snes_load_cartridge_normal(const char *, const uint8_t *rom_data, unsigned 
    // Hack. S9x cannot do stuff from RAM. <_<
    memstream_set_buffer((uint8_t*)rom_data, rom_size);
 
-   int loaded = Memory.LoadROM("foo");
+   int loaded = LoadROM("foo");
    if (!loaded)
    {
       fprintf(stderr, "[libsnes]: Rom loading failed...\n");
@@ -477,7 +477,7 @@ void snes_run()
 void snes_term()
 {
    S9xDeinitAPU();
-   Memory.Deinit();
+   Deinit();
    S9xGraphicsDeinit();
    S9xUnmapAllControls();
 }

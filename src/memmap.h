@@ -218,7 +218,7 @@
 #define MAP_TYPE_ROM 1
 #define MAP_TYPE_RAM 2
 
-struct CMemory
+typedef struct
 {
 	int32	HeaderCount;
 
@@ -259,35 +259,21 @@ struct CMemory
 	uint32	CalculatedSize;
 	uint32	CalculatedChecksum;
 
-	bool8	Init (void);
-	void	Deinit (void);
+} CMemory;
 
-	uint32	FileLoader (uint8 *, const char *, int32);
-	bool8	LoadROM (const char *);
-	bool8	LoadMultiCart (const char *, const char *);
-	bool8	LoadSufamiTurbo (const char *, const char *);
-	bool8	LoadSameGame (const char *, const char *);
-	bool8	LoadSRAM (const char *);
-	bool8	SaveSRAM (const char *);
+bool8	Init (void);
+void	Deinit (void);
 
-	void	InitROM (void);
+bool8	LoadROM (const char *);
+bool8	LoadMultiCart (const char *, const char *);
+bool8	LoadSufamiTurbo (const char *, const char *);
+bool8	LoadSameGame (const char *, const char *);
+bool8	LoadSRAM (const char *);
+bool8	SaveSRAM (const char *);
 
-	void	map_WriteProtectROM (void);
-	void	Map_NoMAD1LoROMMap (void);
-	void	Map_ROM24MBSLoROMMap (void);
-	void	Map_SufamiTurboLoROMMap (void);
-	void	Map_SufamiTurboPseudoLoROMMap (void);
-	void	Map_SuperFXLoROMMap (void);
-	void	Map_SetaDSPLoROMMap (void);
-	void	Map_SDD1LoROMMap (void);
-	void	Map_SA1LoROMMap (void);
-	void	Map_ExtendedHiROMMap (void);
-	void	Map_SameGameHiROMMap (void);
-	void	Map_SPC7110HiROMMap (void);
+void	InitROM (void);
 
-	const char *	StaticRAMSize (void);
-	const char *	Size (void);
-};
+void	map_WriteProtectROM (void);
 
 struct SMulti
 {

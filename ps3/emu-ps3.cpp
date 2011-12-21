@@ -439,7 +439,7 @@ void emulator_toggle_sound(uint64_t soundmode)
 static void emulator_save_sram(void)
 {
 	if(!Settings.SRAMWriteProtect)
-		Memory.SaveSRAM(S9xGetFilename(".srm", SRAM_DIR));
+		SaveSRAM(S9xGetFilename(".srm", SRAM_DIR));
 
 	S9xSaveCheatFile(S9xGetFilename(".cht", CHEAT_DIR));
 }
@@ -899,9 +899,9 @@ static bool emulator_init_system(void)
 	sys_lwmutex_lock(&audio_lock, SYS_NO_TIMEOUT);
 
 	if(emulator_initialized)
-		Memory.Deinit();
+		Deinit();
 
-	Memory.Init();
+	Init();
 
 	if(emulator_initialized)
 		S9xDeinitAPU();
@@ -917,7 +917,7 @@ static bool emulator_init_system(void)
 	if (current_rom == NULL)
 		return false; //No ROM to load
 
-	if (!Memory.LoadROM(current_rom))
+	if (!LoadROM(current_rom))
 		return false; //Load ROM failed
 
 	if(Settings.CurrentROMisMultitapCompatible)
@@ -992,7 +992,7 @@ static bool emulator_init_system(void)
 	else
 		Emulator_SetControllerMode(TWO_JOYSTICKS);
 
-	Memory.LoadSRAM(S9xGetFilename(".srm", SRAM_DIR));
+	LoadSRAM(S9xGetFilename(".srm", SRAM_DIR));
 
 	GFX.Pitch = 1024;
 	GFX.Screen = (uint16_t *)memalign(1024, 489472);

@@ -229,7 +229,7 @@ bool LoadSRAM (char * filepath, bool silent)
 	if(!FindDevice(filepath, &device))
 		return 0;
 
-	Memory.ClearSRAM();
+	ClearSRAM();
 
 	int size = Memory.SRAMSize ? (1 << (Memory.SRAMSize + 3)) * 128 : 0;
 

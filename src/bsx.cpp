@@ -539,7 +539,7 @@ static void BSX_Map (void)
 
 		BSX.dirty2 = FALSE;
 
-		Memory.map_WriteProtectROM();
+		map_WriteProtectROM();
 		return;
 	}
 
@@ -573,7 +573,7 @@ static void BSX_Map (void)
 	BSX.dirty  = FALSE;
 	BSX.dirty2 = FALSE;
 
-	Memory.map_WriteProtectROM();
+	map_WriteProtectROM();
 }
 
 static uint8 BSX_Get_Bypass_FlashIO (uint16 offset)
