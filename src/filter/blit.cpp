@@ -190,7 +190,7 @@ static uint8		*XDelta = NULL;
 
 bool8 S9xBlitFilterInit (void)
 {
-	XDelta = new uint8[SNES_WIDTH * SNES_HEIGHT_EXTENDED * 4];
+	XDelta = (uint8*)malloc(SNES_WIDTH * SNES_HEIGHT_EXTENDED * 4);
 	if (!XDelta)
 		return (FALSE);
 
@@ -203,7 +203,7 @@ void S9xBlitFilterDeinit (void)
 {
 	if (XDelta)
 	{
-		delete[] XDelta;
+		free(XDelta);
 		XDelta = NULL;
 	}
 }

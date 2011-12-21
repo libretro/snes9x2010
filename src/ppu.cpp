@@ -3979,7 +3979,7 @@ static void S9xDoDMA (void)
 			{
 				if (d->AAddress == 0x4800 || d->ABank == 0x50)
 				{
-					spc7110_dma = new uint8[d->TransferBytes];
+					spc7110_dma = (uint8*)malloc(d->TransferBytes);
 					for (int i = 0; i < d->TransferBytes; i++)
 						spc7110_dma[i] = decomp.read();
 
@@ -4893,7 +4893,7 @@ static void S9xDoDMA (void)
 		if (Settings.SPC7110)
 		{
 			if (spc7110_dma)
-				delete [] spc7110_dma;
+				free(spc7110_dma);
 		}
 
 		CPU.InDMA = FALSE;

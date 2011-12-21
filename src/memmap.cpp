@@ -994,51 +994,73 @@ static uint32 ReadUPSPointer (const uint8 *data, uint32 &addr, unsigned size)
 static bool8 ReadUPSPatch (FILE * r, long, int32 &rom_size)
 {
 	//Reader lacks size() and rewind(), so we need to read in the file to get its size
-	uint8 *data = new uint8[8 * 1024 * 1024];  //allocate a lot of memory, better safe than sorry ...
+	uint8 *data = (uint8*)malloc(8 * 1024 * 1024);  //allocate a lot of memory, better safe than sorry ...
 	uint32 size = 0;
-	while(true) {
+	while(true)
+	{
 		int value = fgetc(r);
-		if(value == EOF) break;
+		if(value == EOF)
+			break;
 		data[size++] = value;
-		if(size >= 8 * 1024 * 1024) {
+		if(size >= 8 * 1024 * 1024)
+		{
 			//prevent buffer overflow: SNES-made UPS patches should never be this big anyway ...
-			delete[] data;
+			free(data);
 			return false;
 		}
 	}
 
 	//4-byte header + 1-byte input size + 1-byte output size + 4-byte patch CRC32 + 4-byte unpatched CRC32 + 4-byte patched CRC32
-	if(size < 18) { delete[] data; return false; }  //patch is too small
+	if(size < 18) //patch is too small
+	{
+		free(data);
+		return false;
+	}  
 
 	uint32 addr = 0;
-	if(data[addr++] != 'U') { delete[] data; return false; }  //patch has an invalid header
-	if(data[addr++] != 'P') { delete[] data; return false; }  //...
-	if(data[addr++] != 'S') { delete[] data; return false; }  //...
-	if(data[addr++] != '1') { delete[] data; return false; }  //...
+	if(data[addr++] != 'U') { free(data); return false; }  //patch has an invalid header
+	if(data[addr++] != 'P') { free(data); return false; }  //...
+	if(data[addr++] != 'S') { free(data); return false; }  //...
+	if(data[addr++] != '1') { free(data); return false; }  //...
 
 	uint32 patch_crc32 = caCRC32(data, size - 4, 0xffffffff);  //don't include patch CRC32 itself in CRC32 calculation
 	uint32 rom_crc32 = caCRC32(Memory.ROM, rom_size, 0xffffffff);
 	uint32 px_crc32 = (data[size - 12] << 0) + (data[size - 11] << 8) + (data[size - 10] << 16) + (data[size -  9] << 24);
 	uint32 py_crc32 = (data[size -  8] << 0) + (data[size -  7] << 8) + (data[size -  6] << 16) + (data[size -  5] << 24);
 	uint32 pp_crc32 = (data[size -  4] << 0) + (data[size -  3] << 8) + (data[size -  2] << 16) + (data[size -  1] << 24);
-	if(patch_crc32 != pp_crc32) { delete[] data; return false; }  //patch is corrupted
-	if((rom_crc32 != px_crc32) && (rom_crc32 != py_crc32)) { delete[] data; return false; }  //patch is for a different ROM
 
+	if(patch_crc32 != pp_crc32) // patch is corrupted
+	{
+		free(data);
+		return false;
+	}
+
+	if((rom_crc32 != px_crc32) && (rom_crc32 != py_crc32)) //patch is for a different ROM
+	{
+		free(data);
+		return false;
+	}  
 	uint32 px_size = ReadUPSPointer(data, addr, size);
 	uint32 py_size = ReadUPSPointer(data, addr, size);
 	uint32 out_size = ((uint32) rom_size == px_size) ? py_size : px_size;
-	if(out_size > MAX_ROM_SIZE) { delete[] data; return false; }  //applying this patch will overflow Memory.ROM buffer
+
+	if(out_size > MAX_ROM_SIZE) //applying this patch will overflow Memory.ROM buffer
+	{
+		free(data);
+		return false;
+	}  
 
 	//fill expanded area with 0x00s; so that XORing works as expected below.
 	//note that this is needed (and works) whether output ROM is larger or smaller than pre-patched ROM
-	for(unsigned i = min((uint32) rom_size, out_size); i < max((uint32) rom_size, out_size); i++) {
+	for(unsigned i = min((uint32) rom_size, out_size); i < max((uint32) rom_size, out_size); i++)
 		Memory.ROM[i] = 0x00;
-	}
 
 	uint32 relative = 0;
-	while(addr < size - 12) {
+	while(addr < size - 12)
+	{
 		relative += ReadUPSPointer(data, addr, size);
-		while(addr < size - 12) {
+		while(addr < size - 12)
+		{
 			uint8 x = data[addr++];
 			Memory.ROM[relative++] ^= x;
 			if(!x) break;
@@ -1046,7 +1068,7 @@ static bool8 ReadUPSPatch (FILE * r, long, int32 &rom_size)
 	}
 
 	rom_size = out_size;
-	delete[] data;
+	free(data);
 
 	uint32 out_crc32 = caCRC32(Memory.ROM, rom_size, 0xffffffff);
 	if(((rom_crc32 == px_crc32) && (out_crc32 == py_crc32))
