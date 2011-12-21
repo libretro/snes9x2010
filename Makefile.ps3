@@ -50,7 +50,6 @@ EMULATOR_VERSION     = 1.0
 
 PPU_SRCS		+= $(SNES9X_API_DIR)/tile.cpp \
 			$(SNES9X_API_DIR)/cpu.cpp \
-			$(SNES9X_API_DIR)/gfx.cpp \
 			$(SNES9X_API_DIR)/ppu.cpp \
 			$(SNES9X_API_DIR)/sa1.cpp \
 			$(SNES9X_API_DIR)/fxemu.cpp \

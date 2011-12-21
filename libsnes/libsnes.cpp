@@ -12,7 +12,7 @@
 #include "../src/cpuexec.h"
 #include "../src/srtc.h"
 #include "../src/apu.h"
-#include "../src/gfx.h"
+#include "../src/ppu.h"
 #include "../src/snapshot.h"
 #include "../src/controls.h"
 #include "../src/cheats.h"

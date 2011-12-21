@@ -25,7 +25,7 @@
 #include "gui/gui.h"
 #include "input.h"
 
-#include "../src/gfx.h"
+#include "../src/ppu.h"
 #include "../src/snes9x.h"
 
 /*** Snes9x GFX Buffer ***/
