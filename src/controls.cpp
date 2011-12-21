@@ -177,7 +177,7 @@
 #include "snes9x.h"
 #include "memmap.h"
 #include "getset.h"
-#include "apu/apu.h"
+#include "apu.h"
 #include "snapshot.h"
 #include "controls.h"
 #include "crosshairs.h"

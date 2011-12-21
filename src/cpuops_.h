@@ -174,7 +174,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#include "apu/apu.h"
+#include "apu.h"
 
 // for "Magic WDM" features
 

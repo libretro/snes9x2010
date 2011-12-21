@@ -45,7 +45,7 @@
 #include "../src/cheats.h"
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
-#include "../src/apu/apu.h"
+#include "../src/apu.h"
 #include "../src/controls.h"
 #include "../src/snapshot.h"
 #include "../src/display.h"

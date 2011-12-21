@@ -180,7 +180,7 @@
 #include "getset.h"
 #include "cpuops.h"
 #include "dma.h"
-#include "apu/apu.h"
+#include "apu.h"
 #include "fxinst.h"
 #include "fxemu.h"
 #include "controls.h"

@@ -185,12 +185,12 @@
 #include <limits.h>
 
 #include "blargg_endian.h"
-#include "SPC_DSP.h"
 
-#include "../snes9x.h"
 #include "apu.h"
-#include "../snapshot.h"
-#include "../display.h"
+
+#include "snes9x.h"
+#include "snapshot.h"
+#include "display.h"
 
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512
@@ -1723,8 +1723,6 @@ void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 /***********************************************************************************
 	SNES SPC
 ***********************************************************************************/
-
-#include "SNES_SPC.h"
 
 spc_state_t m;
 static signed char reg_times [256];

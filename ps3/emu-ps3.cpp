@@ -27,7 +27,7 @@
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
 #include "../src/cpuexec.h"
-#include "../src/apu/apu.h"
+#include "../src/apu.h"
 #include "../src/ppu.h"
 #include "../src/controls.h"
 #include "../src/cheats.h"

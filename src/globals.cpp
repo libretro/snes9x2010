@@ -179,7 +179,7 @@
 #include "memmap.h"
 #include "getset.h"
 #include "dma.h"
-#include "apu/apu.h"
+#include "apu.h"
 #include "fxinst.h"
 #include "fxemu.h"
 #include "srtc.h"

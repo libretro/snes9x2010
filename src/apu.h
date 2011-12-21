@@ -1,0 +1,510 @@
+/***********************************************************************************
+  Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
+
+  (c) Copyright 1996 - 2002  Gary Henderson (gary.henderson@ntlworld.com),
+                             Jerremy Koot (jkoot@snes9x.com)
+
+  (c) Copyright 2002 - 2004  Matthew Kendora
+
+  (c) Copyright 2002 - 2005  Peter Bortas (peter@bortas.org)
+
+  (c) Copyright 2004 - 2005  Joel Yliluoma (http://iki.fi/bisqwit/)
+
+  (c) Copyright 2001 - 2006  John Weidman (jweidman@slip.net)
+
+  (c) Copyright 2002 - 2006  funkyass (funkyass@spam.shaw.ca),
+                             Kris Bleakley (codeviolation@hotmail.com)
+
+  (c) Copyright 2002 - 2010  Brad Jorsch (anomie@users.sourceforge.net),
+                             Nach (n-a-c-h@users.sourceforge.net),
+                             zones (kasumitokoduck@yahoo.com)
+
+  (c) Copyright 2006 - 2007  nitsuja
+
+  (c) Copyright 2009 - 2010  BearOso,
+                             OV2
+
+
+  BS-X C emulator code
+  (c) Copyright 2005 - 2006  Dreamer Nom,
+                             zones
+
+  C4 x86 assembler and some C emulation code
+  (c) Copyright 2000 - 2003  _Demo_ (_demo_@zsnes.com),
+                             Nach,
+                             zsKnight (zsknight@zsnes.com)
+
+  C4 C++ code
+  (c) Copyright 2003 - 2006  Brad Jorsch,
+                             Nach
+
+  DSP-1 emulator code
+  (c) Copyright 1998 - 2006  _Demo_,
+                             Andreas Naive (andreasnaive@gmail.com),
+                             Gary Henderson,
+                             Ivar (ivar@snes9x.com),
+                             John Weidman,
+                             Kris Bleakley,
+                             Matthew Kendora,
+                             Nach,
+                             neviksti (neviksti@hotmail.com)
+
+  DSP-2 emulator code
+  (c) Copyright 2003         John Weidman,
+                             Kris Bleakley,
+                             Lord Nightmare (lord_nightmare@users.sourceforge.net),
+                             Matthew Kendora,
+                             neviksti
+
+  DSP-3 emulator code
+  (c) Copyright 2003 - 2006  John Weidman,
+                             Kris Bleakley,
+                             Lancer,
+                             z80 gaiden
+
+  DSP-4 emulator code
+  (c) Copyright 2004 - 2006  Dreamer Nom,
+                             John Weidman,
+                             Kris Bleakley,
+                             Nach,
+                             z80 gaiden
+
+  OBC1 emulator code
+  (c) Copyright 2001 - 2004  zsKnight,
+                             pagefault (pagefault@zsnes.com),
+                             Kris Bleakley
+                             Ported from x86 assembler to C by sanmaiwashi
+
+  SPC7110 and RTC C++ emulator code used in 1.39-1.51
+  (c) Copyright 2002         Matthew Kendora with research by
+                             zsKnight,
+                             John Weidman,
+                             Dark Force
+
+  SPC7110 and RTC C++ emulator code used in 1.52+
+  (c) Copyright 2009         byuu,
+                             neviksti
+
+  S-DD1 C emulator code
+  (c) Copyright 2003         Brad Jorsch with research by
+                             Andreas Naive,
+                             John Weidman
+
+  S-RTC C emulator code
+  (c) Copyright 2001 - 2006  byuu,
+                             John Weidman
+
+  ST010 C++ emulator code
+  (c) Copyright 2003         Feather,
+                             John Weidman,
+                             Kris Bleakley,
+                             Matthew Kendora
+
+  Super FX x86 assembler emulator code
+  (c) Copyright 1998 - 2003  _Demo_,
+                             pagefault,
+                             zsKnight
+
+  Super FX C emulator code
+  (c) Copyright 1997 - 1999  Ivar,
+                             Gary Henderson,
+                             John Weidman
+
+  Sound emulator code used in 1.5-1.51
+  (c) Copyright 1998 - 2003  Brad Martin
+  (c) Copyright 1998 - 2006  Charles Bilyue'
+
+  Sound emulator code used in 1.52+
+  (c) Copyright 2004 - 2007  Shay Green (gblargg@gmail.com)
+
+  SH assembler code partly based on x86 assembler code
+  (c) Copyright 2002 - 2004  Marcus Comstedt (marcus@mc.pp.se)
+
+  2xSaI filter
+  (c) Copyright 1999 - 2001  Derek Liauw Kie Fa
+
+  HQ2x, HQ3x, HQ4x filters
+  (c) Copyright 2003         Maxim Stepin (maxim@hiend3d.com)
+
+  NTSC filter
+  (c) Copyright 2006 - 2007  Shay Green
+
+  GTK+ GUI code
+  (c) Copyright 2004 - 2010  BearOso
+
+  Win32 GUI code
+  (c) Copyright 2003 - 2006  blip,
+                             funkyass,
+                             Matthew Kendora,
+                             Nach,
+                             nitsuja
+  (c) Copyright 2009 - 2010  OV2
+
+  Mac OS GUI code
+  (c) Copyright 1998 - 2001  John Stiles
+  (c) Copyright 2001 - 2010  zones
+
+
+  Specific ports contains the works of other authors. See headers in
+  individual files.
+
+
+  Snes9x homepage: http://www.snes9x.com/
+
+  Permission to use, copy, modify and/or distribute Snes9x in both binary
+  and source form, for non-commercial purposes, is hereby granted without
+  fee, providing that this license information and copyright notice appear
+  with all copies and any derived work.
+
+  This software is provided 'as-is', without any express or implied
+  warranty. In no event shall the authors be held liable for any damages
+  arising from the use of this software or it's derivatives.
+
+  Snes9x is freeware for PERSONAL USE only. Commercial users should
+  seek permission of the copyright holders first. Commercial use includes,
+  but is not limited to, charging money for Snes9x or software derived from
+  Snes9x, including Snes9x or derivatives in commercial game bundles, and/or
+  using Snes9x as a promotion for your commercial product.
+
+  The copyright holders request that bug fixes and improvements to the code
+  should be forwarded to them so everyone can benefit from the modifications
+  in future versions.
+
+  Super NES and Super Nintendo Entertainment System are trademarks of
+  Nintendo Co., Limited and its subsidiary companies.
+ ***********************************************************************************/
+
+
+#ifndef _APU_H_
+#define _APU_H_
+
+#include "snes9x.h"
+
+extern "C" { typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t ); }
+
+#define ECHO_HIST_SIZE		8
+#define ECHO_HIST_SIZE_X2	16
+
+// Sound control
+
+// Mutes voices corresponding to non-zero bits in mask (issues repeated KOFF events).
+// Reduces emulation accuracy.
+#define VOICE_COUNT		8
+#define EXTRA_SIZE		16
+#define EXTRA_SIZE_DIV_2	8
+#define BRR_BUF_SIZE		12
+#define BRR_BUF_SIZE_X2		24
+#define BRR_BLOCK_SIZE		9
+
+// DSP register addresses
+
+// Global registers
+#define R_MVOLL 0x0C
+#define R_MVOLR 0x1C
+#define R_EVOLL 0x2C
+#define R_EVOLR 0x3C
+#define R_KON	0x4C
+#define R_KOFF	0x5C
+#define R_FLG	0x6C
+#define R_ENDX	0x7C
+#define R_EFB	0x0D
+#define R_EON	0x4D
+#define R_PMON	0x2D
+#define R_NON	0x3D
+#define R_DIR	0x5D
+#define R_ESA	0x6D
+#define R_EDL	0x7D
+#define R_FIR	0x0F	// 8 coefficients at 0x0F, 0x1F ... 0x7F
+
+// Voice registers
+#define V_VOLL		0x00
+#define V_VOLR		0x01
+#define V_PITCHL	0x02
+#define V_PITCHH	0x03
+#define V_SRCN		0x04
+#define V_ADSR0		0x05
+#define V_ADSR1		0x06
+#define V_GAIN		0x07
+#define V_ENVX		0x08
+#define V_OUTX		0x09
+
+#define REGISTER_COUNT 128
+
+#define ENV_RELEASE	0
+#define ENV_ATTACK	1
+#define ENV_DECAY	2
+#define ENV_SUSTAIN	3
+
+typedef struct
+{
+	int buf [BRR_BUF_SIZE_X2];// decoded samples (twice the size to simplify wrap handling)
+	int buf_pos;            // place in buffer where next samples will be decoded
+	int interp_pos;         // relative fractional position in sample (0x1000 = 1.0)
+	int brr_addr;           // address of current BRR block
+	int brr_offset;         // current decoding offset in BRR block
+	uint8_t* regs;          // pointer to voice's DSP registers
+	int vbit;               // bitmask for voice: 0x01 for voice 0, 0x02 for voice 1, etc.
+	int kon_delay;          // KON delay/current setup phase
+	int env_mode;
+	int env;                // current envelope level
+	int hidden_env;         // used by GAIN mode 7, very obscure quirk
+	uint8_t t_envx_out;
+} dsp_voice_t;
+
+// Initializes DSP and has it use the 64K RAM provided
+void dsp_init( void* ram_64k );
+
+// Sets destination for output samples. If out is NULL or out_size is 0,
+// doesn't generate any.
+void dsp_set_output( short* out, int out_size );
+
+// Resets DSP to power-on state
+void dsp_reset();
+
+// Emulates pressing reset switch on SNES
+void dsp_soft_reset();
+
+// Runs DSP for specified number of clocks (~1024000 per second). Every 32 clocks
+// a pair of samples is be generated.
+void dsp_run( int clock_count );
+
+// Saves/loads exact emulator state
+void dsp_copy_state( unsigned char** io, dsp_copy_func_t );
+
+void dsp_soft_reset_common();
+
+typedef struct
+{
+	uint8_t regs [REGISTER_COUNT];
+
+	// Echo history keeps most recent 8 samples (twice the size to simplify wrap handling)
+	int echo_hist [ECHO_HIST_SIZE_X2] [2];
+	int (*echo_hist_pos) [2]; // &echo_hist [0 to 7]
+
+	int every_other_sample; // toggles every sample
+	int kon;                // KON value when last checked
+	int noise;
+	int counter;
+	int echo_offset;        // offset from ESA in echo buffer
+	int echo_length;        // number of bytes that echo_offset will stop at
+	int phase;              // next clock cycle to run (0-31)
+
+	// Hidden registers also written to when main register is written to
+	int new_kon;
+	uint8_t endx_buf;
+	uint8_t envx_buf;
+	uint8_t outx_buf;
+
+	// Temporary state between clocks
+
+	// read once per sample
+	int t_pmon;
+	int t_non;
+	int t_eon;
+	int t_dir;
+	int t_koff;
+
+	// read a few clocks ahead then used
+	int t_brr_next_addr;
+	int t_adsr0;
+	int t_brr_header;
+	int t_brr_byte;
+	int t_srcn;
+	int t_esa;
+	int t_echo_enabled;
+
+	// internal state that is recalculated every sample
+	int t_dir_addr;
+	int t_pitch;
+	int t_output;
+	int t_looped;
+	int t_echo_ptr;
+
+	// left/right sums
+	int t_main_out [2];
+	int t_echo_out [2];
+	int t_echo_in  [2];
+
+	dsp_voice_t voices [VOICE_COUNT];
+
+	// non-emulation state
+	uint8_t* ram; // 64K shared RAM between DSP and SMP
+	short* out;
+	short* out_end;
+	short* out_begin;
+	short extra [EXTRA_SIZE];
+} dsp_state_t;
+
+extern dsp_state_t dsp_m;
+
+#if !SPC_NO_COPY_STATE_FUNCS
+
+typedef struct {
+	dsp_copy_func_t func;
+	unsigned char** buf;
+} spc_state_copy_t;
+
+void spc_copier_copy(spc_state_copy_t * copier, void* state, size_t size );
+int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size);
+void spc_copier_extra(spc_state_copy_t * copier);
+
+#define SPC_COPY( type, state ) state = (type) spc_copier_copy_int(&copier, state, sizeof (type) );
+
+#endif
+
+#define REG_COUNT	0x10
+#define PORT_COUNT	4
+#define TEMPO_UNIT	0x100
+#define STATE_SIZE	68 * 1024L // maximum space needed when saving
+#define TIMER_COUNT	3
+#define ROM_SIZE	0x40
+#define ROM_ADDR	0xFFC0
+
+// 1024000 SPC clocks per second, sample pair every 32 clocks
+#define CLOCKS_PER_SAMPLE 32
+
+#define R_TEST		0x0
+#define R_CONTROL	0x1
+#define R_DSPADDR	0x2
+#define R_DSPDATA	0x3
+#define R_CPUIO0	0x4
+#define R_CPUIO1	0x5
+#define R_CPUIO2	0x6
+#define R_CPUIO3	0x7
+#define R_F8		0x8
+#define R_F9		0x9
+#define R_T0TARGET	0xA
+#define R_T1TARGET	0xB
+#define R_T2TARGET	0xC
+#define R_T0OUT		0xD
+#define R_T1OUT		0xE
+#define R_T2OUT		0xF
+
+// Value that padding should be filled with
+#define CPU_PAD_FILL 0xFF
+
+#if !SPC_NO_COPY_STATE_FUNCS
+	// Saves/loads state
+	void spc_copy_state( unsigned char** io, dsp_copy_func_t );
+#endif
+
+// rel_time_t - Time relative to m_spc_time. Speeds up code a bit by eliminating need to
+// constantly add m_spc_time to time from CPU. CPU uses time that ends at
+// 0 to eliminate reloading end time every instruction. It pays off.
+
+typedef struct
+{
+	int next_time; // time of next event
+	int prescaler;
+	int period;
+	int divider;
+	int enabled;
+	int counter;
+} Timer;
+
+extern bool allow_time_overflow;
+
+uint8_t* spc_run_until_( int end_time );
+
+// Resets SPC to power-on state. This resets your output buffer, so you must
+// call set_output() after this.
+void spc_reset();
+
+// Sets destination for output samples
+void spc_set_output( short* out, int out_size );
+
+// Emulates pressing reset switch on SNES. This resets your output buffer, so
+// you must call set_output() after this.
+void spc_soft_reset();
+
+void spc_reset_common( int timer_counter_init );
+
+// Runs SPC to end_time and starts a new time frame at 0
+void spc_end_frame( int end_time );
+
+// Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc.
+void spc_set_tempo( int );
+
+// Must be called once before using
+void spc_init();
+
+// Support SNES_MEMORY_APURAM
+uint8_t *spc_apuram();
+
+typedef struct
+{
+	Timer timers [TIMER_COUNT];
+
+	uint8_t smp_regs [2] [REG_COUNT];
+
+	struct
+	{
+		int pc;
+		int a;
+		int x;
+		int y;
+		int psw;
+		int sp;
+	} cpu_regs;
+
+	int  dsp_time;
+	int  spc_time;
+
+	int         tempo;
+
+	int         extra_clocks;
+	short*   buf_begin;
+	short const* buf_end;
+	short*   extra_pos;
+	short    extra_buf [EXTRA_SIZE];
+
+	int         rom_enabled;
+	uint8_t     rom    [ROM_SIZE];
+	uint8_t     hi_ram [ROM_SIZE];
+
+	unsigned char cycle_table [256];
+
+	struct
+	{
+		// padding to neutralize address overflow
+		union {
+			uint8_t padding1 [0x100];
+			uint16_t align; // makes compiler align data for 16-bit access
+		} padding1 [1];
+		uint8_t ram      [0x10000];
+		uint8_t padding2 [0x100];
+	} ram;
+} spc_state_t;
+
+extern spc_state_t m;
+
+// Number of samples written to output since last set
+#define SPC_SAMPLE_COUNT() ((m.extra_clocks >> 5) * 2)
+
+typedef void (*apu_callback)();
+
+#define SPC_SAVE_STATE_BLOCK_SIZE	(STATE_SIZE + 8)
+
+bool8 S9xInitAPU (void);
+void S9xDeinitAPU (void);
+void S9xResetAPU (void);
+void S9xSoftResetAPU (void);
+uint8 S9xAPUReadPort (int);
+void S9xAPUWritePort (int, uint8);
+void S9xAPUExecute (void);
+void S9xAPUSetReferenceTime (int32);
+void S9xAPUTimingSetSpeedup (int);
+void S9xAPUAllowTimeOverflow (bool);
+void S9xAPULoadState (uint8 *);
+void S9xAPUSaveState (uint8 *);
+
+bool8 S9xInitSound (int, int);
+
+bool8 S9xSyncSound (void);
+int S9xGetSampleCount (void);
+void S9xFinalizeSamples (void);
+void S9xClearSamples (void);
+bool8 S9xMixSamples (short *, int);
+void S9xSetSamplesAvailableCallback (apu_callback);
+
+#endif
