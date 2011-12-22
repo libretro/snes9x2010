@@ -58,7 +58,8 @@ static GLuint vbo[2];
 static GLfloat m_left, m_right, m_bottom, m_top, m_zNear, m_zFar;
 static char curFragmentShaderPath[3][MAX_PATH_LENGTH];
 
-static std::vector<uint32_t> m_supportedResolutions;
+static uint32_t * m_supportedResolutions;
+static uint32_t m_supportedResolutions_count;
 static CGcontext _cgContext;
 static CGprogram _vertexProgram[3];
 static CGprogram _fragmentProgram[3];
@@ -244,13 +245,13 @@ static void ps3graphics_psgl_init_device(uint32_t resolutionId, uint16_t pal60Hz
 	// Get the dimensions of the screen in question, and do stuff with it :)
 	psglGetDeviceDimensions(psgl_device, &gl_width, &gl_height); 
 
-	// Create a context and bind it to the current display.
-	psgl_context = psglCreateContext();
-
 	if(m_viewport_width == 0)
 		m_viewport_width = gl_width;
 	if(m_viewport_height == 0)
 		m_viewport_height = gl_height;
+
+	// Create a context and bind it to the current display.
+	psgl_context = psglCreateContext();
 
 	psglMakeCurrent(psgl_context, psgl_device);
 
@@ -362,24 +363,33 @@ static void ps3graphics_get_all_available_resolutions()
 
 	// Provide future expandability of the videomode array
 	uint16_t num_videomodes = sizeof(videomode)/sizeof(uint32_t);
+
+	uint32_t resolution_count = 0;
+	for (int i=0; i < num_videomodes; i++)
+		if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO,0))
+			resolution_count++;
+	
+	m_supportedResolutions = (uint32_t*)malloc(resolution_count * sizeof(uint32_t));
+
+	m_supportedResolutions_count = 0;
 	for (int i=0; i < num_videomodes; i++) {
 		if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i], CELL_VIDEO_OUT_ASPECT_AUTO,0))
 		{
-			m_supportedResolutions.push_back(videomode[i]);
+			m_supportedResolutions[m_supportedResolutions_count++] = videomode[i];
 			m_initialResolution = videomode[i];
 
 			if (m_currentResolutionId == videomode[i])
 			{
 				defaultresolution = false;
-				m_currentResolutionPos = m_supportedResolutions.size()-1;
+				m_currentResolutionPos = m_supportedResolutions_count-1;
 			}
 		}
 	}
 
 	// In case we didn't specify a resolution - make the last resolution
 	// that was added to the list (the highest resolution) the default resolution
-	if (m_currentResolutionPos > num_videomodes | defaultresolution)
-		m_currentResolutionPos = m_supportedResolutions.size()-1;
+	if (m_currentResolutionPos > num_videomodes || defaultresolution)
+		m_currentResolutionPos = m_supportedResolutions_count-1;
 }
 
 static void ps3graphics_set_resolution()
@@ -911,16 +921,16 @@ int ps3graphics_check_resolution(uint32_t resId)
 	CELL_VIDEO_OUT_ASPECT_AUTO,0);
 }
 
-void ps3graphics_next_resolution()
+void ps3graphics_next_resolution (void)
 {
-	if(m_currentResolutionPos+1 < m_supportedResolutions.size())
+	if(m_currentResolutionPos+1 < m_supportedResolutions_count)
 	{
 		m_currentResolutionPos++;
 		m_currentResolutionId = m_supportedResolutions[m_currentResolutionPos];
 	}
 }
 
-void ps3graphics_previous_resolution()
+void ps3graphics_previous_resolution (void)
 {
 	if(m_currentResolutionPos > 0)
 	{

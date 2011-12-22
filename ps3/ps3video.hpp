@@ -9,8 +9,7 @@
 
 /* System includes */
 
-#include <string>
-
+#include <string.h>
 #include <cell/codec.h>
 #include <PSGL/psgl.h>
 #include <PSGL/psglu.h>
@@ -18,8 +17,6 @@
 #ifdef CELL_DEBUG_FPS
 #include <sys/sys_time.h>
 #endif
-
-#include <vector>
 
 #include "snes_state/snes_state.h"
 #include "snes_state/config_file.h"
