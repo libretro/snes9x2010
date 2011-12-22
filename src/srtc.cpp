@@ -180,7 +180,6 @@
  *****/
 
 
-#include <limits>
 #include <time.h>
 
 #include "snes9x.h"
