@@ -1,10 +1,10 @@
 /******************************************************************************* 
- * ps3video.cpp - SNES9x PS3
+ * ps3video.c - SNES9x PS3
  *
  *  Created on: Nov 14, 2010
 ********************************************************************************/
 
-#include "ps3video.hpp"
+#include "ps3video.h"
 
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
@@ -1542,7 +1542,7 @@ static void ps3graphics_load_textures(config_file_t *conf, char *attr)
 
 		unsigned width, height;
 
-		lookup_texture tex;
+		struct lookup_texture tex;
 		strncpy(tex.id, id, sizeof(tex.id));
 
 		if(strstr(path, ".PNG") != NULL || strstr(path, ".png") != NULL)
@@ -1581,7 +1581,7 @@ static void ps3graphics_load_imports(config_file_t *conf, char *attr)
 	const char *id = strtok(attr, ";");
 	while (id)
 	{
-		snes_tracker_uniform_info uniform;
+		struct snes_tracker_uniform_info uniform;
 
 		char base[MAX_PATH_LENGTH];
 		strcpy(base, id);
@@ -1662,7 +1662,7 @@ static void ps3graphics_load_imports(config_file_t *conf, char *attr)
 		id = strtok(NULL, ";");
 	}
 
-	snes_tracker_info tracker_info;
+	struct snes_tracker_info tracker_info;
 	tracker_info.wram = (const uint8_t**)&Memory.RAM;
 	tracker_info.info = &info[0];
 	tracker_info.info_elem = info_ptr;

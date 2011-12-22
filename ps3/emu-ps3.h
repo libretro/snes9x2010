@@ -1,5 +1,5 @@
 /******************************************************************************* 
- * emu-ps3.hpp - SNES9xNext PS3
+ * emu-ps3.h - SNES9xNext PS3
  *
  *  Created on: May 4, 2011
 ********************************************************************************/
@@ -20,7 +20,7 @@
 
 #include "emu-ps3-constants.h"
 #include "ps3input.h"
-#include "ps3video.hpp"
+#include "ps3video.h"
 
 /* PS3 frontend constants */
 

@@ -598,7 +598,10 @@ static void producesettingentry(uint64_t switchvalue)
 		case SETTING_SNES9X_ACCESSORY_TYPE:
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
 			{
-				Settings.AccessoryType == 1 ? Settings.AccessoryType = 0 : Settings.AccessoryType = 1;
+				if(Settings.AccessoryType)
+					Settings.AccessoryType = 0;
+				else
+					Settings.AccessoryType = 1;
 				sys_timer_usleep(FILEBROWSER_DELAY);
 			}
 			if(CTRL_START(state))

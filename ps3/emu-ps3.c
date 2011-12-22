@@ -1,5 +1,5 @@
 /******************************************************************************* 
- * emu-ps3.cpp - SNES9xNext PS3
+ * emu-ps3.c - SNES9xNext PS3
  *
  *  Created on: May 4, 2011
 ********************************************************************************/
@@ -18,16 +18,9 @@
 
 #include <sys/spu_initialize.h>
 
-#ifndef __SNC__
 #include <stdio.h>
-#endif
-
 #include <pthread.h>
 #include <sys/synchronization.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
@@ -39,10 +32,6 @@ extern "C" {
 #include "../src/display.h"
 #include "../src/snapshot.h"
 
-#ifdef __cplusplus
-}
-#endif
-
 #include "snes_state/config_file.h"
 
 
@@ -52,8 +41,8 @@ extern "C" {
 
 #include "cellframework2/input/mouse_input.h"
 #include "cellframework2/input/pad_input.h"
-#include "emu-ps3.hpp"
-#include "menu.hpp"
+#include "emu-ps3.h"
+#include "menu.h"
 
 SYS_PROCESS_PARAM(1001, 0x100000)
 
@@ -212,22 +201,19 @@ static void Emulator_SetControllerMode(int m)
 	controller_settings = m;
 }
 
-#define audio_default_params() \
-   cell_audio_params params; \
-   memset(&params, 0, sizeof(params)); \
-   params.channels=2; \
-   params.samplerate=48000; \
-   params.buffer_size=8192; \
-   params.sample_cb = NULL; \
-   params.userdata = NULL;
-
 static void callback_rsound_dialog_ok(int button_type, void *userdata)
 {
 	switch(button_type)
 	{
 		case CELL_MSGDIALOG_BUTTON_ESCAPE:
 			dialog_is_running = false;
-			audio_default_params();
+			struct cell_audio_params params;
+			memset(&params, 0, sizeof(params));
+			params.channels=2;
+			params.samplerate=48000;
+			params.buffer_size=8192;
+			params.sample_cb = NULL;
+			params.userdata = NULL;
 			audio_driver = &cell_audio_audioport;
 			audio_handle = audio_driver->init(&params);
 			Settings.SoundMode = SOUND_MODE_NORMAL;
@@ -394,7 +380,13 @@ static uint32_t emulator_input_cheat()
 
 void emulator_toggle_sound(uint64_t soundmode)
 {
-	audio_default_params();
+	struct cell_audio_params params;
+	memset(&params, 0, sizeof(params));
+	params.channels=2;
+	params.samplerate=48000;
+	params.buffer_size=8192;
+	params.sample_cb = NULL;
+	params.userdata = NULL;
 	switch(soundmode)
 	{
 		case SOUND_MODE_RSOUND:
@@ -1716,7 +1708,7 @@ void _splitpath (const char *path, char *drive, char *dir, char *fname, char *ex
 	}
 }
 
-void _makepath (char *path, const char *, const char *dir, const char *fname, const char *ext)
+void _makepath (char *path, const char * unused, const char *dir, const char *fname, const char *ext)
 {
 	if (dir && *dir)
 	{

@@ -1,5 +1,5 @@
 /******************************************************************************* 
- * menu.cpp - SNES9x PS3
+ * menu.c - SNES9x PS3
  *
  *  Created on: Oct 10, 2010
 ********************************************************************************/
@@ -11,9 +11,9 @@
 
 //emulator-specific
 #include "../src/snes9x.h"
-#include "emu-ps3.hpp"
+#include "emu-ps3.h"
 
-#include "menu.hpp"
+#include "menu.h"
 
 #include "cellframework2/fileio/file_browser.h"
 
