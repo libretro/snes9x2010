@@ -181,6 +181,10 @@
 #include "unzip/unzip.h"
 #endif
 
+#ifdef __linux
+#include <unistd.h>
+#endif
+
 #include "snes9x.h"
 #include "memmap.h"
 #include "getset.h"

@@ -13,7 +13,6 @@ else ifneq ($(findstring win,$(shell uname -a)),)
 endif
 endif
 
-CXX        = g++
 CC         = gcc
 
 ifeq ($(platform), unix)
@@ -27,38 +26,30 @@ else ifeq ($(platform), osx)
 else ifeq ($(platform), ps3)
    TARGET := libsnes.a
    CC = ppu-lv2-gcc
-   CXX = ppu-lv2-g++
    AR = ppu-lv2-ar
 else ifeq ($(platform), xenon)
    TARGET := libsnes.a
    CC = xenon-gcc
-   CXX = xenon-g++
    AR = xenon-ar
    CFLAGS += -D__LIBXENON__ -m32
-   CXXFLAGS += -D__LIBXENON__ -m32
 else ifeq ($(platform), wii)
    TARGET := libsnes.a
    CC = powerpc-eabi-gcc
-   CXX = powerpc-eabi-g++
    AR = powerpc-eabi-ar
    CFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
-   CXXFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 else
    TARGET := snes.dll
    CC = gcc
-   CXX = g++
    fpic := -fPIC
    LD_FLAGS := -fPIC
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=libsnes/link.T
-   CXXFLAGS += -D__WIN32__ -D__WIN32_LIBSNES__
+   CFLAGS += -D__WIN32__ -D__WIN32_LIBSNES__
 endif
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -O0 -g
-CXXFLAGS += -O0 -g
 else
 CFLAGS += -O3
-CXXFLAGS += -O3
 endif
 
 
@@ -68,7 +59,6 @@ INCLUDES   = -I. -I.. -I../apu/
 DEFINES    = -DHAVE_STRINGS_H -DHAVE_STDINT_H -DHAVE_INTTYPES_H -D__LIBSNES__ -DRIGHTSHIFT_IS_SAR
 COMMON_DEFINES += -fomit-frame-pointer -Wall -W -Wno-unused-parameter -DNDEBUG=1 $(fpic)
 
-CXXFLAGS    += $(COMMON_DEFINES) $(DEFINES) -fno-exceptions -fno-rtti
 CFLAGS     += $(DEFINES) $(COMMON_DEFINES) -std=gnu99
 
 all: $(TARGET)
@@ -81,11 +71,8 @@ else ifeq ($(platform), xenon)
 else ifeq ($(platform), wii)
 	$(AR) rcs $@ $(OBJECTS)
 else
-	$(CXX) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) -lm
+	$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) -lm
 endif
-
-%.o: %.cpp 
-	$(CXX) $(INCLUDES) $(CXXFLAGS) -c -o $@ $<
 
 %.o: %.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c -o $@ $<

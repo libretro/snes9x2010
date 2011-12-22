@@ -1,6 +1,7 @@
-#include "memstream.h"
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include "memstream.h"
 
 static uint8_t* g_buffer = NULL;
 static size_t g_size = 0;
