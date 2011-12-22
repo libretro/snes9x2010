@@ -1272,7 +1272,7 @@ static int img_free(void *ptr, void * a)
 	Image decompression - libJPEG
 ********************************************************************************/
 
-static bool ps3graphics_load_jpeg(const char * path, unsigned &width, unsigned &height, uint8_t *data)
+static bool ps3graphics_load_jpeg(const char * path, unsigned * width, unsigned * height, uint8_t *data)
 {
 	// More Holy shit
 	CtrlMallocArg              MallocArg;
@@ -1354,8 +1354,8 @@ static bool ps3graphics_load_jpeg(const char * path, unsigned &width, unsigned &
 		goto error;
 	}
 
-	width = outParam.outputWidth;
-	height = outParam.outputHeight;
+	*width = outParam.outputWidth;
+	*height = outParam.outputHeight;
 
 	cellJpgDecClose(mHandle, sHandle);
 	cellJpgDecDestroy(mHandle);
@@ -1374,7 +1374,7 @@ error:
 	Image decompression - libPNG
 ********************************************************************************/
 
-static bool ps3graphics_load_png(const char * path, unsigned &width, unsigned &height, uint8_t *data)
+static bool ps3graphics_load_png(const char * path, unsigned * width, unsigned * height, uint8_t *data)
 {
 	// Holy shit, Sony!
 	CtrlMallocArg              MallocArg;
@@ -1444,8 +1444,8 @@ static bool ps3graphics_load_png(const char * path, unsigned &width, unsigned &h
 	if (ret != CELL_OK || dOutInfo.status != CELL_PNGDEC_DEC_STATUS_FINISH)
 		goto error;
 
-	width = outParam.outputWidth;
-	height = outParam.outputHeight;
+	*width = outParam.outputWidth;
+	*height = outParam.outputHeight;
 
 	cellPngDecClose(mHandle, sHandle);
 	cellPngDecDestroy(mHandle);
@@ -1501,12 +1501,12 @@ bool ps3graphics_load_menu_texture(enum menu_type type, const char * path)
 	unsigned width, height;
 	if(strstr(path, ".PNG") != NULL || strstr(path, ".png") != NULL)
 	{
-		if (!ps3graphics_load_png(path, width, height, decode_buffer))
+		if (!ps3graphics_load_png(path, &width, &height, decode_buffer))
 			return false;
 	}
 	else
 	{
-		if (!ps3graphics_load_jpeg(path, width, height, decode_buffer))
+		if (!ps3graphics_load_jpeg(path, &width, &height, decode_buffer))
 			return false;
 	}
 
@@ -1538,12 +1538,12 @@ static void ps3graphics_load_textures(config_file_t *conf, char *attr)
 
 		if(strstr(path, ".PNG") != NULL || strstr(path, ".png") != NULL)
 		{
-			if (!ps3graphics_load_png(path, width, height, decode_buffer))
+			if (!ps3graphics_load_png(path, &width, &height, decode_buffer))
 				goto error;
 		}
 		else
 		{
-			if (!ps3graphics_load_jpeg(path, width, height, decode_buffer))
+			if (!ps3graphics_load_jpeg(path, &width, &height, decode_buffer))
 				goto error;
 		}
 

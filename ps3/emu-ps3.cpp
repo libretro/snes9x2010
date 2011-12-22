@@ -1616,7 +1616,7 @@ void S9xMessage (int type, int number, const char *message)
 	set_text_message(message, 60);
 }
 
-const char * S9xGetFilename (const char *ex, enum s9x_getdirtype dirtype)
+const char * S9xGetFilename (const char *ex, uint32_t dirtype)
 {
 	static char	s[PATH_MAX + 1];
 	char		drive[_MAX_DRIVE + 1];
@@ -1630,7 +1630,7 @@ const char * S9xGetFilename (const char *ex, enum s9x_getdirtype dirtype)
 	return (s);
 }
 
-const char * S9xGetDirectory (enum s9x_getdirtype dirtype)
+const char * S9xGetDirectory (uint32_t dirtype)
 {
 	static char s[PATH_MAX + 1];
 
