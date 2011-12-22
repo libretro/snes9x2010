@@ -218,8 +218,8 @@ static void srtcemu_update_time (void)
 	//memory::cartrtc timestamp to remain valid for up to ~34 years from the last update, even if
 	//time_t overflows. calculation should be valid regardless of number representation, time_t size,
 	//or whether time_t is signed or unsigned.
-	time_t diff = (current_time >= rtc_time) ? (current_time - rtc_time) : (std::numeric_limits<time_t>::max() - rtc_time + current_time + 1);  //compensate for overflow
-	if(diff > std::numeric_limits<time_t>::max() / 2)
+	time_t diff = (current_time >= rtc_time) ? (current_time - rtc_time) : ((time_t)-1 - rtc_time + current_time + 1);  //compensate for overflow
+	if(diff > (time_t)-1 / 2)
 		diff = 0;            //compensate for underflow
 
 	if(diff > 0) {

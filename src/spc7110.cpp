@@ -889,8 +889,8 @@ static void s7_update_time(int offset)
 	//or whether time_t is signed or unsigned.
 	time_t diff = (current_time >= rtc_time)
 		? (current_time - rtc_time)
-		: (std::numeric_limits<time_t>::max() - rtc_time + current_time + 1);  //compensate for overflow
-	if(diff > std::numeric_limits<time_t>::max() / 2)
+		: ((time_t)-1 - rtc_time + current_time + 1);  //compensate for overflow
+	if(diff > (time_t)-1 / 2)
 		diff = 0;            //compensate for underflow
 
 	bool update = true;
