@@ -1614,7 +1614,6 @@ static void Op58 (void)
 {
 	ClearIRQ();
 	AddCycles(ONE_CYCLE);
-	//CHECK_FOR_IRQ();
 }
 
 // SEI
@@ -2257,7 +2256,6 @@ static void Op28E1 (void)
 	SetFlags(MemoryFlag | IndexFlag);
 	S9xUnpackStatus();
 	S9xFixCycles();
-	//CHECK_FOR_IRQ();
 }
 
 static void Op28E0 (void)
@@ -2274,7 +2272,6 @@ static void Op28E0 (void)
 	}
 
 	S9xFixCycles();
-	//CHECK_FOR_IRQ();
 }
 
 static void Op28Slow (void)
@@ -2302,7 +2299,6 @@ static void Op28Slow (void)
 	}
 
 	S9xFixCycles();
-	//CHECK_FOR_IRQ();
 }
 
 // PLX
@@ -3275,7 +3271,6 @@ static void OpC2 (void)
 	}
 
 	S9xFixCycles();
-	//CHECK_FOR_IRQ();
 }
 
 static void OpC2Slow (void)
@@ -3301,7 +3296,6 @@ static void OpC2Slow (void)
 	}
 
 	S9xFixCycles();
-	//CHECK_FOR_IRQ();
 }
 
 static void OpE2 (void)
@@ -3400,7 +3394,6 @@ static void Op40Slow (void)
 	}
 
 	S9xFixCycles();
-	//CHECK_FOR_IRQ();
 }
 
 /* STP/WAI ***************************************************************** */

@@ -547,7 +547,7 @@ s9xcommand_t S9xGetCommandT (const char *name)
 		if (i == 0 || *s != 0 || *(s - 1) == '+')
 			return (cmd);
 
-		cmd.button.joypad = i;
+		cmd.commandunion.button.joypad = i;
 
 		cmd.type = S9xButtonJoypad;
 	}
@@ -557,12 +557,12 @@ s9xcommand_t S9xGetCommandT (const char *name)
 		if (name[5] < '1' || name[5] > '2' || name[6] != ' ')
 			return (cmd);
 
-		cmd.button.mouse.idx = name[5] - '1';
+		cmd.commandunion.button.mouse.idx = name[5] - '1';
 		s = name + 7;
 		i = 0;
 
-		if ((cmd.button.mouse.left  = (*s == 'L')))	s += i = 1;
-		if ((cmd.button.mouse.right = (*s == 'R')))	s += i = 1;
+		if ((cmd.commandunion.button.mouse.left  = (*s == 'L')))	s += i = 1;
+		if ((cmd.commandunion.button.mouse.right = (*s == 'R')))	s += i = 1;
 
 		if (i == 0 || *s != 0)
 			return (cmd);
@@ -575,11 +575,11 @@ s9xcommand_t S9xGetCommandT (const char *name)
 		s = name + 11;
 		i = 0;
 
-		if ((cmd.button.scope.aim_offscreen     = strncmp(s, "AimOffscreen", 12) ? 0 : 1))	{ s += i = 12; if (*s == ' ') s++; else if (*s != 0) return (cmd); }
-		if ((cmd.button.scope.fire              = strncmp(s, "Fire",          4) ? 0 : 1))	{ s += i =  4; if (*s == '+') s++; }
-		if ((cmd.button.scope.cursor            = strncmp(s, "Cursor",        6) ? 0 : 1))	{ s += i =  6; if (*s == '+') s++; }
-		if ((cmd.button.scope.turbo             = strncmp(s, "ToggleTurbo",  11) ? 0 : 1))	{ s += i = 11; if (*s == '+') s++; }
-		if ((cmd.button.scope.pause             = strncmp(s, "Pause",         5) ? 0 : 1))	{ s += i =  5; }
+		if ((cmd.commandunion.button.scope.aim_offscreen     = strncmp(s, "AimOffscreen", 12) ? 0 : 1))	{ s += i = 12; if (*s == ' ') s++; else if (*s != 0) return (cmd); }
+		if ((cmd.commandunion.button.scope.fire              = strncmp(s, "Fire",          4) ? 0 : 1))	{ s += i =  4; if (*s == '+') s++; }
+		if ((cmd.commandunion.button.scope.cursor            = strncmp(s, "Cursor",        6) ? 0 : 1))	{ s += i =  6; if (*s == '+') s++; }
+		if ((cmd.commandunion.button.scope.turbo             = strncmp(s, "ToggleTurbo",  11) ? 0 : 1))	{ s += i = 11; if (*s == '+') s++; }
+		if ((cmd.commandunion.button.scope.pause             = strncmp(s, "Pause",         5) ? 0 : 1))	{ s += i =  5; }
 
 		if (i == 0 || *s != 0 || *(s - 1) == '+')
 			return (cmd);
@@ -592,13 +592,13 @@ s9xcommand_t S9xGetCommandT (const char *name)
 		if (name[9] < '1' || name[9] > '2' || name[10] != ' ')
 			return (cmd);
 
-		cmd.button.justifier.idx = name[9] - '1';
+		cmd.commandunion.button.justifier.idx = name[9] - '1';
 		s = name + 11;
 		i = 0;
 
-		if ((cmd.button.justifier.aim_offscreen = strncmp(s, "AimOffscreen", 12) ? 0 : 1))	{ s += i = 12; if (*s == ' ') s++; else if (*s != 0) return (cmd); }
-		if ((cmd.button.justifier.trigger       = strncmp(s, "Trigger",       7) ? 0 : 1))	{ s += i =  7; if (*s == '+') s++; }
-		if ((cmd.button.justifier.start         = strncmp(s, "Start",         5) ? 0 : 1))	{ s += i =  5; }
+		if ((cmd.commandunion.button.justifier.aim_offscreen = strncmp(s, "AimOffscreen", 12) ? 0 : 1))	{ s += i = 12; if (*s == ' ') s++; else if (*s != 0) return (cmd); }
+		if ((cmd.commandunion.button.justifier.trigger       = strncmp(s, "Trigger",       7) ? 0 : 1))	{ s += i =  7; if (*s == '+') s++; }
+		if ((cmd.commandunion.button.justifier.start         = strncmp(s, "Start",         5) ? 0 : 1))	{ s += i =  5; }
 
 		if (i == 0 || *s != 0 || *(s - 1) == '+')
 			return (cmd);
@@ -611,11 +611,11 @@ s9xcommand_t S9xGetCommandT (const char *name)
 		s = name + 8;
 		i = 0;
 
-		if ((cmd.pointer.aim_mouse0     = strncmp(s, "Mouse1",      6) ? 0 : 1))	{ s += i =  6; if (*s == '+') s++; }
-		if ((cmd.pointer.aim_mouse1     = strncmp(s, "Mouse2",      6) ? 0 : 1))	{ s += i =  6; if (*s == '+') s++; }
-		if ((cmd.pointer.aim_scope      = strncmp(s, "Superscope", 10) ? 0 : 1))	{ s += i = 10; if (*s == '+') s++; }
-		if ((cmd.pointer.aim_justifier0 = strncmp(s, "Justifier1", 10) ? 0 : 1))	{ s += i = 10; if (*s == '+') s++; }
-		if ((cmd.pointer.aim_justifier1 = strncmp(s, "Justifier2", 10) ? 0 : 1))	{ s += i = 10; }
+		if ((cmd.commandunion.pointer.aim_mouse0     = strncmp(s, "Mouse1",      6) ? 0 : 1))	{ s += i =  6; if (*s == '+') s++; }
+		if ((cmd.commandunion.pointer.aim_mouse1     = strncmp(s, "Mouse2",      6) ? 0 : 1))	{ s += i =  6; if (*s == '+') s++; }
+		if ((cmd.commandunion.pointer.aim_scope      = strncmp(s, "Superscope", 10) ? 0 : 1))	{ s += i = 10; if (*s == '+') s++; }
+		if ((cmd.commandunion.pointer.aim_justifier0 = strncmp(s, "Justifier1", 10) ? 0 : 1))	{ s += i = 10; if (*s == '+') s++; }
+		if ((cmd.commandunion.pointer.aim_justifier1 = strncmp(s, "Justifier2", 10) ? 0 : 1))	{ s += i = 10; }
 
 		if (i == 0 || *s != 0 || *(s - 1) == '+')
 			return (cmd);
@@ -680,31 +680,31 @@ bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll)
 
 	if (mapping.type == S9xPointer)
 	{
-		if (mapping.pointer.aim_mouse0 && mouse[0].ID != InvalidControlID && mouse[0].ID != id)
+		if (mapping.commandunion.pointer.aim_mouse0 && mouse[0].ID != InvalidControlID && mouse[0].ID != id)
 		{
 			fprintf(stderr, "ERROR: Rejecting attempt to control Mouse1 with two pointers\n");
 			return (false);
 		}
 
-		if (mapping.pointer.aim_mouse1 && mouse[1].ID != InvalidControlID && mouse[1].ID != id)
+		if (mapping.commandunion.pointer.aim_mouse1 && mouse[1].ID != InvalidControlID && mouse[1].ID != id)
 		{
 			fprintf(stderr, "ERROR: Rejecting attempt to control Mouse2 with two pointers\n");
 			return (false);
 		}
 
-		if (mapping.pointer.aim_scope && superscope.ID != InvalidControlID && superscope.ID != id)
+		if (mapping.commandunion.pointer.aim_scope && superscope.ID != InvalidControlID && superscope.ID != id)
 		{
 			fprintf(stderr, "ERROR: Rejecting attempt to control SuperScope with two pointers\n");
 			return (false);
 		}
 
-		if (mapping.pointer.aim_justifier0 && justifier.ID[0] != InvalidControlID && justifier.ID[0] != id)
+		if (mapping.commandunion.pointer.aim_justifier0 && justifier.ID[0] != InvalidControlID && justifier.ID[0] != id)
 		{
 			fprintf(stderr, "ERROR: Rejecting attempt to control Justifier1 with two pointers\n");
 			return (false);
 		}
 
-		if (mapping.pointer.aim_justifier1 && justifier.ID[1] != InvalidControlID && justifier.ID[1] != id)
+		if (mapping.commandunion.pointer.aim_justifier1 && justifier.ID[1] != InvalidControlID && justifier.ID[1] != id)
 		{
 			fprintf(stderr, "ERROR: Rejecting attempt to control Justifier2 with two pointers\n");
 			return (false);
@@ -715,11 +715,11 @@ bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll)
 
 	keymap[id] = mapping;
 
-	if (mapping.pointer.aim_mouse0    )	mouse[0].ID     = id;
-	if (mapping.pointer.aim_mouse1    )	mouse[1].ID     = id;
-	if (mapping.pointer.aim_scope     )	superscope.ID   = id;
-	if (mapping.pointer.aim_justifier0)	justifier.ID[0] = id;
-	if (mapping.pointer.aim_justifier1)	justifier.ID[1] = id;
+	if (mapping.commandunion.pointer.aim_mouse0    )	mouse[0].ID     = id;
+	if (mapping.commandunion.pointer.aim_mouse1    )	mouse[1].ID     = id;
+	if (mapping.commandunion.pointer.aim_scope     )	superscope.ID   = id;
+	if (mapping.commandunion.pointer.aim_justifier0)	justifier.ID[0] = id;
+	if (mapping.commandunion.pointer.aim_justifier1)	justifier.ID[1] = id;
 
 	return (true);
 }
@@ -744,7 +744,7 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 		#ifdef GEKKO
 		case S9xButtonJoypad:
 			{
-				uint16 r = cmd.button.joypad;
+				uint16 r = cmd.commandunion.button.joypad;
 
 				if (data1)
 					joypad[data2] |= r;
@@ -754,27 +754,27 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 			return;
 		#endif
 		case S9xButtonMouse:
-			if (cmd.button.mouse.left )	i |= 0x40;
-			if (cmd.button.mouse.right)	i |= 0x80;
+			if (cmd.commandunion.button.mouse.left )	i |= 0x40;
+			if (cmd.commandunion.button.mouse.right)	i |= 0x80;
 
 			if (data1)
-				mouse[cmd.button.mouse.idx].buttons |=  i;
+				mouse[cmd.commandunion.button.mouse.idx].buttons |=  i;
 			else 
-				mouse[cmd.button.mouse.idx].buttons &= ~i;
+				mouse[cmd.commandunion.button.mouse.idx].buttons &= ~i;
 
 			return;
 
 		case S9xButtonSuperscope:
-			if (cmd.button.scope.fire         )	i |= SUPERSCOPE_FIRE;
-			if (cmd.button.scope.cursor       )	i |= SUPERSCOPE_CURSOR;
-			if (cmd.button.scope.pause        )	i |= SUPERSCOPE_PAUSE;
-			if (cmd.button.scope.aim_offscreen)	i |= SUPERSCOPE_OFFSCREEN;
+			if (cmd.commandunion.button.scope.fire         )	i |= SUPERSCOPE_FIRE;
+			if (cmd.commandunion.button.scope.cursor       )	i |= SUPERSCOPE_CURSOR;
+			if (cmd.commandunion.button.scope.pause        )	i |= SUPERSCOPE_PAUSE;
+			if (cmd.commandunion.button.scope.aim_offscreen)	i |= SUPERSCOPE_OFFSCREEN;
 
 			if (data1)
 			{
 				superscope.phys_buttons |= i;
 
-				if (cmd.button.scope.turbo)
+				if (cmd.commandunion.button.scope.turbo)
 				{
 					superscope.phys_buttons ^= SUPERSCOPE_TURBO;
 
@@ -798,10 +798,10 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 			return;
 
 		case S9xButtonJustifier:
-			if (cmd.button.justifier.trigger)	i |= JUSTIFIER_TRIGGER;
-			if (cmd.button.justifier.start  )	i |= JUSTIFIER_START;
-			if (cmd.button.justifier.aim_offscreen)	justifier.offscreen[cmd.button.justifier.idx] = data1 ? 1 : 0;
-			i >>= cmd.button.justifier.idx;
+			if (cmd.commandunion.button.justifier.trigger)	i |= JUSTIFIER_TRIGGER;
+			if (cmd.commandunion.button.justifier.start  )	i |= JUSTIFIER_START;
+			if (cmd.commandunion.button.justifier.aim_offscreen)	justifier.offscreen[cmd.commandunion.button.justifier.idx] = data1 ? 1 : 0;
+			i >>= cmd.commandunion.button.justifier.idx;
 
 			if (data1)
 				justifier.buttons |=  i;
@@ -810,31 +810,31 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 			return;
 		case S9xPointer:
-			if (cmd.pointer.aim_mouse0)
+			if (cmd.commandunion.pointer.aim_mouse0)
 			{
 				mouse[0].cur_x = data1;
 				mouse[0].cur_y = data2;
 			}
 
-			if (cmd.pointer.aim_mouse1)
+			if (cmd.commandunion.pointer.aim_mouse1)
 			{
 				mouse[1].cur_x = data1;
 				mouse[1].cur_y = data2;
 			}
 
-			if (cmd.pointer.aim_scope)
+			if (cmd.commandunion.pointer.aim_scope)
 			{
 				superscope.x   = data1;
 				superscope.y   = data2;
 			}
 
-			if (cmd.pointer.aim_justifier0)
+			if (cmd.commandunion.pointer.aim_justifier0)
 			{
 				justifier.x[0] = data1;
 				justifier.y[0] = data2;
 			}
 
-			if (cmd.pointer.aim_justifier1)
+			if (cmd.commandunion.pointer.aim_justifier1)
 			{
 				justifier.x[1] = data1;
 				justifier.y[1] = data2;
@@ -842,7 +842,7 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 			return;
 		default:
-			//fprintf(stderr, "WARNING: Unknown command type %d\n", cmd.type);
+			//fprintf(stderr, "WARNING: Unknown command type %d\n", cmd.commandunion.type);
 			return;
 	}
 }

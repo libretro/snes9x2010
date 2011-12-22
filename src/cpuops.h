@@ -181,8 +181,4 @@
 void S9xOpcode_NMI (void);
 void S9xOpcode_IRQ (void);
 
-#define CHECK_FOR_IRQ() \
-if (CPU.IRQActive && !CheckFlag(IRQ)) \
-	S9xOpcode_IRQ()
-
 #endif

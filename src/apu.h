@@ -390,7 +390,7 @@ typedef struct
 } Timer;
 
 // Support SNES_MEMORY_APURAM
-uint8_t *spc_apuram();
+uint8_t *spc_apuram (void);
 
 typedef struct
 {

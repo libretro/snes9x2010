@@ -248,7 +248,7 @@ typedef struct
 			}	justifier;
 
 			uint16	command;
-		}	button;
+		} button;
 
 		struct						// Which SNES-pointers to control with this pointer
 		{
@@ -260,7 +260,7 @@ typedef struct
 		}	pointer;
 
 		uint8	port[4];
-	};
+	} commandunion;
 }	s9xcommand_t;
 
 // Starting out...

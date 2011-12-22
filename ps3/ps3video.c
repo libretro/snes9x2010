@@ -86,7 +86,7 @@ static unsigned lut_textures_ptr;
 	Calculate macros
 ********************************************************************************/
 
-static void CalculateViewports()
+static void CalculateViewports (void)
 {
 	float device_aspect = psglGetDeviceAspectRatio(psgl_device);
 	GLuint temp_width = gl_width;
@@ -170,7 +170,7 @@ int ps3graphics_calculate_aspect_ratio_before_game_load()
 /******************************************************************************* 
 	PSGL
 ********************************************************************************/
-static void init_fbo_memb()
+static void init_fbo_memb (void)
 {
 	fbo = 0;
 	fbo_tex = 0;
@@ -258,7 +258,7 @@ static void ps3graphics_psgl_init_device(uint32_t resolutionId, uint16_t pal60Hz
 	psglResetCurrentContext();
 }
 
-static int32_t ps3graphics_init_cg()
+static int32_t ps3graphics_init_cg (void)
 {
 	cgRTCgcInit();
 
@@ -352,7 +352,7 @@ static int32_t ps3graphics_psgl_init(uint32_t scaleEnable, uint32_t scaleFactor)
 	return CELL_OK;
 }
 
-static void ps3graphics_get_all_available_resolutions()
+static void ps3graphics_get_all_available_resolutions (void)
 {
 	bool defaultresolution = true;
 	uint32_t videomode[] = {
@@ -392,7 +392,7 @@ static void ps3graphics_get_all_available_resolutions()
 		m_currentResolutionPos = m_supportedResolutions_count-1;
 }
 
-static void ps3graphics_set_resolution()
+static void ps3graphics_set_resolution (void)
 {
 	cellVideoOutGetState(CELL_VIDEO_OUT_PRIMARY, 0, &m_stored_video_state);
 }
@@ -452,7 +452,7 @@ const char * ps3graphics_get_fragment_shader_path(unsigned index)
 	return curFragmentShaderPath[index];
 }
 
-static void ps3graphics_psgl_deinit_device()
+static void ps3graphics_psgl_deinit_device (void)
 {
 	glFinish();
 	cellDbgFontExit();
@@ -471,7 +471,7 @@ static void ps3graphics_psgl_deinit_device()
 #endif
 }
 
-static void ps3graphics_deinit()
+static void ps3graphics_deinit (void)
 {
 	glDeleteTextures(1, &tex);
 	ps3graphics_psgl_deinit_device();
@@ -746,7 +746,6 @@ void ps3graphics_draw(int width, int height, uint16_t* screen)
 void ps3graphics_draw_menu(void)
 {
 	frame_count++;
-	float device_aspect = psglGetDeviceAspectRatio(psgl_device);
 	GLuint temp_width = gl_width;
 	GLuint temp_height = gl_height;
 	_cgViewWidth = temp_width;

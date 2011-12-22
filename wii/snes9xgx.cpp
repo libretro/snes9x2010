@@ -49,7 +49,6 @@
 #include "../src/controls.h"
 #include "../src/snapshot.h"
 #include "../src/display.h"
-#include "../src/language.h"
 #include "../src/srtc.h"
 
 #define MAX_MESSAGE_LEN (36 * 3)
@@ -483,15 +482,11 @@ int LoadSnapshot (char * filepath, bool silent)
 	switch (result)
 	{
 		case WRONG_FORMAT:
-			ErrorPrompt(SAVE_ERR_WRONG_FORMAT);
+			ErrorPrompt("File not in SNES9x snapshot format.");
 			break;
 
 		case WRONG_VERSION:
-			ErrorPrompt(SAVE_ERR_WRONG_VERSION);
-			break;
-
-		case SNAPSHOT_INCONSISTENT:
-			ErrorPrompt(MOVIE_ERR_SNAPSHOT_INCONSISTENT);
+			ErrorPrompt("Incompatible snapshot version.");
 			break;
 	}
 	return 0;

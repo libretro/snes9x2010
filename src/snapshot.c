@@ -188,7 +188,6 @@
 #include "snapshot.h"
 #include "controls.h"
 #include "display.h"
-#include "language.h"
 
 #ifndef min
 #define min(a,b)	(((a) < (b)) ? (a) : (b))

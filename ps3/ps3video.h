@@ -90,7 +90,7 @@ void ps3graphics_resize_aspect_mode_input_loop(uint64_t state);
 
 /* draw functions */
 void ps3graphics_draw(int width, int height, uint16_t* screen);
-void ps3graphics_draw_menu();
+void ps3graphics_draw_menu (void);
 
 /* image png/jpg */
 bool ps3graphics_load_menu_texture(enum menu_type type, const char * path);
@@ -98,26 +98,26 @@ bool ps3graphics_load_menu_texture(enum menu_type type, const char * path);
 /* resolution functions */
 void ps3graphics_change_resolution(uint32_t resId, uint16_t pal60Hz, uint16_t tripleBuffering, uint32_t scaleEnabled, uint32_t scaleFactor);
 void ps3graphics_switch_resolution(uint32_t resId, uint16_t pal60Hz, uint16_t tripleBuffering, uint32_t scaleEnabled, uint32_t scaleFactor);
-void ps3graphics_next_resolution();
-void ps3graphics_previous_resolution();
+void ps3graphics_next_resolution (void);
+void ps3graphics_previous_resolution (void);
 
 /* calculate functions */
 
-int ps3graphics_calculate_aspect_ratio_before_game_load();
+int ps3graphics_calculate_aspect_ratio_before_game_load (void);
 
 /* get functions */
 const char * ps3graphics_get_resolution_label(uint32_t resolution);
 int ps3graphics_check_resolution(uint32_t resId);
 int ps3graphics_get_aspect_ratio_int(bool orientation);
 float ps3graphics_get_aspect_ratio_float(int enum_);
-uint32_t ps3graphics_get_current_resolution();
-uint32_t ps3graphics_get_initial_resolution();
-uint32_t ps3graphics_get_pal60hz();
+uint32_t ps3graphics_get_current_resolution (void);
+uint32_t ps3graphics_get_initial_resolution (void);
+uint32_t ps3graphics_get_pal60hz (void);
 uint32_t ps3graphics_get_viewport_x(void);
 uint32_t ps3graphics_get_viewport_y(void);
 uint32_t ps3graphics_get_viewport_width(void);
 uint32_t ps3graphics_get_viewport_height(void);
-CellVideoOutState ps3graphics_get_video_out_state();
+CellVideoOutState ps3graphics_get_video_out_state (void);
 const char * ps3graphics_get_fragment_shader_path(unsigned index);
 
 /* game-aware shaders */
@@ -135,7 +135,7 @@ void ps3graphics_set_vsync(uint32_t vsync);
 uint32_t ps3graphics_set_text_message_speed(uint32_t value);
 
 /* libdbgfont */
-void ps3graphics_init_dbgfont();
+void ps3graphics_init_dbgfont (void);
 
 extern uint32_t frame_count;
 extern snes_tracker_t *tracker; // State tracker
