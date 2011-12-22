@@ -162,11 +162,4 @@ inline void set_le32( void* p, blargg_ulong n )
 	#define SET_LE32( addr, data )  set_le32( addr, data )
 #endif
 
-// auto-selecting versions
-
-inline void set_le( uint16_t* p, unsigned     n ) { SET_LE16( p, n ); }
-inline void set_le( uint32_t* p, blargg_ulong n ) { SET_LE32( p, n ); }
-inline unsigned     get_le( uint16_t* p ) { return GET_LE16( p ); }
-inline blargg_ulong get_le( uint32_t* p ) { return GET_LE32( p ); }
-
 #endif

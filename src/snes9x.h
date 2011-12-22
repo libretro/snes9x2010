@@ -284,8 +284,6 @@
 #define IRQ_FLAG			2048	// CPU
 #define HALTED_FLAG			4096	// APU
 
-#define ROM_NAME_LEN	23
-
 struct SCPUState
 {
 	int32	Cycles;

@@ -228,7 +228,6 @@ static uint32	pixbit[8][16];
 static uint8	hrbit_odd[256];
 static uint8	hrbit_even[256];
 
-
 void S9xInitTileRenderer (void)
 {
 	register int	i;
@@ -298,7 +297,7 @@ void S9xInitTileRenderer (void)
 		p2 |= pixbit[(i)][pix & 0xf]; \
 	}
 
-static uint8 ConvertTile2 (uint8 *pCache, uint32 TileAddr, uint32)
+static uint8 ConvertTile2 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
 	register uint8	*tp      = &Memory.VRAM[TileAddr];
 	uint32			*p       = (uint32 *) pCache;
@@ -321,7 +320,7 @@ static uint8 ConvertTile2 (uint8 *pCache, uint32 TileAddr, uint32)
 	return (non_zero ? TRUE : BLANK_TILE);
 }
 
-static uint8 ConvertTile4 (uint8 *pCache, uint32 TileAddr, uint32)
+static uint8 ConvertTile4 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
 	register uint8	*tp      = &Memory.VRAM[TileAddr];
 	uint32			*p       = (uint32 *) pCache;
@@ -346,7 +345,7 @@ static uint8 ConvertTile4 (uint8 *pCache, uint32 TileAddr, uint32)
 	return (non_zero ? TRUE : BLANK_TILE);
 }
 
-static uint8 ConvertTile8 (uint8 *pCache, uint32 TileAddr, uint32)
+static uint8 ConvertTile8 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
 	register uint8	*tp      = &Memory.VRAM[TileAddr];
 	uint32			*p       = (uint32 *) pCache;

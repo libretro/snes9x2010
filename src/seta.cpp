@@ -344,64 +344,64 @@ static int16 ST010_Cos (int16 Theta)
 	return (ST010_SinTable[((Theta + 0x4000) >> 8) & 0xff]);
 }
 
-static void ST010_OP01 (int16 x0, int16 y0, int16 &x1, int16 &y1, int16 &Quadrant, int16 &Theta)
+static void ST010_OP01 (int16 x0, int16 y0, int16 * x1, int16 * y1, int16 * Quadrant, int16 * Theta)
 {
 	if ((x0 < 0) && (y0 < 0))
 	{
-		x1 = -x0;
-		y1 = -y0;
-		Quadrant = -0x8000;
+		*x1 = -x0;
+		*y1 = -y0;
+		*Quadrant = -0x8000;
 	}
 	else
 	if (x0 < 0)
 	{
-		x1 =  y0;
-		y1 = -x0;
-		Quadrant = -0x4000;
+		*x1 =  y0;
+		*y1 = -x0;
+		*Quadrant = -0x4000;
 	}
 	else
 	if (y0 < 0)
 	{
-		x1 = -y0;
-		y1 =  x0;
-		Quadrant =  0x4000;
+		*x1 = -y0;
+		*y1 =  x0;
+		*Quadrant =  0x4000;
 	}
 	else
 	{
-		x1 =  x0;
-		y1 =  y0;
-		Quadrant =  0x0000;
+		*x1 =  x0;
+		*y1 =  y0;
+		*Quadrant =  0x0000;
 	}
 
-	while ((x1 > 0x1f) || (y1 > 0x1f))
+	while ((*x1 > 0x1f) || (*y1 > 0x1f))
 	{
-		if (x1 > 1)
-			x1 >>= 1;
-		if (y1 > 1)
-			y1 >>= 1;
+		if (*x1 > 1)
+			*x1 >>= 1;
+		if (*y1 > 1)
+			*y1 >>= 1;
 	}
 
-	if (y1 == 0)
-		Quadrant += 0x4000;
+	if (*y1 == 0)
+		*Quadrant += 0x4000;
 
-	Theta = (ST010_ArcTan[y1][x1] << 8) ^ Quadrant;
+	*Theta = (ST010_ArcTan[*y1][*x1] << 8) ^ *Quadrant;
 }
 
-static void ST010_Scale (int16 Multiplier, int16 X0, int16 Y0, int32 &X1, int32 &Y1)
+static void ST010_Scale (int16 Multiplier, int16 X0, int16 Y0, int32 *X1, int32 * Y1)
 {
-	X1 = X0 * Multiplier << 1;
-	Y1 = Y0 * Multiplier << 1;
+	*X1 = X0 * Multiplier << 1;
+	*Y1 = Y0 * Multiplier << 1;
 }
 
-static void ST010_Multiply (int16 Multiplicand, int16 Multiplier, int32 &Product)
+static void ST010_Multiply (int16 Multiplicand, int16 Multiplier, int32 * Product)
 {
-	Product = Multiplicand * Multiplier << 1;
+	*Product = Multiplicand * Multiplier << 1;
 }
 
-static void ST010_Rotate (int16 Theta, int16 X0, int16 Y0, int16 &X1, int16 &Y1)
+static void ST010_Rotate (int16 Theta, int16 X0, int16 Y0, int16 * X1, int16 * Y1)
 {
-	X1 = (Y0 * ST010_Sin(Theta) >> 15) + (X0 * ST010_Cos(Theta) >> 15);
-	Y1 = (Y0 * ST010_Cos(Theta) >> 15) - (X0 * ST010_Sin(Theta) >> 15);
+	*X1 = (Y0 * ST010_Sin(Theta) >> 15) + (X0 * ST010_Cos(Theta) >> 15);
+	*Y1 = (Y0 * ST010_Cos(Theta) >> 15) - (X0 * ST010_Sin(Theta) >> 15);
 }
 
 static void ST010_SortDrivers (uint16 Positions, uint16 Places[32], uint16 Drivers[32])
@@ -538,11 +538,11 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 			case 0x03:
 			{
 			#ifdef FAST_LSB_WORD_ACCESS
-				ST010_Scale(*(int16 *) &Memory.SRAM[0x0004], *(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int32 &) Memory.SRAM[0x0010], (int32 &) Memory.SRAM[0x0014]);
+				ST010_Scale(*(int16 *) &Memory.SRAM[0x0004], *(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int32 *) Memory.SRAM[0x0010], (int32 *) Memory.SRAM[0x0014]);
 			#else
 				int32	x1, y1;
 
-				ST010_Scale(ST010_WORD(0x0004), ST010_WORD(0x0000), ST010_WORD(0x0002), x1, y1);
+				ST010_Scale(ST010_WORD(0x0004), ST010_WORD(0x0000), ST010_WORD(0x0002), &x1, &y1);
 
 				Memory.SRAM[0x0010] = (uint8) (x1);
 				Memory.SRAM[0x0011] = (uint8) (x1 >> 8);
@@ -567,11 +567,11 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 			case 0x06:
 			{
 			#ifdef FAST_LSB_WORD_ACCESS
-				ST010_Multiply(*(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int32 &) Memory.SRAM[0x0010]);
+				ST010_Multiply(*(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int32 *) Memory.SRAM[0x0010]);
 			#else
 				int32	Product;
 
-				ST010_Multiply(ST010_WORD(0x0000), ST010_WORD(0x0002), Product);
+				ST010_Multiply(ST010_WORD(0x0000), ST010_WORD(0x0002), &Product);
 
 				Memory.SRAM[0x0010] = (uint8) (Product);
 				Memory.SRAM[0x0011] = (uint8) (Product >> 8);
@@ -642,11 +642,11 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 			case 0x08:
 			{
 			#ifdef FAST_LSB_WORD_ACCESS
-				ST010_Rotate(*(int16 *) &Memory.SRAM[0x0004], *(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int16 &) Memory.SRAM[0x0010], (int16 &) Memory.SRAM[0x0012]);
+				ST010_Rotate(*(int16 *) &Memory.SRAM[0x0004], *(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int16 *) Memory.SRAM[0x0010], (int16 *) Memory.SRAM[0x0012]);
 			#else
 				int16	x1, y1;
 
-				ST010_Rotate(ST010_WORD(0x0004), ST010_WORD(0x0000), ST010_WORD(0x0002), x1, y1);
+				ST010_Rotate(ST010_WORD(0x0004), ST010_WORD(0x0000), ST010_WORD(0x0002), &x1, &y1);
 
 				Memory.SRAM[0x0010] = (uint8) (x1);
 				Memory.SRAM[0x0011] = (uint8) (x1 >> 8);
@@ -668,11 +668,11 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				Memory.SRAM[0x0007] = Memory.SRAM[0x0003];
 
 			#ifdef FAST_LSB_WORD_ACCESS
-				ST010_OP01(*(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int16 &) Memory.SRAM[0x0000], (int16 &) Memory.SRAM[0x0002], (int16 &) Memory.SRAM[0x0004], (int16 &) Memory.SRAM[0x0010]);
+				ST010_OP01(*(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int16 *)Memory.SRAM[0x0000], (int16 *) Memory.SRAM[0x0002], (int16 *) Memory.SRAM[0x0004], (int16 *) Memory.SRAM[0x0010]);
 			#else
 				int16	x1, y1, Quadrant, Theta;
 
-				ST010_OP01(ST010_WORD(0x0000), ST010_WORD(0x0002), x1, y1, Quadrant, Theta);
+				ST010_OP01(ST010_WORD(0x0000), ST010_WORD(0x0002), &x1, &y1, &Quadrant, &Theta);
 
 				Memory.SRAM[0x0000] = (uint8) (x1);
 				Memory.SRAM[0x0001] = (uint8) (x1 >> 8);
@@ -753,7 +753,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				Memory.SRAM[0xDB] = 0;
 
 				// grab the target angle
-				ST010_OP01(dy, dx, a1, b1, c1, (int16 &) o1);
+				ST010_OP01(dy, dx, &a1, &b1, &c1, (int16 *)&o1);
 
 				// check for wrapping
 				//if ((o1 < 0x6000 && rot > 0xA000) || (rot < 0x6000 && o1 > 0xA000))
