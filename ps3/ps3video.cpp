@@ -78,7 +78,7 @@ static PSGLdevice* psgl_device;
 static PSGLcontext* psgl_context;
 static CellVideoOutState m_stored_video_state;
 snes_tracker_t *tracker; // State tracker
-static struct lookup_texture lut_textures; // Lookup textures in use.
+static struct lookup_texture lut_textures[16]; // Lookup textures in use.
 static unsigned lut_textures_ptr;
 
 /******************************************************************************* 
