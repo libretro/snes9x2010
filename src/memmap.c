@@ -174,6 +174,8 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef UNZIP_SUPPORT
 #include "unzip/unzip.h"
@@ -707,14 +709,14 @@ static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, i
 	return (score);
 }
 
-static uint32 HeaderRemove (uint32 size, int32 &headerCount, uint8 *buf)
+static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
 {
 	uint32	calc_size = (size / 0x2000) * 0x2000;
 
 	if (size - calc_size == 512)
 	{
 		memmove(buf, buf + 512, calc_size);
-		headerCount++;
+		*(headerCount)++;
 		size -= 512;
 	}
 
@@ -809,7 +811,7 @@ static bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers,
 			return (FALSE);
 		}
 
-		FileSize = (int)HeaderRemove((uint32) FileSize, *headers, ptr);
+		FileSize = (int)HeaderRemove((uint32) FileSize, headers, ptr);
 		ptr += FileSize;
 		*TotalFileSize += FileSize;
 
@@ -914,7 +916,7 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 					size = READ_STREAM(ptr, maxsize + 0x200 - (ptr - buffer), fp);
 					CLOSE_STREAM(fp);
 
-					size = HeaderRemove(size, Memory.HeaderCount, ptr);
+					size = HeaderRemove(size, &Memory.HeaderCount, ptr);
 					totalSize += size;
 					ptr += size;
 
@@ -2101,19 +2103,19 @@ static uint16 checksum_calc_sum (uint8 *data, uint32 length)
 	return (sum);
 }
 
-static uint16 checksum_mirror_sum (uint8 *start, uint32 &length, uint32 mask)
+static uint16 checksum_mirror_sum (uint8 *start, uint32 * length, uint32 mask)
 {
 	// from NSRT
-	while (!(length & mask))
+	while (!(*length & mask))
 		mask >>= 1;
 
 	uint16	part1 = checksum_calc_sum(start, mask);
 	uint16	part2 = 0;
 
-	uint32	next_length = length - mask;
+	uint32	next_length = *length - mask;
 	if (next_length)
 	{
-		part2 = checksum_mirror_sum(start + mask, next_length, mask >> 1);
+		part2 = checksum_mirror_sum(start + mask, &next_length, mask >> 1);
 
 		while (next_length < mask)
 		{
@@ -3044,7 +3046,7 @@ void InitROM (void)
 		else
 		{
 			uint32	length = Memory.CalculatedSize;
-			sum = checksum_mirror_sum(Memory.ROM, length, 0x800000);
+			sum = checksum_mirror_sum(Memory.ROM, &length, 0x800000);
 		}
 	}
 

@@ -174,7 +174,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
+#include <string.h>
 #include "snes9x.h"
 #include "memmap.h"
 #include "getset.h"
@@ -1179,18 +1179,20 @@ static void fx_computeScreenPointers (void)
 					break;
 				}
 			case 256:
-				const uint32 mul_8192 = vmode << 13;
-				const uint32 mul_4096 = vmode << 12;
-				uint32 apv_multiply = 0;
-				uint32 gsu_x_multiply = 0;
-				for(int i = 0; i < 16; i++)
 				{
-					GSU.apvScreen[i] = GSU.apvScreen[i+16] = pvScreenBase + (apv_multiply * vmode);
-					GSU.x[i] = GSU.x[i+16] = (gsu_x_multiply * vmode);
-					GSU.apvScreen[i+16] += mul_8192;
-					GSU.x[i+16] += mul_4096;
-					apv_multiply += 256;
-					gsu_x_multiply += 16;
+					uint32 mul_8192 = vmode << 13;
+					uint32 mul_4096 = vmode << 12;
+					uint32 apv_multiply = 0;
+					uint32 gsu_x_multiply = 0;
+					for(int i = 0; i < 16; i++)
+					{
+						GSU.apvScreen[i] = GSU.apvScreen[i+16] = pvScreenBase + (apv_multiply * vmode);
+						GSU.x[i] = GSU.x[i+16] = (gsu_x_multiply * vmode);
+						GSU.apvScreen[i+16] += mul_8192;
+						GSU.x[i+16] += mul_4096;
+						apv_multiply += 256;
+						gsu_x_multiply += 16;
+					}
 				}
 				break;
 		}

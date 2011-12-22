@@ -174,6 +174,8 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
+#include <string.h>
+#include <stdlib.h>
 #include <math.h>
 #include "snes9x.h"
 #include "memmap.h"

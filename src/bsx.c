@@ -178,6 +178,7 @@
 // Large thanks to John Weidman for all his initial research
 // Thanks to Seph3 for his modem notes
 
+#include <string.h>
 #include <time.h>
 
 #include "snes9x.h"

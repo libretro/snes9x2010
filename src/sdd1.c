@@ -188,6 +188,7 @@
  * S-DD1 issue in the past.
  */
 
+#include <string.h>
 #include "snes9x.h"
 #include "memmap.h"
 #include "port.h"

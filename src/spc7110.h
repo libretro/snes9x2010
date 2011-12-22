@@ -180,6 +180,12 @@
 
 #define SPC7110_DECOMP_BUFFER_SIZE	64
 
+typedef struct
+{
+	uint8	index;
+	uint8	invert;
+} ContextState;
+
 // for snapshot only
 struct SSPC7110Snapshot
 {
@@ -254,11 +260,7 @@ struct SSPC7110Snapshot
 	uint32	decomp_buffer_wroffset;	// unsigned
 	uint32	decomp_buffer_length;	// unsigned
 
-	struct ContextState
-	{
-		uint8	index;
-		uint8	invert;
-	}	context[32];
+	ContextState context[32];
 };
 
 extern struct SSPC7110Snapshot	s7snap;

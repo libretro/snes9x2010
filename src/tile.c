@@ -510,7 +510,7 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 // First-level include: Get all the renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 // Functions to select which converter and renderer to use.
 
@@ -892,7 +892,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 
 // Second-level include: Get the DrawTile16 renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME1
 #undef ARGS
@@ -999,7 +999,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 
 // Second-level include: Get the DrawClippedTile16 renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME1
 #undef ARGS
@@ -1045,7 +1045,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 
 // Second-level include: Get the DrawMosaicPixel16 renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME1
 #undef ARGS
@@ -1080,7 +1080,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 
 // Second-level include: Get the DrawBackdrop16 renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME1
 #undef ARGS
@@ -1355,7 +1355,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 // Second-level include: Get the DrawMode7BG1 renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME1
 #undef DRAW_TILE
@@ -1365,7 +1365,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 // Second-level include: Get the DrawMode7MosaicBG1 renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef DRAW_TILE
 #undef NAME1
@@ -1385,7 +1385,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 // Second-level include: Get the DrawMode7BG2 renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME1
 #undef DRAW_TILE
@@ -1395,7 +1395,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 // Second-level include: Get the DrawMode7MosaicBG2 renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef MASK
 #undef DCMODE
@@ -1430,7 +1430,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 // Third-level include: Get the Normal1x1 renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME2
 #undef DRAW_PIXEL
@@ -1449,7 +1449,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 // Third-level include: Get the Normal2x1 renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME2
 #undef DRAW_PIXEL
@@ -1476,7 +1476,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 // Third-level include: Get the Hires renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME2
 #undef DRAW_PIXEL
@@ -1497,7 +1497,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 // Third-level include: Get the double width Interlace renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME2
 #undef DRAW_PIXEL
@@ -1507,7 +1507,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 // Third-level include: Get the HiresInterlace renderers.
 
-#include "tile.cpp"
+#include "tile.c"
 
 #undef NAME2
 #undef DRAW_PIXEL

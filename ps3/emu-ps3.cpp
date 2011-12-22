@@ -24,6 +24,11 @@
 
 #include <pthread.h>
 #include <sys/synchronization.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
 #include "../src/cpuexec.h"
@@ -33,6 +38,10 @@
 #include "../src/cheats.h"
 #include "../src/display.h"
 #include "../src/snapshot.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 #include "snes_state/config_file.h"
 

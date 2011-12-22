@@ -214,7 +214,7 @@ struct SBSX			BSX;
 struct SMulti			Multi;
 struct SSettings		Settings;
 struct SSNESGameFixes		SNESGameFixes;
-struct SCheatData		Cheat;
+SCheatData		Cheat;
 struct FxRegs_s			GSU;
 struct FxInfo_s			SuperFX;
 CMemory				Memory;

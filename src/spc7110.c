@@ -191,7 +191,7 @@
  * or in connection with the use or performance of this software.
  *****/
 
-
+#include <string.h>
 #include <time.h>
 
 #include "snes9x.h"
@@ -212,10 +212,7 @@ static unsigned decomp_buffer_rdoffset;
 static unsigned decomp_buffer_wroffset;
 static unsigned decomp_buffer_length;
 
-struct ContextState {
-	uint8 index;
-	uint8 invert;
-} context[32];
+ContextState context[32];
 
 #define memory_cartrom_read(a)		Memory.ROM[(a)]
 #define memory_cartrtc_read(a)		RTCData.reg[(a)]
@@ -294,8 +291,15 @@ uint8 r4840; //RTC latch
 uint8 r4841; //RTC index/data port
 uint8 r4842; //RTC status
 
-enum RTC_State { RTCS_INACTIVE, RTCS_MODESELECT, RTCS_INDEXSELECT, RTCS_WRITE } rtc_state;
-enum RTC_Mode  { RTCM_LINEAR = 0x03, RTCM_INDEXED = 0x0c } rtc_mode;
+#define RTCS_INACTIVE 0
+#define RTCS_MODESELECT 1
+#define RTCS_INDEXSELECT 2
+#define RTCS_WRITE 3
+
+#define  RTCM_LINEAR 0x03
+#define RTCM_INDEXED 0x0c
+static uint32 rtc_mode;
+static uint32 rtc_state;
 unsigned rtc_index;
 
 
@@ -1284,7 +1288,7 @@ static void s7_mmio_write(unsigned addr, uint8 data)
 							     {
 								     r4842 = 0x80;
 								     rtc_state = RTCS_INDEXSELECT;
-								     rtc_mode  = (RTC_Mode)data;
+								     rtc_mode  = data;
 								     rtc_index = 0;
 							     }
 						     }
@@ -1853,8 +1857,8 @@ void S9xSPC7110PostLoadState (int version)
 	r4841 = s7snap.r4841;
 	r4842 = s7snap.r4842;
 
-	rtc_state = (RTC_State) s7snap.rtc_state;
-	rtc_mode  = (RTC_Mode)  s7snap.rtc_mode;
+	rtc_state = s7snap.rtc_state;
+	rtc_mode  = s7snap.rtc_mode;
 	rtc_index = (unsigned)           s7snap.rtc_index;
 
 	decomp_mode   = (unsigned) s7snap.decomp_mode;

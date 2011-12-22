@@ -179,7 +179,7 @@
  * Copyright (c) byuu
  *****/
 
-
+#include <string.h>
 #include <time.h>
 
 #include "snes9x.h"
@@ -448,9 +448,9 @@ void S9xSRTCPreSaveState (void)
 	srtcsnap.rtc_index = (int32) rtc_index;
 }
 
-void S9xSRTCPostLoadState (int)
+void S9xSRTCPostLoadState (int unused)
 {
-	rtc_mode  = (RTC_Mode) srtcsnap.rtc_mode;
+	rtc_mode  = srtcsnap.rtc_mode;
 	rtc_index = (signed)         srtcsnap.rtc_index;
 
 	srtcemu_update_time();

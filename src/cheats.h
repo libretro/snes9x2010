@@ -190,7 +190,7 @@ struct SCheat
 	char	name[22];
 };
 
-struct SCheatData
+typedef struct
 {
 	struct SCheat c[MAX_CHEATS];
 	uint32	num_cheats;
@@ -200,7 +200,7 @@ struct SCheatData
 	uint8	*RAM;
 	uint8	*FillRAM;
 	uint8	*SRAM;
-};
+} SCheatData;
 
 extern SCheatData	Cheat;
 

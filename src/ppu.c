@@ -174,7 +174,8 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
+#include <stdlib.h>
+#include <string.h>
 #include "snes9x.h"
 #include "memmap.h"
 #include "getset.h"
@@ -3882,7 +3883,7 @@ static void S9xDoDMA (void)
 		CPU.InDMAorHDMA = TRUE;
 		CPU.CurrentDMAorHDMAChannel = Channel;
 
-		SDMA	*d = &DMA[Channel];
+		struct SDMA	*d = &DMA[Channel];
 
 		// Check invalid DMA first
 		if ((d->ABank == 0x7E || d->ABank == 0x7F) && d->BAddress == 0x80 && !d->ReverseTransfer)

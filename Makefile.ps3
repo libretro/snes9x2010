@@ -48,26 +48,26 @@ CELL_FRAMEWORK2_DIR	= ./ps3/cellframework2
 
 EMULATOR_VERSION     = 1.0
 
-PPU_SRCS		+= $(SNES9X_API_DIR)/tile.cpp \
-			$(SNES9X_API_DIR)/cpu.cpp \
-			$(SNES9X_API_DIR)/ppu.cpp \
-			$(SNES9X_API_DIR)/sa1.cpp \
-			$(SNES9X_API_DIR)/fxemu.cpp \
-			$(SNES9X_API_DIR)/cpuexec.cpp \
-			$(SNES9X_API_DIR)/srtc.cpp \
-			$(SNES9X_API_DIR)/memmap.cpp \
-			$(SNES9X_API_DIR)/apu.cpp \
-			$(SNES9X_API_DIR)/bsx.cpp \
-			$(SNES9X_API_DIR)/c4emu.cpp \
-			$(SNES9X_API_DIR)/cheats.cpp \
-			$(SNES9X_API_DIR)/controls.cpp \
-			$(SNES9X_API_DIR)/dsp.cpp \
-			$(SNES9X_API_DIR)/globals.cpp \
-			$(SNES9X_API_DIR)/obc1.cpp \
-			$(SNES9X_API_DIR)/sdd1.cpp \
-			$(SNES9X_API_DIR)/seta.cpp \
-			$(SNES9X_API_DIR)/snapshot.cpp \
-			$(SNES9X_API_DIR)/spc7110.cpp
+PPU_SRCS		+= $(SNES9X_API_DIR)/tile.c \
+			$(SNES9X_API_DIR)/cpu.c \
+			$(SNES9X_API_DIR)/ppu.c \
+			$(SNES9X_API_DIR)/sa1.c \
+			$(SNES9X_API_DIR)/fxemu.c \
+			$(SNES9X_API_DIR)/cpuexec.c \
+			$(SNES9X_API_DIR)/srtc.c \
+			$(SNES9X_API_DIR)/memmap.c \
+			$(SNES9X_API_DIR)/apu.c \
+			$(SNES9X_API_DIR)/bsx.c \
+			$(SNES9X_API_DIR)/c4emu.c \
+			$(SNES9X_API_DIR)/cheats.c \
+			$(SNES9X_API_DIR)/controls.c \
+			$(SNES9X_API_DIR)/dsp.c \
+			$(SNES9X_API_DIR)/globals.c \
+			$(SNES9X_API_DIR)/obc1.c \
+			$(SNES9X_API_DIR)/sdd1.c \
+			$(SNES9X_API_DIR)/seta.c \
+			$(SNES9X_API_DIR)/snapshot.c \
+			$(SNES9X_API_DIR)/spc7110.c
 
 
 PPU_SRCS		+= $(UTILS_DIR)/zlib/adler32.c \

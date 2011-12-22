@@ -174,7 +174,6 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
 #include <math.h>
 #include <string.h>
 #include <stddef.h>

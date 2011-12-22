@@ -1,12 +1,6 @@
 #ifndef LIBSNES_HPP
 #define LIBSNES_HPP
 
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 // LIBSNES Super Nintendo emulation API
 //
@@ -1254,9 +1248,5 @@ uint8_t* snes_get_memory_data(unsigned id);
 unsigned snes_get_memory_size(unsigned id);
 
 ////////////////////////////////////////////////////////////////////////////}}}
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

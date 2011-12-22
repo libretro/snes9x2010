@@ -289,7 +289,7 @@ struct SMulti
 };
 
 extern CMemory	Memory;
-extern SMulti	Multi;
+extern struct SMulti	Multi;
 
 #define WRAP_PAGE 0xFF
 #define WRAP_BANK 0xFFFF

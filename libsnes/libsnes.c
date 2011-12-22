@@ -1,11 +1,15 @@
 #include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 #ifndef __WIN32__
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include "libsnes.hpp"
+#include "libsnes.h"
 
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
@@ -198,37 +202,36 @@ void snes_set_controller_port_device(bool in_port, unsigned device)
 void snes_cheat_reset()
 {}
 
-void snes_cheat_set(unsigned, bool, const char*)
-{}
+void snes_cheat_set(unsigned unused, bool unused1, const char* unused2) {}
 
 bool snes_load_cartridge_bsx_slotted(
-      const char *, const uint8_t *, unsigned,
-      const char *, const uint8_t *, unsigned
+      const char * a, const uint8_t * b, unsigned c,
+      const char * d, const uint8_t * e, unsigned f
       )
 {
    return false;
 }
 
 bool snes_load_cartridge_bsx(
-      const char *, const uint8_t *, unsigned,
-      const char *, const uint8_t *, unsigned
+      const char * a, const uint8_t * b, unsigned c,
+      const char * d, const uint8_t * e, unsigned f
       )
 {
    return false;
 }
 
 bool snes_load_cartridge_sufami_turbo(
-      const char *, const uint8_t *, unsigned,
-      const char *, const uint8_t *, unsigned,
-      const char *, const uint8_t *, unsigned
+      const char * a, const uint8_t * b, unsigned c,
+      const char * d, const uint8_t * e, unsigned f,
+      const char * g, const uint8_t * h, unsigned i
       )
 {
    return false;
 }
 
 bool snes_load_cartridge_super_game_boy(
-      const char *, const uint8_t *, unsigned,
-      const char *, const uint8_t *, unsigned 
+      const char * a, const uint8_t * b, unsigned c,
+      const char * d, const uint8_t * e, unsigned f 
       )
 {
    return false;
@@ -312,7 +315,7 @@ void snes_init()
 
 		if (use_overscan)
 		{
-			snes_geometry geom = {256, 239, 512, 512};
+			struct snes_geometry geom = {256, 239, 512, 512};
 			environ_cb(SNES_ENVIRONMENT_SET_GEOMETRY, &geom);
 			unsigned pitch = 1024;
 			environ_cb(SNES_ENVIRONMENT_SET_PITCH, &pitch);
@@ -437,7 +440,7 @@ static void report_buttons()
 	}
 }
 
-bool snes_load_cartridge_normal(const char *, const uint8_t *rom_data, unsigned rom_size)
+bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigned rom_size)
 {
    // Hack. S9x cannot do stuff from RAM. <_<
    memstream_set_buffer((uint8_t*)rom_data, rom_size);
@@ -451,7 +454,7 @@ bool snes_load_cartridge_normal(const char *, const uint8_t *rom_data, unsigned 
 
    if (environ_cb)
    {
-	   snes_system_timing timing;
+	   struct snes_system_timing timing;
 	   timing.sample_rate = 32040.5;
 	   if (!Settings.PAL)
 		   timing.fps = 21477272.0 / 357366.0;
@@ -561,15 +564,14 @@ unsigned snes_get_memory_size(unsigned type)
    return size;
 }
 
-void snes_set_cartridge_basename(const char*)
-{}
+void snes_set_cartridge_basename(const char* a) {}
 
-unsigned snes_serialize_size()
+unsigned snes_serialize_size (void)
 {
-   uint8_t *tmpbuf = new uint8_t[5000000];
+   uint8_t *tmpbuf = (uint8_t*)malloc(5000000);
    memstream_set_buffer(tmpbuf, 5000000);
    S9xFreezeGame("foo");
-   delete [] tmpbuf;
+   free(tmpbuf);
    return memstream_get_last_size();
 }
 
@@ -653,11 +655,11 @@ void S9xDeinitUpdate(int width, int height)
 }
 
 // Dummy functions that should probably be implemented correctly later.
-const char* S9xGetFilename(const char* in, s9x_getdirtype) { return in; }
-const char* S9xGetDirectory(s9x_getdirtype) { return NULL; }
-const char* S9xChooseFilename(unsigned char) { return NULL; }
+const char* S9xGetFilename(const char* in, uint32_t s9x_getdirtype) { return in; }
+const char* S9xGetDirectory(uint32_t s9x_getdirtype) { return NULL; }
+const char* S9xChooseFilename(unsigned char a) { return NULL; }
 
-void S9xMessage(int, int, const char* msg)
+void S9xMessage(int a, int b, const char* msg)
 {
 	fprintf(stderr, "%s\n", msg);
 }
@@ -704,7 +706,7 @@ void _splitpath (const char *path, char *drive, char *dir, char *fname, char *ex
    }
 }
 
-void _makepath (char *path, const char *, const char *dir, const char *fname, const char *ext)
+void _makepath (char *path, const char * a, const char *dir, const char *fname, const char *ext)
 {
    if (dir && *dir)
    {
