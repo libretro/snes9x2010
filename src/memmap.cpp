@@ -3721,7 +3721,7 @@ void InitROM (void)
 	#else
 	sprintf(String, "\"%s\" [%s] %s, %s, %s, %s, SRAM:%s, ID:%s, CRC32:%08X",
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
-		(Memory.HiROM ? ((ExtendedFormat != NOPE) ? "ExHiROM": "HiROM") : "LoROM"), Size(), KartContents(Memory.ROMType), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), Memory.ROMId, Memory.ROMCRC32);
+		(Memory.HiROM ? ((Memory.ExtendedFormat != NOPE) ? "ExHiROM": "HiROM") : "LoROM"), Size(), KartContents(Memory.ROMType), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), Memory.ROMId, Memory.ROMCRC32);
 	#endif
 	S9xMessage(S9X_INFO, S9X_ROM_INFO, String);
 
