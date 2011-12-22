@@ -181,15 +181,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#if defined(__CELLOS_LV2__) || defined(GEKKO) || defined(__LIBXENON__)
-#include <memory>
-#else
-#include <memory.h>
-#endif
 #include <string.h>
-#if defined(HAVE_STRINGS_H) && !defined(__CELLOS_LV2__) && !defined(__LIBXENON__)
-#include <strings.h>
-#endif
 #include <sys/types.h>
 
 #ifdef __WIN32__
