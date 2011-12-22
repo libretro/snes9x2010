@@ -639,7 +639,7 @@ static void ps3graphics_update_state_uniforms(unsigned index)
 		for (unsigned i = 0; i < lut_textures_ptr; i++)
 		{
 			CGparameter param = cgGetNamedParameter(_fragmentProgram[index], lut_textures[i].id);
-			cgGLSetTextureParameter(param, itr->tex);
+			cgGLSetTextureParameter(param, lut_textures[i].tex);
 			cgGLEnableTextureParameter(param);
 		}
 	}
