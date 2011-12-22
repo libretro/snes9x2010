@@ -1565,7 +1565,9 @@ error:
 
 static void ps3graphics_load_imports(config_file_t *conf, char *attr)
 {
-	std::vector<snes_tracker_uniform_info> info;
+	struct snes_tracker_uniform_info info[64];
+   unsigned info_ptr = 0;
+
 	const char *id = strtok(attr, ";");
 	while (id)
 	{
@@ -1644,7 +1646,7 @@ static void ps3graphics_load_imports(config_file_t *conf, char *attr)
 		uniform.mask = mask;
 		uniform.ram_type = ram_type;
 
-		info.push_back(uniform);
+		info[info_ptr++] = uniform;
 		free(semantic);
 
 		id = strtok(NULL, ";");
@@ -1653,7 +1655,7 @@ static void ps3graphics_load_imports(config_file_t *conf, char *attr)
 	snes_tracker_info tracker_info;
 	tracker_info.wram = (const uint8_t**)&Memory.RAM;
 	tracker_info.info = &info[0];
-	tracker_info.info_elem = info.size();
+	tracker_info.info_elem = info_ptr;
 
 	tracker = snes_tracker_init(&tracker_info);
 
