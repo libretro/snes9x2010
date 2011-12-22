@@ -78,7 +78,8 @@ static PSGLdevice* psgl_device;
 static PSGLcontext* psgl_context;
 static CellVideoOutState m_stored_video_state;
 snes_tracker_t *tracker; // State tracker
-static std::vector<lookup_texture> lut_textures; // Lookup textures in use.
+static struct lookup_texture lut_textures; // Lookup textures in use.
+static unsigned lut_textures_ptr;
 
 /******************************************************************************* 
 	Calculate macros
@@ -475,11 +476,9 @@ void ps3graphics_destroy()
 	{
 		snes_tracker_free(tracker);
 
-		for (std::vector<lookup_texture>::iterator itr = lut_textures.begin();
-				itr != lut_textures.end(); ++itr)
-		{
-			glDeleteTextures(1, &itr->tex);
-		}
+		for (unsigned i = 0; i < lut_textures_ptr; i++)
+			glDeleteTextures(1, &lut_textures[i].tex);
+      lut_textures_ptr = 0;
 	}
 }
 
@@ -637,9 +636,9 @@ static void ps3graphics_update_state_uniforms(unsigned index)
 			cgGLSetParameter1f(param_f, info[i].value);
 		}
 
-		for (std::vector<lookup_texture>::const_iterator itr = lut_textures.begin(); itr != lut_textures.end(); ++itr)
+		for (unsigned i = 0; i < lut_textures_ptr; i++)
 		{
-			CGparameter param = cgGetNamedParameter(_fragmentProgram[index], itr->id);
+			CGparameter param = cgGetNamedParameter(_fragmentProgram[index], lut_textures[i].id);
 			cgGLSetTextureParameter(param, itr->tex);
 			cgGLEnableTextureParameter(param);
 		}
@@ -1550,7 +1549,7 @@ static void ps3graphics_load_textures(config_file_t *conf, char *attr)
 		glGenTextures(1, &tex.tex);
 		ps3graphics_setup_texture(tex.tex, width, height);
 
-		lut_textures.push_back(tex);
+      lut_textures[lut_textures_ptr++] = tex;
 		free(path);
 		id = strtok(NULL, ";");
 	}
@@ -1672,13 +1671,10 @@ void ps3graphics_init_state_uniforms(const char * path)
 		snes_tracker_free(tracker);
 		tracker = NULL;
 
-		for (std::vector<lookup_texture>::iterator itr = lut_textures.begin();
-				itr != lut_textures.end(); ++itr)
-		{
-			glDeleteTextures(1, &itr->tex);
-		}
+		for (unsigned i = 0; i < lut_textures_ptr; i++)
+			glDeleteTextures(1, &lut_textures[i].tex);
 
-		lut_textures.clear();
+      lut_textures_ptr = 0;
 	}
 
 	config_file_t *conf = config_file_new(path);
