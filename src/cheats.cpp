@@ -190,20 +190,20 @@ static bool8 S9xAllHex (const char *code, int len)
 	return (TRUE);
 }
 
-const char * S9xProActionReplayToRaw (const char *code, uint32 &address, uint8 &byte)
+const char * S9xProActionReplayToRaw (const char *code, uint32 * address, uint8 * byte)
 {
 	uint32	data = 0;
 
 	if (strlen(code) != 8 || !S9xAllHex(code, 8) || sscanf(code, "%x", &data) != 1)
 		return ("Invalid Pro Action Replay code - should be 8 hex digits in length.");
 
-	address = data >> 8;
-	byte = (uint8) data;
+	*address = data >> 8;
+	*byte = (uint8) data;
 
 	return (NULL);
 }
 
-const char * S9xGoldFingerToRaw (const char *code, uint32 &address, bool8 &sram, uint8 &num_bytes, uint8 bytes[3])
+const char * S9xGoldFingerToRaw (const char *code, uint32 * address, bool8 * sram, uint8 * num_bytes, uint8 bytes[3])
 {
 	char	tmp[15];
 	int		i;
@@ -213,7 +213,7 @@ const char * S9xGoldFingerToRaw (const char *code, uint32 &address, bool8 &sram,
 
 	strncpy(tmp, code, 5);
 	tmp[5] = 0;
-	if (sscanf(tmp, "%x", &address) != 1)
+	if (sscanf(tmp, "%x", address) != 1)
 		return ("Invalid Gold Finger code.");
 
 	for (i = 0; i < 3; i++)
@@ -227,13 +227,13 @@ const char * S9xGoldFingerToRaw (const char *code, uint32 &address, bool8 &sram,
 		bytes[i] = (uint8) byte;
 	}
 
-	num_bytes = i;
-	sram = code[13] == '1';
+	*num_bytes = i;
+	*sram = code[13] == '1';
 
 	return (NULL);
 }
 
-const char * S9xGameGenieToRaw (const char *code, uint32 &address, uint8 &byte)
+const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte)
 {
 	char	new_code[12];
 
@@ -268,15 +268,15 @@ const char * S9xGameGenieToRaw (const char *code, uint32 &address, uint8 &byte)
 
 	uint32	data = 0;
 	sscanf(new_code, "%x", &data);
-	byte = (uint8) (data >> 24);
-	address = data & 0xffffff;
-	address = ((address & 0x003c00) << 10) +
-			  ((address & 0x00003c) << 14) +
-			  ((address & 0xf00000) >>  8) +
-			  ((address & 0x000003) << 10) +
-			  ((address & 0x00c000) >>  6) +
-			  ((address & 0x0f0000) >> 12) +
-			  ((address & 0x0003c0) >>  6);
+	*byte = (uint8) (data >> 24);
+	*address = data & 0xffffff;
+	*address = ((*address & 0x003c00) << 10) +
+			  ((*address & 0x00003c) << 14) +
+			  ((*address & 0xf00000) >>  8) +
+			  ((*address & 0x000003) << 10) +
+			  ((*address & 0x00c000) >>  6) +
+			  ((*address & 0x0f0000) >> 12) +
+			  ((*address & 0x0003c0) >>  6);
 
 	return (NULL);
 }

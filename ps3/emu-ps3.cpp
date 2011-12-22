@@ -345,19 +345,19 @@ static uint32_t emulator_input_cheat()
 
 		int cheatformat = 0;
 
-		if (!S9xGameGenieToRaw (newcode, address, byte))
+		if (!S9xGameGenieToRaw (newcode, &address, &byte))
 		{
 			// (4) add Game Genie cheat code
 			emulator_implementation_add_cheat(address, byte, newcode);
 			cheatformat = 1;
 		}
-		else if (!S9xProActionReplayToRaw(newcode, address, byte))
+		else if (!S9xProActionReplayToRaw(newcode, &address, &byte))
 		{
 			// (4) add Pro Action Replay cheat code
 			emulator_implementation_add_cheat(address, byte, newcode);
 			cheatformat = 2;
 		}
-		else if (!S9xGoldFingerToRaw(newcode, address, sram, num_bytes, bytes))
+		else if (!S9xGoldFingerToRaw(newcode, &address, &sram, &num_bytes, bytes))
 		{
 			// (4) add Gold Finger cheat code
 			for (int c = 0; c < num_bytes; c++)

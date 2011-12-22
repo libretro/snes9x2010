@@ -971,11 +971,11 @@ static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
 
 // UPS % IPS
 
-static uint32 ReadUPSPointer (const uint8 *data, uint32 &addr, unsigned size)
+static uint32 ReadUPSPointer (const uint8 *data, uint32 * addr, unsigned size)
 {
 	uint32 offset = 0, shift = 1;
-	while(addr < size) {
-		uint8 x = data[addr++];
+	while(*addr < size) {
+		uint8 x = data[(*addr)++];
 		offset += (x & 0x7f) * shift;
 		if(x & 0x80) break;
 		shift <<= 7;
@@ -993,7 +993,7 @@ static uint32 ReadUPSPointer (const uint8 *data, uint32 &addr, unsigned size)
 //no-header patching errors that result in IPS patches having a 50/50 chance of
 //being applied correctly.
 
-static bool8 ReadUPSPatch (FILE * r, long, int32 &rom_size)
+static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 {
 	//Reader lacks size() and rewind(), so we need to read in the file to get its size
 	uint8 *data = (uint8*)malloc(8 * 1024 * 1024);  //allocate a lot of memory, better safe than sorry ...
@@ -1026,7 +1026,7 @@ static bool8 ReadUPSPatch (FILE * r, long, int32 &rom_size)
 	if(data[addr++] != '1') { free(data); return false; }  //...
 
 	uint32 patch_crc32 = caCRC32(data, size - 4, 0xffffffff);  //don't include patch CRC32 itself in CRC32 calculation
-	uint32 rom_crc32 = caCRC32(Memory.ROM, rom_size, 0xffffffff);
+	uint32 rom_crc32 = caCRC32(Memory.ROM, *rom_size, 0xffffffff);
 	uint32 px_crc32 = (data[size - 12] << 0) + (data[size - 11] << 8) + (data[size - 10] << 16) + (data[size -  9] << 24);
 	uint32 py_crc32 = (data[size -  8] << 0) + (data[size -  7] << 8) + (data[size -  6] << 16) + (data[size -  5] << 24);
 	uint32 pp_crc32 = (data[size -  4] << 0) + (data[size -  3] << 8) + (data[size -  2] << 16) + (data[size -  1] << 24);
@@ -1042,9 +1042,9 @@ static bool8 ReadUPSPatch (FILE * r, long, int32 &rom_size)
 		free(data);
 		return false;
 	}  
-	uint32 px_size = ReadUPSPointer(data, addr, size);
-	uint32 py_size = ReadUPSPointer(data, addr, size);
-	uint32 out_size = ((uint32) rom_size == px_size) ? py_size : px_size;
+	uint32 px_size = ReadUPSPointer(data, &addr, size);
+	uint32 py_size = ReadUPSPointer(data, &addr, size);
+	uint32 out_size = ((uint32) *rom_size == px_size) ? py_size : px_size;
 
 	if(out_size > MAX_ROM_SIZE) //applying this patch will overflow Memory.ROM buffer
 	{
@@ -1054,13 +1054,13 @@ static bool8 ReadUPSPatch (FILE * r, long, int32 &rom_size)
 
 	//fill expanded area with 0x00s; so that XORing works as expected below.
 	//note that this is needed (and works) whether output ROM is larger or smaller than pre-patched ROM
-	for(unsigned i = min((uint32) rom_size, out_size); i < max((uint32) rom_size, out_size); i++)
+	for(unsigned i = min((uint32) *rom_size, out_size); i < max((uint32) *rom_size, out_size); i++)
 		Memory.ROM[i] = 0x00;
 
 	uint32 relative = 0;
 	while(addr < size - 12)
 	{
-		relative += ReadUPSPointer(data, addr, size);
+		relative += ReadUPSPointer(data, &addr, size);
 		while(addr < size - 12)
 		{
 			uint8 x = data[addr++];
@@ -1069,10 +1069,10 @@ static bool8 ReadUPSPatch (FILE * r, long, int32 &rom_size)
 		}
 	}
 
-	rom_size = out_size;
+	*rom_size = out_size;
 	free(data);
 
-	uint32 out_crc32 = caCRC32(Memory.ROM, rom_size, 0xffffffff);
+	uint32 out_crc32 = caCRC32(Memory.ROM, *rom_size, 0xffffffff);
 	if(((rom_crc32 == px_crc32) && (out_crc32 == py_crc32))
 	|| ((rom_crc32 == py_crc32) && (out_crc32 == px_crc32))
 	) {
@@ -1110,7 +1110,7 @@ static long ReadInt (FILE * r, unsigned nbytes)
 
 #define IPS_EOF 0x00454F46l
 
-static bool8 ReadIPSPatch (FILE * r, long offset, int32 &rom_size)
+static bool8 ReadIPSPatch (FILE * r, long offset, int32 * rom_size)
 {
 	int32		ofs;
 	char		fname[6];
@@ -1158,8 +1158,8 @@ static bool8 ReadIPSPatch (FILE * r, long offset, int32 &rom_size)
 				Memory.ROM[ofs++] = (uint8) rchar;
 			}
 
-			if (ofs > rom_size)
-				rom_size = ofs;
+			if (ofs > *rom_size)
+				*rom_size = ofs;
 		}
 		else
 		{
@@ -1177,19 +1177,19 @@ static bool8 ReadIPSPatch (FILE * r, long offset, int32 &rom_size)
 			while (rlen--)
 				Memory.ROM[ofs++] = (uint8) rchar;
 
-			if (ofs > rom_size)
-				rom_size = ofs;
+			if (ofs > *rom_size)
+				*rom_size = ofs;
 		}
 	}
 
 	ofs = ReadInt(r, 3);
-	if (ofs != -1 && ofs - offset < rom_size)
-		rom_size = ofs - offset;
+	if (ofs != -1 && ofs - offset < *rom_size)
+		*rom_size = ofs - offset;
 
 	return (1);
 }
 
-static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom_size)
+static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * rom_size)
 {
 	if (Settings.NoPatch)
 		return;
@@ -1214,7 +1214,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 	{
 		printf("Using UPS patch %s", fname);
 
-		ret = ReadUPSPatch(patch_file, 0, rom_size);
+		ret = ReadUPSPatch(patch_file, rom_size);
 		fclose(patch_file);
 
 		if (ret)
@@ -1232,7 +1232,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 &rom
 	{
 		printf("Using UPS patch %s", n);
 
-		ret = ReadUPSPatch(patch_file, 0, rom_size);
+		ret = ReadUPSPatch(patch_file, rom_size);
 		fclose(patch_file);
 
 		if (ret)
@@ -1521,7 +1521,7 @@ again:
 		return (FALSE);
 
 	if (!Settings.NoPatch)
-		CheckForAnyPatch(filename, Memory.HeaderCount != 0, totalFileSize);
+		CheckForAnyPatch(filename, Memory.HeaderCount != 0, &totalFileSize);
 
 	int	hi_score, lo_score;
 
@@ -1813,7 +1813,7 @@ bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
 		Multi.sramMaskA = Multi.sramSizeA ? ((1 << (Multi.sramSizeA + 3)) * 128 - 1) : 0;
 
 		if (!Settings.NoPatch)
-			CheckForAnyPatch(cartA, Memory.HeaderCount != 0, Multi.cartSizeA);
+			CheckForAnyPatch(cartA, Memory.HeaderCount != 0, &Multi.cartSizeA);
 
 		strcpy(Multi.fileNameA, cartA);
 		memcpy(Memory.ROM + Multi.cartOffsetA, Memory.ROM, Multi.cartSizeA);
@@ -1837,7 +1837,7 @@ bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
 		Multi.sramMaskB = Multi.sramSizeB ? ((1 << (Multi.sramSizeB + 3)) * 128 - 1) : 0;
 
 		if (!Settings.NoPatch)
-			CheckForAnyPatch(cartB, Memory.HeaderCount != 0, Multi.cartSizeB);
+			CheckForAnyPatch(cartB, Memory.HeaderCount != 0, &Multi.cartSizeB);
 
 		strcpy(Multi.fileNameB, cartB);
 		memcpy(Memory.ROM + Multi.cartOffsetB, Memory.ROM, Multi.cartSizeB);
@@ -1890,7 +1890,7 @@ bool8 LoadSameGame (const char *cartA, const char *cartB)
 	Multi.sramMaskB = 0;
 
 	if (!Settings.NoPatch)
-		CheckForAnyPatch(cartA, Memory.HeaderCount != 0, Multi.cartSizeA);
+		CheckForAnyPatch(cartA, Memory.HeaderCount != 0, &Multi.cartSizeA);
 
 	strcpy(Multi.fileNameA, cartA);
 

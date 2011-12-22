@@ -219,8 +219,8 @@ bool8 S9xSaveCheatFile (const char *);
 bool8 S9xCheatEnabled (uint32);
 const char * S9xGetCheatName(uint8 cheat_no);
 
-const char * S9xGameGenieToRaw (const char *, uint32 &, uint8 &);
-const char * S9xProActionReplayToRaw (const char *, uint32 &, uint8 &);
-const char * S9xGoldFingerToRaw (const char *, uint32 &, bool8 &, uint8 &, uint8 bytes[3]);
+const char * S9xGameGenieToRaw (const char * code, uint32 * address, uint8 * byte);
+const char * S9xProActionReplayToRaw (const char * code, uint32 * address, uint8 * byte);
+const char * S9xGoldFingerToRaw (const char * code, uint32 * address, bool8 * sram, uint8 * num_bytes, uint8 bytes[3]);
 
 #endif
