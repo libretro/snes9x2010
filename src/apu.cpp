@@ -528,7 +528,7 @@ static inline void dsp_voice_V2( dsp_voice_t* const v )
 	uint8_t const* entry = &dsp_m.ram [dsp_m.t_dir_addr];
 	if ( !v->kon_delay )
 		entry += 2;
-	dsp_m.t_brr_next_addr = get_le16( entry );
+	dsp_m.t_brr_next_addr = GET_LE16( entry );
 
 	dsp_m.t_adsr0 = v->regs [V_ADSR0];
 
@@ -709,7 +709,7 @@ static inline void dsp_voice_V8( dsp_voice_t* const v )
 	v->regs [V_OUTX] = dsp_m.outx_buf;
 }
 
-inline void dsp_voice_V9( dsp_voice_t* const v )
+static inline void dsp_voice_V9( dsp_voice_t* const v )
 {
 	v->regs [V_ENVX] = dsp_m.envx_buf;
 }
