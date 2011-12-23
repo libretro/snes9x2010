@@ -242,13 +242,13 @@ static struct
 	struct crosshair	crosshair[2];
 }	justifier;
 
-static int8 mp5[2][4];
+static int8			mp5[2][4];
 s9xcommand_t			keymap[1024];
-static bool8				FLAG_LATCH = FALSE;
-static int32				curcontrollers[2] = { CONTROLS_NONE,    CONTROLS_NONE };
-static int32				newcontrollers[2] = { JOYPAD0, CONTROLS_NONE };
-static char				buf[256];
-uint16 joypad[8];
+static bool8			FLAG_LATCH = FALSE;
+static int32			curcontrollers[2] = { CONTROLS_NONE,    CONTROLS_NONE };
+static int32			newcontrollers[2] = { JOYPAD0, CONTROLS_NONE };
+static char			buf[256];
+uint16				joypad[8];
 
 static void DoGunLatch (int x, int y)
 {
@@ -296,7 +296,8 @@ void S9xControlsReset (void)
 
 void S9xControlsSoftReset (void)
 {
-	for (int i = 0; i < 2; i++)
+	int i;
+	for ( i = 0; i < 2; i++)
 	{
 		read_idx[i][0]=0;
 		read_idx[i][1]=0;
@@ -307,17 +308,22 @@ void S9xControlsSoftReset (void)
 
 void S9xUnmapAllControls (void)
 {
+	int i;
+
 	S9xControlsReset();
 
-	for (int i = 0; i < 2; i++)
+	for ( i = 0; i < 2; i++)
 	{
 		mouse[i].old_x = mouse[i].old_y = 0;
 		mouse[i].cur_x = mouse[i].cur_y = 0;
 		mouse[i].buttons = 1;
 		mouse[i].ID = InvalidControlID;
 
+		/* no image for mouse because its only logical position is
+		game-specific, not known by the emulator */
 		if (!(mouse[i].crosshair.set & 1))
-			mouse[i].crosshair.img = 0; // no image for mouse because its only logical position is game-specific, not known by the emulator
+			mouse[i].crosshair.img = 0;
+
 		if (!(mouse[i].crosshair.set & 2))
 			mouse[i].crosshair.fg  = 5;
 		if (!(mouse[i].crosshair.set & 4))
@@ -409,7 +415,7 @@ void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 i
 bool S9xVerifyControllers (void)
 {
 	bool	ret = false;
-	int		port, i, used[NUMCTLS];
+	int	port, i, used[NUMCTLS];
 
 	for (i = 0; i < NUMCTLS; used[i++] = 0) ;
 
@@ -506,8 +512,8 @@ bool S9xVerifyControllers (void)
 s9xcommand_t S9xGetCommandT (const char *name)
 {
 	s9xcommand_t	cmd;
-	int				i;
-	const char		*s;
+	int		i;
+	const char	*s;
 
 	ZeroMemory(&cmd, sizeof(cmd));
 	cmd.type         = S9xBadMapping;
@@ -630,20 +636,33 @@ static const char * maptypename (int t)
 {
 	switch (t)
 	{
-		case MAP_UNMAPPED:	return ("unmapped");
-		case MAP_BUTTON:	return ("button");
-		case MAP_POINTER:	return ("pointer");
-		default:			return ("unknown");
+		case MAP_UNMAPPED:
+			return ("unmapped");
+		case MAP_BUTTON:
+			return ("button");
+		case MAP_POINTER:
+			return ("pointer");
+		default:
+			return ("unknown");
 	}
 }
 
 static void S9xUnmapID (uint32 id)
 {
-	if (mouse[0].ID     == id)	mouse[0].ID     = InvalidControlID;
-	if (mouse[1].ID     == id)	mouse[1].ID     = InvalidControlID;
-	if (superscope.ID   == id)	superscope.ID   = InvalidControlID;
-	if (justifier.ID[0] == id)	justifier.ID[0] = InvalidControlID;
-	if (justifier.ID[1] == id)	justifier.ID[1] = InvalidControlID;
+	if (mouse[0].ID     == id)
+		mouse[0].ID     = InvalidControlID;
+
+	if (mouse[1].ID     == id)
+		mouse[1].ID     = InvalidControlID;
+
+	if (superscope.ID   == id)
+		superscope.ID   = InvalidControlID;
+
+	if (justifier.ID[0] == id)
+		justifier.ID[0] = InvalidControlID;
+
+	if (justifier.ID[1] == id)
+		justifier.ID[1] = InvalidControlID;
 }
 
 bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll)
@@ -920,9 +939,9 @@ void S9xSetJoypadLatch (bool latch)
 
 	if (latch && !FLAG_LATCH)
 	{
-		int	i;
+		int	i, n;
 
-		for (int n = 0; n < 2; n++)
+		for ( n = 0; n < 2; n++)
 		{
 			read_idx[n][0] = 0;
 			read_idx[n][1] = 0;
@@ -1125,12 +1144,12 @@ uint8 S9xReadJOYSERn (int n)
 
 void S9xDoAutoJoypad (void)
 {
-	int	i, j;
+	int	i, j, n;
 
 	S9xSetJoypadLatch(1);
 	S9xSetJoypadLatch_Latch0();
 
-	for (int n = 0; n < 2; n++)
+	for ( n = 0; n < 2; n++)
 	{
 		switch (i = curcontrollers[n])
 		{
@@ -1191,7 +1210,7 @@ void S9xDoAutoJoypad (void)
 
 static const char	*crosshairs[32] =
 {
-	"`              "  // Crosshair 0 (no image)
+	"`              "  /* Crosshair 0 (no image) */
 	"               "
 	"               "
 	"               "
@@ -1207,7 +1226,7 @@ static const char	*crosshairs[32] =
 	"               "
 	"               ",
 
-	"`              "  // Crosshair 1 (the classic small dot)
+	"`              "  /* Crosshair 1 (the classic small dot) */
 	"               "
 	"               "
 	"               "
@@ -1223,7 +1242,7 @@ static const char	*crosshairs[32] =
 	"               "
 	"               ",
 
-	"`              "  // Crosshair 2 (a standard cross)
+	"`              "  /* Crosshair 2 (a standard cross) */
 	"               "
 	"               "
 	"               "
@@ -1239,7 +1258,7 @@ static const char	*crosshairs[32] =
 	"               "
 	"               ",
 
-	"`     .#.      "  // Crosshair 3 (a standard cross)
+	"`     .#.      "  /* Crosshair 3 (a standard cross) */
 	"      .#.      "
 	"      .#.      "
 	"      .#.      "
@@ -1255,7 +1274,7 @@ static const char	*crosshairs[32] =
 	"      .#.      "
 	"      .#.      ",
 
-	"`              "  // Crosshair 4 (an X)
+	"`              "  /* Crosshair 4 (an X) */
 	"               "
 	"               "
 	"    .     .    "
@@ -1271,7 +1290,7 @@ static const char	*crosshairs[32] =
 	"               "
 	"               ",
 
-	"`.           . "  // Crosshair 5 (an X)
+	"`.           . "  /* Crosshair 5 (an X) */
 	".#.         .#."
 	" .#.       .#. "
 	"  .#.     .#.  "
@@ -1287,7 +1306,7 @@ static const char	*crosshairs[32] =
 	".#.         .#."
 	" .           . ",
 
-	"`              "  // Crosshair 6 (a combo)
+	"`              "  /* Crosshair 6 (a combo) */
 	"               "
 	"               "
 	"               "
@@ -1303,7 +1322,7 @@ static const char	*crosshairs[32] =
 	"               "
 	"               ",
 
-	"`      .       "  // Crosshair 7 (a combo)
+	"`      .       "  /* Crosshair 7 (a combo) */
 	" #     .     # "
 	"  #    .    #  "
 	"   #   .   #   "
@@ -1319,7 +1338,7 @@ static const char	*crosshairs[32] =
 	" #     .     # "
 	"       .       ",
 
-	"`      #       "  // Crosshair 8 (a diamond cross)
+	"`      #       "  /* Crosshair 8 (a diamond cross) */
 	"      #.#      "
 	"     # . #     "
 	"    #  .  #    "
@@ -1335,7 +1354,7 @@ static const char	*crosshairs[32] =
 	"      #.#      "
 	"       #       ",
 
-	"`     ###      "  // Crosshair 9 (a circle cross)
+	"`     ###      "  /* Crosshair 9 (a circle cross) */
 	"    ## . ##    "
 	"   #   .   #   "
 	"  #    .    #  "
@@ -1351,7 +1370,7 @@ static const char	*crosshairs[32] =
 	"    ## . ##    "
 	"      ###      ",
 
-	"`     .#.      "  // Crosshair 10 (a square cross)
+	"`     .#.      "  /* Crosshair 10 (a square cross) */
 	"      .#.      "
 	"      .#.      "
 	"   ....#....   "
@@ -1367,7 +1386,7 @@ static const char	*crosshairs[32] =
 	"      .#.      "
 	"      .#.      ",
 
-	"`     .#.      "  // Crosshair 11 (an interrupted cross)
+	"`     .#.      "  /* Crosshair 11 (an interrupted cross) */
 	"      .#.      "
 	"      .#.      "
 	"      .#.      "
@@ -1383,7 +1402,7 @@ static const char	*crosshairs[32] =
 	"      .#.      "
 	"      .#.      ",
 
-	"`.           . "  // Crosshair 12 (an interrupted X)
+	"`.           . "  /* Crosshair 12 (an interrupted X) */
 	".#.         .#."
 	" .#.       .#. "
 	"  .#.     .#.  "
@@ -1399,7 +1418,7 @@ static const char	*crosshairs[32] =
 	".#.         .#."
 	" .           . ",
 
-	"`      .       "  // Crosshair 13 (an interrupted combo)
+	"`      .       "  /* Crosshair 13 (an interrupted combo) */
 	" #     .     # "
 	"  #    .    #  "
 	"   #   .   #   "
@@ -1415,7 +1434,7 @@ static const char	*crosshairs[32] =
 	" #     .     # "
 	"       .       ",
 
-	"`####     #### "  // Crosshair 14
+	"`####     #### "  /* Crosshair 14 */
 	"#....     ....#"
 	"#.           .#"
 	"#.           .#"
@@ -1431,7 +1450,7 @@ static const char	*crosshairs[32] =
 	"#....     ....#"
 	" ####     #### ",
 
-	"`  .#     #.   "  // Crosshair 15
+	"`  .#     #.   "  /* Crosshair 15 */
 	"   .#     #.   "
 	"   .#     #.   "
 	"....#     #...."
@@ -1447,7 +1466,7 @@ static const char	*crosshairs[32] =
 	"   .#     #.   "
 	"   .#     #.   ",
 
-	"`      #       "  // Crosshair 16
+	"`      #       "  /* Crosshair 16 */
 	"       #       "
 	"       #       "
 	"   ....#....   "
@@ -1476,15 +1495,15 @@ const char * S9xGetCrosshair (int idx)
 
 void S9xControlEOF (void)
 {
-	PPU.GunVLatch = 1000; // i.e., never latch
+	PPU.GunVLatch = 1000; /* i.e., never latch */
 	PPU.GunHLatch = 0;
 
 	if(pad_read)
 	{
 		struct crosshair	*c;
-		int			i;
+		int			i, n;
 
-		for (int n = 0; n < 2; n++)
+		for ( n = 0; n < 2; n++)
 		{
 			switch (i = curcontrollers[n])
 			{
@@ -1560,6 +1579,8 @@ do_justifier:
 
 void S9xControlPreSaveState (struct SControlSnapshot *s)
 {
+	int	i = 0;
+	int	j = 0;
 	ZeroMemory(s, sizeof(*s));
 	s->ver = 3;
 
@@ -1576,12 +1597,11 @@ void S9xControlPreSaveState (struct SControlSnapshot *s)
 
 #define COPY(x)	{ memcpy((char *) s->internal + i, &(x), sizeof(x)); i += sizeof(x); }
 
-	int	i = 0;
 
-	for (int j = 0; j < 8; j++)
+	for ( j = 0; j < 8; j++)
 		COPY(joypad[j]);
 
-	for (int j = 0; j < 2; j++)
+	for ( j = 0; j < 2; j++)
 	{
 		COPY(mouse[j].delta_x);
 		COPY(mouse[j].delta_y);
@@ -1621,6 +1641,9 @@ void S9xControlPreSaveState (struct SControlSnapshot *s)
 
 void S9xControlPostLoadState (struct SControlSnapshot *s)
 {
+	int	i = 0;
+	int	j = 0;
+
 	if (curcontrollers[0] == MP5 && s->ver < 1)
 	{
 		// Crap. Old snes9x didn't support this.
@@ -1649,12 +1672,10 @@ void S9xControlPostLoadState (struct SControlSnapshot *s)
 	{
 	#define COPY(x)	{ memcpy(&(x), (char *) s->internal + i, sizeof(x)); i += sizeof(x); }
 
-		int	i = 0;
-
-		for (int j = 0; j < 8; j++)
+		for ( j = 0; j < 8; j++)
 			COPY(joypad[j]);
 
-		for (int j = 0; j < 2; j++)
+		for ( j = 0; j < 2; j++)
 		{
 			COPY(mouse[j].delta_x);
 			COPY(mouse[j].delta_y);

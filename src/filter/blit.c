@@ -187,10 +187,10 @@
 static snes_ntsc_t	*ntsc   = NULL;
 static uint8		*XDelta = NULL;
 
-
 bool8 S9xBlitFilterInit (void)
 {
 	XDelta = (uint8*)malloc(SNES_WIDTH * SNES_HEIGHT_EXTENDED * 4);
+
 	if (!XDelta)
 		return (FALSE);
 
@@ -382,7 +382,7 @@ void S9xBlitPixScaledTV16 (uint8 *srcPtr, int srcRowBytes, uint8 *dstPtr, int ds
 			dP2 += 2;
 		}
 
-		// Last 2 Pixels
+		/* Last 2 Pixels */
 
 		currentPixel = *bP;
 		currentDelta = *xP;
@@ -477,7 +477,7 @@ void S9xBlitPixHiResMixedTV16 (uint8 *srcPtr, int srcRowBytes, uint8 *dstPtr, in
 		dstPtr2 += dstRowBytes;
 	}
 
-	// Last 1 line
+	/* Last 1 line */
 
 	uint16	*dP1 = (uint16 *) dstPtr, *dP2 = (uint16 *) dstPtr2, *bP1 = (uint16 *) srcPtr;
 	uint16	prev, mixed;

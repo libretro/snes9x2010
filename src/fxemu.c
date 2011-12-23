@@ -195,14 +195,14 @@
    (xx) = 16 bit address (0x0000 - 0xffff)
 */
 
-// 00 - stop - stop GSU execution (and maybe generate an IRQ)
+/* 00 - stop - stop GSU execution (and maybe generate an IRQ) */
 static void fx_stop (void)
 {
 	CF(G);
 	GSU.vCounter = 0;
 	GSU.vInstCount = GSU.vCounter;
 
-	// Check if we need to generate an IRQ
+	/* Check if we need to generate an IRQ */
 	if (!(GSU.pvRegisters[GSU_CFGR] & 0x80))
 		SF(IRQ);
 

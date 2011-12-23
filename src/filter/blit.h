@@ -175,8 +175,8 @@
  ***********************************************************************************/
 
 
-#ifndef _blit_h_
-#define _blit_h_
+#ifndef _BLIT_H_
+#define _BLIT_H_
 
 #include "snes_ntsc.h"
 
@@ -186,14 +186,14 @@ void S9xBlitClearDelta (void);
 bool8 S9xBlitNTSCFilterInit (void);
 void S9xBlitNTSCFilterDeinit (void);
 void S9xBlitNTSCFilterSet (const snes_ntsc_setup_t *);
-void S9xBlitPixSmall16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixScaled16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixHiRes16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixScaledTV16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixHiResTV16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixHiResMixedTV16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixSmooth16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixNTSC16 (uint8 *, int, uint8 *, int, int, int);
-void S9xBlitPixHiResNTSC16 (uint8 *, int, uint8 *, int, int, int);
+void S9xBlitPixSmall16 (uint8 * a, int b, uint8 * c, int d, int e, int f);
+void S9xBlitPixScaled16 (uint8 * a, int b, uint8 * c, int d, int e, int f);
+void S9xBlitPixHiRes16 (uint8 * a, int b, uint8 * c, int d, int e, int f);
+void S9xBlitPixScaledTV16 (uint8 * a, int b, uint8 * c, int d, int e, int f);
+void S9xBlitPixHiResTV16 (uint8 * a, int b, uint8 * c, int d, int e, int f);
+void S9xBlitPixHiResMixedTV16 (uint8 * a, int b, uint8 * c, int d, int e, int f);
+void S9xBlitPixSmooth16 (uint8 * a, int b, uint8 * c, int d, int e, int f);
+void S9xBlitPixNTSC16 (uint8 * a, int b, uint8 * c, int d, int e, int f);
+void S9xBlitPixHiResNTSC16 (uint8 * a, int b, uint8 * c, int d, int e, int f);
 
 #endif

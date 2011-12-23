@@ -208,11 +208,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 	#error "Requires that int type have at least 32 bits"
 #endif
 
-/* TODO: add to blargg_endian.h */
-#define GET_LE16SA( addr )      ((int16_t) GET_LE16( addr ))
-#define GET_LE16A( addr )       GET_LE16( addr )
-#define SET_LE16A( addr, data ) SET_LE16( addr, data )
-
 /* if ( io < -32768 ) io = -32768; */
 /* if ( io >  32767 ) io =  32767; */
 #define CLAMP16( io )\

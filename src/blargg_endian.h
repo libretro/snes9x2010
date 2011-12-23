@@ -162,4 +162,8 @@ inline void set_le32( void* p, blargg_ulong n )
 	#define SET_LE32( addr, data )  set_le32( addr, data )
 #endif
 
+#define GET_LE16SA( addr )      ((int16_t) GET_LE16( addr ))
+#define GET_LE16A( addr )       GET_LE16( addr )
+#define SET_LE16A( addr, data ) SET_LE16( addr, data )
+
 #endif

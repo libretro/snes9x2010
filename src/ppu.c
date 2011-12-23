@@ -228,7 +228,7 @@ bool8 S9xGraphicsInit (void)
 		return (FALSE);
 	}
 
-	// Lookup table for color addition
+	/* Lookup table for color addition */
 	ZeroMemory(GFX.X2, 0x10000 * sizeof(uint16));
 	for (uint32 r = 0; r <= MAX_RED; r++)
 	{
@@ -254,7 +254,7 @@ bool8 S9xGraphicsInit (void)
 		}
 	}
 
-	// Lookup table for 1/2 color subtraction
+	/* Lookup table for 1/2 color subtraction */
 	ZeroMemory(GFX.ZERO, 0x10000 * sizeof(uint16));
 	for (uint32 r = 0; r <= MAX_RED; r++)
 	{
@@ -311,7 +311,7 @@ static int objsize_array[8][4] = {
 
 static void SetupOBJ (void)
 {
-	// default
+	/* default */
 	int	SmallWidth	= objsize_array[4][0];
 	int	SmallHeight	= objsize_array[4][1];
 	int	LargeWidth	= objsize_array[4][2];
@@ -329,9 +329,11 @@ static void SetupOBJ (void)
 
 	int startline = (IPPU.InterlaceOBJ && GFX.InterlaceFrame) ? 1 : 0;
 
-	// OK, we have three cases here. Either there's no priority, priority is
-	// normal FirstSprite, or priority is FirstSprite+Y. The first two are
-	// easy, the last is somewhat more ... interesting. So we split them up.
+	/* OK, we have three cases here. Either there's no priority, priority 
+	   is normal FirstSprite, or priority is FirstSprite+Y. The first two 
+	   are easy, the last is somewhat more ... interesting. 
+	   
+	   So we split them up. */
 
 	int		Height;
 	uint8	S;
@@ -1473,7 +1475,7 @@ static inline void RenderScreen_SFXSpeedupHack()
 	GFX.DB = GFX.SubZBuffer;
 	GFX.Clip = IPPU.Clip[1];
 	BGActive = Memory.FillRAM[0x212d];
-	D = (Memory.FillRAM[0x2130] & 2) << 4; // 'do math' depth flag
+	D = (Memory.FillRAM[0x2130] & 2) << 4; /* 'do math' depth flag */
 
 	if (BGActive & 0x10)
 	{
@@ -1560,9 +1562,6 @@ static inline void RenderScreen_SFXSpeedupHack()
 	#undef DO_BG_DEPTH4_OFFSET1
 
 	BG.EnableMath = 0;
-
-	//ghetto inline of DrawBackdrop - no math - 
-	//END - ghetto inline of DrawBackdrop - no math
 
 	BGActive = 0;
 	D = 0;
@@ -1679,7 +1678,7 @@ static inline void RenderScreen (bool8 sub)
 		GFX.DB = GFX.SubZBuffer;
 		GFX.Clip = IPPU.Clip[1];
 		BGActive = Memory.FillRAM[0x212d];
-		D = (Memory.FillRAM[0x2130] & 2) << 4; // 'do math' depth flag
+		D = (Memory.FillRAM[0x2130] & 2) << 4; /* 'do math' depth flag */
 	}
 
 	if (BGActive & 0x10)
@@ -1906,22 +1905,22 @@ static inline uint8 CalcWindowMask (int i, uint8 W1, uint8 W2)
 
 			switch (PPU.ClipWindowOverlapLogic[i])
 			{
-				case 0: // OR
+				case 0: /* OR */
 					return (W1 | W2);
 
-				case 1: // AND
+				case 1: /* AND */
 					return (W1 & W2);
 
-				case 2: // XOR
+				case 2: /* XOR */
 					return (W1 ^ W2);
 
-				case 3: // XNOR
+				case 3: /* XNOR */
 					return (~(W1 ^ W2));
 			}
 		}
 	}
 
-	// Never get here
+	/* Never gets to here */
 	return (0);
 }
 
@@ -2197,7 +2196,7 @@ void S9xUpdateScreen (void)
 	if (IPPU.OBJChanged || IPPU.InterlaceOBJ)
 		SetupOBJ();
 
-	// XXX: Check ForceBlank? Or anything else?
+	/* XXX: Check ForceBlank? Or anything else? */
 	PPU.RangeTimeOver |= GFX.OBJLines[GFX.EndY].RTOFlags;
 
 	GFX.StartY = IPPU.PreviousLine;
@@ -2206,8 +2205,10 @@ void S9xUpdateScreen (void)
 
 	if (!PPU.ForcedBlanking)
 	{
-		// If force blank, may as well completely skip all this. We only did
-		// the OBJ because (AFAWK) the RTO flags are updated even during force-blank.
+		/* If force blank, may as well completely skip all this. 
+		
+		   We only did the OBJ because (AFAWK) the RTO flags are 
+		   updated even during force-blank. */
 
 		if (PPU.RecomputeClipWindows)
 		{
@@ -2217,7 +2218,7 @@ void S9xUpdateScreen (void)
 
 		if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
 		{
-			// Have to back out of the regular speed hack
+			/* Have to back out of the regular speed hack */
 			for (register uint32 y = 0; y < GFX.StartY; y++)
 			{
 				register uint16	*p = GFX.Screen + y * GFX.PPL + 255;
@@ -2250,8 +2251,8 @@ void S9xUpdateScreen (void)
 			if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
 					((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
 			{
-				// If hires (Mode 5/6 or pseudo-hires) or math is to be done
-				// involving the subscreen, then we need to render the subscreen...
+				/* If hires (Mode 5/6 or pseudo-hires) or math is to be done
+				   involving the subscreen, then we need to render the subscreen... */
 				RenderScreen(TRUE);
 				if(PPU.RenderSub)
 				{
@@ -2360,20 +2361,25 @@ void S9xDrawCrosshair (const char *crosshair, uint8 fgcolor, uint8 bgcolor, int1
 
 static inline void S9xLatchCounters (void)
 {
-	// Latch h and v counters, like the gun
+	/* Latch h and v counters, like the gun */
 
 	PPU.HVBeamCounterLatched = 1;
 	PPU.VBeamPosLatched = (uint16) CPU.V_Counter;
 
-	// From byuu:
-	// All dots are 4 cycles long, except dots 322 and 326. dots 322 and 326 are 6 cycles long.
-	// This holds true for all scanlines except scanline 240 on non-interlace odd frames.
-	// The reason for this is because this scanline is only 1360 cycles long,
-	// instead of 1364 like all other scanlines.
-	// This makes the effective range of hscan_pos 0-339 at all times.
+	/* From byuu:
+	   All dots are 4 cycles long, except dots 322 and 326.
+	   dots 322 and 326 are 6 cycles long.
+
+	   This holds true for all scanlines except scanline 240 
+	   on non-interlace odd frames.
+
+	   The reason for this is because this scanline is only 
+	   1360 cycles long, instead of 1364 like all other scanlines.
+
+	   This makes the effective range of hscan_pos 0-339 at all times. */
 	int32	hc = CPU.Cycles;
 
-	if (Timings.H_Max == Timings.H_Max_Master) // 1364
+	if (Timings.H_Max == Timings.H_Max_Master) /* 1364 */
 	{
 		if (hc >= 1292)
 			hc -= ONE_DOT_CYCLE_DIV_2;
@@ -2398,9 +2404,9 @@ static void S9xUpdateHVTimerPosition (void)
 	{
 		if (PPU.IRQHBeamPos != 0)
 		{
-			// IRQ_read
+			/* IRQ_read */
 			PPU.HTimerPosition = PPU.IRQHBeamPos * ONE_DOT_CYCLE;
-			if (Timings.H_Max == Timings.H_Max_Master)	// 1364
+			if (Timings.H_Max == Timings.H_Max_Master)	/* 1364 */
 			{
 				if (PPU.IRQHBeamPos > 322)
 					PPU.HTimerPosition += (ONE_DOT_CYCLE_DIV_2);
@@ -2581,7 +2587,7 @@ static inline void REGISTER_2122 (uint8 Byte)
 	PPU.CGFLIP ^= 1;
 }
 
-// This code is correct, however due to Snes9x's inaccurate timings, some games might be broken by this change. :(
+/* This code is correct, however due to Snes9x's inaccurate timings, some games might be broken by this change. */
 #define CHECK_INBLANK !(Settings.BlockInvalidVRAMAccess && !PPU.ForcedBlanking && CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE)
 
 static inline void REGISTER_2118 (uint8 Byte)
@@ -2658,7 +2664,7 @@ static inline void REGISTER_2104 (uint8 Byte)
 			PPU.OAMData[addr] = Byte;
 			IPPU.OBJChanged = TRUE;
 
-			// X position high bit, and sprite size (x4)
+			/* X position high bit, and sprite size (x4) */
 			struct SOBJ *pObj = &PPU.OBJ[(addr & 0x1f) * 4];
 			pObj->HPos = (pObj->HPos & 0xFF) | SignExtend[(Byte >> 0) & 1];
 			pObj++->Size = Byte & 2;
@@ -2711,9 +2717,9 @@ static inline void REGISTER_2104 (uint8 Byte)
 			IPPU.OBJChanged = TRUE;
 			if (addr & 2)
 			{
-				// Tile
+				/* Tile */
 				PPU.OBJ[addr = PPU.OAMAddr >> 1].Name = PPU.OAMWriteRegister & 0x1ff;
-				// priority, h and v flip.
+				/* priority, h and v flip. */
 				PPU.OBJ[addr].Palette  = (highbyte >> 1) & 7;
 				PPU.OBJ[addr].Priority = (highbyte >> 4) & 3;
 				PPU.OBJ[addr].HFlip    = (highbyte >> 6) & 1;
@@ -2721,10 +2727,10 @@ static inline void REGISTER_2104 (uint8 Byte)
 			}
 			else
 			{
-				// X position (low)
+				/* X position (low) */
 				PPU.OBJ[addr = PPU.OAMAddr >> 1].HPos &= 0xff00;
 				PPU.OBJ[addr].HPos |= lowbyte;
-				// Sprite Y position
+				/* Sprite Y position */
 				PPU.OBJ[addr].VPos = highbyte;
 			}
 		}
@@ -2758,7 +2764,7 @@ static void S9xSetSuperFX (uint8 byte, uint16 address)
 				}
 				else
 				{
-					//FX Flush cache
+					/* FX Flush cache */
 					GSU.vCacheFlags = 0;
 					GSU.vCacheBaseReg = 0;
 					GSU.bCacheActive = FALSE;
@@ -2782,7 +2788,7 @@ static void S9xSetSuperFX (uint8 byte, uint16 address)
 			break;
 		case 0x3038:
 			Memory.FillRAM[0x3038] = byte;
-			// SCBR write seen. We need to update our cached screen pointers
+			/* SCBR write seen. We need to update our cached screen pointers */
 			GSU.vSCBRDirty = TRUE;
 			break;
 
@@ -2835,24 +2841,25 @@ static void S9xSetSuperFX (uint8 byte, uint16 address)
 
 void S9xSetPPU (uint8 Byte, uint16 Address)
 {
-	// MAP_PPU: $2000-$3FFF
+	/* MAP_PPU: $2000-$3FFF */
 
 	if (CPU.InDMAorHDMA)
 	{
 		if (CPU.CurrentDMAorHDMAChannel >= 0 && DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer)
 		{
-			// S9xSetPPU() is called to write to DMA[].AAddress
+			/* S9xSetPPU() is called to write to DMA[].AAddress */
 			#if 0
 			if ((Address & 0xff00) == 0x2100)
 			{
-				// Cannot access to Address Bus B ($2100-$21ff) via (H)DMA
+				/* Cannot access to Address Bus B ($2100-$21ff) via (H)DMA */
 				return;
 			}
 			else
 			{
-				// 0x2000-0x3FFF is connected to Address Bus A
-				// SA1, SuperFX and SRTC are mapped here
-				// I don't bother for now...
+				/* 0x2000-0x3FFF is connected to Address Bus A
+				   SA1, SuperFX and SRTC are mapped here
+				   
+				   I don't bother for now... */
 				return;
 			}
 			#endif
@@ -2860,22 +2867,24 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 		}
 		else
 		{
-			// S9xSetPPU() is called to read from $21xx
-			// Take care of DMA wrapping
+			/* S9xSetPPU() is called to read from $21xx
+			   Take care of DMA wrapping */
 			if (Address > 0x21ff)
 				Address = 0x2100 + (Address & 0xff);
 		}
 	}
 
 
-	if ((Address & 0xffc0) == 0x2140) // APUIO0, APUIO1, APUIO2, APUIO3
-		// write_port will run the APU until given clock before writing value
+	if ((Address & 0xffc0) == 0x2140) /* APUIO0, APUIO1, APUIO2, APUIO3 */
+	{
+		/* write_port will run the APU until given clock before writing value */
 		S9xAPUWritePort(Address & 3, Byte);
+	}
 	else if (Address <= 0x2183)
 	{
 		switch (Address)
 		{
-			case 0x2100: // INIDISP
+			case 0x2100: /* INIDISP */
 				if (Byte != Memory.FillRAM[0x2100])
 				{
 					FLUSH_REDRAW();
@@ -3474,7 +3483,7 @@ static uint8 S9xGetSuperFX (uint16 address)
 
 uint8 S9xGetPPU (uint16 Address)
 {
-	// MAP_PPU: $2000-$3FFF
+	/* MAP_PPU: $2000-$3FFF */
 
 	if (Address < 0x2100)
 		return (OpenBus);
@@ -3483,10 +3492,10 @@ uint8 S9xGetPPU (uint16 Address)
 	{
 		if (CPU.CurrentDMAorHDMAChannel >= 0 && !DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer)
 		{
-			// S9xGetPPU() is called to read from DMA[].AAddress
+			/* S9xGetPPU() is called to read from DMA[].AAddress */
 			#if 0
 			if ((Address & 0xff00) == 0x2100)
-				// Cannot access to Address Bus B ($2100-$21FF) via (H)DMA
+				/* Cannot access to Address Bus B ($2100-$21FF) via (H)DMA */
 				return (OpenBus);
 			else
 				// $2200-$3FFF are connected to Address Bus A
@@ -3497,15 +3506,18 @@ uint8 S9xGetPPU (uint16 Address)
 		}
 		else
 		{
-			// S9xGetPPU() is called to write to $21xx
-			// Take care of DMA wrapping
+			/* S9xGetPPU() is called to write to $21xx
+			   Take care of DMA wrapping */
 			if (Address > 0x21ff)
 				Address = 0x2100 + (Address & 0xff);
 		}
 	}
 
-	if ((Address & 0xffc0) == 0x2140) // APUIO0, APUIO1, APUIO2, APUIO3
-		return (S9xAPUReadPort(Address & 3)); // will run the APU until given APU time before reading value
+	if ((Address & 0xffc0) == 0x2140) /* APUIO0, APUIO1, APUIO2, APUIO3 */
+	{
+		/* will run the APU until given APU time before reading value */
+		return (S9xAPUReadPort(Address & 3));
+	}
 	else if (Address <= 0x2183)
 	{
 		uint8	byte;
@@ -3885,7 +3897,7 @@ static void S9xDoDMA (void)
 
 		struct SDMA	*d = &DMA[Channel];
 
-		// Check invalid DMA first
+		/* Check invalid DMA first */
 		if ((d->ABank == 0x7E || d->ABank == 0x7F) && d->BAddress == 0x80 && !d->ReverseTransfer)
 		{
 			// Attempting a DMA from WRAM to $2180 will not work, WRAM will not be written.
@@ -3899,14 +3911,14 @@ static void S9xDoDMA (void)
 			// And no, PPU.WRAM should not be updated.
 
 			int32	c = d->TransferBytes;
-			// Writing $0000 to $43x5 actually results in a transfer of $10000 bytes, not 0.
+			/* Writing $0000 to $43x5 actually results in a transfer of $10000 bytes, not 0. */
 			if (c == 0)
 				c = 0x10000;
 
-			// 8 cycles per channel
+			/* 8 cycles per channel */
 			CPU.Cycles += SLOW_ONE_CYCLE;
 
-			// 8 cycles per byte
+			/* 8 cycles per byte */
 			do
 			{
 				d->TransferBytes--;
@@ -3928,7 +3940,7 @@ static void S9xDoDMA (void)
 			continue;
 		}
 
-		// Prepare for accessing $2118-2119
+		/* Prepare for accessing $2118-2119 */
 		switch (d->BAddress)
 		{
 			case 0x18:
@@ -3939,16 +3951,16 @@ static void S9xDoDMA (void)
 
 		int32	inc = d->AAddressFixed ? 0 : (!d->AAddressDecrement ? 1 : -1);
 		int32	count = d->TransferBytes;
-		// Writing $0000 to $43x5 actually results in a transfer of $10000 bytes, not 0.
+		/* Writing $0000 to $43x5 actually results in a transfer of $10000 bytes, not 0. */
 		if (count == 0)
 			count = 0x10000;
 
-		// Prepare for custom chip DMA
+		/* Prepare for custom chip DMA */
 		uint8	*in_sdd1_dma = NULL;
 		uint8	*spc7110_dma = NULL;
 		bool8	in_sa1_dma = FALSE;
 
-		// S-DD1
+		/* S-DD1 */
 		if(special_chips_active)
 		{
 			if (Settings.SDD1)
@@ -3973,8 +3985,7 @@ static void S9xDoDMA (void)
 				Memory.FillRAM[0x4801] = 0;
 			}
 
-			// SPC7110
-
+			/* SPC7110 */
 
 			if (Settings.SPC7110)
 			{
@@ -3994,14 +4005,14 @@ static void S9xDoDMA (void)
 				}
 			}
 
-			// SA-1
+			/* SA-1 */
 
 			if (Settings.SA1)
 			{
 				if (SA1.in_char_dma && d->BAddress == 0x18 && (d->ABank & 0xf0) == 0x40)
 				{
-					// Perform packed bitmap to PPU character format conversion on the data
-					// before transmitting it to V-RAM via-DMA.
+					/* Perform packed bitmap to PPU character format conversion on the data
+					   before transmitting it to V-RAM via-DMA. */
 					int32	num_chars = 1 << ((Memory.FillRAM[0x2231] >> 2) & 7);
 					int32	depth = (Memory.FillRAM[0x2231] & 3) == 0 ? 8 : (Memory.FillRAM[0x2231] & 3) == 1 ? 4 : 2;
 					int32	bytes_per_char = 8 * depth;
@@ -4012,7 +4023,7 @@ static void S9xDoDMA (void)
 					uint8	*base = S9xGetBasePointer((d->ABank << 16) + addr);
 					if (!base)
 					{
-						//"SA-1: DMA from non-block address $%02X:%04X", d->ABank, addr
+						/* SA-1: DMA from non-block address $%02X:%04X", d->ABank, addr */
 						base = Memory.ROM;
 					}
 
@@ -4122,25 +4133,25 @@ static void S9xDoDMA (void)
 			}
 		}
 
-		// Do Transfer
+		/* Do Transfer */
 
 		uint8	Work;
 
-		// 8 cycles per channel
+		/* 8 cycles per channel */
 		CPU.Cycles += SLOW_ONE_CYCLE;
 
 		if (!d->ReverseTransfer)
 		{
-			// CPU -> PPU
+			/* CPU -> PPU */
 			int32	b = 0;
 			uint16	p = d->AAddress;
 			uint8	*base = S9xGetBasePointer((d->ABank << 16) + d->AAddress);
 
 			int32	rem = count;
-			// Transfer per block if d->AAdressFixed is FALSE
+			/* Transfer per block if d->AAdressFixed is FALSE */
 			count = d->AAddressFixed ? rem : (d->AAddressDecrement ? ((p & MEMMAP_MASK) + 1) : (MEMMAP_BLOCK_SIZE - (p & MEMMAP_MASK)));
 
-			// Settings for custom chip DMA
+			/* Settings for custom chip DMA */
 			if(special_chips_active)
 			{
 				if (in_sa1_dma)
@@ -4168,7 +4179,7 @@ static void S9xDoDMA (void)
 						(d->ABank == 0x7e || d->ABank == 0x7f || (!(d->ABank & 0x40) && d->AAddress < 0x2000)));
 
 
-			// 8 cycles per byte
+			/* 8 cycles per byte */
 #define	UPDATE_COUNTERS \
 			d->TransferBytes--; \
 			d->AAddress += inc; \
@@ -4192,7 +4203,7 @@ static void S9xDoDMA (void)
 
 				if (!base)
 				{
-					// DMA SLOW PATH
+					/* DMA SLOW PATH */
 					if (d->TransferMode == 0 || d->TransferMode == 2 || d->TransferMode == 6)
 					{
 						do
@@ -4205,7 +4216,7 @@ static void S9xDoDMA (void)
 					else
 						if (d->TransferMode == 1 || d->TransferMode == 5)
 						{
-							// This is a variation on Duff's Device. It is legal C/C++.
+							/* This is a variation on Duff's Device. It is legal C/C++. */
 							switch (b)
 							{
 								default:
@@ -4335,12 +4346,12 @@ static void S9xDoDMA (void)
 				}
 				else
 				{
-					// DMA FAST PATH
+					/* DMA FAST PATH */
 					if (d->TransferMode == 0 || d->TransferMode == 2 || d->TransferMode == 6)
 					{
 						switch (d->BAddress)
 						{
-							case 0x04: // OAMDATA
+							case 0x04: /* OAMDATA */
 								do
 								{
 									Work = *(base + p);
@@ -4350,7 +4361,7 @@ static void S9xDoDMA (void)
 
 								break;
 
-							case 0x18: // VMDATAL
+							case 0x18: /* VMDATAL */
 #ifndef CORRECT_VRAM_READS
 								IPPU.FirstVRAMRead = TRUE;
 #endif
@@ -4377,7 +4388,7 @@ static void S9xDoDMA (void)
 
 								break;
 
-							case 0x19: // VMDATAH
+							case 0x19: /* VMDATAH */
 #ifndef CORRECT_VRAM_READS
 								IPPU.FirstVRAMRead = TRUE;
 #endif
@@ -5468,7 +5479,7 @@ void S9xSoftResetPPU (void)
 	ZeroMemory(IPPU.TileCached[TILE_4BIT_EVEN], MAX_4BIT_TILES);
 	ZeroMemory(IPPU.TileCached[TILE_4BIT_ODD],  MAX_4BIT_TILES);
 #ifdef CORRECT_VRAM_READS
-	IPPU.VRAMReadBuffer = 0; // XXX: FIXME: anything better?
+	IPPU.VRAMReadBuffer = 0; /* XXX: FIXME: anything better? */
 #else
 	IPPU.FirstVRAMRead = FALSE;
 #endif
@@ -5492,7 +5503,8 @@ void S9xSoftResetPPU (void)
 	ZeroMemory(&Memory.FillRAM[0x2100], 0x100);
 	ZeroMemory(&Memory.FillRAM[0x4200], 0x100);
 	ZeroMemory(&Memory.FillRAM[0x4000], 0x100);
-	// For BS Suttehakkun 2...
+
+	/* For BS Suttehakkun 2 */
 	ZeroMemory(&Memory.FillRAM[0x1000], 0x1000);
 
 	Memory.FillRAM[0x4201] = Memory.FillRAM[0x4213] = 0xff;

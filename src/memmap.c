@@ -258,9 +258,10 @@ static const uint32	crc32Table[256] =
 static void S9xDeinterleaveType1 (int size, uint8 *base)
 {
 	uint8	blocks[256];
-	int		nblocks = size >> 16;
+	int	nblocks = size >> 16;
+	int	i, j;
 
-	for (int i = 0; i < nblocks; i++)
+	for ( i = 0; i < nblocks; i++)
 	{
 		blocks[i * 2] = i + nblocks;
 		blocks[i * 2 + 1] = i;
@@ -269,9 +270,9 @@ static void S9xDeinterleaveType1 (int size, uint8 *base)
 	uint8	*tmp = (uint8 *) malloc(0x8000);
 	if (tmp)
 	{
-		for (int i = 0; i < nblocks * 2; i++)
+		for ( i = 0; i < nblocks * 2; i++)
 		{
-			for (int j = i; j < nblocks * 2; j++)
+			for ( j = i; j < nblocks * 2; j++)
 			{
 				if (blocks[j] == i)
 				{
@@ -294,22 +295,23 @@ static void S9xDeinterleaveType2 (int size, uint8 *base)
 {
 	/* for odd Super FX images */
 	uint8	blocks[256];
-	int		nblocks = size >> 16;
-	int		step = 64;
+	int	nblocks = size >> 16;
+	int	step = 64;
+	int	i, j;
 
 	while (nblocks <= step)
 		step >>= 1;
 	nblocks = step;
 
-	for (int i = 0; i < nblocks * 2; i++)
+	for ( i = 0; i < nblocks * 2; i++)
 		blocks[i] = (i & ~0xf) | ((i & 3) << 2) | ((i & 12) >> 2);
 
 	uint8	*tmp = (uint8 *) malloc(0x10000);
 	if (tmp)
 	{
-		for (int i = 0; i < nblocks * 2; i++)
+		for ( i = 0; i < nblocks * 2; i++)
 		{
-			for (int j = i; j < nblocks * 2; j++)
+			for ( j = i; j < nblocks * 2; j++)
 			{
 				if (blocks[j] == i)
 				{
@@ -449,6 +451,7 @@ static char * Safe (const char *s)
 {
 	static char	*safe = NULL;
 	static int	safe_len = 0;
+	int		i;
 
 	if (s == NULL)
 	{
@@ -471,7 +474,7 @@ static char * Safe (const char *s)
 		safe = (char *) malloc(safe_len);
 	}
 
-	for (int i = 0; i < len; i++)
+	for ( i = 0; i < len; i++)
 	{
 		if (s[i] >= 32 && s[i] < 127)
 			safe[i] = s[i];
@@ -488,6 +491,7 @@ static char * SafeANK (uint8 ROMRegion, const char *s)
 {
 	static char	*safe = NULL;
 	static int	safe_len = 0;
+	int		i;
 
 	if (s == NULL)
 	{
@@ -510,7 +514,7 @@ static char * SafeANK (uint8 ROMRegion, const char *s)
 		safe = (char *) malloc(safe_len);
 	}
 
-	for (int i = 0; i < len; i++)
+	for ( i = 0; i < len; i++)
 	{
 		if (s[i] >= 32 && s[i] < 127) /* ASCII */
 			safe [i] = s[i];
@@ -576,7 +580,8 @@ void Deinit (void)
 
 static bool8 allASCII (uint8 *b, int size)
 {
-	for (int i = 0; i < size; i++)
+	int i;
+	for ( i = 0; i < size; i++)
 	{
 		if (b[i] < 32 || b[i] > 126)
 			return (FALSE);
@@ -864,9 +869,9 @@ static bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers,
 
 static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 {
-	// <- ROM size without header
-	// ** Memory.HeaderCount
-	// ** Memory.ROMFilename
+	/* <- ROM size without header */
+	/* ** Memory.HeaderCount */
+	/* ** Memory.ROMFilename */
 
 	int32	totalSize = 0;
 	char	fname[PATH_MAX + 1];
@@ -972,34 +977,40 @@ static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
 	return (~crc32);
 }
 
-// UPS % IPS
+/* UPS % IPS */
 
 static uint32 ReadUPSPointer (const uint8 *data, uint32 * addr, unsigned size)
 {
 	uint32 offset = 0, shift = 1;
-	while(*addr < size) {
+	while(*addr < size)
+	{
 		uint8 x = data[(*addr)++];
 		offset += (x & 0x7f) * shift;
-		if(x & 0x80) break;
+
+		if(x & 0x80)
+			break;
+
 		shift <<= 7;
 		offset += shift;
 	}
 	return offset;
 }
 
-//NOTE: UPS patches are *never* created against a headered ROM!
-//this is per the UPS file specification. however, do note that it is
-//technically possible for a non-compliant patcher to ignore this requirement.
-//therefore, it is *imperative* that no emulator support such patches.
-//thusly, we ignore the "long offset" parameter below. failure to do so would
-//completely invalidate the purpose of UPS; which is to avoid header vs
-//no-header patching errors that result in IPS patches having a 50/50 chance of
-//being applied correctly.
+/* NOTE: UPS patches are *never* created against a headered ROM!
+   this is per the UPS file specification. however, do note that it is
+   technically possible for a non-compliant patcher to ignore this requirement.
+   therefore, it is *imperative* that no emulator support such patches.
+   
+   thusly, we ignore the "long offset" parameter below. failure to do so would
+   completely invalidate the purpose of UPS; which is to avoid header vs
+   no-header patching errors that result in IPS patches having a 50/50 chance of
+   being applied correctly. */
 
 static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 {
-	//Reader lacks size() and rewind(), so we need to read in the file to get its size
-	uint8 *data = (uint8*)malloc(8 * 1024 * 1024);  //allocate a lot of memory, better safe than sorry ...
+	unsigned i;
+
+	uint8 *data = (uint8*)malloc(8 * 1024 * 1024);  /* allocate a lot of memory, better safe than sorry */
 	uint32 size = 0;
 	while(true)
 	{
@@ -1009,39 +1020,64 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 		data[size++] = value;
 		if(size >= 8 * 1024 * 1024)
 		{
-			//prevent buffer overflow: SNES-made UPS patches should never be this big anyway ...
+			/* prevent buffer overflow: SNES-made UPS patches should never be this big anyway */
 			free(data);
 			return false;
 		}
 	}
 
-	//4-byte header + 1-byte input size + 1-byte output size + 4-byte patch CRC32 + 4-byte unpatched CRC32 + 4-byte patched CRC32
-	if(size < 18) //patch is too small
+	/* 4-byte header + 1-byte input size + 1-byte output size + 
+	   4-byte patch CRC32 + 4-byte unpatched CRC32 + 4-byte patched CRC32 */
+
+	if(size < 18) /* patch is too small */
 	{
 		free(data);
 		return false;
 	}  
 
 	uint32 addr = 0;
-	if(data[addr++] != 'U') { free(data); return false; }  //patch has an invalid header
-	if(data[addr++] != 'P') { free(data); return false; }  //...
-	if(data[addr++] != 'S') { free(data); return false; }  //...
-	if(data[addr++] != '1') { free(data); return false; }  //...
+	if(data[addr++] != 'U') /* patch has an invalid header */
 
-	uint32 patch_crc32 = caCRC32(data, size - 4, 0xffffffff);  //don't include patch CRC32 itself in CRC32 calculation
-	uint32 rom_crc32 = caCRC32(Memory.ROM, *rom_size, 0xffffffff);
-	uint32 px_crc32 = (data[size - 12] << 0) + (data[size - 11] << 8) + (data[size - 10] << 16) + (data[size -  9] << 24);
-	uint32 py_crc32 = (data[size -  8] << 0) + (data[size -  7] << 8) + (data[size -  6] << 16) + (data[size -  5] << 24);
-	uint32 pp_crc32 = (data[size -  4] << 0) + (data[size -  3] << 8) + (data[size -  2] << 16) + (data[size -  1] << 24);
-
-	if(patch_crc32 != pp_crc32) // patch is corrupted
 	{
 		free(data);
 		return false;
 	}
 
-	if((rom_crc32 != px_crc32) && (rom_crc32 != py_crc32)) //patch is for a different ROM
+	if(data[addr++] != 'P') /* patch has an invalid header */
 	{
+		free(data);
+		return false;
+	}
+
+	if(data[addr++] != 'S') /* patch has an invalid header */
+	{
+		free(data);
+		return false;
+	}
+	if(data[addr++] != '1') /* patch has an invalid header */
+	{
+		free(data);
+		return false;
+	}
+
+	/* don't include patch CRC32 itself in CRC32 calculation */
+	uint32 patch_crc32 = caCRC32(data, size - 4, 0xffffffff);
+
+	uint32 rom_crc32 = caCRC32(Memory.ROM, *rom_size, 0xffffffff);
+	uint32 px_crc32 = (data[size - 12] << 0) + (data[size - 11] << 8) + (data[size - 10] << 16) + (data[size -  9] << 24);
+	uint32 py_crc32 = (data[size -  8] << 0) + (data[size -  7] << 8) + (data[size -  6] << 16) + (data[size -  5] << 24);
+	uint32 pp_crc32 = (data[size -  4] << 0) + (data[size -  3] << 8) + (data[size -  2] << 16) + (data[size -  1] << 24);
+
+	if(patch_crc32 != pp_crc32)
+	{
+		/* patch is corrupted */
+		free(data);
+		return false;
+	}
+
+	if((rom_crc32 != px_crc32) && (rom_crc32 != py_crc32))
+	{
+		/* patch is for a different ROM */
 		free(data);
 		return false;
 	}  
@@ -1049,15 +1085,18 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 	uint32 py_size = ReadUPSPointer(data, &addr, size);
 	uint32 out_size = ((uint32) *rom_size == px_size) ? py_size : px_size;
 
-	if(out_size > MAX_ROM_SIZE) //applying this patch will overflow Memory.ROM buffer
+	if(out_size > MAX_ROM_SIZE)
 	{
+		/* applying this patch will overflow Memory.ROM buffer, so don't */
 		free(data);
 		return false;
 	}  
 
-	//fill expanded area with 0x00s; so that XORing works as expected below.
-	//note that this is needed (and works) whether output ROM is larger or smaller than pre-patched ROM
-	for(unsigned i = min((uint32) *rom_size, out_size); i < max((uint32) *rom_size, out_size); i++)
+	/* fill expanded area with 0x00s; so that XORing works as expected below.
+	   note that this is needed (and works) whether output ROM is larger or 
+	   smaller than pre-patched ROM */
+
+	for( i = min((uint32) *rom_size, out_size); i < max((uint32) *rom_size, out_size); i++)
 		Memory.ROM[i] = 0x00;
 
 	uint32 relative = 0;
@@ -1078,19 +1117,22 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 	uint32 out_crc32 = caCRC32(Memory.ROM, *rom_size, 0xffffffff);
 	if(((rom_crc32 == px_crc32) && (out_crc32 == py_crc32))
 	|| ((rom_crc32 == py_crc32) && (out_crc32 == px_crc32))
-	) {
+	)
+	{
 		return true;
-	} else {
-		//technically, reaching here means that patching has failed.
-		//we should return false, but unfortunately Memory.ROM has already
-		//been modified above and cannot be undone. to do this properly, we
-		//would need to make a copy of Memory.ROM, apply the patch, and then
-		//copy that back to Memory.ROM.
-		//
-		//however, the only way for this case to happen is if the UPS patch file
-		//itself is corrupted, which should be detected by the patch CRC32 check
-		//above anyway. errors due to the wrong ROM or patch file being used are
-		//already caught above.
+	}
+	else
+	{
+		/*Technically, reaching here means that patching has failed.
+		we should return false, but unfortunately Memory.ROM has already
+		been modified above and cannot be undone. to do this properly, we
+		would need to make a copy of Memory.ROM, apply the patch, and then
+		copy that back to Memory.ROM.
+
+		However, the only way for this case to happen is if the UPS patch file
+		itself is corrupted, which should be detected by the patch CRC32 check
+		above anyway. errors due to the wrong ROM or patch file being used are
+		already caught above. */
 		fprintf(stderr, "WARNING: UPS patching appears to have failed.\nGame may not be playable.\n");
 		return true;
 	}
@@ -1117,9 +1159,10 @@ static bool8 ReadIPSPatch (FILE * r, long offset, int32 * rom_size)
 {
 	int32		ofs;
 	char		fname[6];
+	int		i;
 
 	fname[5] = 0;
-	for (int i = 0; i < 5; i++)
+	for ( i = 0; i < 5; i++)
 	{
 		int	c = fgetc(r);
 		if (c == EOF)
@@ -1194,9 +1237,6 @@ static bool8 ReadIPSPatch (FILE * r, long offset, int32 * rom_size)
 
 static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * rom_size)
 {
-	if (Settings.NoPatch)
-		return;
-
 #ifdef CUSTOM_FILE_HANDLING
 	CustomCheckForAnyPatch(header, rom_size);
 #else
@@ -1208,7 +1248,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 	char		dir[_MAX_DIR + 1], drive[_MAX_DRIVE + 1], name[_MAX_FNAME + 1], ext[_MAX_EXT + 1], ips[_MAX_EXT + 3], fname[PATH_MAX + 1];
 	const char	*n;
 
-	// UPS
+	/* UPS */
 
 	_splitpath(rom_filename, drive, dir, name, ext);
 	_makepath(fname, drive, dir, name, "ups");
@@ -1247,7 +1287,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			printf(" failed!\n");
 	}
 
-	// IPS
+	/* IPS */
 
 	_splitpath(rom_filename, drive, dir, name, ext);
 	_makepath(fname, drive, dir, name, "ips");
@@ -1538,7 +1578,7 @@ again:
 		memmove(Memory.ROM, Memory.ROM + 512, totalFileSize - 512);
 		totalFileSize -= 512;
 		S9xMessage(S9X_INFO, S9X_HEADER_WARNING, "Try 'force no-header' option if the game doesn't work");
-		// modifying ROM, so we need to rescore
+		/* modifying ROM, so we need to rescore */
 		hi_score = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 		lo_score = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 	}
@@ -1546,13 +1586,13 @@ again:
 	Memory.CalculatedSize = (totalFileSize / 0x2000) * 0x2000;
 
 	if (Memory.CalculatedSize > 0x400000 &&
-		(Memory.ROM[0x7fd5] + (Memory.ROM[0x7fd6] << 8)) != 0x4332 && // exclude S-DD1
+		(Memory.ROM[0x7fd5] + (Memory.ROM[0x7fd6] << 8)) != 0x4332 && /* exclude S-DD1 */
 		(Memory.ROM[0x7fd5] + (Memory.ROM[0x7fd6] << 8)) != 0x4532 &&
-		(Memory.ROM[0xffd5] + (Memory.ROM[0xffd6] << 8)) != 0xF93a && // exclude SPC7110
+		(Memory.ROM[0xffd5] + (Memory.ROM[0xffd6] << 8)) != 0xF93a && /* exclude SPC7110 */
 		(Memory.ROM[0xffd5] + (Memory.ROM[0xffd6] << 8)) != 0xF53a)
 		Memory.ExtendedFormat = YEAH;
 
-	// if both vectors are invalid, it's type 1 interleaved LoROM
+	/* if both vectors are invalid, it's type 1 interleaved LoROM */
 	if (Memory.ExtendedFormat == NOPE &&
 		((Memory.ROM[0x7ffc] + (Memory.ROM[0x7ffd] << 8)) < 0x8000) &&
 		((Memory.ROM[0xfffc] + (Memory.ROM[0xfffd] << 8)) < 0x8000))
@@ -1561,7 +1601,7 @@ again:
 			S9xDeinterleaveType1(totalFileSize, Memory.ROM);
 	}
 
-	// CalculatedSize is now set, so rescore
+	/* CalculatedSize is now set, so rescore */
 	hi_score = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 	lo_score = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 
@@ -1574,7 +1614,7 @@ again:
 		swappedhirom = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0x400000);
 		swappedlorom = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0x400000);
 
-		// set swapped here
+		/* set swapped here */
 		if (max(swappedlorom, swappedhirom) >= max(lo_score, hi_score))
 		{
 			Memory.ExtendedFormat = BIGFIRST;
@@ -1595,7 +1635,7 @@ again:
 		Memory.LoROM = TRUE;
 		Memory.HiROM = FALSE;
 
-		// ignore map type byte if not 0x2x or 0x3x
+		/* ignore map type byte if not 0x2x or 0x3x */
 		if ((RomHeader[0x7fd5] & 0xf0) == 0x20 || (RomHeader[0x7fd5] & 0xf0) == 0x30)
 		{
 			switch (RomHeader[0x7fd5] & 0xf)
@@ -1628,7 +1668,7 @@ again:
 		}
 	}
 
-	// this two games fail to be detected
+	/* these two games fail to be detected otherwise */
 	if (!Settings.ForceHiROM && !Settings.ForceLoROM)
 	{
 		if (strncmp((char *) &Memory.ROM[0x7fc0], "YUYU NO QUIZ DE GO!GO!", 22) == 0 ||
@@ -1766,7 +1806,7 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB)
 			Multi.cartType = 4;
 	}
 	else
-		Multi.cartType = 4; // assuming BIOS only
+		Multi.cartType = 4; /* assuming BIOS only */
 
 	switch (Multi.cartType)
 	{
@@ -1812,7 +1852,7 @@ bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
 
 	if (Multi.cartSizeA)
 	{
-		Multi.sramSizeA = 4; // ROM[0x37]?
+		Multi.sramSizeA = 4; /* ROM[0x37]? */
 		Multi.sramMaskA = Multi.sramSizeA ? ((1 << (Multi.sramSizeA + 3)) * 128 - 1) : 0;
 
 		if (!Settings.NoPatch)
@@ -1836,7 +1876,7 @@ bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
 
 	if (Multi.cartSizeB)
 	{
-		Multi.sramSizeB = 4; // ROM[0x37]?
+		Multi.sramSizeB = 4; /* ROM[0x37]? */
 		Multi.sramMaskB = Multi.sramSizeB ? ((1 << (Multi.sramSizeB + 3)) * 128 - 1) : 0;
 
 		if (!Settings.NoPatch)
@@ -1949,7 +1989,7 @@ bool8 LoadSRAM (const char *filename)
 
 	strcpy(sramName, filename);
 
-	// Clear SRAM
+	/* Clear SRAM */
 	memset(Memory.SRAM, SNESGameFixes.SRAMInitialValue, 0x20000);
 
 	if (Multi.cartType && Multi.sramSizeB)
@@ -1995,8 +2035,8 @@ bool8 LoadSRAM (const char *filename)
 		else
 		if (Settings.BS && !Settings.BSXItself)
 		{
-			// The BS game's SRAM was not found
-			// Try to read BS-X.srm instead
+			/* The BS game's SRAM was not found
+			   Try to read BS-X.srm instead */
 			char	path[PATH_MAX + 1];
 
 			strcpy(path, S9xGetDirectory(SRAM_DIR));
@@ -2029,10 +2069,10 @@ bool8 LoadSRAM (const char *filename)
 
 bool8 SaveSRAM (const char *filename)
 {
-	if (Settings.SuperFX && Memory.ROMType < 0x15) // doesn't have SRAM
+	if (Settings.SuperFX && Memory.ROMType < 0x15) /* doesn't have SRAM */
 		return (TRUE);
 
-	if (Settings.SA1 && Memory.ROMType == 0x34)    // doesn't have SRAM
+	if (Settings.SA1 && Memory.ROMType == 0x34)    /* doesn't have SRAM */
 		return (TRUE);
 
 	FILE	*file;
@@ -2110,7 +2150,7 @@ static uint16 checksum_calc_sum (uint8 *data, uint32 length)
 
 static uint16 checksum_mirror_sum (uint8 *start, uint32 * length, uint32 mask)
 {
-	// from NSRT
+	/* from NSRT */
 	while (!(*length & mask))
 		mask >>= 1;
 
@@ -2136,7 +2176,7 @@ static uint16 checksum_mirror_sum (uint8 *start, uint32 * length, uint32 mask)
 
 static uint32 map_mirror (uint32 size, uint32 pos)
 {
-	// from bsnes
+	/* from bsnes */
 	if (size == 0)
 		return (0);
 	if (pos < size)
@@ -2505,7 +2545,7 @@ static void Map_SufamiTurboLoROMMap (void)
 
 static void Map_SufamiTurboPseudoLoROMMap (void)
 {
-	// for combined images
+	/* for combined images */
 	printf("Map_SufamiTurboPseudoLoROMMap\n");
 	MAP_SYSTEM();
 
@@ -2516,7 +2556,7 @@ static void Map_SufamiTurboPseudoLoROMMap (void)
 	MAP_LOROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, 0x100000, 0x100000);
 	MAP_LOROM_OFFSET(0xc0, 0xdf, 0x8000, 0xffff, 0x100000, 0x200000);
 
-	// I don't care :P
+	/* I don't care :P */
 	MAP_SPACE(0x60, 0x63, 0x8000, 0xffff, Memory.SRAM - 0x8000);
 	MAP_SPACE(0xe0, 0xe3, 0x8000, 0xffff, Memory.SRAM - 0x8000);
 	MAP_SPACE(0x70, 0x73, 0x8000, 0xffff, Memory.SRAM + 0x4000 - 0x8000);
@@ -2532,8 +2572,8 @@ static void Map_SuperFXLoROMMap (void)
 	printf("Map_SuperFXLoROMMap\n");
 	MAP_SYSTEM();
 
-	// Replicate the first 2Mb of the ROM at ROM + 2MB such that each 32K
-	// block is repeated twice in each 64K block.
+	/* Replicate the first 2Mbit of the ROM at ROM + 2Mbit such that each 32K
+	   block is repeated twice in each 64K block. */
 	for (int c = 0; c < 64; c++)
 	{
 		memmove(&Memory.ROM[0x200000 + c * 0x10000], &Memory.ROM[c * 0x8000], 0x8000);
@@ -2600,6 +2640,7 @@ static void Map_SDD1LoROMMap (void)
 
 static void Map_SA1LoROMMap (void)
 {
+	int c;
 	printf("Map_SA1LoROMMap\n");
 	MAP_SYSTEM();
 
@@ -2622,12 +2663,12 @@ static void Map_SA1LoROMMap (void)
 
 	map_WriteProtectROM();
 
-	// Now copy the map and correct it for the SA1 CPU.
+	/* Now copy the map and correct it for the SA1 CPU. */
 	memmove((void *) SA1.Map, (void *) Memory.Map, sizeof(Memory.Map));
 	memmove((void *) SA1.WriteMap, (void *) Memory.WriteMap, sizeof(Memory.WriteMap));
 
-	// SA-1 Banks 00->3f and 80->bf
-	for (int c = 0x000; c < 0x400; c += 0x10)
+	/* SA-1 Banks 00->3f and 80->bf */
+	for ( c = 0x000; c < 0x400; c += 0x10)
 	{
 		SA1.Map[c + 0] = SA1.Map[c + 0x800] = Memory.FillRAM + 0x3000;
 		SA1.Map[c + 1] = SA1.Map[c + 0x801] = (uint8 *) MAP_NONE;
@@ -2635,8 +2676,8 @@ static void Map_SA1LoROMMap (void)
 		SA1.WriteMap[c + 1] = SA1.WriteMap[c + 0x801] = (uint8 *) MAP_NONE;
 	}
 
-	// SA-1 Banks 60->6f
-	for (int c = 0x600; c < 0x700; c++)
+	/* SA-1 Banks 60->6f */
+	for ( c = 0x600; c < 0x700; c++)
 		SA1.Map[c] = SA1.WriteMap[c] = (uint8 *) MAP_BWRAM_BITMAP;
 
 	Memory.BWRAM = Memory.SRAM;
@@ -2738,7 +2779,7 @@ void InitROM (void)
 	Settings.BS = FALSE;
 	SuperFX.nRomBanks = Memory.CalculatedSize >> 15;
 
-	//// Parse ROM header and read ROM informatoin
+	/* Parse ROM header and read ROM information */
 
 	Memory.CompanyId = -1;
 	memset(Memory.ROMId, 0, 5);
@@ -2749,9 +2790,9 @@ void InitROM (void)
 	if (Memory.HiROM)
 		RomHeader += 0x8000;
 
-	S9xInitBSX(); // Set BS header before parsing
+	S9xInitBSX(); /* Set BS header before parsing */
 
-	//Parse SNES Header
+	/* Parse SNES Header */
 
 	bool8	bs = Settings.BS & !Settings.BSXItself;
 
@@ -2797,34 +2838,33 @@ void InitROM (void)
 		Memory.CompanyId = l2 * 36 + r2;
 	}
 
-	// End of Parse SNES Header
+	/* End of Parse SNES Header */
 
-	//// Detect and initialize chips
-	//// detection codes are compatible with NSRT
+	/* Detect and initialize chips
+	   detection codes are compatible with NSRT */
 
-	// DSP1/2/3/4
+	/* DSP1/2/3/4 */
 	if (Memory.ROMType == 0x03)
 	{
 		if (Memory.ROMSpeed == 0x30)
-			Settings.DSP = 4; // DSP4
+			Settings.DSP = 4; /* DSP4 */
 		else
-			Settings.DSP = 1; // DSP1
+			Settings.DSP = 1; /* DSP1 */
 	}
-	else
-	if (Memory.ROMType == 0x05)
+	else if (Memory.ROMType == 0x05)
 	{
 		if (Memory.ROMSpeed == 0x20)
-			Settings.DSP = 2; // DSP2
+			Settings.DSP = 2; /* DSP2 */
 		else
 		if (Memory.ROMSpeed == 0x30 && RomHeader[0x2a] == 0xb2)
-			Settings.DSP = 3; // DSP3
+			Settings.DSP = 3; /* DSP3 */
 		else
-			Settings.DSP = 1; // DSP1
+			Settings.DSP = 1; /* DSP1 */
 	}
 
 	switch (Settings.DSP)
 	{
-		case 1:	// DSP1
+		case 1:	/* DSP1 */
 			if (Memory.HiROM)
 			{
 				DSP0.boundary = 0x7000;
@@ -2846,21 +2886,21 @@ void InitROM (void)
 			GetDSP = &DSP1GetByte;
 			break;
 
-		case 2: // DSP2
+		case 2: /* DSP2 */
 			DSP0.boundary = 0x10000;
 			DSP0.maptype = M_DSP2_LOROM;
 			SetDSP = &DSP2SetByte;
 			GetDSP = &DSP2GetByte;
 			break;
 
-		case 3: // DSP3
+		case 3: /* DSP3 */
 			DSP0.boundary = 0xc000;
 			DSP0.maptype = M_DSP3_LOROM;
 			SetDSP = &DSP3SetByte;
 			GetDSP = &DSP3GetByte;
 			break;
 
-		case 4: // DSP4
+		case 4: /* DSP4 */
 			DSP0.boundary = 0xc000;
 			DSP0.maptype = M_DSP4_LOROM;
 			SetDSP = &DSP4SetByte;
@@ -2955,7 +2995,7 @@ void InitROM (void)
 			break;
 	}
 
-	//// Map memory and calculate checksum
+	/* Map memory and calculate checksum */
 
 	MAP_INITIALIZE();
 	Memory.CalculatedChecksum = 0;
@@ -3032,7 +3072,7 @@ void InitROM (void)
 											}
 	}
 
-	// from NSRT
+	/* from NSRT */
 	uint16	sum = 0;
 
 	if (Settings.BS && !Settings.BSXItself)
@@ -3060,40 +3100,41 @@ void InitROM (void)
 	bool8 isChecksumOK = (Memory.ROMChecksum + Memory.ROMComplementChecksum == 0xffff) &
 						 (Memory.ROMChecksum == Memory.CalculatedChecksum);
 
-	//// Build more ROM information
+	/* Build more ROM information */
 
-	// CRC32
-	if (!Settings.BS || Settings.BSXItself) // Not BS Dump
+	/* CRC32 */
+	if (!Settings.BS || Settings.BSXItself) /* Not BS Dump */
 		Memory.ROMCRC32 = caCRC32(Memory.ROM, Memory.CalculatedSize, 0xffffffff);
-	else // Convert to correct format before scan
+	else /* Convert to correct format before scan */
 	{
 		int offset = Memory.HiROM ? 0xffc0 : 0x7fc0;
-		// Backup
-		uint8 BSMagic0 = Memory.ROM[offset + 22],
-			  BSMagic1 = Memory.ROM[offset + 23];
-		// uCONSRT standard
+		/* Backup */
+		uint8 BSMagic0 = Memory.ROM[offset + 22];
+		uint8 BSMagic1 = Memory.ROM[offset + 23];
+
+		/* uCONSRT standard */
 		Memory.ROM[offset + 22] = 0x42;
 		Memory.ROM[offset + 23] = 0x00;
-		// Calc
+
+		/* Calc */
 		Memory.ROMCRC32 = caCRC32(Memory.ROM, Memory.CalculatedSize, 0xffffffff);
-		// Convert back
+
+		/* Convert back */
 		Memory.ROM[offset + 22] = BSMagic0;
 		Memory.ROM[offset + 23] = BSMagic1;
 	}
 
-	// NTSC/PAL
+	/* NTSC/PAL */
 	if (Settings.ForceNTSC)
 		Settings.PAL = FALSE;
-	else
-	if (Settings.ForcePAL)
+	else if (Settings.ForcePAL)
 		Settings.PAL = TRUE;
-	else
-	if (!Settings.BS && (Memory.ROMRegion >= 2) && (Memory.ROMRegion <= 12))
+	else if (!Settings.BS && (Memory.ROMRegion >= 2) && (Memory.ROMRegion <= 12))
 		Settings.PAL = TRUE;
 	else
 		Settings.PAL = FALSE;
 
-	// truncate cart name
+	/* truncate cart name */
 	Memory.ROMName[ROM_NAME_LEN - 1] = 0;
 	if (strlen(Memory.ROMName))
 	{
@@ -3105,10 +3146,10 @@ void InitROM (void)
 		*p = 0;
 	}
 
-	// SRAM size
+	/* SRAM size */
 	Memory.SRAMMask = Memory.SRAMSize ? ((1 << (Memory.SRAMSize + 3)) * 128) - 1 : 0;
 
-	// checksum
+	/* checksum */
 	if (!isChecksumOK || ((uint32) Memory.CalculatedSize > (uint32) (((1 << (Memory.ROMSize - 7)) * 128) * 1024)))
 	{
 	}
@@ -3117,7 +3158,7 @@ void InitROM (void)
 	{
 	}
 
-	//// Initialize emulation
+	/* Initialize emulation */
 
 	Timings.H_Max_Master = SNES_CYCLES_PER_SCANLINE;
 	Timings.H_Max        = Timings.H_Max_Master;
@@ -3128,26 +3169,33 @@ void InitROM (void)
 	Timings.RenderPos    = SNES_RENDER_START_HC;
 	Timings.V_Max_Master = Settings.PAL ? SNES_MAX_PAL_VCOUNTER : SNES_MAX_NTSC_VCOUNTER;
 	Timings.V_Max        = Timings.V_Max_Master;
+
 	/* From byuu: The total delay time for both the initial (H)DMA sync (to the DMA clock),
-	   and the end (H)DMA sync (back to the last CPU cycle's mcycle rate (6, 8, or 12)) always takes between 12-24 mcycles.
+	   and the end (H)DMA sync (back to the last CPU cycle's mcycle rate (6, 8, or 12)) 
+	   always takes between 12-24 mcycles.
+
 	   Possible delays: { 12, 14, 16, 18, 20, 22, 24 }
 	   XXX: Snes9x can't emulate this timing :( so let's use the average value... */
+
 	Timings.DMACPUSync   = 18;
+
 	/* If the CPU is halted (i.e. for DMA) while /NMI goes low, the NMI will trigger
 	   after the DMA completes (even if /NMI goes high again before the DMA
 	   completes). In this case, there is a 24-30 cycle delay between the end of DMA
-	   and the NMI handler, time enough for an instruction or two. */
-	// Wild Guns, Mighty Morphin Power Rangers - The Fighting Edition
+	   and the NMI handler, time enough for an instruction or two.
+	   
+	   Examples: Wild Guns, Mighty Morphin Power Rangers - The Fighting Edition */
+
 	Timings.NMIDMADelay  = 24;
 	Timings.IRQPendCount = 0;
 
-	//// Hack games
+	/* Hack games */
 
 	Settings.BlockInvalidVRAMAccess = Settings.BlockInvalidVRAMAccessMaster;
 
-	//// Warnings
+	/* Warnings */
 
-	// Reject strange hacked games
+	/* Reject strange hacked games */
 	if ((Memory.ROMCRC32 == 0x6810aa95) ||
 		(Memory.ROMCRC32 == 0x340f23e5) ||
 		(Memory.ROMCRC32 == 0x77fd806a) ||
@@ -3157,7 +3205,7 @@ void InitROM (void)
 	{
 	}
 
-	//// APU timing hacks :(
+	/* APU timing hacks */
 
 	Timings.APUSpeedup = 0;
 	Timings.APUAllowTimeOverflow = FALSE;
@@ -3214,22 +3262,25 @@ void InitROM (void)
 			MATCH_NA ("A35"))				// Mechwarrior 3050/Battle Tech 3050
 			Timings.APUAllowTimeOverflow = TRUE;
 
-		//We don't want Seiken Densetsu 3/Romancing Saga 3 unbearably slow in
-		//hi-res mosaic mode - no difference with these games between normal
-		//hi-res renderer and mosaic version - only double the FPS
+		/* Mosaic renderer hack
+
+		   We don't want Seiken Densetsu 3/Romancing Saga 3 unbearably 
+		   slow in hi-res mosaic mode - no difference with these games 
+		   between normal hi-res renderer and mosaic version - only double the FPS */
+
 		if (
 				MATCH_NN("SeikenDensetsu3") ||
-				MATCH_NA("SeikenDensetsu3Sample1") ||	// Seiken Densetsu 3
-				MATCH_NA("ROMANCING SAGA3"))		// Romancing Saga 3
+				MATCH_NA("SeikenDensetsu3Sample1") ||	/* Seiken Densetsu 3 */
+				MATCH_NA("ROMANCING SAGA3"))		/* Romancing Saga 3 */
 			PPU.DisableMosaicHack = false;
 		else
 			PPU.DisableMosaicHack = true;
 
-		//Speedup hack for Star Fox 2/Vortex
+		/* Speedup hack for Star Fox 2/Vortex */
 		if (
-				MATCH_NA("VORTEX") ||			// Vortex
-				MATCH_NA("Super Street Fighter21") ||	// Super Street Fighter II
-				MATCH_NA("STAR FOX 2"))			// Star Fox 2
+				MATCH_NA("VORTEX") ||			/* Vortex */
+				MATCH_NA("Super Street Fighter21") ||	/* Super Street Fighter II */
+				MATCH_NA("STAR FOX 2"))			/* Star Fox 2 */
 					PPU.SFXSpeedupHack = true;
 				else
 					PPU.SFXSpeedupHack = false;
@@ -3238,136 +3289,141 @@ void InitROM (void)
 		fprintf(stderr, "PPU.SFXSpeedupHack = %d\n", PPU.SFXSpeedupHack);
 		#endif
 
-		// Check if Chrono Trigger is loaded, if so, we need to set a variable to true
-		// to get rid of an annoying mid-frame resolution switch to 256x239 which can cause
-		// an undesirable flicker/breakup of the screen for a split second - this happens
-		// whenever the game switches from normal mode to battle mode and vice versa
-		if(	MATCH_NC("CHRONO TRIGGER") ||			// Chrono Trigger
+		/* Check if Chrono Trigger is loaded, if so, we need to set a variable to 
+		   true to get rid of an annoying mid-frame resolution switch to 256x239 
+		   which can cause an undesirable flicker/breakup of the screen for a 
+		   split second - this happens whenever the game switches from normal 
+		   mode to battle mode and vice versa */
+		if(	MATCH_NC("CHRONO TRIGGER") ||	/* Chrono Trigger */
 			MATCH_ID("ACT") ||
-			MATCH_ID("AC9J")					// Chrono Trigger (Sample)
+			MATCH_ID("AC9J")		/* Chrono Trigger (Sample) */
 		  )
 			Settings.ChronoTriggerFrameHack = 1;
 		else
 			Settings.ChronoTriggerFrameHack = 0;
 
-		// Don't render subscreen for games that don't switch to high-res mode in-game or
-		// don't use hi-res at all - and yet still need to do stuff with the subscreen
-		// FPS improvement ranges from 7/10fps to 20/25fps depending on the game ( +25/30fps in
-		// some occassions - benchmarked on PC)
+		/* Don't render subscreen for games that don't switch to high-res mode 
+                   in-game or don't use hi-res at all - and yet still need to do stuff 
+		   with the subscreen FPS improvement ranges from 7/10fps to 20/25fps 
+		   depending on the game ( +25/30fps in some occassions - benchmarked 
+		   on PC).
+
+		   TODO: This glitches with rewind enabled (SSNES), force-disable it
+		   when rewind is active */
 		if(
-			MATCH_NA("Super Metroid") 	// Super Metroid
-			|| MATCH_ID("ATVE")		// Tales of Phantasia (EN) (DeJap)
-			|| MATCH_NA("SECRET OF EVERMORE") 	// Secret of Evermore
-			|| MATCH_ID("AKL")		// Killer Instinct
-			|| MATCH_NA("FINAL FANTASY 6")	// Final Fantasy VI (JP)
-			|| MATCH_NA("FINAL FANTASY 3")	// Final Fantasy III (US)
-			|| MATCH_NA("ILLUSION OF GAIA USA") // Illusion of Gaia (US)
-			|| MATCH_NA("GAIA GENSOUKI 1 JPN")	// Gaia Gensouki (JPN)
-			|| MATCH_ID("AEJ") 		// Earthworm Jim
-			|| MATCH_ID("YI")		// Yoshi's Island
-			|| MATCH_NA("SUPER MARIOWORLD")	// Super Mario World
-			|| MATCH_NA("THE LEGEND OF ZELDA")	// Zelda 3
-			|| MATCH_NA("LA LEGENDE DE ZELDA")	// Zelda 3 (FR)
-			|| MATCH_NA("ZELDANODENSETSU")		// Zelda 3 (JPN)
-			|| MATCH_NA("SPARKSTER")		// Sparkster
-			|| MATCH_NA("PLOK")		// Plok!
-			|| MATCH_NA("GS MIKAMI")		// GS Mikami - Joreishi wa Nice Body
-			|| MATCH_ID("AJOJ")		// Jikkyou Oshaberi Parodius
-			|| MATCH_NA("RISE OF THE ROBOTS")	// Rise Of The Robots
-			|| MATCH_NA("MORTAL KOMBAT II")	// Mortal Kombat II
-			|| MATCH_NA("STAR FOX")		// Star Fox (US/JP)
-			|| MATCH_NA("STAR WING")		// Star Wing (EU)
-			|| MATCH_ID("3Z")		// Demon's Crest
-			|| MATCH_NA("AXELAY")		// Axelay
-			|| MATCH_NA("ZOMBIES")		// Zombies (EU)
-			|| MATCH_NA("ZOMBIES ATE MY NEIGHB")	// Zombies Ate My Neighbors
-			|| MATCH_NA("UNIRACERS")		// Uniracers
-			|| MATCH_NA("UNIRALLY")		// Unirally
-			|| MATCH_NA("CHRONO TRIGGER")	// Chrono Trigger
-			|| MATCH_NA("JURASSIC PARK")	// Jurassic Park
-			|| MATCH_NA("THE MAGICAL QUEST")	// The Magical Quest
-			|| MATCH_NA("SOULBLAZER - 1 USA")	// Soul Blazer (US)
-			|| MATCH_NA("SOULBLAZER - 1 ENG")	// Soul Blazer (PAL)
-			|| MATCH_NA("SOULBLADER - 1")		// Soul Blader
-			|| MATCH_NA("GOKUJYOU PARODIUS")		// Gokujou Parodius
-			|| MATCH_ID("ABT")		// Adventures of Batman and Robin
-			|| MATCH_ID("A3C")		// Donkey Kong Country 3
-			|| MATCH_ID("5M")		// Mario All-Stars + World
-			|| MATCH_NA("SUPER MARIO ALL_STARS") // Super Mario All-Stars (EU/US)
-			|| MATCH_NA("SUPERMARIO COLLECTION") // Super Mario Collection (JP)
-			|| MATCH_ID("4Q")		// Super Punch-Out
-			|| MATCH_NA("HARVEST MOON")	// Harvest Moon
-			|| MATCH_ID("ADZ")		// Dracula X
-			|| MATCH_ID("A3M")		// Mortal Kombat 3
-			|| MATCH_ID("AM4J")		// Do-Re-Mi Fantasy - Milon no Dokidoki Daibouken
-			|| MATCH_NA("BT IN BATTLEMANIACS")	// Battletoads in Battlemaniacs
-			|| MATCH_NA("SPACE MEGAFORCE")	// Space Megaforce (US)
-			|| MATCH_NA("SUPER ALESTE")	// Super Aleste (EU/JP)
-			|| MATCH_NA("VALKEN")		// Assault Suits Valken (JP)
-			|| MATCH_NA("CYBERNATOR")	// Cybernator (EU/US)
-			|| MATCH_NA("SUPER BOMBERMAN")	// Super Bomberman 1
-			|| MATCH_NA("SUPER BOMBERMAN2")	// Super Bomberman 2
-			|| MATCH_ID("AS6")		// Super Bomberman 3
-			|| MATCH_ID("A4B")		// Super Bomberman 4
-			|| MATCH_ID("AYL")		// Tetris Attack
-			|| MATCH_NA("POCKY ROCKY")	// Pocky & Rocky (US/EU)
-			|| MATCH_NA("KIKIKAIKAI")	// Kiki Kaikai (JP)
-			|| MATCH_ID("ANI")		// Lufia 2 / Estpolis Denki 2
-			|| MATCH_ID("AQT")		// Terranigma
-			|| MATCH_NA("twinbee")		// Twinbee Rainbow Bell Adventures
-			|| MATCH_ID("AO7")		// Tactics Ogre
-			|| MATCH_NA("Ogre Battle USA")	// Ogre Battle (US)
-			|| MATCH_ID("AQ3")		// Dragon Quest 3
-			|| MATCH_NA("DRAGONQUEST5")	// Dragon Quest 5
-			|| MATCH_ID("AQ6J")		// Dragon Quest 6
-			|| MATCH_NA("DARIUS FORCE")	// Darius Force
-			|| MATCH_ID("AGC")		// Front Mission
-			|| MATCH_ID("AZGJ")		// Front Mission Gun Hazard
-			|| MATCH_NA("GANBARE GOEMON")	// Ganbare Goemon (JP)
-			|| MATCH_NA("GANBARE GOEMON 2")	// Ganbare Goemon 2
-			|| MATCH_NA("mystical ninja")	// Legend of Mystical Ninja (US/EU)
-			|| MATCH_NA("NOSFERATU")		// Nosferatu
-			|| MATCH_NA("PAC ATTACK")	// Pac Attack
-			|| MATCH_NA("PARODIUS")		// Parodius 1
-			|| MATCH_NA("PRINCE OF PERSIA")	// Prince of Persia
-			|| MATCH_NA("FINAL FANTASY 5")	// Final Fantasy 5
-			|| MATCH_NA("OUT OF THIS WORLD") // Out Of This World (US)
-			|| MATCH_NA("OUTER WORLD")	// Outer World (JP)
-			|| MATCH_NA("ANOTHER WORLD")	// Another World (EU)
-			|| MATCH_ID("ABZE")		// Ballz 3D
-			|| MATCH_ID("AXSP")		// Winter Gold
-			|| MATCH_ID("APJJ")		// Wonder Project J
-			|| MATCH_NA("KRUSTYS SUPER FUNHOUSE")	// Krustys Super Fun House
-			|| MATCH_NA("KRUSTYS SUPERFUNHOUSE")	// Krustys Super Fun House
-			|| MATCH_NA("LEMMINGS")		// Lemmings 1
-			|| MATCH_ID("A3Z")		// Ultimate Mortal Kombat 3
-			|| MATCH_ID("ARFJ")		// Star Ocean
-			|| MATCH_ID("AXBE")		// Bahamut Lagoon
-			|| MATCH_ID("AC6J")		// Cu-On-Pa
-			|| MATCH_ID("ASR")		// Street Racer
-			|| MATCH_NA("SUPER WIDGET")	// Super Widget
-			|| MATCH_NA("R-TYPE 3")		// R-Type 3
-			|| MATCH_ID("ARW")		// Super Mario RPG
-			|| MATCH_NA("SHVC FIREEMBLEM")	// Fire Emblem - Monshou no Nazo
-			|| MATCH_ID("BFRJ")		// Fire Emblem - Thracia 776
-			|| MATCH_ID("A32J")		// Fire Emblem - Seisen no Keifu
-			|| MATCH_ID("AR9")		// Primal Rage
-			|| MATCH_ID("APUE")		// Prehistorik Man
-			|| MATCH_ID("ALSJ")		// Lady Stalker
-			|| MATCH_NA("ROCKMAN&FORTE")	// Rockman & Forte
-			|| MATCH_NA("SUPER SWIV")	// Super SWIV
-			|| MATCH_NA("CONTRA3 THE ALIEN WARS")	// Contra 3 The Alien Wars
-			|| MATCH_NA("EARTHWORM JIM 2")	// Earthworm Jim 2
-			|| MATCH_NA("CHOHMAKAIMURA")	// Chou Makai Mura
-			|| MATCH_NA("SUPER GHOULS'N GHOSTS")	// Super Ghouls 'n Ghosts
-			|| MATCH_NA("X-KALIBER 2097")	// X-Kaliber 2097
-			|| MATCH_NA("FINAL FIGHT 2")	// Final Fight 2
-			|| MATCH_NA("SUPER TURRICAN 2")	// Super Turrican 2
-			|| MATCH_NA("DUNGEON MASTER")	// Dungeon Master
-			|| MATCH_NA("DOOM TROOPERS")	// Doom Troopers
-			|| MATCH_NA("XAK 1")		// Xak 1
-			|| MATCH_NA("XARDION")		// Xardion
-		  )
+				MATCH_NA("Super Metroid") 	// Super Metroid
+				|| MATCH_ID("ATVE")		// Tales of Phantasia (EN) (DeJap)
+				|| MATCH_NA("SECRET OF EVERMORE") 	// Secret of Evermore
+				|| MATCH_ID("AKL")		// Killer Instinct
+				|| MATCH_NA("FINAL FANTASY 6")	// Final Fantasy VI (JP)
+				|| MATCH_NA("FINAL FANTASY 3")	// Final Fantasy III (US)
+				|| MATCH_NA("ILLUSION OF GAIA USA") // Illusion of Gaia (US)
+				|| MATCH_NA("GAIA GENSOUKI 1 JPN")	// Gaia Gensouki (JPN)
+				|| MATCH_ID("AEJ") 		// Earthworm Jim
+				|| MATCH_ID("YI")		// Yoshi's Island
+				|| MATCH_NA("SUPER MARIOWORLD")	// Super Mario World
+				|| MATCH_NA("THE LEGEND OF ZELDA")	// Zelda 3
+				|| MATCH_NA("LA LEGENDE DE ZELDA")	// Zelda 3 (FR)
+				|| MATCH_NA("ZELDANODENSETSU")		// Zelda 3 (JPN)
+				|| MATCH_NA("SPARKSTER")		// Sparkster
+				|| MATCH_NA("PLOK")		// Plok!
+				|| MATCH_NA("GS MIKAMI")		// GS Mikami - Joreishi wa Nice Body
+				|| MATCH_ID("AJOJ")		// Jikkyou Oshaberi Parodius
+				|| MATCH_NA("RISE OF THE ROBOTS")	// Rise Of The Robots
+				|| MATCH_NA("MORTAL KOMBAT II")	// Mortal Kombat II
+				|| MATCH_NA("STAR FOX")		// Star Fox (US/JP)
+				|| MATCH_NA("STAR WING")		// Star Wing (EU)
+				|| MATCH_ID("3Z")		// Demon's Crest
+				|| MATCH_NA("AXELAY")		// Axelay
+				|| MATCH_NA("ZOMBIES")		// Zombies (EU)
+				|| MATCH_NA("ZOMBIES ATE MY NEIGHB")	// Zombies Ate My Neighbors
+				|| MATCH_NA("UNIRACERS")		// Uniracers
+				|| MATCH_NA("UNIRALLY")		// Unirally
+				|| MATCH_NA("CHRONO TRIGGER")	// Chrono Trigger
+				|| MATCH_NA("JURASSIC PARK")	// Jurassic Park
+				|| MATCH_NA("THE MAGICAL QUEST")	// The Magical Quest
+				|| MATCH_NA("SOULBLAZER - 1 USA")	// Soul Blazer (US)
+				|| MATCH_NA("SOULBLAZER - 1 ENG")	// Soul Blazer (PAL)
+				|| MATCH_NA("SOULBLADER - 1")		// Soul Blader
+				|| MATCH_NA("GOKUJYOU PARODIUS")		// Gokujou Parodius
+				|| MATCH_ID("ABT")		// Adventures of Batman and Robin
+				|| MATCH_ID("A3C")		// Donkey Kong Country 3
+				|| MATCH_ID("5M")		// Mario All-Stars + World
+				|| MATCH_NA("SUPER MARIO ALL_STARS") // Super Mario All-Stars (EU/US)
+				|| MATCH_NA("SUPERMARIO COLLECTION") // Super Mario Collection (JP)
+				|| MATCH_ID("4Q")		// Super Punch-Out
+				|| MATCH_NA("HARVEST MOON")	// Harvest Moon
+				|| MATCH_ID("ADZ")		// Dracula X
+				|| MATCH_ID("A3M")		// Mortal Kombat 3
+				|| MATCH_ID("AM4J")		// Do-Re-Mi Fantasy - Milon no Dokidoki Daibouken
+				|| MATCH_NA("BT IN BATTLEMANIACS")	// Battletoads in Battlemaniacs
+				|| MATCH_NA("SPACE MEGAFORCE")	// Space Megaforce (US)
+				|| MATCH_NA("SUPER ALESTE")	// Super Aleste (EU/JP)
+				|| MATCH_NA("VALKEN")		// Assault Suits Valken (JP)
+				|| MATCH_NA("CYBERNATOR")	// Cybernator (EU/US)
+				|| MATCH_NA("SUPER BOMBERMAN")	// Super Bomberman 1
+				|| MATCH_NA("SUPER BOMBERMAN2")	// Super Bomberman 2
+				|| MATCH_ID("AS6")		// Super Bomberman 3
+				|| MATCH_ID("A4B")		// Super Bomberman 4
+				|| MATCH_ID("AYL")		// Tetris Attack
+				|| MATCH_NA("POCKY ROCKY")	// Pocky & Rocky (US/EU)
+				|| MATCH_NA("KIKIKAIKAI")	// Kiki Kaikai (JP)
+				|| MATCH_ID("ANI")		// Lufia 2 / Estpolis Denki 2
+				|| MATCH_ID("AQT")		// Terranigma
+				|| MATCH_NA("twinbee")		// Twinbee Rainbow Bell Adventures
+				|| MATCH_ID("AO7")		// Tactics Ogre
+				|| MATCH_NA("Ogre Battle USA")	// Ogre Battle (US)
+				|| MATCH_ID("AQ3")		// Dragon Quest 3
+				|| MATCH_NA("DRAGONQUEST5")	// Dragon Quest 5
+				|| MATCH_ID("AQ6J")		// Dragon Quest 6
+				|| MATCH_NA("DARIUS FORCE")	// Darius Force
+				|| MATCH_ID("AGC")		// Front Mission
+				|| MATCH_ID("AZGJ")		// Front Mission Gun Hazard
+				|| MATCH_NA("GANBARE GOEMON")	// Ganbare Goemon (JP)
+				|| MATCH_NA("GANBARE GOEMON 2")	// Ganbare Goemon 2
+				|| MATCH_NA("mystical ninja")	// Legend of Mystical Ninja (US/EU)
+				|| MATCH_NA("NOSFERATU")		// Nosferatu
+				|| MATCH_NA("PAC ATTACK")	// Pac Attack
+				|| MATCH_NA("PARODIUS")		// Parodius 1
+				|| MATCH_NA("PRINCE OF PERSIA")	// Prince of Persia
+				|| MATCH_NA("FINAL FANTASY 5")	// Final Fantasy 5
+				|| MATCH_NA("OUT OF THIS WORLD") // Out Of This World (US)
+				|| MATCH_NA("OUTER WORLD")	// Outer World (JP)
+				|| MATCH_NA("ANOTHER WORLD")	// Another World (EU)
+				|| MATCH_ID("ABZE")		// Ballz 3D
+				|| MATCH_ID("AXSP")		// Winter Gold
+				|| MATCH_ID("APJJ")		// Wonder Project J
+				|| MATCH_NA("KRUSTYS SUPER FUNHOUSE")	// Krustys Super Fun House
+				|| MATCH_NA("KRUSTYS SUPERFUNHOUSE")	// Krustys Super Fun House
+				|| MATCH_NA("LEMMINGS")		// Lemmings 1
+				|| MATCH_ID("A3Z")		// Ultimate Mortal Kombat 3
+				|| MATCH_ID("ARFJ")		// Star Ocean
+				|| MATCH_ID("AXBE")		// Bahamut Lagoon
+				|| MATCH_ID("AC6J")		// Cu-On-Pa
+				|| MATCH_ID("ASR")		// Street Racer
+				|| MATCH_NA("SUPER WIDGET")	// Super Widget
+				|| MATCH_NA("R-TYPE 3")		// R-Type 3
+				|| MATCH_ID("ARW")		// Super Mario RPG
+				|| MATCH_NA("SHVC FIREEMBLEM")	// Fire Emblem - Monshou no Nazo
+				|| MATCH_ID("BFRJ")		// Fire Emblem - Thracia 776
+				|| MATCH_ID("A32J")		// Fire Emblem - Seisen no Keifu
+				|| MATCH_ID("AR9")		// Primal Rage
+				|| MATCH_ID("APUE")		// Prehistorik Man
+				|| MATCH_ID("ALSJ")		// Lady Stalker
+				|| MATCH_NA("ROCKMAN&FORTE")	// Rockman & Forte
+				|| MATCH_NA("SUPER SWIV")	// Super SWIV
+				|| MATCH_NA("CONTRA3 THE ALIEN WARS")	// Contra 3 The Alien Wars
+				|| MATCH_NA("EARTHWORM JIM 2")	// Earthworm Jim 2
+				|| MATCH_NA("CHOHMAKAIMURA")	// Chou Makai Mura
+				|| MATCH_NA("SUPER GHOULS'N GHOSTS")	// Super Ghouls 'n Ghosts
+				|| MATCH_NA("X-KALIBER 2097")	// X-Kaliber 2097
+				|| MATCH_NA("FINAL FIGHT 2")	// Final Fight 2
+				|| MATCH_NA("SUPER TURRICAN 2")	// Super Turrican 2
+				|| MATCH_NA("DUNGEON MASTER")	// Dungeon Master
+				|| MATCH_NA("DOOM TROOPERS")	// Doom Troopers
+				|| MATCH_NA("XAK 1")		// Xak 1
+				|| MATCH_NA("XARDION")		// Xardion
+				)
 		  	PPU.RenderSub = false;
 		else
 			PPU.RenderSub = true;
@@ -3376,12 +3432,12 @@ void InitROM (void)
 		fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
 		#endif
 
-		// Clipping hack - gains around 5-7 extra fps - only use it for specific
-		// games where nothing breaks with this hack on
+		/* Clipping hack - gains around 5-7 extra fps - only use it 
+		   for specific games where nothing breaks with this hack on */
 
 		if(
-			MATCH_NA("FINAL FANTASY 6")	// Final Fantasy VI (JP)
-			|| MATCH_NA("FINAL FANTASY 3")	// Final Fantasy III (US)
+			MATCH_NA("FINAL FANTASY 6")	/* Final Fantasy VI (JP) */
+			|| MATCH_NA("FINAL FANTASY 3")	/* Final Fantasy III (US) */
 		)
 			PPU.FullClipping = false;
 		else
@@ -3394,7 +3450,7 @@ void InitROM (void)
 
 	if (Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
 	{
-		//multitap
+		/* Multitap accessory detection */
 		if(
 				MATCH_NN("BARKLEY") ||				// Barkley Shut Up and Jam!
 				MATCH_ID("ABCJ") ||				// Battle Cross
@@ -3487,7 +3543,7 @@ void InitROM (void)
 		else
 			Settings.CurrentROMisMultitapCompatible = false;
 
-		//mouse
+		/* Mouse accessory detection */
 		if	(
 				MATCH_NC("ACME ANIMATION FACTOR") ||	// ACME Animation Factory
 				MATCH_ID("ACM") ||
@@ -3591,7 +3647,7 @@ void InitROM (void)
 		else
 			Settings.CurrentROMisMouseCompatible = false;
 
-		//super scope
+		/* Super Scope accessory detection */
 		if	(
 				MATCH_NA("BATTLE CLASH") ||		// Battle Clash (EU/US) (*)
 										// Space Bazooka (JP)
@@ -3617,16 +3673,18 @@ void InitROM (void)
 	S9xAPUTimingSetSpeedup(Timings.APUSpeedup);
 	S9xAPUAllowTimeOverflow(Timings.APUAllowTimeOverflow);
 
-	//// Other timing hacks :(
+	/* Other timing hacks */
 
 	Timings.HDMAStart   = SNES_HDMA_START_HC + Settings.HDMATimingHack - 100;
 	Timings.HBlankStart = SNES_HBLANK_START_HC + Timings.HDMAStart - SNES_HDMA_START_HC;
 
 	if (!Settings.DisableGameSpecificHacks)
 	{
-		// The delay to sync CPU and DMA which Snes9x cannot emulate.
-		// Some games need really severe delay timing...
-		if (MATCH_NA("BATTLE GRANDPRIX")) // Battle Grandprix
+		/* The delay to sync CPU and DMA which Snes9x cannot emulate.
+		   Some games need really severe delay timing... */
+
+		/* Battle Grandprix */
+		if (MATCH_NA("BATTLE GRANDPRIX"))
 		{
 			Timings.DMACPUSync = 20;
 			printf("DMA sync: %d\n", Timings.DMACPUSync);
@@ -3635,18 +3693,24 @@ void InitROM (void)
 
 	if (!Settings.DisableGameSpecificHacks)
 	{
-		// Opcode-based emulators cannot escape from "reading $4211/BPL" infinite loop...
-		// The true IRQ can be triggered inside an opcode.
+		/* Opcode-based emulators cannot escape from "reading $4211/BPL" infinite loop...
+		   The true IRQ can be triggered inside an opcode. */
 		if (MATCH_NA("TRAVERSE")) // Traverse - Starlight & Prairie
 		{
 			Timings.IRQPendCount = 1;
 			printf("IRQ count hack: %d\n", Timings.IRQPendCount);
 		}
 
-		// An infinite loop reads $4212 and waits V-blank end, whereas VIRQ is set V=0.
-		// If Snes9x succeeds to escape from the loop before jumping into the IRQ handler, the game goes further.
-		// If Snes9x jumps into the IRQ handler before escaping from the loop,
-		// Snes9x cannot escape from the loop permanently because the RTI is in the next V-blank.
+		/* An infinite loop reads $4212 and waits V-blank end, whereas 
+		   VIRQ is set V=0.
+
+		   If Snes9x succeeds to escape from the loop before jumping 
+		   into the IRQ handler, the game goes further.
+
+		   If Snes9x jumps into the IRQ handler before escaping from 
+		   the loop, Snes9x cannot escape from the loop permanently 
+		   because the RTI is in the next V-blank. */
+
 		if (MATCH_NA("Aero the AcroBat 2"))
 		{
 			Timings.IRQPendCount = 2;
@@ -3662,15 +3726,17 @@ void InitROM (void)
 
 	if (!Settings.DisableGameSpecificHacks)
 	{
-		// XXX: What's happening?
-		if (MATCH_NA("X-MEN")) // Spider-Man and the X-Men
+		/* XXX: What's happening? */
+
+		/* Spider-Man and the X-Men */
+		if (MATCH_NA("X-MEN"))
 		{
 			Settings.BlockInvalidVRAMAccess = FALSE;
 			printf("Invalid VRAM access hack\n");
 		}
 	}
 
-	//// SRAM initial value
+	/* SRAM initial value */
 
 	if (!Settings.DisableGameSpecificHacks)
 	{
@@ -3680,7 +3746,7 @@ void InitROM (void)
 			Memory.SRAMMask = ((1 << (Memory.SRAMSize + 3)) * 128) - 1;
 		}
 
-		// SRAM value fixes
+		/* SRAM value fixes */
 		if (MATCH_NA("SUPER DRIFT OUT")      || // Super Drift Out
 			MATCH_NA("SATAN IS OUR FATHER!") ||
 			MATCH_NA("goemon 4"))               // Ganbare Goemon Kirakira Douchuu
@@ -3694,21 +3760,27 @@ void InitROM (void)
 		// others: BS and ST-01x games are 0x00.
 	}
 
-	//// OAM hacks :(
+	/* OAM hacks */
 
 	if (!Settings.DisableGameSpecificHacks)
 	{
-		// OAM hacks because we don't fully understand the behavior of the SNES.
-		// Totally wacky display in 2P mode...
-		// seems to need a disproven behavior, so we're definitely overlooking some other bug?
-		if (MATCH_NN("UNIRACERS")) // Uniracers
+		/* OAM hacks because we don't fully understand the behavior of 
+		   the SNES.
+
+		   Totally wacky display in 2P mode...
+
+		   seems to need a disproven behavior, so we're definitely 
+		   overlooking some other bug? */
+
+		/* Uniracers */
+		if (MATCH_NN("UNIRACERS"))
 		{
 			SNESGameFixes.Uniracers = TRUE;
 			printf("Applied Uniracers hack.\n");
 		}
 	}
 
-	//// Show ROM information
+	/* Show ROM information */
 	char displayName[ROM_NAME_LEN];
 
 	strcpy(Memory.RawROMName, Memory.ROMName);
@@ -3741,8 +3813,3 @@ void InitROM (void)
 
 	S9xVerifyControllers();
 }
-
-
-// information
-
-
