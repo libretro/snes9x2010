@@ -290,7 +290,7 @@ static uint8 run_table[128] = {
     113,  49,  81,  17,  97,  33,  65,   1
 };
 
-static inline uint8 GetCodeword(int bits)
+static INLINE uint8 GetCodeword(int bits)
 {
 	uint8 tmp;
 
@@ -320,7 +320,7 @@ static inline uint8 GetCodeword(int bits)
 	return run_table[tmp];
 }
 
-static inline uint8 GolombGetBit(int code_size)
+static INLINE uint8 GolombGetBit(int code_size)
 {
 	if(!bit_ctr[code_size])
 		bit_ctr[code_size]=GetCodeword(code_size);
@@ -333,7 +333,7 @@ static inline uint8 GolombGetBit(int code_size)
 	return (bit_ctr[code_size] == 0) ? 1 : 0;
 }
 
-static inline uint8 ProbGetBit(uint8 context)
+static INLINE uint8 ProbGetBit(uint8 context)
 {
 	uint8 state=context_states[context];
 	uint8 bit=GolombGetBit(evolution_table[state].code_size);
@@ -354,7 +354,7 @@ static inline uint8 ProbGetBit(uint8 context)
 	return context_MPS[context]; /* we know bit is 0, so don't bother xoring */
 }
 
-static inline uint8 GetBit(uint8 cur_bitplane)
+static INLINE uint8 GetBit(uint8 cur_bitplane)
 {
 	uint8 bit = ProbGetBit(((cur_bitplane&1)<<4)
 			| ((prev_bits[cur_bitplane]&high_context_bits)>>5)

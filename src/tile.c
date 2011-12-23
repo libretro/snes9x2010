@@ -190,7 +190,7 @@
 #include "ppu.h"
 #include "tile.h"
 
-static inline uint16 COLOR_SUB (uint16 C1, uint16 C2)
+static INLINE uint16 COLOR_SUB (uint16 C1, uint16 C2)
 {
 	uint16	mC1, mC2, v = ALPHA_BITS_MASK;
 

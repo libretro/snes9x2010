@@ -278,7 +278,7 @@ static short const gauss [512] =
 
 /* Gaussian interpolation */
 
-static inline int dsp_interpolate( dsp_voice_t const* v )
+static INLINE int dsp_interpolate( dsp_voice_t const* v )
 {
 	/* Make pointers into gaussian based on fractional position between samples */
 	int offset = v->interp_pos >> 4 & 0xFF;
@@ -296,7 +296,6 @@ static inline int dsp_interpolate( dsp_voice_t const* v )
 	out &= ~1;
 	return out;
 }
-
 
 /* Counters */
 
@@ -344,7 +343,7 @@ static unsigned const counter_offsets [32] =
 
 /* Envelope */
 
-static inline void dsp_run_envelope( dsp_voice_t* const v )
+static INLINE void dsp_run_envelope( dsp_voice_t* const v )
 {
 	int env = v->env;
 
@@ -357,7 +356,7 @@ static inline void dsp_run_envelope( dsp_voice_t* const v )
 			env--;
 			env -= env >> 8;
 			rate = env_data & 0x1F;
-			if ( v->env_mode == ENV_DECAY ) // 1%
+			if ( v->env_mode == ENV_DECAY ) /* 1% */
 				rate = (dsp_m.t_adsr0 >> 3 & 0x0E) + 0x10;
 		}
 		else /* ENV_ATTACK */
@@ -417,7 +416,7 @@ static inline void dsp_run_envelope( dsp_voice_t* const v )
 
 /* BRR Decoding */
 
-static inline void dsp_decode_brr( dsp_voice_t* v )
+static INLINE void dsp_decode_brr( dsp_voice_t* v )
 {
 	/* Arrange the four input nybbles in 0xABCD order for easy decoding */
 	int nybbles = dsp_m.t_brr_byte * 0x100 + dsp_m.ram [(v->brr_addr + v->brr_offset + 1) & 0xFFFF];
@@ -489,7 +488,7 @@ static inline void dsp_decode_brr( dsp_voice_t* v )
 	if ( (dsp_m.every_other_sample ^= 1) != 0 ) \
 		dsp_m.new_kon &= ~dsp_m.kon; /* clears KON 63 clocks after it was last read */
 
-static inline void dsp_misc_30 (void)
+static INLINE void dsp_misc_30 (void)
 {
 	if ( dsp_m.every_other_sample )
 	{
@@ -509,13 +508,13 @@ static inline void dsp_misc_30 (void)
 
 /* Voices */
 
-static inline void dsp_voice_V1( dsp_voice_t* const v )
+static INLINE void dsp_voice_V1( dsp_voice_t* const v )
 {
 	dsp_m.t_dir_addr = dsp_m.t_dir * 0x100 + dsp_m.t_srcn * 4;
 	dsp_m.t_srcn = v->regs[V_SRCN];
 }
 
-static inline void dsp_voice_V2( dsp_voice_t* const v )
+static INLINE void dsp_voice_V2( dsp_voice_t* const v )
 {
 
 	uint8_t const* entry = &dsp_m.ram [dsp_m.t_dir_addr];
@@ -529,12 +528,12 @@ static inline void dsp_voice_V2( dsp_voice_t* const v )
 	dsp_m.t_pitch = v->regs [V_PITCHL];
 }
 
-static inline void dsp_voice_V3a( dsp_voice_t* const v )
+static INLINE void dsp_voice_V3a( dsp_voice_t* const v )
 {
 	dsp_m.t_pitch += (v->regs [V_PITCHH] & 0x3F) << 8;
 }
 
-static inline void dsp_voice_V3b( dsp_voice_t* const v )
+static INLINE void dsp_voice_V3b( dsp_voice_t* const v )
 {
 	dsp_m.t_brr_byte = dsp_m.ram [(v->brr_addr + v->brr_offset) & 0xffff];
 	dsp_m.t_brr_header = dsp_m.ram [v->brr_addr];
@@ -618,7 +617,7 @@ static void dsp_voice_V3c( dsp_voice_t* const v )
 	}
 }
 
-static inline void dsp_voice_output( dsp_voice_t const* v, int ch )
+static INLINE void dsp_voice_output( dsp_voice_t const* v, int ch )
 {
 	/* Apply left/right volume */
 	int amp = (dsp_m.t_output * (int8_t) VREG(v->regs,VOLL + ch)) >> 7;
@@ -635,7 +634,7 @@ static inline void dsp_voice_output( dsp_voice_t const* v, int ch )
 	}
 }
 
-static void dsp_voice_V4( dsp_voice_t* const v )
+static INLINE void dsp_voice_V4( dsp_voice_t* const v )
 {
 	/* Decode BRR */
 	dsp_m.t_looped = 0;
@@ -667,7 +666,7 @@ static void dsp_voice_V4( dsp_voice_t* const v )
 	dsp_voice_output( v, 0 );
 }
 
-static inline void dsp_voice_V5( dsp_voice_t* const v )
+static INLINE void dsp_voice_V5( dsp_voice_t* const v )
 {
 	/* Output right */
 	dsp_voice_output( v, 1 );
@@ -681,13 +680,13 @@ static inline void dsp_voice_V5( dsp_voice_t* const v )
 	dsp_m.endx_buf = (uint8_t) endx_buf;
 }
 
-static inline void dsp_voice_V6( dsp_voice_t* const v )
+static INLINE void dsp_voice_V6( dsp_voice_t* const v )
 {
 	(void) v; /* avoid compiler warning about unused v */
 	dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
 }
 
-static inline void dsp_voice_V7( dsp_voice_t* const v )
+static INLINE void dsp_voice_V7( dsp_voice_t* const v )
 {
 	/* Update ENDX */
 	dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
@@ -695,20 +694,20 @@ static inline void dsp_voice_V7( dsp_voice_t* const v )
 	dsp_m.envx_buf = v->t_envx_out;
 }
 
-static inline void dsp_voice_V8( dsp_voice_t* const v )
+static INLINE void dsp_voice_V8( dsp_voice_t* const v )
 {
 	/* Update OUTX */
 	v->regs [V_OUTX] = dsp_m.outx_buf;
 }
 
-static inline void dsp_voice_V9( dsp_voice_t* const v )
+static INLINE void dsp_voice_V9( dsp_voice_t* const v )
 {
 	v->regs [V_ENVX] = dsp_m.envx_buf;
 }
 
 /* Most voices do all these in one clock, so make a handy composite */
 
-static inline void dsp_voice_V3( dsp_voice_t* const v )
+static INLINE void dsp_voice_V3( dsp_voice_t* const v )
 {
 	dsp_voice_V3a( v );
 	dsp_voice_V3b( v );
@@ -755,7 +754,7 @@ static void dsp_voice_V9_V6_V3( dsp_voice_t* const v )
 	/* second copy simplifies wrap-around handling */ \
 	(dsp_m.echo_hist_pos [0]) [ch] = (dsp_m.echo_hist_pos [8]) [ch] = s >> 1;
 
-static inline void dsp_echo_22 (void)
+static INLINE void dsp_echo_22 (void)
 {
 	if ( ++dsp_m.echo_hist_pos >= &dsp_m.echo_hist [ECHO_HIST_SIZE] )
 		dsp_m.echo_hist_pos = dsp_m.echo_hist;
@@ -771,7 +770,7 @@ static inline void dsp_echo_22 (void)
 	dsp_m.t_echo_in [1] = r;
 }
 
-static inline void dsp_echo_23 (void)
+static INLINE void dsp_echo_23 (void)
 {
 	int l = (((dsp_m.echo_hist_pos [1 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
 	int r = (((dsp_m.echo_hist_pos [1 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
@@ -782,7 +781,7 @@ static inline void dsp_echo_23 (void)
 	ECHO_READ(1);
 }
 
-static inline void dsp_echo_24 (void)
+static INLINE void dsp_echo_24 (void)
 {
 	int l = (((dsp_m.echo_hist_pos [3 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6);
 	int r = (((dsp_m.echo_hist_pos [3 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6);
@@ -791,7 +790,7 @@ static inline void dsp_echo_24 (void)
 	dsp_m.t_echo_in [1] += r;
 }
 
-static inline void dsp_echo_25 (void)
+static INLINE void dsp_echo_25 (void)
 {
 	int l = dsp_m.t_echo_in [0] + (((dsp_m.echo_hist_pos [6 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 6 * 0x10]) >> 6);
 	int r = dsp_m.t_echo_in [1] + (((dsp_m.echo_hist_pos [6 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 6 * 0x10]) >> 6);
@@ -817,7 +816,7 @@ static inline void dsp_echo_25 (void)
 	CLAMP16( var ); \
 }
 
-static inline void dsp_echo_26 (void)
+static INLINE void dsp_echo_26 (void)
 {
 	ECHO_OUTPUT(dsp_m.t_main_out[0], 0 );
 
@@ -831,7 +830,7 @@ static inline void dsp_echo_26 (void)
 	dsp_m.t_echo_out [1] = r & ~1;
 }
 
-static inline void dsp_echo_27 (void)
+static INLINE void dsp_echo_27 (void)
 {
 	int r;
 	int l = dsp_m.t_main_out [0];
@@ -864,7 +863,7 @@ static inline void dsp_echo_27 (void)
 		SET_LE16A( ECHO_PTR( ch ), dsp_m.t_echo_out [ch] ); \
 	dsp_m.t_echo_out [ch] = 0;
 
-static inline void dsp_echo_29 (void)
+static INLINE void dsp_echo_29 (void)
 {
 	dsp_m.t_esa = dsp_m.regs [R_ESA];
 
@@ -1367,7 +1366,7 @@ void spc_enable_rom( int enable )
 		dsp_run( clock_count ); \
 	}
 
-static inline void spc_dsp_write( int data, int time )
+static INLINE void spc_dsp_write( int data, int time )
 {
 	/* Writes DSP registers. */
 	int addr = m.smp_regs[0][R_DSPADDR];
@@ -3197,7 +3196,7 @@ static void resampler_new(int num_samples)
 	resampler_clear();
 }
 
-static inline bool resampler_push(short *src, int num_samples)
+static INLINE bool resampler_push(short *src, int num_samples)
 {
 	int bytes = num_samples << 1;
 	if (MAX_WRITE() < num_samples || SPACE_EMPTY() < bytes)
@@ -3218,7 +3217,7 @@ static inline bool resampler_push(short *src, int num_samples)
 	return true;
 }
 
-static inline void resampler_resize (int num_samples)
+static INLINE void resampler_resize (int num_samples)
 {
 	int size = num_samples << 1;
 	free(rb_buffer);

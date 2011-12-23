@@ -100,12 +100,12 @@
 	#undef BLARGG_BIG_ENDIAN
 #endif
 
-inline unsigned get_le16( void const* p )
+INLINE unsigned get_le16( void const* p )
 {
 	return (unsigned) ((unsigned char const*) p) [1] << 8 | (unsigned) ((unsigned char const*) p) [0];
 }
 
-inline blargg_ulong get_le32( void const* p )
+INLINE blargg_ulong get_le32( void const* p )
 {
 	return (blargg_ulong) ((unsigned char const*) p) [3] << 24 |
 		(blargg_ulong) ((unsigned char const*) p) [2] << 16 |
@@ -113,13 +113,13 @@ inline blargg_ulong get_le32( void const* p )
 		(blargg_ulong) ((unsigned char const*) p) [0];
 }
 
-inline void set_le16( void* p, unsigned n )
+INLINE void set_le16( void* p, unsigned n )
 {
 	((unsigned char*) p) [1] = (unsigned char) (n >> 8);
 	((unsigned char*) p) [0] = (unsigned char) n;
 }
 
-inline void set_le32( void* p, blargg_ulong n )
+INLINE void set_le32( void* p, blargg_ulong n )
 {
 	((unsigned char*) p) [0] = (unsigned char) n;
 	((unsigned char*) p) [1] = (unsigned char) (n >> 8);

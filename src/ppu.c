@@ -1453,7 +1453,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 	}
 }
 
-static inline void DrawBackgroundMode7 (int bg, void (*DrawMath) (uint32, uint32, int), void (*DrawNomath) (uint32, uint32, int), int D)
+static INLINE void DrawBackgroundMode7 (int bg, void (*DrawMath) (uint32, uint32, int), void (*DrawNomath) (uint32, uint32, int), int D)
 {
 	for (int clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
@@ -1466,7 +1466,7 @@ static inline void DrawBackgroundMode7 (int bg, void (*DrawMath) (uint32, uint32
 	}
 }
 
-static inline void RenderScreen_SFXSpeedupHack()
+static INLINE void RenderScreen_SFXSpeedupHack()
 {
 	uint8	BGActive;
 	int		D;
@@ -1657,7 +1657,7 @@ static inline void RenderScreen_SFXSpeedupHack()
 	BG.EnableMath = (Memory.FillRAM[0x2131] & 0x20);
 }
 
-static inline void RenderScreen (bool8 sub)
+static INLINE void RenderScreen (bool8 sub)
 {
 	uint8	BGActive;
 	int		D;
@@ -1875,7 +1875,7 @@ static inline void RenderScreen (bool8 sub)
 	BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x20);
 }
 
-static inline uint8 CalcWindowMask (int i, uint8 W1, uint8 W2)
+static INLINE uint8 CalcWindowMask (int i, uint8 W1, uint8 W2)
 {
 	if (!PPU.ClipWindow1Enable[i])
 	{
@@ -1925,7 +1925,7 @@ static inline uint8 CalcWindowMask (int i, uint8 W1, uint8 W2)
 }
 
 #if 0
-static inline void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_regions, int16 *windows, uint8 *drawing_modes, bool8 sub, bool8 StoreMode0)
+static INLINE void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_regions, int16 *windows, uint8 *drawing_modes, bool8 sub, bool8 StoreMode0)
 {
 	int	ct = 0;
 
@@ -2359,7 +2359,7 @@ void S9xDrawCrosshair (const char *crosshair, uint8 fgcolor, uint8 bgcolor, int1
 	}
 }
 
-static inline void S9xLatchCounters (void)
+static INLINE void S9xLatchCounters (void)
 {
 	/* Latch h and v counters, like the gun */
 
@@ -2555,7 +2555,7 @@ void S9xFixColourBrightness (void)
 	}
 }
 
-static inline void REGISTER_2122 (uint8 Byte)
+static INLINE void REGISTER_2122 (uint8 Byte)
 {
 	if (PPU.CGFLIP)
 	{
@@ -2590,7 +2590,7 @@ static inline void REGISTER_2122 (uint8 Byte)
 /* This code is correct, however due to Snes9x's inaccurate timings, some games might be broken by this change. */
 #define CHECK_INBLANK !(Settings.BlockInvalidVRAMAccess && !PPU.ForcedBlanking && CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE)
 
-static inline void REGISTER_2118 (uint8 Byte)
+static INLINE void REGISTER_2118 (uint8 Byte)
 {
 	uint32	address;
 
@@ -2621,7 +2621,7 @@ static inline void REGISTER_2118 (uint8 Byte)
 	}
 }
 
-static inline void REGISTER_2119 (uint8 Byte)
+static INLINE void REGISTER_2119 (uint8 Byte)
 {
 	uint32	address;
 
@@ -2652,7 +2652,7 @@ static inline void REGISTER_2119 (uint8 Byte)
 	}
 }
 
-static inline void REGISTER_2104 (uint8 Byte)
+static INLINE void REGISTER_2104 (uint8 Byte)
 {
 	uint16 SignExtend[2] = {0x0000,0xff00};
 	if (PPU.OAMAddr & 0x100)
@@ -3770,7 +3770,7 @@ uint8 S9xGetPPU (uint16 Address)
 
 static uint8	sdd1_decode_buffer[0x10000];
 
-static inline bool8 addCyclesInDMA (uint8 dma_channel)
+static INLINE bool8 addCyclesInDMA (uint8 dma_channel)
 {
 	// Add 8 cycles per byte, sync APU, and do HC related events.
 	// If HDMA was done in S9xDoHEventProcessing(), check if it used the same channel as DMA.
@@ -3791,7 +3791,7 @@ static inline bool8 addCyclesInDMA (uint8 dma_channel)
 	return (TRUE);
 }
 
-static inline void REGISTER_2119_linear (uint8 Byte)
+static INLINE void REGISTER_2119_linear (uint8 Byte)
 {
 	uint32	address = ((PPU.VMA.Address << 1) + 1) & 0xffff;
 
@@ -3813,7 +3813,7 @@ static inline void REGISTER_2119_linear (uint8 Byte)
 		PPU.VMA.Address += PPU.VMA.Increment;
 }
 
-static inline void REGISTER_2118_linear (uint8 Byte)
+static INLINE void REGISTER_2118_linear (uint8 Byte)
 {
 	uint32	address = (PPU.VMA.Address << 1) & 0xffff;
 
@@ -3835,7 +3835,7 @@ static inline void REGISTER_2118_linear (uint8 Byte)
 		PPU.VMA.Address += PPU.VMA.Increment;
 }
 
-static inline void REGISTER_2118_tile (uint8 Byte)
+static INLINE void REGISTER_2118_tile (uint8 Byte)
 {
 	uint32 rem = PPU.VMA.Address & PPU.VMA.Mask1;
 	uint32 address = (((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) & 0xffff;
@@ -3858,7 +3858,7 @@ static inline void REGISTER_2118_tile (uint8 Byte)
 		PPU.VMA.Address += PPU.VMA.Increment;
 }
 
-static inline void REGISTER_2119_tile (uint8 Byte)
+static INLINE void REGISTER_2119_tile (uint8 Byte)
 {
 	uint32 rem = PPU.VMA.Address & PPU.VMA.Mask1;
 	uint32 address = ((((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) + 1) & 0xffff;
@@ -5213,7 +5213,7 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 	Memory.FillRAM[Address] = Byte;
 }
 
-static inline uint8 REGISTER_4212 (void)
+static INLINE uint8 REGISTER_4212 (void)
 {
 	uint8	byte = 0;
 

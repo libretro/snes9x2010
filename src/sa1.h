@@ -255,7 +255,7 @@ void S9xSA1PostLoadState (void);
 #define TIMER_IRQ_SOURCE	64
 #define SNES_IRQ_SOURCE		128
 
-static inline void S9xSA1PackStatus (void)
+static INLINE void S9xSA1PackStatus (void)
 {
 	SA1Registers.PL &= ~(Zero | Negative | Carry | Overflow);
 	SA1Registers.PL |= SA1._Carry | ((SA1._Zero == 0) << 1) | (SA1._Negative & 0x80) | (SA1._Overflow << 6);

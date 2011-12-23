@@ -244,7 +244,7 @@ void S9xDeinitUpdate (int, int);
 	Registers.PL &= ~(Zero | Negative | Carry | Overflow); \
 	Registers.PL |= ICPU._Carry | ((ICPU._Zero == 0) << 1) | (ICPU._Negative & 0x80) | (ICPU._Overflow << 6);
 
-static inline void S9xFixCycles (void)
+static INLINE void S9xFixCycles (void)
 {
 	if (CheckEmulation())
 	{

@@ -245,7 +245,7 @@ static void S9xSA1SetPCBase (uint32 address)
 	}
 }
 
-static inline void S9xSA1UnpackStatus (void)
+static INLINE void S9xSA1UnpackStatus (void)
 {
 	SA1._Zero = (SA1Registers.PL & Zero) == 0;
 	SA1._Negative = (SA1Registers.PL & Negative);
@@ -253,7 +253,7 @@ static inline void S9xSA1UnpackStatus (void)
 	SA1._Overflow = (SA1Registers.PL & Overflow) >> 6;
 }
 
-static inline void S9xSA1FixCycles (void)
+static INLINE void S9xSA1FixCycles (void)
 {
 	if (SA1CheckEmulation())
 	{

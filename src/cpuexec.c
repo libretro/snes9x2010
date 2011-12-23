@@ -389,7 +389,7 @@ static void S9xStartScreenRefresh (void)
 	}
 }
 
-static inline void S9xReschedule (void)
+static INLINE void S9xReschedule (void)
 {
 	uint8	next = 0;
 	int32	hpos = 0;
@@ -470,7 +470,7 @@ static inline void S9xReschedule (void)
 }
 
 
-static inline bool8 HDMAReadLineCount (int d)
+static INLINE bool8 HDMAReadLineCount (int d)
 {
 	// CPU.InDMA is set, so S9xGetXXX() / S9xSetXXX() incur no charges.
 

@@ -184,7 +184,7 @@
 #define SAR(b, n)	((b) >> (n))
 #else
 
-static inline int8 SAR (const int8 b, const int n)
+static INLINE int8 SAR (const int8 b, const int n)
 {
 #ifndef RIGHTSHIFT_int8_IS_SAR
 	if (b < 0)
@@ -193,7 +193,7 @@ static inline int8 SAR (const int8 b, const int n)
 	return (b >> n);
 }
 
-static inline int16 SAR (const int16 b, const int n)
+static INLINE int16 SAR (const int16 b, const int n)
 {
 #ifndef RIGHTSHIFT_int16_IS_SAR
 	if (b < 0)
@@ -202,7 +202,7 @@ static inline int16 SAR (const int16 b, const int n)
 	return (b >> n);
 }
 
-static inline int32 SAR (const int32 b, const int n)
+static INLINE int32 SAR (const int32 b, const int n)
 {
 #ifndef RIGHTSHIFT_int32_IS_SAR
 	if (b < 0)
@@ -211,7 +211,7 @@ static inline int32 SAR (const int32 b, const int n)
 	return (b >> n);
 }
 
-static inline int64 SAR (const int64 b, const int n)
+static INLINE int64 SAR (const int64 b, const int n)
 {
 #ifndef RIGHTSHIFT_int64_IS_SAR
 	if (b < 0)
@@ -392,7 +392,7 @@ static uint8	C4TestPattern[12 * 4] =
 	0x00, 0xff, 0xfe, 0x00
 };
 
-static inline uint8 * C4GetMemPointer (uint32 Address)
+static INLINE uint8 * C4GetMemPointer (uint32 Address)
 {
 	return (Memory.ROM + ((Address & 0xff0000) >> 1) + (Address & 0x7fff));
 }
@@ -401,7 +401,7 @@ static void C4ConvOAM (void)
 {
 	uint8	*OAMptr = Memory.C4RAM + (Memory.C4RAM[0x626] << 2);
 	for (uint8 *i = Memory.C4RAM + 0x1fd; i > OAMptr; i -= 4)
-		*i = 0xe0; // Clear OAM-to-be
+		*i = 0xe0; /* Clear OAM-to-be */
 
 	uint8	*OAMptr2;
 	uint16	globalX, globalY;
@@ -425,7 +425,7 @@ static void C4ConvOAM (void)
 			SprX = READ_WORD(srcptr)     - globalX;
 			SprY = READ_WORD(srcptr + 2) - globalY;
 			SprName = srcptr[5];
-			SprAttr = srcptr[4] | srcptr[0x06]; // XXX: mask bits?
+			SprAttr = srcptr[4] | srcptr[0x06]; /* XXX: mask bits? */
 
 			uint8	*sprptr = C4GetMemPointer(READ_3WORD(srcptr + 7));
 			if (*sprptr != 0)
@@ -499,7 +499,7 @@ static void C4DoScaleRotate (int row_padding)
 {
 	int16	A, B, C, D;
 
-	// Calculate matrix
+	/* Calculate matrix */
 	int32	XScale = READ_WORD(Memory.C4RAM + 0x1f8f);
 	if (XScale & 0x8000)
 		XScale = 0x7fff;
@@ -552,27 +552,23 @@ static void C4DoScaleRotate (int row_padding)
 		D = (int16)   SAR(C4CosTable[READ_WORD(Memory.C4RAM + 0x1f80) & 0x1ff] * YScale, 15);
 	}
 
-	// Calculate Pixel Resolution
+	/* Calculate Pixel Resolution */
 	uint8	w = Memory.C4RAM[0x1f89] & ~7;
 	uint8	h = Memory.C4RAM[0x1f8c] & ~7;
 
-	//printf("%dx%d XScale=%04x YScale=%04x angle=%03x\n", w, h, XScale, YScale, READ_WORD(Memory.C4RAM + 0x1f80) & 0x1ff);
-	//printf("Matrix: [%10g %10g]  [%04x %04x]\n", A / 4096.0, B / 4096.0, A & 0xffff, B & 0xffff);
-	//printf("        [%10g %10g]  [%04x %04x]\n", C / 4096.0, D / 4096.0, C & 0xffff, D & 0xffff);
-
-	// Clear the output RAM
+	/* Clear the output RAM */
 	memset(Memory.C4RAM, 0, (w + row_padding / 4) * h / 2);
 
 	int32	Cx = (int16) READ_WORD(Memory.C4RAM + 0x1f83);
 	int32	Cy = (int16) READ_WORD(Memory.C4RAM + 0x1f86);
 
-	// Calculate start position (i.e. (Ox, Oy) = (0, 0))
-	// The low 12 bits are fractional, so (Cx<<12) gives us the Cx we want in the function.
-	// We do Cx*A etc normally because the matrix parameters already have the fractional parts.
+	/* Calculate start position (i.e. (Ox, Oy) = (0, 0))
+	   The low 12 bits are fractional, so (Cx<<12) gives us the Cx we want in the function.
+	   We do Cx*A etc normally because the matrix parameters already have the fractional parts. */
 	int32	LineX = (Cx << 12) - Cx * A - Cx * B;
 	int32	LineY = (Cy << 12) - Cy * C - Cy * D;
 
-	// Start loop
+	/* Start loop */
 	uint32	X, Y;
 	uint8	byte;
 	int		outidx = 0;
@@ -595,7 +591,7 @@ static void C4DoScaleRotate (int row_padding)
 					byte >>= 4;
 			}
 
-			// De-bitplanify
+			/* De-bitplanify */
 			if (byte & 1)
 				Memory.C4RAM[outidx]      |= bit;
 			if (byte & 2)
@@ -622,7 +618,7 @@ static void C4DoScaleRotate (int row_padding)
 		else
 			outidx -= w * 4 + row_padding;
 
-		LineX += B; // Add 1 to output y => add a B and a D
+		LineX += B; /* Add 1 to output y => add a B and a D */
 		LineY += D;
 	}
 }
@@ -663,29 +659,29 @@ static void C4TransfWireFrame2 (void)
 	c4y = (double) C4WFYVal;
 	c4z = (double) C4WFZVal;
 
-	// Rotate X
+	/* Rotate X */
 	tanval = -(double) C4WFX2Val * C4_PI * 2 / 128;
 	c4y2 = c4y  *  cos(tanval) - c4z  * sin(tanval);
 	c4z2 = c4y  *  sin(tanval) + c4z  * cos(tanval);
 
-	// Rotate Y
+	/* Rotate Y */
 	tanval = -(double) C4WFY2Val * C4_PI * 2 / 128;
 	c4x2 = c4x  *  cos(tanval) + c4z2 * sin(tanval);
 	c4z  = c4x  * -sin(tanval) + c4z2 * cos(tanval);
 
-	// Rotate Z
+	/* Rotate Z */
 	tanval = -(double) C4WFDist  * C4_PI * 2 / 128;
 	c4x  = c4x2 *  cos(tanval) - c4y2 * sin(tanval);
 	c4y  = c4x2 *  sin(tanval) + c4y2 * cos(tanval);
 
-	// Scale
+	/* Scale */
 	C4WFXVal = (int16) (c4x * (double) C4WFScale / 0x100);
 	C4WFYVal = (int16) (c4y * (double) C4WFScale / 0x100);
 }
 
 static void C4DrawLine (int32 X1, int32 Y1, int16 Z1, int32 X2, int32 Y2, int16 Z2, uint8 Color)
 {
-	// Transform coordinates
+	/* Transform coordinates */
 	C4WFXVal  = (int16) X1;
 	C4WFYVal  = (int16) Y1;
 	C4WFZVal  = Z1;
@@ -741,8 +737,9 @@ static void C4DrawWireFrame (void)
 	int16	X1, Y1, Z1;
 	int16	X2, Y2, Z2;
 	uint8	Color;
+	int	i;
 
-	for (int i = Memory.C4RAM[0x0295]; i > 0; i--, line += 5)
+	for ( i = Memory.C4RAM[0x0295]; i > 0; i--, line += 5)
 	{
 		if (line[0] == 0xff && line[1] == 0xff)
 		{
@@ -775,45 +772,45 @@ static void C4TransfWireFrame (void)
 	c4y = (double) C4WFYVal;
 	c4z = (double) C4WFZVal - 0x95;
 
-	// Rotate X
+	/* Rotate X */
 	tanval = -(double) C4WFX2Val * C4_PI * 2 / 128;
 	c4y2 = c4y  *  cos(tanval) - c4z  * sin(tanval);
 	c4z2 = c4y  *  sin(tanval) + c4z  * cos(tanval);
 
-	// Rotate Y
+	/* Rotate Y */
 	tanval = -(double) C4WFY2Val * C4_PI * 2 / 128;
 	c4x2 = c4x  *  cos(tanval) + c4z2 * sin(tanval);
 	c4z  = c4x  * -sin(tanval) + c4z2 * cos(tanval);
 
-	// Rotate Z
+	/* Rotate Z */
 	tanval = -(double) C4WFDist  * C4_PI * 2 / 128;
 	c4x  = c4x2 *  cos(tanval) - c4y2 * sin(tanval);
 	c4y  = c4x2 *  sin(tanval) + c4y2 * cos(tanval);
 
-	// Scale
+	/* Scale */
 	C4WFXVal = (int16) (c4x * (double) C4WFScale / (0x90 * (c4z + 0x95)) * 0x95);
 	C4WFYVal = (int16) (c4y * (double) C4WFScale / (0x90 * (c4z + 0x95)) * 0x95);
 }
 
 static void C4TransformLines (void)
 {
+	int i;
 	C4WFX2Val = Memory.C4RAM[0x1f83];
 	C4WFY2Val = Memory.C4RAM[0x1f86];
 	C4WFDist  = Memory.C4RAM[0x1f89];
 	C4WFScale = Memory.C4RAM[0x1f8c];
 
-
-	// Transform vertices
+	/* Transform vertices */
 	uint8	*ptr = Memory.C4RAM;
 
-	for (int i = READ_WORD(Memory.C4RAM + 0x1f80); i > 0; i--, ptr += 0x10)
+	for ( i = READ_WORD(Memory.C4RAM + 0x1f80); i > 0; i--, ptr += 0x10)
 	{
 		C4WFXVal = READ_WORD(ptr + 1);
 		C4WFYVal = READ_WORD(ptr + 5);
 		C4WFZVal = READ_WORD(ptr + 9);
 		C4TransfWireFrame();
 
-		// Displace
+		/* Displace */
 		WRITE_WORD(ptr + 1, C4WFXVal + 0x80);
 		WRITE_WORD(ptr + 5, C4WFYVal + 0x50);
 	}
@@ -828,7 +825,7 @@ static void C4TransformLines (void)
 	ptr = Memory.C4RAM + 0xb02;
 	uint8	*ptr2 = Memory.C4RAM;
 
-	for (int i = READ_WORD(Memory.C4RAM + 0xb00); i > 0; i--, ptr += 2, ptr2 += 8)
+	for ( i = READ_WORD(Memory.C4RAM + 0xb00); i > 0; i--, ptr += 2, ptr2 += 8)
 	{
 		C4WFXVal  = READ_WORD(Memory.C4RAM + (ptr[0] << 4) + 1);
 		C4WFYVal  = READ_WORD(Memory.C4RAM + (ptr[0] << 4) + 5);
@@ -844,6 +841,8 @@ static void C4TransformLines (void)
 
 static void C4BitPlaneWave (void)
 {
+	int j;
+
 	static uint16 bmpdata[] =
 	{
 		0x0000, 0x0002, 0x0004, 0x0006, 0x0008, 0x000A, 0x000C, 0x000E,
@@ -858,7 +857,7 @@ static void C4BitPlaneWave (void)
 	uint16	mask1 = 0xc0c0;
 	uint16	mask2 = 0x3f3f;
 
-	for (int j = 0; j < 0x10; j++)
+	for ( j = 0; j < 0x10; j++)
 	{
 		do
 		{
@@ -925,6 +924,7 @@ static void C4SprDisintegrate (void)
 	uint32	StartX, StartY;
 	int32	scaleX, scaleY;
 	int32	Cx, Cy;
+	uint32 	i, y;
 
 	width  = Memory.C4RAM[0x1f89];
 	height = Memory.C4RAM[0x1f8c];
@@ -941,7 +941,7 @@ static void C4SprDisintegrate (void)
 
 	memset(Memory.C4RAM, 0, width * height / 2);
 
-	for (uint32 y = StartY, i = 0; i < height; i++, y += scaleY)
+	for ( y = StartY, i = 0; i < height; i++, y += scaleY)
 	{
 		for (uint32 x = StartX, j = 0; j < width; j++, x += scaleX)
 		{
@@ -971,31 +971,31 @@ static void C4ProcessSprites (void)
 {
 	switch (Memory.C4RAM[0x1f4d])
 	{
-		case 0x00: // Build OAM
+		case 0x00: /* Build OAM */
 			C4ConvOAM();
 			break;
 
-		case 0x03: // Scale/Rotate
+		case 0x03: /* Scale/Rotate */
 			C4DoScaleRotate(0);
 			break;
 
-		case 0x05: // Transform Lines
+		case 0x05: /* Transform Lines */
 			C4TransformLines();
 			break;
 
-		case 0x07: // Scale/Rotate
+		case 0x07: /* Scale/Rotate */
 			C4DoScaleRotate(64);
 			break;
 
-		case 0x08: // Draw wireframe
+		case 0x08: /* Draw wireframe */
 			C4DrawWireFrame();
 			break;
 
-		case 0x0b: // Disintegrate
+		case 0x0b: /* Disintegrate */
 			C4SprDisintegrate();
 			break;
 
-		case 0x0c: // Wave
+		case 0x0c: /* Wave */
 			C4BitPlaneWave();
 			break;
 
@@ -1059,16 +1059,16 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 		{
 			switch (byte)
 			{
-				case 0x00: // Sprite
+				case 0x00: /* Sprite */
 					C4ProcessSprites();
 					break;
 
-				case 0x01: // Draw wireframe
+				case 0x01: /* Draw wireframe */
 					memset(Memory.C4RAM + 0x300, 0, 16 * 12 * 3 * 4);
 					C4DrawWireFrame();
 					break;
 
-				case 0x05: // Propulsion (?)
+				case 0x05: /* Propulsion (?) */
 				{
 					int32	tmp = 0x10000;
 					if (READ_WORD(Memory.C4RAM + 0x1f83))
@@ -1078,7 +1078,7 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 					break;
 				}
 
-				case 0x0d: // Set vector length
+				case 0x0d: /* Set vector length */
 					C41FXVal    = READ_WORD(Memory.C4RAM + 0x1f80);
 					C41FYVal    = READ_WORD(Memory.C4RAM + 0x1f83);
 					C41FDistVal = READ_WORD(Memory.C4RAM + 0x1f86);
@@ -1087,7 +1087,7 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 					WRITE_WORD(Memory.C4RAM + 0x1f8c, C41FYVal);
 					break;
 
-				case 0x10: // Polar to rectangluar
+				case 0x10: /* Polar to rectangular */
 				{
 					int32	tmp;
 					int32   r1;
@@ -1104,7 +1104,7 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 					break;
 				}
 
-				case 0x13: // Polar to rectangluar
+				case 0x13: /* Polar to rectangular */
 				{
 					int32	tmp;
 					tmp = SAR((int32) READ_WORD(Memory.C4RAM + 0x1f83) * C4CosTable[READ_WORD(Memory.C4RAM + 0x1f80) & 0x1ff] * 2, 8);
@@ -1114,21 +1114,21 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 					break;
 				}
 
-				case 0x15: // Pythagorean
+				case 0x15: /* Pythagorean */
 					C41FXVal = READ_WORD(Memory.C4RAM + 0x1f80);
 					C41FYVal = READ_WORD(Memory.C4RAM + 0x1f83);
 					C41FDist = (int16) sqrt((double) C41FXVal * C41FXVal + (double) C41FYVal * C41FYVal);
 					WRITE_WORD(Memory.C4RAM + 0x1f80, C41FDist);
 					break;
 
-				case 0x1f: // atan
+				case 0x1f: /* atan */
 					C41FXVal = READ_WORD(Memory.C4RAM + 0x1f80);
 					C41FYVal = READ_WORD(Memory.C4RAM + 0x1f83);
 					C4Op1F();
 					WRITE_WORD(Memory.C4RAM + 0x1f86, C41FAngleRes);
 					break;
 
-				case 0x22: // Trapezoid
+				case 0x22: /* Trapezoid */
 				{
 					int16	angle1 = READ_WORD(Memory.C4RAM + 0x1f8c) & 0x1ff;
 					int16	angle2 = READ_WORD(Memory.C4RAM + 0x1f8f) & 0x1ff;
@@ -1186,7 +1186,7 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 					break;
 				}
 
-				case 0x25: // Multiply
+				case 0x25: /* Multiply */
 				{
 					int32	foo = READ_3WORD(Memory.C4RAM + 0x1f80);
 					int32	bar = READ_3WORD(Memory.C4RAM + 0x1f83);
@@ -1195,7 +1195,7 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 					break;
 				}
 
-				case 0x2d: // Transform Coords
+				case 0x2d: /* Transform Coords */
 					C4WFXVal  = READ_WORD(Memory.C4RAM + 0x1f81);
 					C4WFYVal  = READ_WORD(Memory.C4RAM + 0x1f84);
 					C4WFZVal  = READ_WORD(Memory.C4RAM + 0x1f87);
@@ -1208,7 +1208,7 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 					WRITE_WORD(Memory.C4RAM + 0x1f83, C4WFYVal);
 					break;
 
-				case 0x40: // Sum
+				case 0x40: /* Sum */
 				{
 					uint16	sum = 0;
 					for (int i = 0; i < 0x800; sum += Memory.C4RAM[i++]) ;
@@ -1216,23 +1216,21 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 					break;
 				}
 
-				case 0x54: // Square
+				case 0x54: /* Square */
 				{
 					int64	a = SAR((int64) READ_3WORD(Memory.C4RAM + 0x1f80) << 40, 40);
-					//printf("%08X%08X\n", (uint32) (a>>32), (uint32) (a&0xFFFFFFFF));
 					a *= a;
-					//printf("%08X%08X\n", (uint32) (a>>32), (uint32) (a&0xFFFFFFFF));
 					WRITE_3WORD(Memory.C4RAM + 0x1f83, a);
 					WRITE_3WORD(Memory.C4RAM + 0x1f86, (a >> 24));
 					break;
 				}
 
-				case 0x5c: // Immediate Reg
+				case 0x5c: /* Immediate Reg */
 					for (int i = 0; i < 12 * 4; i++)
 						Memory.C4RAM[i] = C4TestPattern[i];
 					break;
 
-				case 0x89: // Immediate ROM
+				case 0x89: /* Immediate ROM */
 					Memory.C4RAM[0x1f80] = 0x36;
 					Memory.C4RAM[0x1f81] = 0x43;
 					Memory.C4RAM[0x1f82] = 0x05;

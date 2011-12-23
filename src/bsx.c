@@ -174,10 +174,11 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-// Dreamer Nom wrote:
-// Large thanks to John Weidman for all his initial research
-// Thanks to Seph3 for his modem notes
+/* Dreamer Nom wrote:
+   Large thanks to John Weidman for all his initial research
+   Thanks to Seph3 for his modem notes */
 
+#include <stddef.h>
 #include <string.h>
 #include <time.h>
 
@@ -186,7 +187,7 @@
 #include "getset.h"
 #include "display.h"
 
-//#define BSX_DEBUG
+/* #define BSX_DEBUG */
 
 #define BIOS_SIZE	0x100000
 #define FLASH_SIZE	0x200000
@@ -212,25 +213,26 @@ struct SBSX_RTC
 
 static struct SBSX_RTC	BSX_RTC;
 
-// flash card vendor information
+/* flash card vendor information */
+
 static const uint8	flashcard[20] =
 {
-	0x4D, 0x00, 0x50, 0x00,	// vendor id
-	0x00, 0x00,				// ?
-	0x2B, 0x00,				// 2MB Flash (1MB = 0x2A)
+	0x4D, 0x00, 0x50, 0x00,			/* vendor id */
+	0x00, 0x00,				/* ? */
+	0x2B, 0x00,				/* 2MB Flash (1MB = 0x2A) */
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static const uint8	init2192[32] =	// FIXME
+static const uint8	init2192[32] =	/* FIXME */
 {
-	00, 00, 00, 00, 00,		// unknown
+	00, 00, 00, 00, 00,		/* unknown */
 	01, 01, 00, 00, 00,
-	00,						// seconds (?)
-	00,						// minutes
-	00,						// hours
-	10, 10, 10, 10, 10,		// unknown
-	10, 10, 10, 10, 10,		// dummy
+	00,				/* seconds (?) */
+	00,				/* minutes */
+	00,				/* hours */
+	10, 10, 10, 10, 10,		/* unknown */
+	10, 10, 10, 10, 10,		/* dummy */
 	00, 00, 00, 00, 00, 00, 00, 00, 00
 };
 
@@ -240,11 +242,11 @@ static uint8	*MapROM, *FlashROM;
 
 static void BSX_Map_SNES (void)
 {
-	// These maps will be partially overwritten
+	/* These maps will be partially overwritten */
 
 	int	c;
 
-	// Banks 00->3F and 80->BF
+	/* Banks 00->3F and 80->BF */
 	for (c = 0; c < 0x400; c += 16)
 	{
 		Map[c + 0] = Map[c + 0x800] = RAM;
@@ -263,11 +265,11 @@ static void BSX_Map_SNES (void)
 
 static void BSX_Map_LoROM (void)
 {
-	// These maps will be partially overwritten
+	/* These maps will be partially overwritten */
 
 	int	i, c;
 
-	// Banks 00->3F and 80->BF
+	/* Banks 00->3F and 80->BF */
 	for (c = 0; c < 0x400; c += 16)
 	{
 		for (i = c + 8; i < c + 16; i++)
@@ -278,7 +280,7 @@ static void BSX_Map_LoROM (void)
 		}
 	}
 
-	// Banks 40->7F and C0->FF
+	/* Banks 40->7F and C0->FF */
 	for (c = 0; c < 0x400; c += 16)
 	{
 		for (i = c; i < c + 8; i++)
@@ -297,11 +299,11 @@ static void BSX_Map_LoROM (void)
 
 static void BSX_Map_HiROM (void)
 {
-	// These maps will be partially overwritten
+	/* These maps will be partially overwritten */
 
 	int	i, c;
 
-	// Banks 00->3F and 80->BF
+	/* Banks 00->3F and 80->BF */
 	for (c = 0; c < 0x400; c += 16)
 	{
 		for (i = c + 8; i < c + 16; i++)
@@ -312,7 +314,7 @@ static void BSX_Map_HiROM (void)
 		}
 	}
 
-	// Banks 40->7F and C0->FF
+	/* Banks 40->7F and C0->FF */
 	for (c = 0; c < 0x400; c += 16)
 	{
 		for (i = c; i < c + 16; i++)
@@ -328,7 +330,7 @@ static void BSX_Map_MMC (void)
 {
 	int	c;
 
-	// Banks 01->0E:5000-5FFF
+	/* Banks 01->0E:5000-5FFF */
 	for (c = 0x010; c < 0x0F0; c += 16)
 	{
 		Map[c + 5] = (uint8 *) MAP_BSX;
@@ -342,7 +344,7 @@ static void BSX_Map_FlashIO (void)
 
 	if (BSX.MMC[0x0C] || BSX.MMC[0x0D])
 	{
-		// Bank C0:0000, 2AAA, 5555, FF00-FF1F
+		/* Bank C0:0000, 2AAA, 5555, FF00-FF1F */
 		for (c = 0; c < 16; c++)
 		{
 			Map[c + 0xC00] = (uint8 *) MAP_BSX;
@@ -356,7 +358,7 @@ static void BSX_Map_SRAM (void)
 {
 	int	c;
 
-	// Banks 10->17:5000-5FFF
+	/* Banks 10->17:5000-5FFF */
 	for (c = 0x100; c < 0x180; c += 16)
 	{
 		Map[c + 5] = (uint8 *) SRAM + ((c & 0x70) << 8) - 0x5000;
@@ -406,8 +408,8 @@ static void BSX_Map_PSRAM (void)
 {
 	int	c;
 
-	// Banks 70->77:0000-FFFF
-	// FIXME: could be toggled by $03
+	/* Banks 70->77:0000-FFFF */
+	/* FIXME: could be toggled by $03 */
 	for (c = 0; c < 0x80; c++)
 	{
 		Map[c + 0x700] = &PSRAM[((c & 0x70) << 12) % PSRAM_SIZE];
@@ -415,7 +417,7 @@ static void BSX_Map_PSRAM (void)
 		BlockIsROM[c + 0x700] = FALSE;
 	}
 
-	// Banks 20->3F:6000-7FFF mirrors 70->77:6000-7FFF
+	/* Banks 20->3F:6000-7FFF mirrors 70->77:6000-7FFF */
 	for (c = 0x200; c < 0x400; c += 16)
 	{
 		Map[c + 6] = &PSRAM[((c & 0x70) << 12) % PSRAM_SIZE];
@@ -427,16 +429,16 @@ static void BSX_Map_PSRAM (void)
 	}
 
 	if (!BSX.MMC[0x05])
-		// Banks 40->4F:0000-FFFF mirrors 70->77:0000-7FFF
+		/* Banks 40->4F:0000-FFFF mirrors 70->77:0000-7FFF */
 		map_psram_mirror_sub(0x40);
 
 	if (!BSX.MMC[0x06])
-		// Banks 50->5F:0000-FFFF mirrors 70->77:0000-7FFF
+		/* Banks 50->5F:0000-FFFF mirrors 70->77:0000-7FFF */
 		map_psram_mirror_sub(0x50);
 
-	// FIXME
+	/* FIXME */
 	if (!BSX.MMC[0x03])
-		// Banks 60->6F:0000-FFFF mirrors 70->77:0000-7FFF (?)
+		/* Banks 60->6F:0000-FFFF mirrors 70->77:0000-7FFF (?) */
 		map_psram_mirror_sub(0x60);
 }
 
@@ -444,7 +446,7 @@ static void BSX_Map_BIOS (void)
 {
 	int	i,c;
 
-	// Banks 00->1F:8000-FFFF
+	/* Banks 00->1F:8000-FFFF */
 	if (BSX.MMC[0x07])
 	{
 		for (c = 0; c < 0x200; c += 16)
@@ -458,7 +460,7 @@ static void BSX_Map_BIOS (void)
 		}
 	}
 
-	// Banks 80->9F:8000-FFFF
+	/* Banks 80->9F:8000-FFFF */
 	if (BSX.MMC[0x08])
 	{
 		for (c = 0; c < 0x200; c += 16)
@@ -477,7 +479,7 @@ static void BSX_Map_RAM (void)
 {
 	int	c;
 
-	// Banks 7E->7F
+	/* Banks 7E->7F */
 	for (c = 0; c < 16; c++)
 	{
 		Map[c + 0x7E0] = RAM;
@@ -491,11 +493,11 @@ static void BSX_Map_RAM (void)
 
 static void BSX_Map_Dirty (void)
 {
-	// for the quick bank change
+	/* for the quick bank change */
 
 	int i, c;
 
-	// Banks 00->1F and 80->9F:8000-FFFF
+	/* Banks 00->1F and 80->9F:8000-FFFF */
 	if (BSX.MMC[0x02])
 	{
 		for (c = 0; c < 0x200; c += 16)
@@ -532,7 +534,7 @@ static void BSX_Map (void)
 
 	memcpy(BSX.prevMMC, BSX.MMC, sizeof(BSX.MMC));
 
-	// Do a quick bank change
+	/* Do a quick bank change */
 	if (BSX.dirty2 && !BSX.dirty)
 	{
 		BSX_Map_Dirty();
@@ -570,7 +572,7 @@ static void BSX_Map (void)
 	BSX_Map_FlashIO();
 	BSX_Map_MMC();
 
-	// Monitor new register changes
+	/* Monitor new register changes */
 	BSX.dirty  = FALSE;
 	BSX.dirty2 = FALSE;
 
@@ -609,27 +611,27 @@ uint8 S9xGetBSX (uint32 address)
 	uint16	offset = address & 0xFFFF;
 	uint8	t = 0;
 
-	// MMC
+	/* MMC */
 	if ((bank >= 0x01 && bank <= 0x0E) && (offset == 0x5000))
 		return (BSX.MMC[bank]);
 
-	// Flash IO
+	/* Flash IO */
 	if (bank == 0xC0)
 	{
-		// default: read-through mode
+		/* default: read-through mode */
 		t = BSX_Get_Bypass_FlashIO(offset);
 
-		// note: may be more registers, purposes unknown
+		/* note: may be more registers, purposes unknown */
 		switch (offset)
 		{
 			case 0x0002:
 				if (BSX.flash_enable)
-					t = 0x80; // status register?
+					t = 0x80; /* status register? */
 				break;
 
 			case 0x5555:
 				if (BSX.flash_enable)
-					t = 0x80; // ???
+					t = 0x80; /* ??? */
 				break;
 
 			case 0xFF00:
@@ -642,7 +644,7 @@ uint8 S9xGetBSX (uint32 address)
 			case 0xFF0E:
 			case 0xFF10:
 			case 0xFF12:
-				// return flash vendor information
+				/* return flash vendor information */
 				if (BSX.read_enable)
 					t = flashcard[offset - 0xFF00];
 				break;
@@ -657,7 +659,7 @@ void S9xSetBSX (uint8 byte, uint32 address)
 	uint8	bank = (address >> 16) & 0xFF;
 	uint16	offset = address & 0xFFFF;
 
-	// MMC
+	/* MMC */
 	if ((bank >= 0x01 && bank <= 0x0E) && (offset == 0x5000))
 	{
 		switch (bank)
@@ -697,22 +699,22 @@ void S9xSetBSX (uint8 byte, uint32 address)
 		}
 	}
 
-	// Flash IO
+	/* Flash IO */
 	if (bank == 0xC0)
 	{
 		BSX.old_write = BSX.new_write;
 		BSX.new_write = address;
 
-		// ???: double writes to the desired address will bypass
-		// flash registers
+		/* ???: double writes to the desired address will bypass
+		   flash registers */
 		if (BSX.old_write == BSX.new_write && BSX.write_enable)
 		{
 			BSX_Set_Bypass_FlashIO(offset, byte);
 			return;
 		}
 
-		// flash command handling
-		// note: incomplete
+		/* flash command handling
+		   NOTE: incomplete */
 		switch (offset)
 		{
 			case 0x0000:
@@ -720,7 +722,7 @@ void S9xSetBSX (uint8 byte, uint32 address)
 				BSX.flash_command |= byte;
 				if ((BSX.flash_command & 0xFFFF) == 0x38D0)
 				{
-					// retrieve information about the flash card
+					/* retrieve information about the flash card */
 					BSX.flash_enable = TRUE;
 					BSX.read_enable  = TRUE;
 				}
@@ -738,14 +740,14 @@ void S9xSetBSX (uint8 byte, uint32 address)
 				switch (BSX.flash_command & 0xFFFFFF)
 				{
 					case 0xAA55F0:
-						// turn off flash i/o
+						/* turn off flash i/o */
 						BSX.flash_enable = FALSE;
 						BSX.write_enable = FALSE;
 						BSX.read_enable  = FALSE;
 						break;
 
 					case 0xAA55A0:
-						// enable writing to flash
+						/* enable writing to flash */
 						BSX.old_write = 0;
 						BSX.new_write = 0;
 						BSX.flash_enable = TRUE;
@@ -754,16 +756,15 @@ void S9xSetBSX (uint8 byte, uint32 address)
 						break;
 
 					case 0xAA5570:
-						// turn on write-protection
+						/* turn on write-protection */
 						BSX.write_enable = FALSE;
 						BSX_Map();
 						break;
 
 					case 0xAA5580:
 					case 0xAA5510:
-						// ???
+						/* ??? */
 						break;
-
 				}
 
 				break;
@@ -775,15 +776,15 @@ uint8 S9xGetBSXPPU (uint16 address)
 {
 	uint8	t;
 
-	// known read registers
+	/* known read registers */
 	switch (address)
 	{
-		// Test register low? (r/w)
+		/* Test register low? (r/w) */
 		case 0x2188:
 			t = BSX.PPU[0x2188 - BSXPPUBASE];
 			break;
 
-		// Test register high? (r/w)
+		/* Test register high? (r/w) */
 		case 0x2189:
 			t = BSX.PPU[0x2189 - BSXPPUBASE];
 			break;
@@ -796,26 +797,26 @@ uint8 S9xGetBSXPPU (uint16 address)
 			t = BSX.PPU[0x218C - BSXPPUBASE];
 			break;
 
-		// Transmission number low? (r/w)
+		/* Transmission number low? (r/w) */
 		case 0x218E:
 			t = BSX.PPU[0x218E - BSXPPUBASE];
 			break;
 
-		// Transmission number high? (r/w)
+		/* Transmission number high? (r/w) */
 		case 0x218F:
 			t = BSX.PPU[0x218F - BSXPPUBASE];
 			break;
 
-		// Status register? (r)
+		/* Status register? (r) */
 		case 0x2190:
 			t = BSX.PPU[0x2190 - BSXPPUBASE];
 			break;
 
-		// Data register? (r/w)
+		/* Data register? (r/w) */
 		case 0x2192:
 			t = BSX.PPU[0x2192 - BSXPPUBASE];
 
-			// test
+			/* test */
 			t = BSX.test2192[BSX.out_index++];
 			if (BSX.out_index == 32)
 				BSX.out_index = 0;
@@ -845,28 +846,28 @@ uint8 S9xGetBSXPPU (uint16 address)
 
 			break;
 
-		// Transmission status? (r/w)
+		/* Transmission status? (r/w) */
 		case 0x2193:
-			// Data ready when bits 2/3 clear?
+			/* Data ready when bits 2/3 clear? */
 			t = BSX.PPU[0x2193 - BSXPPUBASE] & ~0x0C;
 			break;
 
-		// Reset? (r/w)
+		/* Reset? (r/w) */
 		case 0x2194:
 			t = BSX.PPU[0x2194 - BSXPPUBASE];
 			break;
 
-		// Unknown (r)
+		/* Unknown (r) */
 		case 0x2196:
 			t = BSX.PPU[0x2196 - BSXPPUBASE];
 			break;
 
-		// Unknown (r/w)
+		/* Unknown (r/w) */
 		case 0x2197:
 			t = BSX.PPU[0x2197 - BSXPPUBASE];
 			break;
 
-		// Modem protocol? (r/w)
+		/* Modem protocol? (r/w) */
 		case 0x2199:
 			t = BSX.PPU[0x2199 - BSXPPUBASE];
 			break;
@@ -881,15 +882,15 @@ uint8 S9xGetBSXPPU (uint16 address)
 
 void S9xSetBSXPPU (uint8 byte, uint16 address)
 {
-	// known write registers
+	/* known write registers */
 	switch (address)
 	{
-		// Test register low? (r/w)
+		/* Test register low? (r/w) */
 		case 0x2188:
 			BSX.PPU[0x2188 - BSXPPUBASE] = byte;
 			break;
 
-		// Test register high? (r/w)
+		/* Test register high? (r/w) */
 		case 0x2189:
 			BSX.PPU[0x2189 - BSXPPUBASE] = byte;
 			break;
@@ -906,54 +907,55 @@ void S9xSetBSXPPU (uint8 byte, uint16 address)
 			BSX.PPU[0x218C - BSXPPUBASE] = byte;
 			break;
 
-		// Transmission number low? (r/w)
+		/* Transmission number low? (r/w) */
 		case 0x218E:
 			BSX.PPU[0x218E - BSXPPUBASE] = byte;
 			break;
 
-		// Transmission number high? (r/w)
+		/* Transmission number high? (r/w) */
 		case 0x218F:
 			BSX.PPU[0x218F - BSXPPUBASE] = byte;
 
-			// ?
+			/* ? */
 			BSX.PPU[0x218E - BSXPPUBASE] >>= 1;
 			BSX.PPU[0x218E - BSXPPUBASE] = BSX.PPU[0x218F - BSXPPUBASE] - BSX.PPU[0x218E - BSXPPUBASE];
 			BSX.PPU[0x218F - BSXPPUBASE] >>= 1;
 
-			BSX.PPU[0x2190 - BSXPPUBASE] = 0x80; // ?
+			/* ? */
+			BSX.PPU[0x2190 - BSXPPUBASE] = 0x80;
 			break;
 
-		// Strobe assert? (w)
+		/* Strobe assert? (w) */
 		case 0x2191:
 			BSX.PPU[0x2191 - BSXPPUBASE] = byte;
 			BSX.out_index = 0;
 			break;
 
-		// Data register? (r/w)
+		/* Data register? (r/w) */
 		case 0x2192:
-			BSX.PPU[0x2192 - BSXPPUBASE] = 0x01; // ?
-			BSX.PPU[0x2190 - BSXPPUBASE] = 0x80; // ?
+			BSX.PPU[0x2192 - BSXPPUBASE] = 0x01; /* ? */
+			BSX.PPU[0x2190 - BSXPPUBASE] = 0x80; /* ? */
 			break;
 
-		// Transmission status? (r/w)
+		/* Transmission status? (r/w) */
 		case 0x2193:
 			BSX.PPU[0x2193 - BSXPPUBASE] = byte;
 			break;
 
-		// Reset? (r/w)
+		/* Reset? (r/w) */
 		case 0x2194:
 			BSX.PPU[0x2194 - BSXPPUBASE] = byte;
 			break;
 
-		// Unknown (r/w)
+		/* Unknown (r/w) */
 		case 0x2197:
 			BSX.PPU[0x2197 - BSXPPUBASE] = byte;
 			break;
 
-		// Modem protocol? (r/w)
+		/* Modem protocol? (r/w) */
 		case 0x2199:
-			// Lots of modem strings written here when
-			// connection is lost or no uplink established
+			/* Lots of modem strings written here when
+			   connection is lost or no uplink established */
 			BSX.PPU[0x2199 - BSXPPUBASE] = byte;
 			break;
 	}
@@ -1037,7 +1039,7 @@ void S9xInitBSX (void)
 
 	if (!memcmp(&Memory.ROM[0x7FC0], "Satellaview BS-X     ", 21))
 	{
-		// BS-X itself
+		/* BS-X itself */
 
 		Settings.BS = TRUE;
 		Settings.BSXItself = TRUE;
@@ -1064,7 +1066,7 @@ void S9xInitBSX (void)
 
 		if (Settings.BS)
 		{
-			// BS games
+			/* BS games */
 
 			Memory.LoROM = r1 ? TRUE : FALSE;
 			Memory.HiROM = r2 ? TRUE : FALSE;
@@ -1134,14 +1136,14 @@ void S9xResetBSX (void)
 	BSX.out_index = 0;
 	memset(BSX.output, 0, sizeof(BSX.output));
 
-	// starting from the bios
+	/* starting from the BIOS */
 	if (BSX.bootup)
 		BSX.MMC[0x07] = BSX.MMC[0x08] = 0x80;
 	else
 	{
 		BSX.MMC[0x02] = FlashMode ? 0x80: 0;
 
-		// per bios: run from psram or flash card
+		/* per BIOS: run from psram or flash card */
 		if (FlashSize == PSRAM_SIZE)
 		{
 			memcpy(PSRAM, FlashROM, PSRAM_SIZE);
