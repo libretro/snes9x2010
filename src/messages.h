@@ -178,7 +178,8 @@
 #ifndef _MESSAGES_H_
 #define _MESSAGES_H_
 
-// Types of message sent to S9xMessage()
+/* Types of message sent to S9xMessage() */
+
 enum
 {
 	S9X_TRACE,
@@ -189,7 +190,7 @@ enum
 	S9X_FATAL_ERROR
 };
 
-// Individual message numbers
+/* Individual message numbers */
 enum
 {
 	S9X_ROM_INFO,

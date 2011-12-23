@@ -208,8 +208,8 @@
 #define CLOSE_STREAM(s)		fclose(s)
 #else 
 #include "../libsnes/memstream.h"
- // Create some sort of abstraction for files using memory only since libsnes API is memory oriented.
- // Very hacky, but at least allows us to avoid hacking up the whole source or go through the file system every time we want to do something ... :)
+ /* Create some sort of abstraction for files using memory only since libsnes API is memory oriented.
+    Very hacky, but at least allows us to avoid hacking up the whole source or go through the file system every time we want to do something ... :) */
 #define STREAM memstream_t *
 #define READ_STREAM(p, l, s)     memstream_read(s, p, l)
 #define WRITE_STREAM(p, l, s)    memstream_write(s, p, l)
@@ -226,10 +226,10 @@
 #define SNES_HEIGHT		224
 #define SNES_HEIGHT_EXTENDED	239
 
-//MAX_SNES_WIDTH = SNES_WIDTH * 2
+/* MAX_SNES_WIDTH = SNES_WIDTH * 2 */
 #define MAX_SNES_WIDTH		512
 
-//MAX_SNES_HEIGHT = SNES_HEIGHT_EXTENDED * 2
+/* MAX_SNES_HEIGHT = SNES_HEIGHT_EXTENDED * 2 */
 #define MAX_SNES_HEIGHT		478
 
 #define IMAGE_WIDTH		MAX_SNES_WIDTH
@@ -254,13 +254,13 @@
 #define SNES_WRAM_REFRESH_HC_v2_MIN_ONE_DOT_CYCLE	534
 #define SNES_WRAM_REFRESH_CYCLES	40
 
-#define SNES_HBLANK_START_HC		1096		// H=274
-#define	SNES_HDMA_START_HC		1106		// FIXME: not true
-#define	SNES_HBLANK_END_HC		4		// H=1
-#define	SNES_HDMA_INIT_HC		20		// FIXME: not true
+#define SNES_HBLANK_START_HC		1096		/* H=274 */
+#define	SNES_HDMA_START_HC		1106		/* FIXME: not true */
+#define	SNES_HBLANK_END_HC		4		/* H=1 */
+#define	SNES_HDMA_INIT_HC		20		/* FIXME: not true */
 
-//SNES_RENDER_START_HC = 48 * ONE_DOT_CYCLE
-#define	SNES_RENDER_START_HC		192		// FIXME: Snes9x renders a line at a time.
+/* SNES_RENDER_START_HC = 48 * ONE_DOT_CYCLE */
+#define	SNES_RENDER_START_HC		192		/* FIXME: Snes9x renders a line at a time. */
 
 #define SNES_TR_MASK			16
 #define SNES_TL_MASK			32
@@ -275,14 +275,14 @@
 #define SNES_Y_MASK			16384
 #define SNES_B_MASK			32768
 
-#define DEBUG_MODE_FLAG			1	// debugger
-#define TRACE_FLAG			2	// debugger
-#define SINGLE_STEP_FLAG		4	// debugger
-#define BREAK_FLAG			8	// debugger
-#define SCAN_KEYS_FLAG			16	// CPU
-#define NMI_FLAG			128	// CPU
-#define IRQ_FLAG			2048	// CPU
-#define HALTED_FLAG			4096	// APU
+#define DEBUG_MODE_FLAG			1	/* debugger */
+#define TRACE_FLAG			2	/* debugger */
+#define SINGLE_STEP_FLAG		4	/* debugger */
+#define BREAK_FLAG			8	/* debugger */
+#define SCAN_KEYS_FLAG			16	/* CPU */
+#define NMI_FLAG			128	/* CPU */
+#define IRQ_FLAG			2048	/* CPU */
+#define HALTED_FLAG			4096	/* APU */
 
 struct SCPUState
 {
@@ -334,9 +334,9 @@ struct STimings
 	int32	WRAMRefreshPos;
 	int32	RenderPos;
 	bool8	InterlaceField;
-	int32	DMACPUSync;	// The cycles to synchronize DMA and CPU. Snes9x cannot emulate correctly.
-	int32	NMIDMADelay;	// The delay of NMI trigger after DMA transfers. Snes9x cannot emulate correctly.
-	int32	IRQPendCount;	// This value is just a hack, because Snes9x cannot emulate any events in an opcode.
+	int32	DMACPUSync;	/* The cycles to synchronize DMA and CPU. Snes9x cannot emulate correctly. */
+	int32	NMIDMADelay;	/* The delay of NMI trigger after DMA transfers. Snes9x cannot emulate correctly. */
+	int32	IRQPendCount;	/* This value is just a hack, because Snes9x cannot emulate any events in an opcode. */
 	int32	APUSpeedup;
 	bool8	APUAllowTimeOverflow;
 };
@@ -458,10 +458,10 @@ extern struct SCPUState			CPU;
 extern struct STimings			Timings;
 extern struct SSNESGameFixes	SNESGameFixes;
 
-// Use when writing to $4016.
+/* Use when writing to $4016. */
 extern void S9xSetJoypadLatch (bool latch);
 
-// Use when reading $4016/7 (JOYSER0 and JOYSER1).
+/* Use when reading $4016/7 (JOYSER0 and JOYSER1). */
 extern uint8 S9xReadJOYSERn (int n);
 
 extern bool8 pad_read;

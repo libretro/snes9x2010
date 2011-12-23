@@ -427,7 +427,7 @@ const uint8 mode2_context_table[32][2] = {
 #define NEXT_MPS(n) (evolution_table[context[n].index][2])
 #define TOGGLE_INVERT(n) (evolution_table[context[n].index][3])
 
-static uint8 spc7110_decomp_dataread()
+static uint8 spc7110_decomp_dataread (void)
 {
 	unsigned size = Memory.CalculatedSize - 0x100000;
 	while(decomp_offset >= size)
@@ -812,7 +812,7 @@ static void spc7110_decomp_init(unsigned mode, unsigned offset, unsigned index)
 		spc7110_decomp_read();
 }
 
-void spc7110_decomp_reset()
+void spc7110_decomp_reset (void)
 {
 	//mode 3 is invalid; this is treated as a special case to always return 0x00
 	//set to mode 3 so that reading decomp port before starting first decomp will return 0x00
@@ -1358,7 +1358,7 @@ static void s7_mmio_write(unsigned addr, uint8 data)
 	}
 }
 
-static void s7_power()
+static void s7_power (void)
 {
 	r4801 = 0x00;
 	r4802 = 0x00;
@@ -1426,7 +1426,7 @@ static void s7_power()
 
 
 
-static unsigned s7_data_increment()
+static unsigned s7_data_increment (void)
 {
 	return r4816 + (r4817 << 8);
 }

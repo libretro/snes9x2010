@@ -180,15 +180,15 @@
 
 struct SBSX
 {
-	bool8	dirty;			// Changed register values
-	bool8	dirty2;			// Changed register values
-	bool8	bootup;			// Start in bios mapping
-	bool8	flash_enable;	// Flash state
-	bool8	write_enable;	// ROM write protection
-	bool8	read_enable;	// Allow card vendor reading
-	uint32	flash_command;	// Flash command
-	uint32	old_write;		// Previous flash write address
-	uint32	new_write;		// Current flash write address
+	bool8	dirty;		/* Changed register values */
+	bool8	dirty2;		/* Changed register values */
+	bool8	bootup;		/* Start in bios mapping */
+	bool8	flash_enable;	/* Flash state */
+	bool8	write_enable;	/* ROM write protection */
+	bool8	read_enable;	/* Allow card vendor reading */
+	uint32	flash_command;	/* Flash command */
+	uint32	old_write;	/* Previous flash write address */
+	uint32	new_write;	/* Current flash write address */
 	uint8	out_index;
 	uint8	output[32];
 	uint8	PPU[32];

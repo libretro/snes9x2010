@@ -228,8 +228,8 @@ void S9xDeinitUpdate (int, int);
 	CPU.Flags |= IRQ_FLAG; \
 	if (CPU.WaitingForInterrupt) \
 	{ \
-		/* Force IRQ to trigger immediately after WAI - */ \
-		/* Final Fantasy Mystic Quest crashes without this. */ \
+		/* Force IRQ to trigger immediately after WAI - \
+		Final Fantasy Mystic Quest crashes without this. */ \
 		CPU.WaitingForInterrupt = FALSE; \
 		Registers.PCw++; \
 	}

@@ -292,7 +292,7 @@ static void S9xDeinterleaveType1 (int size, uint8 *base)
 
 static void S9xDeinterleaveType2 (int size, uint8 *base)
 {
-	// for odd Super FX images
+	/* for odd Super FX images */
 	uint8	blocks[256];
 	int		nblocks = size >> 16;
 	int		step = 64;
@@ -330,7 +330,7 @@ static void S9xDeinterleaveType2 (int size, uint8 *base)
 
 static void S9xDeinterleaveGD24 (int size, uint8 *base)
 {
-	// for 24Mb images dumped with Game Doctor
+	/* for 24Mbit images dumped with Game Doctor */
 	if (size != 0x300000)
 		return;
 
@@ -348,7 +348,7 @@ static void S9xDeinterleaveGD24 (int size, uint8 *base)
 	}
 }
 
-// allocation and deallocation
+/* allocation and deallocation */
 
 bool8 Init (void)
 {
@@ -374,8 +374,9 @@ bool8 Init (void)
 	IPPU.TileCached[TILE_4BIT_ODD]  = (uint8 *) malloc(MAX_4BIT_TILES);
 
 
-	// don't render subscreen speed hack - disable this by default by turning the variable (RenderSub - opposite of
-	// don't render sub) on
+	/* don't render subscreen speed hack - disable this by default by 
+	turning the variable (RenderSub - opposite of don't render sub) on */
+
 	PPU.RenderSub = true;
 	PPU.FullClipping = true;
 
@@ -420,23 +421,23 @@ bool8 Init (void)
 	ZeroMemory(IPPU.TileCached[TILE_4BIT_EVEN], MAX_4BIT_TILES);
 	ZeroMemory(IPPU.TileCached[TILE_4BIT_ODD],  MAX_4BIT_TILES);
 
-	// FillRAM uses first 32K of ROM image area, otherwise space just
-	// wasted. Might be read by the SuperFX code.
+	/* FillRAM uses first 32K of ROM image area, otherwise space just
+	wasted. Might be read by the SuperFX code. */
 
 	Memory.FillRAM = Memory.ROM;
 
-	// Add 0x8000 to ROM image pointer to stop SuperFX code accessing
-	// unallocated memory (can cause crash on some ports).
+	/* Add 0x8000 to ROM image pointer to stop SuperFX code accessing
+	unallocated memory (can cause crash on some ports). */
 
 	Memory.ROM += 0x8000;
 
-	Memory.C4RAM   = Memory.ROM + 0x400000 + 8192 * 8; // C4
-	Memory.OBC1RAM = Memory.ROM + 0x400000; // OBC1
-	Memory.BIOSROM = Memory.ROM + 0x300000; // BS
-	Memory.BSRAM   = Memory.ROM + 0x400000; // BS
+	Memory.C4RAM   = Memory.ROM + 0x400000 + 8192 * 8; /* C4 */
+	Memory.OBC1RAM = Memory.ROM + 0x400000; /* OBC1 */
+	Memory.BIOSROM = Memory.ROM + 0x300000; /* BS */
+	Memory.BSRAM   = Memory.ROM + 0x400000; /* BS */
 
 	SuperFX.pvRegisters = Memory.FillRAM + 0x3000;
-	SuperFX.nRamBanks   = 2; // Most only use 1.  1=64KB=512Mb, 2=128KB=1024Mb
+	SuperFX.nRamBanks   = 2; /* Most only use 1.  1=64KB=512Mb, 2=128KB=1024Mb */
 	SuperFX.pvRam       = Memory.SRAM;
 	SuperFX.nRomBanks   = (2 * 1024 * 1024) / (32 * 1024);
 	SuperFX.pvRom       = (uint8 *) Memory.ROM;
@@ -511,10 +512,10 @@ static char * SafeANK (uint8 ROMRegion, const char *s)
 
 	for (int i = 0; i < len; i++)
 	{
-		if (s[i] >= 32 && s[i] < 127) // ASCII
+		if (s[i] >= 32 && s[i] < 127) /* ASCII */
 			safe [i] = s[i];
 		else
-		if (ROMRegion == 0 && ((uint8) s[i] >= 0xa0 && (uint8) s[i] < 0xe0)) // JIS X 201 - Katakana
+		if (ROMRegion == 0 && ((uint8) s[i] >= 0xa0 && (uint8) s[i] < 0xe0)) /* JIS X 201 - Katakana */
 			safe [i] = s[i];
 		else
 			safe [i] = '_';
@@ -571,7 +572,7 @@ void Deinit (void)
 	SafeANK(Memory.ROMRegion, NULL);
 }
 
-// file management and ROM detection
+/* file management and ROM detection */
 
 static bool8 allASCII (uint8 *b, int size)
 {
@@ -626,7 +627,7 @@ static int ScoreHiROM (uint32 calculated_size, uint8 * rom,  bool8 skip_header, 
 	if (buf[0xd5] & 0x1)
 		score += 2;
 
-	// Mode23 is SA-1
+	/* Mode23 is SA-1 */
 	if (buf[0xd5] == 0x23)
 		score -= 2;
 
@@ -650,7 +651,7 @@ static int ScoreHiROM (uint32 calculated_size, uint8 * rom,  bool8 skip_header, 
 		score -= 6;
 
 	if ((buf[0xfc] + (buf[0xfd] << 8)) > 0xffb0)
-		score -= 2; // reduced after looking at a scan by Cowering
+		score -= 2; /* reduced after looking at a scan by Cowering */
 
 	if (calculated_size > 1024 * 1024 * 3)
 		score += 4;
@@ -675,7 +676,7 @@ static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, i
 	if (!(buf[0xd5] & 0x1))
 		score += 3;
 
-	// Mode23 is SA-1
+	/* Mode23 is SA-1 */
 	if (buf[0xd5] == 0x23)
 		score += 2;
 
@@ -696,7 +697,7 @@ static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, i
 		score -= 6;
 
 	if ((buf[0xfc] + (buf[0xfd] << 8)) > 0xffb0)
-		score -= 2; // reduced per Cowering suggestion
+		score -= 2; /* reduced per Cowering suggestion */
 
 	if (calculated_size <= 1024 * 1024 * 16)
 		score += 2;

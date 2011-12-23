@@ -203,7 +203,7 @@
 #define SUPERSCOPE			10
 #define ONE_JUSTIFIER			11
 #define TWO_JUSTIFIERS			12
-#define NUMCTLS				13 // This must be LAST
+#define NUMCTLS				13 /* This must be LAST */
 
 typedef struct
 {
@@ -213,12 +213,12 @@ typedef struct
 	{
 		union
 		{
-			uint16 joypad;	// Which buttons to actuate. Use SNES_*_MASK constants from snes9x.h
+			uint16 joypad;	/* Which buttons to actuate. Use SNES_*_MASK constants from snes9x.h */
 
 			struct
 			{
-				uint8	idx:1;				// Mouse number 0-1
-				uint8	left:1;				// buttons
+				uint8	idx:1;			/* Mouse number 0-1 */
+				uint8	left:1;			/* buttons */
 				uint8	right:1;
 			}	mouse;
 
@@ -263,87 +263,102 @@ typedef struct
 	} commandunion;
 }	s9xcommand_t;
 
-// Starting out...
+/* Starting out... */
 
 void S9xUnmapAllControls (void);
 
-// Setting which controllers are plugged in.
+/* Setting which controllers are plugged in. */
 
-#define CTL_NONE 0		// all ids ignored
-#define CTL_JOYPAD 1		// use id1 to specify 0-7
-#define CTL_MOUSE 2		// use id1 to specify 0-1
+#define CTL_NONE 0		/* all ids ignored */
+#define CTL_JOYPAD 1		/* use id1 to specify 0-7 */
+#define CTL_MOUSE 2		/* use id1 to specify 0-1 */
 #define CTL_SUPERSCOPE 3
-#define CTL_JUSTIFIER 4		// use id1: 0=one justifier, 1=two justifiers
-#define CTL_MP5 5		// use id1-id4 to specify pad 0-7 (or -1)
+#define CTL_JUSTIFIER 4		/* use id1: 0=one justifier, 1=two justifiers */
+#define CTL_MP5 5		/* use id1-id4 to specify pad 0-7 (or -1) */
 
-void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 id3, int8 id4); // port=0-1
+void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 id3, int8 id4); /* port=0-1 */
 
-// Call this when you're done with S9xSetController, or if you change any of the controller Settings.*Master flags. 
-// Returns true if something was disabled.
+/* Call this when you're done with S9xSetController, or if you change any of 
+   the controller Settings.*Master flags. 
+
+   Returns true if something was disabled. */
 
 bool S9xVerifyControllers (void);
 
-// Functions for translating s9xcommand_t's into strings, and vice versa.
-// free() the returned string after you're done with it.
+/* Functions for translating s9xcommand_t's into strings, and vice versa.
+   free() the returned string after you're done with it. */
 
 s9xcommand_t S9xGetCommandT (const char *name);
 
-// Generic mapping functions
+/* Generic mapping functions */
 
-// Button mapping functions.
-// If a button is mapped with poll=TRUE, then S9xPollButton will be called whenever snes9x feels a need for that mapping.
-// Otherwise, snes9x will assume you will call S9xReportButton() whenever the button state changes.
-// S9xMapButton() will fail and return FALSE if mapping.type isn't an S9xButton* type.
+/* Button mapping functions.
+   If a button is mapped with poll=TRUE, then S9xPollButton will be called 
+   whenever snes9x feels a need for that mapping.
+   
+   Otherwise, snes9x will assume you will call S9xReportButton() whenever the 
+   button state changes.
+   S9xMapButton() will fail and return FALSE if mapping.type isn't an S9xButton* type. */
 
 bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll);
 void S9xReportButton (uint32 id, bool pressed);
 
-// Pointer mapping functions.
-// If a pointer is mapped with poll=TRUE, then S9xPollPointer will be called whenever snes9x feels a need for that mapping.
-// Otherwise, snes9x will assume you will call S9xReportPointer() whenever the pointer position changes.
-// S9xMapPointer() will fail and return FALSE if mapping.type isn't an S9xPointer* type.
+/* Pointer mapping functions.
 
-// Note that position [0,0] is considered the upper-left corner of the 'screen',
-// and either [255,223] or [255,239] is the lower-right.
-// Note that the SNES mouse doesn't aim at a particular point,
-// so the SNES's idea of where the mouse pointer is will probably differ from your OS's idea.
+   If a pointer is mapped with poll=TRUE, then S9xPollPointer will be called whenever 
+   snes9x feels a need for that mapping.
+   
+   Otherwise, snes9x will assume you will call S9xReportPointer() whenever the
+   pointer position changes.
+
+   S9xMapPointer() will fail and return FALSE if mapping.type isn't an 
+   S9xPointer* type.
+   
+   Note that position [0,0] is considered the upper-left corner of the 'screen',
+   and either [255,223] or [255,239] is the lower-right.
+   
+   Note that the SNES mouse doesn't aim at a particular point,
+   so the SNES's idea of where the mouse pointer is will probably differ
+   from your OS's idea. */
 
 bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll);
 void S9xReportPointer (uint32 id, int16 x, int16 y);
 
-// Do whatever the s9xcommand_t says to do.
-// If cmd.type is a button type, data1 should be TRUE (non-0) or FALSE (0) to indicate whether the 'button' is pressed or released.
-// If cmd.type is an axis, data1 holds the deflection value.
-// If cmd.type is a pointer, data1 and data2 are the positions of the pointer.
+/* Do whatever the s9xcommand_t says to do.
+   If cmd.type is a button type, data1 should be TRUE (non-0) or FALSE (0)
+   to indicate whether the 'button' is pressed or released.
+
+   If cmd.type is an axis, data1 holds the deflection value.
+
+   If cmd.type is a pointer, data1 and data2 are the positions of the pointer. */
 
 void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2);
 
-//////////
-// These functions are called from snes9x into this subsystem. No need to use them from a port.
+/* These functions are called from snes9x into this subsystem. No need to use them from a port. */
 
-// Use when resetting snes9x.
+/* Use when resetting snes9x. */
 
 void S9xControlsReset (void);
 void S9xControlsSoftReset (void);
 
-// End-Of-Frame processing. Sets gun latch variables and tries to draw crosshairs
+/* End-Of-Frame processing. Sets gun latch variables and tries to draw crosshairs */
 
 void S9xControlEOF (void);
 
-// Functions and a structure for snapshot.
+/* Functions and a structure for snapshot. */
 
 struct SControlSnapshot
 {
 	uint8	ver;
 	uint8	port1_read_idx[2];
-	uint8	dummy1[4];					// for future expansion
+	uint8	dummy1[4];		/* for future expansion */
 	uint8	port2_read_idx[2];
 	uint8	dummy2[4];
 	uint8	mouse_speed[2];
 	uint8	justifier_select;
 	uint8	dummy3[8];
 	bool8	pad_read, pad_read_last;
-	uint8	internal[60];				// yes, we need to save this!
+	uint8	internal[60];		/* yes, we need to save this! */
 };
 
 void S9xControlPreSaveState (struct SControlSnapshot *s);

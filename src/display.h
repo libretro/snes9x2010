@@ -195,7 +195,7 @@ enum s9x_getdirtype
 	LAST_DIR
 };
 
-// Routines the port has to implement even if it doesn't use them
+/* Routines the port has to implement even if it doesn't use them */
 
 const char * S9xGetDirectory (uint32_t s9x_getdirtype);
 const char * S9xGetFilename (const char *, uint32_t s9x_getdirtype);

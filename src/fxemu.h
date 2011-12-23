@@ -178,15 +178,16 @@
 #ifndef _FXEMU_H_
 #define _FXEMU_H_
 
-// The FxInfo_s structure, the link between the FxEmulator and the Snes Emulator
+/* The FxInfo_s structure, the link between the FxEmulator and the Snes Emulator */
+
 struct FxInfo_s
 {
 	uint32	vFlags;
-	uint8	*pvRegisters;	// 768 bytes located in the memory at address 0x3000
-	uint32	nRamBanks;	// Number of 64kb-banks in GSU-RAM/BackupRAM (banks 0x70-0x73)
-	uint8	*pvRam;		// Pointer to GSU-RAM
-	uint32	nRomBanks;	// Number of 32kb-banks in Cart-ROM
-	uint8	*pvRom;		// Pointer to Cart-ROM
+	uint8	*pvRegisters;	/* 768 bytes located in the memory at address 0x3000 */
+	uint32	nRamBanks;	/* Number of 64kb-banks in GSU-RAM/BackupRAM (banks 0x70-0x73) */
+	uint8	*pvRam;		/* Pointer to GSU-RAM */
+	uint32	nRomBanks;	/* Number of 32kb-banks in Cart-ROM */
+	uint8	*pvRom;		/* Pointer to Cart-ROM */
 	uint32	speedPerLine;
 	bool8	oneLineDone;
 };

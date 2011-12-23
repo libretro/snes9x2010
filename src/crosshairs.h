@@ -178,7 +178,7 @@
 #ifndef _CROSSHAIRS_H_
 #define _CROSSHAIRS_H_
 
-// Return the specified crosshair. Woo-hoo.
+// Return the specified crosshair.
 // char * to a 225-byte string, with '#' marking foreground, '.' marking background,
 // and anything else transparent.
 

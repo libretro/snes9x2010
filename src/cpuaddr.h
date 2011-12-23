@@ -261,8 +261,8 @@ static inline uint32 AbsoluteIndexedIndirectSlow (unsigned a)			// (a,X)
 
 	if (a & JSR)
 	{
-		// JSR (a,X) pushes the old address in the middle of loading the new.
-		// OpenBus needs to be set to account for this.
+		/* JSR (a,X) pushes the old address in the middle of loading the new.
+		OpenBus needs to be set to account for this. */
 		addr = Immediate8Slow(READ);
 		if (a == JSR)
 			OpenBus = Registers.PCl;
@@ -272,7 +272,7 @@ static inline uint32 AbsoluteIndexedIndirectSlow (unsigned a)			// (a,X)
 	AddCycles(ONE_CYCLE);
 	addr += Registers.X.W;
 
-	// Address load wraps within the bank
+	/* Address load wraps within the bank */
 	uint16	addr2 = S9xGetWord(ICPU.ShiftedPB | addr, WRAP_BANK);
 	OpenBus = addr2 >> 8;
 
@@ -284,7 +284,7 @@ static inline uint32 AbsoluteIndexedIndirect (unsigned a)				// (a,X)
 	uint16	addr = Immediate16Slow(READ);
 	addr += Registers.X.W;
 
-	// Address load wraps within the bank
+	/* Address load wraps within the bank */
 	uint16	addr2 = S9xGetWord(ICPU.ShiftedPB | addr, WRAP_BANK);
 	OpenBus = addr2 >> 8;
 

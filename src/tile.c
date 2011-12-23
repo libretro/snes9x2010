@@ -175,11 +175,13 @@
  ***********************************************************************************/
 
 
-// This file includes itself multiple times.
-// The other option would be to have 4 files, where A includes B, and B includes C 3 times, and C includes D 5 times.
-// Look for the following marker to find where the divisions are.
+/* This file includes itself multiple times.
+   The other option would be to have 4 files, 
+   where A includes B, and B includes C 3 times, and C includes D 5 times.
 
-// Top-level compilation.
+   Look for the following marker to find where the divisions are. */
+
+/* Top-level compilation. */
 
 #ifndef _NEWTILE_CPP
 #define _NEWTILE_CPP
@@ -287,8 +289,9 @@ void S9xInitTileRenderer (void)
 	}
 }
 
-// Here are the tile converters, selected by S9xSelectTileConverter().
-// Really, except for the definition of DOBIT and the number of times it is called, they're all the same.
+/* Here are the tile converters, selected by S9xSelectTileConverter().
+   Really, except for the definition of DOBIT and the number of times 
+   it is called, they're all the same. */
 
 #define DOBIT(n, i) \
 	if ((pix = *(tp + (n)))) \
@@ -508,11 +511,11 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 #undef DOBIT
 
-// First-level include: Get all the renderers.
+/* First-level include: Get all the renderers. */
 
 #include "tile.c"
 
-// Functions to select which converter and renderer to use.
+/* Functions to select which converter and renderer to use. */
 
 void S9xSelectTileRenderers_SFXSpeedup()
 {
@@ -751,7 +754,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 
 /*****************************************************************************/
 #else
-#ifndef NAME1 // First-level: Get all the renderers.
+#ifndef NAME1 /* First-level: Get all the renderers. */
 /*****************************************************************************/
 
 #define GET_CACHED_TILE() \
@@ -800,16 +803,21 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #define MATHS1_2(Op, Main, Sub, SD) \
 	(GFX.ClipColors ? REGMATH(Op, Main, Sub, SD) : (((SD) & 0x20) ? COLOR_##Op##1_2((Main), (Sub)) : COLOR_##Op((Main), GFX.FixedColour)))
 
-// Basic routine to render an unclipped tile.
-// Input parameters:
-//     BPSTART = either StartLine or (StartLine * 2 + BG.InterlaceLine),
-//     so interlace modes can render every other line from the tile.
-//     PITCH = 1 or 2, again so interlace can count lines properly.
-//     DRAW_PIXEL(N, M) is a routine to actually draw the pixel. N is the pixel in the row to draw,
-//     and M is a test which if false means the pixel should be skipped.
-//     Z1 is the "draw if Z1 > cur_depth".
-//     Z2 is the "cur_depth = new_depth". OBJ need the two separate.
-//     Pix is the pixel to draw.
+/* Basic routine to render an unclipped tile.
+   Input parameters:
+   
+   BPSTART = either StartLine or (StartLine * 2 + BG.InterlaceLine),
+   so interlace modes can render every other line from the tile.
+   
+   PITCH = 1 or 2, again so interlace can count lines properly.
+   DRAW_PIXEL(N, M) is a routine to actually draw the pixel. N is the pixel in the row to draw,
+   and M is a test which if false means the pixel should be skipped.
+   
+   Z1 is the "draw if Z1 > cur_depth".
+   
+   Z2 is the "cur_depth = new_depth". OBJ need the two separate.
+   
+   Pix is the pixel to draw. */
 
 #define Z1	GFX.Z1
 #define Z2	GFX.Z2
@@ -890,7 +898,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #define NAME1	DrawTile16
 #define ARGS	uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount
 
-// Second-level include: Get the DrawTile16 renderers.
+/* Second-level include: Get the DrawTile16 renderers. */
 
 #include "tile.c"
 
@@ -900,7 +908,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #undef Z1
 #undef Z2
 
-// Basic routine to render a clipped tile. Inputs same as above.
+/* Basic routine to render a clipped tile. Inputs same as above. */
 
 #define Z1	GFX.Z1
 #define Z2	GFX.Z2
@@ -997,7 +1005,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #define NAME1	DrawClippedTile16
 #define ARGS	uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount
 
-// Second-level include: Get the DrawClippedTile16 renderers.
+/* Second-level include: Get the DrawClippedTile16 renderers. */
 
 #include "tile.c"
 
@@ -1007,8 +1015,8 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #undef Z1
 #undef Z2
 
-// Basic routine to render a single mosaic pixel.
-// DRAW_PIXEL, BPSTART, Z1, Z2 and Pix are the same as above, but PITCH is not used.
+/* Basic routine to render a single mosaic pixel.
+   DRAW_PIXEL, BPSTART, Z1, Z2 and Pix are the same as above, but PITCH is not used. */
 
 #define Z1	GFX.Z1
 #define Z2	GFX.Z2
@@ -1043,7 +1051,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #define NAME1	DrawMosaicPixel16
 #define ARGS	uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount
 
-// Second-level include: Get the DrawMosaicPixel16 renderers.
+/* Second-level include: Get the DrawMosaicPixel16 renderers. */
 
 #include "tile.c"
 
@@ -1053,10 +1061,14 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #undef Z1
 #undef Z2
 
-// Basic routine to render the backdrop.
-// DRAW_PIXEL is the same as above, but since we're just replicating a single pixel there's no need for PITCH or BPSTART
-// (or interlace at all, really).
-// The backdrop is always depth = 1, so Z1 = Z2 = 1. And backdrop is always color 0.
+/* Basic routine to render the backdrop.
+
+   DRAW_PIXEL is the same as above, but since we're just replicating a single 
+   pixel there's no need for PITCH or BPSTART
+   (or interlace at all, really).
+   
+   The backdrop is always depth = 1, so Z1 = Z2 = 1. 
+   And backdrop is always color 0. */
 
 #define NO_INTERLACE	1
 #define Z1				1
@@ -1078,7 +1090,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #define NAME1	DrawBackdrop16
 #define ARGS	uint32 Offset, uint32 Left, uint32 Right
 
-// Second-level include: Get the DrawBackdrop16 renderers.
+/* Second-level include: Get the DrawBackdrop16 renderers. */
 
 #include "tile.c"
 
@@ -1353,7 +1365,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define NAME1		DrawMode7BG1
 #define ARGS		uint32 Left, uint32 Right, int D
 
-// Second-level include: Get the DrawMode7BG1 renderers.
+/* Second-level include: Get the DrawMode7BG1 renderers. */
 
 #include "tile.c"
 
@@ -1363,7 +1375,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define DRAW_TILE()	DRAW_TILE_MOSAIC()
 #define NAME1		DrawMode7MosaicBG1
 
-// Second-level include: Get the DrawMode7MosaicBG1 renderers.
+/* Second-level include: Get the DrawMode7MosaicBG1 renderers. */
 
 #include "tile.c"
 
@@ -1383,7 +1395,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define DCMODE		0
 #define BG			1
 
-// Second-level include: Get the DrawMode7BG2 renderers.
+/* Second-level include: Get the DrawMode7BG2 renderers. */
 
 #include "tile.c"
 
@@ -1393,7 +1405,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define DRAW_TILE()	DRAW_TILE_MOSAIC()
 #define NAME1		DrawMode7MosaicBG2
 
-// Second-level include: Get the DrawMode7MosaicBG2 renderers.
+/* Second-level include: Get the DrawMode7MosaicBG2 renderers. */
 
 #include "tile.c"
 
@@ -1411,13 +1423,13 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 /*****************************************************************************/
 #else
-#ifndef NAME2 // Second-level: Get all the NAME1 renderers.
+#ifndef NAME2 /* Second-level: Get all the NAME1 renderers. */
 /*****************************************************************************/
 
 #define BPSTART	StartLine
 #define PITCH	1
 
-// The 1x1 pixel plotter, for speedhacking modes.
+/* The 1x1 pixel plotter, for speedhacking modes. */
 
 #define DRAW_PIXEL(N, M) \
 	if (Z1 > GFX.DB[Offset + N] && (M)) \
@@ -1428,14 +1440,14 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 #define NAME2	Normal1x1
 
-// Third-level include: Get the Normal1x1 renderers.
+/* Third-level include: Get the Normal1x1 renderers. */
 
 #include "tile.c"
 
 #undef NAME2
 #undef DRAW_PIXEL
 
-// The 2x1 pixel plotter, for normal rendering when we've used hires/interlace already this frame.
+/* The 2x1 pixel plotter, for normal rendering when we've used hires/interlace already this frame. */
 
 #define DRAW_PIXEL_N2x1(N, M) \
 	if (Z1 > GFX.DB[Offset + 2 * N] && (M)) \
@@ -1447,7 +1459,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define DRAW_PIXEL(N, M)	DRAW_PIXEL_N2x1(N, M)
 #define NAME2				Normal2x1
 
-// Third-level include: Get the Normal2x1 renderers.
+/* Third-level include: Get the Normal2x1 renderers. */
 
 #include "tile.c"
 
@@ -1474,15 +1486,17 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define DRAW_PIXEL(N, M)	DRAW_PIXEL_H2x1(N, M)
 #define NAME2				Hires
 
-// Third-level include: Get the Hires renderers.
+/* Third-level include: Get the Hires renderers. */
 
 #include "tile.c"
 
 #undef NAME2
 #undef DRAW_PIXEL
 
-// Interlace: Only draw every other line, so we'll redefine BPSTART and PITCH to do so.
-// Otherwise, it's the same as Normal2x1/Hires2x1.
+/* Interlace: Only draw every other line, so we'll redefine BPSTART and 
+   PITCH to do so.
+   
+   Otherwise, it's the same as Normal2x1/Hires2x1. */
 
 #undef BPSTART
 #undef PITCH
@@ -1495,7 +1509,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define DRAW_PIXEL(N, M)	DRAW_PIXEL_N2x1(N, M)
 #define NAME2				Interlace
 
-// Third-level include: Get the double width Interlace renderers.
+/* Third-level include: Get the double width Interlace renderers. */
 
 #include "tile.c"
 
@@ -1505,7 +1519,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define DRAW_PIXEL(N, M)	DRAW_PIXEL_H2x1(N, M)
 #define NAME2				HiresInterlace
 
-// Third-level include: Get the HiresInterlace renderers.
+/* Third-level include: Get the HiresInterlace renderers. */
 
 #include "tile.c"
 
@@ -1518,7 +1532,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #undef PITCH
 
 /*****************************************************************************/
-#else // Third-level: Renderers for each math mode for NAME1 + NAME2.
+#else /* Third-level: Renderers for each math mode for NAME1 + NAME2. */
 /*****************************************************************************/
 
 #define CONCAT3(A, B, C)	A##B##C

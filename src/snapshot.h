@@ -185,13 +185,11 @@
 #define WRONG_FORMAT		(-1)
 #define WRONG_VERSION		(-2)
 #define FILE_NOT_FOUND		(-3)
-#define WRONG_MOVIE_SNAPSHOT	(-4)
-#define NOT_A_MOVIE_SNAPSHOT	(-5)
 #define SNAPSHOT_INCONSISTENT	(-6)
 
 bool8 S9xFreezeGame (const char *);
 bool8 S9xUnfreezeGame (const char *);
 void S9xFreezeToStream (STREAM);
-int	 S9xUnfreezeFromStream (STREAM);
+int S9xUnfreezeFromStream (STREAM);
 
 #endif

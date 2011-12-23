@@ -526,13 +526,13 @@ struct SDSP4
 	uint8	byte;
 	uint16	address;
 
-	// op control
-	int8	Logic;				// controls op flow
+	/* op control */
+	int8	Logic;				/* controls op flow */
 
-	// projection format
-	int16	lcv;				// loop-control variable
-	int16	distance;			// z-position into virtual world
-	int16	raster;				// current raster line
+	/* projection format */
+	int16	lcv;				/* loop-control variable */
+	int16	distance;			/* z-position into virtual world */
+	int16	raster;				/* current raster line */
 	int16	segments;			// number of raster lines drawn
 
 	// 1.15.16 or 1.15.0 [sign, integer, fraction]
