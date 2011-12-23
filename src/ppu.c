@@ -205,6 +205,7 @@ static int counter = 0;
 
 bool8 S9xGraphicsInit (void)
 {
+	uint32 r, g, b;
 	S9xInitTileRenderer();
 
 	GFX.DoInterlace = 0;
@@ -230,19 +231,19 @@ bool8 S9xGraphicsInit (void)
 
 	/* Lookup table for color addition */
 	ZeroMemory(GFX.X2, 0x10000 * sizeof(uint16));
-	for (uint32 r = 0; r <= MAX_RED; r++)
+	for ( r = 0; r <= MAX_RED; r++)
 	{
 		uint32	r2 = r << 1;
 		if (r2 > MAX_RED)
 			r2 = MAX_RED;
 
-		for (uint32 g = 0; g <= MAX_GREEN; g++)
+		for ( g = 0; g <= MAX_GREEN; g++)
 		{
 			uint32	g2 = g << 1;
 			if (g2 > MAX_GREEN)
 				g2 = MAX_GREEN;
 
-			for (uint32 b = 0; b <= MAX_BLUE; b++)
+			for ( b = 0; b <= MAX_BLUE; b++)
 			{
 				uint32	b2 = b << 1;
 				if (b2 > MAX_BLUE)
@@ -256,7 +257,7 @@ bool8 S9xGraphicsInit (void)
 
 	/* Lookup table for 1/2 color subtraction */
 	ZeroMemory(GFX.ZERO, 0x10000 * sizeof(uint16));
-	for (uint32 r = 0; r <= MAX_RED; r++)
+	for ( r = 0; r <= MAX_RED; r++)
 	{
 		uint32	r2 = r;
 		if (r2 & 0x10)
@@ -264,7 +265,7 @@ bool8 S9xGraphicsInit (void)
 		else
 			r2 = 0;
 
-		for (uint32 g = 0; g <= MAX_GREEN; g++)
+		for ( g = 0; g <= MAX_GREEN; g++)
 		{
 			uint32	g2 = g;
 			if (g2 & GREEN_HI_BIT)
@@ -272,7 +273,7 @@ bool8 S9xGraphicsInit (void)
 			else
 				g2 = 0;
 
-			for (uint32 b = 0; b <= MAX_BLUE; b++)
+			for ( b = 0; b <= MAX_BLUE; b++)
 			{
 				uint32	b2 = b;
 				if (b2 & 0x10)
@@ -335,19 +336,19 @@ static void SetupOBJ (void)
 	   
 	   So we split them up. */
 
-	int		Height;
-	uint8	S;
+	int	i, j, Height, Y;
+	uint8	line, S;
 
 	if (!PPU.OAMPriorityRotation || !(PPU.OAMFlip & PPU.OAMAddr & 1)) // normal case
 	{
 		uint8	LineOBJ[SNES_HEIGHT_EXTENDED];
 		ZeroMemory(LineOBJ, sizeof(LineOBJ));
 
-		for (int i = 0; i < SNES_HEIGHT_EXTENDED; i++)
+		for ( i = 0; i < SNES_HEIGHT_EXTENDED; i++)
 		{
 			GFX.OBJLines[i].RTOFlags = 0;
 			GFX.OBJLines[i].Tiles = 34;
-			for (int j = 0; j < 32; j++)
+			for ( j = 0; j < 32; j++)
 				GFX.OBJLines[i].OBJ[j].Sprite = -1;
 		}
 
@@ -381,7 +382,7 @@ static void SetupOBJ (void)
 				else
 					GFX.OBJVisibleTiles[S] = GFX.OBJWidths[S] >> 3;
 
-				for (uint8 line = startline, Y = (uint8) (PPU.OBJ[S].VPos & 0xff); line < Height; Y++, line += inc)
+				for ( line = startline, Y = (uint8) (PPU.OBJ[S].VPos & 0xff); line < Height; Y++, line += inc)
 				{
 					if (Y >= SNES_HEIGHT_EXTENDED)
 						continue;
@@ -411,7 +412,7 @@ static void SetupOBJ (void)
 			S = (S + 1) & 0x7f;
 		} while (S != FirstSprite);
 
-		for (int Y = 1; Y < SNES_HEIGHT_EXTENDED; Y++)
+		for ( Y = 1; Y < SNES_HEIGHT_EXTENDED; Y++)
 			GFX.OBJLines[Y].RTOFlags |= GFX.OBJLines[Y - 1].RTOFlags;
 	}
 	else // evil FirstSprite+Y case
@@ -447,7 +448,7 @@ static void SetupOBJ (void)
 				else
 					GFX.OBJVisibleTiles[S] = GFX.OBJWidths[S] >> 3;
 
-				for (uint8 line = startline, Y = (uint8) (PPU.OBJ[S].VPos & 0xff); line < Height; Y++, line += inc)
+				for ( line = startline, Y = (uint8) (PPU.OBJ[S].VPos & 0xff); line < Height; Y++, line += inc)
 				{
 					if (Y >= SNES_HEIGHT_EXTENDED)
 						continue;
@@ -464,7 +465,7 @@ static void SetupOBJ (void)
 
 		// Now go through and pull out those OBJ that are actually visible.
 		int	j;
-		for (int Y = 0; Y < SNES_HEIGHT_EXTENDED; Y++)
+		for ( Y = 0; Y < SNES_HEIGHT_EXTENDED; Y++)
 		{
 			GFX.OBJLines[Y].RTOFlags = Y ? GFX.OBJLines[Y - 1].RTOFlags : 0;
 			GFX.OBJLines[Y].Tiles = 34;
@@ -2544,9 +2545,10 @@ static void S9xUpdateHVTimerPosition (void)
 
 void S9xFixColourBrightness (void)
 {
+	int i;
 	IPPU.XB = mul_brightness[PPU.Brightness];
 
-	for (int i = 0; i < 256; i++)
+	for ( i = 0; i < 256; i++)
 	{
 		IPPU.Red[i]   = IPPU.XB[(PPU.CGDATA[i])       & 0x1f];
 		IPPU.Green[i] = IPPU.XB[(PPU.CGDATA[i] >>  5) & 0x1f];
@@ -3886,7 +3888,8 @@ static bool special_chips_active = false;
 
 static void S9xDoDMA (void)
 {
-	for(uint8 Channel = 0; Channel < 8; Channel++)
+	uint8 Channel;
+	for( Channel = 0; Channel < 8; Channel++)
 	{
 		if(dma_channels_to_be_used[Channel] != 1)
 			continue;
@@ -3992,7 +3995,8 @@ static void S9xDoDMA (void)
 				if (d->AAddress == 0x4800 || d->ABank == 0x50)
 				{
 					spc7110_dma = (uint8*)malloc(d->TransferBytes);
-					for (int i = 0; i < d->TransferBytes; i++)
+					int i;
+					for ( i = 0; i < d->TransferBytes; i++)
 						spc7110_dma[i] = spc7110_decomp_read();
 
 					int32	icount = r4809 | (r480a << 8);
@@ -5336,6 +5340,7 @@ void S9xResetPPU (void)
 
 void S9xSoftResetPPU (void)
 {
+	int c;
 	S9xControlsSoftReset();
 
 	PPU.VMA.High = 0;
@@ -5346,7 +5351,7 @@ void S9xSoftResetPPU (void)
 
 	PPU.WRAM = 0;
 
-	for (int c = 0; c < 4; c++)
+	for ( c = 0; c < 4; c++)
 	{
 		PPU.BG[c].SCBase = 0;
 		PPU.BG[c].HOffset = 0;
@@ -5363,7 +5368,7 @@ void S9xSoftResetPPU (void)
 	PPU.CGFLIPRead = 0;
 	PPU.CGADD = 0;
 
-	for (int c = 0; c < 256; c++)
+	for ( c = 0; c < 256; c++)
 	{
 		IPPU.Red[c]   = (c & 7) << 2;
 		IPPU.Green[c] = ((c >> 3) & 7) << 2;
@@ -5371,7 +5376,7 @@ void S9xSoftResetPPU (void)
 		PPU.CGDATA[c] = IPPU.Red[c] | (IPPU.Green[c] << 5) | (IPPU.Blue[c] << 10);
 	}
 
-	for (int c = 0; c < 128; c++)
+	for ( c = 0; c < 128; c++)
 	{
 		PPU.OBJ[c].HPos = 0;
 		PPU.OBJ[c].VPos = 0;
@@ -5440,7 +5445,7 @@ void S9xSoftResetPPU (void)
 	PPU.Window2Right = 0;
 	PPU.RecomputeClipWindows = TRUE;
 
-	for (int c = 0; c < 6; c++)
+	for ( c = 0; c < 6; c++)
 	{
 		PPU.ClipCounts[c] = 0;
 		PPU.ClipWindowOverlapLogic[c] = CLIP_OR;
@@ -5467,8 +5472,9 @@ void S9xSoftResetPPU (void)
 	PPU.OpenBus1 = 0;
 	PPU.OpenBus2 = 0;
 
-	for (int c = 0; c < 2; c++)
-		memset(&IPPU.Clip[c], 0, sizeof(struct ClipData));
+	memset(&IPPU.Clip[0], 0, sizeof(struct ClipData));
+	memset(&IPPU.Clip[1], 0, sizeof(struct ClipData));
+
 	IPPU.OBJChanged = TRUE;
 	IPPU.DirectColourMapsNeedRebuild = TRUE;
 	ZeroMemory(IPPU.TileCached[TILE_2BIT], MAX_2BIT_TILES);
@@ -5490,7 +5496,7 @@ void S9xSoftResetPPU (void)
 	IPPU.CurrentLine = 0;
 	IPPU.PreviousLine = 0;
 	IPPU.XB = NULL;
-	for (int c = 0; c < 256; c++)
+	for ( c = 0; c < 256; c++)
 		IPPU.ScreenColors[c] = c;
 	IPPU.MaxBrightness = 0;
 	IPPU.RenderedScreenWidth = SNES_WIDTH;
@@ -5498,7 +5504,7 @@ void S9xSoftResetPPU (void)
 
 	S9xFixColourBrightness();
 
-	for (int c = 0; c < 0x8000; c += 0x100)
+	for ( c = 0; c < 0x8000; c += 0x100)
 		memset(&Memory.FillRAM[c], c >> 8, 0x100);
 	ZeroMemory(&Memory.FillRAM[0x2100], 0x100);
 	ZeroMemory(&Memory.FillRAM[0x4200], 0x100);
