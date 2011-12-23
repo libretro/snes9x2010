@@ -183,7 +183,8 @@
 
 static bool8 S9xAllHex (const char *code, int len)
 {
-	for (int i = 0; i < len; i++)
+	int i;
+	for ( i = 0; i < len; i++)
 		if ((code[i] < '0' || code[i] > '9') && (code[i] < 'a' || code[i] > 'f') && (code[i] < 'A' || code[i] > 'F'))
 			return (FALSE);
 
@@ -247,7 +248,8 @@ const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte
 	static const char	*real_hex  = "0123456789ABCDEF";
 	static const char	*genie_hex = "DF4709156BC8A23E";
 
-	for (int i = 2; i < 10; i++)
+	int i;
+	for ( i = 2; i < 10; i++)
 	{
 		if (islower(new_code[i]))
 			new_code[i] = toupper(new_code[i]);
@@ -369,7 +371,8 @@ void S9xRemoveCheat (uint32 which1)
 
 void S9xRemoveCheats (void)
 {
-	for (uint32 i = 0; i < Cheat.num_cheats; i++)
+	uint32 i;
+	for ( i = 0; i < Cheat.num_cheats; i++)
 		if (Cheat.c[i].enabled)
 			S9xRemoveCheat(i);
 }
@@ -420,7 +423,8 @@ void S9xApplyCheats (void)
 {
 	if (Settings.ApplyCheats)
 	{
-		for (uint32 i = 0; i < Cheat.num_cheats; i++)
+		uint32 i;
+		for ( i = 0; i < Cheat.num_cheats; i++)
 			if (Cheat.c[i].enabled)
 				S9xApplyCheat(i);
 	}
@@ -468,7 +472,8 @@ bool8 S9xSaveCheatFile (const char *filename)
 	if (!fs)
 		return (FALSE);
 
-	for (uint32 i = 0; i < Cheat.num_cheats; i++)
+	uint32 i;
+	for ( i = 0; i < Cheat.num_cheats; i++)
 	{
 		ZeroMemory(data, 28);
 

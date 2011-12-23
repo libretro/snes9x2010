@@ -399,8 +399,10 @@ static INLINE uint8 * C4GetMemPointer (uint32 Address)
 
 static void C4ConvOAM (void)
 {
+	uint8 *i;
+	int j;
 	uint8	*OAMptr = Memory.C4RAM + (Memory.C4RAM[0x626] << 2);
-	for (uint8 *i = Memory.C4RAM + 0x1fd; i > OAMptr; i -= 4)
+	for (i = Memory.C4RAM + 0x1fd; i > OAMptr; i -= 4)
 		*i = 0xe0; /* Clear OAM-to-be */
 
 	uint8	*OAMptr2;
@@ -420,7 +422,7 @@ static void C4ConvOAM (void)
 		uint8	offset = (Memory.C4RAM[0x626] & 3) * 2;
 		uint8	*srcptr = Memory.C4RAM + 0x220;
 
-		for (int i = Memory.C4RAM[0x0620]; i > 0 && SprCount > 0; i--, srcptr += 16)
+		for ( j = Memory.C4RAM[0x0620]; j > 0 && SprCount > 0; j--, srcptr += 16)
 		{
 			SprX = READ_WORD(srcptr)     - globalX;
 			SprY = READ_WORD(srcptr + 2) - globalY;
@@ -431,12 +433,13 @@ static void C4ConvOAM (void)
 			if (*sprptr != 0)
 			{
 				int16	X, Y;
+				int SprCnt;
 
-				for (int SprCnt = *sprptr++; SprCnt > 0 && SprCount > 0; SprCnt--, sprptr += 4)
+				for ( SprCnt = *sprptr++; SprCnt > 0 && SprCount > 0; SprCnt--, sprptr += 4)
 				{
 					X = (int8) sprptr[1];
 					if (SprAttr & 0x40)
-						X = -X - ((sprptr[0] & 0x20) ? 16 : 8); // flip X
+						X = -X - ((sprptr[0] & 0x20) ? 16 : 8); /* flip X */
 					X += SprX;
 
 					if (X >= -16 && X <= 272)
@@ -451,7 +454,7 @@ static void C4ConvOAM (void)
 							OAMptr[0] = X & 0xff;
 							OAMptr[1] = (uint8) Y;
 							OAMptr[2] = SprName + sprptr[3];
-							OAMptr[3] = SprAttr ^ (sprptr[0] & 0xc0); // XXX: Carry from SprName addition?
+							OAMptr[3] = SprAttr ^ (sprptr[0] & 0xc0); /* XXX: Carry from SprName addition? */
 
 							*OAMptr2 &= ~(3 << offset);
 							if (X & 0x100)
@@ -472,7 +475,7 @@ static void C4ConvOAM (void)
 			else
 			if (SprCount > 0)
 			{
-				// XXX: Should we be testing -16<=SprX<=272 and -16<=SprY<=224?
+				/* XXX: Should we be testing -16<=SprX<=272 and -16<=SprY<=224? */
 				OAMptr[0] = (uint8) SprX;
 				OAMptr[1] = (uint8) SprY;
 				OAMptr[2] = SprName;
@@ -508,37 +511,37 @@ static void C4DoScaleRotate (int row_padding)
 	if (YScale & 0x8000)
 		YScale = 0x7fff;
 
-	if (READ_WORD(Memory.C4RAM + 0x1f80) == 0)		// no rotation
+	if (READ_WORD(Memory.C4RAM + 0x1f80) == 0)	/* no rotation */
 	{
-		// XXX: only do this for C and D?
-		// XXX: and then only when YScale is 0x1000?
+		/* XXX: only do this for C and D? */
+		/* XXX: and then only when YScale is 0x1000? */
 		A = (int16) XScale;
 		B = 0;
 		C = 0;
 		D = (int16) YScale;
 	}
 	else
-	if (READ_WORD(Memory.C4RAM + 0x1f80) == 128)	// 90 degree rotation
+	if (READ_WORD(Memory.C4RAM + 0x1f80) == 128)	/* 90 degree rotation */
 	{
-		// XXX: Really do this?
+		/* XXX: Really do this? */
 		A = 0;
 		B = (int16) (-YScale);
 		C = (int16) XScale;
 		D = 0;
 	}
 	else
-	if (READ_WORD(Memory.C4RAM + 0x1f80) == 256)	// 180 degree rotation
+	if (READ_WORD(Memory.C4RAM + 0x1f80) == 256)	/* 180 degree rotation */
 	{
-		// XXX: Really do this?
+		/* XXX: Really do this? */
 		A = (int16) (-XScale);
 		B = 0;
 		C = 0;
 		D = (int16) (-YScale);
 	}
 	else
-	if (READ_WORD(Memory.C4RAM + 0x1f80) == 384)	// 270 degree rotation
+	if (READ_WORD(Memory.C4RAM + 0x1f80) == 384)	/* 270 degree rotation */
 	{
-		// XXX: Really do this?
+		/* XXX: Really do this? */
 		A = 0;
 		B = (int16) YScale;
 		C = (int16) (-XScale);
@@ -573,13 +576,14 @@ static void C4DoScaleRotate (int row_padding)
 	uint8	byte;
 	int		outidx = 0;
 	uint8	bit = 0x80;
+	int x, y;
 
-	for (int y = 0; y < h; y++)
+	for ( y = 0; y < h; y++)
 	{
 		X = LineX;
 		Y = LineY;
 
-		for (int x = 0; x < w; x++)
+		for ( x = 0; x < w; x++)
 		{
 			if ((X >> 12) >= w || (Y >> 12) >= h)
 				byte = 0;
@@ -608,7 +612,7 @@ static void C4DoScaleRotate (int row_padding)
 				outidx += 32;
 			}
 
-			X += A; // Add 1 to output x => add an A and a C
+			X += A; /* Add 1 to output x => add an A and a C */
 			Y += C;
 		}
 
@@ -700,7 +704,7 @@ static void C4DrawLine (int32 X1, int32 Y1, int16 Z1, int32 X2, int32 Y2, int16 
 	X2 = (C4WFXVal + 48) << 8;
 	Y2 = (C4WFYVal + 48) << 8;
 
-	// Get line info
+	/* Get line info */
 	C4WFXVal  = (int16) (X1 >> 8);
 	C4WFYVal  = (int16) (Y1 >> 8);
 	C4WFX2Val = (int16) (X2 >> 8);
@@ -709,8 +713,10 @@ static void C4DrawLine (int32 X1, int32 Y1, int16 Z1, int32 X2, int32 Y2, int16 
 	X2 = (int16) C4WFXVal;
 	Y2 = (int16) C4WFYVal;
 
-	// Render line
-	for (int i = C4WFDist ? C4WFDist : 1; i > 0; i--)
+	int i;
+
+	/* Render line */
+	for ( i = C4WFDist ? C4WFDist : 1; i > 0; i--)
 	{
 		if (X1 > 0xff && Y1 > 0xff && X1 < 0x6000 && Y1 < 0x6000)
 		{
@@ -841,7 +847,7 @@ static void C4TransformLines (void)
 
 static void C4BitPlaneWave (void)
 {
-	int j;
+	int i, j;
 
 	static uint16 bmpdata[] =
 	{
@@ -863,7 +869,7 @@ static void C4BitPlaneWave (void)
 		{
 			int16	height = -((int8) Memory.C4RAM[waveptr + 0xb00]) - 16;
 
-			for (int i = 0; i < 40; i++)
+			for ( i = 0; i < 40; i++)
 			{
 				uint16	tmp = READ_WORD(dst + bmpdata[i]) & mask2;
 				if (height >= 0)
@@ -891,7 +897,7 @@ static void C4BitPlaneWave (void)
 		{
 			int16	height = -((int8) Memory.C4RAM[waveptr + 0xb00]) - 16;
 
-			for (int i = 0; i < 40; i++)
+			for ( i = 0; i < 40; i++)
 			{
 				uint16	tmp = READ_WORD(dst + bmpdata[i]) & mask2;
 				if (height >= 0)
@@ -924,7 +930,7 @@ static void C4SprDisintegrate (void)
 	uint32	StartX, StartY;
 	int32	scaleX, scaleY;
 	int32	Cx, Cy;
-	uint32 	i, y;
+	uint32 	i, j, x, y;
 
 	width  = Memory.C4RAM[0x1f89];
 	height = Memory.C4RAM[0x1f8c];
@@ -943,7 +949,7 @@ static void C4SprDisintegrate (void)
 
 	for ( y = StartY, i = 0; i < height; i++, y += scaleY)
 	{
-		for (uint32 x = StartX, j = 0; j < width; j++, x += scaleX)
+		for ( x = StartX, j = 0; j < width; j++, x += scaleX)
 		{
 			if ((x >> 8) < width && (y >> 8) < height && (y >> 8) * width + (x >> 8) < 0x2000)
 			{
@@ -1139,8 +1145,9 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 
 					int16	y = READ_WORD(Memory.C4RAM + 0x1f83) - READ_WORD(Memory.C4RAM + 0x1f89);
 					int16	left, right;
+					int j;
 
-					for (int j = 0; j < 225; j++)
+					for ( j = 0; j < 225; j++)
 					{
 						if (y >= 0)
 						{
@@ -1211,7 +1218,8 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 				case 0x40: /* Sum */
 				{
 					uint16	sum = 0;
-					for (int i = 0; i < 0x800; sum += Memory.C4RAM[i++]) ;
+					int i;
+					for ( i = 0; i < 0x800; sum += Memory.C4RAM[i++]) ;
 					WRITE_WORD(Memory.C4RAM + 0x1f80, sum);
 					break;
 				}
@@ -1226,8 +1234,11 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 				}
 
 				case 0x5c: /* Immediate Reg */
-					for (int i = 0; i < 12 * 4; i++)
+				{
+					int i;
+					for ( i = 0; i < 12 * 4; i++)
 						Memory.C4RAM[i] = C4TestPattern[i];
+				}
 					break;
 
 				case 0x89: /* Immediate ROM */

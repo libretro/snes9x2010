@@ -56,7 +56,7 @@ void snes_set_environment(snes_environment_t cb)
 
 static void S9xAudioCallback()
 {
-   // Just pick a big buffer. We won't use it all.
+   /* Just pick a big buffer. We won't use it all. */
    static int16_t audio_buf[0x10000];
 
    S9xFinalizeSamples();
@@ -158,11 +158,11 @@ void snes_set_controller_port_device(bool in_port, unsigned device)
 			S9xSetController(port, CTL_MOUSE, 0, 0, 0, 0);
 			snes_devices[port] = SNES_DEVICE_MOUSE;
 
-			//mapping pointers here
+			/* mapping pointers here */
 			S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"), false);
 			S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"), false);
 
-			//mapping extra buttons here
+			/* mapping extra buttons here */
 			MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_SELECT), "Mouse1 L");
 			MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_START), "Mouse1 R");
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Mouse2 L");
@@ -172,11 +172,11 @@ void snes_set_controller_port_device(bool in_port, unsigned device)
 			S9xSetController(port, CTL_SUPERSCOPE, 0, 0, 0, 0);
 			snes_devices[port] = SNES_DEVICE_SUPER_SCOPE;
 
-			//mapping pointers here
+			/* mapping pointers here */
 			S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"), false);
 			S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"), false);
 
-			//mapping extra buttons here
+			/* mapping extra buttons here */
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Superscope Fire");
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Superscope Cursor");
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_UP), "Superscope ToggleTurbo");
@@ -186,7 +186,7 @@ void snes_set_controller_port_device(bool in_port, unsigned device)
 			S9xSetController(port, CTL_JUSTIFIER, 0, 0, 0, 0);
 			snes_devices[port] = SNES_DEVICE_JUSTIFIER;
 
-			//mapping extra buttons here
+			/* mapping extra buttons here */
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Justifier1 Trigger");
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_START), "Justifier1 Start");
 			break;
@@ -359,9 +359,10 @@ void snes_init()
 	map_buttons();
 }
 
-// libsnes uses relative values for analogue devices. 
-// S9x seems to use absolute values, but do convert these into relative values in the core. (Why?!)
-// Hack around it. :)
+/* libsnes uses relative values for analogue devices. 
+   S9x seems to use absolute values, but do convert these into relative values in the core. (Why?!)
+   Hack around it. :) */
+
 static int16_t snes_mouse_state[2][2] = {{0}, {0}};
 static int16_t snes_scope_state[2] = {0};
 static int16_t snes_justifier_state[2][2] = {{0}, {0}};
@@ -442,7 +443,7 @@ static void report_buttons()
 
 bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigned rom_size)
 {
-   // Hack. S9x cannot do stuff from RAM. <_<
+   /* Hack. S9x cannot do stuff from RAM. <_< */
    memstream_set_buffer((uint8_t*)rom_data, rom_size);
 
    int loaded = LoadROM("foo");
@@ -592,7 +593,7 @@ bool snes_unserialize(const uint8_t* data, unsigned size)
    return true;
 }
 
-// Pitch 2048 -> 1024, only done once per res-change.
+/* Pitch 2048 -> 1024, only done once per res-change. */
 static void pack_frame(uint16_t *frame, int width, int height)
 {
    for (int y = 1; y < height; y++)
@@ -604,7 +605,7 @@ static void pack_frame(uint16_t *frame, int width, int height)
    }
 }
 
-// Pitch 1024 -> 2048, only done once per res-change.
+/* Pitch 1024 -> 2048, only done once per res-change. */
 static void stretch_frame(uint16_t *frame, int width, int height)
 {
    for (int y = height - 1; y >= 0; y--)
@@ -635,7 +636,7 @@ void S9xDeinitUpdate(int width, int height)
 			height = 478;
 		}
 	}
-	else // libsnes classic behavior
+	else /* libsnes classic behavior */
 	{
 		if (height == 448 || height == 478)
 		{
@@ -654,7 +655,7 @@ void S9xDeinitUpdate(int width, int height)
 	s9x_video_cb(GFX.Screen, width, height);
 }
 
-// Dummy functions that should probably be implemented correctly later.
+/* Dummy functions that should probably be implemented correctly later. */
 const char* S9xGetFilename(const char* in, uint32_t s9x_getdirtype) { return in; }
 const char* S9xGetDirectory(uint32_t s9x_getdirtype) { return NULL; }
 const char* S9xChooseFilename(unsigned char a) { return NULL; }
@@ -664,7 +665,7 @@ void S9xMessage(int a, int b, const char* msg)
 	fprintf(stderr, "%s\n", msg);
 }
 
-// S9x weirdness.
+/* S9x weirdness. */
 void _splitpath (const char *path, char *drive, char *dir, char *fname, char *ext)
 {
    *drive = 0;

@@ -228,29 +228,31 @@ typedef struct
 				uint8	cursor:1;
 				uint8	turbo:1;
 				uint8	pause:1;
-				uint8	aim_offscreen:1;	// Pretend we're pointing the gun offscreen (ignore the pointer)
+				/* Pretend we're pointing the gun offscreen (ignore the pointer)*/
+				uint8	aim_offscreen:1;
 			}	scope;
 
 			struct
 			{
-				uint8	idx:3;			// Pseudo-pointer number 0-7
-				uint8	speed_type:2;		// 0=variable, 1=slow, 2=med, 3=fast
-				int8	UD:2;			// -1=up, 1=down, 0=no vertical motion
-				int8	LR:2;			// -1=left, 1=right, 0=no horizontal motion
+				uint8	idx:3;			/* Pseudo-pointer number 0-7 */
+				uint8	speed_type:2;		/* 0=variable, 1=slow, 2=med, 3=fast */
+				int8	UD:2;			/* -1=up, 1=down, 0=no vertical motion */
+				int8	LR:2;			/* -1=left, 1=right, 0=no horizontal motion */
 			}	pointer;
 
 			struct
 			{
-				uint8	idx:1;			// Justifier number 0-1
-				uint8	trigger:1;		// buttons
+				uint8	idx:1;			/* Justifier number 0-1 */
+				uint8	trigger:1;		/* buttons */
 				uint8	start:1;
-				uint8	aim_offscreen:1;	// Pretend we're pointing the gun offscreen (ignore the pointer)
+				/* Pretend we're pointing the gun offscreen (ignore the pointer) */
+				uint8	aim_offscreen:1;
 			}	justifier;
 
 			uint16	command;
 		} button;
 
-		struct						// Which SNES-pointers to control with this pointer
+		struct	/* Which SNES-pointers to control with this pointer */
 		{
 			uint16	aim_mouse0:1;
 			uint16	aim_mouse1:1;
