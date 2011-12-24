@@ -10,6 +10,12 @@
 #define BLARGG_NONPORTABLE 1
 #endif
 
+/* PS3 - if SNC compiler is used - enable platform-specific optimizations  */
+#ifdef __SNC__
+#include <ppu_intrinsics.h>
+#define BLARGG_NONPORTABLE 1
+#endif
+
 /* Uncomment if automatic byte-order determination doesn't work */
 /* #define BLARGG_BIG_ENDIAN 1 */
 
@@ -100,6 +106,35 @@
 	#undef BLARGG_BIG_ENDIAN
 #endif
 
+#if BLARGG_NONPORTABLE
+	/* Optimized implementation if byte order is known */
+	#if BLARGG_LITTLE_ENDIAN
+		#define GET_LE16( addr )        (*(uint16_t*) (addr))
+		#define GET_LE32( addr )        (*(uint32_t*) (addr))
+		#define SET_LE16( addr, data )  (void) (*(uint16_t*) (addr) = (data))
+		#define SET_LE32( addr, data )  (void) (*(uint32_t*) (addr) = (data))
+	#elif BLARGG_BIG_ENDIAN
+		#if BLARGG_CPU_POWERPC
+			/* PowerPC has special byte-reversed instructions */
+			#if defined (__SNC__)
+				#define GET_LE16( addr )        ({unsigned ppc_lhbrx_ = __lhbrx(addr); ppc_lhbrx_;})
+				#define GET_LE32( addr )        ({unsigned ppc_lwbrx_ = __lwbrx(addr); ppc_lwbrx_;})
+				#define SET_LE16( addr, in )    ({__sthbrx(addr, in);})
+				#define SET_LE32( addr, in )    ({__stwbrx(addr, in);})
+			#elif defined (__MWERKS__)
+				#define GET_LE16( addr )        (__lhbrx( addr, 0 ))
+				#define GET_LE32( addr )        (__lwbrx( addr, 0 ))
+				#define SET_LE16( addr, in )    (__sthbrx( in, addr, 0 ))
+				#define SET_LE32( addr, in )    (__stwbrx( in, addr, 0 ))
+			#elif defined (__GNUC__)
+				#define GET_LE16( addr )        ({unsigned ppc_lhbrx_; asm( "lhbrx %0,0,%1" : "=r" (ppc_lhbrx_) : "r" (addr), "0" (ppc_lhbrx_) ); ppc_lhbrx_;})
+				#define GET_LE32( addr )        ({unsigned ppc_lwbrx_; asm( "lwbrx %0,0,%1" : "=r" (ppc_lwbrx_) : "r" (addr), "0" (ppc_lwbrx_) ); ppc_lwbrx_;})
+				#define SET_LE16( addr, in )    ({asm( "sthbrx %0,0,%1" : : "r" (in), "r" (addr) );})
+				#define SET_LE32( addr, in )    ({asm( "stwbrx %0,0,%1" : : "r" (in), "r" (addr) );})
+			#endif
+		#endif
+	#endif
+#else
 INLINE unsigned get_le16( void const* p )
 {
 	return (unsigned) ((unsigned char const*) p) [1] << 8 | (unsigned) ((unsigned char const*) p) [0];
@@ -126,30 +161,6 @@ INLINE void set_le32( void* p, blargg_ulong n )
 	((unsigned char*) p) [2] = (unsigned char) (n >> 16);
 	((unsigned char*) p) [3] = (unsigned char) (n >> 24);
 }
-
-#if BLARGG_NONPORTABLE
-	/* Optimized implementation if byte order is known */
-	#if BLARGG_LITTLE_ENDIAN
-		#define GET_LE16( addr )        (*(uint16_t*) (addr))
-		#define GET_LE32( addr )        (*(uint32_t*) (addr))
-		#define SET_LE16( addr, data )  (void) (*(uint16_t*) (addr) = (data))
-		#define SET_LE32( addr, data )  (void) (*(uint32_t*) (addr) = (data))
-	#elif BLARGG_BIG_ENDIAN
-		#if BLARGG_CPU_POWERPC
-			/* PowerPC has special byte-reversed instructions */
-			#if defined (__MWERKS__)
-				#define GET_LE16( addr )        (__lhbrx( addr, 0 ))
-				#define GET_LE32( addr )        (__lwbrx( addr, 0 ))
-				#define SET_LE16( addr, in )    (__sthbrx( in, addr, 0 ))
-				#define SET_LE32( addr, in )    (__stwbrx( in, addr, 0 ))
-			#elif defined (__GNUC__)
-				#define GET_LE16( addr )        ({unsigned ppc_lhbrx_; asm( "lhbrx %0,0,%1" : "=r" (ppc_lhbrx_) : "r" (addr), "0" (ppc_lhbrx_) ); ppc_lhbrx_;})
-				#define GET_LE32( addr )        ({unsigned ppc_lwbrx_; asm( "lwbrx %0,0,%1" : "=r" (ppc_lwbrx_) : "r" (addr), "0" (ppc_lwbrx_) ); ppc_lwbrx_;})
-				#define SET_LE16( addr, in )    ({asm( "sthbrx %0,0,%1" : : "r" (in), "r" (addr) );})
-				#define SET_LE32( addr, in )    ({asm( "stwbrx %0,0,%1" : : "r" (in), "r" (addr) );})
-			#endif
-		#endif
-	#endif
 #endif
 
 #ifndef GET_LE16
