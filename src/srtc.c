@@ -211,15 +211,15 @@ static void srtcemu_update_time (void)
 	time_t rtc_time = (MEMORY_CARTRTC_READ(16) <<  0) | (MEMORY_CARTRTC_READ(17) <<  8) | (MEMORY_CARTRTC_READ(18) << 16) | (MEMORY_CARTRTC_READ(19) << 24);
 	time_t current_time = time(0);
 
-	//sizeof(time_t) is platform-dependent; though memory::cartrtc needs to be platform-agnostic.
-	//yet platforms with 32-bit signed time_t will overflow every ~68 years. handle this by
-	//accounting for overflow at the cost of 1-bit precision (to catch underflow). this will allow
-	//memory::cartrtc timestamp to remain valid for up to ~34 years from the last update, even if
-	//time_t overflows. calculation should be valid regardless of number representation, time_t size,
-	//or whether time_t is signed or unsigned.
-	time_t diff = (current_time >= rtc_time) ? (current_time - rtc_time) : ((time_t)-1 - rtc_time + current_time + 1);  //compensate for overflow
+	/*sizeof(time_t) is platform-dependent; though memory::cartrtc needs to be platform-agnostic.*/
+	/*yet platforms with 32-bit signed time_t will overflow every ~68 years. handle this by*/
+	/*accounting for overflow at the cost of 1-bit precision (to catch underflow). this will allow*/
+	/*memory::cartrtc timestamp to remain valid for up to ~34 years from the last update, even if*/
+	/*time_t overflows. calculation should be valid regardless of number representation, time_t size,*/
+	/*or whether time_t is signed or unsigned.*/
+	time_t diff = (current_time >= rtc_time) ? (current_time - rtc_time) : ((time_t)-1 - rtc_time + current_time + 1);  /*compensate for overflow*/
 	if(diff > (time_t)-1 / 2)
-		diff = 0;            //compensate for underflow
+		diff = 0;            /*compensate for underflow*/
 
 	if(diff > 0) {
 		unsigned second  = MEMORY_CARTRTC_READ( 0) + MEMORY_CARTRTC_READ( 1) * 10;
@@ -297,13 +297,13 @@ static void srtcemu_update_time (void)
 	MEMORY_CARTRTC_WRITE(19, current_time >> 24);
 }
 
-//returns day of week for specified date
-//eg 0 = Sunday, 1 = Monday, ... 6 = Saturday
-//usage: weekday(2008, 1, 1) returns weekday of January 1st, 2008
+/*returns day of week for specified date*/
+/*eg 0 = Sunday, 1 = Monday, ... 6 = Saturday*/
+/*usage: weekday(2008, 1, 1) returns weekday of January 1st, 2008*/
 static unsigned srtcemu_weekday(unsigned year, unsigned month, unsigned day)
 {
-	unsigned y = 1900, m = 1;  //epoch is 1900-01-01
-	unsigned sum = 0;          //number of days passed since epoch
+	unsigned y = 1900, m = 1;  /*epoch is 1900-01-01*/
+	unsigned sum = 0;          /*number of days passed since epoch*/
 
 	year = max(1900, year);
 	month = max(1, min(12, month));
@@ -337,7 +337,7 @@ static unsigned srtcemu_weekday(unsigned year, unsigned month, unsigned day)
 	}
 
 	sum += day - 1;
-	return (sum + 1) % 7;  //1900-01-01 was a Monday
+	return (sum + 1) % 7;  /*1900-01-01 was a Monday*/
 }
 
 void S9xInitSRTC (void)
@@ -361,7 +361,7 @@ void S9xSetSRTC (uint8 data, uint16 address)
 
 	if(address == 0x2801)
 	{
-		data &= 0x0f;  //only the low four bits are used
+		data &= 0x0f;  /*only the low four bits are used*/
 
 		if(data == 0x0d)
 		{
@@ -375,8 +375,10 @@ void S9xSetSRTC (uint8 data, uint16 address)
 			return;
 		}
 
-		if(data == 0x0f) return;  //unknown behavior
+		if(data == 0x0f)
+			return;  /*unknown behavior*/
 
+		unsigned i;
 		if(rtc_mode == RTCM_WRITE)
 		{
 			if(rtc_index >= 0 && rtc_index < 12)
@@ -385,7 +387,7 @@ void S9xSetSRTC (uint8 data, uint16 address)
 
 				if(rtc_index == 12)
 				{
-					//day of week is automatically calculated and written
+					/*day of week is automatically calculated and written*/
 					unsigned day   = MEMORY_CARTRTC_READ( 6) + MEMORY_CARTRTC_READ( 7) * 10;
 					unsigned month = MEMORY_CARTRTC_READ( 8);
 					unsigned year  = MEMORY_CARTRTC_READ( 9) + MEMORY_CARTRTC_READ(10) * 10 + MEMORY_CARTRTC_READ(11) * 100;
@@ -406,11 +408,11 @@ void S9xSetSRTC (uint8 data, uint16 address)
 			{
 				rtc_mode = RTCM_READY;
 				rtc_index = -1;
-				for(unsigned i = 0; i < 13; i++)
+				for( i = 0; i < 13; i++)
 					MEMORY_CARTRTC_WRITE(i, 0);
 			}
 			else
-				rtc_mode = RTCM_READY;	//unknown behavior
+				rtc_mode = RTCM_READY;	/*unknown behavior*/
 		}
 	}
 }

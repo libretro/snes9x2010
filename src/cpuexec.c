@@ -217,7 +217,7 @@ void S9xMainLoop (void)
 			if (CPU.Flags & IRQ_FLAG)
 			{
 				if (CPU.IRQPending)
-					CPU.IRQPending--;	// FIXME: In case of IRQ during WRAM refresh
+					CPU.IRQPending--;	/* FIXME: In case of IRQ during WRAM refresh */
 				else
 				{
 					if (CPU.WaitingForInterrupt)
@@ -228,8 +228,8 @@ void S9xMainLoop (void)
 
 					if (CPU.IRQActive)
 					{
+						/* in IRQ handler $4211 is supposed to be read, so IRQ_FLAG should be cleared. */
 						if (!CheckFlag(IRQ))
-						// in IRQ handler $4211 is supposed to be read, so IRQ_FLAG should be cleared.
 							S9xOpcode_IRQ();
 					}
 					else
@@ -317,7 +317,7 @@ static void S9xEndScreenRefresh (void)
 
 	if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
 	{
-		//Chrono Trigger mid-frame overscan hack - field to battle transition
+		/* Chrono Trigger mid-frame overscan hack - field to battle transition */
 		if (Settings.ChronoTriggerFrameHack & (IPPU.RenderedScreenHeight == 239))
 			IPPU.RenderedScreenHeight = 224;
 		S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
@@ -472,7 +472,7 @@ static INLINE void S9xReschedule (void)
 
 static INLINE bool8 HDMAReadLineCount (int d)
 {
-	// CPU.InDMA is set, so S9xGetXXX() / S9xSetXXX() incur no charges.
+	/* CPU.InDMA is set, so S9xGetXXX() / S9xSetXXX() incur no charges. */
 
 	uint8	line;
 
@@ -533,6 +533,7 @@ static INLINE bool8 HDMAReadLineCount (int d)
 
 static void S9xStartHDMA (void)
 {
+	uint8 i;
 	PPU.HDMA = Memory.FillRAM[0x420c];
 	PPU.HDMAEnded = 0;
 
@@ -540,11 +541,11 @@ static void S9xStartHDMA (void)
 	CPU.InDMAorHDMA = TRUE;
 	int32 tmpch = CPU.CurrentDMAorHDMAChannel;
 
-	// XXX: Not quite right...
+	/* XXX: Not quite right... */
 	if (PPU.HDMA != 0)
 		CPU.Cycles += Timings.DMACPUSync;
 
-	for (uint8 i = 0; i < 8; i++)
+	for ( i = 0; i < 8; i++)
 	{
 		if (PPU.HDMA & (1 << i))
 		{
@@ -575,6 +576,7 @@ static int HDMA_ModeByteCounts[8] =
 
 static uint8 S9xDoHDMA (uint8 byte)
 {
+	uint8 mask;
 	struct SDMA	*p = &DMA[0];
 
 	uint32	ShiftedIBank;
@@ -589,10 +591,10 @@ static uint8 S9xDoHDMA (uint8 byte)
 	temp = CPU.InWRAMDMAorHDMA;
 	tmpch = CPU.CurrentDMAorHDMAChannel;
 
-	// XXX: Not quite right...
+	/* XXX: Not quite right... */
 	CPU.Cycles += Timings.DMACPUSync;
 
-	for (uint8 mask = 1; mask; mask <<= 1, p++, d++)
+	for ( mask = 1; mask; mask <<= 1, p++, d++)
 	{
 		if (byte & mask)
 		{
@@ -615,8 +617,8 @@ static uint8 S9xDoHDMA (uint8 byte)
 
 			if (p->DoTransfer)
 			{
-				// XXX: Hack for Uniracers, because we don't understand
-				// OAM Address Invalidation
+				/* XXX: Hack for Uniracers, because we don't understand 
+				OAM Address Invalidation */
 				if (p->BAddress == 0x04)
 				{
 					if (SNESGameFixes.Uniracers)
@@ -631,7 +633,7 @@ static uint8 S9xDoHDMA (uint8 byte)
 				{
 					if ((IAddr & MEMMAP_MASK) + HDMA_ModeByteCounts[p->TransferMode] >= MEMMAP_BLOCK_SIZE)
 					{
-						// HDMA REALLY-SLOW PATH
+						/* HDMA REALLY-SLOW PATH */
 						HDMAMemPointers[d] = NULL;
 
 						#define DOBYTE(Addr, RegOff) \
@@ -705,7 +707,7 @@ static uint8 S9xDoHDMA (uint8 byte)
 
 						if (!HDMAMemPointers[d])
 						{
-							// HDMA SLOW PATH
+							/* HDMA SLOW PATH */
 							uint32	Addr = ShiftedIBank + IAddr;
 
 							switch (p->TransferMode)
@@ -763,7 +765,7 @@ static uint8 S9xDoHDMA (uint8 byte)
 						}
 						else
 						{
-							// HDMA FAST PATH
+							/* HDMA FAST PATH */
 							switch (p->TransferMode)
 							{
 								case 0:
@@ -825,9 +827,9 @@ static uint8 S9xDoHDMA (uint8 byte)
 				}
 				else
 				{
-					// REVERSE HDMA REALLY-SLOW PATH
-					// anomie says: Since this is apparently never used
-					// (otherwise we would have noticed before now), let's not bother with faster paths.
+					/* REVERSE HDMA REALLY-SLOW PATH
+					   anomie says: Since this is apparently never used
+					   (otherwise we would have noticed before now), let's not bother with faster paths. */
 					HDMAMemPointers[d] = NULL;
 
 					#define DOBYTE(Addr, RegOff) \
@@ -962,28 +964,37 @@ void S9xDoHEventProcessing (void)
 				Timings.NMITriggerPos -= Timings.H_Max;
 
 			CPU.V_Counter++;
-			if (CPU.V_Counter >= Timings.V_Max)	// V ranges from 0 to Timings.V_Max - 1
+			if (CPU.V_Counter >= Timings.V_Max)	/* V ranges from 0 to Timings.V_Max - 1 */
 			{
 				CPU.V_Counter = 0;
 				Timings.InterlaceField ^= 1;
 
-				// From byuu:
-				// [NTSC]
-				// interlace mode has 525 scanlines: 263 on the even frame, and 262 on the odd.
-				// non-interlace mode has 524 scanlines: 262 scanlines on both even and odd frames.
-				// [PAL] <PAL info is unverified on hardware>
-				// interlace mode has 625 scanlines: 313 on the even frame, and 312 on the odd.
-				// non-interlace mode has 624 scanlines: 312 scanlines on both even and odd frames.
+				/* From byuu:
+				   [NTSC]
+				   interlace mode has 525 scanlines: 263 on 
+				   the even frame, and 262 on the odd.
 
-				Timings.V_Max = Timings.V_Max_Master;	// 262 (NTSC), 312?(PAL)
+				   non-interlace mode has 524 scanlines: 
+				   262 scanlines on both even and odd frames.
+				   
+				   [PAL] <PAL info is unverified on hardware>
+				   interlace mode has 625 scanlines: 313 on 
+				   the even frame, and 312 on the odd.
+				   
+				   non-interlace mode has 624 scanlines: 
+				   312 scanlines on both even and odd frames. */
+
+				Timings.V_Max = Timings.V_Max_Master;	/* 262 (NTSC), 312?(PAL) */
 
 				if (IPPU.Interlace && !Timings.InterlaceField)
-					Timings.V_Max += 1;	// 263 (NTSC), 313?(PAL)
+					Timings.V_Max += 1;	/* 263 (NTSC), 313?(PAL) */
 
 				Memory.FillRAM[0x213F] ^= 0x80;
 				PPU.RangeTimeOver = 0;
 
-				// FIXME: reading $4210 will wait 2 cycles, then perform reading, then wait 4 more cycles.
+				/* FIXME: reading $4210 will wait 2 cycles, 
+				then perform reading, then wait 4 more cycles. */
+
 				Memory.FillRAM[0x4210] = MAX_5A22_VERSION;
 				CPU.Flags &= ~NMI_FLAG;
 				Timings.NMITriggerPos = 0xffff;
@@ -993,34 +1004,39 @@ void S9xDoHEventProcessing (void)
 				CPU.Flags |= SCAN_KEYS_FLAG;
 			}
 
-			// From byuu:
-			// In non-interlace mode, there are 341 dots per scanline, and 262 scanlines per frame.
-			// On odd frames, scanline 240 is one dot short.
-			// In interlace mode, there are always 341 dots per scanline. Even frames have 263 scanlines,
-			// and odd frames have 262 scanlines.
-			// Interlace mode scanline 240 on odd frames is not missing a dot.
+			/* From byuu:
+			   In non-interlace mode, there are 341 dots 
+			   per scanline, and 262 scanlines per frame.
+			   
+			   On odd frames, scanline 240 is one dot short.
+			   In interlace mode, there are always 341 dots 
+			   per scanline. Even frames have 263 scanlines,
+			   and odd frames have 262 scanlines.
+			   
+			   Interlace mode scanline 240 on odd frames is 
+			   not missing a dot. */
 
-			Timings.H_Max = Timings.H_Max_Master;					// HC=1364
+			Timings.H_Max = Timings.H_Max_Master;					/* HC=1364 */
 
-			if (CPU.V_Counter == 240 && !IPPU.Interlace && Timings.InterlaceField)	// V=240
-				Timings.H_Max -= ONE_DOT_CYCLE;					// HC=1360
+			if (CPU.V_Counter == 240 && !IPPU.Interlace && Timings.InterlaceField)	/* V=240 */
+				Timings.H_Max -= ONE_DOT_CYCLE;					/* HC=1360 */
 
-			if (CPU.V_Counter != 240 || IPPU.Interlace || !Timings.InterlaceField)	// V=240
+			if (CPU.V_Counter != 240 || IPPU.Interlace || !Timings.InterlaceField)	/* V=240 */
 			{
-				if (Timings.WRAMRefreshPos == SNES_WRAM_REFRESH_HC_v2_MIN_ONE_DOT_CYCLE)	// HC=534
-					Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2;					// HC=538
+				if (Timings.WRAMRefreshPos == SNES_WRAM_REFRESH_HC_v2_MIN_ONE_DOT_CYCLE) /* HC=534 */
+					Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2; /* HC=538 */
 				else
-					Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2_MIN_ONE_DOT_CYCLE;	// HC=534
+					Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2_MIN_ONE_DOT_CYCLE; /* HC=534 */
 			}
 
 			if (PPU.HTimerPosition == 0)
 				S9xCheckMissingHTimerPosition();
 
-			if (CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE)	// VBlank starts from V=225(240).
+			if (CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE) /* VBlank starts from V=225(240). */
 			{
 				S9xEndScreenRefresh();
 				PPU.HDMA = 0;
-				// Bits 7 and 6 of $4212 are computed when read in S9xGetPPU.
+				/* Bits 7 and 6 of $4212 are computed when read in S9xGetPPU. */
 				IPPU.MaxBrightness = PPU.Brightness;
 				PPU.ForcedBlanking = (Memory.FillRAM[0x2100] >> 7) & 1;
 
@@ -1041,24 +1057,27 @@ void S9xDoHEventProcessing (void)
 					PPU.OAMFlip = 0;
 				}
 
-				// FIXME: writing to $4210 will wait 6 cycles.
+				/* FIXME: writing to $4210 will wait 6 cycles. */
 				Memory.FillRAM[0x4210] = 0x80 | MAX_5A22_VERSION;
 				if (Memory.FillRAM[0x4200] & 0x80)
 				{
-					// FIXME: triggered at HC=6, checked just before the final CPU cycle,
-					// then, when to call S9xOpcode_NMI()?
+					/* FIXME: triggered at HC=6, checked just 
+					before the final CPU cycle, then, when to 
+					call S9xOpcode_NMI()? */
 					CPU.Flags |= NMI_FLAG;
 					Timings.NMITriggerPos = 6 + 6;
 				}
 
 			}
 
-			if ((CPU.V_Counter == PPU.ScreenHeight + 3) && (Memory.FillRAM[0x4200] & 1))	// FIXME: not true
+			/* FIXME: not true */
+			if ((CPU.V_Counter == PPU.ScreenHeight + 3) && (Memory.FillRAM[0x4200] & 1))
 			{
 				S9xDoAutoJoypad();
 			}
 
-			if (CPU.V_Counter == FIRST_VISIBLE_LINE)	// V=1
+			/* V = 1 */
+			if (CPU.V_Counter == FIRST_VISIBLE_LINE)
 			{
 				GFX.InterlaceFrame = !GFX.InterlaceFrame;
 

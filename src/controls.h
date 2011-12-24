@@ -295,22 +295,17 @@ s9xcommand_t S9xGetCommandT (const char *name);
 /* Generic mapping functions */
 
 /* Button mapping functions.
-   If a button is mapped with poll=TRUE, then S9xPollButton will be called 
-   whenever snes9x feels a need for that mapping.
    
-   Otherwise, snes9x will assume you will call S9xReportButton() whenever the 
+   snes9x will assume you will call S9xReportButton() whenever the 
    button state changes.
    S9xMapButton() will fail and return FALSE if mapping.type isn't an S9xButton* type. */
 
-bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll);
+bool S9xMapButton (uint32 id, s9xcommand_t mapping);
 void S9xReportButton (uint32 id, bool pressed);
 
 /* Pointer mapping functions.
 
-   If a pointer is mapped with poll=TRUE, then S9xPollPointer will be called whenever 
-   snes9x feels a need for that mapping.
-   
-   Otherwise, snes9x will assume you will call S9xReportPointer() whenever the
+   snes9x will assume you will call S9xReportPointer() whenever the
    pointer position changes.
 
    S9xMapPointer() will fail and return FALSE if mapping.type isn't an 
@@ -323,7 +318,7 @@ void S9xReportButton (uint32 id, bool pressed);
    so the SNES's idea of where the mouse pointer is will probably differ
    from your OS's idea. */
 
-bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll);
+bool S9xMapPointer (uint32 id, s9xcommand_t mapping);
 void S9xReportPointer (uint32 id, int16 x, int16 y);
 
 /* Do whatever the s9xcommand_t says to do.

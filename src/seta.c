@@ -303,7 +303,7 @@ static const uint8	ST010_ArcTan[32][32] =
 	  0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9c, 0x9d, 0x9e, 0x9f, 0x9f, 0xa0 }
 };
 
-// Mode 7 scaling constants for all raster lines
+/* Mode 7 scaling constants for all raster lines*/
 static const int16	ST010_M7Scale[176] =
 {
 	0x0380, 0x0325, 0x02da, 0x029c, 0x0268, 0x023b, 0x0215, 0x01f3,
@@ -408,6 +408,7 @@ static void ST010_Rotate (int16 Theta, int16 X0, int16 Y0, int16 * X1, int16 * Y
 
 static void ST010_SortDrivers (uint16 Positions, uint16 Places[32], uint16 Drivers[32])
 {
+	int i;
 	bool	Sorted;
 	uint16	Temp;
 
@@ -417,7 +418,7 @@ static void ST010_SortDrivers (uint16 Positions, uint16 Places[32], uint16 Drive
 		{
 			Sorted = true;
 
-			for (int i = 0; i < Positions - 1; i++)
+			for ( i = 0; i < Positions - 1; i++)
 			{
 				if (Places[i] < Places[i + 1])
 				{
@@ -486,16 +487,16 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 	{
 		switch (ST010.op_reg)
 		{
-			// Sorts Driver Placements
-			//
-			// Input
-			//   0x0024-0x0025 : Positions
-			//   0x0040-0x007f : Places
-			//   0x0080-0x00ff : Drivers
-			// Output
-			//   0x0040-0x007f : Places
-			//   0x0080-0x00ff : Drivers
-			//
+			/* Sorts Driver Placements*/
+		/*	*/
+			/* Input*/
+			/*   0x0024-0x0025 : Positions*/
+			/*   0x0040-0x007f : Places*/
+			/*   0x0080-0x00ff : Drivers*/
+			/* Output*/
+			/*   0x0040-0x007f : Places*/
+			/*   0x0080-0x00ff : Drivers*/
+		/*	*/
 			case 0x02:
 			{
 			#ifdef FAST_LSB_WORD_ACCESS
@@ -527,16 +528,16 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				break;
 			}
 
-			// Two Dimensional Coordinate Scale
-			//
-			// Input
-			//   0x0000-0x0001 : X0 (signed)
-			//   0x0002-0x0003 : Y0 (signed)
-			//   0x0004-0x0005 : Multiplier (signed)
-			// Output
-			//   0x0010-0x0013 : X1 (signed)
-			//   0x0014-0x0017 : Y1 (signed)
-			//
+			/* Two Dimensional Coordinate Scale*/
+		/*	*/
+			/* Input*/
+			/*   0x0000-0x0001 : X0 (signed)*/
+			/*   0x0002-0x0003 : Y0 (signed)*/
+			/*   0x0004-0x0005 : Multiplier (signed)*/
+			/* Output*/
+			/*   0x0010-0x0013 : X1 (signed)*/
+			/*   0x0014-0x0017 : Y1 (signed)*/
+		/*	*/
 			case 0x03:
 			{
 			#ifdef FAST_LSB_WORD_ACCESS
@@ -558,14 +559,14 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				break;
 			}
 
-			// 16-bit Multiplication
-			//
-			// Input
-			//   0x0000-0x0001 : Multiplcand (signed)
-			//   0x0002-0x0003 : Multiplier (signed)
-			// Output
-			//   0x0010-0x0013 : Product (signed)
-			//
+			/* 16-bit Multiplication*/
+		/*	*/
+			/* Input*/
+			/*   0x0000-0x0001 : Multiplcand (signed)*/
+			/*   0x0002-0x0003 : Multiplier (signed)*/
+			/* Output*/
+			/*   0x0010-0x0013 : Product (signed)*/
+		/*	*/
 			case 0x06:
 			{
 			#ifdef FAST_LSB_WORD_ACCESS
@@ -583,25 +584,26 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				break;
 			}
 
-			// Mode 7 Raster Data Calculation
-			//
-			// Input
-			//   0x0000-0x0001 : Angle (signed)
-			// Output
-			//   0x00f0-0x024f : Mode 7 Matrix A
-			//   0x0250-0x03af : Mode 7 Matrix B
-			//   0x03b0-0x050f : Mode 7 Matrix C
-			//   0x0510-0x066f : Mode 7 Matrix D
-			//
+			/* Mode 7 Raster Data Calculation*/
+		/*	*/
+			/* Input*/
+			/*   0x0000-0x0001 : Angle (signed)*/
+			/* Output*/
+			/*   0x00f0-0x024f : Mode 7 Matrix A*/
+			/*   0x0250-0x03af : Mode 7 Matrix B*/
+			/*   0x03b0-0x050f : Mode 7 Matrix C*/
+			/*   0x0510-0x066f : Mode 7 Matrix D*/
+		/*	*/
 			case 0x07:
 			{
+				int32 line;
 				int16	data;
 				int32	offset = 0;
 				int16	Theta = ST010_WORD(0x0000);
 
-				for (int32 line = 0; line < 176; line++)
+				for ( line = 0; line < 176; line++)
 				{
-					// Calculate Mode 7 Matrix A/D data
+					/* Calculate Mode 7 Matrix A/D data*/
 					data = ST010_M7Scale[line] * ST010_Cos(Theta) >> 15;
 
 					Memory.SRAM[0x00f0 + offset] = (uint8) (data);
@@ -609,7 +611,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 					Memory.SRAM[0x0510 + offset] = (uint8) (data);
 					Memory.SRAM[0x0511 + offset] = (uint8) (data >> 8);
 
-					// Calculate Mode 7 Matrix B/C data
+					/* Calculate Mode 7 Matrix B/C data*/
 					data = ST010_M7Scale[line] * ST010_Sin(Theta) >> 15;
 
 					Memory.SRAM[0x0250 + offset] = (uint8) (data);
@@ -624,23 +626,23 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 					offset += 2;
 				}
 
-				// Shift Angle for use with Lookup table
+				/* Shift Angle for use with Lookup table*/
 				Memory.SRAM[0x00] = Memory.SRAM[0x01];
 				Memory.SRAM[0x01] = 0x00;
 
 				break;
 			}
 
-			// Two dimensional Coordinate Rotation
-			//
-			// Input
-			//   0x0000-0x0001 : X0 (signed)
-			//   0x0002-0x0003 : Y0 (signed)
-			//   0x0004-0x0005 : Angle (signed)
-			// Output
-			//   0x0010-0x0011 : X1 (signed)
-			//   0x0012-0x0013 : Y1 (signed)
-			//
+			/* Two dimensional Coordinate Rotation*/
+		/*	*/
+			/* Input*/
+			/*   0x0000-0x0001 : X0 (signed)*/
+			/*   0x0002-0x0003 : Y0 (signed)*/
+			/*   0x0004-0x0005 : Angle (signed)*/
+			/* Output*/
+			/*   0x0010-0x0011 : X1 (signed)*/
+			/*   0x0012-0x0013 : Y1 (signed)*/
+		/*	*/
 			case 0x08:
 			{
 			#ifdef FAST_LSB_WORD_ACCESS
@@ -658,12 +660,12 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				break;
 			}
 
-			// Input
-			//   0x0000-0x0001 : DX (signed)
-			//   0x0002-0x0003 : DY (signed)
-			// Output
-			//   0x0010-0x0011 : Angle (signed)
-			//
+			/* Input*/
+			/*   0x0000-0x0001 : DX (signed)*/
+			/*   0x0002-0x0003 : DY (signed)*/
+			/* Output*/
+			/*   0x0010-0x0011 : Angle (signed)*/
+		/*	*/
 			case 0x01:
 			{
 				Memory.SRAM[0x0006] = Memory.SRAM[0x0002];
@@ -688,7 +690,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				break;
 			}
 
-			// calculate the vector length of (x, y)
+			/* calculate the vector length of (x, y)*/
 			case 0x04:
 			{
 				int16	square, x, y;
@@ -700,7 +702,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				y = Memory.SRAM[2] | (Memory.SRAM[3] << 8);
 			#endif
 				square = (int16) sqrt((double) (y * y + x * x));
-				//SETA_Distance(x, y, square);
+				/*SETA_Distance(x, y, square);*/
 
 			#ifdef FAST_LSB_WORD_ACCESS
 				*((int16 *) &Memory.SRAM[0x10]) = square;
@@ -711,7 +713,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				break;
 			}
 
-			// calculate AI orientation based on specific guidelines
+			/* calculate AI orientation based on specific guidelines*/
 			case 0x05:
 			{
 				int32	dx, dy;
@@ -719,83 +721,83 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				uint16	o1;
 				bool	wrap = false;
 
-				// target (x, y) coordinates
+				/* target (x, y) coordinates*/
 				int16	ypos_max  = ST010_WORD(0x00C0);
 				int16	xpos_max  = ST010_WORD(0x00C2);
 
-				// current coordinates and direction
+				/* current coordinates and direction*/
 				int32	ypos = Memory.SRAM[0xC4] | (Memory.SRAM[0xC5] << 8) | (Memory.SRAM[0xC6] << 16) | (Memory.SRAM[0xC7] << 24);
 				int32	xpos = Memory.SRAM[0xC8] | (Memory.SRAM[0xC9] << 8) | (Memory.SRAM[0xCA] << 16) | (Memory.SRAM[0xCB] << 24);
 				uint16	rot  = Memory.SRAM[0xCC] | (Memory.SRAM[0xCD] << 8);
 
-				// physics
+				/* physics*/
 				uint16	speed     = ST010_WORD(0x00D4);
 				uint16	accel     = ST010_WORD(0x00D6);
 				uint16	speed_max = ST010_WORD(0x00D8);
 
-				// special condition acknowledgment
+				/* special condition acknowledgment*/
 				int16	system    = ST010_WORD(0x00DA);
 				int16	flags     = ST010_WORD(0x00DC);
 
-				// new target coordinates
+				/* new target coordinates*/
 				int16	ypos_new  = ST010_WORD(0x00DE);
 				int16	xpos_new  = ST010_WORD(0x00E0);
 
-				// mask upper bit
+				/* mask upper bit*/
 				xpos_new &= 0x7FFF;
 
-				// get the current distance
+				/* get the current distance*/
 				dx = xpos_max - (xpos >> 16);
 				dy = ypos_max - (ypos >> 16);
 
-				// quirk: clear and move in9
+				/* quirk: clear and move in9*/
 				Memory.SRAM[0xD2] = 0xFF;
 				Memory.SRAM[0xD3] = 0xFF;
 				Memory.SRAM[0xDA] = 0;
 				Memory.SRAM[0xDB] = 0;
 
-				// grab the target angle
+				/* grab the target angle*/
 				ST010_OP01(dy, dx, &a1, &b1, &c1, (int16 *)&o1);
 
-				// check for wrapping
-				//if ((o1 < 0x6000 && rot > 0xA000) || (rot < 0x6000 && o1 > 0xA000))
-				//if (o1 < rot)
+				/* check for wrapping*/
+				/*if ((o1 < 0x6000 && rot > 0xA000) || (rot < 0x6000 && o1 > 0xA000))*/
+				/*if (o1 < rot)*/
 				if (abs(o1 - rot) > 0x8000)
 				{
 					o1  += 0x8000;
 					rot += 0x8000;
 					wrap = true;
 				}
-				//o1  = 0x0000;
-				//rot = 0xFF00;
+				/*o1  = 0x0000;*/
+				/*rot = 0xFF00;*/
 
 				uint16	old_speed;
 
 				old_speed = speed;
 
-				// special case
+				/* special case*/
 				if (abs(o1 - rot) == 0x8000)
 					speed = 0x100;
-				// slow down for sharp curves
+				/* slow down for sharp curves*/
 				else
 				if (abs(o1 - rot) >= 0x1000)
 				{
 					uint32	slow = abs(o1 - rot);
-					slow >>= 4;	// scaling
+					slow >>= 4;	/* scaling*/
 					speed -= slow;
 				}
-				// otherwise accelerate
+				/* otherwise accelerate*/
 				else
 				{
 					speed += accel;
 					if (speed > speed_max)
 					{
-						// clip speed
+						/* clip speed*/
 						speed = speed_max;
 					}
 				}
 
-				// prevent negative/positive overflow
+				/* prevent negative/positive overflow*/
 				if (abs(old_speed - speed) > 0x8000)
 				{
 					if (old_speed < speed)
@@ -804,8 +806,8 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 						speed = 0xff00;
 				}
 
-				// adjust direction by so many degrees
-				// be careful of negative adjustments
+				/* adjust direction by so many degrees*/
+				/* be careful of negative adjustments*/
 				if ((o1 > rot && (o1 - rot) > 0x80) || (o1 < rot && (rot - o1) >= 0x80))
 				{
 					if (o1 < rot)
@@ -815,30 +817,30 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 						rot += 0x280;
 				}
 
-				// turn off wrapping
+				/* turn off wrapping*/
 				if (wrap)
 					rot -= 0x8000;
 
-				// now check the distances (store for later)
+				/* now check the distances (store for later)*/
 				dx = (xpos_max << 16) - xpos;
 				dy = (ypos_max << 16) - ypos;
 				dx >>= 16;
 				dy >>= 16;
 
-				// if we're in so many units of the target, signal it
+				/* if we're in so many units of the target, signal it*/
 				if ((system && (dy <= 6 && dy >= -8) && (dx <= 126 && dx >= -128)) || (!system && (dx <= 6 && dx >= -8) && (dy <= 126 && dy >= -128)))
 				{
-					// announce our new destination and flag it
+					/* announce our new destination and flag it*/
 					xpos_max = xpos_new & 0x7FFF;
 					ypos_max = ypos_new;
 					flags |= 0x08;
 				}
 
-				// update position
+				/* update position*/
 				xpos -= (ST010_Cos(rot) * 0x400 >> 15) * (speed >> 8) << 1;
 				ypos -= (ST010_Sin(rot) * 0x400 >> 15) * (speed >> 8) << 1;
 
-				// quirk: mask upper byte
+				/* quirk: mask upper byte*/
 				xpos &= 0x1FFFFFFF;
 				ypos &= 0x1FFFFFFF;
 
@@ -868,7 +870,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				break;
 		}
 
-		// lower signal: op processed
+		/* lower signal: op processed*/
 		ST010.op_reg  = 0;
 		ST010.execute = 0;
 	}
@@ -878,18 +880,18 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
  Seta 011
 ***********************************************************************************/
 
-static uint8	board[9][9];	// shougi playboard
+static uint8	board[9][9];	/* shougi playboard*/
 
 uint8 S9xGetST011 (uint32 Address)
 {
 	uint8	t;
 	uint16	address = (uint16) Address & 0xFFFF;
 
-	// status check
+	/* status check*/
 	if (address == 0x01)
 		t = 0xFF;	
 	else
-		t = Memory.SRAM[address]; // read directly from s-ram
+		t = Memory.SRAM[address]; /* read directly from s-ram*/
 
 	return (t);
 }
@@ -901,17 +903,17 @@ void S9xSetST011 (uint32 Address, uint8 Byte)
 
 	if (!reset)
 	{
-		// bootup values
+		/* bootup values*/
 		ST011.waiting4command = true;
 		reset = true;
 	}
 
 	Memory.SRAM[address] = Byte;
 
-	// op commands/data goes through this address
+	/* op commands/data goes through this address*/
 	if (address == 0x00)
 	{
-		// check for new commands
+		/* check for new commands*/
 		if (ST011.waiting4command)
 		{
 			ST011.waiting4command = false;
@@ -940,50 +942,53 @@ void S9xSetST011 (uint32 Address, uint8 Byte)
 
 	if (ST011.in_count == ST011.in_index)
 	{
-		// actually execute the command
+		/* actually execute the command*/
 		ST011.waiting4command = true;
 		ST011.out_index       = 0;
 
 		switch (ST011.command)
 		{
-			// unknown: download playboard
+			/* unknown: download playboard*/
 			case 0x01:
-				// 9x9 board data: top to bottom, left to right
-				// Values represent piece types and ownership
-				for (int lcv = 0; lcv < 9; lcv++)
+			{
+				int lcv;
+				/* 9x9 board data: top to bottom, left to right*/
+				/* Values represent piece types and ownership*/
+				for ( lcv = 0; lcv < 9; lcv++)
 					memcpy(board[lcv], ST011.parameters + lcv * 10, 9 * 1);
+			}
 				break;
 
-			// unknown
+			/* unknown*/
 			case 0x02:
 				break;
 
-			// unknown
+			/* unknown*/
 			case 0x04:
-				// outputs
+				/* outputs*/
 				Memory.SRAM[0x12C] = 0x00;
-				//Memory.SRAM[0x12D] = 0x00;
+				/*Memory.SRAM[0x12D] = 0x00;*/
 				Memory.SRAM[0x12E] = 0x00;
 				break;
 
-			// unknown
+			/* unknown*/
 			case 0x05:
-				// outputs
+				/* outputs*/
 				Memory.SRAM[0x12C] = 0x00;
-				//Memory.SRAM[0x12D] = 0x00;
+				/*Memory.SRAM[0x12D] = 0x00;*/
 				Memory.SRAM[0x12E] = 0x00;
 				break;
 
-			// unknown
+			/* unknown*/
 			case 0x06:
 				break;
 
 			case 0x07:
 				break;
 
-			// unknown
+			/* unknown*/
 			case 0x0E:
-				// outputs
+				/* outputs*/
 				Memory.SRAM[0x12C] = 0x00;
 				Memory.SRAM[0x12D] = 0x00;
 				break;
@@ -1000,8 +1005,8 @@ uint8 S9xGetST018 (uint32 Address)
 	uint8	t       = 0;
 	uint16	address = (uint16) Address & 0xFFFF;
 
-	// these roles may be flipped
-	// op output
+	/* these roles may be flipped*/
+	/* op output*/
 	if (address == 0x3804)
 	{
 		if (ST018.out_count)
@@ -1014,7 +1019,7 @@ uint8 S9xGetST018 (uint32 Address)
 		else
 			t = 0x81;
 	}
-	// status register
+	/* status register*/
 	else
 	if (address == 0x3800)
 		t = ST018.status;
@@ -1030,7 +1035,7 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 
 	if (!reset)
 	{
-		// bootup values
+		/* bootup values*/
 		ST018.waiting4command = true;
 		ST018.part_command    = 0;
 		reset = true;
@@ -1038,20 +1043,20 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 
 	Memory.SRAM[address] = Byte;
 
-	// default status for now
+	/* default status for now*/
 	ST018.status = 0x00;
 
-	// op data goes through this address
+	/* op data goes through this address*/
 	if (address == 0x3804)
 	{
-		// check for new commands: 3 bytes length
+		/* check for new commands: 3 bytes length*/
 		if (ST018.waiting4command && ST018.part_command == 2)
 		{
 			ST018.waiting4command = false;
 			ST018.in_index        = 0;
 			ST018.out_index       = 0;
-			ST018.part_command    = 0; // 3-byte commands
-			ST018.pass            = 0; // data streams into the chip
+			ST018.part_command    = 0; /* 3-byte commands*/
+			ST018.pass            = 0; /* data streams into the chip*/
 			ST018.command <<= 8;
 			ST018.command |= Byte;
 
@@ -1065,13 +1070,13 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 		else
 		if (ST018.waiting4command)
 		{
-			// 3-byte commands
+			/* 3-byte commands*/
 			ST018.part_command++;
 			ST018.command <<= 8;
 			ST018.command |= Byte;
 		}
 	}
-	// extra parameters
+	/* extra parameters*/
 	else
 	if (address == 0x3802)
 	{
@@ -1081,14 +1086,14 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 
 	if (ST018.in_count == ST018.in_index)
 	{
-		// qctually execute the command
+		/* qctually execute the command*/
 		ST018.waiting4command = true;
 		ST018.in_index        = 0;
 		ST018.out_index       = 0;
 
 		switch (ST018.command)
 		{
-			// hardware check?
+			/* hardware check?*/
 			case 0x0100:
 				ST018.waiting4command = false;
 				ST018.pass++;
@@ -1098,29 +1103,29 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 					ST018.in_count  = 1;
 					ST018.out_count = 2;
 
-					// Overload's research
+					/* Overload's research*/
 					ST018.output[0x00] = 0x81;
 					ST018.output[0x01] = 0x81;
 				}
 				else
 				{
-					//ST018.in_count = 1;
+					/*ST018.in_count = 1;*/
 					ST018.out_count = 3;
 
-					// no reason to change this
-					//ST018.output[0x00] = 0x81;
-					//ST018.output[0x01] = 0x81;
+					/* no reason to change this*/
+					/*ST018.output[0x00] = 0x81;*/
+					/*ST018.output[0x01] = 0x81;*/
 					ST018.output[0x02] = 0x81;
 
-					// done processing requests
+					/* done processing requests*/
 					if (ST018.pass == 3)
 						ST018.waiting4command = true;
 				}
 
 				break;
 
-			// unknown: feels like a security detection
-			// format identical to 0x0100
+			/* unknown: feels like a security detection*/
+			/* format identical to 0x0100*/
 			case 0xFF00:
 				ST018.waiting4command = false;
 				ST018.pass++;
@@ -1130,21 +1135,21 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 					ST018.in_count  = 1;
 					ST018.out_count = 2;
 
-					// Overload's research
+					/* Overload's research*/
 					ST018.output[0x00] = 0x81;
 					ST018.output[0x01] = 0x81;
 				}
 				else
 				{
-					//ST018.in_count = 1;
+					/*ST018.in_count = 1;*/
 					ST018.out_count = 3;
 
-					// no reason to change this
-					//ST018.output[0x00] = 0x81;
-					//ST018.output[0x01] = 0x81;
+					/* no reason to change this*/
+					/*ST018.output[0x00] = 0x81;*/
+					/*ST018.output[0x01] = 0x81;*/
 					ST018.output[0x02] = 0x81;
 
-					// done processing requests
+					/* done processing requests*/
 					if (ST018.pass == 3)
 						ST018.waiting4command = true;
 				}

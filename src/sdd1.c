@@ -199,21 +199,23 @@
 
 void S9xSetSDD1MemoryMap (uint32 bank, uint32 value)
 {
+	int i, c;
 	bank = 0xc00 + bank * 0x100;
 	value = value * 1024 * 1024;
 
-	for (int c = 0; c < 0x100; c += 16)
+	for ( c = 0; c < 0x100; c += 16)
 	{
 		uint8	*block = &Memory.ROM[value + (c << 12)];
-		for (int i = c; i < c + 16; i++)
+		for ( i = c; i < c + 16; i++)
 			Memory.Map[i + bank] = block;
 	}
 }
 
 void S9xResetSDD1 (void)
 {
+	int i;
 	memset(&Memory.FillRAM[0x4800], 0, 4);
-	for (int i = 0; i < 4; i++)
+	for ( i = 0; i < 4; i++)
 	{
 		Memory.FillRAM[0x4804 + i] = i;
 		S9xSetSDD1MemoryMap(i, i);
@@ -222,7 +224,8 @@ void S9xResetSDD1 (void)
 
 void S9xSDD1PostLoadState (void)
 {
-	for (int i = 0; i < 4; i++)
+	int i;
+	for ( i = 0; i < 4; i++)
 		S9xSetSDD1MemoryMap(i, Memory.FillRAM[0x4804 + i]);
 }
 

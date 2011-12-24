@@ -202,7 +202,8 @@ struct SDMA
 #define IndirectAddress	DMACount_Or_HDMAIndirectAddress
 
 #define S9X_RESET_DMA() \
-	for (int d = 0; d < 8; d++) \
+	int d; \
+	for ( d = 0; d < 8; d++) \
 	{ \
 		DMA[d].ReverseTransfer = TRUE; \
 		DMA[d].HDMAIndirectAddressing = TRUE; \

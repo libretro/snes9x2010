@@ -665,7 +665,7 @@ static void S9xUnmapID (uint32 id)
 		justifier.ID[1] = InvalidControlID;
 }
 
-bool S9xMapButton (uint32 id, s9xcommand_t mapping, bool poll)
+bool S9xMapButton (uint32 id, s9xcommand_t mapping)
 {
 	int	t = maptype(mapping.type);
 
@@ -690,7 +690,7 @@ void S9xReportButton (uint32 id, bool pressed)
 	S9xApplyCommand(keymap[id], pressed, 0);
 }
 
-bool S9xMapPointer (uint32 id, s9xcommand_t mapping, bool poll)
+bool S9xMapPointer (uint32 id, s9xcommand_t mapping)
 {
 	int	t = maptype(mapping.type);
 
@@ -861,7 +861,7 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 			return;
 		default:
-			//fprintf(stderr, "WARNING: Unknown command type %d\n", cmd.commandunion.type);
+			/* fprintf(stderr, "WARNING: Unknown command type %d\n", cmd.commandunion.type); */
 			return;
 	}
 }
@@ -932,7 +932,7 @@ void S9xSetJoypadLatch (bool latch)
 {
 	if (!latch && FLAG_LATCH)
 	{
-		// 1 written, 'plug in' new controllers now
+		/* 1 written, 'plug in' new controllers now */
 		curcontrollers[0] = newcontrollers[0];
 		curcontrollers[1] = newcontrollers[1];
 	}
@@ -985,7 +985,7 @@ void S9xSetJoypadLatch (bool latch)
 					break;
 
 				case TWO_JUSTIFIERS:
-					// fall through
+					/* fall through */
 				case ONE_JUSTIFIER:
 					justifier.buttons ^= JUSTIFIER_SELECT;
 					break;
@@ -1646,8 +1646,8 @@ void S9xControlPostLoadState (struct SControlSnapshot *s)
 
 	if (curcontrollers[0] == MP5 && s->ver < 1)
 	{
-		// Crap. Old snes9x didn't support this.
-		// Old savestate has no support for MP5 in port 1.
+		/* Crap. Old snes9x didn't support this.
+		   Old savestate has no support for MP5 in port 1. */
 		newcontrollers[0] = curcontrollers[0];
 		curcontrollers[0] = mp5[0][0];
 	}

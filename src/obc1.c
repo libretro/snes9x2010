@@ -249,7 +249,8 @@ void S9xSetOBC1 (uint8 Byte, uint16 Address)
 
 void S9xResetOBC1 (void)
 {
-	for (int i = 0; i <= 0x1fff; i++)
+	int i;
+	for ( i = 0; i <= 0x1fff; i++)
 		Memory.OBC1RAM[i] = 0xff;
 
 	if (Memory.OBC1RAM[0x1ff5] & 1)

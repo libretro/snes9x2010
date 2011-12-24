@@ -1128,12 +1128,12 @@ static void FreezeBlock (STREAM stream, const char *name, uint8 *block, int size
 {
 	char	buffer[20];
 
-	// check if it fits in 6 digits. (letting it go over and using strlen isn't safe)
+	/* check if it fits in 6 digits. (letting it go over and using strlen isn't safe)*/
 	if (size <= 999999)
 		sprintf(buffer, "%s:%06d:", name, size);
 	else
 	{
-		// to make it fit, pack it in the bytes instead of as digits
+		/* to make it fit, pack it in the bytes instead of as digits*/
 		sprintf(buffer, "%s:------:", name);
 		buffer[6] = (unsigned char) ((unsigned) size >> 24);
 		buffer[7] = (unsigned char) ((unsigned) size >> 16);
@@ -1173,7 +1173,7 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 	{
 		if (SNAPSHOT_VERSION < fields[i].debuted_in)
 		{
-			//fprintf(stderr, "%s[%p]: field has bad debuted_in value %d, > %d.", name, (void *) fields, fields[i].debuted_in, SNAPSHOT_VERSION);
+			/*fprintf(stderr, "%s[%p]: field has bad debuted_in value %d, > %d.", name, (void *) fields, fields[i].debuted_in, SNAPSHOT_VERSION);*/
 			continue;
 		}
 
@@ -1196,12 +1196,12 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 
 		addr = (uint8 *) base + fields[i].offset;
 
-		// determine real address of indirect-type fields
-		// (where the structure contains a pointer to an array rather than the array itself)
+		/* determine real address of indirect-type fields*/
+		/* (where the structure contains a pointer to an array rather than the array itself)*/
 		if (fields[i].type == uint8_INDIR_ARRAY_V || fields[i].type == uint16_INDIR_ARRAY_V || fields[i].type == uint32_INDIR_ARRAY_V)
 			addr = (uint8 *) (*((intptr_t *) addr));
 
-		// convert pointer-type saves from absolute to relative pointers
+		/* convert pointer-type saves from absolute to relative pointers*/
 		if (fields[i].type == POINTER_V)
 		{
 			uint8	*pointer    = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset));
@@ -1288,6 +1288,7 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 
 void S9xFreezeToStream (STREAM stream)
 {
+	int d;
 	char	buffer[1024];
 
 	sprintf(buffer, "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
@@ -1303,8 +1304,16 @@ void S9xFreezeToStream (STREAM stream)
 	FreezeStruct(stream, "PPU", &PPU, SnapPPU, COUNT(SnapPPU));
 
 	struct SDMASnapshot	dma_snap;
-	for (int d = 0; d < 8; d++)
-		dma_snap.dma[d] = DMA[d];
+
+	dma_snap.dma[0] = DMA[0];
+	dma_snap.dma[1] = DMA[1];
+	dma_snap.dma[2] = DMA[2];
+	dma_snap.dma[3] = DMA[3];
+	dma_snap.dma[4] = DMA[4];
+	dma_snap.dma[5] = DMA[5];
+	dma_snap.dma[6] = DMA[6];
+	dma_snap.dma[7] = DMA[7];
+
 	FreezeStruct(stream, "DMA", &dma_snap, SnapDMA, COUNT(SnapDMA));
 
 	FreezeBlock (stream, "VRA", Memory.VRAM, 0x10000);
@@ -1390,7 +1399,7 @@ static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int siz
 	if (l != 11 || strncmp(buffer, name, 3) != 0 || buffer[3] != ':')
 	{
 	err:
-		//fprintf(stdout, "absent: %s(%d); next: '%.11s'\n", name, size, buffer);
+		/*fprintf(stdout, "absent: %s(%d); next: '%.11s'\n", name, size, buffer);*/
 		REVERT_STREAM(stream, FIND_STREAM(stream) - l, 0);
 		return (WRONG_FORMAT);
 	}
@@ -1456,9 +1465,10 @@ static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, in
 
 static int UnfreezeStructCopy (STREAM stream, const char *name, uint8 **block, FreezeData *fields, int num_fields, int version)
 {
+	int i;
 	int	len = 0;
 
-	for (int i = 0; i < num_fields; i++)
+	for ( i = 0; i < num_fields; i++)
 	{
 		if (version >= fields[i].debuted_in && version < fields[i].deleted_in)
 			len += FreezeSize(fields[i].size, fields[i].type);
@@ -1844,8 +1854,15 @@ int S9xUnfreezeFromStream (STREAM stream)
 		S9xUnpackStatus();
 		S9xFixCycles();
 
-		for (int d = 0; d < 8; d++)
-			DMA[d] = dma_snap.dma[d];
+		DMA[0] = dma_snap.dma[0];
+		DMA[1] = dma_snap.dma[1];
+		DMA[2] = dma_snap.dma[2];
+		DMA[3] = dma_snap.dma[3];
+		DMA[4] = dma_snap.dma[4];
+		DMA[5] = dma_snap.dma[5];
+		DMA[6] = dma_snap.dma[6];
+		DMA[7] = dma_snap.dma[7];
+
 		CPU.InDMA = CPU.InHDMA = FALSE;
 		CPU.InDMAorHDMA = CPU.InWRAMDMAorHDMA = FALSE;
 		CPU.HDMARanInDMA = 0;

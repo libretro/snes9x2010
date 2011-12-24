@@ -71,9 +71,9 @@ const struct cell_audio_driver *audio_driver = &cell_audio_audioport;
 oskutil_params oskutil_handle;
 uint32_t control_binds[MAX_PADS][BTN_DEF_MAX];
 
-uint64_t mode_switch = MODE_MENU;			// mode the main loop is in
+uint64_t mode_switch = MODE_MENU;			/* mode the main loop is in */
 
-static uint32_t is_running;				// is the ROM currently running in the emulator?
+static uint32_t is_running;				/* is the ROM currently running in the emulator? */
 static bool is_ingame_menu_running;			// is the ingame menu currently running?
 bool return_to_MM = false;				// launch multiMAN on exit if ROM is passed
 bool emulator_initialized = false;			// is the emulator loaded?
@@ -89,7 +89,7 @@ static uint32_t controller_settings = NO_JOYSTICKS;	// controller mode to run em
 bool audio_active = false;
 extern bool8 pad_read_last;
 
-//emulator-specific
+/* emulator-specific */
 extern s9xcommand_t keymap[1024];
 extern uint16_t joypad[8];
 static unsigned snes_devices[2];
@@ -186,7 +186,7 @@ static void callback_sysutil_exit(uint64_t status, uint64_t param, void *userdat
 
 static void S9xAudioCallback()
 {
-	// Just pick a big buffer. We won't use it all.
+	/* Just pick a big buffer. We won't use it all. */
 	static int16_t audio_buf[0x10000];
 
 	S9xFinalizeSamples();
@@ -281,7 +281,7 @@ void emulator_change_cheat_description(uint32 cheatposition, const char *descrip
 
 static void emulator_input_cheatlabel(char * msg)
 {
-	// (1) Let the user enter a label name for currently selected cheat code
+	/* (1) Let the user enter a label name for currently selected cheat code */
 
 	oskutil_write_initial_message(&oskutil_handle, L"");
 	oskutil_write_message(&oskutil_handle, L"Enter cheat label");
@@ -300,7 +300,7 @@ static void emulator_input_cheatlabel(char * msg)
 	else
 		strncpy(msg, "", sizeof(msg));
 
-	// (2) add cheat label
+	/* (2) add cheat label */
 	emulator_change_cheat_description(Settings.CurrentCheatPosition, msg);
 }
 
@@ -312,7 +312,7 @@ static void emulator_input_cheatlabel(char * msg)
 
 static uint32_t emulator_input_cheat()
 {
-	// (1) Let the user enter his cheat code
+	/* (1) Let the user enter his cheat code */
 	oskutil_write_initial_message(&oskutil_handle, L"");
 	oskutil_write_message(&oskutil_handle, L"Enter cheat code (Game Genie/Action Replay/GoldFinger Pro format)");
 	oskutil_start(&oskutil_handle);
@@ -325,13 +325,13 @@ static uint32_t emulator_input_cheat()
 		cellSysutilCheckCallback();
 	}
 
-	// (2) Save the code to a char variable
+	/* (2) Save the code to a char variable */
 	char newcode[128];
 
 	if(oskutil_handle.text_can_be_fetched)
 	{
 		strncpy(newcode, OUTPUT_TEXT_STRING(oskutil_handle), sizeof(newcode));
-		// (3) Check the cheat format of the cheat code
+		/* (3) Check the cheat format of the cheat code */
 		uint32 address;
 		uint8 byte;
 		uint8 bytes [3];
@@ -342,19 +342,19 @@ static uint32_t emulator_input_cheat()
 
 		if (!S9xGameGenieToRaw (newcode, &address, &byte))
 		{
-			// (4) add Game Genie cheat code
+			/* (4) add Game Genie cheat code */
 			emulator_implementation_add_cheat(address, byte, newcode);
 			cheatformat = 1;
 		}
 		else if (!S9xProActionReplayToRaw(newcode, &address, &byte))
 		{
-			// (4) add Pro Action Replay cheat code
+			/* (4) add Pro Action Replay cheat code */
 			emulator_implementation_add_cheat(address, byte, newcode);
 			cheatformat = 2;
 		}
 		else if (!S9xGoldFingerToRaw(newcode, &address, &sram, &num_bytes, bytes))
 		{
-			// (4) add Gold Finger cheat code
+			/* (4) add Gold Finger cheat code */
 			for (int c = 0; c < num_bytes; c++)
 				emulator_implementation_add_cheat(address + c, bytes[c], newcode);
 			cheatformat = 3;
@@ -362,16 +362,16 @@ static uint32_t emulator_input_cheat()
 		else
 			cheatformat = 4;
 
-		// (5) Return message text string
+		/* (5) Return message text string */
 		switch(cheatformat)
 		{
-			case 1:  //Game Genie
+			case 1:  /* Game Genie */
 				return GAME_GENIE_CODE_ADDED;
-			case 2:  //Action Replay
+			case 2:  /* Action Replay */
 				return PRO_ACTION_REPLAY_CODE_ADDED;
-			case 3:  //Gold Finger
+			case 3:  /* Gold Finger */
 				return GOLD_FINGER_CODE_ADDED;
-			case 4:  //else
+			case 4:  /* else */
 				return CODE_ADDED_INCORRECT;
 		}
 	}
@@ -647,7 +647,7 @@ static void emulator_implementation_input_loop_mouse(unsigned port, unsigned sne
 	static int _x = 128;
 	static int _y = 128;
 
-	//USB/Bluetooth mouse
+	/* USB/Bluetooth mouse */
 	if(Settings.AccessoryType)
 	{
 		const CellMouseData mouse_state = cell_mouse_input_poll_device(port);
@@ -706,7 +706,7 @@ static void emulator_implementation_input_loop_mouse(unsigned port, unsigned sne
 			used_mouse_button_5 = old_mouse_buttons & CELL_MOUSE_BUTTON_5;
 		}
 
-		//five mouse buttons hooked up - report them
+		/* five mouse buttons hooked up - report them */
 		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_SQUARE_DEF])], (used_mouse_button_1), 0);
 		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_TRIANGLE_DEF])], (used_mouse_button_2), 0);
 		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_CIRCLE_DEF])], (used_mouse_button_3), 0);
@@ -714,7 +714,7 @@ static void emulator_implementation_input_loop_mouse(unsigned port, unsigned sne
 		S9xApplyCommand(keymap[MAKE_BUTTON(pad, control_binds[port][CTRL_START_DEF])], (used_mouse_button_5), 0);
 
 	}
-	else	//Mapped to joystick analog
+	else	/* Mapped to joystick analog */
 	{
 		int16 x = CTRL_AXIS_LSTICK_X(state);
 		int16 y = CTRL_AXIS_LSTICK_Y(state);
@@ -916,10 +916,10 @@ static bool emulator_init_system(void)
 	sys_lwmutex_unlock(&audio_lock);
 
 	if (current_rom == NULL)
-		return false; //No ROM to load
+		return false; /* No ROM to load */
 
 	if (!LoadROM(current_rom))
-		return false; //Load ROM failed
+		return false; /* Load ROM failed */
 
 	if(Settings.CurrentROMisMultitapCompatible)
 	{
@@ -1006,10 +1006,9 @@ static bool emulator_init_system(void)
 	S9xGraphicsInit();
 
 
-#define MAP_BUTTON(id, name) S9xMapButton((id), S9xGetCommandT((name)), false)
-#define MAP_POINTER(id, name) S9xMapPointer((id), S9xGetCommandT((name)), false)
+#define MAP_BUTTON(id, name) S9xMapButton((id), S9xGetCommandT((name)))
 
-	// Controller initialization
+	/* Controller initialization */
 	switch(controller_settings)
 	{
 		case TWO_JOYSTICKS:
@@ -1058,25 +1057,25 @@ static bool emulator_init_system(void)
 	switch(controller_settings)
 	{
 		case MULTITAP:
-			map_snes9x_standard_controls(PAD_3);      // Player 3
-			map_snes9x_standard_controls(PAD_4);      // Player 4
-			map_snes9x_standard_controls(PAD_5);      // Player 5
+			map_snes9x_standard_controls(PAD_3);
+			map_snes9x_standard_controls(PAD_4);
+			map_snes9x_standard_controls(PAD_5);
 
 			map_snes9x_special_controls(PAD_3);       
 			map_snes9x_special_controls(PAD_4);
 			map_snes9x_special_controls(PAD_5);
 			//fall-through
 		case TWO_JOYSTICKS:
-			map_snes9x_standard_controls(PAD_1);      // Player 1
-			map_snes9x_standard_controls(PAD_2);      // Player 2
+			map_snes9x_standard_controls(PAD_1);
+			map_snes9x_standard_controls(PAD_2);
 			break;
 		case MOUSE:
 			MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_X), "Mouse1 R");
 			MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_Y), "Mouse1 L");
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_X), "Mouse2 R");
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_Y), "Mouse2 L");
-			MAP_POINTER(BTN_POINTER1, "Pointer Mouse1");
-			MAP_POINTER(BTN_POINTER2, "Pointer Mouse2");
+			S9xMapPointer((BTN_POINTER1), S9xGetCommandT("Pointer Mouse1"));
+			S9xMapPointer((BTN_POINTER1), S9xGetCommandT("Pointer Mouse2"));
 			break;
 		case SUPERSCOPE:
 			MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_A), "Superscope ToggleTurbo");
@@ -1087,7 +1086,7 @@ static bool emulator_init_system(void)
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_X), "Superscope AimOffscreen");
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_Y), "Superscope Fire");
 			MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_START), "Justifier Pause");
-			MAP_POINTER(BTN_SCOPE_POINTER, "Pointer Superscope");
+			S9xMapPointer((BTN_SCOPE_POINTER), S9xGetCommandT("Pointer Superscope"));
 			break;
 		case JUSTIFIER:
 		case TWO_JUSTIFIERS:

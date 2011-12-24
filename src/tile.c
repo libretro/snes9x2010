@@ -1109,13 +1109,13 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #undef Z2
 #undef NO_INTERLACE
 
-// Basic routine to render a chunk of a Mode 7 BG.
-// Mode 7 has no interlace, so BPSTART and PITCH are unused.
-// We get some new parameters, so we can use the same DRAW_TILE to do BG1 or BG2:
-//     DCMODE tests if Direct Color should apply.
-//     BG is the BG, so we use the right clip window.
-//     MASK is 0xff or 0x7f, the 'color' portion of the pixel.
-// We define Z1/Z2 to either be constant 5 or to vary depending on the 'priority' portion of the pixel.
+/* Basic routine to render a chunk of a Mode 7 BG.*/
+/* Mode 7 has no interlace, so BPSTART and PITCH are unused.*/
+/* We get some new parameters, so we can use the same DRAW_TILE to do BG1 or BG2:*/
+/*     DCMODE tests if Direct Color should apply.*/
+/*     BG is the BG, so we use the right clip window.*/
+/*     MASK is 0xff or 0x7f, the 'color' portion of the pixel.*/
+/* We define Z1/Z2 to either be constant 5 or to vary depending on the 'priority' portion of the pixel.*/
 
 #define CLIP_10_BIT_SIGNED(a)	(((a) & 0x2000) ? ((a) | ~0x3ff) : ((a) & 0x3ff))
 
@@ -1129,6 +1129,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define BG				0
 
 #define DRAW_TILE_NORMAL() \
+	uint32 x, Line; \
 	uint8	*VRAM1 = Memory.VRAM + 1; \
 	\
 	if (DCMODE) \
@@ -1148,7 +1149,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	uint32	Offset = GFX.StartY * GFX.PPL; \
 	struct SLineMatrixData	*l = &LineMatrixData[GFX.StartY]; \
 	\
-	for (uint32 Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
+	for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
 	{ \
 		int	yy, starty; \
 		\
@@ -1189,7 +1190,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		\
 		if (!PPU.Mode7Repeat) \
 		{ \
-			for (uint32 x = Left; x < Right; x++, AA += aa, CC += cc) \
+			for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
 			{ \
 				int	X = ((AA + BB) >> 8) & 0x3ff; \
 				int	Y = ((CC + DD) >> 8) & 0x3ff; \
@@ -1202,7 +1203,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		} \
 		else \
 		{ \
-			for (uint32 x = Left; x < Right; x++, AA += aa, CC += cc) \
+			for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
 			{ \
 				int	X = ((AA + BB) >> 8); \
 				int	Y = ((CC + DD) >> 8); \
@@ -1226,6 +1227,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	}
 
 #define DRAW_TILE_MOSAIC() \
+	uint32 Line; \
+	int32 h, w, x; \
 	uint8	*VRAM1 = Memory.VRAM + 1; \
 	\
 	if (DCMODE) \
@@ -1263,7 +1266,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	uint32	Offset = StartY * GFX.PPL; \
 	struct SLineMatrixData	*l = &LineMatrixData[StartY]; \
 	\
-	for (uint32 Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic) \
+	for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic) \
 	{ \
 		if (Line + VMosaic > GFX.EndY) \
 			VMosaic = GFX.EndY - Line + 1; \
@@ -1308,7 +1311,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		\
 		if (!PPU.Mode7Repeat) \
 		{ \
-			for (int32 x = MLeft; x < MRight; x++, AA += aa, CC += cc) \
+			for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc) \
 			{ \
 				if (--ctr) \
 					continue; \
@@ -1322,9 +1325,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
 				\
 				if ((Pix = (b & MASK))) \
 				{ \
-					for (int32 h = MosaicStart; h < VMosaic; h++) \
+					for ( h = MosaicStart; h < VMosaic; h++) \
 					{ \
-						for (int32 w = x + HMosaic - 1; w >= x; w--) \
+						for ( w = x + HMosaic - 1; w >= x; w--) \
 							DRAW_PIXEL(w + h * GFX.PPL, (w >= (int32) Left && w < (int32) Right)); \
 					} \
 				} \
@@ -1332,7 +1335,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		} \
 		else \
 		{ \
-			for (int32 x = MLeft; x < MRight; x++, AA += aa, CC += cc) \
+			for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc) \
 			{ \
 				if (--ctr) \
 					continue; \
@@ -1356,9 +1359,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
 				\
 				if ((Pix = (b & MASK))) \
 				{ \
-					for (int32 h = MosaicStart; h < VMosaic; h++) \
+					for ( h = MosaicStart; h < VMosaic; h++) \
 					{ \
-						for (int32 w = x + HMosaic - 1; w >= x; w--) \
+						for ( w = x + HMosaic - 1; w >= x; w--) \
 							DRAW_PIXEL(w + h * GFX.PPL, (w >= (int32) Left && w < (int32) Right)); \
 					} \
 				} \
@@ -1473,14 +1476,14 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #undef NAME2
 #undef DRAW_PIXEL
 
-// Hires pixel plotter, this combines the main and subscreen pixels as appropriate to render hires or pseudo-hires images.
-// Use it only on the main screen, subscreen should use Normal2x1 instead.
-// Hires math:
-//     Main pixel is mathed as normal: Main(x, y) * Sub(x, y).
-//     Sub pixel is mathed somewhat weird: Basically, for Sub(x + 1, y) we apply the same operation we applied to Main(x, y)
-//     (e.g. no math, add fixed, add1/2 subscreen) using Main(x, y) as the "corresponding subscreen pixel".
-//     Also, color window clipping clips Sub(x + 1, y) if Main(x, y) is clipped, not Main(x + 1, y).
-//     We don't know how Sub(0, y) is handled.
+/* Hires pixel plotter, this combines the main and subscreen pixels as appropriate to render hires or pseudo-hires images.*/
+/* Use it only on the main screen, subscreen should use Normal2x1 instead.*/
+/* Hires math:*/
+/*     Main pixel is mathed as normal: Main(x, y) * Sub(x, y).*/
+/*     Sub pixel is mathed somewhat weird: Basically, for Sub(x + 1, y) we apply the same operation we applied to Main(x, y)*/
+/*     (e.g. no math, add fixed, add1/2 subscreen) using Main(x, y) as the "corresponding subscreen pixel".*/
+/*     Also, color window clipping clips Sub(x + 1, y) if Main(x, y) is clipped, not Main(x + 1, y).*/
+/*     We don't know how Sub(0, y) is handled.*/
 
 #define DRAW_PIXEL_H2x1(N, M) \
 	if (Z1 > GFX.DB[Offset + 2 * N] && (M)) \

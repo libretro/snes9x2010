@@ -49,11 +49,8 @@ extern s9xcommand_t keymap[1024];
  *
  * The following map the Wii controls to the Snes9x controller system
  ***************************************************************************/
-#define ASSIGN_BUTTON_TRUE( keycode, snescmd ) \
-	  S9xMapButton( keycode, cmd = S9xGetCommandT(snescmd), true)
-
 #define ASSIGN_BUTTON_FALSE( keycode, snescmd ) \
-	  S9xMapButton( keycode, cmd = S9xGetCommandT(snescmd), false)
+	  S9xMapButton( keycode, cmd = S9xGetCommandT(snescmd))
 
 static int scopeTurbo = 0; // tracks whether superscope turbo is on or off
 u32 btnmap[4][4][12]; // button mapping
@@ -736,11 +733,11 @@ void SetDefaultButtonMap ()
 	ASSIGN_BUTTON_FALSE (maxcode++, "Justifier2 Start");
 
 	maxcode = 0x80;
-	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Superscope"), false);
-	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Mouse1"), false);
-	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Mouse2"), false);
-	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Justifier1"), false);
-	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Justifier2"), false);
+	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Superscope"));
+	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Mouse1"));
+	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Mouse2"));
+	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Justifier1"));
+	S9xMapPointer(maxcode++, S9xGetCommandT("Pointer Justifier2"));
 
 	SetControllers();
 }

@@ -56,13 +56,14 @@ void snes_set_environment(snes_environment_t cb)
 
 static void S9xAudioCallback()
 {
+   size_t i;
    /* Just pick a big buffer. We won't use it all. */
    static int16_t audio_buf[0x10000];
 
    S9xFinalizeSamples();
    size_t avail = S9xGetSampleCount();
    S9xMixSamples(audio_buf, avail);
-   for (size_t i = 0; i < avail; i+=2)
+   for ( i = 0; i < avail; i+=2)
       s9x_audio_cb((uint16_t)audio_buf[i], (uint16_t)audio_buf[i + 1]);
 }
 
@@ -90,7 +91,7 @@ void snes_reset()
    S9xSoftReset();
 }
 
-#define MAP_BUTTON(id, name) S9xMapButton((id), S9xGetCommandT((name)), false)
+#define MAP_BUTTON(id, name) S9xMapButton((id), S9xGetCommandT((name)))
 #define MAKE_BUTTON(pad, btn) (((pad)<<4)|(btn))
 
 #define PAD_1 1
@@ -159,8 +160,8 @@ void snes_set_controller_port_device(bool in_port, unsigned device)
 			snes_devices[port] = SNES_DEVICE_MOUSE;
 
 			/* mapping pointers here */
-			S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"), false);
-			S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"), false);
+			S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"));
+			S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"));
 
 			/* mapping extra buttons here */
 			MAP_BUTTON(MAKE_BUTTON(PAD_1, BTN_SELECT), "Mouse1 L");
@@ -173,8 +174,8 @@ void snes_set_controller_port_device(bool in_port, unsigned device)
 			snes_devices[port] = SNES_DEVICE_SUPER_SCOPE;
 
 			/* mapping pointers here */
-			S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"), false);
-			S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"), false);
+			S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"));
+			S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"));
 
 			/* mapping extra buttons here */
 			MAP_BUTTON(MAKE_BUTTON(PAD_2, BTN_SELECT), "Superscope Fire");
@@ -308,6 +309,7 @@ static void map_buttons()
 
 void snes_init()
 {
+	int i;
 	if(environ_cb)
 	{
 		if (!environ_cb(SNES_ENVIRONMENT_GET_OVERSCAN, &use_overscan))
@@ -349,7 +351,7 @@ void snes_init()
 	GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
 	S9xGraphicsInit();
 
-	for (int i = 0; i < 2; i++)
+	for ( i = 0; i < 2; i++)
 	{
 		S9xSetController(i, CTL_JOYPAD, i, 0, 0, 0);
 		snes_devices[i] = SNES_DEVICE_JOYPAD;
@@ -372,13 +374,13 @@ extern bool8 pad_read_last;
 
 static void report_buttons()
 {
-	int _x, _y;
-	for (int port = SNES_PORT_1; port <= SNES_PORT_2; port++)
+	int i, j, _x, _y, port;
+	for ( port = SNES_PORT_1; port <= SNES_PORT_2; port++)
 	{
 		switch (snes_devices[port])
 		{
 			case SNES_DEVICE_JOYPAD:
-				for (int i = BTN_FIRST; i <= BTN_LAST; i++)
+				for ( i = BTN_FIRST; i <= BTN_LAST; i++)
 				{
 					s9xcommand_t cmd = keymap[MAKE_BUTTON(port + 1, i)];
 					uint16 r = cmd.commandunion.button.joypad;
@@ -391,9 +393,9 @@ static void report_buttons()
 				}
 				break;
 			case SNES_DEVICE_MULTITAP:
-				for (int j = 0; j < 4; j++)
+				for ( j = 0; j < 4; j++)
 				{
-					for (int i = BTN_FIRST; i <= BTN_LAST; i++)
+					for ( i = BTN_FIRST; i <= BTN_LAST; i++)
 					{
 						s9xcommand_t cmd = keymap[MAKE_BUTTON(j + 2, i)];
 						uint16 r = cmd.commandunion.button.joypad;
@@ -413,7 +415,7 @@ static void report_buttons()
 				snes_mouse_state[port][0] += _x;
 				snes_mouse_state[port][1] += _y;
 				S9xReportPointer(BTN_POINTER + port, snes_mouse_state[port][0], snes_mouse_state[port][1]);
-				for (int i = MOUSE_LEFT; i <= MOUSE_LAST; i++)
+				for ( i = MOUSE_LEFT; i <= MOUSE_LAST; i++)
 					S9xReportButton(MAKE_BUTTON(port + 1, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_MOUSE, 0, i));
 				break;
 
@@ -421,7 +423,7 @@ static void report_buttons()
 				snes_scope_state[0] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_SUPER_SCOPE, 0, SNES_DEVICE_ID_SUPER_SCOPE_X);
 				snes_scope_state[1] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_SUPER_SCOPE, 0, SNES_DEVICE_ID_SUPER_SCOPE_Y);
 				S9xReportPointer(BTN_POINTER, snes_scope_state[0], snes_scope_state[1]);
-				for (int i = SCOPE_TRIGGER; i <= SCOPE_LAST; i++)
+				for ( i = SCOPE_TRIGGER; i <= SCOPE_LAST; i++)
 					S9xReportButton(MAKE_BUTTON(port + 1, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_SUPER_SCOPE, 0, i));
 				break;
 
@@ -430,7 +432,7 @@ static void report_buttons()
 				snes_justifier_state[0][0] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JUSTIFIER, 0, SNES_DEVICE_ID_JUSTIFIER_X);
 				snes_justifier_state[0][1] += s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JUSTIFIER, 0, SNES_DEVICE_ID_JUSTIFIER_Y);
 				S9xReportPointer(BTN_POINTER, snes_justifier_state[0][0], snes_justifier_state[0][1]);
-				for (int i = JUSTIFIER_TRIGGER; i <= JUSTIFIER_LAST; i++)
+				for ( i = JUSTIFIER_TRIGGER; i <= JUSTIFIER_LAST; i++)
 					S9xReportButton(MAKE_BUTTON(port + 1, i), s9x_input_state_cb(port == SNES_PORT_2, SNES_DEVICE_JUSTIFIER, 0, i));
 				break;
 
@@ -596,7 +598,8 @@ bool snes_unserialize(const uint8_t* data, unsigned size)
 /* Pitch 2048 -> 1024, only done once per res-change. */
 static void pack_frame(uint16_t *frame, int width, int height)
 {
-   for (int y = 1; y < height; y++)
+   int y;
+   for ( y = 1; y < height; y++)
    {
       uint16_t *src = frame + y * 1024;
       uint16_t *dst = frame + y * 512;
@@ -608,7 +611,8 @@ static void pack_frame(uint16_t *frame, int width, int height)
 /* Pitch 1024 -> 2048, only done once per res-change. */
 static void stretch_frame(uint16_t *frame, int width, int height)
 {
-   for (int y = height - 1; y >= 0; y--)
+   int y;
+   for ( y = height - 1; y >= 0; y--)
    {
       uint16_t *src = frame + y * 512;
       uint16_t *dst = frame + y * 1024;

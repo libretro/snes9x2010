@@ -20,7 +20,7 @@
 
 #include "spc7110dec.h"
 
-extern uint8 r4809; //compression length low
-extern uint8 r480a; //compression length high
+extern uint8 r4809; /* compression length low */
+extern uint8 r480a; /* compression length high */
 
 #endif

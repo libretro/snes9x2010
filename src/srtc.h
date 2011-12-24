@@ -183,11 +183,11 @@ struct SRTCData
 	uint8	reg[20];
 };
 
-// for snapshot only
+/* for snapshot only */
 struct SSRTCSnapshot
 {
-	int32	rtc_mode;	// enum RTC_Mode
-	int32	rtc_index;	// signed
+	int32	rtc_mode;	/* enum RTC_Mode */
+	int32	rtc_index;	/* signed */
 };
 
 extern struct SRTCData		RTCData;

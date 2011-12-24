@@ -176,7 +176,7 @@
 
 #include "apu.h"
 
-// for "Magic WDM" features
+/* for "Magic WDM" features */
 
 #ifdef SA1_OPCODES
 #define AddCycles(n)	{ }
@@ -1523,52 +1523,52 @@ mOPM (0CSlow,   AbsoluteSlow,                     WRAP_BANK, TSB)
 
 /* Branch Instructions ***************************************************** */
 
-// BCC
+/* BCC */
 bOP(90E0,   Relative,     !CheckCarry(),    0, 0)
 bOP(90E1,   Relative,     !CheckCarry(),    0, 1)
 bOP(90Slow, RelativeSlow, !CheckCarry(),    0, CheckEmulation())
 
-// BCS
+/* BCS*/
 bOP(B0E0,   Relative,      CheckCarry(),    0, 0)
 bOP(B0E1,   Relative,      CheckCarry(),    0, 1)
 bOP(B0Slow, RelativeSlow,  CheckCarry(),    0, CheckEmulation())
 
-// BEQ
+/* BEQ*/
 bOP(F0E0,   Relative,      CheckZero(),     2, 0)
 bOP(F0E1,   Relative,      CheckZero(),     2, 1)
 bOP(F0Slow, RelativeSlow,  CheckZero(),     2, CheckEmulation())
 
-// BMI
+/* BMI*/
 bOP(30E0,   Relative,      CheckNegative(), 1, 0)
 bOP(30E1,   Relative,      CheckNegative(), 1, 1)
 bOP(30Slow, RelativeSlow,  CheckNegative(), 1, CheckEmulation())
 
-// BNE
+/* BNE*/
 bOP(D0E0,   Relative,     !CheckZero(),     1, 0)
 bOP(D0E1,   Relative,     !CheckZero(),     1, 1)
 bOP(D0Slow, RelativeSlow, !CheckZero(),     1, CheckEmulation())
 
-// BPL
+/* BPL*/
 bOP(10E0,   Relative,     !CheckNegative(), 1, 0)
 bOP(10E1,   Relative,     !CheckNegative(), 1, 1)
 bOP(10Slow, RelativeSlow, !CheckNegative(), 1, CheckEmulation())
 
-// BRA
+/* BRA*/
 bOP(80E0,   Relative,     1,                X, 0)
 bOP(80E1,   Relative,     1,                X, 1)
 bOP(80Slow, RelativeSlow, 1,                X, CheckEmulation())
 
-// BVC
+/* BVC*/
 bOP(50E0,   Relative,     !CheckOverflow(), 0, 0)
 bOP(50E1,   Relative,     !CheckOverflow(), 0, 1)
 bOP(50Slow, RelativeSlow, !CheckOverflow(), 0, CheckEmulation())
 
-// BVS
+/* BVS*/
 bOP(70E0,   Relative,      CheckOverflow(), 0, 0)
 bOP(70E1,   Relative,      CheckOverflow(), 0, 1)
 bOP(70Slow, RelativeSlow,  CheckOverflow(), 0, CheckEmulation())
 
-// BRL
+/* BRL*/
 static void Op82 (void)
 {
 	S9xSetPCBase(ICPU.ShiftedPB + RelativeLong(JUMP));
@@ -1581,49 +1581,49 @@ static void Op82Slow (void)
 
 /* Flag Instructions ******************************************************* */
 
-// CLC
+/* CLC*/
 static void Op18 (void)
 {
 	ClearCarry();
 	AddCycles(ONE_CYCLE);
 }
 
-// SEC
+/* SEC*/
 static void Op38 (void)
 {
 	SetCarry();
 	AddCycles(ONE_CYCLE);
 }
 
-// CLD
+/* CLD*/
 static void OpD8 (void)
 {
 	ClearDecimal();
 	AddCycles(ONE_CYCLE);
 }
 
-// SED
+/* SED*/
 static void OpF8 (void)
 {
 	SetDecimal();
 	AddCycles(ONE_CYCLE);
 }
 
-// CLI
+/* CLI*/
 static void Op58 (void)
 {
 	ClearIRQ();
 	AddCycles(ONE_CYCLE);
 }
 
-// SEI
+/* SEI*/
 static void Op78 (void)
 {
 	SetIRQ();
 	AddCycles(ONE_CYCLE);
 }
 
-// CLV
+/* CLV*/
 static void OpB8 (void)
 {
 	ClearOverflow();
@@ -1779,7 +1779,7 @@ static void OpEA (void)
 	S9xSetByte(b, Registers.S.W); \
 	Registers.SL--;
 
-// PEA
+/* PEA*/
 static void OpF4E0 (void)
 {
 	uint16	val = (uint16) ABSOLUTE_MACRO(NONE);
@@ -1789,8 +1789,8 @@ static void OpF4E0 (void)
 
 static void OpF4E1 (void)
 {
-	// Note: PEA is a new instruction,
-	// and so doesn't respect the emu-mode stack bounds.
+	/* Note: PEA is a new instruction,*/
+	/* and so doesn't respect the emu-mode stack bounds.*/
 	uint16	val = (uint16) ABSOLUTE_MACRO(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
@@ -1806,7 +1806,7 @@ static void OpF4Slow (void)
 		Registers.SH = 1;
 }
 
-// PEI
+/* PEI*/
 static void OpD4E0 (void)
 {
 	uint16	val = (uint16) DirectIndirectE0(NONE);
@@ -1816,8 +1816,8 @@ static void OpD4E0 (void)
 
 static void OpD4E1 (void)
 {
-	// Note: PEI is a new instruction,
-	// and so doesn't respect the emu-mode stack bounds.
+	/* Note: PEI is a new instruction,*/
+	/* and so doesn't respect the emu-mode stack bounds.*/
 	uint16	val = (uint16) DirectIndirectE1(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
@@ -1833,7 +1833,7 @@ static void OpD4Slow (void)
 		Registers.SH = 1;
 }
 
-// PER
+/* PER*/
 static void Op62E0 (void)
 {
 	uint16	val = (uint16) RelativeLong(NONE);
@@ -1843,8 +1843,8 @@ static void Op62E0 (void)
 
 static void Op62E1 (void)
 {
-	// Note: PER is a new instruction,
-	// and so doesn't respect the emu-mode stack bounds.
+	/* Note: PER is a new instruction,*/
+	/* and so doesn't respect the emu-mode stack bounds.*/
 	uint16	val = (uint16) RelativeLong(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
@@ -1860,7 +1860,7 @@ static void Op62Slow (void)
 		Registers.SH = 1;
 }
 
-// PHA
+/* PHA*/
 static void Op48E1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -1903,7 +1903,7 @@ static void Op48Slow (void)
 	OpenBus = Registers.AL;
 }
 
-// PHB
+/* PHB*/
 static void Op8BE1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -1934,7 +1934,7 @@ static void Op8BSlow (void)
 	OpenBus = Registers.DB;
 }
 
-// PHD
+/* PHD*/
 static void Op0BE0 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -1944,8 +1944,8 @@ static void Op0BE0 (void)
 
 static void Op0BE1 (void)
 {
-	// Note: PHD is a new instruction,
-	// and so doesn't respect the emu-mode stack bounds.
+	/* Note: PHD is a new instruction,*/
+	/* and so doesn't respect the emu-mode stack bounds.*/
 	AddCycles(ONE_CYCLE);
 	PushW(Registers.D.W);
 	OpenBus = Registers.DL;
@@ -1961,7 +1961,7 @@ static void Op0BSlow (void)
 		Registers.SH = 1;
 }
 
-// PHK
+/* PHK*/
 static void Op4BE1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -1992,7 +1992,7 @@ static void Op4BSlow (void)
 	OpenBus = Registers.PB;
 }
 
-// PHP
+/* PHP*/
 static void Op08E0 (void)
 {
 	S9xPackStatus();
@@ -2026,7 +2026,7 @@ static void Op08Slow (void)
 	OpenBus = Registers.PL;
 }
 
-// PHX
+/* PHX*/
 static void OpDAE1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2069,7 +2069,7 @@ static void OpDASlow (void)
 	OpenBus = Registers.XL;
 }
 
-// PHY
+/* PHY*/
 static void Op5AE1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2130,7 +2130,7 @@ static void Op5ASlow (void)
 	Registers.SL++; \
 	b = S9xGetByte(Registers.S.W);
 
-// PLA
+/* PLA*/
 static void Op68E1 (void)
 {
 	AddCycles(TWO_CYCLES);
@@ -2180,7 +2180,7 @@ static void Op68Slow (void)
 	}
 }
 
-// PLB
+/* PLB*/
 static void OpABE1 (void)
 {
 	AddCycles(TWO_CYCLES);
@@ -2217,7 +2217,7 @@ static void OpABSlow (void)
 	OpenBus = Registers.DB;
 }
 
-// PLD
+/* PLD*/
 static void Op2BE0 (void)
 {
 	AddCycles(TWO_CYCLES);
@@ -2228,8 +2228,8 @@ static void Op2BE0 (void)
 
 static void Op2BE1 (void)
 {
-	// Note: PLD is a new instruction,
-	// and so doesn't respect the emu-mode stack bounds.
+	/* Note: PLD is a new instruction,*/
+	/* and so doesn't respect the emu-mode stack bounds.*/
 	AddCycles(TWO_CYCLES);
 	PullW(Registers.D.W);
 	SetZN16(Registers.D.W);
@@ -2247,7 +2247,7 @@ static void Op2BSlow (void)
 		Registers.SH = 1;
 }
 
-// PLP
+/* PLP*/
 static void Op28E1 (void)
 {
 	AddCycles(TWO_CYCLES);
@@ -2301,7 +2301,7 @@ static void Op28Slow (void)
 	S9xFixCycles();
 }
 
-// PLX
+/* PLX*/
 static void OpFAE1 (void)
 {
 	AddCycles(TWO_CYCLES);
@@ -2351,7 +2351,7 @@ static void OpFASlow (void)
 	}
 }
 
-// PLY
+/* PLY*/
 static void Op7AE1 (void)
 {
 	AddCycles(TWO_CYCLES);
@@ -2403,7 +2403,7 @@ static void Op7ASlow (void)
 
 /* Transfer Instructions *************************************************** */
 
-// TAX
+/* TAX*/
 static void OpAAX1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2434,7 +2434,7 @@ static void OpAASlow (void)
 	}
 }
 
-// TAY
+/* TAY*/
 static void OpA8X1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2465,7 +2465,7 @@ static void OpA8Slow (void)
 	}
 }
 
-// TCD
+/* TCD*/
 static void Op5B (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2473,7 +2473,7 @@ static void Op5B (void)
 	SetZN16(Registers.D.W);
 }
 
-// TCS
+/* TCS*/
 static void Op1B (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2482,7 +2482,7 @@ static void Op1B (void)
 		Registers.SH = 1;
 }
 
-// TDC
+/* TDC*/
 static void Op7B (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2490,7 +2490,7 @@ static void Op7B (void)
 	SetZN16(Registers.A.W);
 }
 
-// TSC
+/* TSC*/
 static void Op3B (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2498,7 +2498,7 @@ static void Op3B (void)
 	SetZN16(Registers.A.W);
 }
 
-// TSX
+/* TSX*/
 static void OpBAX1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2529,7 +2529,7 @@ static void OpBASlow (void)
 	}
 }
 
-// TXA
+/* TXA*/
 static void Op8AM1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2560,7 +2560,7 @@ static void Op8ASlow (void)
 	}
 }
 
-// TXS
+/* TXS*/
 static void Op9A (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2569,7 +2569,7 @@ static void Op9A (void)
 		Registers.SH = 1;
 }
 
-// TXY
+/* TXY*/
 static void Op9BX1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2600,7 +2600,7 @@ static void Op9BSlow (void)
 	}
 }
 
-// TYA
+/* TYA*/
 static void Op98M1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2631,7 +2631,7 @@ static void Op98Slow (void)
 	}
 }
 
-// TYX
+/* TYX*/
 static void OpBBX1 (void)
 {
 	AddCycles(ONE_CYCLE);
@@ -2731,7 +2731,7 @@ static void Op00 (void)
 void S9xOpcode_IRQ (void)
 {
 
-	// IRQ and NMI do an opcode fetch as their first "IO" cycle.
+	/* IRQ and NMI do an opcode fetch as their first "IO" cycle.*/
 	AddCycles(CPU.MemSpeed + ONE_CYCLE);
 
 	if (!CheckEmulation())
@@ -2798,7 +2798,7 @@ void S9xOpcode_IRQ (void)
 void S9xOpcode_NMI (void)
 {
 
-	// IRQ and NMI do an opcode fetch as their first "IO" cycle.
+	/* IRQ and NMI do an opcode fetch as their first "IO" cycle.*/
 	AddCycles(CPU.MemSpeed + ONE_CYCLE);
 
 	if (!CheckEmulation())
@@ -2955,8 +2955,8 @@ static void Op7CSlow (void)
 
 static void Op22E1 (void)
 {
-	// Note: JSL is a new instruction,
-	// and so doesn't respect the emu-mode stack bounds.
+	/* Note: JSL is a new instruction,*/
+	/* and so doesn't respect the emu-mode stack bounds.*/
 	uint32	addr = AbsoluteLong(JSR);
 	PushB(Registers.PB);
 	PushW(Registers.PCw - 1);
@@ -2984,8 +2984,8 @@ static void Op22Slow (void)
 
 static void Op6BE1 (void)
 {
-	// Note: RTL is a new instruction,
-	// and so doesn't respect the emu-mode stack bounds.
+	/* Note: RTL is a new instruction,*/
+	/* and so doesn't respect the emu-mode stack bounds.*/
 	AddCycles(TWO_CYCLES);
 	PullW(Registers.PCw);
 	PullB(Registers.PB);
@@ -3052,8 +3052,8 @@ static void Op20Slow (void)
 
 static void OpFCE1 (void)
 {
-	// Note: JSR (a,X) is a new instruction,
-	// and so doesn't respect the emu-mode stack bounds.
+	/* Note: JSR (a,X) is a new instruction,*/
+	/* and so doesn't respect the emu-mode stack bounds.*/
 	uint16	addr = AbsoluteIndexedIndirect(JSR);
 	PushW(Registers.PCw - 1);
 	Registers.SH = 1;
@@ -3398,23 +3398,23 @@ static void Op40Slow (void)
 
 /* STP/WAI ***************************************************************** */
 
-// WAI
+/* WAI*/
 static void OpCB (void)
 {
-	// Ok, let's just C-ify the ASM versions separately.
+	/* Ok, let's just C-ify the ASM versions separately.*/
 #ifdef SA1_OPCODES
 	SA1.WaitingForInterrupt = TRUE;
 	Registers.PCw--;
-#else	// SA1_OPCODES
+#else	/* SA1_OPCODES*/
 	{
 		CPU.WaitingForInterrupt = TRUE;
 		Registers.PCw--;
 		AddCycles(TWO_CYCLES);
 	}
-#endif	// SA1_OPCODES
+#endif	/* SA1_OPCODES*/
 }
 
-// STP
+/* STP*/
 static void OpDB (void)
 {
 	Registers.PCw--;

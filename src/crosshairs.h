@@ -184,18 +184,18 @@
 
 const char * S9xGetCrosshair (int idx);
 
-// In controls.cpp. Sets the crosshair for the specified device. Defaults are:
-//                cross   fgcolor    bgcolor
-//   Mouse 1:       1     White      Black
-//   Mouse 2:       1     Purple     White
-//   Superscope:    2     White      Black
-//   Justifier 1:   4     Blue       Black
-//   Justifier 2:   4     MagicPink  Black
-//
-// Available colors are: Trans, Black, 25Grey, 50Grey, 75Grey, White, Red, Orange,
-// Yellow, Green, Cyan, Sky, Blue, Violet, MagicPink, and Purple.
-// You may also prefix a 't' (e.g. tBlue) for a 50%-transparent version.
-// Use idx = -1 or fg/bg = NULL to keep the current setting.
+/* In controls.cpp. Sets the crosshair for the specified device. Defaults are:
+                cross   fgcolor    bgcolor
+   Mouse 1:       1     White      Black
+   Mouse 2:       1     Purple     White
+   Superscope:    2     White      Black
+   Justifier 1:   4     Blue       Black
+   Justifier 2:   4     MagicPink  Black
+
+ Available colors are: Trans, Black, 25Grey, 50Grey, 75Grey, White, Red, Orange,
+ Yellow, Green, Cyan, Sky, Blue, Violet, MagicPink, and Purple.
+ You may also prefix a 't' (e.g. tBlue) for a 50%-transparent version.
+ Use idx = -1 or fg/bg = NULL to keep the current setting. */
 
 #define X_MOUSE1 0
 #define X_MOUSE2 1
@@ -203,16 +203,16 @@ const char * S9xGetCrosshair (int idx);
 #define X_JUSTIFIER1 3
 #define X_JUSTIFIER2 4
 
-// In gfx.cpp, much like S9xDisplayChar() except it takes the parameters
-// listed and looks up GFX.Screen.
-// The 'crosshair' arg is a 15x15 image, with '#' meaning fgcolor,
-// '.' meaning bgcolor, and anything else meaning transparent.
-// Color values should be (RGB):
-//  0 = transparent  4 = 23 23 23    8 = 31 31  0   12 =  0  0 31
-//  1 =  0  0  0     5 = 31 31 31    9 =  0 31  0   13 = 23  0 31
-//  2 =  8  8  8     6 = 31  0  0   10 =  0 31 31   14 = 31  0 31
-//  3 = 16 16 16     7 = 31 16  0   11 =  0 23 31   15 = 31  0 16
-//  16-31 are 50% transparent versions of 0-15.
+/* In gfx.cpp, much like S9xDisplayChar() except it takes the parameters
+ listed and looks up GFX.Screen.
+ The 'crosshair' arg is a 15x15 image, with '#' meaning fgcolor,
+ '.' meaning bgcolor, and anything else meaning transparent.
+ Color values should be (RGB):
+  0 = transparent  4 = 23 23 23    8 = 31 31  0   12 =  0  0 31
+  1 =  0  0  0     5 = 31 31 31    9 =  0 31  0   13 = 23  0 31
+  2 =  8  8  8     6 = 31  0  0   10 =  0 31 31   14 = 31  0 31
+  3 = 16 16 16     7 = 31 16  0   11 =  0 23 31   15 = 31  0 16
+  16-31 are 50% transparent versions of 0-15. */
 
 void S9xDrawCrosshair (const char *crosshair, uint8 fgcolor, uint8 bgcolor, int16 x, int16 y);
 
