@@ -83598,7 +83598,7 @@ static void DrawMosaicPixel16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + w])
 				{
 					GFX.S[Offset + w] = (GFX.ScreenColors[Pix]);
 					GFX.DB[Offset + w] = GFX.Z2;
@@ -83658,7 +83658,7 @@ static void DrawMosaicPixel16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + w])
 				{
 					GFX.S[Offset + w] =
 						(GFX.
@@ -83738,7 +83738,7 @@ static void DrawMosaicPixel16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + w])
 				{
 					GFX.S[Offset + w] =
 						(GFX.
@@ -83821,7 +83821,7 @@ static void DrawMosaicPixel16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + w])
 				{
 					GFX.S[Offset + w] =
 						(GFX.
@@ -83913,7 +83913,7 @@ static void DrawMosaicPixel16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + w])
 				{
 					GFX.S[Offset + w] =
 						(COLOR_SUB
@@ -83980,7 +83980,7 @@ static void DrawMosaicPixel16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + w])
 				{
 					GFX.S[Offset + w] =
 						(GFX.
@@ -84050,7 +84050,7 @@ static void DrawMosaicPixel16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + w])
 				{
 					GFX.S[Offset + w] =
 						(GFX.
@@ -84145,7 +84145,7 @@ static void DrawMosaicPixel16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.ScreenColors[Pix]);
@@ -84206,7 +84206,7 @@ static void DrawMosaicPixel16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.
@@ -84291,7 +84291,7 @@ static void DrawMosaicPixel16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.
@@ -84374,7 +84374,7 @@ static void DrawMosaicPixel16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.
@@ -84471,7 +84471,7 @@ static void DrawMosaicPixel16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(COLOR_SUB
@@ -84539,7 +84539,7 @@ static void DrawMosaicPixel16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.
@@ -84609,7 +84609,7 @@ static void DrawMosaicPixel16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.
@@ -84706,7 +84706,7 @@ static void DrawMosaicPixel16_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * w]));
@@ -84768,7 +84768,7 @@ static void DrawMosaicPixel16Add_Hires (uint32 Tile, uint32 Offset, uint32 Start
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(GFX.
@@ -84876,7 +84876,7 @@ static void DrawMosaicPixel16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(GFX.
@@ -84991,7 +84991,7 @@ static void DrawMosaicPixel16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(GFX.
@@ -85126,7 +85126,7 @@ static void DrawMosaicPixel16Sub_Hires (uint32 Tile, uint32 Offset, uint32 Start
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(COLOR_SUB
@@ -85201,7 +85201,7 @@ static void DrawMosaicPixel16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(GFX.
@@ -85289,7 +85289,7 @@ static void DrawMosaicPixel16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(GFX.
@@ -85415,7 +85415,7 @@ static void DrawMosaicPixel16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.ScreenColors[Pix]);
@@ -85476,7 +85476,7 @@ static void DrawMosaicPixel16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.
@@ -85561,7 +85561,7 @@ static void DrawMosaicPixel16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.
@@ -85644,7 +85644,7 @@ static void DrawMosaicPixel16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.
@@ -85741,7 +85741,7 @@ static void DrawMosaicPixel16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(COLOR_SUB
@@ -85809,7 +85809,7 @@ static void DrawMosaicPixel16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.
@@ -85879,7 +85879,7 @@ static void DrawMosaicPixel16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] = GFX.S[Offset + 2 * w + 1] =
 						(GFX.
@@ -85976,7 +85976,7 @@ static void DrawMosaicPixel16_HiresInterlace (uint32 Tile, uint32 Offset, uint32
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * w]));
@@ -86038,7 +86038,7 @@ static void DrawMosaicPixel16Add_HiresInterlace (uint32 Tile, uint32 Offset, uin
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(GFX.
@@ -86146,7 +86146,7 @@ static void DrawMosaicPixel16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(GFX.
@@ -86261,7 +86261,7 @@ static void DrawMosaicPixel16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(GFX.
@@ -86396,7 +86396,7 @@ static void DrawMosaicPixel16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uin
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(COLOR_SUB
@@ -86471,7 +86471,7 @@ static void DrawMosaicPixel16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(GFX.
@@ -86559,7 +86559,7 @@ static void DrawMosaicPixel16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
 		for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
 		{
 			for (w = Width - 1; w >= 0; w--)
-				if (GFX.Z1 > GFX.DB[Offset + 2 * w] && (1))
+				if (GFX.Z1 > GFX.DB[Offset + 2 * w])
 				{
 					GFX.S[Offset + 2 * w] =
 						(GFX.
@@ -86645,7 +86645,7 @@ static void DrawBackdrop16_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + x] && (1))
+			if (1 > GFX.DB[Offset + x])
 			{
 				GFX.S[Offset + x] = (GFX.ScreenColors[0]);
 				GFX.DB[Offset + x] = 1;
@@ -86663,7 +86663,7 @@ static void DrawBackdrop16Add_Normal1x1 (uint32 Offset, uint32 Left, uint32 Righ
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + x] && (1))
+			if (1 > GFX.DB[Offset + x])
 			{
 				GFX.S[Offset + x] =
 					(GFX.
@@ -86700,7 +86700,7 @@ static void DrawBackdrop16AddF1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + x] && (1))
+			if (1 > GFX.DB[Offset + x])
 			{
 				GFX.S[Offset + x] =
 					(GFX.
@@ -86737,7 +86737,7 @@ static void DrawBackdrop16AddS1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + x] && (1))
+			if (1 > GFX.DB[Offset + x])
 			{
 				GFX.S[Offset + x] =
 					(GFX.
@@ -86806,7 +86806,7 @@ static void DrawBackdrop16Sub_Normal1x1 (uint32 Offset, uint32 Left, uint32 Righ
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + x] && (1))
+			if (1 > GFX.DB[Offset + x])
 			{
 				GFX.S[Offset + x] =
 					(COLOR_SUB
@@ -86830,7 +86830,7 @@ static void DrawBackdrop16SubF1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + x] && (1))
+			if (1 > GFX.DB[Offset + x])
 			{
 				GFX.S[Offset + x] =
 					(GFX.
@@ -86852,7 +86852,7 @@ static void DrawBackdrop16SubS1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + x] && (1))
+			if (1 > GFX.DB[Offset + x])
 			{
 				GFX.S[Offset + x] =
 					(GFX.
@@ -86907,7 +86907,7 @@ static void DrawBackdrop16_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] = GFX.S[Offset + 2 * x + 1] =
 					(GFX.ScreenColors[0]);
@@ -86926,7 +86926,7 @@ static void DrawBackdrop16Add_Normal2x1 (uint32 Offset, uint32 Left, uint32 Righ
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] = GFX.S[Offset + 2 * x + 1] =
 					(GFX.
@@ -86966,7 +86966,7 @@ static void DrawBackdrop16AddF1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] = GFX.S[Offset + 2 * x + 1] =
 					(GFX.
@@ -87004,7 +87004,7 @@ static void DrawBackdrop16AddS1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] = GFX.S[Offset + 2 * x + 1] =
 					(GFX.
@@ -87080,7 +87080,7 @@ static void DrawBackdrop16Sub_Normal2x1 (uint32 Offset, uint32 Left, uint32 Righ
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] = GFX.S[Offset + 2 * x + 1] =
 					(COLOR_SUB
@@ -87106,7 +87106,7 @@ static void DrawBackdrop16SubF1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] = GFX.S[Offset + 2 * x + 1] =
 					(GFX.
@@ -87128,7 +87128,7 @@ static void DrawBackdrop16SubS1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] = GFX.S[Offset + 2 * x + 1] =
 					(GFX.
@@ -87183,7 +87183,7 @@ static void DrawBackdrop16_Hires (uint32 Offset, uint32 Left, uint32 Right)
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] =
 					((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * x]));
@@ -87203,7 +87203,7 @@ static void DrawBackdrop16Add_Hires (uint32 Offset, uint32 Left, uint32 Right)
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] =
 					(GFX.
@@ -87261,7 +87261,7 @@ static void DrawBackdrop16AddF1_2_Hires (uint32 Offset, uint32 Left, uint32 Righ
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] =
 					(GFX.
@@ -87332,7 +87332,7 @@ static void DrawBackdrop16AddS1_2_Hires (uint32 Offset, uint32 Left, uint32 Righ
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] =
 					(GFX.
@@ -87473,7 +87473,7 @@ static void DrawBackdrop16Sub_Hires (uint32 Offset, uint32 Left, uint32 Right)
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] =
 					(COLOR_SUB
@@ -87506,7 +87506,7 @@ static void DrawBackdrop16SubF1_2_Hires (uint32 Offset, uint32 Left, uint32 Righ
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] =
 					(GFX.
@@ -87546,7 +87546,7 @@ static void DrawBackdrop16SubS1_2_Hires (uint32 Offset, uint32 Left, uint32 Righ
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
 	{
 		for (x = Left; x < Right; x++)
-			if (1 > GFX.DB[Offset + 2 * x] && (1))
+			if (1 > GFX.DB[Offset + 2 * x])
 			{
 				GFX.S[Offset + 2 * x] =
 					(GFX.
@@ -96036,14 +96036,7 @@ static void DrawMode7BG2_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -96143,14 +96136,7 @@ static void DrawMode7BG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -96292,14 +96278,7 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -96451,14 +96430,7 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -96628,14 +96600,7 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -96749,14 +96714,7 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -96876,14 +96834,7 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -97047,14 +96998,7 @@ static void DrawMode7BG2_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -97158,14 +97102,7 @@ static void DrawMode7BG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -97317,14 +97254,7 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -97478,14 +97408,7 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -97667,14 +97590,7 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -97792,14 +97708,7 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -97921,14 +97830,7 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -98097,14 +97999,7 @@ static void DrawMode7BG2_Hires (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -98210,14 +98105,7 @@ static void DrawMode7BG2Add_Hires (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -98417,14 +98305,7 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -98646,14 +98527,7 @@ static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -98913,14 +98787,7 @@ static void DrawMode7BG2Sub_Hires (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -99052,14 +98919,7 @@ static void DrawMode7BG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -99223,14 +99083,7 @@ static void DrawMode7BG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
 
 	uint32 x, Line;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx;
@@ -99463,14 +99316,7 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32 Left, uint32 Right, int D)
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -99617,14 +99463,7 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -99835,14 +99674,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -100043,14 +99875,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -100341,14 +100166,7 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -100519,14 +100337,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -100709,14 +100520,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -100959,14 +100763,7 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32 Left, uint32 Right, int D)
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -101117,14 +100914,7 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -101347,14 +101137,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -101559,14 +101342,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -101869,14 +101645,7 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -102051,14 +101820,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -102245,14 +102007,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -102502,14 +102257,7 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -102664,14 +102412,7 @@ static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -102958,14 +102699,7 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -103254,14 +102988,7 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 	uint32 Line;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps ();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
 	int startx, StartY = GFX.StartY;
@@ -103734,14 +103461,7 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32 Left, uint32 Right, int D)
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 	int aa, cc;
@@ -103876,14 +103596,7 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild)
-			S9xBuildDirectColourMaps();
-		GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 
@@ -104023,12 +103736,7 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 
-	if (0)
-	{
-		if (IPPU.DirectColourMapsNeedRebuild) S9xBuildDirectColourMaps(); GFX.RealScreenColors = DirectColourMaps[0];
-	}
-	else
-		GFX.RealScreenColors = IPPU.ScreenColors;
+	GFX.RealScreenColors = IPPU.ScreenColors;
 
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 
