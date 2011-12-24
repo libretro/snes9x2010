@@ -217,11 +217,10 @@ static uint16 BlackColourMap[256] = {0};
 
 static void S9xBuildDirectColourMaps (void)
 {
-	uint32 p, c;
 	IPPU.XB = mul_brightness[PPU.Brightness];
 
-	for ( p = 0; p < 8; p++)
-		for ( c = 0; c < 256; c++)
+	for (uint32 p = 0; p < 8; p++)
+		for (uint32 c = 0; c < 256; c++)
 			DirectColourMaps[p][c] = BUILD_PIXEL(IPPU.XB[((c & 7) << 2) | ((p & 1) << 1)], IPPU.XB[((c & 0x38) >> 1) | (p & 2)], IPPU.XB[((c & 0xc0) >> 3) | (p & 4)]);
 
 	IPPU.DirectColourMapsNeedRebuild = FALSE;
@@ -259,14 +258,8 @@ void S9xInitTileRenderer (void)
 			b |= 1;
 	#endif
 
-		pixbit[0][i] = b << 0;
-		pixbit[1][i] = b << 1;
-		pixbit[2][i] = b << 2;
-		pixbit[3][i] = b << 3;
-		pixbit[4][i] = b << 4;
-		pixbit[5][i] = b << 5;
-		pixbit[6][i] = b << 6;
-		pixbit[7][i] = b << 7;
+		for (uint8 bitshift = 0; bitshift < 8; bitshift++)
+			pixbit[bitshift][i] = b << bitshift;
 	}
 
 	for (i = 0; i < 256; i++)
@@ -568,7 +561,7 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	bool8 interlace = obj ? FALSE : IPPU.Interlace;
 	bool8 hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
 
-	if (!IPPU.DoubleWidthPixels)	/* normal width */
+	if (!IPPU.DoubleWidthPixels)	// normal width
 	{
 		DT     = Renderers_DrawTile16Normal1x1;
 		DCT    = Renderers_DrawClippedTile16Normal1x1;
@@ -578,7 +571,7 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal1x1 : Renderers_DrawMode7BG2Normal1x1;
 		GFX.LinesPerTile = 8;
 	}
-	else if(hires)			/* hires double width */
+	else if(hires)			//hires double width
 	{
 		if (interlace)
 		{
