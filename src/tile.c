@@ -541,7 +541,7 @@ static void DrawTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -588,7 +588,7 @@ static void DrawTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -635,7 +635,7 @@ static void DrawTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -682,7 +682,7 @@ static void DrawTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -771,7 +771,7 @@ static void DrawTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -978,7 +978,7 @@ static void DrawTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -1185,7 +1185,7 @@ static void DrawTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -1392,7 +1392,7 @@ static void DrawTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -1641,7 +1641,7 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -1872,7 +1872,7 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -2103,7 +2103,7 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -2334,7 +2334,7 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -2607,7 +2607,7 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -2902,7 +2902,7 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -3197,7 +3197,7 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -3492,7 +3492,7 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -3829,7 +3829,7 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -3924,7 +3924,7 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -4019,7 +4019,7 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -4114,7 +4114,7 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -4251,7 +4251,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -4378,7 +4378,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -4505,7 +4505,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -4632,7 +4632,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -4801,7 +4801,7 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -5064,7 +5064,7 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -5327,7 +5327,7 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[0]))
 			{
@@ -5590,7 +5590,7 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 0] && (Pix = bp[7]))
 			{
@@ -5875,22 +5875,23 @@ static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 		TileAddr += BG.NameSelect;
 	TileAddr &= 0xffff;
 	TileNumber = TileAddr >> BG.TileShift;
+
 	if (Tile & 0x4000)
 	{
 		pCache = &BG.BufferFlip[TileNumber << 6];
 		if (!BG.BufferedFlip[TileNumber])
-			BG.BufferedFlip[TileNumber] =
-				BG.ConvertTileFlip (pCache, TileAddr, Tile & 0x3ff);
+			BG.BufferedFlip[TileNumber] = BG.ConvertTileFlip (pCache, TileAddr, Tile & 0x3ff);
 	}
 	else
 	{
 		pCache = &BG.Buffer[TileNumber << 6];
 		if (!BG.Buffered[TileNumber])
-			BG.Buffered[TileNumber] =
-				BG.ConvertTile (pCache, TileAddr, Tile & 0x3ff);
-	};
+			BG.Buffered[TileNumber] = BG.ConvertTile (pCache, TileAddr, Tile & 0x3ff);
+	}
+
 	if ((BG.Buffered[TileNumber] == 2))
 		return;
+
 	if (BG.DirectColourMode)
 	{
 		if (IPPU.DirectColourMapsNeedRebuild)
@@ -5898,44 +5899,39 @@ static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 		GFX.RealScreenColors = DirectColourMaps[(Tile >> 10) & 7];
 	}
 	else
-		GFX.RealScreenColors =
-			&IPPU.ScreenColors[((Tile >> BG.PaletteShift) & BG.PaletteMask) +
-			BG.StartPalette];
+		GFX.RealScreenColors = &IPPU.ScreenColors[((Tile >> BG.PaletteShift) & BG.PaletteMask) + BG.StartPalette];
+
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.S[Offset] = GFX.S[Offset + 1] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[2]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[3]))
+			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[3]))
 			{
-				GFX.S[Offset + 2 * 3] = GFX.S[Offset + 2 * 3 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 3] = GFX.DB[Offset + 2 * 3 + 1] = GFX.Z2;
+				GFX.S[Offset + 6] = GFX.S[Offset + 7] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 6] = GFX.DB[Offset + 7] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 4] && (Pix = bp[4]))
+			if (GFX.Z1 > GFX.DB[Offset + 8] && (Pix = bp[4]))
 			{
-				GFX.S[Offset + 2 * 4] = GFX.S[Offset + 2 * 4 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 4] = GFX.DB[Offset + 2 * 4 + 1] = GFX.Z2;
+				GFX.S[Offset + 8] = GFX.S[Offset + 9] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 8] = GFX.DB[Offset + 9] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 5] && (Pix = bp[5]))
 			{
@@ -5960,37 +5956,34 @@ static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[5]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[4]))
+			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[4]))
 			{
-				GFX.S[Offset + 2 * 3] = GFX.S[Offset + 2 * 3 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 3] = GFX.DB[Offset + 2 * 3 + 1] = GFX.Z2;
+				GFX.S[Offset + 6] = GFX.S[Offset + 7] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 6] = GFX.DB[Offset + 7] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 4] && (Pix = bp[3]))
+			if (GFX.Z1 > GFX.DB[Offset + 8] && (Pix = bp[3]))
 			{
-				GFX.S[Offset + 2 * 4] = GFX.S[Offset + 2 * 4 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 4] = GFX.DB[Offset + 2 * 4 + 1] = GFX.Z2;
+				GFX.S[Offset + 8] = GFX.S[Offset + 9] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 8] = GFX.DB[Offset + 9] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 5] && (Pix = bp[2]))
 			{
@@ -6015,92 +6008,82 @@ static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.S[Offset] = GFX.S[Offset + 1] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[2]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[3]))
+			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[3]))
 			{
-				GFX.S[Offset + 2 * 3] = GFX.S[Offset + 2 * 3 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 3] = GFX.DB[Offset + 2 * 3 + 1] = GFX.Z2;
+				GFX.S[Offset + 6] = GFX.S[Offset + 7] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 6] = GFX.DB[Offset + 7] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 4] && (Pix = bp[4]))
+			if (GFX.Z1 > GFX.DB[Offset + 8] && (Pix = bp[4]))
 			{
-				GFX.S[Offset + 2 * 4] = GFX.S[Offset + 2 * 4 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 4] = GFX.DB[Offset + 2 * 4 + 1] = GFX.Z2;
+				GFX.S[Offset + 8] = GFX.S[Offset + 9] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 8] = GFX.DB[Offset + 9] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 5] && (Pix = bp[5]))
+			if (GFX.Z1 > GFX.DB[Offset + 10] && (Pix = bp[5]))
 			{
-				GFX.S[Offset + 2 * 5] = GFX.S[Offset + 2 * 5 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 5] = GFX.DB[Offset + 2 * 5 + 1] = GFX.Z2;
+				GFX.S[Offset + 10] = GFX.S[Offset + 11] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 10] = GFX.DB[Offset + 11] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 6] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 12] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 6] = GFX.S[Offset + 2 * 6 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 6] = GFX.DB[Offset + 2 * 6 + 1] = GFX.Z2;
+				GFX.S[Offset + 12] = GFX.S[Offset + 13] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 12] = GFX.DB[Offset + 13] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 7] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset + 14] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 7] = GFX.S[Offset + 2 * 7 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 7] = GFX.DB[Offset + 2 * 7 + 1] = GFX.Z2;
+				GFX.S[Offset + 14] = GFX.S[Offset + 15] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 14] = GFX.DB[Offset + 15] = GFX.Z2;
 			};
 		}
 	}
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.S[Offset] = GFX.S[Offset + 1] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[5]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
-					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[4]))
+			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[4]))
 			{
-				GFX.S[Offset + 2 * 3] = GFX.S[Offset + 2 * 3 + 1] =
+				GFX.S[Offset + 6] = GFX.S[Offset + 7] =
 					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 3] = GFX.DB[Offset + 2 * 3 + 1] = GFX.Z2;
+				GFX.DB[Offset + 6] = GFX.DB[Offset + 7] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 4] && (Pix = bp[3]))
+			if (GFX.Z1 > GFX.DB[Offset + 8] && (Pix = bp[3]))
 			{
-				GFX.S[Offset + 2 * 4] = GFX.S[Offset + 2 * 4 + 1] =
+				GFX.S[Offset + 8] = GFX.S[Offset + 9] =
 					(GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 4] = GFX.DB[Offset + 2 * 4 + 1] = GFX.Z2;
+				GFX.DB[Offset + 8] = GFX.DB[Offset + 9] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 5] && (Pix = bp[2]))
 			{
@@ -6167,136 +6150,60 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] = (GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) +
+				((((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.SubScreen[Offset]) : GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + 
+				(((GFX.ScreenColors[Pix])) & (((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.SubScreen[Offset]) : GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]);
+
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
+			};
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
+			{
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] = (GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) +
+				((((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.SubScreen[Offset + 2]) : GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
+				(((GFX.ScreenColors[Pix])) & (((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.SubScreen[Offset + 2]) : GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]);
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
+			};
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[2]))
+			{
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] =
 					(GFX.
-					 X2[(((((GFX.
-										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
-							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
-													SubScreen
-													[Offset +
-													2 *
-													0]) :
-							   GFX.
-							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
-					 (((GFX.
-					    ScreenColors[Pix])) & (((GFX.
-							    SubZBuffer[Offset +
-							    2 *
-							    0]) & 0x20) ? (GFX.
-							    SubScreen
-							    [Offset
-							    +
-							    2 *
-							    0])
+					 X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((((GFX.SubZBuffer[Offset + 4]) & 0x20) ? (GFX.SubScreen[Offset + 4]) :
+					GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (((GFX.SubZBuffer[Offset + 4]) & 0x20) ? 
+					(GFX.SubScreen[Offset + 4])
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[3]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 6] = GFX.S[Offset + 7] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
-													SubScreen
-													[Offset +
-													2 *
-													1]) :
-							   GFX.
-							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
+							 ((((GFX.SubZBuffer[Offset + 6]) & 0x20) ? (GFX.SubScreen[Offset + 6]) : GFX. FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
 					 (((GFX.
 					    ScreenColors[Pix])) & (((GFX.
-							    SubZBuffer[Offset +
-							    2 *
-							    1]) & 0x20) ? (GFX.
-							    SubScreen
-							    [Offset
-							    +
-							    2 *
-							    1])
+							    SubZBuffer[Offset + 6]) & 0x20) ? (GFX.
+							    SubScreen[Offset + 6])
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 6] = GFX.DB[Offset + 7] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 8] && (Pix = bp[4]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
+				GFX.S[Offset + 8] = GFX.S[Offset + 9] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 2]) & 0x20) ? (GFX.
-													SubScreen
-													[Offset +
-													2 *
-													2]) :
-							   GFX.
-							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
-					 (((GFX.
-					    ScreenColors[Pix])) & (((GFX.
-							    SubZBuffer[Offset +
-							    2 *
-							    2]) & 0x20) ? (GFX.
-							    SubScreen
-							    [Offset
-							    +
-							    2 *
-							    2])
-					    : GFX.
-					    FixedColour) & (0x0400 | 0x0020
-						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
-			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[3]))
-			{
-				GFX.S[Offset + 2 * 3] = GFX.S[Offset + 2 * 3 + 1] =
-					(GFX.
-					 X2[(((((GFX.
-										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
-							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 3]) & 0x20) ? (GFX.
-													SubScreen
-													[Offset +
-													2 *
-													3]) :
-							   GFX.
-							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
-					 (((GFX.
-					    ScreenColors[Pix])) & (((GFX.
-							    SubZBuffer[Offset +
-							    2 *
-							    3]) & 0x20) ? (GFX.
-							    SubScreen
-							    [Offset
-							    +
-							    2 *
-							    3])
-					    : GFX.
-					    FixedColour) & (0x0400 | 0x0020
-						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 3] = GFX.DB[Offset + 2 * 3 + 1] = GFX.Z2;
-			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 4] && (Pix = bp[4]))
-			{
-				GFX.S[Offset + 2 * 4] = GFX.S[Offset + 2 * 4 + 1] =
-					(GFX.
-					 X2[(((((GFX.
-										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
-							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 4]) & 0x20) ? (GFX.
-													SubScreen
-													[Offset +
-													2 *
-													4]) :
+							 ((((GFX.SubZBuffer[Offset + 8]) & 0x20) ? (GFX.SubScreen[Offset + 8]) :
 							   GFX.
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
 					 (((GFX.
@@ -6406,45 +6313,27 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
-					(GFX.
-					 X2[(((((GFX.
-										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
-							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
-													SubScreen
-													[Offset +
-													2 *
-													0]) :
-							   GFX.
-							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
-					 (((GFX.
-					    ScreenColors[Pix])) & (((GFX.
-							    SubZBuffer[Offset +
-							    2 *
-							    0]) & 0x20) ? (GFX.
-							    SubScreen
-							    [Offset
-							    +
-							    2 *
-							    0])
+				GFX.S[Offset] = GFX.S[Offset + 1] =
+					(GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) +
+					((((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.SubScreen[Offset]) : GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
+					 (((GFX.ScreenColors[Pix])) & (((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.SubScreen[Offset])
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
+							 ((((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.
 													SubScreen
 													[Offset +
 													2 *
@@ -6464,11 +6353,11 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[5]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
@@ -6551,16 +6440,16 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 4] = GFX.DB[Offset + 2 * 4 + 1] = GFX.Z2;
+				GFX.DB[Offset + 8] = GFX.DB[Offset + 9] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 5] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 10] && (Pix = bp[2]))
 			{
-				GFX.S[Offset + 2 * 5] = GFX.S[Offset + 2 * 5 + 1] =
+				GFX.S[Offset + 10] = GFX.S[Offset + 11] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 5]) & 0x20) ? (GFX.
+							 ((((GFX.SubZBuffer[Offset + 10]) & 0x20) ? (GFX.
 													SubScreen
 													[Offset +
 													2 *
@@ -6645,16 +6534,16 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+							 ((((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 													SubScreen
 													[Offset +
 													2 *
@@ -6674,16 +6563,16 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
+							 ((((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.
 													SubScreen
 													[Offset +
 													2 *
@@ -6703,7 +6592,7 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
 			{
@@ -6884,16 +6773,16 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+							 ((((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 													SubScreen
 													[Offset +
 													2 *
@@ -6913,16 +6802,16 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
+							 ((((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.
 													SubScreen
 													[Offset +
 													2 *
@@ -6942,7 +6831,7 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
 			{
@@ -7165,11 +7054,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7193,11 +7082,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7221,11 +7110,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[2]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7249,11 +7138,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[3]))
+			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[3]))
 			{
-				GFX.S[Offset + 2 * 3] = GFX.S[Offset + 2 * 3 + 1] =
+				GFX.S[Offset + 6] = GFX.S[Offset + 7] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7277,11 +7166,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 3] = GFX.DB[Offset + 2 * 3 + 1] = GFX.Z2;
+				GFX.DB[Offset + 6] = GFX.DB[Offset + 7] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 4] && (Pix = bp[4]))
+			if (GFX.Z1 > GFX.DB[Offset + 8] && (Pix = bp[4]))
 			{
-				GFX.S[Offset + 2 * 4] = GFX.S[Offset + 2 * 4 + 1] =
+				GFX.S[Offset + 8] = GFX.S[Offset + 9] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7305,11 +7194,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 4] = GFX.DB[Offset + 2 * 4 + 1] = GFX.Z2;
+				GFX.DB[Offset + 8] = GFX.DB[Offset + 9] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 5] && (Pix = bp[5]))
+			if (GFX.Z1 > GFX.DB[Offset + 10] && (Pix = bp[5]))
 			{
-				GFX.S[Offset + 2 * 5] = GFX.S[Offset + 2 * 5 + 1] =
+				GFX.S[Offset + 10] = GFX.S[Offset + 11] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7333,11 +7222,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 5] = GFX.DB[Offset + 2 * 5 + 1] = GFX.Z2;
+				GFX.DB[Offset + 10] = GFX.DB[Offset + 11] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 6] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 12] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 6] = GFX.S[Offset + 2 * 6 + 1] =
+				GFX.S[Offset + 12] = GFX.S[Offset + 13] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7361,11 +7250,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 6] = GFX.DB[Offset + 2 * 6 + 1] = GFX.Z2;
+				GFX.DB[Offset + 12] = GFX.DB[Offset + 13] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 7] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset + 14] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 7] = GFX.S[Offset + 2 * 7 + 1] =
+				GFX.S[Offset + 14] = GFX.S[Offset + 15] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7389,18 +7278,18 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 7] = GFX.DB[Offset + 2 * 7 + 1] = GFX.Z2;
+				GFX.DB[Offset + 14] = GFX.DB[Offset + 15] = GFX.Z2;
 			};
 		}
 	}
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7424,11 +7313,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7452,11 +7341,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[5]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7480,11 +7369,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[4]))
+			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[4]))
 			{
-				GFX.S[Offset + 2 * 3] = GFX.S[Offset + 2 * 3 + 1] =
+				GFX.S[Offset + 6] = GFX.S[Offset + 7] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7508,11 +7397,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 3] = GFX.DB[Offset + 2 * 3 + 1] = GFX.Z2;
+				GFX.DB[Offset + 6] = GFX.DB[Offset + 7] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 4] && (Pix = bp[3]))
+			if (GFX.Z1 > GFX.DB[Offset + 8] && (Pix = bp[3]))
 			{
-				GFX.S[Offset + 2 * 4] = GFX.S[Offset + 2 * 4 + 1] =
+				GFX.S[Offset + 8] = GFX.S[Offset + 9] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7536,11 +7425,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 4] = GFX.DB[Offset + 2 * 4 + 1] = GFX.Z2;
+				GFX.DB[Offset + 8] = GFX.DB[Offset + 9] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 5] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 10] && (Pix = bp[2]))
 			{
-				GFX.S[Offset + 2 * 5] = GFX.S[Offset + 2 * 5 + 1] =
+				GFX.S[Offset + 10] = GFX.S[Offset + 11] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7564,11 +7453,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 5] = GFX.DB[Offset + 2 * 5 + 1] = GFX.Z2;
+				GFX.DB[Offset + 10] = GFX.DB[Offset + 11] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 6] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 12] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 6] = GFX.S[Offset + 2 * 6 + 1] =
+				GFX.S[Offset + 12] = GFX.S[Offset + 13] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7592,11 +7481,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 6] = GFX.DB[Offset + 2 * 6 + 1] = GFX.Z2;
+				GFX.DB[Offset + 12] = GFX.DB[Offset + 13] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 7] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset + 14] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 7] = GFX.S[Offset + 2 * 7 + 1] =
+				GFX.S[Offset + 14] = GFX.S[Offset + 15] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7620,18 +7509,18 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 7] = GFX.DB[Offset + 2 * 7 + 1] = GFX.Z2;
+				GFX.DB[Offset + 14] = GFX.DB[Offset + 15] = GFX.Z2;
 			};
 		}
 	}
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7655,11 +7544,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7683,11 +7572,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[2]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7711,11 +7600,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[3]))
+			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[3]))
 			{
-				GFX.S[Offset + 2 * 3] = GFX.S[Offset + 2 * 3 + 1] =
+				GFX.S[Offset + 6] = GFX.S[Offset + 7] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7739,11 +7628,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 3] = GFX.DB[Offset + 2 * 3 + 1] = GFX.Z2;
+				GFX.DB[Offset + 6] = GFX.DB[Offset + 7] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 4] && (Pix = bp[4]))
+			if (GFX.Z1 > GFX.DB[Offset + 8] && (Pix = bp[4]))
 			{
-				GFX.S[Offset + 2 * 4] = GFX.S[Offset + 2 * 4 + 1] =
+				GFX.S[Offset + 8] = GFX.S[Offset + 9] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7767,11 +7656,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 4] = GFX.DB[Offset + 2 * 4 + 1] = GFX.Z2;
+				GFX.DB[Offset + 8] = GFX.DB[Offset + 9] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 5] && (Pix = bp[5]))
+			if (GFX.Z1 > GFX.DB[Offset + 10] && (Pix = bp[5]))
 			{
-				GFX.S[Offset + 2 * 5] = GFX.S[Offset + 2 * 5 + 1] =
+				GFX.S[Offset + 10] = GFX.S[Offset + 11] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7795,11 +7684,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 5] = GFX.DB[Offset + 2 * 5 + 1] = GFX.Z2;
+				GFX.DB[Offset + 10] = GFX.DB[Offset + 11] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 6] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 12] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 6] = GFX.S[Offset + 2 * 6 + 1] =
+				GFX.S[Offset + 12] = GFX.S[Offset + 13] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7823,11 +7712,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 6] = GFX.DB[Offset + 2 * 6 + 1] = GFX.Z2;
+				GFX.DB[Offset + 12] = GFX.DB[Offset + 13] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 7] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset + 14] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 7] = GFX.S[Offset + 2 * 7 + 1] =
+				GFX.S[Offset + 14] = GFX.S[Offset + 15] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7851,18 +7740,18 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 7] = GFX.DB[Offset + 2 * 7 + 1] = GFX.Z2;
+				GFX.DB[Offset + 14] = GFX.DB[Offset + 15] = GFX.Z2;
 			};
 		}
 	}
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7886,11 +7775,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7914,11 +7803,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[5]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7942,11 +7831,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[4]))
+			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[4]))
 			{
-				GFX.S[Offset + 2 * 3] = GFX.S[Offset + 2 * 3 + 1] =
+				GFX.S[Offset + 6] = GFX.S[Offset + 7] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7970,11 +7859,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 3] = GFX.DB[Offset + 2 * 3 + 1] = GFX.Z2;
+				GFX.DB[Offset + 6] = GFX.DB[Offset + 7] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 4] && (Pix = bp[3]))
+			if (GFX.Z1 > GFX.DB[Offset + 8] && (Pix = bp[3]))
 			{
-				GFX.S[Offset + 2 * 4] = GFX.S[Offset + 2 * 4 + 1] =
+				GFX.S[Offset + 8] = GFX.S[Offset + 9] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -7998,11 +7887,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 4] = GFX.DB[Offset + 2 * 4 + 1] = GFX.Z2;
+				GFX.DB[Offset + 8] = GFX.DB[Offset + 9] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 5] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 10] && (Pix = bp[2]))
 			{
-				GFX.S[Offset + 2 * 5] = GFX.S[Offset + 2 * 5 + 1] =
+				GFX.S[Offset + 10] = GFX.S[Offset + 11] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8026,11 +7915,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 5] = GFX.DB[Offset + 2 * 5 + 1] = GFX.Z2;
+				GFX.DB[Offset + 10] = GFX.DB[Offset + 11] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 6] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 12] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 6] = GFX.S[Offset + 2 * 6 + 1] =
+				GFX.S[Offset + 12] = GFX.S[Offset + 13] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8054,11 +7943,11 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 6] = GFX.DB[Offset + 2 * 6 + 1] = GFX.Z2;
+				GFX.DB[Offset + 12] = GFX.DB[Offset + 13] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 7] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset + 14] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 7] = GFX.S[Offset + 2 * 7 + 1] =
+				GFX.S[Offset + 14] = GFX.S[Offset + 15] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8082,7 +7971,7 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 7] = GFX.DB[Offset + 2 * 7 + 1] = GFX.Z2;
+				GFX.DB[Offset + 14] = GFX.DB[Offset + 15] = GFX.Z2;
 			};
 		}
 	};
@@ -8131,11 +8020,11 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8171,12 +8060,12 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 								  2 *
 								  0]) &
 							  0x20)
-						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 0])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 0])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8212,12 +8101,12 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 								  2 *
 								  1]) &
 							  0x20)
-						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 1])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 1])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[2]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8254,11 +8143,11 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 								  2]) &
 							  0x20)
 						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 2])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 2])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[3]))
+			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[3]))
 			{
-				GFX.S[Offset + 2 * 3] = GFX.S[Offset + 2 * 3 + 1] =
+				GFX.S[Offset + 6] = GFX.S[Offset + 7] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8466,11 +8355,11 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8506,12 +8395,12 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 								  2 *
 								  0]) &
 							  0x20)
-						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 0])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 0])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8547,8 +8436,8 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 								  2 *
 								  1]) &
 							  0x20)
-						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 1])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 1])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
 			{
@@ -8801,11 +8690,11 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8841,12 +8730,12 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 								  2 *
 								  0]) &
 							  0x20)
-						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 0])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 0])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -8882,8 +8771,8 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 								  2 *
 								  1]) &
 							  0x20)
-						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 1])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 1])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
 			{
@@ -9136,11 +9025,11 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -9176,12 +9065,12 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 								  2 *
 								  0]) &
 							  0x20)
-						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 0])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 0])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -9217,8 +9106,8 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 								  2 *
 								  1]) &
 							  0x20)
-						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 1])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 1])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
 			{
@@ -9513,33 +9402,33 @@ static void DrawTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  0]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  1]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
 			{
@@ -9624,33 +9513,33 @@ static void DrawTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  0]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  1]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
 			{
@@ -9691,18 +9580,18 @@ static void DrawTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 					  FixedColour));
 				GFX.DB[Offset + 2 * 4] = GFX.DB[Offset + 2 * 4 + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 5] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 10] && (Pix = bp[2]))
 			{
-				GFX.S[Offset + 2 * 5] = GFX.S[Offset + 2 * 5 + 1] =
+				GFX.S[Offset + 10] = GFX.S[Offset + 11] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 5]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset + 10]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  5]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 5] = GFX.DB[Offset + 2 * 5 + 1] = GFX.Z2;
+				GFX.DB[Offset + 10] = GFX.DB[Offset + 11] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 6] && (Pix = bp[1]))
 			{
@@ -9735,33 +9624,33 @@ static void DrawTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  0]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  1]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
 			{
@@ -9846,33 +9735,33 @@ static void DrawTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  0]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  1]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
 			{
@@ -9999,11 +9888,11 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors
 					 ? (COLOR_SUB ((GFX.ScreenColors[Pix]), GFX.FixedColour))
@@ -10014,11 +9903,11 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 							 ((GFX.
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors
 					 ? (COLOR_SUB ((GFX.ScreenColors[Pix]), GFX.FixedColour))
@@ -10029,7 +9918,7 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 							 ((GFX.
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
 			{
@@ -10126,11 +10015,11 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors
 					 ? (COLOR_SUB ((GFX.ScreenColors[Pix]), GFX.FixedColour))
@@ -10141,7 +10030,7 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 							 ((GFX.
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
 			{
@@ -10253,11 +10142,11 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors
 					 ? (COLOR_SUB ((GFX.ScreenColors[Pix]), GFX.FixedColour))
@@ -10268,7 +10157,7 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 							 ((GFX.
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
 			{
@@ -10380,11 +10269,11 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors
 					 ? (COLOR_SUB ((GFX.ScreenColors[Pix]), GFX.FixedColour))
@@ -10395,7 +10284,7 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 							 ((GFX.
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
 			{
@@ -10549,7 +10438,7 @@ static void DrawTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -10846,14 +10735,14 @@ static void DrawTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 		bp = pCache + StartLine;
 		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset] = GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors
 					 ? (COLOR_SUB
 						 ((GFX.ScreenColors[Pix]),
-						  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+						  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 							  SubScreen
 							  [Offset +
 							  2 *
@@ -10880,16 +10769,16 @@ static void DrawTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 								  [Pix]),
 							  GFX.
 							  FixedColour)));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] = GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 2] = GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors
 					 ? (COLOR_SUB
 						 ((GFX.ScreenColors[Pix]),
-						  ((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
+						  ((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.
 							  SubScreen
 							  [Offset +
 							  2 *
@@ -11781,21 +11670,20 @@ static void DrawTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] =
-					((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * 0]));
-				GFX.S[Offset + 2 * 0 + 1] = (GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.S[Offset] = ((GFX.ClipColors ? 0 : GFX.SubScreen[Offset]));
+				GFX.S[Offset + 1] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] =
-					((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * 1]));
-				GFX.S[Offset + 2 * 1 + 1] = (GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.S[Offset + 2] =
+					((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2]));
+				GFX.S[Offset + 3] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
 			{
@@ -11844,14 +11732,14 @@ static void DrawTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] =
-					((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * 0]));
-				GFX.S[Offset + 2 * 0 + 1] = (GFX.ScreenColors[Pix]);
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.S[Offset] =
+					((GFX.ClipColors ? 0 : GFX.SubScreen[Offset]));
+				GFX.S[Offset + 1] = (GFX.ScreenColors[Pix]);
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
 			{
@@ -11907,7 +11795,7 @@ static void DrawTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -11970,7 +11858,7 @@ static void DrawTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -12074,7 +11962,7 @@ static void DrawTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -12481,7 +12369,7 @@ static void DrawTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -12888,7 +12776,7 @@ static void DrawTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -13295,37 +13183,34 @@ static void DrawTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 			{
-				GFX.S[Offset + 2 * 0] =
+				GFX.S[Offset] =
 					(GFX.
 					 X2[((((((GFX.ClipColors ? 0 : GFX.
 											 SubScreen[Offset +
 											 2 *
 											 0]))) & (~(0x0400 | 0x0020 | 0x0001))) +
-							 ((((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+							 ((((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 													RealScreenColors
 													[Pix]) :
 							   GFX.
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
 					 ((((GFX.ClipColors ? 0 : GFX.
-					     SubScreen[Offset +
-					     2 * 0]))) & (((GFX.SubZBuffer[Offset +
-						     2 *
-						     0]) & 0x20)
+					     SubScreen[Offset]))) & (((GFX.SubZBuffer[Offset]) & 0x20)
 				     ? (GFX.
 					     RealScreenColors[Pix]) :
 				     GFX.
 				     FixedColour) & (0x0400 | 0x0020
 					     | 0x0001))]);
-				GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset + 1] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+							 ((((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 													SubScreen
 													[Offset +
 													2 *
@@ -13744,7 +13629,7 @@ static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -14223,7 +14108,7 @@ static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -14702,7 +14587,7 @@ static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -15181,7 +15066,7 @@ static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -15275,7 +15160,7 @@ static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 							     FixedColour) & (0x0400 | 0x0020 |
 								     0x0001))) |
 							 0x0000)));
-				GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -15299,7 +15184,7 @@ static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 										 0x0020 |
 										 0x0001)))
 							 | 0x0000)));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[5]))
 			{
@@ -15702,7 +15587,7 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -15857,8 +15742,8 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 								  2 *
 								  1]) &
 							  0x20)
-						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 1])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 1])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
 			{
@@ -16333,7 +16218,7 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -16413,9 +16298,9 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 						  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 0])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 0])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
 				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[6]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[6]))
 			{
-				GFX.S[Offset + 2 * 1] =
+				GFX.S[Offset + 2] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[((((((GFX.ClipColors ? 0 : GFX.
@@ -16451,8 +16336,8 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 								  2 *
 								  1]) &
 							  0x20)
-						  ? ((((((((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * 1]))) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.RealScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + ((((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * 1]))) & ((GFX.RealScreenColors[Pix])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[((((((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * 1]))) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + ((((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * 1]))) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-				GFX.S[Offset + 2 * 1 + 1] =
+						  ? ((((((((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2]))) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.RealScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + ((((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2]))) & ((GFX.RealScreenColors[Pix])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[((((((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2]))) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + ((((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2]))) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+				GFX.S[Offset + 3] =
 					(GFX.
 					 ClipColors ? (GFX.
 						 X2[(((((GFX.
@@ -16964,7 +16849,7 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -17595,7 +17480,7 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -18268,7 +18153,7 @@ static void DrawTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -18435,7 +18320,7 @@ static void DrawTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -18602,47 +18487,47 @@ static void DrawTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] =
+				GFX.S[Offset] =
 					(COLOR_SUB
-					 (((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * 0])),
-					  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+					 (((GFX.ClipColors ? 0 : GFX.SubScreen[Offset])),
+					  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 						  RealScreenColors
 						  [Pix]) : GFX.
 					  FixedColour));
-				GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset + 1] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  0]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
+			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[1]))
 			{
-				GFX.S[Offset + 2 * 1] =
+				GFX.S[Offset + 2] =
 					(COLOR_SUB
-					 (((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * 1])),
-					  ((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
+					 (((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2])),
+					  ((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.
 						  RealScreenColors
 						  [Pix]) : GFX.
 					  FixedColour));
-				GFX.S[Offset + 2 * 1 + 1] =
+				GFX.S[Offset + 3] =
 					(COLOR_SUB
 					 ((GFX.ScreenColors[Pix]),
-					  ((GFX.SubZBuffer[Offset + 2 * 1]) & 0x20) ? (GFX.
+					  ((GFX.SubZBuffer[Offset + 2]) & 0x20) ? (GFX.
 						  SubScreen
 						  [Offset +
 						  2 *
 						  1]) : GFX.
 					  FixedColour));
-				GFX.DB[Offset + 2 * 1] = GFX.DB[Offset + 2 * 1 + 1] = GFX.Z2;
+				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
 			{
@@ -18769,7 +18654,7 @@ static void DrawTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -18978,7 +18863,7 @@ static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -19273,7 +19158,7 @@ static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -19568,11 +19453,11 @@ static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+			if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 			{
-				GFX.S[Offset + 2 * 0] =
+				GFX.S[Offset] =
 					(GFX.
 					 ClipColors
 					 ? (COLOR_SUB
@@ -19593,7 +19478,7 @@ static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 									    0x0020 |
 									    0x0001))))
 						  >> 1]));
-				GFX.S[Offset + 2 * 0 + 1] =
+				GFX.S[Offset + 1] =
 					(GFX.
 					 ClipColors
 					 ? (COLOR_SUB ((GFX.ScreenColors[Pix]), GFX.FixedColour))
@@ -19604,7 +19489,7 @@ static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 							 ((GFX.
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
-				GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] = GFX.Z2;
+				GFX.DB[Offset] = GFX.DB[Offset + 1] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 1] && (Pix = bp[1]))
 			{
@@ -19863,7 +19748,7 @@ static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -20200,7 +20085,7 @@ static void DrawTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -20751,7 +20636,7 @@ static void DrawTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -21302,7 +21187,7 @@ static void DrawTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
 			{
@@ -21853,7 +21738,7 @@ static void DrawTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
 			{
@@ -39586,7 +39471,7 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -39828,7 +39713,7 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -40070,7 +39955,7 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -40354,7 +40239,7 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -40636,7 +40521,7 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -40918,7 +40803,7 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -41524,7 +41409,7 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -41878,7 +41763,7 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -42232,7 +42117,7 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -42586,7 +42471,7 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -42982,7 +42867,7 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -43112,7 +42997,7 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -43242,7 +43127,7 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -43372,7 +43257,7 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -43544,7 +43429,7 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -43698,7 +43583,7 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -43852,7 +43737,7 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -44006,7 +43891,7 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -44202,7 +44087,7 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	if (!(Tile & (0x8000 | 0x4000)))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -44492,7 +44377,7 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else if (!(Tile & 0x8000))
 	{
 		bp = pCache + StartLine;
-		for (l = LineCount; l > 0; l--, bp += 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -44782,7 +44667,7 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -45072,7 +44957,7 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
@@ -63325,21 +63210,21 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 	else if (!(Tile & 0x4000))
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 					{
-						GFX.S[Offset + 2 * 0] =
+						GFX.S[Offset] =
 							(GFX.
 							 ClipColors
 							 ? (COLOR_SUB
 								 (((GFX.ClipColors ? 0 : GFX.
-								    SubScreen[Offset + 2 * 0])),
-								  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+								    SubScreen[Offset])),
+								  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 									  RealScreenColors
 									  [Pix]) :
 								  GFX.FixedColour)) : (((GFX.
@@ -63365,12 +63250,12 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 											  SubScreen[Offset +
 											  2 * 0])),
 									  GFX.FixedColour)));
-						GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset + 1] =
 							(GFX.
 							 ClipColors
 							 ? (COLOR_SUB
 								 ((GFX.ScreenColors[Pix]),
-								  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+								  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 									  SubScreen
 									  [Offset
 									  +
@@ -63394,7 +63279,7 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 								  COLOR_SUB ((GFX.
 										  ScreenColors[Pix]),
 									  GFX.FixedColour)));
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -63887,21 +63772,21 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 	else
 	{
 		bp = pCache + 56 - StartLine;
-		for (l = LineCount; l > 0; l--, bp -= 8 * 1, Offset += GFX.PPL)
+		for (l = LineCount; l > 0; l--, bp -= 8, Offset += GFX.PPL)
 		{
 			w = Width;
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 					{
-						GFX.S[Offset + 2 * 0] =
+						GFX.S[Offset] =
 							(GFX.
 							 ClipColors
 							 ? (COLOR_SUB
 								 (((GFX.ClipColors ? 0 : GFX.
-								    SubScreen[Offset + 2 * 0])),
-								  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+								    SubScreen[Offset])),
+								  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 									  RealScreenColors
 									  [Pix]) :
 								  GFX.FixedColour)) : (((GFX.
@@ -63927,12 +63812,12 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 											  SubScreen[Offset +
 											  2 * 0])),
 									  GFX.FixedColour)));
-						GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset + 1] =
 							(GFX.
 							 ClipColors
 							 ? (COLOR_SUB
 								 ((GFX.ScreenColors[Pix]),
-								  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+								  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 									  SubScreen
 									  [Offset
 									  +
@@ -63956,7 +63841,7 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 								  COLOR_SUB ((GFX.
 										  ScreenColors[Pix]),
 									  GFX.FixedColour)));
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -64507,11 +64392,11 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.ScreenColors[Pix]);
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -64597,11 +64482,11 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.ScreenColors[Pix]);
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -64687,11 +64572,11 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.ScreenColors[Pix]);
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -64777,11 +64662,11 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.ScreenColors[Pix]);
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -64909,14 +64794,14 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 X2[(((((GFX.
 												 ScreenColors[Pix])) & (~(0x0400 | 0x0020 |
 													 0x0001))) +
-									 ((((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+									 ((((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 															SubScreen
 															[Offset
 															+
@@ -64937,7 +64822,7 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
 							    FixedColour) & (0x0400 |
 								    0x0020 |
 								    0x0001))]);
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -65191,14 +65076,14 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 X2[(((((GFX.
 												 ScreenColors[Pix])) & (~(0x0400 | 0x0020 |
 													 0x0001))) +
-									 ((((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+									 ((((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 															SubScreen
 															[Offset
 															+
@@ -65219,7 +65104,7 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
 							    FixedColour) & (0x0400 |
 								    0x0020 |
 								    0x0001))]);
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -65473,14 +65358,14 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 X2[(((((GFX.
 												 ScreenColors[Pix])) & (~(0x0400 | 0x0020 |
 													 0x0001))) +
-									 ((((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+									 ((((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 															SubScreen
 															[Offset
 															+
@@ -65501,7 +65386,7 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
 							    FixedColour) & (0x0400 |
 								    0x0020 |
 								    0x0001))]);
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -65755,14 +65640,14 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 X2[(((((GFX.
 												 ScreenColors[Pix])) & (~(0x0400 | 0x0020 |
 													 0x0001))) +
-									 ((((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+									 ((((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 															SubScreen
 															[Offset
 															+
@@ -65783,7 +65668,7 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
 							    FixedColour) & (0x0400 |
 								    0x0020 |
 								    0x0001))]);
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -66079,9 +65964,9 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 ClipColors ? (GFX.
 								 X2[(((((GFX.
@@ -66108,7 +65993,7 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
 												 |
 												 0x0001)))
 									 | 0x0000)));
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -66659,9 +66544,9 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 ClipColors ? (GFX.
 								 X2[(((((GFX.
@@ -66688,7 +66573,7 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
 												 |
 												 0x0001)))
 									 | 0x0000)));
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -66949,9 +66834,9 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 ClipColors ? (GFX.
 								 X2[(((((GFX.
@@ -66978,7 +66863,7 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
 												 |
 												 0x0001)))
 									 | 0x0000)));
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -67281,9 +67166,9 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 ClipColors ? (GFX.
 								 X2[(((((GFX.
@@ -67323,8 +67208,8 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 										  0])
 									  &
 									  0x20)
-								  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 0])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 0])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+								  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -67683,9 +67568,9 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 ClipColors ? (GFX.
 								 X2[(((((GFX.
@@ -67725,8 +67610,8 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 										  0])
 									  &
 									  0x20)
-								  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 0])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 0])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+								  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -68085,9 +67970,9 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[0]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[0]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 ClipColors ? (GFX.
 								 X2[(((((GFX.
@@ -68127,8 +68012,8 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 										  0])
 									  &
 									  0x20)
-								  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 0])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 0])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+								  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -68487,9 +68372,9 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(GFX.
 							 ClipColors ? (GFX.
 								 X2[(((((GFX.
@@ -68529,8 +68414,8 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 										  0])
 									  &
 									  0x20)
-								  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset + 2 * 0])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset + 2 * 0])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+								  ? (((((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + (((GFX.SubScreen[Offset])) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & ((GFX.SubScreen[Offset])) & (0x0400 | 0x0020 | 0x0001))) | 0x0000) : GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) + ((GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) + (((GFX.ScreenColors[Pix])) & (GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]));
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
@@ -69077,18 +68962,18 @@ static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
 			switch (StartPixel)
 			{
 				case 0:
-					if (GFX.Z1 > GFX.DB[Offset + 2 * 0] && (Pix = bp[7]))
+					if (GFX.Z1 > GFX.DB[Offset] && (Pix = bp[7]))
 					{
-						GFX.S[Offset + 2 * 0] = GFX.S[Offset + 2 * 0 + 1] =
+						GFX.S[Offset] = GFX.S[Offset + 1] =
 							(COLOR_SUB
 							 ((GFX.ScreenColors[Pix]),
-							  ((GFX.SubZBuffer[Offset + 2 * 0]) & 0x20) ? (GFX.
+							  ((GFX.SubZBuffer[Offset]) & 0x20) ? (GFX.
 								  SubScreen
 								  [Offset +
 								  2 *
 								  0]) : GFX.
 							  FixedColour));
-						GFX.DB[Offset + 2 * 0] = GFX.DB[Offset + 2 * 0 + 1] =
+						GFX.DB[Offset] = GFX.DB[Offset + 1] =
 							GFX.Z2;
 					};
 					if (!--w)
