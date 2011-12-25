@@ -677,7 +677,7 @@ static INLINE void SBC16(uint16 Work16)
 {
 	if (CheckDecimal())
 	{
-		uin16 Ans16;
+		uint16 Ans16;
 		uint16	A1 = Registers.A.W & 0x000F;
 		uint16	A2 = Registers.A.W & 0x00F0;
 		uint16	A3 = Registers.A.W & 0x0F00;

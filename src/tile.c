@@ -88610,7 +88610,7 @@ static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	uint32 Offset = GFX.StartY * GFX.PPL;
+	Offset = GFX.StartY * GFX.PPL;
 	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
