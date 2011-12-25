@@ -1625,7 +1625,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 	int		result = SUCCESS;
 	int		version, len;
 	char	buffer[PATH_MAX + 1];
-	uint8 *local_cpu, local_registers, local_ppu, local_dma;
+	uint8 *local_cpu, *local_registers, *local_ppu, *local_dma;
 
 	len = strlen(SNAPSHOT_MAGIC) + 1 + 4 + 1;
 	if (READ_STREAM(buffer, len, stream) != len)
