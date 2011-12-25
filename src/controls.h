@@ -285,7 +285,7 @@ void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 i
 
    Returns true if something was disabled. */
 
-bool S9xVerifyControllers (void);
+bool8 S9xVerifyControllers (void);
 
 /* Functions for translating s9xcommand_t's into strings, and vice versa.
    free() the returned string after you're done with it. */
@@ -300,8 +300,8 @@ s9xcommand_t S9xGetCommandT (const char *name);
    button state changes.
    S9xMapButton() will fail and return FALSE if mapping.type isn't an S9xButton* type. */
 
-bool S9xMapButton (uint32 id, s9xcommand_t mapping);
-void S9xReportButton (uint32 id, bool pressed);
+bool8 S9xMapButton (uint32 id, s9xcommand_t mapping);
+void S9xReportButton (uint32 id, bool8 pressed);
 
 /* Pointer mapping functions.
 
@@ -318,7 +318,7 @@ void S9xReportButton (uint32 id, bool pressed);
    so the SNES's idea of where the mouse pointer is will probably differ
    from your OS's idea. */
 
-bool S9xMapPointer (uint32 id, s9xcommand_t mapping);
+bool8 S9xMapPointer (uint32 id, s9xcommand_t mapping);
 void S9xReportPointer (uint32 id, int16 x, int16 y);
 
 /* Do whatever the s9xcommand_t says to do.

@@ -1009,12 +1009,12 @@ static bool8 BSX_LoadBIOS (void)
 #endif
 }
 
-static bool valid_normal_bank (unsigned char bankbyte)
+static bool8 valid_normal_bank (unsigned char bankbyte)
 {
 	if(bankbyte == 32 || bankbyte == 33 || bankbyte == 48 || bankbyte == 49)
-		return (true);
+		return TRUE;
 	else
-		return (false);
+		return FALSE;
 }
 
 static int is_bsx (unsigned char *p)

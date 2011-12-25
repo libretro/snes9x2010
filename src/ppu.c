@@ -3895,7 +3895,7 @@ static INLINE void REGISTER_2119_tile (uint8 Byte)
 }
 
 static uint8 dma_channels_to_be_used[8] = {0};
-static bool special_chips_active = false;
+static bool8 special_chips_active = FALSE;
 
 static void S9xDoDMA (void)
 {
@@ -5044,7 +5044,7 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 				if ((PPU.HTimerPosition >= CPU.PrevCycles) && (PPU.HTimerPosition < (CPU.PrevCycles + (CPU.Cycles - CPU.PrevCycles))))
 				{
 					/*Check Missing H Timer Range*/
-					bool v_counter_eq_vtimer_pos = (CPU.V_Counter == PPU.VTimerPosition);
+					bool8 v_counter_eq_vtimer_pos = (CPU.V_Counter == PPU.VTimerPosition);
 					if ((PPU.HTimerEnabled && (!PPU.VTimerEnabled || v_counter_eq_vtimer_pos)) || (PPU.VTimerEnabled && v_counter_eq_vtimer_pos))
 					{
 						S9X_SET_IRQ(PPU_IRQ_SOURCE);
@@ -5077,7 +5077,7 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 				}
 				else if (CPU.V_Counter >  PPU.GunVLatch || (CPU.V_Counter == PPU.GunVLatch && CPU.Cycles >= PPU.GunHLatch * ONE_DOT_CYCLE))
 				{
-					bool force = (Byte & 0x80) ? true : false;
+					bool8 force = (Byte & 0x80) ? TRUE : FALSE;
 					if (force || (Memory.FillRAM[0x4213] & 0x80))
 					{
 						S9X_TRY_GUN_LATCH();
@@ -5154,9 +5154,9 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 				memset(dma_channels_to_be_used, 0, 8 * sizeof(uint8));
 
 				if (Settings.SPC7110 || Settings.SDD1 || Settings.SA1)
-					special_chips_active = true;
+					special_chips_active = TRUE;
 				else
-					special_chips_active = false;
+					special_chips_active = FALSE;
 
 				if (Byte & 0x01)
 					dma_channels_to_be_used[0] = 1;

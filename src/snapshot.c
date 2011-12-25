@@ -1105,7 +1105,7 @@ bool8 S9xFreezeGame (const char *filename)
 	return (FALSE);
 }
 
-bool8 S9xUnfreezeGame (const char *filename)
+bool8 S9xUnfreezeGame (const char * filename)
 {
 	STREAM	stream = NULL;
 	char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], def[_MAX_FNAME + 1], ext[_MAX_EXT + 1];
@@ -1769,7 +1769,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 			break;
 
 		result = SUCCESS;
-	} while (false);
+	} while (0);
 
 	if (result == SUCCESS)
 	{

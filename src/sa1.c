@@ -1190,7 +1190,7 @@ void S9xSA1MainLoop (void)
 			SA1.Flags &= ~IRQ_FLAG;
 	}
 
-	bool sa1_quit = Memory.FillRAM[0x2200] & 0x60;
+	bool8 sa1_quit = Memory.FillRAM[0x2200] & 0x60;
 	int i;
 	for ( i = 0; i < 3 && !sa1_quit; i++)
 	{

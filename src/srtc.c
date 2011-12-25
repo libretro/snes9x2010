@@ -252,13 +252,17 @@ static void srtcemu_update_time (void)
 			day++;
 			weekday = (weekday + 1) % 7;
 			unsigned days = months[month % 12];
-			if(days == 28) {
-				bool leapyear = false;
-				if((year % 4) == 0) {
-					leapyear = true;
-					if((year % 100) == 0 && (year % 400) != 0) leapyear = false;
+			if(days == 28)
+			{
+				bool8 leapyear = FALSE;
+				if((year % 4) == 0)
+				{
+					leapyear = TRUE;
+					if((year % 100) == 0 && (year % 400) != 0)
+						leapyear = FALSE;
 				}
-				if(leapyear) days++;
+				if(leapyear)
+					days++;
 			}
 			if(day < days)
 				continue;
@@ -310,24 +314,28 @@ static unsigned srtcemu_weekday(unsigned year, unsigned month, unsigned day)
 	day = max(1, min(31, day));
 
 	while(y < year) {
-		bool leapyear = false;
-		if((y % 4) == 0) {
-			leapyear = true;
-			if((y % 100) == 0 && (y % 400) != 0) leapyear = false;
+		bool8 leapyear = FALSE;
+		if((y % 4) == 0)
+		{
+			leapyear = TRUE;
+			if((y % 100) == 0 && (y % 400) != 0)
+				leapyear = FALSE;
 		}
 		sum += leapyear ? 366 : 365;
 		y++;
 	}
 
-	while(m < month) {
+	while(m < month)
+	{
 		unsigned days = months[m - 1];
-		if(days == 28) {
-			bool leapyear = false;
+		if(days == 28)
+		{
+			bool8 leapyear = FALSE;
 			if((y % 4) == 0)
 			{
-				leapyear = true;
+				leapyear = TRUE;
 				if((y % 100) == 0 && (y % 400) != 0)
-					leapyear = false;
+					leapyear = FALSE;
 			}
 			if(leapyear)
 				days++;

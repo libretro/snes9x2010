@@ -464,22 +464,22 @@ bool8 S9xInitAPU (void);
 void S9xDeinitAPU (void);
 void S9xResetAPU (void);
 void S9xSoftResetAPU (void);
-uint8 S9xAPUReadPort (int);
-void S9xAPUWritePort (int, uint8);
+uint8 S9xAPUReadPort (int port);
+void S9xAPUWritePort (int port, uint8 byte);
 void S9xAPUExecute (void);
-void S9xAPUSetReferenceTime (int32);
-void S9xAPUTimingSetSpeedup (int);
-void S9xAPUAllowTimeOverflow (bool);
-void S9xAPULoadState (uint8 *);
-void S9xAPUSaveState (uint8 *);
+void S9xAPUSetReferenceTime (int32 cpucycles);
+void S9xAPUTimingSetSpeedup (int ticks);
+void S9xAPUAllowTimeOverflow (bool8 allow);
+void S9xAPULoadState (uint8 * block);
+void S9xAPUSaveState (uint8 * block);
 
-bool8 S9xInitSound (int, int);
+bool8 S9xInitSound (int buffer_ms, int lag_ms);
 
 bool8 S9xSyncSound (void);
 int S9xGetSampleCount (void);
 void S9xFinalizeSamples (void);
 void S9xClearSamples (void);
-bool8 S9xMixSamples (short *, int);
+bool8 S9xMixSamples (short * buffer, int sample_count);
 void S9xSetSamplesAvailableCallback (apu_callback);
 
 #endif

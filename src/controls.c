@@ -412,9 +412,9 @@ void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 i
 	newcontrollers[port] = CONTROLS_NONE;
 }
 
-bool S9xVerifyControllers (void)
+bool8 S9xVerifyControllers (void)
 {
-	bool	ret = false;
+	bool8	ret = FALSE;
 	int	port, i, used[NUMCTLS];
 
 	for (i = 0; i < NUMCTLS; used[i++] = 0) ;
@@ -430,7 +430,7 @@ bool S9xVerifyControllers (void)
 					snprintf(buf, sizeof(buf), "Mouse%d used more than once! Disabling extra instances", i - MOUSE0 + 1);
 					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
 					newcontrollers[port] = CONTROLS_NONE;
-					ret = true;
+					ret = TRUE;
 					break;
 				}
 
@@ -457,7 +457,7 @@ bool S9xVerifyControllers (void)
 					snprintf(buf, sizeof(buf), "Justifier used more than once! Disabling extra instances");
 					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
 					newcontrollers[port] = CONTROLS_NONE;
-					ret = true;
+					ret = TRUE;
 					break;
 				}
 
@@ -474,7 +474,7 @@ bool S9xVerifyControllers (void)
 							snprintf(buf, sizeof(buf), "Joypad%d used more than once! Disabling extra instances", mp5[port][i] - JOYPAD0 + 1);
 							S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
 							mp5[port][i] = CONTROLS_NONE;
-							ret = true;
+							ret = TRUE;
 							break;
 						}
 					}
@@ -495,7 +495,7 @@ bool S9xVerifyControllers (void)
 					snprintf(buf, sizeof(buf), "Joypad%d used more than once! Disabling extra instances", i - JOYPAD0 + 1);
 					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
 					newcontrollers[port] = CONTROLS_NONE;
-					ret = true;
+					ret = TRUE;
 					break;
 				}
 
@@ -665,21 +665,21 @@ static void S9xUnmapID (uint32 id)
 		justifier.ID[1] = InvalidControlID;
 }
 
-bool S9xMapButton (uint32 id, s9xcommand_t mapping)
+bool8 S9xMapButton (uint32 id, s9xcommand_t mapping)
 {
 	int	t = maptype(mapping.type);
 
 	if (t != MAP_BUTTON)
-		return (false);
+		return FALSE;
 
 	S9xUnmapID(id);
 
 	keymap[id] = mapping;
 
-	return (true);
+	return TRUE;
 }
 
-void S9xReportButton (uint32 id, bool pressed)
+void S9xReportButton (uint32 id, bool8 pressed)
 {
 	if (maptype(keymap[id].type) != MAP_BUTTON)
 	{
@@ -690,43 +690,43 @@ void S9xReportButton (uint32 id, bool pressed)
 	S9xApplyCommand(keymap[id], pressed, 0);
 }
 
-bool S9xMapPointer (uint32 id, s9xcommand_t mapping)
+bool8 S9xMapPointer (uint32 id, s9xcommand_t mapping)
 {
 	int	t = maptype(mapping.type);
 
 	if (t != MAP_POINTER)
-		return (false);
+		return FALSE;
 
 	if (mapping.type == S9xPointer)
 	{
 		if (mapping.commandunion.pointer.aim_mouse0 && mouse[0].ID != InvalidControlID && mouse[0].ID != id)
 		{
 			fprintf(stderr, "ERROR: Rejecting attempt to control Mouse1 with two pointers\n");
-			return (false);
+			return FALSE;
 		}
 
 		if (mapping.commandunion.pointer.aim_mouse1 && mouse[1].ID != InvalidControlID && mouse[1].ID != id)
 		{
 			fprintf(stderr, "ERROR: Rejecting attempt to control Mouse2 with two pointers\n");
-			return (false);
+			return FALSE;
 		}
 
 		if (mapping.commandunion.pointer.aim_scope && superscope.ID != InvalidControlID && superscope.ID != id)
 		{
 			fprintf(stderr, "ERROR: Rejecting attempt to control SuperScope with two pointers\n");
-			return (false);
+			return FALSE;
 		}
 
 		if (mapping.commandunion.pointer.aim_justifier0 && justifier.ID[0] != InvalidControlID && justifier.ID[0] != id)
 		{
 			fprintf(stderr, "ERROR: Rejecting attempt to control Justifier1 with two pointers\n");
-			return (false);
+			return FALSE;
 		}
 
 		if (mapping.commandunion.pointer.aim_justifier1 && justifier.ID[1] != InvalidControlID && justifier.ID[1] != id)
 		{
 			fprintf(stderr, "ERROR: Rejecting attempt to control Justifier2 with two pointers\n");
-			return (false);
+			return FALSE;
 		}
 	}
 
@@ -740,7 +740,7 @@ bool S9xMapPointer (uint32 id, s9xcommand_t mapping)
 	if (mapping.commandunion.pointer.aim_justifier0)	justifier.ID[0] = id;
 	if (mapping.commandunion.pointer.aim_justifier1)	justifier.ID[1] = id;
 
-	return (true);
+	return TRUE;
 }
 
 void S9xReportPointer (uint32 id, int16 x, int16 y)
@@ -928,7 +928,7 @@ static void UpdatePolledMouse (int i)
 	} \
 	FLAG_LATCH = 0;
 
-void S9xSetJoypadLatch (bool latch)
+void S9xSetJoypadLatch (bool8 latch)
 {
 	if (!latch && FLAG_LATCH)
 	{

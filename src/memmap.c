@@ -595,18 +595,18 @@ static bool8 is_SufamiTurbo_BIOS (uint8 *data, uint32 size)
 {
 	if (size == 0x40000 &&
 		strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0 && strncmp((char * ) (data + 0x10), "SFC-ADX BACKUP", 14) == 0)
-		return (TRUE);
+		return TRUE;
 	else
-		return (FALSE);
+		return FALSE;
 }
 
 static bool8 is_SufamiTurbo_Cart (uint8 *data, uint32 size)
 {
 	if (size >= 0x80000 && size <= 0x100000 &&
 		strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0 && strncmp((char * ) (data + 0x10), "SFC-ADX BACKUP", 14) != 0)
-		return (TRUE);
+		return TRUE;
 	else
-		return (FALSE);
+		return FALSE;
 }
 
 static bool8 is_SameGame_BIOS (uint8 *data, uint32 size)
@@ -1024,7 +1024,7 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 		{
 			/* prevent buffer overflow: SNES-made UPS patches should never be this big anyway */
 			free(data);
-			return false;
+			return FALSE;
 		}
 	}
 
@@ -1034,7 +1034,7 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 	if(size < 18) /* patch is too small */
 	{
 		free(data);
-		return false;
+		return FALSE;
 	}  
 
 	uint32 addr = 0;
@@ -1042,24 +1042,24 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 
 	{
 		free(data);
-		return false;
+		return FALSE;
 	}
 
 	if(data[addr++] != 'P') /* patch has an invalid header */
 	{
 		free(data);
-		return false;
+		return FALSE;
 	}
 
 	if(data[addr++] != 'S') /* patch has an invalid header */
 	{
 		free(data);
-		return false;
+		return FALSE;
 	}
 	if(data[addr++] != '1') /* patch has an invalid header */
 	{
 		free(data);
-		return false;
+		return FALSE;
 	}
 
 	/* don't include patch CRC32 itself in CRC32 calculation */
@@ -1074,14 +1074,14 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 	{
 		/* patch is corrupted */
 		free(data);
-		return false;
+		return FALSE;
 	}
 
 	if((rom_crc32 != px_crc32) && (rom_crc32 != py_crc32))
 	{
 		/* patch is for a different ROM */
 		free(data);
-		return false;
+		return FALSE;
 	}  
 	uint32 px_size = ReadUPSPointer(data, &addr, size);
 	uint32 py_size = ReadUPSPointer(data, &addr, size);
@@ -1091,7 +1091,7 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 	{
 		/* applying this patch will overflow Memory.ROM buffer, so don't */
 		free(data);
-		return false;
+		return FALSE;
 	}  
 
 	/* fill expanded area with 0x00s; so that XORing works as expected below.
@@ -1121,7 +1121,7 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 	|| ((rom_crc32 == py_crc32) && (out_crc32 == px_crc32))
 	)
 	{
-		return true;
+		return TRUE;
 	}
 	else
 	{
@@ -1136,7 +1136,7 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 		above anyway. errors due to the wrong ROM or patch file being used are
 		already caught above. */
 		fprintf(stderr, "WARNING: UPS patching appears to have failed.\nGame may not be playable.\n");
-		return true;
+		return TRUE;
 	}
 }
 
@@ -1168,12 +1168,12 @@ static bool8 ReadIPSPatch (FILE * r, long offset, int32 * rom_size)
 	{
 		int	c = fgetc(r);
 		if (c == EOF)
-			return (0);
+			return FALSE;
 		fname[i] = (char) c;
 	}
 
 	if (strncmp(fname, "PATCH", 5))
-		return (0);
+		return FALSE;
 
 	for (;;)
 	{
@@ -1182,7 +1182,7 @@ static bool8 ReadIPSPatch (FILE * r, long offset, int32 * rom_size)
 
 		ofs = ReadInt(r, 3);
 		if (ofs == -1)
-			return (0);
+			return FALSE;
 
 		if (ofs == IPS_EOF)
 			break;
@@ -1191,18 +1191,18 @@ static bool8 ReadIPSPatch (FILE * r, long offset, int32 * rom_size)
 
 		len = ReadInt(r, 2);
 		if (len == -1)
-			return (0);
+			return FALSE;
 
 		if (len)
 		{
 			if (ofs + len > MAX_ROM_SIZE)
-				return (0);
+				return FALSE;
 
 			while (len--)
 			{
 				rchar = fgetc(r);
 				if (rchar == EOF)
-					return (0);
+					return FALSE;
 				Memory.ROM[ofs++] = (uint8) rchar;
 			}
 
@@ -1213,14 +1213,14 @@ static bool8 ReadIPSPatch (FILE * r, long offset, int32 * rom_size)
 		{
 			rlen = ReadInt(r, 2);
 			if (rlen == -1)
-				return (0);
+				return FALSE;
 
 			rchar = fgetc(r);
 			if (rchar == EOF)
-				return (0);
+				return FALSE;
 
 			if (ofs + rlen > MAX_ROM_SIZE)
-				return (0);
+				return FALSE;
 
 			while (rlen--)
 				Memory.ROM[ofs++] = (uint8) rchar;
@@ -1234,7 +1234,7 @@ static bool8 ReadIPSPatch (FILE * r, long offset, int32 * rom_size)
 	if (ofs != -1 && ofs - offset < *rom_size)
 		*rom_size = ofs - offset;
 
-	return (1);
+	return TRUE;
 }
 
 static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * rom_size)
@@ -1246,7 +1246,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 	uint32		i;
 	long		offset = header ? 512 : 0;
 	int			ret;
-	bool		flag;
+	bool8		flag;
 	char		dir[_MAX_DIR + 1], drive[_MAX_DRIVE + 1], name[_MAX_FNAME + 1], ext[_MAX_EXT + 1], ips[_MAX_EXT + 3], fname[PATH_MAX + 1];
 	const char	*n;
 
@@ -1313,7 +1313,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 	if (_MAX_EXT > 6)
 	{
 		i = 0;
-		flag = false;
+		flag = FALSE;
 
 		do
 		{
@@ -1331,7 +1331,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			if (ret)
 			{
 				printf("!\n");
-				flag = true;
+				flag = TRUE;
 			}
 			else
 			{
@@ -1347,7 +1347,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 	if (_MAX_EXT > 3)
 	{
 		i = 0;
-		flag = false;
+		flag = FALSE;
 
 		do
 		{
@@ -1367,7 +1367,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			if (ret)
 			{
 				printf("!\n");
-				flag = true;
+				flag = TRUE;
 			}
 			else
 			{
@@ -1383,7 +1383,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 	if (_MAX_EXT > 2)
 	{
 		i = 0;
-		flag = false;
+		flag = FALSE;
 
 		do
 		{
@@ -1401,7 +1401,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			if (ret)
 			{
 				printf("!\n");
-				flag = true;
+				flag = TRUE;
 			}
 			else
 			{
@@ -1435,7 +1435,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 	if (_MAX_EXT > 6)
 	{
 		i = 0;
-		flag = false;
+		flag = FALSE;
 
 		do
 		{
@@ -1453,7 +1453,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			if (ret)
 			{
 				printf("!\n");
-				flag = true;
+				flag = TRUE;
 			}
 			else
 			{
@@ -1469,7 +1469,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 	if (_MAX_EXT > 3)
 	{
 		i = 0;
-		flag = false;
+		flag = FALSE;
 
 		do
 		{
@@ -1489,7 +1489,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			if (ret)
 			{
 				printf("!\n");
-				flag = true;
+				flag = TRUE;
 			}
 			else
 			{
@@ -1505,7 +1505,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 	if (_MAX_EXT > 2)
 	{
 		i = 0;
-		flag = false;
+		flag = FALSE;
 
 		do
 		{
@@ -1523,7 +1523,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			if (ret)
 			{
 				printf("!\n");
-				flag = true;
+				flag = TRUE;
 			}
 			else
 			{
@@ -1543,7 +1543,7 @@ bool8 LoadROM (const char *filename)
 	int	retry_count = 0;
 
 	if (!filename || !*filename)
-		return (FALSE);
+		return FALSE;
 
 	ZeroMemory(Memory.ROM, MAX_ROM_SIZE);
 	ZeroMemory(&Multi, sizeof(Multi));
@@ -1563,7 +1563,7 @@ again:
 	totalFileSize = FileLoader(Memory.ROM, filename, MAX_ROM_SIZE);
 	#endif
 	if (!totalFileSize)
-		return (FALSE);
+		return FALSE;
 
 	if (!Settings.NoPatch)
 		CheckForAnyPatch(filename, Memory.HeaderCount != 0, &totalFileSize);
@@ -3298,18 +3298,18 @@ void InitROM (void)
 				MATCH_NN("SeikenDensetsu3") ||
 				MATCH_NA("SeikenDensetsu3Sample1") ||	/* Seiken Densetsu 3 */
 				MATCH_NA("ROMANCING SAGA3"))		/* Romancing Saga 3 */
-			PPU.DisableMosaicHack = false;
+			PPU.DisableMosaicHack = FALSE;
 		else
-			PPU.DisableMosaicHack = true;
+			PPU.DisableMosaicHack = TRUE;
 
 		/* Speedup hack for Star Fox 2/Vortex */
 		if (
 				MATCH_NA("VORTEX") ||			/* Vortex */
 				MATCH_NA("Super Street Fighter21") ||	/* Super Street Fighter II */
 				MATCH_NA("STAR FOX 2"))			/* Star Fox 2 */
-					PPU.SFXSpeedupHack = true;
+					PPU.SFXSpeedupHack = TRUE;
 				else
-					PPU.SFXSpeedupHack = false;
+					PPU.SFXSpeedupHack = FALSE;
 
 		#ifdef __LIBSNES__
 		fprintf(stderr, "PPU.SFXSpeedupHack = %d\n", PPU.SFXSpeedupHack);
@@ -3450,9 +3450,9 @@ void InitROM (void)
 				|| MATCH_NA("XAK 1")		/* Xak 1*/
 				|| MATCH_NA("XARDION")		/* Xardion*/
 				)
-		  	PPU.RenderSub = false;
+		  	PPU.RenderSub = FALSE;
 		else
-			PPU.RenderSub = true;
+			PPU.RenderSub = TRUE;
 
 		#ifdef __LIBSNES__
 		fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
@@ -3465,9 +3465,9 @@ void InitROM (void)
 			MATCH_NA("FINAL FANTASY 6")	/* Final Fantasy VI (JP) */
 			|| MATCH_NA("FINAL FANTASY 3")	/* Final Fantasy III (US) */
 		)
-			PPU.FullClipping = false;
+			PPU.FullClipping = FALSE;
 		else
-			PPU.FullClipping = true;
+			PPU.FullClipping = TRUE;
 
 		#ifdef __LIBSNES__
 		fprintf(stderr, "PPU.FullClipping = %d\n", PPU.FullClipping);
@@ -3565,9 +3565,9 @@ void InitROM (void)
 				MATCH_NC("MICRO MACHINES") ||			/* All Micro Machines games*/
 				MATCH_ID("Q4")					/* ?*/
 				)
-				Settings.CurrentROMisMultitapCompatible = true;
+				Settings.CurrentROMisMultitapCompatible = TRUE;
 		else
-			Settings.CurrentROMisMultitapCompatible = false;
+			Settings.CurrentROMisMultitapCompatible = FALSE;
 
 		/* Mouse accessory detection */
 		if	(
@@ -3669,9 +3669,9 @@ void InitROM (void)
 				MATCH_NA("ZAN2 SPIRITS") ||		/* Zan 2: Spirits*/
 				MATCH_NA("ZAN3 SFC")			/* Zan 3: Spirits*/
 				)
-				Settings.CurrentROMisMouseCompatible = true;
+				Settings.CurrentROMisMouseCompatible = TRUE;
 		else
-			Settings.CurrentROMisMouseCompatible = false;
+			Settings.CurrentROMisMouseCompatible = FALSE;
 
 		/* Super Scope accessory detection */
 		if	(
@@ -3691,9 +3691,9 @@ void InitROM (void)
 				/*FIXME: TODO: Add Yoshi no Road Hunting - CRC32: 52948F3C*/
 				MATCH_NA("YOSHI'S SAFARI")		/* Yoshi's Safari*/
 			)
-			Settings.CurrentROMisSuperScopeCompatible = true;
+			Settings.CurrentROMisSuperScopeCompatible = TRUE;
 		else
-			Settings.CurrentROMisSuperScopeCompatible = false;
+			Settings.CurrentROMisSuperScopeCompatible = FALSE;
 	}
 
 	S9xAPUTimingSetSpeedup(Timings.APUSpeedup);

@@ -442,7 +442,7 @@ void spc7110_decomp_write(uint8 data)
 	decomp_buffer_length++;
 }
 
-static void spc7110_decomp_mode2(bool init)
+static void spc7110_decomp_mode2(bool8 init)
 {
 	unsigned i, pixel;
 	static unsigned pixelorder[16], realorder[16];
@@ -450,7 +450,7 @@ static void spc7110_decomp_mode2(bool init)
 	static uint8 in, val, span;
 	static int out0, out1, inverts, lps, in_count;
 
-	if(init == true)
+	if(init == TRUE)
 	{
 		for( i = 0; i < 16; i++)
 			pixelorder[i] = i;
@@ -574,14 +574,14 @@ static void spc7110_decomp_mode2(bool init)
 	}
 }
 
-void spc7110_decomp_mode1(bool init)
+void spc7110_decomp_mode1(bool8 init)
 {
 	unsigned i, bit, pixel;
 	static unsigned pixelorder[4], realorder[4];
 	static uint8 in, val, span;
 	static int out, inverts, lps, in_count;
 
-	if(init == true)
+	if(init == TRUE)
 	{
 		for( i = 0; i < 4; i++) pixelorder[i] = i;
 		out = inverts = lps = 0;
@@ -687,13 +687,13 @@ void spc7110_decomp_mode1(bool init)
 	}
 }
 
-static void spc7110_decomp_mode0(bool init)
+static void spc7110_decomp_mode0(bool8 init)
 {
 	unsigned bit;
 	static uint8 val, in, span;
 	static int out, inverts, lps, in_count;
 
-	if(init == true)
+	if(init == TRUE)
 	{
 		out = inverts = lps = 0;
 		span = 0xff;
@@ -909,13 +909,13 @@ static void s7_update_time(int offset)
 	if(diff > (time_t)-1 / 2)
 		diff = 0;            /*compensate for underflow*/
 
-	bool update = true;
+	bool8 update = TRUE;
 	if(memory_cartrtc_read(13) & 1)
-		update = false;  /*do not update if CR0 timer disable flag is set*/
+		update = FALSE;  /*do not update if CR0 timer disable flag is set*/
 	if(memory_cartrtc_read(15) & 3)
-		update = false;  /*do not update if CR2 timer disable flags are set*/
+		update = FALSE;  /*do not update if CR2 timer disable flags are set*/
 
-	if(diff > 0 && update == true)
+	if(diff > 0 && update == TRUE)
 	{
 		unsigned second  = memory_cartrtc_read( 0) + memory_cartrtc_read( 1) * 10;
 		unsigned minute  = memory_cartrtc_read( 2) + memory_cartrtc_read( 3) * 10;

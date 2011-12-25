@@ -4536,10 +4536,10 @@ static bool8 fx_checkStartAddress (void)
 		return (TRUE);
 
 	/* Check if we're in RAM and the RAN flag is not set*/
-	bool condition1 = GSU.vPrgBankReg >= 0x60 && GSU.vPrgBankReg <= 0x6f;
-	bool condition2 = GSU.vPrgBankReg >= 0x74;
-	bool condition3 = GSU.vPrgBankReg >= 0x70 && GSU.vPrgBankReg <= 0x73 && !(SCMR & 8);
-	bool condition4 = !(SCMR & 16);
+	bool8 condition1 = GSU.vPrgBankReg >= 0x60 && GSU.vPrgBankReg <= 0x6f;
+	bool8 condition2 = GSU.vPrgBankReg >= 0x74;
+	bool8 condition3 = GSU.vPrgBankReg >= 0x70 && GSU.vPrgBankReg <= 0x73 && !(SCMR & 8);
+	bool8 condition4 = !(SCMR & 16);
 
 	if (condition1 | condition2 | condition3 | condition4)
 		return (FALSE);
@@ -4602,7 +4602,7 @@ void S9xSuperFXExec (void)
 	fx_readRegisterSpace();
 
 	/* Check if the start address is valid*/
-	bool address_valid = fx_checkStartAddress();
+	bool8 address_valid = fx_checkStartAddress();
 	if (address_valid)
 	{
 		/* Execute GSU session*/

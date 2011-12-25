@@ -409,14 +409,14 @@ static void ST010_Rotate (int16 Theta, int16 X0, int16 Y0, int16 * X1, int16 * Y
 static void ST010_SortDrivers (uint16 Positions, uint16 Places[32], uint16 Drivers[32])
 {
 	int i;
-	bool	Sorted;
+	bool8	Sorted;
 	uint16	Temp;
 
 	if (Positions > 1)
 	{
 		do
 		{
-			Sorted = true;
+			Sorted = TRUE;
 
 			for ( i = 0; i < Positions - 1; i++)
 			{
@@ -430,7 +430,7 @@ static void ST010_SortDrivers (uint16 Positions, uint16 Places[32], uint16 Drive
 					Drivers[i + 1] = Drivers[i];
 					Drivers[i] = Temp;
 
-					Sorted = false;
+					Sorted = FALSE;
 				}
 			}
 
@@ -719,7 +719,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				int32	dx, dy;
 				int16	a1, b1, c1;
 				uint16	o1;
-				bool	wrap = false;
+				bool8	wrap = FALSE;
 
 				/* target (x, y) coordinates*/
 				int16	ypos_max  = ST010_WORD(0x00C0);
@@ -766,7 +766,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				{
 					o1  += 0x8000;
 					rot += 0x8000;
-					wrap = true;
+					wrap = TRUE;
 				}
 				/*o1  = 0x0000;*/
 				/*rot = 0xFF00;*/
@@ -898,14 +898,14 @@ uint8 S9xGetST011 (uint32 Address)
 
 void S9xSetST011 (uint32 Address, uint8 Byte)
 {
-	static bool	reset   = false;
+	static bool8	reset   = FALSE;
 	uint16		address = (uint16) Address & 0xFFFF;
 
 	if (!reset)
 	{
 		/* bootup values*/
-		ST011.waiting4command = true;
-		reset = true;
+		ST011.waiting4command = TRUE;
+		reset = TRUE;
 	}
 
 	Memory.SRAM[address] = Byte;
@@ -916,7 +916,7 @@ void S9xSetST011 (uint32 Address, uint8 Byte)
 		/* check for new commands*/
 		if (ST011.waiting4command)
 		{
-			ST011.waiting4command = false;
+			ST011.waiting4command = FALSE;
 			ST011.command         = Byte;
 			ST011.in_index        = 0;
 			ST011.out_index       = 0;
@@ -930,7 +930,7 @@ void S9xSetST011 (uint32 Address, uint8 Byte)
 				case 0x06: ST011.in_count = 0;           break;
 				case 0x07: ST011.in_count = 0;           break;
 				case 0x0E: ST011.in_count = 0;           break;
-				default:   ST011.waiting4command = true; break;
+				default:   ST011.waiting4command = TRUE; break;
 			}
 		}
 		else
@@ -943,7 +943,7 @@ void S9xSetST011 (uint32 Address, uint8 Byte)
 	if (ST011.in_count == ST011.in_index)
 	{
 		/* actually execute the command*/
-		ST011.waiting4command = true;
+		ST011.waiting4command = TRUE;
 		ST011.out_index       = 0;
 
 		switch (ST011.command)
@@ -1030,15 +1030,15 @@ uint8 S9xGetST018 (uint32 Address)
 
 void S9xSetST018 (uint8 Byte, uint32 Address)
 {
-	static bool	reset   = false;
+	static bool8	reset   = FALSE;
 	uint16		address = (uint16) Address & 0xFFFF;
 
 	if (!reset)
 	{
 		/* bootup values*/
-		ST018.waiting4command = true;
+		ST018.waiting4command = TRUE;
 		ST018.part_command    = 0;
-		reset = true;
+		reset = TRUE;
 	}
 
 	Memory.SRAM[address] = Byte;
@@ -1052,7 +1052,7 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 		/* check for new commands: 3 bytes length*/
 		if (ST018.waiting4command && ST018.part_command == 2)
 		{
-			ST018.waiting4command = false;
+			ST018.waiting4command = FALSE;
 			ST018.in_index        = 0;
 			ST018.out_index       = 0;
 			ST018.part_command    = 0; /* 3-byte commands*/
@@ -1064,7 +1064,7 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 			{
 				case 0x0100: ST018.in_count        = 0;    break;
 				case 0xFF00: ST018.in_count        = 0;    break;
-				default:     ST018.waiting4command = true; break;
+				default:     ST018.waiting4command = TRUE; break;
 			}
 		}
 		else
@@ -1087,7 +1087,7 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 	if (ST018.in_count == ST018.in_index)
 	{
 		/* qctually execute the command*/
-		ST018.waiting4command = true;
+		ST018.waiting4command = TRUE;
 		ST018.in_index        = 0;
 		ST018.out_index       = 0;
 
@@ -1095,7 +1095,7 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 		{
 			/* hardware check?*/
 			case 0x0100:
-				ST018.waiting4command = false;
+				ST018.waiting4command = FALSE;
 				ST018.pass++;
 
 				if (ST018.pass == 1)
@@ -1119,7 +1119,7 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 
 					/* done processing requests*/
 					if (ST018.pass == 3)
-						ST018.waiting4command = true;
+						ST018.waiting4command = TRUE;
 				}
 
 				break;
@@ -1127,7 +1127,7 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 			/* unknown: feels like a security detection*/
 			/* format identical to 0x0100*/
 			case 0xFF00:
-				ST018.waiting4command = false;
+				ST018.waiting4command = FALSE;
 				ST018.pass++;
 
 				if (ST018.pass == 1)
@@ -1151,7 +1151,7 @@ void S9xSetST018 (uint8 Byte, uint32 Address)
 
 					/* done processing requests*/
 					if (ST018.pass == 3)
-						ST018.waiting4command = true;
+						ST018.waiting4command = TRUE;
 				}
 
 				break;
