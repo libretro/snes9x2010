@@ -2666,10 +2666,11 @@ static void OpBBSlow (void)
 
 static void OpFB (void)
 {
+	uint8 A1, A2;
 	AddCycles(ONE_CYCLE);
 
-	uint8	A1 = ICPU._Carry;
-	uint8	A2 = Registers.PH;
+	A1 = ICPU._Carry;
+	A2 = Registers.PH;
 
 	ICPU._Carry = A2 & 1;
 	Registers.PH = A1;
@@ -2693,10 +2694,8 @@ static void OpFB (void)
 
 static void Op00 (void)
 {
-
+	uint16 addr;
 	AddCycles(CPU.MemSpeed);
-
-	uint16	addr;
 
 	if (!CheckEmulation())
 	{
@@ -2864,10 +2863,8 @@ void S9xOpcode_NMI (void)
 
 static void Op02 (void)
 {
-
+	uint16 addr;
 	AddCycles(CPU.MemSpeed);
-
-	uint16	addr;
 
 	if (!CheckEmulation())
 	{

@@ -35,10 +35,11 @@ static void memstream_init(memstream_t *stream, uint8_t *buffer, size_t max_size
 
 memstream_t *memstream_open()
 {
+	memstream_t *stream;
    if (!g_buffer || !g_size)
       return NULL;
 
-   memstream_t *stream = calloc(1, sizeof(*stream));
+   stream = (memstream_t*)calloc(1, sizeof(*stream));
    memstream_init(stream, g_buffer, g_size);
 
    g_buffer = NULL;

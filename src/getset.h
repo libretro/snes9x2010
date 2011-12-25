@@ -374,12 +374,17 @@ static INLINE uint8 S9xGetByte (uint32 Address)
 
 static INLINE uint16 S9xGetWord (uint32 Address, uint32 w)
 {
+	int block;
+	uint16 word, addr_tmp, temp_result;
+	int32 speed;
+	uint8	*GetAddress;
 	if ((Address & (MEMMAP_MASK & w)) == (MEMMAP_MASK & w))
 	{
 		PC_t	a;
+		uint32 addr_tmp;
 
 		OpenBus = S9xGetByte(Address);
-		uint32 addr_tmp = 0;
+		addr_tmp = 0;
 
 		switch (w)
 		{
@@ -401,10 +406,9 @@ static INLINE uint16 S9xGetWord (uint32 Address, uint32 w)
 		return (OpenBus | (S9xGetByte(addr_tmp) << 8));
 	}
 
-	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
-	uint8	*GetAddress = Memory.Map[block];
-	int32	speed = memory_speed(Address);
-	uint16	word;
+	block = (Address & 0xffffff) >> MEMMAP_SHIFT;
+	GetAddress = Memory.Map[block];
+	speed = memory_speed(Address);
 
 	if (GetAddress >= (uint8 *) MAP_LAST)
 	{
@@ -417,10 +421,10 @@ static INLINE uint16 S9xGetWord (uint32 Address, uint32 w)
 	{
 		case MAP_CPU:
 			{
-				uint16 addr_tmp = Address & 0xffff;
+				addr_tmp = Address & 0xffff;
 				S9X_GET_CPU_PREAMBLE(word, addr_tmp);
 				addCyclesInMemoryAccess;
-				uint16 temp_result = 0;
+				temp_result = 0;
 				addr_tmp = (Address + 1) & 0xffff;
 				S9X_GET_CPU_PREAMBLE(temp_result, addr_tmp);
 				word |= temp_result << 8;
@@ -642,12 +646,16 @@ static INLINE void S9xSetByte (uint8 Byte, uint32 Address)
 
 static INLINE void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 {
+	int block;
+	int32 speed;
+	uint8 *SetAddress;
 	if ((Address & (MEMMAP_MASK & w)) == (MEMMAP_MASK & w))
 	{
 		PC_t	a;
+		uint32 addr_tmp;
 
 		S9xSetByte((uint8) Word, Address);
-		uint32 addr_tmp = 0;
+		addr_tmp = 0;
 
 		switch (w)
 		{
@@ -670,9 +678,9 @@ static INLINE void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 		S9xSetByte(Word >> 8, addr_tmp);
 	}
 
-	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
-	uint8	*SetAddress = Memory.WriteMap[block];
-	int32	speed = memory_speed(Address);
+	block = (Address & 0xffffff) >> MEMMAP_SHIFT;
+	SetAddress = Memory.WriteMap[block];
+	speed = memory_speed(Address);
 
 	if (SetAddress >= (uint8 *) MAP_LAST)
 	{
@@ -814,6 +822,9 @@ static INLINE void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 
 static INLINE void S9xSetWord_Write1(uint16 Word, uint32 Address, uint32 w)
 {
+	int block;
+	int32 speed;
+	uint8	*SetAddress;
 	if ((Address & (MEMMAP_MASK & w)) == (MEMMAP_MASK & w))
 	{
 		PC_t	a;
@@ -843,9 +854,9 @@ static INLINE void S9xSetWord_Write1(uint16 Word, uint32 Address, uint32 w)
 	}
 
 
-	int	block = (Address & 0xffffff) >> MEMMAP_SHIFT;
-	uint8	*SetAddress = Memory.WriteMap[block];
-	int32	speed = memory_speed(Address);
+	block = (Address & 0xffffff) >> MEMMAP_SHIFT;
+	SetAddress = Memory.WriteMap[block];
+	speed = memory_speed(Address);
 
 	if (SetAddress >= (uint8 *) MAP_LAST)
 	{
@@ -987,11 +998,13 @@ static INLINE void S9xSetWord_Write1(uint16 Word, uint32 Address, uint32 w)
 
 static INLINE void S9xSetPCBase (uint32 Address)
 {
+	int block;
+	uint8 *GetAddress;
 	Registers.PBPC = Address & 0xffffff;
 	ICPU.ShiftedPB = Address & 0xff0000;
 
-	int block = ((Address & 0xffffff) >> MEMMAP_SHIFT);
-	uint8	*GetAddress = Memory.Map[block];
+	block = ((Address & 0xffffff) >> MEMMAP_SHIFT);
+	GetAddress = Memory.Map[block];
 
 	CPU.MemSpeed = memory_speed(Address);
 	CPU.MemSpeedx2 = CPU.MemSpeed << 1;

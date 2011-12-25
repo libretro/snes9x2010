@@ -668,11 +668,12 @@ static INLINE void dsp_voice_V4( dsp_voice_t* const v )
 
 static INLINE void dsp_voice_V5( dsp_voice_t* const v )
 {
+	int endx_buf;
 	/* Output right */
 	dsp_voice_output( v, 1 );
 
 	/* ENDX, OUTX, and ENVX won't update if you wrote to them 1-2 clocks earlier */
-	int endx_buf = dsp_m.regs[R_ENDX] | dsp_m.t_looped;
+	endx_buf = dsp_m.regs[R_ENDX] | dsp_m.t_looped;
 
 	/* Clear bit in ENDX if KON just began */
 	if ( v->kon_delay == 5 )
@@ -1689,22 +1690,20 @@ static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
 
 static uint8_t* spc_run_until_( int end_time )
 {
+	int dp, nz, c, psw, a, x, y;
+	uint8_t* ram;
 	int rel_time = m.spc_time - end_time;
 	m.spc_time = end_time;
 	m.dsp_time += rel_time;
 	m.timers [0].next_time += rel_time;
 	m.timers [1].next_time += rel_time;
 	m.timers [2].next_time += rel_time;
-	uint8_t* const ram = m.ram.ram;
-	int a = m.cpu_regs.a;
-	int x = m.cpu_regs.x;
-	int y = m.cpu_regs.y;
+	ram = m.ram.ram;
+	a = m.cpu_regs.a;
+	x = m.cpu_regs.x;
+	y = m.cpu_regs.y;
 	uint8_t const* pc;
 	uint8_t* sp;
-	int psw;
-	int c;
-	int nz;
-	int dp;
 
 	SET_PC( m.cpu_regs.pc );
 	SET_SP( m.cpu_regs.sp );

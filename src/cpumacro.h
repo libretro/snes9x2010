@@ -296,6 +296,7 @@ static INLINE void ADC16(uint16 Work16)
 {
 	if (CheckDecimal())
 	{
+		uint16 Ans16;
 		uint16	A1 = Registers.A.W & 0x000F;
 		uint16	A2 = Registers.A.W & 0x00F0;
 		uint16	A3 = Registers.A.W & 0x0F00;
@@ -339,7 +340,7 @@ static INLINE void ADC16(uint16 Work16)
 		else
 			ClearCarry();
 
-		uint16	Ans16 = A4 | A3 | A2 | A1;
+		Ans16 = A4 | A3 | A2 | A1;
 
 		if (~(Registers.A.W ^ Work16) & (Work16 ^ Ans16) & 0x8000)
 			SetOverflow();
@@ -676,6 +677,7 @@ static INLINE void SBC16(uint16 Work16)
 {
 	if (CheckDecimal())
 	{
+		uin16 Ans16;
 		uint16	A1 = Registers.A.W & 0x000F;
 		uint16	A2 = Registers.A.W & 0x00F0;
 		uint16	A3 = Registers.A.W & 0x0F00;
@@ -720,7 +722,7 @@ static INLINE void SBC16(uint16 Work16)
 		else
 			SetCarry();
 
-		uint16	Ans16 = A4 | A3 | A2 | A1;
+		Ans16 = A4 | A3 | A2 | A1;
 
 		if ((Registers.A.W ^ Work16) & (Registers.A.W ^ Ans16) & 0x8000)
 			SetOverflow();

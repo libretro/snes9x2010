@@ -205,10 +205,11 @@ static uint16 BlackColourMap[256] = {0};
 
 static void S9xBuildDirectColourMaps (void)
 {
+	uint32 p, c;
 	IPPU.XB = mul_brightness[PPU.Brightness];
 
-	for (uint32 p = 0; p < 8; p++)
-		for (uint32 c = 0; c < 256; c++)
+	for ( p = 0; p < 8; p++)
+		for ( c = 0; c < 256; c++)
 			DirectColourMaps[p][c] = BUILD_PIXEL(IPPU.XB[((c & 7) << 2) | ((p & 1) << 1)], IPPU.XB[((c & 0x38) >> 1) | (p & 2)], IPPU.XB[((c & 0xc0) >> 3) | (p & 4)]);
 
 	IPPU.DirectColourMapsNeedRebuild = FALSE;
@@ -87603,8 +87604,9 @@ extern struct SLineMatrixData LineMatrixData[240];
 
 static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	struct SLineMatrixData *l;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -87615,13 +87617,12 @@ static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
+		int yy, starty, AA, BB, CC, DD;
+		uint8 Pix;
 		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
 		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
@@ -87635,10 +87636,10 @@ static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -87658,9 +87659,8 @@ static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 					CentreX) | ~0x3ff) : ((HOffset -
 						CentreX) &
 					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -87709,7 +87709,9 @@ static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 static void DrawMode7BG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
 
-	uint32 x, Line;
+	uint32 x, Line, Offset;
+	int aa, cc, startx;
+	struct SLineMatrixData *l;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -87720,17 +87722,17 @@ static void DrawMode7BG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix;
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
@@ -87740,10 +87742,10 @@ static void DrawMode7BG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -87758,14 +87760,13 @@ static void DrawMode7BG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
+		xx =
 			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
 					CentreX) | ~0x3ff) : ((HOffset -
 						CentreX) &
 					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -87856,7 +87857,9 @@ static void DrawMode7BG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
 
-	uint32 x, Line;
+	uint32 x, Line, Offset;
+	int aa, cc, startx;
+	struct SLineMatrixData *l;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -87867,13 +87870,11 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
+		int xx, yy, starty, AA, BB, CC, DD;
 		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
 		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
@@ -87887,10 +87888,10 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -87905,13 +87906,13 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
+		xx =
 			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
 					CentreX) | ~0x3ff) : ((HOffset -
 						CentreX) &
 					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		uint8 Pix;
 		if (!PPU.Mode7Repeat)
 		{
@@ -88012,8 +88013,9 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	struct SLineMatrixData *l;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -88024,13 +88026,11 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
+		int yy, starty, AA, BB, CC, DD;
 		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
 		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
@@ -88044,10 +88044,10 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -88067,8 +88067,8 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 					CentreX) | ~0x3ff) : ((HOffset -
 						CentreX) &
 					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		uint8 Pix;
 		if (!PPU.Mode7Repeat)
 		{
@@ -88187,8 +88187,9 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	struct SLineMatrixData *l;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -88199,13 +88200,11 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
+		int xx, yy, starty, AA, BB, CC, DD;
 		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
 		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
@@ -88219,10 +88218,10 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -88237,13 +88236,13 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
+		xx =
 			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
 					CentreX) | ~0x3ff) : ((HOffset -
 						CentreX) &
 					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		uint8 Pix;
 		if (!PPU.Mode7Repeat)
 		{
@@ -88306,8 +88305,9 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	struct SLineMatrixData *l;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -88318,13 +88318,11 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
+		int xx, yy, starty, AA, BB, CC, DD;
 		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
 		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
@@ -88338,10 +88336,10 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -88356,13 +88354,13 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
+		xx =
 			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
 					CentreX) | ~0x3ff) : ((HOffset -
 						CentreX) &
 					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		uint8 Pix;
 		if (!PPU.Mode7Repeat)
 		{
@@ -88431,8 +88429,9 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	struct SLineMatrixData *l;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -88443,13 +88442,11 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
+		int yy, starty, AA, BB, CC, DD;
 		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
 		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
@@ -88463,10 +88460,10 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -88486,8 +88483,8 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 					CentreX) | ~0x3ff) : ((HOffset -
 						CentreX) &
 					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		uint8 Pix;
 		if (!PPU.Mode7Repeat)
 		{
@@ -88600,8 +88597,9 @@ static void (*Renderers_DrawMode7BG1Normal1x1[7]) (uint32 Left, uint32 Right, in
 
 static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	struct SLineMatrixData *l;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -88612,17 +88610,16 @@ static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
 	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+		int yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
@@ -88632,10 +88629,10 @@ static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -88655,8 +88652,8 @@ static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
 					CentreX) | ~0x3ff) : ((HOffset -
 						CentreX) &
 					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		uint8 Pix;
 		if (!PPU.Mode7Repeat)
 		{
@@ -88709,8 +88706,9 @@ static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	struct SLineMatrixData *l;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -88721,13 +88719,12 @@ static void DrawMode7BG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
+		int yy, starty, AA, BB, CC, DD;
+		uint8 Pix;
 		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
 		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
@@ -88741,10 +88738,10 @@ static void DrawMode7BG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -88764,9 +88761,8 @@ static void DrawMode7BG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 					CentreX) | ~0x3ff) : ((HOffset -
 						CentreX) &
 					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -88866,8 +88862,9 @@ static void DrawMode7BG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	struct SLineMatrixData *l;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -88878,10 +88875,8 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int yy, starty;

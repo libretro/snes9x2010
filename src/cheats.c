@@ -236,6 +236,8 @@ const char * S9xGoldFingerToRaw (const char *code, uint32 * address, bool8 * sra
 
 const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte)
 {
+	int i;
+	uint32 data;
 	char	new_code[12];
 
 	if (strlen(code) != 9 || *(code + 4) != '-' || !S9xAllHex(code, 4) || !S9xAllHex(code + 5, 4))
@@ -248,7 +250,6 @@ const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte
 	static const char	*real_hex  = "0123456789ABCDEF";
 	static const char	*genie_hex = "DF4709156BC8A23E";
 
-	int i;
 	for ( i = 2; i < 10; i++)
 	{
 		if (islower(new_code[i]))
@@ -268,7 +269,7 @@ const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte
 			return ("Invalid hex-character in Game Genie(tm) code.");
 	}
 
-	uint32	data = 0;
+	data = 0;
 	sscanf(new_code, "%x", &data);
 	*byte = (uint8) (data >> 24);
 	*address = data & 0xffffff;
@@ -402,6 +403,8 @@ void S9xDisableCheat (uint32 which1)
 
 void S9xApplyCheat (uint32 which1)
 {
+	int block;
+	uint8 *ptr;
 	uint32	address = Cheat.c[which1].address;
 
 	if (!Cheat.c[which1].saved)
@@ -410,8 +413,8 @@ void S9xApplyCheat (uint32 which1)
 		Cheat.c[which1].saved = TRUE;
 	}
 
-	int		block = (address & 0xffffff) >> MEMMAP_SHIFT;
-	uint8	*ptr = Memory.Map[block];
+	block = (address & 0xffffff) >> MEMMAP_SHIFT;
+	ptr = Memory.Map[block];
 
 	if (ptr >= (uint8 *) MAP_LAST)
 		*(ptr + (address & 0xffff)) = Cheat.c[which1].byte;
@@ -459,14 +462,14 @@ bool8 S9xLoadCheatFile (const char *filename)
 
 bool8 S9xSaveCheatFile (const char *filename)
 {
+	FILE	*fs;
+	uint8 data[28];
+
 	if (Cheat.num_cheats == 0)
 	{
 		remove(filename);
 		return (TRUE);
 	}
-
-	FILE	*fs;
-	uint8	data[28];
 
 	fs = fopen(filename, "wb");
 	if (!fs)

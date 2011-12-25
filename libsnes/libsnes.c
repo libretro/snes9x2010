@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdint.h>
+#ifndef WIN32
 #include <stdbool.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
-#ifndef __WIN32__
+#ifndef WIN32
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
@@ -56,12 +58,12 @@ void snes_set_environment(snes_environment_t cb)
 
 static void S9xAudioCallback()
 {
-   size_t i;
+   size_t i, avail;
    /* Just pick a big buffer. We won't use it all. */
    static int16_t audio_buf[0x10000];
 
    S9xFinalizeSamples();
-   size_t avail = S9xGetSampleCount();
+   avail = S9xGetSampleCount();
    S9xMixSamples(audio_buf, avail);
    for ( i = 0; i < avail; i+=2)
       s9x_audio_cb((uint16_t)audio_buf[i], (uint16_t)audio_buf[i + 1]);
@@ -205,37 +207,37 @@ void snes_cheat_reset()
 
 void snes_cheat_set(unsigned unused, bool unused1, const char* unused2) {}
 
-bool snes_load_cartridge_bsx_slotted(
+bool8 snes_load_cartridge_bsx_slotted(
       const char * a, const uint8_t * b, unsigned c,
       const char * d, const uint8_t * e, unsigned f
       )
 {
-   return false;
+   return FALSE;
 }
 
-bool snes_load_cartridge_bsx(
+bool8 snes_load_cartridge_bsx(
       const char * a, const uint8_t * b, unsigned c,
       const char * d, const uint8_t * e, unsigned f
       )
 {
-   return false;
+   return FALSE;
 }
 
-bool snes_load_cartridge_sufami_turbo(
+bool8 snes_load_cartridge_sufami_turbo(
       const char * a, const uint8_t * b, unsigned c,
       const char * d, const uint8_t * e, unsigned f,
       const char * g, const uint8_t * h, unsigned i
       )
 {
-   return false;
+   return FALSE;
 }
 
-bool snes_load_cartridge_super_game_boy(
+bool8 snes_load_cartridge_super_game_boy(
       const char * a, const uint8_t * b, unsigned c,
       const char * d, const uint8_t * e, unsigned f 
       )
 {
-   return false;
+   return FALSE;
 }
 
 static void map_buttons()
@@ -312,14 +314,15 @@ void snes_init()
 	int i;
 	if(environ_cb)
 	{
+		unsigned pitch;
 		if (!environ_cb(SNES_ENVIRONMENT_GET_OVERSCAN, &use_overscan))
-			use_overscan = false;
+			use_overscan = FALSE;
 
 		if (use_overscan)
 		{
 			struct snes_geometry geom = {256, 239, 512, 512};
 			environ_cb(SNES_ENVIRONMENT_SET_GEOMETRY, &geom);
-			unsigned pitch = 1024;
+			pitch = 1024;
 			environ_cb(SNES_ENVIRONMENT_SET_PITCH, &pitch);
 		}
 	}
@@ -443,16 +446,17 @@ static void report_buttons()
 	}
 }
 
-bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigned rom_size)
+bool8 snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigned rom_size)
 {
+	int loaded;
    /* Hack. S9x cannot do stuff from RAM. <_< */
    memstream_set_buffer((uint8_t*)rom_data, rom_size);
 
-   int loaded = LoadROM("foo");
+   loaded = LoadROM("foo");
    if (!loaded)
    {
       fprintf(stderr, "[libsnes]: Rom loading failed...\n");
-      return false;
+      return FALSE;
    }
 
    if (environ_cb)
@@ -467,7 +471,7 @@ bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigne
 	   environ_cb(SNES_ENVIRONMENT_SET_TIMING, &timing);
    }
    
-   return true;
+   return TRUE;
 }
 
 void snes_run()
@@ -578,21 +582,21 @@ unsigned snes_serialize_size (void)
    return memstream_get_last_size();
 }
 
-bool snes_serialize(uint8_t *data, unsigned size)
+bool8 snes_serialize(uint8_t *data, unsigned size)
 { 
    memstream_set_buffer(data, size);
    if (S9xFreezeGame("foo") == FALSE)
-      return false;
+      return FALSE;
 
-   return true;
+   return TRUE;
 }
 
-bool snes_unserialize(const uint8_t* data, unsigned size)
+bool8 snes_unserialize(const uint8_t* data, unsigned size)
 { 
    memstream_set_buffer((uint8_t*)data, size);
    if (S9xUnfreezeGame("foo") == FALSE)
-      return false;
-   return true;
+      return FALSE;
+   return TRUE;
 }
 
 /* Pitch 2048 -> 1024, only done once per res-change. */
@@ -670,12 +674,14 @@ void S9xMessage(int a, int b, const char* msg)
 }
 
 /* S9x weirdness. */
-void _splitpath (const char *path, char *drive, char *dir, char *fname, char *ext)
+void _splitpath (char *path, char *drive, char *dir, char *fname, char *ext)
 {
+	char * slash;
+	char * dot;
    *drive = 0;
 
-   const char	*slash = strrchr(path, SLASH_CHAR),
-         *dot   = strrchr(path, '.');
+   slash = strrchr(path, SLASH_CHAR);
+   dot   = strrchr(path, '.');
 
    if (dot && slash && dot < slash)
       dot = NULL;

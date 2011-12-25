@@ -718,7 +718,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 			{
 				int32	dx, dy;
 				int16	a1, b1, c1;
-				uint16	o1;
+				uint16	o1, old_speed;
 				bool8	wrap = FALSE;
 
 				/* target (x, y) coordinates*/
@@ -770,8 +770,6 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				}
 				/*o1  = 0x0000;*/
 				/*rot = 0xFF00;*/
-
-				uint16	old_speed;
 
 				old_speed = speed;
 

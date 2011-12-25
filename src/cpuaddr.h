@@ -257,7 +257,9 @@ static INLINE uint32 RelativeLong (unsigned a)			/* BRL $xxxx */
 
 static INLINE uint32 AbsoluteIndexedIndirectSlow (unsigned a)	/* (a,X) */
 {
-	uint16	addr = Immediate16Slow(READ);
+	uint16 addr, addr2;
+	
+	addr = Immediate16Slow(READ);
 
 	if (a & JSR)
 	{
@@ -273,7 +275,7 @@ static INLINE uint32 AbsoluteIndexedIndirectSlow (unsigned a)	/* (a,X) */
 	addr += Registers.X.W;
 
 	/* Address load wraps within the bank */
-	uint16	addr2 = S9xGetWord(ICPU.ShiftedPB | addr, WRAP_BANK);
+	addr2 = S9xGetWord(ICPU.ShiftedPB | addr, WRAP_BANK);
 	OpenBus = addr2 >> 8;
 
 	return (addr2);
@@ -281,11 +283,12 @@ static INLINE uint32 AbsoluteIndexedIndirectSlow (unsigned a)	/* (a,X) */
 
 static INLINE uint32 AbsoluteIndexedIndirect (unsigned a)	/* (a,X) */
 {
-	uint16	addr = Immediate16Slow(READ);
+	uint16	addr, addr2;
+	addr = Immediate16Slow(READ);
 	addr += Registers.X.W;
 
 	/* Address load wraps within the bank */
-	uint16	addr2 = S9xGetWord(ICPU.ShiftedPB | addr, WRAP_BANK);
+	addr2 = S9xGetWord(ICPU.ShiftedPB | addr, WRAP_BANK);
 	OpenBus = addr2 >> 8;
 
 	return (addr2);
@@ -665,11 +668,14 @@ static INLINE uint32 StackRelative (unsigned a)				/* d,S */
 
 static INLINE uint32 StackRelativeIndirectIndexedSlow (unsigned a)	/* (d,S),Y */
 {
+	uint16 addr_stack_relative_slow;
+	uint32 addr;
+
 	/* StackRelativeSlow */
-	uint16	addr_stack_relative_slow = Immediate8Slow(READ) + Registers.S.W;
+	addr_stack_relative_slow = Immediate8Slow(READ) + Registers.S.W;
 	AddCycles(ONE_CYCLE);
 	/* EOF StackRelativeSlow */
-	uint32	addr = S9xGetWord(addr_stack_relative_slow, WRAP_NONE);
+	addr = S9xGetWord(addr_stack_relative_slow, WRAP_NONE);
 	if (a & READ)
 		OpenBus = (uint8) (addr >> 8);
 	addr = (addr + Registers.Y.W + ICPU.ShiftedDB) & 0xffffff;
@@ -680,10 +686,12 @@ static INLINE uint32 StackRelativeIndirectIndexedSlow (unsigned a)	/* (d,S),Y */
 
 static INLINE uint32 StackRelativeIndirectIndexed (unsigned a)		/* (d,S),Y */
 {
+	uint16 addr_stack_relative;
+	uint32 addr;
 	/* StackRelative */
-	uint16 addr_stack_relative = Immediate8Slow(READ) + Registers.S.W;
+	addr_stack_relative = Immediate8Slow(READ) + Registers.S.W;
 	AddCycles(ONE_CYCLE);
-	uint32	addr = S9xGetWord(addr_stack_relative, WRAP_NONE);
+	addr = S9xGetWord(addr_stack_relative, WRAP_NONE);
 	/* EOF StackRelative */
 	if (a & READ)
 		OpenBus = (uint8) (addr >> 8);

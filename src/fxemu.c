@@ -1149,21 +1149,24 @@ static void fx_color (void)
 
 static void fx_computeScreenPointers (void)
 {
+	int i;
+	uint8 *pvScreenBase;
+	int32 condition, mask, result;
+	uint32 vmode, screenheight, incrementvalue;
 	if (GSU.vMode != GSU.vPrevMode || GSU.vPrevScreenHeight != GSU.vScreenHeight || GSU.vSCBRDirty)
 	{
 		GSU.vSCBRDirty = FALSE;
 
 		/* Make a list of pointers to the start of each screen column*/
-		uint8* pvScreenBase = GSU.pvScreenBase;
-		uint32 vmode = GSU.vMode;
-		int32 condition = vmode - 2;
-		int32 mask = (condition | -condition) >> 31;
-		int32 result = (vmode & mask) | (3 & ~mask);
-		uint32 screenheight = GSU.vScreenHeight;
-		uint32 incrementvalue = screenheight+screenheight;
+		pvScreenBase = GSU.pvScreenBase;
+		vmode = GSU.vMode;
+		condition = vmode - 2;
+		mask = (condition | -condition) >> 31;
+		result = (vmode & mask) | (3 & ~mask);
+		screenheight = GSU.vScreenHeight;
+		incrementvalue = screenheight+screenheight;
 		vmode = result;
 		vmode++;
-		int i;
 		switch (screenheight)
 		{
 			case 128:
@@ -4531,15 +4534,16 @@ void S9xResetSuperFX (void)
 
 static bool8 fx_checkStartAddress (void)
 {
+	bool8 condition1, condition2, condition3, condition4;
 	/* Check if we start inside the cache*/
 	if (GSU.bCacheActive && R15 >= GSU.vCacheBaseReg && R15 < (GSU.vCacheBaseReg + 512))
 		return (TRUE);
 
 	/* Check if we're in RAM and the RAN flag is not set*/
-	bool8 condition1 = GSU.vPrgBankReg >= 0x60 && GSU.vPrgBankReg <= 0x6f;
-	bool8 condition2 = GSU.vPrgBankReg >= 0x74;
-	bool8 condition3 = GSU.vPrgBankReg >= 0x70 && GSU.vPrgBankReg <= 0x73 && !(SCMR & 8);
-	bool8 condition4 = !(SCMR & 16);
+	condition1 = GSU.vPrgBankReg >= 0x60 && GSU.vPrgBankReg <= 0x6f;
+	condition2 = GSU.vPrgBankReg >= 0x74;
+	condition3 = GSU.vPrgBankReg >= 0x70 && GSU.vPrgBankReg <= 0x73 && !(SCMR & 8);
+	condition4 = !(SCMR & 16);
 
 	if (condition1 | condition2 | condition3 | condition4)
 		return (FALSE);
@@ -4594,6 +4598,8 @@ static void fx_writeRegisterSpace (void)
 
 void S9xSuperFXExec (void)
 {
+	bool8 address_valid;
+	uint16 GSUStatus;
 	/* EMULATE FX CHIP*/
 	/* Execute until the next stop instruction*/
 	uint32 nInstructions = (Memory.FillRAM[0x3000 + GSU_CLSR] & 1) ? SuperFX.speedPerLine * 2 : SuperFX.speedPerLine;
@@ -4602,7 +4608,7 @@ void S9xSuperFXExec (void)
 	fx_readRegisterSpace();
 
 	/* Check if the start address is valid*/
-	bool8 address_valid = fx_checkStartAddress();
+	address_valid = fx_checkStartAddress();
 	if (address_valid)
 	{
 		/* Execute GSU session*/
@@ -4628,7 +4634,7 @@ void S9xSuperFXExec (void)
 	fx_writeRegisterSpace();
 	/* EOF EMULATE FX CHIP*/
 
-	uint16 GSUStatus = Memory.FillRAM[0x3000 + GSU_SFR] | (Memory.FillRAM[0x3000 + GSU_SFR + 1] << 8);
+	GSUStatus = Memory.FillRAM[0x3000 + GSU_SFR] | (Memory.FillRAM[0x3000 + GSU_SFR + 1] << 8);
 	if ((GSUStatus & (FLG_G | FLG_IRQ)) == FLG_IRQ)
 	{
 		S9X_SET_IRQ(GSU_IRQ_SOURCE);

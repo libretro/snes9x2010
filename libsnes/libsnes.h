@@ -1,6 +1,11 @@
 #ifndef LIBSNES_HPP
 #define LIBSNES_HPP
 
+#ifdef WIN32
+#include <stddef.h>
+typedef unsigned char bool;
+#endif
+
 /*/////////////////////////////////////////////////////////////////////////////*/
 /* LIBSNES Super Nintendo emulation API*/
 /**/

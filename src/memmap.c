@@ -257,7 +257,8 @@ static const uint32	crc32Table[256] =
 
 static void S9xDeinterleaveType1 (int size, uint8 *base)
 {
-	uint8	blocks[256];
+	uint8 *tmp;
+	uint8	blocks[256], b;
 	int	nblocks = size >> 16;
 	int	i, j;
 
@@ -267,7 +268,7 @@ static void S9xDeinterleaveType1 (int size, uint8 *base)
 		blocks[i * 2 + 1] = i;
 	}
 
-	uint8	*tmp = (uint8 *) malloc(0x8000);
+	tmp = (uint8 *) malloc(0x8000);
 	if (tmp)
 	{
 		for ( i = 0; i < nblocks * 2; i++)
@@ -279,7 +280,7 @@ static void S9xDeinterleaveType1 (int size, uint8 *base)
 					memmove(tmp, &base[blocks[j] * 0x8000], 0x8000);
 					memmove(&base[blocks[j] * 0x8000], &base[blocks[i] * 0x8000], 0x8000);
 					memmove(&base[blocks[i] * 0x8000], tmp, 0x8000);
-					uint8	b = blocks[j];
+					b = blocks[j];
 					blocks[j] = blocks[i];
 					blocks[i] = b;
 					break;
@@ -294,7 +295,8 @@ static void S9xDeinterleaveType1 (int size, uint8 *base)
 static void S9xDeinterleaveType2 (int size, uint8 *base)
 {
 	/* for odd Super FX images */
-	uint8	blocks[256];
+	uint8 *tmp;
+	uint8	blocks[256], b;
 	int	nblocks = size >> 16;
 	int	step = 64;
 	int	i, j;
@@ -306,7 +308,7 @@ static void S9xDeinterleaveType2 (int size, uint8 *base)
 	for ( i = 0; i < nblocks * 2; i++)
 		blocks[i] = (i & ~0xf) | ((i & 3) << 2) | ((i & 12) >> 2);
 
-	uint8	*tmp = (uint8 *) malloc(0x10000);
+	tmp = (uint8 *) malloc(0x10000);
 	if (tmp)
 	{
 		for ( i = 0; i < nblocks * 2; i++)
@@ -318,7 +320,7 @@ static void S9xDeinterleaveType2 (int size, uint8 *base)
 					memmove(tmp, &base[blocks[j] * 0x10000], 0x10000);
 					memmove(&base[blocks[j] * 0x10000], &base[blocks[i] * 0x10000], 0x10000);
 					memmove(&base[blocks[i] * 0x10000], tmp, 0x10000);
-					uint8	b = blocks[j];
+					b = blocks[j];
 					blocks[j] = blocks[i];
 					blocks[i] = b;
 					break;
@@ -332,11 +334,12 @@ static void S9xDeinterleaveType2 (int size, uint8 *base)
 
 static void S9xDeinterleaveGD24 (int size, uint8 *base)
 {
+	uint8 *tmp;
 	/* for 24Mbit images dumped with Game Doctor */
 	if (size != 0x300000)
 		return;
 
-	uint8	*tmp = (uint8 *) malloc(0x80000);
+	tmp = (uint8 *) malloc(0x80000);
 	if (tmp)
 	{
 		memmove(tmp, &base[0x180000], 0x80000);
@@ -379,8 +382,8 @@ bool8 Init (void)
 	/* don't render subscreen speed hack - disable this by default by 
 	turning the variable (RenderSub - opposite of don't render sub) on */
 
-	PPU.RenderSub = true;
-	PPU.FullClipping = true;
+	PPU.RenderSub = TRUE;
+	PPU.FullClipping = TRUE;
 
 	if (!Memory.RAM || !Memory.SRAM || !Memory.VRAM || !Memory.ROM ||
 			!IPPU.TileCache[TILE_2BIT]       ||
@@ -451,7 +454,7 @@ static char * Safe (const char *s)
 {
 	static char	*safe = NULL;
 	static int	safe_len = 0;
-	int		i;
+	int		i, len;
 
 	if (s == NULL)
 	{
@@ -464,7 +467,7 @@ static char * Safe (const char *s)
 		return (NULL);
 	}
 
-	int	len = strlen(s);
+	len = strlen(s);
 	if (!safe || len + 1 > safe_len)
 	{
 		if (safe)
@@ -491,7 +494,7 @@ static char * SafeANK (uint8 ROMRegion, const char *s)
 {
 	static char	*safe = NULL;
 	static int	safe_len = 0;
-	int		i;
+	int		i, len;
 
 	if (s == NULL)
 	{
@@ -504,7 +507,7 @@ static char * SafeANK (uint8 ROMRegion, const char *s)
 		return (NULL);
 	}
 
-	int	len = strlen(s);
+	len = strlen(s);
 	if (!safe || len + 1 > safe_len)
 	{
 		if (safe)
@@ -874,10 +877,14 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	/* ** Memory.HeaderCount */
 	/* ** Memory.ROMFilename */
 
+	bool8	more;
 	int32	totalSize = 0;
+	uint32	size;
 	char	fname[PATH_MAX + 1];
 	char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], name[_MAX_FNAME + 1], exts[_MAX_EXT + 1];
 	char	*ext;
+	int		len, nFormat;
+	uint8	*ptr;
 
 	ext = &exts[0];
 
@@ -886,7 +893,7 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	_splitpath(filename, drive, dir, name, exts);
 	_makepath(fname, drive, dir, name, exts);
 
-	int	nFormat = FILE_DEFAULT;
+	nFormat = FILE_DEFAULT;
 	if (strcasecmp(ext, "zip") == 0)
 		nFormat = FILE_ZIP;
 
@@ -917,10 +924,10 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 
 				strcpy(Memory.ROMFilename, fname);
 
-				int 	len  = 0;
-				uint32	size = 0;
-				bool8	more = FALSE;
-				uint8	*ptr = buffer;
+				len  = 0;
+				size = 0;
+				more = FALSE;
+				ptr = buffer;
 
 				do
 				{
@@ -1011,10 +1018,12 @@ static uint32 ReadUPSPointer (const uint8 *data, uint32 * addr, unsigned size)
 static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 {
 	unsigned i;
+	uint32 addr, relative,size, patch_crc32, out_crc32, out_size, px_crc32,
+	py_crc32, pp_crc32, px_size, py_size, rom_crc32;
 
 	uint8 *data = (uint8*)malloc(8 * 1024 * 1024);  /* allocate a lot of memory, better safe than sorry */
-	uint32 size = 0;
-	while(true)
+	size = 0;
+	while(TRUE)
 	{
 		int value = fgetc(r);
 		if(value == EOF)
@@ -1037,7 +1046,7 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 		return FALSE;
 	}  
 
-	uint32 addr = 0;
+	addr = 0;
 	if(data[addr++] != 'U') /* patch has an invalid header */
 
 	{
@@ -1063,12 +1072,12 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 	}
 
 	/* don't include patch CRC32 itself in CRC32 calculation */
-	uint32 patch_crc32 = caCRC32(data, size - 4, 0xffffffff);
+	patch_crc32 = caCRC32(data, size - 4, 0xffffffff);
 
-	uint32 rom_crc32 = caCRC32(Memory.ROM, *rom_size, 0xffffffff);
-	uint32 px_crc32 = (data[size - 12] << 0) + (data[size - 11] << 8) + (data[size - 10] << 16) + (data[size -  9] << 24);
-	uint32 py_crc32 = (data[size -  8] << 0) + (data[size -  7] << 8) + (data[size -  6] << 16) + (data[size -  5] << 24);
-	uint32 pp_crc32 = (data[size -  4] << 0) + (data[size -  3] << 8) + (data[size -  2] << 16) + (data[size -  1] << 24);
+	rom_crc32 = caCRC32(Memory.ROM, *rom_size, 0xffffffff);
+	px_crc32 = (data[size - 12] << 0) + (data[size - 11] << 8) + (data[size - 10] << 16) + (data[size -  9] << 24);
+	py_crc32 = (data[size -  8] << 0) + (data[size -  7] << 8) + (data[size -  6] << 16) + (data[size -  5] << 24);
+	pp_crc32 = (data[size -  4] << 0) + (data[size -  3] << 8) + (data[size -  2] << 16) + (data[size -  1] << 24);
 
 	if(patch_crc32 != pp_crc32)
 	{
@@ -1083,9 +1092,9 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 		free(data);
 		return FALSE;
 	}  
-	uint32 px_size = ReadUPSPointer(data, &addr, size);
-	uint32 py_size = ReadUPSPointer(data, &addr, size);
-	uint32 out_size = ((uint32) *rom_size == px_size) ? py_size : px_size;
+	px_size = ReadUPSPointer(data, &addr, size);
+	py_size = ReadUPSPointer(data, &addr, size);
+	out_size = ((uint32) *rom_size == px_size) ? py_size : px_size;
 
 	if(out_size > MAX_ROM_SIZE)
 	{
@@ -1101,7 +1110,7 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 	for( i = min((uint32) *rom_size, out_size); i < max((uint32) *rom_size, out_size); i++)
 		Memory.ROM[i] = 0x00;
 
-	uint32 relative = 0;
+	relative = 0;
 	while(addr < size - 12)
 	{
 		relative += ReadUPSPointer(data, &addr, size);
@@ -1116,7 +1125,7 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 	*rom_size = out_size;
 	free(data);
 
-	uint32 out_crc32 = caCRC32(Memory.ROM, *rom_size, 0xffffffff);
+	out_crc32 = caCRC32(Memory.ROM, *rom_size, 0xffffffff);
 	if(((rom_crc32 == px_crc32) && (out_crc32 == py_crc32))
 	|| ((rom_crc32 == py_crc32) && (out_crc32 == px_crc32))
 	)
@@ -1540,7 +1549,11 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 
 bool8 LoadROM (const char *filename)
 {
+	int	hi_score, lo_score;
+	bool8 interleaved, tales;
+	uint8 * RomHeader;
 	int	retry_count = 0;
+	int32 totalFileSize;
 
 	if (!filename || !*filename)
 		return FALSE;
@@ -1555,8 +1568,6 @@ again:
 	Memory.CalculatedSize = 0;
 	Memory.ExtendedFormat = NOPE;
 
-	int32 totalFileSize;
-
 	#ifdef CUSTOM_FILE_HANDLING
 	totalFileSize = CustomFileLoader();
 	#else
@@ -1567,8 +1578,6 @@ again:
 
 	if (!Settings.NoPatch)
 		CheckForAnyPatch(filename, Memory.HeaderCount != 0, &totalFileSize);
-
-	int	hi_score, lo_score;
 
 	hi_score = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 	lo_score = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
@@ -1607,7 +1616,7 @@ again:
 	hi_score = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 	lo_score = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 
-	uint8	*RomHeader = Memory.ROM;
+	RomHeader = Memory.ROM;
 
 	if (Memory.ExtendedFormat != NOPE)
 	{
@@ -1628,7 +1637,8 @@ again:
 			Memory.ExtendedFormat = SMALLFIRST;
 	}
 
-	bool8	interleaved, tales = FALSE;
+	interleaved = FALSE;
+	tales = FALSE;
 
     interleaved = Settings.ForceInterleaved || Settings.ForceInterleaved2 || Settings.ForceInterleaveGD24;
 
@@ -1847,6 +1857,10 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB)
 
 bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
 {
+	FILE * fp;
+	size_t	size;
+	char	path[PATH_MAX + 1];
+
 	Multi.cartOffsetA = 0x100000;
 	Multi.cartOffsetB = 0x200000;
 	Multi.sramA = Memory.SRAM;
@@ -1887,10 +1901,6 @@ bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
 		strcpy(Multi.fileNameB, cartB);
 		memcpy(Memory.ROM + Multi.cartOffsetB, Memory.ROM, Multi.cartSizeB);
 	}
-
-	FILE	*fp;
-	size_t	size;
-	char	path[PATH_MAX + 1];
 
 	strcpy(path, S9xGetDirectory(BIOS_DIR));
 	strcat(path, SLASH_STR);
@@ -2071,15 +2081,15 @@ bool8 LoadSRAM (const char *filename)
 
 bool8 SaveSRAM (const char *filename)
 {
+	FILE	*file;
+	int		size;
+	char	sramName[PATH_MAX + 1];
+
 	if (Settings.SuperFX && Memory.ROMType < 0x15) /* doesn't have SRAM */
 		return (TRUE);
 
 	if (Settings.SA1 && Memory.ROMType == 0x34)    /* doesn't have SRAM */
 		return (TRUE);
-
-	FILE	*file;
-	int		size;
-	char	sramName[PATH_MAX + 1];
 
 	strcpy(sramName, filename);
 
@@ -2156,14 +2166,17 @@ static uint16 checksum_calc_sum (uint8 *data, uint32 length)
 
 static uint16 checksum_mirror_sum (uint8 *start, uint32 * length, uint32 mask)
 {
+	uint16 part1, part2;
+	uint32 next_length;
+
 	/* from NSRT */
 	while (!(*length & mask))
 		mask >>= 1;
 
-	uint16	part1 = checksum_calc_sum(start, mask);
-	uint16	part2 = 0;
+	part1 = checksum_calc_sum(start, mask);
+	part2 = 0;
 
-	uint32	next_length = *length - mask;
+	next_length = *length - mask;
 	if (next_length)
 	{
 		part2 = checksum_mirror_sum(start + mask, &next_length, mask >> 1);
@@ -2182,13 +2195,14 @@ static uint16 checksum_mirror_sum (uint8 *start, uint32 * length, uint32 mask)
 
 static uint32 map_mirror (uint32 size, uint32 pos)
 {
+	uint32 mask;
 	/* from bsnes */
 	if (size == 0)
 		return (0);
 	if (pos < size)
 		return (pos);
 
-	uint32	mask = 1 << 31;
+	mask = 1 << 31;
 	while (!(pos & mask))
 		mask >>= 1;
 
@@ -2792,6 +2806,13 @@ static const char * Size (void)
 
 void InitROM (void)
 {
+	int p;
+	bool8 bs, isChecksumOK;
+	uint8 *RomHeader;
+	uint16 sum;
+	uint32 identifier;
+	char displayName[ROM_NAME_LEN], String[513];
+
 	Settings.SuperFX = FALSE;
 	Settings.DSP = 0;
 	Settings.SA1 = FALSE;
@@ -2810,7 +2831,7 @@ void InitROM (void)
 	Memory.CompanyId = -1;
 	memset(Memory.ROMId, 0, 5);
 
-	uint8	*RomHeader = Memory.ROM + 0x7FB0;
+	RomHeader = Memory.ROM + 0x7FB0;
 	if (Memory.ExtendedFormat == BIGFIRST)
 		RomHeader += 0x400000;
 	if (Memory.HiROM)
@@ -2820,7 +2841,7 @@ void InitROM (void)
 
 	/* Parse SNES Header */
 
-	bool8	bs = Settings.BS & !Settings.BSXItself;
+	bs = Settings.BS & !Settings.BSXItself;
 
 	strncpy(Memory.ROMName, (char *) &RomHeader[0x10], ROM_NAME_LEN - 1);
 	if (bs)
@@ -2833,7 +2854,7 @@ void InitROM (void)
 			printf("BS: Size mismatch\n");
 
 		/* FIXME*/
-		int	p = 0;
+		p = 0;
 		while ((1 << p) < (int) Memory.CalculatedSize)
 			p++;
 		Memory.ROMSize = p - 10;
@@ -2939,7 +2960,7 @@ void InitROM (void)
 			break;
 	}
 
-	uint32	identifier = ((Memory.ROMType & 0xff) << 8) + (Memory.ROMSpeed & 0xff);
+	identifier = ((Memory.ROMType & 0xff) << 8) + (Memory.ROMSpeed & 0xff);
 
 	switch (identifier)
 	{
@@ -3099,7 +3120,7 @@ void InitROM (void)
 	}
 
 	/* from NSRT */
-	uint16	sum = 0;
+	sum = 0;
 
 	if (Settings.BS && !Settings.BSXItself)
 		sum = checksum_calc_sum(Memory.ROM, Memory.CalculatedSize) - checksum_calc_sum(Memory.ROM + (Memory.HiROM ? 0xffb0 : 0x7fb0), 48);
@@ -3123,7 +3144,7 @@ void InitROM (void)
 
 	Memory.CalculatedChecksum = sum;
 
-	bool8 isChecksumOK = (Memory.ROMChecksum + Memory.ROMComplementChecksum == 0xffff) &
+	isChecksumOK = (Memory.ROMChecksum + Memory.ROMComplementChecksum == 0xffff) &
 						 (Memory.ROMChecksum == Memory.CalculatedChecksum);
 
 	/* Build more ROM information */
@@ -3807,14 +3828,12 @@ void InitROM (void)
 	}
 
 	/* Show ROM information */
-	char displayName[ROM_NAME_LEN];
 
 	strcpy(Memory.RawROMName, Memory.ROMName);
 	sprintf(displayName, "%s", SafeANK(Memory.ROMRegion, Memory.ROMName));
 	sprintf(Memory.ROMName, "%s", Safe(Memory.ROMName));
 	sprintf(Memory.ROMId, "%s", Safe(Memory.ROMId));
 
-	char String[513];
 	#ifndef __LIBSNES__
 	sprintf(String, "\"%s\" [%s] ID:%s",
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),

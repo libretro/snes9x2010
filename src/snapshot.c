@@ -1132,8 +1132,12 @@ static int FreezeSize (int size, int type)
 
 static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeData *fields, int num_fields)
 {
+	uint8 *addr, *block, *ptr;
+	uint16 word;
+	uint32 dword;
+	int64 qaword;
 	int	len = 0;
-	int	i, j;
+	int	i, j, relativeAddr;
 
 	for (i = 0; i < num_fields; i++)
 	{
@@ -1147,13 +1151,8 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 			len += FreezeSize(fields[i].size, fields[i].type);
 	}
 
-	uint8	*block = (uint8*)malloc(len);
-	uint8	*ptr = block;
-	uint8	*addr;
-	uint16	word;
-	uint32	dword;
-	int64	qaword;
-	int	relativeAddr;
+	block = (uint8*)malloc(len);
+	ptr = block;
 
 	for (i = 0; i < num_fields; i++)
 	{
@@ -1254,7 +1253,10 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 
 static void S9xFreezeToStream (STREAM stream)
 {
+	struct SDMASnapshot	dma_snap;
+	struct SControlSnapshot	ctl_snap;
 	char	buffer[1024];
+	uint8	soundsnapshot[SPC_SAVE_STATE_BLOCK_SIZE];
 
 	sprintf(buffer, "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
 	WRITE_STREAM(buffer, strlen(buffer), stream);
@@ -1267,8 +1269,6 @@ static void S9xFreezeToStream (STREAM stream)
 	FreezeStruct(stream, "REG", &Registers, SnapRegisters, COUNT(SnapRegisters));
 
 	FreezeStruct(stream, "PPU", &PPU, SnapPPU, COUNT(SnapPPU));
-
-	struct SDMASnapshot	dma_snap;
 
 	dma_snap.dma[0] = DMA[0];
 	dma_snap.dma[1] = DMA[1];
@@ -1289,11 +1289,9 @@ static void S9xFreezeToStream (STREAM stream)
 
 	FreezeBlock (stream, "FIL", Memory.FillRAM, 0x8000);
 
-	uint8	soundsnapshot[SPC_SAVE_STATE_BLOCK_SIZE];
 	S9xAPUSaveState(soundsnapshot);
 	FreezeBlock (stream, "SND", soundsnapshot, SPC_SAVE_STATE_BLOCK_SIZE);
 
-	struct SControlSnapshot	ctl_snap;
 	S9xControlPreSaveState(&ctl_snap);
 	FreezeStruct(stream, "CTL", &ctl_snap, SnapControls, COUNT(SnapControls));
 
@@ -1627,6 +1625,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 	int		result = SUCCESS;
 	int		version, len;
 	char	buffer[PATH_MAX + 1];
+	uint8 *local_cpu, local_registers, local_ppu, local_dma;
 
 	len = strlen(SNAPSHOT_MAGIC) + 1 + 4 + 1;
 	if (READ_STREAM(buffer, len, stream) != len)
@@ -1643,10 +1642,10 @@ int S9xUnfreezeFromStream (STREAM stream)
 	if (result != SUCCESS)
 		return (result);
 
-	uint8	*local_cpu           = NULL;
-	uint8	*local_registers     = NULL;
-	uint8	*local_ppu           = NULL;
-	uint8	*local_dma           = NULL;
+	local_cpu           = NULL;
+	local_registers     = NULL;
+	local_ppu           = NULL;
+	local_dma           = NULL;
 	uint8	*local_vram          = NULL;
 	uint8	*local_ram           = NULL;
 	uint8	*local_sram          = NULL;

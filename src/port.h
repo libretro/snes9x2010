@@ -179,7 +179,9 @@
 #define _PORT_H_
 
 #include <stdio.h>
+#ifndef WIN32
 #include <stdbool.h>
+#endif
 #include <limits.h>
 #include <sys/types.h>
 

@@ -443,7 +443,7 @@ bool8 S9xVerifyControllers (void)
 					snprintf(buf, sizeof(buf), "Superscope used more than once! Disabling extra instances");
 					S9xMessage(S9X_CONFIG_INFO, S9X_ERROR, buf);
 					newcontrollers[port] = CONTROLS_NONE;
-					ret = true;
+					ret = TRUE;
 					break;
 				}
 
@@ -1003,11 +1003,12 @@ void S9xSetJoypadLatch (bool8 latch)
 uint8 S9xReadJOYSERn (int n)
 {
 	int	i, j, r;
+	uint8 bits;
 
 	if (n > 1)
 		n -= 0x4016;
 
-	uint8	bits = (OpenBus & ~3) | ((n == 1) ? 0x1c : 0);
+	bits = (OpenBus & ~3) | ((n == 1) ? 0x1c : 0);
 
 	if (FLAG_LATCH)
 	{
@@ -1574,7 +1575,7 @@ do_justifier:
 	}
 
 	pad_read_last = pad_read;
-	pad_read      = false;
+	pad_read      = FALSE;
 }
 
 void S9xControlPreSaveState (struct SControlSnapshot *s)

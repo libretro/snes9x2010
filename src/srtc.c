@@ -208,6 +208,7 @@ static const unsigned months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 
 static void srtcemu_update_time (void)
 {
+	unsigned days;
 	time_t rtc_time = (MEMORY_CARTRTC_READ(16) <<  0) | (MEMORY_CARTRTC_READ(17) <<  8) | (MEMORY_CARTRTC_READ(18) << 16) | (MEMORY_CARTRTC_READ(19) << 24);
 	time_t current_time = time(0);
 
@@ -251,7 +252,7 @@ static void srtcemu_update_time (void)
 
 			day++;
 			weekday = (weekday + 1) % 7;
-			unsigned days = months[month % 12];
+			days = months[month % 12];
 			if(days == 28)
 			{
 				bool8 leapyear = FALSE;
@@ -365,6 +366,7 @@ void S9xResetSRTC (void)
 
 void S9xSetSRTC (uint8 data, uint16 address)
 {
+	unsigned i;
 	address &= 0xffff;
 
 	if(address == 0x2801)
@@ -386,7 +388,6 @@ void S9xSetSRTC (uint8 data, uint16 address)
 		if(data == 0x0f)
 			return;  /*unknown behavior*/
 
-		unsigned i;
 		if(rtc_mode == RTCM_WRITE)
 		{
 			if(rtc_index >= 0 && rtc_index < 12)
