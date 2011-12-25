@@ -1296,7 +1296,7 @@ static void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 
 static spc_state_t m;
 static signed char reg_times [256];
-static bool allow_time_overflow;
+static bool8 allow_time_overflow;
 
 /* Copyright (C) 2004-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -2932,7 +2932,7 @@ static void spc_init()
 		m.cycle_table [i * 2 + 1] = n & 0x0F;
 	}
 
-	allow_time_overflow = false;
+	allow_time_overflow = FALSE;
 
 	signed char const reg_times_ [256] =
 	{
@@ -3071,7 +3071,7 @@ static int		lag             = 0;
 
 static short		*landing_buffer = NULL;
 
-static bool8		resampler      = false;
+static bool8		resampler      = FALSE;
 
 static int32		reference_time;
 static uint32		spc_remainder;
@@ -3196,11 +3196,11 @@ static void resampler_new(int num_samples)
 	resampler_clear();
 }
 
-static INLINE bool resampler_push(short *src, int num_samples)
+static INLINE bool8 resampler_push(short *src, int num_samples)
 {
 	int bytes = num_samples << 1;
 	if (MAX_WRITE() < num_samples || SPACE_EMPTY() < bytes)
-		return false;
+		return FALSE;
 
 	/* Ring buffer push */
 	unsigned char * src_ring = (unsigned char*)src; 
@@ -3214,7 +3214,7 @@ static INLINE bool resampler_push(short *src, int num_samples)
 
 	rb_size += bytes;
 
-	return true;
+	return TRUE;
 }
 
 static INLINE void resampler_resize (int num_samples)
@@ -3367,7 +3367,7 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	if (!resampler)
 	{
 		resampler_new(buffer_size >> (Settings.SoundSync ? 0 : 1));
-		resampler = true;
+		resampler = TRUE;
 	}
 	else
 		resampler_resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
@@ -3377,7 +3377,7 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 
 	UpdatePlaybackRate();
 
-	return true;
+	return TRUE;
 }
 
 bool8 S9xInitAPU (void)
@@ -3394,7 +3394,7 @@ void S9xDeinitAPU (void)
 	if (resampler)
 	{
 		free(rb_buffer);
-		resampler = false;
+		resampler = FALSE;
 	}
 
 	if (landing_buffer)
