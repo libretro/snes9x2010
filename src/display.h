@@ -198,7 +198,7 @@ enum s9x_getdirtype
 /* Routines the port has to implement even if it doesn't use them */
 
 const char * S9xGetDirectory (uint32_t dirtype);
-const char * S9xGetFilename (const char *, uint32_t dirtype);
+const char * S9xGetFilename (const char * in, uint32_t dirtype);
 const char * S9xChooseFilename (bool8 a);
 
 #ifdef CUSTOM_FILE_HANDLING

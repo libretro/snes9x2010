@@ -215,7 +215,7 @@ void S9xMainLoop (void);
 void S9xReset (void);
 void S9xSoftReset (void);
 void S9xDoHEventProcessing (void);
-void S9xDeinitUpdate (int, int);
+void S9xDeinitUpdate (int width, int height);
 
 #define S9X_CLEAR_IRQ(source) \
 	CPU.IRQActive &= ~source; \

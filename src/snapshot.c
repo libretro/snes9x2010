@@ -1090,40 +1090,6 @@ static bool8 S9xOpenSnapshotFile(const char* filepath, const char * file_mode, S
 		return (FALSE);
 }
 
-bool8 S9xFreezeGame (const char *filename)
-{
-	STREAM	stream = NULL;
-
-	if (S9xOpenSnapshotFile(filename, "wb", &stream))
-	{
-		S9xFreezeToStream(stream);
-		CLOSE_STREAM(stream);
-
-		return (TRUE);
-	}
-
-	return (FALSE);
-}
-
-bool8 S9xUnfreezeGame (const char * filename)
-{
-	STREAM	stream = NULL;
-	char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], def[_MAX_FNAME + 1], ext[_MAX_EXT + 1];
-
-	_splitpath(filename, drive, dir, def, ext);
-
-	if (S9xOpenSnapshotFile(filename, "rb", &stream))
-	{
-		int result = S9xUnfreezeFromStream(stream);
-		CLOSE_STREAM(stream);
-
-		if (result == SUCCESS)
-			return (TRUE);
-	}
-
-	return (FALSE);
-}
-
 static void FreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
 {
 	char	buffer[20];
@@ -1286,9 +1252,8 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 	free(block);
 }
 
-void S9xFreezeToStream (STREAM stream)
+static void S9xFreezeToStream (STREAM stream)
 {
-	int d;
 	char	buffer[1024];
 
 	sprintf(buffer, "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
@@ -1387,6 +1352,44 @@ void S9xFreezeToStream (STREAM stream)
 		FreezeStruct(stream, "BSX", &BSX, SnapBSX, COUNT(SnapBSX));
 }
 
+bool8 S9xFreezeGame (const char *filename)
+{
+	STREAM	stream = NULL;
+
+	if (S9xOpenSnapshotFile(filename, "wb", &stream))
+	{
+		S9xFreezeToStream(stream);
+		CLOSE_STREAM(stream);
+
+		return (TRUE);
+	}
+
+	return (FALSE);
+}
+
+bool8 S9xUnfreezeGame (const char * filename)
+{
+	STREAM	stream = NULL;
+	char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], def[_MAX_FNAME + 1], ext[_MAX_EXT + 1];
+
+	_splitpath(filename, drive, dir, def, ext);
+
+	if (S9xOpenSnapshotFile(filename, "rb", &stream))
+	{
+		int result = S9xUnfreezeFromStream(stream);
+		CLOSE_STREAM(stream);
+
+		if (result == SUCCESS)
+			return (TRUE);
+	}
+
+	return (FALSE);
+}
+
+
+
+
+
 static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
 {
 	char	buffer[20];
@@ -1460,7 +1463,7 @@ static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, in
 		return (result);
 	}
 
-	return (SUCCESS);
+	return SUCCESS;
 }
 
 static int UnfreezeStructCopy (STREAM stream, const char *name, uint8 **block, FreezeData *fields, int num_fields, int version)

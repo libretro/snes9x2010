@@ -266,12 +266,12 @@ typedef struct
 bool8	Init (void);
 void	Deinit (void);
 
-bool8	LoadROM (const char *);
-bool8	LoadMultiCart (const char *, const char *);
-bool8	LoadSufamiTurbo (const char *, const char *);
-bool8	LoadSameGame (const char *, const char *);
-bool8	LoadSRAM (const char *);
-bool8	SaveSRAM (const char *);
+bool8 LoadROM (const char *filename);
+bool8 LoadMultiCart (const char *cartA, const char *cartB);
+bool8 LoadSufamiTurbo (const char *cartA, const char *cartB);
+bool8 LoadSameGame (const char *cartA, const char *cartB);
+bool8 LoadSRAM (const char *filename);
+bool8 SaveSRAM (const char *filename);
 
 void	InitROM (void);
 
@@ -280,12 +280,18 @@ void	map_WriteProtectROM (void);
 struct SMulti
 {
 	int	cartType;
-	int32	cartSizeA, cartSizeB;
-	int32	sramSizeA, sramSizeB;
-	uint32	sramMaskA, sramMaskB;
-	uint32	cartOffsetA, cartOffsetB;
-	uint8	*sramA, *sramB;
-	char	fileNameA[PATH_MAX + 1], fileNameB[PATH_MAX + 1];
+	int32	cartSizeA;
+	int32	cartSizeB;
+	int32	sramSizeA;
+	int32	sramSizeB;
+	uint32	sramMaskA;
+	uint32	sramMaskB;
+	uint32	cartOffsetA;
+	uint32	cartOffsetB;
+	uint8	*sramA;
+	uint8	*sramB;
+	char	fileNameA[PATH_MAX + 1];
+	char	fileNameB[PATH_MAX + 1];
 };
 
 extern CMemory	Memory;

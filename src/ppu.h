@@ -377,11 +377,11 @@ extern struct InternalPPU	IPPU;
 
 void S9xResetPPU (void);
 void S9xSoftResetPPU (void);
-void S9xSetPPU (uint8, uint16);
-uint8 S9xGetPPU (uint16);
-void S9xSetCPU (uint8, uint16);
-uint8 S9xGetCPU (uint16);
-uint8 S9xGetCPU_Alt (uint16);
+void S9xSetPPU (uint8 Byte, uint16 Address);
+uint8 S9xGetPPU (uint16 Address);
+void S9xSetCPU (uint8 Byte, uint16 Address);
+uint8 S9xGetCPU (uint16 Address);
+uint8 S9xGetCPU_Alt(uint16 Address);
 void S9xFixColourBrightness (void);
 void S9xDoAutoJoypad (void);
 

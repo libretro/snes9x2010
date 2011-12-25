@@ -245,8 +245,8 @@ extern uint8			S9xOpLengthsM1X0[256];
 extern uint8			S9xOpLengthsM0X1[256];
 extern uint8			S9xOpLengthsM0X0[256];
 
-uint8 S9xGetSA1 (uint32);
-void S9xSetSA1 (uint8, uint32);
+uint8 S9xGetSA1 (uint32 address);
+void S9xSetSA1 (uint8 byte, uint32 address);
 void S9xSA1Init (void);
 void S9xSA1MainLoop (void);
 void S9xSA1PostLoadState (void);
@@ -255,10 +255,8 @@ void S9xSA1PostLoadState (void);
 #define TIMER_IRQ_SOURCE	64
 #define SNES_IRQ_SOURCE		128
 
-static INLINE void S9xSA1PackStatus (void)
-{
-	SA1Registers.PL &= ~(Zero | Negative | Carry | Overflow);
+#define S9xSA1PackStatus() \
+	SA1Registers.PL &= ~(Zero | Negative | Carry | Overflow); \
 	SA1Registers.PL |= SA1._Carry | ((SA1._Zero == 0) << 1) | (SA1._Negative & 0x80) | (SA1._Overflow << 6);
-}
 
 #endif

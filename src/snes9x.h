@@ -343,28 +343,28 @@ struct STimings
 
 struct SSettings
 {
-	bool	SoundSync;
-	bool	SuperFX;
+	bool8	SoundSync;
+	bool8	SuperFX;
 	uint8	DSP;
-	bool	SA1;
-	bool	C4;
-	bool	SDD1;
-	bool	SPC7110;
-	bool	SPC7110RTC;
-	bool	OBC1;
+	bool8	SA1;
+	bool8	C4;
+	bool8	SDD1;
+	bool8	SPC7110;
+	bool8	SPC7110RTC;
+	bool8	OBC1;
 	uint8	SETA;
-	bool	SRTC;
-	bool	BS;
-	bool	BSXItself;
-	bool	BSXBootup;
+	bool8	SRTC;
+	bool8	BS;
+	bool8	BSXItself;
+	bool8	BSXBootup;
 
-	bool	ForceLoROM;
-	bool	ForceHiROM;
-	bool	ForceHeader;
-	bool	ForceNoHeader;
-	bool	ForceInterleaved;
-	bool	ForceInterleaved2;
-	bool	ForceInterleaveGD24;
+	bool8	ForceLoROM;
+	bool8	ForceHiROM;
+	bool8	ForceHeader;
+	bool8	ForceNoHeader;
+	bool8	ForceInterleaved;
+	bool8	ForceInterleaved2;
+	bool8	ForceInterleaveGD24;
 	bool8	ForceNotInterleaved;
 	#ifdef __CELLOS_LV2__
 	uint32	ForcePAL;
@@ -372,25 +372,25 @@ struct SSettings
 	uint32	ApplyCheats;
 	uint32	NoPatch;
 	#else
-	bool	ForcePAL;
-	bool	ForceNTSC;
-	bool	ApplyCheats;
-	bool	NoPatch;
+	bool8	ForcePAL;
+	bool8	ForceNTSC;
+	bool8	ApplyCheats;
+	bool8	NoPatch;
 	#endif
-	bool	PAL;
+	bool8	PAL;
 	uint32	FrameTimePAL;
 	uint32	FrameTimeNTSC;
 
 	uint32	SoundPlaybackRate;
 	uint32	SoundInputRate;
 
-	bool	Multi;
+	bool8	Multi;
 	char	CartAName[PATH_MAX + 1];
 	char	CartBName[PATH_MAX + 1];
 
-	bool	DisableGameSpecificHacks;
-	bool	BlockInvalidVRAMAccessMaster;
-	bool	BlockInvalidVRAMAccess;
+	bool8	DisableGameSpecificHacks;
+	bool8	BlockInvalidVRAMAccessMaster;
+	bool8	BlockInvalidVRAMAccess;
 	int32	HDMATimingHack;
 
 	uint32	Throttled;
@@ -432,17 +432,17 @@ struct SSettings
 	char		GameAwareShaderPath[PATH_MAX];
 	char		ShaderPresetPath[PATH_MAX];
 	char		ShaderPresetTitle[PATH_MAX];
-	bool		SaveCustomControlScheme;
+	bool8		SaveCustomControlScheme;
 	int32_t		PS3OverscanAmount;
 	int32_t		ControlScheme;
 	#endif
 	uint32	AccessoryType;
 	int32		AccessoryAutoDetection;
-	bool		ChronoTriggerFrameHack;
-	bool		CurrentROMisMultitapCompatible;
-	bool		CurrentROMisMouseCompatible;
-	bool		CurrentROMisSuperScopeCompatible;
-	bool		CurrentROMisJustifierCompatible;
+	bool8		ChronoTriggerFrameHack;
+	bool8		CurrentROMisMultitapCompatible;
+	bool8		CurrentROMisMouseCompatible;
+	bool8		CurrentROMisSuperScopeCompatible;
+	bool8		CurrentROMisJustifierCompatible;
 };
 
 struct SSNESGameFixes

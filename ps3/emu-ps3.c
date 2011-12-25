@@ -268,7 +268,7 @@ static void callback_superscope_compatible(int button_type, void *userdata)
 
 static void emulator_implementation_add_cheat(uint32_t address, uint8_t byte, const char* description)
 {
-	S9xAddCheat(false, true, address, byte);
+	S9xAddCheat(FALSE, TRUE, address, byte);
 	S9xEnableCheat(Cheat.num_cheats - 1);
 	strncpy(Cheat.c[Cheat.num_cheats - 1].name, description, 22);
 }

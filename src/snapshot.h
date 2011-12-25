@@ -187,9 +187,8 @@
 #define FILE_NOT_FOUND		(-3)
 #define SNAPSHOT_INCONSISTENT	(-6)
 
-bool8 S9xFreezeGame (const char *);
-bool8 S9xUnfreezeGame (const char *);
-void S9xFreezeToStream (STREAM);
-int S9xUnfreezeFromStream (STREAM);
+bool8 S9xFreezeGame (const char * filename);
+bool8 S9xUnfreezeGame (const char * filename);
+int S9xUnfreezeFromStream (STREAM stream);
 
 #endif
