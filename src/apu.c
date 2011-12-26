@@ -240,7 +240,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 /* Gaussian interpolation */
 
-static short const gauss [512] =
+static short gauss [512] =
 {
    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,
@@ -278,16 +278,17 @@ static short const gauss [512] =
 
 /* Gaussian interpolation */
 
-static INLINE int dsp_interpolate( dsp_voice_t const* v )
+static INLINE int dsp_interpolate( dsp_voice_t *v )
 {
-	int offset, out;
+	int offset, out, *in;
+	short *fwd, *rev;
 
 	/* Make pointers into gaussian based on fractional position between samples */
 	offset = v->interp_pos >> 4 & 0xFF;
-	short const* fwd = gauss + 255 - offset;
-	short const* rev = gauss       + offset; /* mirror left half of gaussian */
+	fwd = gauss + 255 - offset;
+	rev = gauss       + offset; /* mirror left half of gaussian */
 	
-	int const* in = &v->buf [(v->interp_pos >> 12) + v->buf_pos];
+	in = &v->buf [(v->interp_pos >> 12) + v->buf_pos];
 	out  = (fwd [  0] * in [0]) >> 11;
 	out += (fwd [256] * in [1]) >> 11;
 	out += (rev [256] * in [2]) >> 11;
@@ -522,8 +523,9 @@ static INLINE void dsp_voice_V1( dsp_voice_t* const v )
 
 static INLINE void dsp_voice_V2( dsp_voice_t* const v )
 {
+	uint8_t *entry;
 
-	uint8_t const* entry = &dsp_m.ram [dsp_m.t_dir_addr];
+	entry = &dsp_m.ram [dsp_m.t_dir_addr];
 	if ( !v->kon_delay )
 		entry += 2;
 	dsp_m.t_brr_next_addr = GET_LE16( entry );
@@ -1400,7 +1402,8 @@ void spc_enable_rom( int enable )
 	int count = (time) - (offset) - m.dsp_time; \
 	if ( count >= 0 ) \
 	{ \
-		int clock_count = (count & ~(CLOCKS_PER_SAMPLE - 1)) + CLOCKS_PER_SAMPLE; \
+		int clock_count; \
+		clock_count = (count & ~(CLOCKS_PER_SAMPLE - 1)) + CLOCKS_PER_SAMPLE; \
 		m.dsp_time += clock_count; \
 		dsp_run( clock_count ); \
 	}
