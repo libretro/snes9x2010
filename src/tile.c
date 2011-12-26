@@ -180,7 +180,8 @@
 
 static INLINE uint16 COLOR_SUB (uint16 C1, uint16 C2)
 {
-	uint16	mC1, mC2, v = ALPHA_BITS_MASK;
+	uint16	mC1, mC2, v;
+	v = ALPHA_BITS_MASK;
 
 	mC1 = C1 & FIRST_COLOR_MASK;
 	mC2 = C2 & FIRST_COLOR_MASK;
@@ -225,7 +226,8 @@ void S9xInitTileRenderer (void)
 
 	for (i = 0; i < 16; i++)
 	{
-		register uint32	b = 0;
+		register uint32	b;
+		b = 0;
 
 	#ifdef LSB_FIRST
 		if (i & 8)
@@ -259,8 +261,9 @@ void S9xInitTileRenderer (void)
 
 	for (i = 0; i < 256; i++)
 	{
-		register uint8	m = 0;
-		register uint8	s = 0;
+		register uint8 m, s;
+		m = 0;
+		s = 0;
 
 		if (i & 0x80)
 			s |= 8;
@@ -297,16 +300,20 @@ void S9xInitTileRenderer (void)
 
 static uint8 ConvertTile2 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
-	register uint8	*tp      = &Memory.VRAM[TileAddr];
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	register uint8 *tp, line;
+	uint32	*p;
+	uint32	non_zero;
+
+	tp      = &Memory.VRAM[TileAddr];
+	p = (uint32 *) pCache;
+	non_zero = 0;
 
 	for (line = 8; line != 0; line--, tp += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
 		register uint8	pix;
+		uint32 p1, p2;
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -320,16 +327,19 @@ static uint8 ConvertTile2 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 
 static uint8 ConvertTile4 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
-	register uint8	*tp      = &Memory.VRAM[TileAddr];
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	register uint8	*tp, line;
+	uint32	*p, non_zero;
+
+	tp = &Memory.VRAM[TileAddr];
+	p = (uint32 *) pCache;
+	non_zero = 0;
 
 	for (line = 8; line != 0; line--, tp += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
 		register uint8	pix;
+		uint32 p1, p2;
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -448,10 +458,12 @@ static uint8 ConvertTile4h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 static uint8 ConvertTile2h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 {
-	register uint8	*tp1     = &Memory.VRAM[TileAddr], *tp2;
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	register uint8	line, *tp1, *tp2;
+	uint32 *p, non_zero;
+
+	tp1 = &Memory.VRAM[TileAddr];
+	p = (uint32 *) pCache;
+	non_zero = 0;
 
 	if (Tile == 0x3ff)
 		tp2 = tp1 - (0x3ff << 4);
@@ -460,9 +472,10 @@ static uint8 ConvertTile2h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
 		register uint8	pix;
+		uint32 p1, p2;
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -476,10 +489,12 @@ static uint8 ConvertTile2h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 {
-	register uint8	*tp1     = &Memory.VRAM[TileAddr], *tp2;
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	register uint8	*tp1, *tp2, line;
+	uint32	non_zero, *p;
+
+	tp1 = &Memory.VRAM[TileAddr];
+	p = (uint32 *) pCache;
+	non_zero= 0;
 
 	if (Tile == 0x3ff)
 		tp2 = tp1 - (0x3ff << 5);
@@ -488,9 +503,11 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
+		uint32 p1, p2;
 		register uint8	pix;
+
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -512,8 +529,9 @@ static void DrawTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 	uint8 *pCache;
 	register int32 l;
 	register uint8 *bp, Pix;
-	uint32 TileNumber;
-	uint32 TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
+	uint32 TileNumber, TileAddr;
+
+	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
 	if (Tile & 0x100)
 		TileAddr += BG.NameSelect;
 	TileAddr &= 0xffff;
@@ -742,8 +760,9 @@ static void DrawTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	uint8 *pCache;
 	register int32 l;
 	register uint8 *bp, Pix;
-	uint32 TileNumber;
-	uint32 TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
+	uint32 TileNumber, TileAddr;
+
+	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
 	if (Tile & 0x100)
 		TileAddr += BG.NameSelect;
 	TileAddr &= 0xffff;
@@ -1640,8 +1659,8 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	uint8 *pCache;
 	register int32 l;
 	register uint8 *bp, Pix;
-	uint32 TileNumber;
-	uint32 TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
+	uint32 TileNumber, TileAddr;
+	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
 	if (Tile & 0x100)
 		TileAddr += BG.NameSelect;
 	TileAddr &= 0xffff;
@@ -2633,8 +2652,9 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	uint8 *pCache;
 	register int32 l;
 	register uint8 *bp, Pix;
-	uint32 TileNumber;
-	uint32 TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
+	uint32 TileNumber, TileAddr;
+
+	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
 	if (Tile & 0x100)
 		TileAddr += BG.NameSelect;
 	TileAddr &= 0xffff;
@@ -3861,8 +3881,9 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	uint8 *pCache;
 	register int32 l;
 	register uint8 *bp, Pix;
-	uint32 TileNumber;
-	uint32 TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
+	uint32 TileNumber, TileAddr;
+
+	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
 	if (Tile & 0x100)
 		TileAddr += BG.NameSelect;
 	TileAddr &= 0xffff;
@@ -4274,7 +4295,7 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 						  5]) :
 					  GFX.FixedColour));
 				GFX.DB[Offset + 5] = GFX.Z2;
-			};
+			}
 			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[1]))
 			{
 				GFX.S[Offset + 6] =
@@ -4285,7 +4306,7 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 						  6]) :
 					  GFX.FixedColour));
 				GFX.DB[Offset + 6] = GFX.Z2;
-			};
+			}
 			if (GFX.Z1 > GFX.DB[Offset + 7] && (Pix = bp[0]))
 			{
 				GFX.S[Offset + 7] =
@@ -4296,9 +4317,9 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 						  7]) :
 					  GFX.FixedColour));
 				GFX.DB[Offset + 7] = GFX.Z2;
-			};
+			}
 		}
-	};
+	}
 
 }
 
@@ -4308,8 +4329,9 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	uint8 *pCache;
 	register int32 l;
 	register uint8 *bp, Pix;
-	uint32 TileNumber;
-	uint32 TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
+	uint32 TileNumber, TileAddr;
+
+	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
 	if (Tile & 0x100)
 		TileAddr += BG.NameSelect;
 	TileAddr &= 0xffff;
@@ -4758,7 +4780,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
 				GFX.DB[Offset + 0] = GFX.Z2;
-			};
+			}
 			if (GFX.Z1 > GFX.DB[Offset + 1] && (Pix = bp[6]))
 			{
 				GFX.S[Offset + 1] =
@@ -4773,7 +4795,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
 				GFX.DB[Offset + 1] = GFX.Z2;
-			};
+			}
 			if (GFX.Z1 > GFX.DB[Offset + 2] && (Pix = bp[5]))
 			{
 				GFX.S[Offset + 2] =
@@ -4788,7 +4810,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
 				GFX.DB[Offset + 2] = GFX.Z2;
-			};
+			}
 			if (GFX.Z1 > GFX.DB[Offset + 3] && (Pix = bp[4]))
 			{
 				GFX.S[Offset + 3] =
@@ -4803,7 +4825,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
 				GFX.DB[Offset + 3] = GFX.Z2;
-			};
+			}
 			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[3]))
 			{
 				GFX.S[Offset + 4] =
@@ -4818,7 +4840,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
 				GFX.DB[Offset + 4] = GFX.Z2;
-			};
+			}
 			if (GFX.Z1 > GFX.DB[Offset + 5] && (Pix = bp[2]))
 			{
 				GFX.S[Offset + 5] =
@@ -4833,7 +4855,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
 				GFX.DB[Offset + 5] = GFX.Z2;
-			};
+			}
 			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[1]))
 			{
 				GFX.S[Offset + 6] =
@@ -4848,7 +4870,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
 				GFX.DB[Offset + 6] = GFX.Z2;
-			};
+			}
 			if (GFX.Z1 > GFX.DB[Offset + 7] && (Pix = bp[0]))
 			{
 				GFX.S[Offset + 7] =
@@ -4863,9 +4885,9 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 							   FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >>
 						 1]));
 				GFX.DB[Offset + 7] = GFX.Z2;
-			};
+			}
 		}
-	};
+	}
 
 }
 
@@ -4875,8 +4897,9 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 	uint8 *pCache;
 	register int32 l;
 	register uint8 *bp, Pix;
-	uint32 TileNumber;
-	uint32 TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
+	uint32 TileNumber, TileAddr;
+
+	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
 	if (Tile & 0x100)
 		TileAddr += BG.NameSelect;
 	TileAddr &= 0xffff;
@@ -5979,8 +6002,9 @@ static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 	uint8 *pCache;
 	register int32 l;
 	register uint8 *bp, Pix;
-	uint32 TileNumber;
-	uint32 TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
+	uint32 TileNumber, TileAddr;
+	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
+
 	if (Tile & 0x100)
 		TileAddr += BG.NameSelect;
 	TileAddr &= 0xffff;
@@ -6234,8 +6258,7 @@ static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
 				GFX.DB[Offset + 2 * 7] = GFX.DB[Offset + 2 * 7 + 1] = GFX.Z2;
 			}
 		}
-	};
-
+	}
 }
 
 static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
@@ -6244,8 +6267,9 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 	uint8 *pCache;
 	register int32 l;
 	register uint8 *bp, Pix;
-	uint32 TileNumber;
-	uint32 TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
+	uint32 TileNumber, TileAddr;
+
+	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift);
 	if (Tile & 0x100)
 		TileAddr += BG.NameSelect;
 	TileAddr &= 0xffff;
@@ -6501,7 +6525,7 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 2]) & 0x20) ? (GFX.
+							 ((((GFX.SubZBuffer[Offset + 4]) & 0x20) ? (GFX.
 													SubScreen
 													[Offset +
 													2 *
@@ -6521,7 +6545,7 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			}
 
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[4]))
@@ -6740,14 +6764,14 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 				GFX.DB[Offset + 2] = GFX.DB[Offset + 3] = GFX.Z2;
 			}
 
-			if (GFX.Z1 > GFX.DB[Offset + 2 * 2] && (Pix = bp[2]))
+			if (GFX.Z1 > GFX.DB[Offset + 4] && (Pix = bp[2]))
 			{
-				GFX.S[Offset + 2 * 2] = GFX.S[Offset + 2 * 2 + 1] =
+				GFX.S[Offset + 4] = GFX.S[Offset + 5] =
 					(GFX.
 					 X2[(((((GFX.
 										 ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001)))
 							 +
-							 ((((GFX.SubZBuffer[Offset + 2 * 2]) & 0x20) ? (GFX.
+							 ((((GFX.SubZBuffer[Offset + 4]) & 0x20) ? (GFX.
 													SubScreen
 													[Offset +
 													2 *
@@ -6767,7 +6791,7 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 					    : GFX.
 					    FixedColour) & (0x0400 | 0x0020
 						    | 0x0001))]);
-				GFX.DB[Offset + 2 * 2] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			}
 
 			if (GFX.Z1 > GFX.DB[Offset + 2 * 3] && (Pix = bp[3]))
@@ -6954,11 +6978,11 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
 			{
 				GFX.S[Offset + 4] = GFX.S[Offset + 5] =
 					(GFX.X2[(((((GFX.ScreenColors[Pix])) & (~(0x0400 | 0x0020 | 0x0001))) +
-					 ((((GFX.SubZBuffer[Offset + 2 * 2]) & 0x20) ? (GFX.SubScreen[Offset + 4]) :
+					 ((((GFX.SubZBuffer[Offset + 4]) & 0x20) ? (GFX.SubScreen[Offset + 4]) :
 					GFX.FixedColour) & (~(0x0400 | 0x0020 | 0x0001)))) >> 1) +
 					 (((GFX.ScreenColors[Pix])) & (((GFX.SubZBuffer[Offset + 4]) & 0x20) ? 
 					 (GFX.SubScreen[Offset + 4]) : GFX.FixedColour) & (0x0400 | 0x0020 | 0x0001))]);
-				GFX.DB[Offset + 4] = GFX.DB[Offset + 2 * 2 + 1] = GFX.Z2;
+				GFX.DB[Offset + 4] = GFX.DB[Offset + 5] = GFX.Z2;
 			};
 			if (GFX.Z1 > GFX.DB[Offset + 6] && (Pix = bp[4]))
 			{
@@ -87621,7 +87645,7 @@ static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty, AA, BB, CC, DD;
+		int xx, yy, starty, AA, BB, CC, DD;
 		uint8 Pix;
 		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
@@ -87654,11 +87678,8 @@ static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff) : ((HOffset -
+		CentreX) & 0x3ff));
 		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
 		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		if (!PPU.Mode7Repeat)
@@ -87875,25 +87896,27 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int xx, yy, starty, AA, BB, CC, DD;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
-					0x3ff));
-		BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset -
+		CentreY) | ~0x3ff) : ((VOffset - CentreY) & 0x3ff));
+
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
+		(CentreX << 8);
+
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
+		(CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = Right - 1;
@@ -87913,16 +87936,19 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 					0x3ff));
 		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
 		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
 			{
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				int X, Y;
+				uint8 *TileData, b;
+
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+
 				if ((D + 7) > GFX.DB[Offset + x] && (Pix = (b & 0xff)))
 				{
 					GFX.S[Offset + x] =
@@ -89036,9 +89062,12 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
+	struct SLineMatrixData *l;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	uint8 *VRAM1;
 
-	uint32 x, Line;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
 		if (IPPU.DirectColourMapsNeedRebuild)
@@ -89048,10 +89077,9 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
+
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int xx, yy, starty, AA, BB, CC, DD;
@@ -89224,9 +89252,13 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
+	struct SLineMatrixData *l;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	uint8 *VRAM1;
 
-	uint32 x, Line;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
+
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
 		if (IPPU.DirectColourMapsNeedRebuild)
@@ -89236,10 +89268,9 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
+
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int xx, yy, starty, AA, BB, CC, DD;
@@ -89349,8 +89380,9 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	struct SLineMatrixData *l;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -89362,9 +89394,8 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 
-	int aa, cc, startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
@@ -89480,7 +89511,7 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	struct SLineMatrixData *l;
 	int aa, cc, startx;
 	uint32 x, Line, Offset;
 	uint8 *VRAM1;
@@ -89498,6 +89529,8 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 
 	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
+
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int xx, yy, starty, AA, BB, CC, DD;
@@ -89657,7 +89690,7 @@ static void (*Renderers_DrawMode7BG1Normal2x1[7]) (uint32 Left, uint32 Right, in
 
 static void DrawMode7BG1_Hires (uint32 Left, uint32 Right, int D)
 {
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	struct SLineMatrixData *l;
 	int aa, cc, startx;
 	uint32 x, Line, Offset;
 	uint8 *VRAM1;
@@ -89674,6 +89707,7 @@ static void DrawMode7BG1_Hires (uint32 Left, uint32 Right, int D)
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
 
 	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int xx, yy, starty, AA, BB, CC, DD;
@@ -89772,7 +89806,7 @@ static void DrawMode7BG1_Hires (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1Add_Hires (uint32 Left, uint32 Right, int D)
 {
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	struct SLineMatrixData *l;
 	int aa, cc, startx;
 	uint32 x, Line, Offset;
 	uint8 *VRAM1 = Memory.VRAM + 1;
@@ -89785,7 +89819,9 @@ static void DrawMode7BG1Add_Hires (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+
 	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
@@ -89978,8 +90014,9 @@ static void DrawMode7BG1Add_Hires (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	struct SLineMatrixData *l;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -89989,11 +90026,11 @@ static void DrawMode7BG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 	}
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
+
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
+
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int yy, starty;
@@ -90205,8 +90242,9 @@ static void DrawMode7BG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 x, Line;
+	struct SLineMatrixData *l;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -90216,11 +90254,11 @@ static void DrawMode7BG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 	}
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
+
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
+
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int yy, starty;
@@ -90470,9 +90508,12 @@ static void DrawMode7BG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1Sub_Hires (uint32 Left, uint32 Right, int D)
 {
+	int aa, cc, startx;
+	struct SLineMatrixData *l;
+	uint32 x, Line, Offset;
+	uint8 *VRAM1;
 
-	uint32 x, Line;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
 		if (IPPU.DirectColourMapsNeedRebuild)
@@ -90482,10 +90523,9 @@ static void DrawMode7BG1Sub_Hires (uint32 Left, uint32 Right, int D)
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int yy, starty;
@@ -90607,9 +90647,13 @@ static void DrawMode7BG1Sub_Hires (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
 {
+	struct SLineMatrixData *l;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	uint8 *VRAM1;
 
-	uint32 x, Line;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
+
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
 		if (IPPU.DirectColourMapsNeedRebuild)
@@ -90618,11 +90662,10 @@ static void DrawMode7BG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
 	}
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
+
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int yy, starty;
@@ -90776,9 +90819,12 @@ static void DrawMode7BG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
 {
+	struct SLineMatrixData *l;
+	int aa, cc, startx;
+	uint32 x, Line, Offset;
+	uint8 *VRAM1;
 
-	uint32 x, Line;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
 		if (IPPU.DirectColourMapsNeedRebuild)
@@ -90787,11 +90833,11 @@ static void DrawMode7BG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
 	}
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
+
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
+
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
 		int yy, starty;
@@ -91013,9 +91059,10 @@ static void (*Renderers_DrawMode7BG1Hires[7]) (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7MosaicBG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 Line;
-	int32 h, w, x;
+	struct SLineMatrixData *l;
+	int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+	uint32 Line, Offset;
+	int32 h, w, x, MLeft, MRight;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
@@ -91025,11 +91072,16 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 	}
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
+
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx, StartY = GFX.StartY;
-	int HMosaic = 1, VMosaic = 1, MosaicStart = 0;
-	int32 MLeft = Left, MRight = Right;
+	StartY = GFX.StartY;
+
+	HMosaic = 1;
+	VMosaic = 1;
+	MosaicStart = 0;
+	MLeft = Left;
+	MRight = Right;
+
 	if (PPU.BGMosaic[0])
 	{
 		VMosaic = PPU.Mosaic;
@@ -91043,8 +91095,10 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 		MRight += HMosaic - 1;
 		MRight -= MRight % HMosaic;
 	}
-	uint32 Offset = StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[StartY];
+
+	Offset = StartY * GFX.PPL;
+	l = &LineMatrixData[StartY];
+
 	for (Line = StartY; Line <= GFX.EndY;
 			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
@@ -94009,10 +94063,13 @@ static void (*Renderers_DrawMode7MosaicBG1Normal2x1[7]) (uint32 Left, uint32 Rig
 
 static void DrawMode7MosaicBG1_Hires (uint32 Left, uint32 Right, int D)
 {
+	struct SLineMatrixData *l;
+	uint32 Line,Offset;
+	int32 h, w, x, MLeft, MRight;
+	int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+	uint8 *VRAM1;
 
-	uint32 Line;
-	int32 h, w, x;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
 		if (IPPU.DirectColourMapsNeedRebuild)
@@ -94021,11 +94078,18 @@ static void DrawMode7MosaicBG1_Hires (uint32 Left, uint32 Right, int D)
 	}
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
+
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx, StartY = GFX.StartY;
-	int HMosaic = 1, VMosaic = 1, MosaicStart = 0;
-	int32 MLeft = Left, MRight = Right;
+
+	StartY = GFX.StartY;
+
+	HMosaic = 1;
+	VMosaic = 1;
+	MosaicStart = 0;
+
+	MLeft = Left;
+	MRight = Right;
+
 	if (PPU.BGMosaic[0])
 	{
 		VMosaic = PPU.Mosaic;
@@ -94039,18 +94103,23 @@ static void DrawMode7MosaicBG1_Hires (uint32 Left, uint32 Right, int D)
 		MRight += HMosaic - 1;
 		MRight -= MRight % HMosaic;
 	}
-	uint32 Offset = StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[StartY];
-	for (Line = StartY; Line <= GFX.EndY;
-			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+
+	Offset = StartY * GFX.PPL;
+	l = &LineMatrixData[StartY];
+
+	for (Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
+		uint8 Pix, ctr;
+		int32 HOffset, VOffset, CentreX, CentreY;
+
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
@@ -94060,10 +94129,10 @@ static void DrawMode7MosaicBG1_Hires (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -94078,15 +94147,14 @@ static void DrawMode7MosaicBG1_Hires (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
+		xx =
 			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
 					CentreX) | ~0x3ff) : ((HOffset -
 						CentreX) &
 					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
-		uint8 ctr = 1;
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
@@ -94169,10 +94237,13 @@ static void DrawMode7MosaicBG1_Hires (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7MosaicBG1Add_Hires (uint32 Left, uint32 Right, int D)
 {
+	struct SLineMatrixData *l;
+	int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+	uint32 Line, Offset;
+	int32 h, w, x, MLeft, MRight;
+	uint8 *VRAM1;
 
-	uint32 Line;
-	int32 h, w, x;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
 	{
 		if (IPPU.DirectColourMapsNeedRebuild)
@@ -94181,11 +94252,18 @@ static void DrawMode7MosaicBG1Add_Hires (uint32 Left, uint32 Right, int D)
 	}
 	else
 		GFX.RealScreenColors = IPPU.ScreenColors;
+
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx, StartY = GFX.StartY;
-	int HMosaic = 1, VMosaic = 1, MosaicStart = 0;
-	int32 MLeft = Left, MRight = Right;
+
+	StartY = GFX.StartY;
+
+	HMosaic = 1;
+	VMosaic = 1;
+	MosaicStart = 0;
+
+	MLeft = Left;
+	MRight = Right;
+
 	if (PPU.BGMosaic[0])
 	{
 		VMosaic = PPU.Mosaic;
@@ -94199,8 +94277,10 @@ static void DrawMode7MosaicBG1Add_Hires (uint32 Left, uint32 Right, int D)
 		MRight += HMosaic - 1;
 		MRight -= MRight % HMosaic;
 	}
-	uint32 Offset = StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[StartY];
+
+	Offset = StartY * GFX.PPL;
+	l = &LineMatrixData[StartY];
+
 	for (Line = StartY; Line <= GFX.EndY;
 			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
@@ -94461,8 +94541,8 @@ static void DrawMode7MosaicBG1Add_Hires (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7MosaicBG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 Line;
+	struct SLineMatrixData *l;
+	uint32 Line, Offset;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
@@ -94491,8 +94571,9 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 		MRight += HMosaic - 1;
 		MRight -= MRight % HMosaic;
 	}
-	uint32 Offset = StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[StartY];
+
+	Offset = StartY * GFX.PPL;
+	l = &LineMatrixData[StartY];
 	for (Line = StartY; Line <= GFX.EndY;
 			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
@@ -98107,37 +98188,41 @@ static void DrawMode7BG2_Hires (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG2Add_Hires (uint32 Left, uint32 Right, int D)
 {
+	struct SLineMatrixData *l;
+	uint32 x, Line, Offset;
+	int aa, cc, startx, starty;
+	uint8 *VRAM1;
 
-	uint32 x, Line;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
 	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+
+	Offset = GFX.StartY * GFX.PPL;
+	l = &LineMatrixData[GFX.StartY];
+
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		int AA, BB, CC, DD, xx, yy;
+		uint8 Pix;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
-					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset -
+		CentreY) | ~0x3ff) : ((VOffset - CentreY) & 0x3ff));
+
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
+		(CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
+		(CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = Right - 1;
@@ -98150,23 +98235,22 @@ static void DrawMode7BG2Add_Hires (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset -
+		CentreX) | ~0x3ff) : ((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
 			{
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				int X, Y;
+				uint8 *TileData, b;
+
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((D + ((b & 0x80) ? 11 : 3)) > GFX.DB[Offset + 2 * x]
 						&& (Pix = (b & 0x7f)))
 				{
@@ -98318,11 +98402,15 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
@@ -98332,10 +98420,10 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
+		BB =
 			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
 			(CentreX << 8);
-		int DD =
+		DD =
 			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
 			(CentreY << 8);
 		if (PPU.Mode7HFlip)
@@ -98350,23 +98438,22 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff) : ((HOffset -
+		CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
 			{
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				int X, Y;
+				uint8 *TileData, b;
+
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+
 				if ((D + ((b & 0x80) ? 11 : 3)) > GFX.DB[Offset + 2 * x]
 						&& (Pix = (b & 0x7f)))
 				{
@@ -98440,9 +98527,11 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
 			{
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
+				int X, Y;
 				uint8 b;
+
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
 					uint8 *TileData =
@@ -98529,18 +98618,21 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 
 static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 {
+	uint32 x, Line, Offset;
+	int aa, cc, startx;
+	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	uint8 *VRAM1;
 
-	uint32 x, Line;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
 	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx;
-	uint32 Offset = GFX.StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
+	Offset = GFX.StartY * GFX.PPL;
+
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
+		int xx, yy, starty, AA, BB, CC, DD;
+		uint8 Pix;
+
 		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
 		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
@@ -98554,12 +98646,11 @@ static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
+		(CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
+		(CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = Right - 1;
@@ -98572,23 +98663,24 @@ static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff) : 
+		((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
 			{
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				int X, Y;
+				uint8 *TileData, b;
+
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+
 				if ((D + ((b & 0x80) ? 11 : 3)) > GFX.DB[Offset + 2 * x]
 						&& (Pix = (b & 0x7f)))
 				{
@@ -98681,9 +98773,12 @@ static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
 			{
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
+				int X, Y;
 				uint8 b;
+
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
+
 				if (((X | Y) & ~0x3ff) == 0)
 				{
 					uint8 *TileData =
@@ -101756,7 +101851,7 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 								GFX.DB[Offset + 2 * w + h * GFX.PPL] =
 									GFX.DB[Offset + 2 * w + h * GFX.PPL + 1] =
 									(D + ((b & 0x80) ? 11 : 3));
-							};
+							}
 					}
 				}
 			}
@@ -101809,7 +101904,7 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 								GFX.DB[Offset + 2 * w + h * GFX.PPL] =
 									GFX.DB[Offset + 2 * w + h * GFX.PPL + 1] =
 									(D + ((b & 0x80) ? 11 : 3));
-							};
+							}
 					}
 				}
 			}
@@ -102008,16 +102103,25 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 
 static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
+	int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+	struct SLineMatrixData *l;
+	uint32 Line, Offset;
+	int32 h, w, x, MLeft, MRight;
+	uint8 *VRAM1;
 
-	uint32 Line;
-	int32 h, w, x;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
+
 	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx, StartY = GFX.StartY;
-	int HMosaic = 1, VMosaic = 1, MosaicStart = 0;
-	int32 MLeft = Left, MRight = Right;
+	StartY = GFX.StartY;
+	
+	HMosaic = 1;
+	VMosaic = 1;
+	MosaicStart = 0;
+
+	MLeft = Left;
+	MRight = Right;
+
 	if (PPU.BGMosaic[0])
 	{
 		VMosaic = PPU.Mosaic;
@@ -102031,8 +102135,10 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 		MRight += HMosaic - 1;
 		MRight -= MRight % HMosaic;
 	}
-	uint32 Offset = StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[StartY];
+
+	Offset = StartY * GFX.PPL;
+	l = &LineMatrixData[StartY];
+
 	for (Line = StartY; Line <= GFX.EndY;
 			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
@@ -102258,16 +102364,25 @@ static void (*Renderers_DrawMode7MosaicBG2Normal2x1[7]) (uint32 Left, uint32 Rig
 
 static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
 {
+	struct SLineMatrixData *l;
+	int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+	uint32 Line, Offset;
+	int32 h, w, x, MLeft, MRight;
+	uint8 *VRAM1;
 
-	uint32 Line;
-	int32 h, w, x;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	VRAM1 = Memory.VRAM + 1;
+
 	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx, StartY = GFX.StartY;
-	int HMosaic = 1, VMosaic = 1, MosaicStart = 0;
-	int32 MLeft = Left, MRight = Right;
+
+	HMosaic = 1;
+	VMosaic = 1;
+	MosaicStart = 0;
+
+	MLeft = Left;
+	MRight = Right;
+
+	StartY = GFX.StartY;
 	if (PPU.BGMosaic[0])
 	{
 		VMosaic = PPU.Mosaic;
@@ -102281,18 +102396,22 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
 		MRight += HMosaic - 1;
 		MRight -= MRight % HMosaic;
 	}
-	uint32 Offset = StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[StartY];
-	for (Line = StartY; Line <= GFX.EndY;
-			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+
+	Offset = StartY * GFX.PPL;
+	l = &LineMatrixData[StartY];
+
+	for (Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
+
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
+
 		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
 		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
 		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
@@ -102302,12 +102421,9 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -102320,27 +102436,28 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff) : 
+		((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 		uint8 Pix;
 		uint8 ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				int X, Y;
+				uint8 *TileData, b;
+
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -102367,12 +102484,16 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				int X, Y;
+				uint8 b;
+
 				if (--ctr)
 					continue;
+
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
+
 				if (((X | Y) & ~0x3ff) == 0)
 				{
 					uint8 *TileData =
@@ -102401,7 +102522,7 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
 								GFX.DB[Offset + 2 * w + h * GFX.PPL] =
 									GFX.DB[Offset + 2 * w + h * GFX.PPL + 1] =
 									(D + ((b & 0x80) ? 11 : 3));
-							};
+							}
 					}
 				}
 			}
@@ -102414,15 +102535,24 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
 static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
 {
 
-	uint32 Line;
-	int32 h, w, x;
-	uint8 *VRAM1 = Memory.VRAM + 1;
+	struct SLineMatrixData *l;
+	int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+	uint32 Line, Offset;
+	int32 h, w, x, MLeft, MRight;
+	uint8 *VRAM1;
+
+	VRAM1 = Memory.VRAM + 1;
 	GFX.RealScreenColors = IPPU.ScreenColors;
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
-	int aa, cc;
-	int startx, StartY = GFX.StartY;
-	int HMosaic = 1, VMosaic = 1, MosaicStart = 0;
-	int32 MLeft = Left, MRight = Right;
+	
+	HMosaic = 1;
+	VMosaic = 1;
+	MosaicStart = 0;
+
+	MLeft = Left;
+	MRight = Right;
+
+	StartY = GFX.StartY;
 	if (PPU.BGMosaic[0])
 	{
 		VMosaic = PPU.Mosaic;
@@ -102436,18 +102566,24 @@ static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
 		MRight += HMosaic - 1;
 		MRight -= MRight % HMosaic;
 	}
-	uint32 Offset = StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[StartY];
-	for (Line = StartY; Line <= GFX.EndY;
-			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+
+	Offset = StartY * GFX.PPL;
+	l = &LineMatrixData[StartY];
+
+	for (Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix, ctr;
+
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
@@ -102457,12 +102593,9 @@ static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -102475,27 +102608,29 @@ static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
-		uint8 ctr = 1;
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff) : ((HOffset -
+		CentreX) & 0x3ff));
+
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				int X, Y;
+				uint8 *TileData, b;
+
 				if (--ctr)
 					continue;
+
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -102588,12 +102723,16 @@ static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				int X, Y;
+				uint8 b;
+
 				if (--ctr)
 					continue;
+
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
+
 				if (((X | Y) & ~0x3ff) == 0)
 				{
 					uint8 *TileData =
@@ -103887,6 +104026,7 @@ void S9xSelectTileRenderers_SFXSpeedup()
 	void	(**DT)		(uint32, uint32, uint32, uint32);
 	void	(**DCT)		(uint32, uint32, uint32, uint32, uint32, uint32);
 	void	(**DB)		(uint32, uint32, uint32);
+	int i;
 
 	DT     = Renderers_DrawTile16Normal1x1;
 	DCT    = Renderers_DrawClippedTile16Normal1x1;
@@ -103897,7 +104037,7 @@ void S9xSelectTileRenderers_SFXSpeedup()
 	GFX.DrawClippedTileNomath = DCT[0];
 	GFX.DrawBackdropNomath    = DB[0];
 
-	int	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
+	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
 	if (Memory.FillRAM[0x2131] & 0x40)
 	{
 		i++;
@@ -103918,15 +104058,16 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	void	(**DB)		(uint32, uint32, uint32);
 	void	(**DM7BG1)	(uint32, uint32, int);
 	void	(**DM7BG2)	(uint32, uint32, int);
-	bool8	M7M1, M7M2;
+	bool8	M7M1, M7M2, interlace, hires;
+	int i;
 
 	M7M1 = PPU.BGMosaic[0] && PPU.Mosaic > 1;
 	M7M2 = PPU.BGMosaic[1] && PPU.Mosaic > 1;
 
-	bool8 interlace = obj ? FALSE : IPPU.Interlace;
-	bool8 hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
+	interlace = obj ? FALSE : IPPU.Interlace;
+	hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
 
-	if (!IPPU.DoubleWidthPixels)	// normal width
+	if (!IPPU.DoubleWidthPixels)	/* normal width */
 	{
 		DT     = Renderers_DrawTile16Normal1x1;
 		DCT    = Renderers_DrawClippedTile16Normal1x1;
@@ -103936,7 +104077,7 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal1x1 : Renderers_DrawMode7BG2Normal1x1;
 		GFX.LinesPerTile = 8;
 	}
-	else if(hires)			//hires double width
+	else if(hires)			/* hires double width */
 	{
 		if (interlace)
 		{
@@ -103990,7 +104131,7 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	GFX.DrawMode7BG1Nomath    = DM7BG1[0];
 	GFX.DrawMode7BG2Nomath    = DM7BG2[0];
 
-	int	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
+	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
 	if (Memory.FillRAM[0x2131] & 0x40)
 	{
 		i++;
