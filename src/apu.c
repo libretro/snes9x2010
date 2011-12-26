@@ -3094,12 +3094,12 @@ static float hermite (float mu1, float a, float b, float c, float d)
 
 	mu2 = mu1 * mu1;
 	mu3 = mu2 * mu1;
-	m0  = (c - a) * 0.5;
-	m1  = (d - b) * 0.5;
-	a0 = +2 * mu3 - 3 * mu2 + 1;
-	a1 =      mu3 - 2 * mu2 + mu1;
-	a2 =      mu3 -     mu2;
-	a3 = -2 * mu3 + 3 * mu2;
+	m0 = (c - a) * 0.5f;
+	m1 = (d - b) * 0.5f;
+	a0 = + 2.0f * mu3 - 3.0f * mu2 + 1.0f;
+	a1 = mu3 - 2.0f * mu2 + mu1;
+	a2 = mu3 -     mu2;
+	a3 = -2.0f * mu3 + 3.0f * mu2;
 	return (a0 * b) + (a1 * m0) + (a2 * m1) + (a3 * c);
 }
 

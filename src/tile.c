@@ -93059,17 +93059,17 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
+
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -93164,13 +93164,14 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 	for (Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
 		uint8 Pix, ctr;
+		int32 HOffset, VOffset, CentreX, CentreY;
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
 		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
@@ -93762,17 +93763,16 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -93823,8 +93823,8 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 
 static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
-
-	uint32 Line;
+	struct SLineMatrixData *l;
+	uint32 Line, Offset;
 	int32 h, w, x;
 	uint8 *VRAM1 = Memory.VRAM + 1;
 	if ((Memory.FillRAM[0x2130] & 1))
@@ -93853,18 +93853,21 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 		MRight += HMosaic - 1;
 		MRight -= MRight % HMosaic;
 	}
-	uint32 Offset = StartY * GFX.PPL;
-	struct SLineMatrixData *l = &LineMatrixData[StartY];
-	for (Line = StartY; Line <= GFX.EndY;
-			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+	Offset = StartY * GFX.PPL;
+	l = &LineMatrixData[StartY];
+	for (Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix, ctr;
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
@@ -93874,12 +93877,9 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 					CentreY) | ~0x3ff) : ((VOffset -
 						CentreY) &
 					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -93892,27 +93892,26 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
-		uint8 ctr = 1;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff)
+		: ((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+
 				if ((Pix = (b & 0xff)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -93980,17 +93979,16 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				int X, Y;
+				uint8 *TileData, b;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -94625,14 +94623,15 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0xff)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -94725,17 +94724,16 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -95690,17 +95688,16 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -96934,26 +96931,26 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 	struct SLineMatrixData *l = &LineMatrixData[GFX.StartY];
 	for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
 	{
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
-					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset - CentreY) | ~0x3ff)
+		: ((VOffset - CentreY) & 0x3ff));
+
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = Right - 1;
@@ -96966,23 +96963,24 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff)
+		: ((HOffset - CentreX) & 0x3ff));
+
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
 			{
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				uint8 *TileData, b;
+				int X, Y;
+
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((D + ((b & 0x80) ? 11 : 3)) > GFX.DB[Offset + x]
 						&& (Pix = (b & 0x7f)))
 				{
@@ -97977,13 +97975,13 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 		{
 			for (x = Left; x < Right; x++, AA += aa, CC += cc)
 			{
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
-				if ((D + ((b & 0x80) ? 11 : 3)) > GFX.DB[Offset + 2 * x]
-						&& (Pix = (b & 0x7f)))
+				uint8 *TileData, b;
+				int X, Y;
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				if ((D + ((b & 0x80) ? 11 : 3)) > GFX.DB[Offset + 2 * x] && (Pix = (b & 0x7f)))
 				{
 					GFX.S[Offset + 2 * x] = GFX.S[Offset + 2 * x + 1] =
 						(GFX.
@@ -99443,28 +99441,28 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32 Left, uint32 Right, int D)
 	for (Line = StartY; Line <= GFX.EndY;
 			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		uint8 Pix, ctr;
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
-					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset - CentreY) | ~0x3ff)
+		: ((VOffset - CentreY) & 0x3ff));
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -99477,27 +99475,25 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
-		uint8 ctr = 1;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff)
+		: ((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -99520,17 +99516,16 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				int X, Y;
+				uint8 *TileData, b;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -99590,8 +99585,8 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 	for (Line = StartY; Line <= GFX.EndY;
 			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
 		uint8 Pix, ctr;
-		int yy, starty;
 
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
@@ -99599,21 +99594,17 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
 		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
 		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
-					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset - CentreY) | ~0x3ff)
+		: ((VOffset - CentreY) & 0x3ff));
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -99626,27 +99617,27 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff)
+		: ((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
 		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
+
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -99701,17 +99692,16 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -99852,14 +99842,15 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -99909,17 +99900,16 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -100053,14 +100043,15 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -100155,17 +100146,16 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -100344,14 +100334,15 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -100386,17 +100377,16 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -100515,14 +100505,15 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -100563,17 +100554,16 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -100698,14 +100688,15 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -100771,17 +100762,16 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -100941,14 +100931,15 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -100973,17 +100964,16 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -101045,28 +101035,29 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 	for (Line = StartY; Line <= GFX.EndY;
 			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix, ctr;
+
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
+
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset - CentreY) | ~0x3ff)
+		: ((VOffset - CentreY) &
 					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -101079,27 +101070,26 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
-		uint8 ctr = 1;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff)
+		: ((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -101160,17 +101150,16 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -101265,31 +101254,30 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 	}
 	uint32 Offset = StartY * GFX.PPL;
 	struct SLineMatrixData *l = &LineMatrixData[StartY];
-	for (Line = StartY; Line <= GFX.EndY;
-			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+	for (Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix, ctr;
+
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
-					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset - CentreY) | ~0x3ff)
+		: ((VOffset - CentreY) & 0x3ff));
+
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -101302,27 +101290,26 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
-		uint8 ctr = 1;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff)
+		: ((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -101374,17 +101361,16 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -101473,28 +101459,28 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 	for (Line = StartY; Line <= GFX.EndY;
 			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix, ctr;
+
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
-					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset - CentreY) | ~0x3ff)
+		: ((VOffset - CentreY) & 0x3ff));
+
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -101507,27 +101493,25 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
-		uint8 ctr = 1;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff)
+		: ((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -101628,17 +101612,16 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -101776,28 +101759,28 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 	for (Line = StartY; Line <= GFX.EndY;
 			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix, ctr;
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
+
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
-					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset - CentreY) | ~0x3ff)
+		: ((VOffset - CentreY) & 0x3ff));
+
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -101810,27 +101793,25 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
-		uint8 ctr = 1;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff)
+		: ((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -101867,17 +101848,16 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -101951,28 +101931,28 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 	for (Line = StartY; Line <= GFX.EndY;
 			Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix, ctr;
+
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
-					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset - CentreY) | ~0x3ff)
+		: ((VOffset - CentreY) & 0x3ff));
+
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -101985,27 +101965,25 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
-		uint8 ctr = 1;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff)
+		: ((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -102048,17 +102026,16 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
@@ -102869,28 +102846,27 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 
 	for (Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
 	{
+		int xx, yy, starty, AA, BB, CC, DD;
+		int32 HOffset, VOffset, CentreX, CentreY;
+		uint8 Pix, ctr;
+
 		if (Line + VMosaic > GFX.EndY)
 			VMosaic = GFX.EndY - Line + 1;
-		int yy, starty;
-		int32 HOffset = ((int32) l->M7HOFS << 19) >> 19;
-		int32 VOffset = ((int32) l->M7VOFS << 19) >> 19;
-		int32 CentreX = ((int32) l->CentreX << 19) >> 19;
-		int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+
+		HOffset = ((int32) l->M7HOFS << 19) >> 19;
+		VOffset = ((int32) l->M7VOFS << 19) >> 19;
+		CentreX = ((int32) l->CentreX << 19) >> 19;
+		CentreY = ((int32) l->CentreY << 19) >> 19;
 		if (PPU.Mode7VFlip)
 			starty = 255 - (int) (Line + 1);
 		else
 			starty = Line + 1;
-		yy =
-			(((VOffset - CentreY) & 0x2000) ? ((VOffset -
-					CentreY) | ~0x3ff) : ((VOffset -
-						CentreY) &
-					0x3ff));
-		int BB =
-			((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) +
-			(CentreX << 8);
-		int DD =
-			((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) +
-			(CentreY << 8);
+
+		yy = (((VOffset - CentreY) & 0x2000) ? ((VOffset - CentreY) | ~0x3ff)
+		: ((VOffset - CentreY) & 0x3ff));
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
 		if (PPU.Mode7HFlip)
 		{
 			startx = MRight - 1;
@@ -102903,27 +102879,25 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 			aa = l->MatrixA;
 			cc = l->MatrixC;
 		}
-		int xx =
-			(((HOffset - CentreX) & 0x2000) ? ((HOffset -
-					CentreX) | ~0x3ff) : ((HOffset -
-						CentreX) &
-					0x3ff));
-		int AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
-		int CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-		uint8 Pix;
-		uint8 ctr = 1;
+
+		xx = (((HOffset - CentreX) & 0x2000) ? ((HOffset - CentreX) | ~0x3ff)
+		: ((HOffset - CentreX) & 0x3ff));
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+		ctr = 1;
 		if (!PPU.Mode7Repeat)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8) & 0x3ff;
-				int Y = ((CC + DD) >> 8) & 0x3ff;
-				uint8 *TileData =
-					VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-				uint8 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+				X = ((AA + BB) >> 8) & 0x3ff;
+				Y = ((CC + DD) >> 8) & 0x3ff;
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				if ((Pix = (b & 0x7f)))
 				{
 					for (h = MosaicStart; h < VMosaic; h++)
@@ -103017,17 +102991,16 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 		{
 			for (x = MLeft; x < MRight; x++, AA += aa, CC += cc)
 			{
+				uint8 *TileData, b;
+				int X, Y;
 				if (--ctr)
 					continue;
 				ctr = HMosaic;
-				int X = ((AA + BB) >> 8);
-				int Y = ((CC + DD) >> 8);
-				uint8 b;
+				X = ((AA + BB) >> 8);
+				Y = ((CC + DD) >> 8);
 				if (((X | Y) & ~0x3ff) == 0)
 				{
-					uint8 *TileData =
-						VRAM1 +
-						(Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
 				}
 				else if (PPU.Mode7Repeat == 3)
