@@ -1489,7 +1489,7 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 	uint16	word;
 	uint32	dword;
 	int64	qaword;
-	uint8	*addr;
+	uint8	*addr, *relativeTo;
 	void	*base;
 	int	relativeAddr;
 	int	i, j;
@@ -1619,7 +1619,7 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 		if (fields[i].type == POINTER_V)
 		{
 			relativeAddr = (int) *((intptr_t *) ((uint8 *) base + fields[i].offset));
-			uint8	*relativeTo = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset2));
+			relativeTo = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset2));
 			*((intptr_t *) (addr)) = (intptr_t) (relativeTo + relativeAddr);
 		}
 	}
@@ -1627,9 +1627,12 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 
 int S9xUnfreezeFromStream (STREAM stream)
 {
+	struct SDMASnapshot	dma_snap;
+	struct SControlSnapshot	ctl_snap;
 	int		result = SUCCESS;
 	int		version, len;
 	char		buffer[PATH_MAX + 1];
+	uint8		hdma_byte;
 	uint8		*local_cpu, *local_registers, *local_ppu, *local_dma,
 			*local_vram, *local_ram, *local_sram, *local_fillram,
 			*local_apu_sound, *local_control_data, *local_timing_data,
@@ -1797,7 +1800,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 
 		UnfreezeStructFromCopy(&PPU, SnapPPU, COUNT(SnapPPU), local_ppu, version);
 
-		struct SDMASnapshot	dma_snap;
 		UnfreezeStructFromCopy(&dma_snap, SnapDMA, COUNT(SnapDMA), local_dma, version);
 
 		memcpy(Memory.VRAM, local_vram, 0x10000);
@@ -1810,7 +1812,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 
 		S9xAPULoadState(local_apu_sound);
 
-		struct SControlSnapshot	ctl_snap;
 		UnfreezeStructFromCopy(&ctl_snap, SnapControls, COUNT(SnapControls), local_control_data, version);
 
 		UnfreezeStructFromCopy(&Timings, SnapTimings, COUNT(SnapTimings), local_timing_data, version);
@@ -1883,7 +1884,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 		S9xFixColourBrightness();
 		IPPU.OBJChanged = TRUE;
 
-		uint8 hdma_byte = Memory.FillRAM[0x420c];
+		hdma_byte = Memory.FillRAM[0x420c];
 		S9X_SET_CPU_PREAMBLE(0x420c, hdma_byte);
 
 		S9xControlPostLoadState(&ctl_snap);
@@ -1935,9 +1936,3 @@ int S9xUnfreezeFromStream (STREAM stream)
 
 	return (result);
 }
-
-
-
-
-
-

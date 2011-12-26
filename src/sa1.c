@@ -204,10 +204,12 @@ void S9xSA1Init (void)
 
 static void S9xSA1SetPCBase (uint32 address)
 {
+	uint8	*GetAddress;
+
 	SA1Registers.PBPC = address & 0xffffff;
 	SA1.ShiftedPB = address & 0xff0000;
 
-	uint8	*GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
+	GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
 
 	if (GetAddress >= (uint8 *) MAP_LAST)
 	{
@@ -449,8 +451,11 @@ static uint16 S9xSA1GetWord (uint32 address, uint32 w)
 
 static void S9xSA1ReadVariableLengthData (bool8 inc, bool8 no_shift)
 {
-	uint32	addr  = Memory.FillRAM[0x2259] | (Memory.FillRAM[0x225a] << 8) | (Memory.FillRAM[0x225b] << 16);
-	uint8	shift = Memory.FillRAM[0x2258] & 15;
+	uint32 addr, data;
+	uint8 shift, s;
+
+	addr  = Memory.FillRAM[0x2259] | (Memory.FillRAM[0x225a] << 8) | (Memory.FillRAM[0x225b] << 16);
+	shift = Memory.FillRAM[0x2258] & 15;
 
 	if (no_shift)
 		shift = 0;
@@ -458,7 +463,7 @@ static void S9xSA1ReadVariableLengthData (bool8 inc, bool8 no_shift)
 	if (shift == 0)
 		shift = 16;
 
-	uint8	s = shift + SA1.variable_bit_pos;
+	s = shift + SA1.variable_bit_pos;
 
 	if (s >= 16)
 	{
@@ -466,7 +471,7 @@ static void S9xSA1ReadVariableLengthData (bool8 inc, bool8 no_shift)
 		s &= 15;
 	}
 
-	uint32	data = S9xSA1GetWord(addr, WRAP_NONE) | (S9xSA1GetWord(addr + 2, WRAP_NONE) << 16);
+	data = S9xSA1GetWord(addr, WRAP_NONE) | (S9xSA1GetWord(addr + 2, WRAP_NONE) << 16);
 
 	data >>= s;
 	Memory.FillRAM[0x230c] = (uint8) data;
@@ -529,14 +534,16 @@ uint8 S9xGetSA1 (uint32 address)
 
 static void S9xSA1CharConv2 (void)
 {
-	uint32	dest           = Memory.FillRAM[0x2235] | (Memory.FillRAM[0x2236] << 8);
-	uint32	offset         = (SA1.in_char_dma & 7) ? 0 : 1;
-	int		depth          = (Memory.FillRAM[0x2231] & 3) == 0 ? 8 : (Memory.FillRAM[0x2231] & 3) == 1 ? 4 : 2;
-	int		bytes_per_char = 8 * depth;
-	uint8	*p             = &Memory.FillRAM[0x3000] + (dest & 0x7ff) + offset * bytes_per_char;
-	uint8	*q             = &Memory.ROM[MAX_ROM_SIZE - 0x10000] + offset * 64;
+	uint32 dest, offset;
+	uint8 *p, *q;
+	int depth, bytes_per_char, l, b;
 
-	int l, b;
+	dest           = Memory.FillRAM[0x2235] | (Memory.FillRAM[0x2236] << 8);
+	offset         = (SA1.in_char_dma & 7) ? 0 : 1;
+	depth          = (Memory.FillRAM[0x2231] & 3) == 0 ? 8 : (Memory.FillRAM[0x2231] & 3) == 1 ? 4 : 2;
+	bytes_per_char = 8 * depth;
+	p             = &Memory.FillRAM[0x3000] + (dest & 0x7ff) + offset * bytes_per_char;
+	q             = &Memory.ROM[MAX_ROM_SIZE - 0x10000] + offset * 64;
 
 	switch (depth)
 	{
@@ -1156,6 +1163,9 @@ static void S9xSA1SetWord_Write1(uint16 Word, uint32 address, uint32 w)
 
 void S9xSA1MainLoop (void)
 {
+	int i;
+	bool8 sa1_quit;
+
 	if (SA1.Flags & NMI_FLAG)
 	{
 		if (Memory.FillRAM[0x2200] & 0x10)
@@ -1190,11 +1200,11 @@ void S9xSA1MainLoop (void)
 			SA1.Flags &= ~IRQ_FLAG;
 	}
 
-	bool8 sa1_quit = Memory.FillRAM[0x2200] & 0x60;
-	int i;
+	sa1_quit = Memory.FillRAM[0x2200] & 0x60;
+
 	for ( i = 0; i < 3 && !sa1_quit; i++)
 	{
-		register uint8				Op;
+		register uint8			Op;
 		register struct SOpcodes	*Opcodes;
 
 		if (SA1.PCBase)
