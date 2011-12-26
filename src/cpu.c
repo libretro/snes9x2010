@@ -250,6 +250,30 @@ static void S9xResetCPU (void)
 	ClearFlags(Decimal);
 }
 
+static void S9xResetDMA (void)
+{
+	int d;
+
+	for ( d = 0; d < 8; d++)
+	{
+		DMA[d].ReverseTransfer = TRUE;
+		DMA[d].HDMAIndirectAddressing = TRUE;
+		DMA[d].AAddressFixed = TRUE;
+		DMA[d].AAddressDecrement = TRUE;
+		DMA[d].TransferMode = 7;
+		DMA[d].BAddress = 0xff;
+		DMA[d].AAddress = 0xffff;
+		DMA[d].ABank = 0xff;
+		DMA[d].DMACount_Or_HDMAIndirectAddress = 0xffff;
+		DMA[d].IndirectBank = 0xff;
+		DMA[d].Address = 0xffff;
+		DMA[d].Repeat = FALSE;
+		DMA[d].LineCount = 0x7f;
+		DMA[d].UnknownByte = 0xff;
+		DMA[d].DoTransfer = FALSE;
+		DMA[d].UnusedBit43x0 = 1;
+	}
+}
 
 void S9xReset (void)
 {
@@ -262,7 +286,7 @@ void S9xReset (void)
 
 	S9xResetCPU();
 	S9xResetPPU();
-	S9X_RESET_DMA();
+	S9xResetDMA();
 	S9xResetAPU();
 
 	if (Settings.DSP)
@@ -294,7 +318,7 @@ void S9xSoftReset (void)
 
 	S9xSoftResetCPU();
 	S9xSoftResetPPU();
-	S9X_RESET_DMA();
+	S9xResetDMA();
 	S9xSoftResetAPU();
 
 	if (Settings.DSP)

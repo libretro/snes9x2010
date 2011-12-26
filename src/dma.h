@@ -201,28 +201,6 @@ struct SDMA
 #define TransferBytes	DMACount_Or_HDMAIndirectAddress
 #define IndirectAddress	DMACount_Or_HDMAIndirectAddress
 
-#define S9X_RESET_DMA() \
-	int d; \
-	for ( d = 0; d < 8; d++) \
-	{ \
-		DMA[d].ReverseTransfer = TRUE; \
-		DMA[d].HDMAIndirectAddressing = TRUE; \
-		DMA[d].AAddressFixed = TRUE; \
-		DMA[d].AAddressDecrement = TRUE; \
-		DMA[d].TransferMode = 7; \
-		DMA[d].BAddress = 0xff; \
-		DMA[d].AAddress = 0xffff; \
-		DMA[d].ABank = 0xff; \
-		DMA[d].DMACount_Or_HDMAIndirectAddress = 0xffff; \
-		DMA[d].IndirectBank = 0xff; \
-		DMA[d].Address = 0xffff; \
-		DMA[d].Repeat = FALSE; \
-		DMA[d].LineCount = 0x7f; \
-		DMA[d].UnknownByte = 0xff; \
-		DMA[d].DoTransfer = FALSE; \
-		DMA[d].UnusedBit43x0 = 1; \
-	}
-
 extern struct SDMA	DMA[8];
 
 #endif

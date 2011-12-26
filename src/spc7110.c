@@ -248,8 +248,8 @@ uint8 r4818; /*data port control register*/
 
 uint8 r481x;
 
-bool r4814_latch;
-bool r4815_latch;
+bool8 r4814_latch;
+bool8 r4815_latch;
 
 /*=========*/
 /*math unit*/
@@ -705,17 +705,17 @@ static void spc7110_decomp_mode0(bool8 init)
 	{
 		for( bit = 0; bit < 8; bit++)
 		{
+			unsigned prob, mps, flag_lps, shift;
 			/*get context*/
 			uint8 mask = (1 << (bit & 3)) - 1;
 			uint8 con = mask + ((inverts & mask) ^ (lps & mask));
 			if(bit > 3) con += 15;
 
 			/*get prob and mps*/
-			unsigned prob = PROBABILITY(con);
-			unsigned mps = (((out >> 15) & 1) ^ context[con].invert);
+			prob = PROBABILITY(con);
+			mps = (((out >> 15) & 1) ^ context[con].invert);
 
 			/*get bit*/
-			unsigned flag_lps;
 			if(val <= span - prob) { /*mps*/
 				span = span - prob;
 				out = (out << 1) + mps;
@@ -728,7 +728,7 @@ static void spc7110_decomp_mode0(bool8 init)
 			}
 
 			/*renormalize*/
-			unsigned shift = 0;
+			shift = 0;
 			while(span < 0x7f) {
 				shift++;
 
@@ -762,6 +762,8 @@ static void spc7110_decomp_mode0(bool8 init)
 
 uint8 spc7110_decomp_read (void)
 {
+	uint8 data;
+
 	if(decomp_buffer_length == 0)
 	{
 		/*decompress at least (SPC7110_DECOMP_BUFFER_SIZE / 2) bytes to the buffer*/
@@ -781,7 +783,7 @@ uint8 spc7110_decomp_read (void)
 		}
 	}
 
-	uint8 data = decomp_buffer[decomp_buffer_rdoffset++];
+	data = decomp_buffer[decomp_buffer_rdoffset++];
 	decomp_buffer_rdoffset &= SPC7110_DECOMP_BUFFER_SIZE - 1;
 	decomp_buffer_length--;
 	return data;
@@ -1521,6 +1523,7 @@ static uint8 s7_mmio_read(unsigned addr)
 		case 0x4810:
 			{
 				unsigned addr, adjust, adjustaddr, increment;
+				uint8 data;
 
 				if(r481x != 0x07)
 					return 0x00;
@@ -1537,7 +1540,7 @@ static uint8 s7_mmio_read(unsigned addr)
 					s7_set_data_adjust(adjust + 1);
 				}
 
-				uint8 data = memory_cartrom_read(s7_datarom_addr(adjustaddr));
+				data = memory_cartrom_read(s7_datarom_addr(adjustaddr));
 				if(!(r4818 & 2))
 				{
 					increment = (r4818 & 1) ? s7_data_increment() : 1;
@@ -1571,6 +1574,7 @@ static uint8 s7_mmio_read(unsigned addr)
 		case 0x481a:
 			{
 				unsigned addr, adjust;
+				uint8 data;
 
 				if(r481x != 0x07)
 					return 0x00;
@@ -1581,7 +1585,7 @@ static uint8 s7_mmio_read(unsigned addr)
 				if(r4818 & 8)
 					adjust = (int16)adjust;  /*16-bit sign extend*/
 
-				uint8 data = memory_cartrom_read(s7_datarom_addr(addr + adjust));
+				data = memory_cartrom_read(s7_datarom_addr(addr + adjust));
 				if((r4818 & 0x60) == 0x60)
 				{
 					if((r4818 & 16) == 0)
@@ -1612,8 +1616,10 @@ static uint8 s7_mmio_read(unsigned addr)
 		case 0x482c: return r482c;
 		case 0x482d: return r482d;
 		case 0x482e: return r482e;
-		case 0x482f: {
-				     uint8 status = r482f;
+		case 0x482f:
+			     {
+				     uint8 status;
+				     status = r482f;
 				     r482f &= 0x7f;
 				     return status;
 			     }
@@ -1635,16 +1641,20 @@ static uint8 s7_mmio_read(unsigned addr)
 		case 0x4840: return r4840;
 		case 0x4841:
 			     {
+				     uint8 data;
+
 				     if(rtc_state == RTCS_INACTIVE || rtc_state == RTCS_MODESELECT)
 					     return 0x00;
 
 				     r4842 = 0x80;
-				     uint8 data = memory_cartrtc_read(rtc_index);
+				     data = memory_cartrtc_read(rtc_index);
 				     rtc_index = (rtc_index + 1) & 15;
 				     return data;
 			     }
-		case 0x4842: {
-				     uint8 status = r4842;
+		case 0x4842:
+			     {
+				     uint8 status;
+				     status = r4842;
 				     r4842 &= 0x7f;
 				     return status;
 			     }
@@ -1712,7 +1722,9 @@ uint8 * S9xGetBasePointerSPC7110 (uint32 address)
 
 uint8 S9xGetSPC7110Byte (uint32 address)
 {
-	uint32	i = 0;
+	uint32 i;
+	
+	i = 0;
 
 	switch (address & 0xf00000)
 	{
