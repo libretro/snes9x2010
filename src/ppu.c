@@ -2721,9 +2721,7 @@ static INLINE void REGISTER_2119 (uint8 Byte)
 	IPPU.TileCached[TILE_4BIT_ODD] [((address >> 5) - 1) & (MAX_4BIT_TILES - 1)] = FALSE;
 
 	if (PPU.VMA.High)
-	{
 		PPU.VMA.Address += PPU.VMA.Increment;
-	}
 }
 
 static INLINE void REGISTER_2104 (uint8 Byte)
@@ -3873,104 +3871,6 @@ static INLINE bool8 addCyclesInDMA (uint8 dma_channel)
 	return (TRUE);
 }
 
-static INLINE void REGISTER_2119_linear (uint8 Byte)
-{
-	uint32 address;
-
-	address = ((PPU.VMA.Address << 1) + 1) & 0xffff;
-
-	Memory.VRAM[address] = Byte;
-
-	IPPU.TileCached[TILE_2BIT][address >> 4] = FALSE;
-	IPPU.TileCached[TILE_4BIT][address >> 5] = FALSE;
-	IPPU.TileCached[TILE_8BIT][address >> 6] = FALSE;
-	IPPU.TileCached[TILE_2BIT_EVEN][address >> 4] = FALSE;
-	IPPU.TileCached[TILE_2BIT_EVEN][((address >> 4) - 1) & (MAX_2BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_2BIT_ODD] [address >> 4] = FALSE;
-	IPPU.TileCached[TILE_2BIT_ODD] [((address >> 4) - 1) & (MAX_2BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_4BIT_EVEN][address >> 5] = FALSE;
-	IPPU.TileCached[TILE_4BIT_EVEN][((address >> 5) - 1) & (MAX_4BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_4BIT_ODD] [address >> 5] = FALSE;
-	IPPU.TileCached[TILE_4BIT_ODD] [((address >> 5) - 1) & (MAX_4BIT_TILES - 1)] = FALSE;
-
-	if (PPU.VMA.High)
-		PPU.VMA.Address += PPU.VMA.Increment;
-}
-
-static INLINE void REGISTER_2118_linear (uint8 Byte)
-{
-	uint32 address;
-
-	address = (PPU.VMA.Address << 1) & 0xffff;
-
-	Memory.VRAM[address] = Byte;
-
-	IPPU.TileCached[TILE_2BIT][address >> 4] = FALSE;
-	IPPU.TileCached[TILE_4BIT][address >> 5] = FALSE;
-	IPPU.TileCached[TILE_8BIT][address >> 6] = FALSE;
-	IPPU.TileCached[TILE_2BIT_EVEN][address >> 4] = FALSE;
-	IPPU.TileCached[TILE_2BIT_EVEN][((address >> 4) - 1) & (MAX_2BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_2BIT_ODD] [address >> 4] = FALSE;
-	IPPU.TileCached[TILE_2BIT_ODD] [((address >> 4) - 1) & (MAX_2BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_4BIT_EVEN][address >> 5] = FALSE;
-	IPPU.TileCached[TILE_4BIT_EVEN][((address >> 5) - 1) & (MAX_4BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_4BIT_ODD] [address >> 5] = FALSE;
-	IPPU.TileCached[TILE_4BIT_ODD] [((address >> 5) - 1) & (MAX_4BIT_TILES - 1)] = FALSE;
-
-	if (!PPU.VMA.High)
-		PPU.VMA.Address += PPU.VMA.Increment;
-}
-
-static INLINE void REGISTER_2118_tile (uint8 Byte)
-{
-	uint32 address, rem;
-
-	rem = PPU.VMA.Address & PPU.VMA.Mask1;
-	address = (((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) & 0xffff;
-
-	Memory.VRAM[address] = Byte;
-
-	IPPU.TileCached[TILE_2BIT][address >> 4] = FALSE;
-	IPPU.TileCached[TILE_4BIT][address >> 5] = FALSE;
-	IPPU.TileCached[TILE_8BIT][address >> 6] = FALSE;
-	IPPU.TileCached[TILE_2BIT_EVEN][address >> 4] = FALSE;
-	IPPU.TileCached[TILE_2BIT_EVEN][((address >> 4) - 1) & (MAX_2BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_2BIT_ODD] [address >> 4] = FALSE;
-	IPPU.TileCached[TILE_2BIT_ODD] [((address >> 4) - 1) & (MAX_2BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_4BIT_EVEN][address >> 5] = FALSE;
-	IPPU.TileCached[TILE_4BIT_EVEN][((address >> 5) - 1) & (MAX_4BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_4BIT_ODD] [address >> 5] = FALSE;
-	IPPU.TileCached[TILE_4BIT_ODD] [((address >> 5) - 1) & (MAX_4BIT_TILES - 1)] = FALSE;
-
-	if (!PPU.VMA.High)
-		PPU.VMA.Address += PPU.VMA.Increment;
-}
-
-static INLINE void REGISTER_2119_tile (uint8 Byte)
-{
-	uint32 address, rem;
-
-	rem = PPU.VMA.Address & PPU.VMA.Mask1;
-	address = ((((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) + 1) & 0xffff;
-
-	Memory.VRAM[address] = Byte;
-
-	IPPU.TileCached[TILE_2BIT][address >> 4] = FALSE;
-	IPPU.TileCached[TILE_4BIT][address >> 5] = FALSE;
-	IPPU.TileCached[TILE_8BIT][address >> 6] = FALSE;
-	IPPU.TileCached[TILE_2BIT_EVEN][address >> 4] = FALSE;
-	IPPU.TileCached[TILE_2BIT_EVEN][((address >> 4) - 1) & (MAX_2BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_2BIT_ODD] [address >> 4] = FALSE;
-	IPPU.TileCached[TILE_2BIT_ODD] [((address >> 4) - 1) & (MAX_2BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_4BIT_EVEN][address >> 5] = FALSE;
-	IPPU.TileCached[TILE_4BIT_EVEN][((address >> 5) - 1) & (MAX_4BIT_TILES - 1)] = FALSE;
-	IPPU.TileCached[TILE_4BIT_ODD] [address >> 5] = FALSE;
-	IPPU.TileCached[TILE_4BIT_ODD] [((address >> 5) - 1) & (MAX_4BIT_TILES - 1)] = FALSE;
-
-	if (PPU.VMA.High)
-		PPU.VMA.Address += PPU.VMA.Increment;
-}
-
 static uint8 dma_channels_to_be_used[8] = {0};
 static bool8 special_chips_active = FALSE;
 
@@ -4475,26 +4375,13 @@ static void S9xDoDMA (void)
 #ifndef CORRECT_VRAM_READS
 								IPPU.FirstVRAMRead = TRUE;
 #endif
-								if (!PPU.VMA.FullGraphicCount)
+								do
 								{
-									do
-									{
-										Work = *(base + p);
-										if(CHECK_INBLANK)
-											REGISTER_2118_linear(Work);
-										UPDATE_COUNTERS;
-									} while (--count > 0);
-								}
-								else
-								{
-									do
-									{
-										Work = *(base + p);
-										if(CHECK_INBLANK)
-											REGISTER_2118_tile(Work);
-										UPDATE_COUNTERS;
-									} while (--count > 0);
-								}
+									Work = *(base + p);
+									if(CHECK_INBLANK)
+										REGISTER_2118(Work);
+									UPDATE_COUNTERS;
+								} while (--count > 0);
 
 								break;
 
@@ -4502,26 +4389,13 @@ static void S9xDoDMA (void)
 #ifndef CORRECT_VRAM_READS
 								IPPU.FirstVRAMRead = TRUE;
 #endif
-								if (!PPU.VMA.FullGraphicCount)
+								do
 								{
-									do
-									{
-										Work = *(base + p);
-										if(CHECK_INBLANK)
-											REGISTER_2119_linear(Work);
-										UPDATE_COUNTERS;
-									} while (--count > 0);
-								}
-								else
-								{
-									do
-									{
-										Work = *(base + p);
-										if(CHECK_INBLANK)
-											REGISTER_2119_tile(Work);
-										UPDATE_COUNTERS;
-									} while (--count > 0);
-								}
+									Work = *(base + p);
+									if(CHECK_INBLANK)
+										REGISTER_2119(Work);
+									UPDATE_COUNTERS;
+								} while (--count > 0);
 
 								break;
 
@@ -4575,68 +4449,34 @@ static void S9xDoDMA (void)
 #ifndef CORRECT_VRAM_READS
 								IPPU.FirstVRAMRead = TRUE;
 #endif
-								if (!PPU.VMA.FullGraphicCount)
+								switch (b)
 								{
-									switch (b)
-									{
-										default:
-											while (count > 1)
-											{
-												Work = *(base + p);
-												REGISTER_2118_linear(Work);
-												UPDATE_COUNTERS;
-												count--;
+									default:
+										while (count > 1)
+										{
+											Work = *(base + p);
+											REGISTER_2118(Work);
+											UPDATE_COUNTERS;
+											count--;
 
-												case 1:
-												Work = *(base + p);
-												if(CHECK_INBLANK)
-													REGISTER_2119_linear(Work);
-												UPDATE_COUNTERS;
-												count--;
-											}
-									}
+											case 1:
+											Work = *(base + p);
+											if(CHECK_INBLANK)
+												REGISTER_2119(Work);
+											UPDATE_COUNTERS;
+											count--;
+										}
+								}
 
-									if (count == 1)
-									{
-										Work = *(base + p);
-										REGISTER_2118_linear(Work);
-										UPDATE_COUNTERS;
-										b = 1;
-									}
-									else
-										b = 0;
+								if (count == 1)
+								{
+									Work = *(base + p);
+									REGISTER_2118(Work);
+									UPDATE_COUNTERS;
+									b = 1;
 								}
 								else
-								{
-									switch (b)
-									{
-										default:
-											while (count > 1)
-											{
-												Work = *(base + p);
-												REGISTER_2118_tile(Work);
-												UPDATE_COUNTERS;
-												count--;
-
-												case 1:
-												Work = *(base + p);
-												if(CHECK_INBLANK)
-													REGISTER_2119_tile(Work);
-												UPDATE_COUNTERS;
-												count--;
-											}
-									}
-
-									if (count == 1)
-									{
-										Work = *(base + p);
-										REGISTER_2118_tile(Work);
-										UPDATE_COUNTERS;
-										b = 1;
-									}
-									else
-										b = 0;
-								}
+									b = 0;
 							}
 							else
 							{
@@ -4670,104 +4510,102 @@ static void S9xDoDMA (void)
 									b = 0;
 							}
 						}
-						else
-							if (d->TransferMode == 3 || d->TransferMode == 7)
+						else if (d->TransferMode == 3 || d->TransferMode == 7)
+						{
+							switch (b)
 							{
-								switch (b)
-								{
-									default:
-										do
-										{
-											Work = *(base + p);
-											S9xSetPPU(Work, 0x2100 + d->BAddress);
-											UPDATE_COUNTERS;
-											if (--count <= 0)
-											{
-												b = 1;
-												break;
-											}
-
-											case 1:
-											Work = *(base + p);
-											S9xSetPPU(Work, 0x2100 + d->BAddress);
-											UPDATE_COUNTERS;
-											if (--count <= 0)
-											{
-												b = 2;
-												break;
-											}
-
-											case 2:
-											Work = *(base + p);
-											S9xSetPPU(Work, 0x2101 + d->BAddress);
-											UPDATE_COUNTERS;
-											if (--count <= 0)
-											{
-												b = 3;
-												break;
-											}
-
-											case 3:
-											Work = *(base + p);
-											S9xSetPPU(Work, 0x2101 + d->BAddress);
-											UPDATE_COUNTERS;
-											if (--count <= 0)
-											{
-												b = 0;
-												break;
-											}
-										} while (1);
-								}
-							}
-							else
-								if (d->TransferMode == 4)
-								{
-									switch (b)
+								default:
+									do
 									{
-										default:
-											do
-											{
-												Work = *(base + p);
-												S9xSetPPU(Work, 0x2100 + d->BAddress);
-												UPDATE_COUNTERS;
-												if (--count <= 0)
-												{
-													b = 1;
-													break;
-												}
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2100 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 1;
+											break;
+										}
 
-												case 1:
-												Work = *(base + p);
-												S9xSetPPU(Work, 0x2101 + d->BAddress);
-												UPDATE_COUNTERS;
-												if (--count <= 0)
-												{
-													b = 2;
-													break;
-												}
+										case 1:
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2100 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 2;
+											break;
+										}
 
-												case 2:
-												Work = *(base + p);
-												S9xSetPPU(Work, 0x2102 + d->BAddress);
-												UPDATE_COUNTERS;
-												if (--count <= 0)
-												{
-													b = 3;
-													break;
-												}
+										case 2:
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2101 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 3;
+											break;
+										}
 
-												case 3:
-												Work = *(base + p);
-												S9xSetPPU(Work, 0x2103 + d->BAddress);
-												UPDATE_COUNTERS;
-												if (--count <= 0)
-												{
-													b = 0;
-													break;
-												}
-											} while (1);
-									}
-								}
+										case 3:
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2101 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 0;
+											break;
+										}
+									} while (1);
+							}
+						}
+						else if (d->TransferMode == 4)
+						{
+							switch (b)
+							{
+								default:
+									do
+									{
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2100 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 1;
+											break;
+										}
+
+										case 1:
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2101 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 2;
+											break;
+										}
+
+										case 2:
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2102 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 3;
+											break;
+										}
+
+										case 3:
+										Work = *(base + p);
+										S9xSetPPU(Work, 0x2103 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 0;
+											break;
+										}
+									} while (1);
+							}
+						}
 				}
 
 				if (rem <= 0)
@@ -5190,7 +5028,9 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 
 			case 0x4203: /* WRMPYB*/
 			{
-				uint32 res = Memory.FillRAM[0x4202] * Byte;
+				uint32 res;
+
+				res = Memory.FillRAM[0x4202] * Byte;
 				/* FIXME: The update occurs 8 machine cycles after $4203 is set.*/
 				Memory.FillRAM[0x4216] = (uint8) res;
 				Memory.FillRAM[0x4217] = (uint8) (res >> 8);
@@ -5203,9 +5043,12 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 
 			case 0x4206: /* WRDIVB*/
 			{
-				uint16 a = Memory.FillRAM[0x4204] + (Memory.FillRAM[0x4205] << 8);
-				uint16 div = Byte ? a / Byte : 0xffff;
-				uint16 rem = Byte ? a % Byte : a;
+				uint16 a, div, rem;
+
+				a = Memory.FillRAM[0x4204] + (Memory.FillRAM[0x4205] << 8);
+				div = Byte ? a / Byte : 0xffff;
+				rem = Byte ? a % Byte : a;
+
 				/* FIXME: The update occurs 16 machine cycles after $4206 is set.*/
 				Memory.FillRAM[0x4214] = (uint8) div;
 				Memory.FillRAM[0x4215] = div >> 8;
