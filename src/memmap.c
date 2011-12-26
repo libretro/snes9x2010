@@ -297,9 +297,10 @@ static void S9xDeinterleaveType2 (int size, uint8 *base)
 	/* for odd Super FX images */
 	uint8 *tmp;
 	uint8	blocks[256], b;
-	int	nblocks = size >> 16;
-	int	step = 64;
-	int	i, j;
+	int nblocks, step, i, j;
+
+	nblocks = size >> 16;
+	step = 64;
 
 	while (nblocks <= step)
 		step >>= 1;
@@ -596,8 +597,8 @@ static bool8 allASCII (uint8 *b, int size)
 
 static bool8 is_SufamiTurbo_BIOS (uint8 *data, uint32 size)
 {
-	if (size == 0x40000 &&
-		strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0 && strncmp((char * ) (data + 0x10), "SFC-ADX BACKUP", 14) == 0)
+	if (size == 0x40000 && strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0
+	&& strncmp((char * ) (data + 0x10), "SFC-ADX BACKUP", 14) == 0)
 		return TRUE;
 	else
 		return FALSE;
@@ -605,8 +606,8 @@ static bool8 is_SufamiTurbo_BIOS (uint8 *data, uint32 size)
 
 static bool8 is_SufamiTurbo_Cart (uint8 *data, uint32 size)
 {
-	if (size >= 0x80000 && size <= 0x100000 &&
-		strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0 && strncmp((char * ) (data + 0x10), "SFC-ADX BACKUP", 14) != 0)
+	if (size >= 0x80000 && size <= 0x100000 && strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0
+	&& strncmp((char * ) (data + 0x10), "SFC-ADX BACKUP", 14) != 0)
 		return TRUE;
 	else
 		return FALSE;
@@ -630,8 +631,11 @@ static bool8 is_SameGame_Add_On (uint8 *data, uint32 size)
 
 static int ScoreHiROM (uint32 calculated_size, uint8 * rom,  bool8 skip_header, int32 romoff)
 {
-	uint8	*buf = rom + 0xff00 + romoff + (skip_header ? 0x200 : 0);
-	int		score = 0;
+	uint8	*buf;
+	int score;
+
+	score = 0;
+	buf = rom + 0xff00 + romoff + (skip_header ? 0x200 : 0);
 
 	if (buf[0xd5] & 0x1)
 		score += 2;
@@ -679,8 +683,11 @@ static int ScoreHiROM (uint32 calculated_size, uint8 * rom,  bool8 skip_header, 
 
 static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, int32 romoff)
 {
-	uint8	*buf = rom + 0x7f00 + romoff + (skip_header ? 0x200 : 0);
-	int		score = 0;
+	uint8	*buf;
+	int score;
+
+	score = 0;
+	buf = rom + 0x7f00 + romoff + (skip_header ? 0x200 : 0);
 
 	if (!(buf[0xd5] & 0x1))
 		score += 3;
@@ -725,7 +732,9 @@ static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, i
 
 static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
 {
-	uint32	calc_size = (size / 0x2000) * 0x2000;
+	uint32 calc_size;
+
+	calc_size = (size / 0x2000) * 0x2000;
 
 	if (size - calc_size == 512)
 	{
@@ -741,6 +750,9 @@ static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
 
 static bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers, uint8 *buffer)
 {
+	char	filename[132], *ext;
+	int filesize, port;
+
 	*TotalFileSize = 0;
 	*headers = 0;
 
@@ -749,9 +761,8 @@ static bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers,
 		return (FALSE);
 
 	/* find largest file in zip file (under MAX_ROM_SIZE) or a file with extension .1*/
-	char	filename[132];
-	int		filesize = 0;
-	int		port = unzGoToFirstFile(file);
+	filesize = 0;
+	port = unzGoToFirstFile(file);
 
 	unz_file_info	info;
 
@@ -790,7 +801,9 @@ static bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers,
 
 	/* find extension*/
 	char	tmp[2] = { 0, 0 };
-	char	*ext = strrchr(filename, '.');
+
+	ext = strrchr(filename, '.');
+
 	if (ext)
 		ext++;
 	else
@@ -810,8 +823,10 @@ static bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers,
 
 	do
 	{
-		int	FileSize = info.uncompressed_size;
-		int	l = unzReadCurrentFile(file, ptr, FileSize);
+		int FileSize, l, len;
+
+		FileSize = info.uncompressed_size;
+		l = unzReadCurrentFile(file, ptr, FileSize);
 
 		if (unzCloseCurrentFile(file) == UNZ_CRCERROR)
 		{
@@ -828,8 +843,6 @@ static bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers,
 		FileSize = (int)HeaderRemove((uint32) FileSize, headers, ptr);
 		ptr += FileSize;
 		*TotalFileSize += FileSize;
-
-		int	len;
 
 		if (ptr - Memory.ROM < MAX_ROM_SIZE + 512 && (isdigit(ext[0]) && ext[1] == 0 && ext[0] < '9'))
 		{
@@ -878,13 +891,14 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	/* ** Memory.ROMFilename */
 
 	bool8	more;
-	int32	totalSize = 0;
+	int32	totalSize;
 	uint32	size;
-	char	fname[PATH_MAX + 1];
-	char	drive[_MAX_DRIVE + 1], dir[PATH_MAX + 1], name[PATH_MAX + 1], exts[PATH_MAX + 1];
+	char	fname[PATH_MAX + 1], drive[_MAX_DRIVE + 1], dir[PATH_MAX + 1], name[PATH_MAX + 1], exts[PATH_MAX + 1];
 	char	*ext;
-	int		len, nFormat;
+	int	len, nFormat;
 	uint8	*ptr;
+
+	totalSize = 0;
 
 	ext = &exts[0];
 
@@ -980,6 +994,7 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
 {
 	uint32 i;
+
 	for ( i = 0; i < size; i++)
 		crc32 = ((crc32 >> 8) & 0x00FFFFFF) ^ crc32Table[(crc32 ^ array[i]) & 0xFF];
 
@@ -990,7 +1005,11 @@ static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
 
 static uint32 ReadUPSPointer (const uint8 *data, uint32 * addr, unsigned size)
 {
-	uint32 offset = 0, shift = 1;
+	uint32 offset, shift;
+
+	offset = 0;
+	shift = 1;
+
 	while(*addr < size)
 	{
 		uint8 x = data[(*addr)++];
@@ -1020,12 +1039,16 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 	unsigned i;
 	uint32 addr, relative,size, patch_crc32, out_crc32, out_size, px_crc32,
 	py_crc32, pp_crc32, px_size, py_size, rom_crc32;
+	uint8 *data;
 
-	uint8 *data = (uint8*)malloc(8 * 1024 * 1024);  /* allocate a lot of memory, better safe than sorry */
+	data = (uint8*)malloc(8 * 1024 * 1024);  /* allocate a lot of memory, better safe than sorry */
 	size = 0;
 	while(TRUE)
 	{
-		int value = fgetc(r);
+		int value;
+
+		value = fgetc(r);
+
 		if(value == EOF)
 			break;
 		data[size++] = value;
@@ -1151,7 +1174,9 @@ static bool8 ReadUPSPatch (FILE * r, int32 * rom_size)
 
 static long ReadInt (FILE * r, unsigned nbytes)
 {
-	long	v = 0;
+	long v;
+
+	v = 0;
 
 	while (nbytes--)
 	{
@@ -1187,7 +1212,7 @@ static bool8 ReadIPSPatch (FILE * r, long offset, int32 * rom_size)
 	for (;;)
 	{
 		long	len, rlen;
-		int		rchar;
+		int	rchar;
 
 		ofs = ReadInt(r, 3);
 		if (ofs == -1)
@@ -1251,13 +1276,16 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 #ifdef CUSTOM_FILE_HANDLING
 	CustomCheckForAnyPatch(header, rom_size);
 #else
-	FILE *		patch_file  = NULL;
+	FILE *		patch_file;
 	uint32		i;
-	long		offset = header ? 512 : 0;
-	int			ret;
+	long		offset;
+	int		ret;
 	bool8		flag;
 	char		dir[PATH_MAX + 1], drive[_MAX_DRIVE + 1], name[PATH_MAX + 1], ext[PATH_MAX + 1], ips[PATH_MAX + 3], fname[PATH_MAX + 1];
 	const char	*n;
+
+	offset = header ? 512 : 0;
+	patch_file  = NULL;
 
 	/* UPS */
 
@@ -1549,11 +1577,12 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 
 bool8 LoadROM (const char *filename)
 {
-	int	hi_score, lo_score;
+	int	hi_score, lo_score, retry_count;
 	bool8 interleaved, tales;
 	uint8 * RomHeader;
-	int	retry_count = 0;
 	int32 totalFileSize;
+
+	retry_count = 0;
 
 	if (!filename || !*filename)
 		return FALSE;
@@ -1786,7 +1815,9 @@ again:
 
 bool8 LoadMultiCart (const char *cartA, const char *cartB)
 {
-	bool8	r = TRUE;
+	bool8 r;
+
+	r = TRUE;
 
 	ZeroMemory(Memory.ROM, MAX_ROM_SIZE);
 	ZeroMemory(&Multi, sizeof(Multi));
@@ -1971,7 +2002,9 @@ bool8 LoadSameGame (const char *cartA, const char *cartB)
 
 static bool8 LoadSRTC (void)
 {
-	FILE	*fp = fopen(S9xGetFilename(".rtc", SRAM_DIR), "rb");
+	FILE *fp;
+
+	fp = fopen(S9xGetFilename(".rtc", SRAM_DIR), "rb");
 	if (!fp)
 		return (FALSE);
 
@@ -1983,7 +2016,9 @@ static bool8 LoadSRTC (void)
 
 static bool8 SaveSRTC (void)
 {
-	FILE	*fp = fopen(S9xGetFilename(".rtc", SRAM_DIR), "wb");
+	FILE *fp;
+
+	fp = fopen(S9xGetFilename(".rtc", SRAM_DIR), "wb");
 	if (!fp)
 		return (FALSE);
 
@@ -1996,7 +2031,7 @@ static bool8 SaveSRTC (void)
 bool8 LoadSRAM (const char *filename)
 {
 	FILE	*file;
-	int		size, len;
+	int	size, len;
 	char	sramName[PATH_MAX + 1];
 
 	strcpy(sramName, filename);
@@ -2082,7 +2117,7 @@ bool8 LoadSRAM (const char *filename)
 bool8 SaveSRAM (const char *filename)
 {
 	FILE	*file;
-	int		size;
+	int	size;
 	char	sramName[PATH_MAX + 1];
 
 	if (Settings.SuperFX && Memory.ROMType < 0x15) /* doesn't have SRAM */
@@ -2156,7 +2191,9 @@ bool8 SaveSRAM (const char *filename)
 static uint16 checksum_calc_sum (uint8 *data, uint32 length)
 {
 	uint32 i;
-	uint16	sum = 0;
+	uint16 sum;
+
+	sum = 0;
 
 	for ( i = 0; i < length; i++)
 		sum += data[i];

@@ -365,9 +365,10 @@ void S9xSA1PostLoadState (void)
 
 static void S9xSetSA1MemMap (uint32 which1, uint8 map)
 {
-	int i, c;
-	int	start  = which1 * 0x100 + 0xc00;
-	int	start2 = which1 * 0x200;
+	int i, c, start, start2;
+
+	start  = which1 * 0x100 + 0xc00;
+	start2 = which1 * 0x200;
 
 	if (which1 >= 2)
 		start2 += 0x400;
@@ -389,7 +390,9 @@ static void S9xSetSA1MemMap (uint32 which1, uint8 map)
 
 static uint8 S9xSA1GetByte (uint32 address)
 {
-	uint8	*GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
+	uint8	*GetAddress;
+
+	GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
 
 	if (GetAddress >= (uint8 *) MAP_LAST)
 		return (*(GetAddress + (address & 0xffff)));
@@ -604,10 +607,12 @@ static void S9xSA1CharConv2 (void)
 
 static void S9xSA1DMA (void)
 {
-	uint32	src = Memory.FillRAM[0x2232] | (Memory.FillRAM[0x2233] << 8) | (Memory.FillRAM[0x2234] << 16);
-	uint32	dst = Memory.FillRAM[0x2235] | (Memory.FillRAM[0x2236] << 8) | (Memory.FillRAM[0x2237] << 16);
-	uint32	len = Memory.FillRAM[0x2238] | (Memory.FillRAM[0x2239] << 8);
+	uint32 src, dst, len;
 	uint8	*s, *d;
+
+	src = Memory.FillRAM[0x2232] | (Memory.FillRAM[0x2233] << 8) | (Memory.FillRAM[0x2234] << 16);
+	dst = Memory.FillRAM[0x2235] | (Memory.FillRAM[0x2236] << 8) | (Memory.FillRAM[0x2237] << 16);
+	len = Memory.FillRAM[0x2238] | (Memory.FillRAM[0x2239] << 8);
 
 	switch (Memory.FillRAM[0x2230] & 3)
 	{
@@ -995,7 +1000,9 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 
 static void S9xSA1SetByte (uint8 byte, uint32 address)
 {
-	uint8	*SetAddress = SA1.WriteMap[(address & 0xffffff) >> MEMMAP_SHIFT];
+	uint8 *SetAddress;
+
+	SetAddress = SA1.WriteMap[(address & 0xffffff) >> MEMMAP_SHIFT];
 
 	if (SetAddress >= (uint8 *) MAP_LAST)
 	{

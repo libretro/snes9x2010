@@ -1353,7 +1353,9 @@ static void S9xFreezeToStream (STREAM stream)
 
 bool8 S9xFreezeGame (const char *filename)
 {
-	STREAM	stream = NULL;
+	STREAM	stream;
+
+	stream = NULL;
 
 	if (S9xOpenSnapshotFile(filename, "wb", &stream))
 	{
@@ -1368,8 +1370,10 @@ bool8 S9xFreezeGame (const char *filename)
 
 bool8 S9xUnfreezeGame (const char * filename)
 {
-	STREAM	stream = NULL;
+	STREAM	stream;
 	char	drive[_MAX_DRIVE + 1], dir[PATH_MAX + 1], def[PATH_MAX + 1], ext[PATH_MAX + 1];
+
+	stream = NULL;
 
 	_splitpath(filename, drive, dir, def, ext);
 
@@ -1394,8 +1398,9 @@ static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int siz
 	char	buffer[20], *junk;
 	int	len, rem;
 	size_t	l;
-	long	rewind = FIND_STREAM(stream);
+	long	rewind;
 
+	rewind = FIND_STREAM(stream);
 	len = 0;
 	rem = 0;
 	l = READ_STREAM(buffer, 11, stream);

@@ -393,8 +393,11 @@ static void S9xStartScreenRefresh (void)
 
 static INLINE void S9xReschedule (void)
 {
-	uint8	next = 0;
-	int32	hpos = 0;
+	uint8 next;
+	int32 hpos;
+
+	next = 0;
+	hpos = 0;
 
 	switch (CPU.WhichEvent)
 	{
@@ -582,13 +585,16 @@ static int HDMA_ModeByteCounts[8] =
 static uint8 S9xDoHDMA (uint8 byte)
 {
 	uint8 mask;
-	struct SDMA	*p = &DMA[0];
-
 	uint32	ShiftedIBank;
 	uint16	IAddr;
 	bool8	temp;
 	int32	tmpch;
-	int		d = 0;
+	int d;
+	struct SDMA *p;
+
+	p = &DMA[0];
+
+	d = 0;
 
 	CPU.InHDMA = TRUE;
 	CPU.InDMAorHDMA = TRUE;
@@ -779,14 +785,14 @@ static uint8 S9xDoHDMA (uint8 byte)
 									break;
 
 								case 5:
-									S9xSetPPU(*(HDMAMemPointers[d] + 0), 0x2100 + p->BAddress);
+									S9xSetPPU(*(HDMAMemPointers[d]), 0x2100 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(*(HDMAMemPointers[d] + 1), 0x2101 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									HDMAMemPointers[d] += 2;
 									/* fall through */
 								case 1:
-									S9xSetPPU(*(HDMAMemPointers[d] + 0), 0x2100 + p->BAddress);
+									S9xSetPPU(*(HDMAMemPointers[d]), 0x2100 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(*(HDMAMemPointers[d] + 1), 0x2101 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
@@ -795,7 +801,7 @@ static uint8 S9xDoHDMA (uint8 byte)
 
 								case 2:
 								case 6:
-									S9xSetPPU(*(HDMAMemPointers[d] + 0), 0x2100 + p->BAddress);
+									S9xSetPPU(*(HDMAMemPointers[d]), 0x2100 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(*(HDMAMemPointers[d] + 1), 0x2100 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
@@ -804,7 +810,7 @@ static uint8 S9xDoHDMA (uint8 byte)
 
 								case 3:
 								case 7:
-									S9xSetPPU(*(HDMAMemPointers[d] + 0), 0x2100 + p->BAddress);
+									S9xSetPPU(*(HDMAMemPointers[d]), 0x2100 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(*(HDMAMemPointers[d] + 1), 0x2100 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
@@ -816,7 +822,7 @@ static uint8 S9xDoHDMA (uint8 byte)
 									break;
 
 								case 4:
-									S9xSetPPU(*(HDMAMemPointers[d] + 0), 0x2100 + p->BAddress);
+									S9xSetPPU(*(HDMAMemPointers[d]), 0x2100 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(*(HDMAMemPointers[d] + 1), 0x2101 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;

@@ -209,8 +209,10 @@ static const unsigned months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30,
 static void srtcemu_update_time (void)
 {
 	unsigned days;
-	time_t rtc_time = (MEMORY_CARTRTC_READ(16) <<  0) | (MEMORY_CARTRTC_READ(17) <<  8) | (MEMORY_CARTRTC_READ(18) << 16) | (MEMORY_CARTRTC_READ(19) << 24);
-	time_t current_time = time(0);
+	time_t current_time, rtc_time, diff;
+
+	rtc_time = (MEMORY_CARTRTC_READ(16) <<  0) | (MEMORY_CARTRTC_READ(17) <<  8) | (MEMORY_CARTRTC_READ(18) << 16) | (MEMORY_CARTRTC_READ(19) << 24);
+	current_time = time(0);
 
 	/*sizeof(time_t) is platform-dependent; though memory::cartrtc needs to be platform-agnostic.*/
 	/*yet platforms with 32-bit signed time_t will overflow every ~68 years. handle this by*/
@@ -218,18 +220,24 @@ static void srtcemu_update_time (void)
 	/*memory::cartrtc timestamp to remain valid for up to ~34 years from the last update, even if*/
 	/*time_t overflows. calculation should be valid regardless of number representation, time_t size,*/
 	/*or whether time_t is signed or unsigned.*/
-	time_t diff = (current_time >= rtc_time) ? (current_time - rtc_time) : ((time_t)-1 - rtc_time + current_time + 1);  /*compensate for overflow*/
+
+	diff = (current_time >= rtc_time) ? (current_time - rtc_time) : ((time_t)-1 - rtc_time + current_time + 1);
+	/*compensate for overflow*/
+
 	if(diff > (time_t)-1 / 2)
 		diff = 0;            /*compensate for underflow*/
 
-	if(diff > 0) {
-		unsigned second  = MEMORY_CARTRTC_READ( 0) + MEMORY_CARTRTC_READ( 1) * 10;
-		unsigned minute  = MEMORY_CARTRTC_READ( 2) + MEMORY_CARTRTC_READ( 3) * 10;
-		unsigned hour    = MEMORY_CARTRTC_READ( 4) + MEMORY_CARTRTC_READ( 5) * 10;
-		unsigned day     = MEMORY_CARTRTC_READ( 6) + MEMORY_CARTRTC_READ( 7) * 10;
-		unsigned month   = MEMORY_CARTRTC_READ( 8);
-		unsigned year    = MEMORY_CARTRTC_READ( 9) + MEMORY_CARTRTC_READ(10) * 10 + MEMORY_CARTRTC_READ(11) * 100;
-		unsigned weekday = MEMORY_CARTRTC_READ(12);
+	if(diff > 0)
+	{
+		unsigned second, minute, hour, day, month, year, weekday;
+
+		second  = MEMORY_CARTRTC_READ( 0) + MEMORY_CARTRTC_READ( 1) * 10;
+		minute  = MEMORY_CARTRTC_READ( 2) + MEMORY_CARTRTC_READ( 3) * 10;
+		hour    = MEMORY_CARTRTC_READ( 4) + MEMORY_CARTRTC_READ( 5) * 10;
+		day     = MEMORY_CARTRTC_READ( 6) + MEMORY_CARTRTC_READ( 7) * 10;
+		month   = MEMORY_CARTRTC_READ( 8);
+		year    = MEMORY_CARTRTC_READ( 9) + MEMORY_CARTRTC_READ(10) * 10 + MEMORY_CARTRTC_READ(11) * 100;
+		weekday = MEMORY_CARTRTC_READ(12);
 
 		day--;
 		month--;
@@ -307,14 +315,18 @@ static void srtcemu_update_time (void)
 /*usage: weekday(2008, 1, 1) returns weekday of January 1st, 2008*/
 static unsigned srtcemu_weekday(unsigned year, unsigned month, unsigned day)
 {
-	unsigned y = 1900, m = 1;  /*epoch is 1900-01-01*/
-	unsigned sum = 0;          /*number of days passed since epoch*/
+	unsigned y, m, sum, days;
+
+	y = 1900;
+	m = 1;		/*epoch is 1900-01-01*/
+	sum = 0;	/*number of days passed since epoch*/
 
 	year = max(1900, year);
 	month = max(1, min(12, month));
 	day = max(1, min(31, day));
 
-	while(y < year) {
+	while(y < year)
+	{
 		bool8 leapyear = FALSE;
 		if((y % 4) == 0)
 		{
@@ -328,7 +340,7 @@ static unsigned srtcemu_weekday(unsigned year, unsigned month, unsigned day)
 
 	while(m < month)
 	{
-		unsigned days = months[m - 1];
+		days = months[m - 1];
 		if(days == 28)
 		{
 			bool8 leapyear = FALSE;
@@ -396,10 +408,11 @@ void S9xSetSRTC (uint8 data, uint16 address)
 
 				if(rtc_index == 12)
 				{
+					unsigned day, month, year;
 					/*day of week is automatically calculated and written*/
-					unsigned day   = MEMORY_CARTRTC_READ( 6) + MEMORY_CARTRTC_READ( 7) * 10;
-					unsigned month = MEMORY_CARTRTC_READ( 8);
-					unsigned year  = MEMORY_CARTRTC_READ( 9) + MEMORY_CARTRTC_READ(10) * 10 + MEMORY_CARTRTC_READ(11) * 100;
+					day   = MEMORY_CARTRTC_READ( 6) + MEMORY_CARTRTC_READ( 7) * 10;
+					month = MEMORY_CARTRTC_READ( 8);
+					year  = MEMORY_CARTRTC_READ( 9) + MEMORY_CARTRTC_READ(10) * 10 + MEMORY_CARTRTC_READ(11) * 100;
 					year += 1000;
 
 					MEMORY_CARTRTC_WRITE(rtc_index++, srtcemu_weekday(year, month, day));

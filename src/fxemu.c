@@ -222,7 +222,9 @@ static void fx_nop (void)
 /* 02 - cache - reintialize GSU cache*/
 static void fx_cache (void)
 {
-	uint32	c = R15 & 0xfff0;
+	uint32 c;
+
+	c = R15 & 0xfff0;
 
 	if (GSU.vCacheBaseReg != c || !GSU.bCacheActive)
 	{
@@ -254,7 +256,9 @@ static void fx_lsr (void)
 /* 04 - rol - rotate left*/
 static void fx_rol (void)
 {
-	uint32	v = USEX16((SREG << 1) + GSU.vCarry);
+	uint32 v;
+
+	v = USEX16((SREG << 1) + GSU.vCarry);
 	GSU.vCarry = (SREG >> 15) & 1;
 	R15++;
 	DREG = v;
@@ -267,7 +271,9 @@ static void fx_rol (void)
 /* 05 - bra - branch always*/
 static void fx_bra (void)
 {
-	uint8	v = PIPE;
+	uint8 v;
+
+	v = PIPE;
 	R15++;
 	FETCHPIPE;
 	R15 += SEX8(v);
@@ -864,10 +870,11 @@ static void fx_ldb_r11 (void)
 /* 4c - plot - plot pixel with R1, R2 as x, y and the color register as the color*/
 static void fx_plot_2bit (void)
 {
-	uint32	x = USEX8(R1);
-	uint32	y = USEX8(R2);
-	uint8	*a;
-	uint8	v, c;
+	uint8	*a, v, c;
+	uint32 x, y;
+
+	x = USEX8(R1);
+	y = USEX8(R2);
 
 	R15++;
 	CLRFLAGS;
@@ -903,10 +910,11 @@ static void fx_plot_2bit (void)
 /* 4c (ALT1) - rpix - read color of the pixel with R1, R2 as x, y*/
 static void fx_rpix_2bit (void)
 {
-	uint32	x = USEX8(R1);
-	uint32	y = USEX8(R2);
-	uint8	*a;
-	uint8	v;
+	uint8 *a, v;
+	uint32 x, y;
+
+	x = USEX8(R1);
+	y = USEX8(R2);
 
 	R15++;
 	CLRFLAGS;
@@ -928,10 +936,11 @@ static void fx_rpix_2bit (void)
 /* 4c - plot - plot pixel with R1, R2 as x, y and the color register as the color*/
 static void fx_plot_4bit (void)
 {
-	uint32	x = USEX8(R1);
-	uint32	y = USEX8(R2);
-	uint8	*a;
-	uint8	v, c;
+	uint8 *a, v, c;
+	uint32 x, y;
+
+	x = USEX8(R1);
+	y = USEX8(R2);
 
 	R15++;
 	CLRFLAGS;
@@ -1075,10 +1084,11 @@ static void fx_plot_8bit (void)
 /* 4c (ALT1) - rpix - read color of the pixel with R1, R2 as x, y*/
 static void fx_rpix_8bit (void)
 {
-	uint32	x = USEX8(R1);
-	uint32	y = USEX8(R2);
-	uint8	*a;
-	uint8	v;
+	uint32 x, y;
+	uint8 *a, v;
+
+	x = USEX8(R1);
+	y = USEX8(R2);
 
 	R15++;
 	CLRFLAGS;
@@ -1117,9 +1127,13 @@ static void fx_rpix_obj (void)
 /* 4d - swap - swap upper and lower byte of a register*/
 static void fx_swap (void)
 {
-	uint8	c = (uint8) SREG;
-	uint8	d = (uint8) (SREG >> 8);
-	uint32	v = (((uint32) c) << 8) | ((uint32) d);
+	uint8 c, d;
+	uint32 v;
+
+	c = (uint8) SREG;
+	d = (uint8) (SREG >> 8);
+	v = (((uint32) c) << 8) | ((uint32) d);
+
 	R15++;
 	DREG = v;
 	GSU.vSign = v;
@@ -1131,7 +1145,9 @@ static void fx_swap (void)
 /* 4e - color - copy source register to color register*/
 static void fx_color (void)
 {
-	uint8	c = (uint8) SREG;
+	uint8 c;
+
+	c = (uint8) SREG;
 
 	if (GSU.vPlotOptionReg & 0x04)
 		c = (c & 0xf0) | (c >> 4);
@@ -1153,6 +1169,7 @@ static void fx_computeScreenPointers (void)
 	uint8 *pvScreenBase;
 	int32 condition, mask, result;
 	uint32 vmode, screenheight, incrementvalue;
+
 	if (GSU.vMode != GSU.vPrevMode || GSU.vPrevScreenHeight != GSU.vScreenHeight || GSU.vSCBRDirty)
 	{
 		GSU.vSCBRDirty = FALSE;
@@ -1224,7 +1241,9 @@ static void fx_cmode (void)
 /* 4f - not - perform exclusive exor with 1 on all bits*/
 static void fx_not (void)
 {
-	uint32	v = ~SREG;
+	uint32 v;
+
+	v = ~SREG;
 	R15++;
 	DREG = v;
 	GSU.vSign = v;
@@ -2719,7 +2738,9 @@ static void fx_link_i4 (void)
 /* 95 - sex - sign extend 8 bit to 16 bit*/
 static void fx_sex (void)
 {
-	uint32	v = (uint32) SEX8(SREG);
+	uint32 v;
+
+	v = (uint32) SEX8(SREG);
 	R15++;
 	DREG = v;
 	GSU.vSign = v;
@@ -2746,7 +2767,10 @@ static void fx_asr (void)
 static void fx_div2 (void)
 {
 	uint32	v;
-	int32	s = SEX16(SREG);
+	int32 s;
+
+	s = SEX16(SREG);
+
 	GSU.vCarry = s & 1;
 	if (s == -1)
 		v = 0;
@@ -2763,7 +2787,9 @@ static void fx_div2 (void)
 /* 97 - ror - rotate right by one*/
 static void fx_ror (void)
 {
-	uint32	v = (USEX16(SREG) >> 1) | (GSU.vCarry << 15);
+	uint32 v;
+
+	v = (USEX16(SREG) >> 1) | (GSU.vCarry << 15);
 	GSU.vCarry = SREG & 1;
 	R15++;
 	DREG = v;
@@ -2862,8 +2888,9 @@ static void fx_lob (void)
 /* 9f - fmult - 16 bit to 32 bit signed multiplication, upper 16 bits only*/
 static void fx_fmult (void)
 {
-	uint32	v;
-	uint32	c = (uint32) (SEX16(SREG) * SEX16(R6));
+	uint32	v, c;
+
+	c = (uint32) (SEX16(SREG) * SEX16(R6));
 	v = c >> 16;
 	R15++;
 	DREG = v;
@@ -2877,8 +2904,9 @@ static void fx_fmult (void)
 /* 9f (ALT1) - lmult - 16 bit to 32 bit signed multiplication*/
 static void fx_lmult (void)
 {
-	uint32	v;
-	uint32	c = (uint32) (SEX16(SREG) * SEX16(R6));
+	uint32	v, c;
+
+	c = (uint32) (SEX16(SREG) * SEX16(R6));
 	R4 = c;
 	v = c >> 16;
 	R15++;
@@ -3703,10 +3731,12 @@ static void fx_inc_r14 (void)
 /* df - getc - transfer ROM buffer to color register*/
 static void fx_getc (void)
 {
+	uint8 c;
+
 #ifndef FX_DO_ROMBUFFER
-	uint8	c = ROM(R14);
+	c = ROM(R14);
 #else
-	uint8	c = GSU.vRomBuffer;
+	c = GSU.vRomBuffer;
 #endif
 
 	if (GSU.vPlotOptionReg & 0x04)
@@ -3860,11 +3890,12 @@ static void fx_getbh (void)
 /* ef (ALT2) - getbl - get low-byte from ROM at address R14*/
 static void fx_getbl (void)
 {
-	uint32	v;
+	uint32	c, v;
+
 #ifndef FX_DO_ROMBUFFER
-	uint32	c = (uint32) ROM(R14);
+	c = (uint32) ROM(R14);
 #else
-	uint32	c = USEX8(GSU.vRomBuffer);
+	c = USEX8(GSU.vRomBuffer);
 #endif
 	v = (SREG & 0xff00) | c;
 	R15++;
@@ -4391,11 +4422,11 @@ static void (*fx_OpcodeTable[]) (void) =
 
 static void fx_readRegisterSpace (void)
 {
-	static uint32	avHeight[] = { 128, 160, 192, 256 };
-	static uint32	avMult[]   = {  16,  32,  32,  64 };
-
 	uint8	*p;
 	int	i, n;
+
+	static uint32	avHeight[] = { 128, 160, 192, 256 };
+	static uint32	avMult[]   = {  16,  32,  32,  64 };
 
 	/*GSU.vErrorCode = 0;*/
 
@@ -4521,8 +4552,10 @@ static void FxReset (struct FxInfo_s *psFxInfo)
 
 void S9xResetSuperFX (void)
 {
+	float frames_per_second;
+
 	/* FIXME: Snes9x can't execute CPU and SuperFX at a time. Don't ask me what is 0.417 :P*/
-	float frames_per_second = 60.0f;
+	frames_per_second = 60.0f;
 	if (Settings.PAL)
 		frames_per_second = 50.0f;
 

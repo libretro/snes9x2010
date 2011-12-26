@@ -201,7 +201,6 @@ void S9xResetDSP (void)
 
 uint8 S9xGetDSP (uint16 address)
 {
-
 	return ((*GetDSP)(address));
 }
 
@@ -534,8 +533,10 @@ static int16 DSP1_Cos (int16 Angle)
 
 static void DSP1_Normalize (int16 m, int16 *Coefficient, int16 *Exponent)
 {
-	int16	i = 0x4000;
-	int16	e = 0;
+	int16 i, e;
+
+	i = 0x4000;
+	e = 0;
 
 	if (m < 0)
 	{
@@ -564,10 +565,12 @@ static void DSP1_Normalize (int16 m, int16 *Coefficient, int16 *Exponent)
 
 static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Exponent)
 {
-	int16	n = Product & 0x7fff;
-	int16	m = Product >> 15;
-	int16	i = 0x4000;
-	int16	e = 0;
+	int16 n, m, i,e;
+
+	n = Product & 0x7fff;
+	m = Product >> 15;
+	i = 0x4000;
+	e = 0;
 
 	if (m < 0)
 	{
@@ -667,10 +670,10 @@ static void DSP1_Parameter (int16 Fx, int16 Fy, int16 Fz, int16 Lfe, int16 Les, 
 	int16	CSec, C, E, MaxAZS, Aux;
 	int16	LfeNx, LfeNy, LfeNz;
 	int16	LesNx, LesNy, LesNz;
-	int16	CentreZ;
+	int16	CentreZ, AZS;
 
 	/* Copy Zenith angle for clipping*/
-	int16	AZS = Azs;
+	AZS = Azs;
 
 	/* Store Sine and Cosine of Azimuth and Zenith angle*/
 	DSP1.SinAas = DSP1_Sin(Aas);
@@ -902,12 +905,14 @@ static void DSP1_Op06 (void)
 
 static void DSP1_Op01 (void)
 {
-	int16	SinAz = DSP1_Sin(DSP1.Op01Zr);
-	int16	CosAz = DSP1_Cos(DSP1.Op01Zr);
-	int16	SinAy = DSP1_Sin(DSP1.Op01Yr);
-	int16	CosAy = DSP1_Cos(DSP1.Op01Yr);
-	int16	SinAx = DSP1_Sin(DSP1.Op01Xr);
-	int16	CosAx = DSP1_Cos(DSP1.Op01Xr);
+	int16 SinAz, CosAz, SinAy, CosAy, SinAx, CosAx;
+
+	SinAz = DSP1_Sin(DSP1.Op01Zr);
+	CosAz = DSP1_Cos(DSP1.Op01Zr);
+	SinAy = DSP1_Sin(DSP1.Op01Yr);
+	CosAy = DSP1_Cos(DSP1.Op01Yr);
+	SinAx = DSP1_Sin(DSP1.Op01Xr);
+	CosAx = DSP1_Cos(DSP1.Op01Xr);
 
 	DSP1.Op01m >>= 1;
 
@@ -926,12 +931,14 @@ static void DSP1_Op01 (void)
 
 static void DSP1_Op11 (void)
 {
-	int16	SinAz = DSP1_Sin(DSP1.Op11Zr);
-	int16	CosAz = DSP1_Cos(DSP1.Op11Zr);
-	int16	SinAy = DSP1_Sin(DSP1.Op11Yr);
-	int16	CosAy = DSP1_Cos(DSP1.Op11Yr);
-	int16	SinAx = DSP1_Sin(DSP1.Op11Xr);
-	int16	CosAx = DSP1_Cos(DSP1.Op11Xr);
+	int16 SinAz, CosAz, SinAy, CosAy, SinAx, CosAx;
+
+	SinAz = DSP1_Sin(DSP1.Op11Zr);
+	CosAz = DSP1_Cos(DSP1.Op11Zr);
+	SinAy = DSP1_Sin(DSP1.Op11Yr);
+	CosAy = DSP1_Cos(DSP1.Op11Yr);
+	SinAx = DSP1_Sin(DSP1.Op11Xr);
+	CosAx = DSP1_Cos(DSP1.Op11Xr);
 
 	DSP1.Op11m >>= 1;
 
@@ -950,12 +957,14 @@ static void DSP1_Op11 (void)
 
 static void DSP1_Op21 (void)
 {
-	int16	SinAz = DSP1_Sin(DSP1.Op21Zr);
-	int16	CosAz = DSP1_Cos(DSP1.Op21Zr);
-	int16	SinAy = DSP1_Sin(DSP1.Op21Yr);
-	int16	CosAy = DSP1_Cos(DSP1.Op21Yr);
-	int16	SinAx = DSP1_Sin(DSP1.Op21Xr);
-	int16	CosAx = DSP1_Cos(DSP1.Op21Xr);
+	int16 SinAz, CosAz, SinAy, CosAy, SinAx, CosAx;
+
+	SinAz = DSP1_Sin(DSP1.Op21Zr);
+	CosAz = DSP1_Cos(DSP1.Op21Zr);
+	SinAy = DSP1_Sin(DSP1.Op21Yr);
+	CosAy = DSP1_Cos(DSP1.Op21Yr);
+	SinAx = DSP1_Sin(DSP1.Op21Xr);
+	CosAx = DSP1_Cos(DSP1.Op21Xr);
 
 	DSP1.Op21m >>= 1;
 
@@ -1812,14 +1821,15 @@ uint8 DSP1GetByte (uint16 address)
 /* convert bitmap to bitplane tile*/
 static void DSP2_Op01 (void)
 {
-	int j;
 	/* Op01 size is always 32 bytes input and output*/
 	/* The hardware does strange things if you vary the size*/
-
+	int j;
 	uint8	c0, c1, c2, c3;
-	uint8	*p1  = DSP2.parameters;
-	uint8	*p2a = DSP2.output;
-	uint8	*p2b = DSP2.output + 16; /* halfway*/
+	uint8 *p1, *p2a, *p2b;
+
+	p1  = DSP2.parameters;
+	p2a = DSP2.output;
+	p2b = DSP2.output + 16; /* halfway*/
 
 	/* Process 8 blocks of 4 bytes each*/
 
@@ -1905,9 +1915,11 @@ static void DSP2_Op05 (void)
 
 	uint8	color;
 	uint8	c1, c2;
-	uint8	*p1 = DSP2.parameters;
-	uint8	*p2 = DSP2.parameters + DSP2.Op05Len;
-	uint8	*p3 = DSP2.output;
+	uint8 *p1, *p2, *p3;
+
+	p1 = DSP2.parameters;
+	p2 = DSP2.parameters + DSP2.Op05Len;
+	p3 = DSP2.output;
 
 	color = DSP2.Op05Transparent & 0x0f;
 
@@ -2294,8 +2306,6 @@ static const uint16	DSP3_DataROM[1024] =
 	0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
 };
 
-static void DSP3_MemoryDump (void);
-static void DSP3_Coordinate (void);
 static void DSP3_Command (void);
 static void DSP3_Decode_Data (void);
 static void DSP3_Decode_Tree (void);
@@ -2368,9 +2378,11 @@ static void DSP3_OP06 (void)
 
 static void DSP3_OP03 (void)
 {
-	int16	Lo  = (uint8) (DSP3.DR);
-	int16	Hi  = (uint8) (DSP3.DR >> 8);
-	int16	Ofs = (DSP3.WinLo * Hi << 1) + (Lo << 1);
+	int16 Lo, Hi, Ofs;
+
+	Lo  = (uint8) (DSP3.DR);
+	Hi  = (uint8) (DSP3.DR >> 8);
+	Ofs = (DSP3.WinLo * Hi << 1) + (Lo << 1);
 
 	DSP3.DR = Ofs >> 1;
 	SetDSP3 = &DSP3_Reset;
@@ -2378,7 +2390,9 @@ static void DSP3_OP03 (void)
 
 static void DSP3_OP07_B (void)
 {
-	int16	Ofs = (DSP3.WinLo * DSP3.AddHi << 1) + (DSP3.AddLo << 1);
+	int16 Ofs;
+
+	Ofs = (DSP3.WinLo * DSP3.AddHi << 1) + (DSP3.AddLo << 1);
 
 	DSP3.DR = Ofs >> 1;
 	SetDSP3 = &DSP3_Reset;
@@ -2386,8 +2400,10 @@ static void DSP3_OP07_B (void)
 
 static void DSP3_OP07_A (void)
 {
-	int16	Lo = (uint8) (DSP3.DR);
-	int16	Hi = (uint8) (DSP3.DR >> 8);
+	int16 Lo, Hi;
+
+	Lo = (uint8) (DSP3.DR);
+	Hi = (uint8) (DSP3.DR >> 8);
 
 	if (Lo & 1)
 		Hi += (DSP3.AddLo & 1);
@@ -2413,7 +2429,9 @@ static void DSP3_OP07_A (void)
 
 static void DSP3_OP07 (void)
 {
-	uint32	dataOfs = ((DSP3.DR << 1) + 0x03b2) & 0x03ff;
+	uint32 dataOfs;
+
+	dataOfs = ((DSP3.DR << 1) + 0x03b2) & 0x03ff;
 
 	DSP3.AddHi = DSP3_DataROM[dataOfs];
 	DSP3.AddLo = DSP3_DataROM[dataOfs + 1];
@@ -2914,10 +2932,7 @@ static void DSP3_OP1E_B1 (void)
 
 static void DSP3_OP1E_B2 (void)
 {
-	int16	cell;
-	int16	path;
-	int16	x, y;
-	int16	lcv_turns;
+	int16	cell, path, x, y, lcv_turns;
 
 	path = 0xff;
 	lcv_turns = 6;
@@ -3041,9 +3056,11 @@ static void DSP3_OP1E_C2 (void)
 
 static void DSP3_OP1E_D (int16 move, int16 *lo, int16 *hi)
 {
-	uint32	dataOfs = ((move << 1) + 0x03b2) & 0x03ff;
+	uint32 dataOfs;
 	int16	Lo;
 	int16	Hi;
+
+	dataOfs = ((move << 1) + 0x03b2) & 0x03ff;
 
 	DSP3.AddHi = DSP3_DataROM[dataOfs];
 	DSP3.AddLo = DSP3_DataROM[dataOfs + 1];
@@ -3085,8 +3102,7 @@ static void DSP3_OP1E_D1 (int16 move, int16 *lo, int16 *hi)
 		0x00, 0x00, 0x01, 0x01, 0x00, 0xFF, 0xFF, 0x00
 	};
 
-	int16	Lo;
-	int16	Hi;
+	int16	Lo, Hi;
 
 	if ((*lo) & 1)
 		DSP3.AddHi = HiAdd[move + 8];
