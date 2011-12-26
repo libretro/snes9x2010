@@ -4621,6 +4621,8 @@ static void S9xDoDMA (void)
 		}
 		else
 		{
+			int reverse_dma_slow_path;
+
 			/* PPU -> CPU*/
 
 			/* 8 cycles per byte*/
@@ -4636,210 +4638,126 @@ static void S9xDoDMA (void)
 				continue; \
 			}
 
-			if (d->BAddress > 0x80 - 4 && d->BAddress <= 0x83 && !(d->ABank & 0x40))
-			{
-				/* REVERSE-DMA REALLY-SLOW PATH*/
-				do
-				{
-					switch (d->TransferMode)
-					{
-						case 0:
-						case 2:
-						case 6:
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2100 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							count--;
 
-							break;
+			reverse_dma_slow_path = (d->BAddress > 0x80 - 4 && d->BAddress <= 0x83 && !(d->ABank & 0x40));
 
-						case 1:
-						case 5:
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2100 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2101 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							count--;
-
-							break;
-
-						case 3:
-						case 7:
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2100 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2100 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2101 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2101 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							count--;
-
-							break;
-
-						case 4:
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2100 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2101 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2102 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-							Work = S9xGetPPU(0x2103 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							count--;
-
-							break;
-
-						default:
-							while (count)
-							{
-								UPDATE_COUNTERS;
-								count--;
-							}
-
-							break;
-					}
-				} while (count);
-			}
-			else
-			{
-				/* REVERSE-DMA FASTER PATH*/
+			if(!reverse_dma_slow_path)
 				CPU.InWRAMDMAorHDMA = (d->ABank == 0x7e || d->ABank == 0x7f);
-				do
+
+			do
+			{
+				switch (d->TransferMode)
 				{
-					switch (d->TransferMode)
-					{
-						case 0:
-						case 2:
-						case 6:
-							Work = S9xGetPPU(0x2100 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+					case 0:
+					case 2:
+					case 6:
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2100 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						count--;
+
+						break;
+
+					case 1:
+					case 5:
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2100 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						if (!--count)
+							break;
+
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2101 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						count--;
+
+						break;
+
+					case 3:
+					case 7:
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2100 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						if (!--count)
+							break;
+
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2100 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						if (!--count)
+							break;
+
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2101 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						if (!--count)
+							break;
+
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2101 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						count--;
+
+						break;
+
+					case 4:
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2100 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						if (!--count)
+							break;
+
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2101 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						if (!--count)
+							break;
+
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2102 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						if (!--count)
+							break;
+
+						if(reverse_dma_slow_path)
+							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+						Work = S9xGetPPU(0x2103 + d->BAddress);
+						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+						UPDATE_COUNTERS;
+						count--;
+
+						break;
+
+					default:
+						while (count)
+						{
 							UPDATE_COUNTERS;
 							count--;
+						}
 
-							break;
-
-						case 1:
-						case 5:
-							Work = S9xGetPPU(0x2100 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							Work = S9xGetPPU(0x2101 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							count--;
-
-							break;
-
-						case 3:
-						case 7:
-							Work = S9xGetPPU(0x2100 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							Work = S9xGetPPU(0x2100 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							Work = S9xGetPPU(0x2101 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							Work = S9xGetPPU(0x2101 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							count--;
-
-							break;
-
-						case 4:
-							Work = S9xGetPPU(0x2100 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							Work = S9xGetPPU(0x2101 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							Work = S9xGetPPU(0x2102 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							if (!--count)
-								break;
-
-							Work = S9xGetPPU(0x2103 + d->BAddress);
-							S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-							UPDATE_COUNTERS;
-							count--;
-
-							break;
-
-						default:
-							while (count)
-							{
-								UPDATE_COUNTERS;
-								count--;
-							}
-
-							break;
-					}
-				} while (count);
-			}
+						break;
+				}
+			} while (count);
 		}
 
 		if ((CPU.Flags & NMI_FLAG) && (Timings.NMITriggerPos != 0xffff))
