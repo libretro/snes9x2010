@@ -881,7 +881,7 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	int32	totalSize = 0;
 	uint32	size;
 	char	fname[PATH_MAX + 1];
-	char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], name[_MAX_FNAME + 1], exts[_MAX_EXT + 1];
+	char	drive[_MAX_DRIVE + 1], dir[PATH_MAX + 1], name[PATH_MAX + 1], exts[PATH_MAX + 1];
 	char	*ext;
 	int		len, nFormat;
 	uint8	*ptr;
@@ -1256,7 +1256,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 	long		offset = header ? 512 : 0;
 	int			ret;
 	bool8		flag;
-	char		dir[_MAX_DIR + 1], drive[_MAX_DRIVE + 1], name[_MAX_FNAME + 1], ext[_MAX_EXT + 1], ips[_MAX_EXT + 3], fname[PATH_MAX + 1];
+	char		dir[PATH_MAX + 1], drive[_MAX_DRIVE + 1], name[PATH_MAX + 1], ext[PATH_MAX + 1], ips[PATH_MAX + 3], fname[PATH_MAX + 1];
 	const char	*n;
 
 	/* UPS */
@@ -1319,7 +1319,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			printf(" failed!\n");
 	}
 
-	if (_MAX_EXT > 6)
+	if (PATH_MAX > 6)
 	{
 		i = 0;
 		flag = FALSE;
@@ -1353,15 +1353,15 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			return;
 	}
 
-	if (_MAX_EXT > 3)
+	if (PATH_MAX > 3)
 	{
 		i = 0;
 		flag = FALSE;
 
 		do
 		{
-			snprintf(ips, _MAX_EXT + 2, "ips%d", i);
-			if (strlen(ips) > _MAX_EXT)
+			snprintf(ips, PATH_MAX + 2, "ips%d", i);
+			if (strlen(ips) > PATH_MAX)
 				break;
 			_makepath(fname, drive, dir, name, ips);
 
@@ -1389,7 +1389,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			return;
 	}
 
-	if (_MAX_EXT > 2)
+	if (PATH_MAX > 2)
 	{
 		i = 0;
 		flag = FALSE;
@@ -1441,7 +1441,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			printf(" failed!\n");
 	}
 
-	if (_MAX_EXT > 6)
+	if (PATH_MAX > 6)
 	{
 		i = 0;
 		flag = FALSE;
@@ -1475,15 +1475,15 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			return;
 	}
 
-	if (_MAX_EXT > 3)
+	if (PATH_MAX > 3)
 	{
 		i = 0;
 		flag = FALSE;
 
 		do
 		{
-			snprintf(ips, _MAX_EXT + 3, ".ips%d", i);
-			if (strlen(ips) > _MAX_EXT + 1)
+			snprintf(ips, PATH_MAX + 3, ".ips%d", i);
+			if (strlen(ips) > PATH_MAX + 1)
 				break;
 			n = S9xGetFilename(ips, IPS_DIR);
 
@@ -1511,7 +1511,7 @@ static void CheckForAnyPatch (const char *rom_filename, bool8 header, int32 * ro
 			return;
 	}
 
-	if (_MAX_EXT > 2)
+	if (PATH_MAX > 2)
 	{
 		i = 0;
 		flag = FALSE;

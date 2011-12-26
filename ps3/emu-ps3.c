@@ -1611,9 +1611,9 @@ const char * S9xGetFilename (const char *ex, uint32_t dirtype)
 {
 	static char	s[PATH_MAX + 1];
 	char		drive[_MAX_DRIVE + 1];
-	char		dir[_MAX_DIR + 1];
-	char		fname[_MAX_FNAME + 1];
-	char		ext[_MAX_EXT + 1];
+	char		dir[PATH_MAX + 1];
+	char		fname[PATH_MAX + 1];
+	char		ext[PATH_MAX + 1];
 
 	_splitpath(Memory.ROMFilename, drive, dir, fname, ext);
 	snprintf(s, PATH_MAX + 1, "%s%s%s%s", S9xGetDirectory(dirtype), SLASH_STR, fname, ex);
@@ -1656,9 +1656,9 @@ const char *S9xChooseFilename (bool8 read_only)
 {
 	static char	filename[PATH_MAX + 1];
 	static char	drive[_MAX_DRIVE + 1];
-	static char	dir[_MAX_DIR + 1];
-	static char	def[_MAX_FNAME + 1];
-	static char	ext[_MAX_EXT + 1];
+	static char	dir[PATH_MAX + 1];
+	static char	def[PATH_MAX + 1];
+	static char	ext[PATH_MAX + 1];
 
 	_splitpath(Memory.ROMFilename, drive, dir, def, ext);
 	snprintf(filename, PATH_MAX + 1, "%s%s%s.%03d", S9xGetDirectory(SNAPSHOT_DIR), SLASH_STR, def, Settings.CurrentSaveStateSlot);

@@ -1132,12 +1132,13 @@ static int FreezeSize (int size, int type)
 
 static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeData *fields, int num_fields)
 {
-	uint8 *addr, *block, *ptr;
-	uint16 word;
-	uint32 dword;
-	int64 qaword;
-	int	len = 0;
-	int	i, j, relativeAddr;
+	uint8	*addr, *block, *ptr;
+	uint16	word;
+	uint32	dword;
+	int64	qaword;
+	int	len, i, j, relativeAddr;
+
+	len  = 0;
 
 	for (i = 0; i < num_fields; i++)
 	{
@@ -1368,7 +1369,7 @@ bool8 S9xFreezeGame (const char *filename)
 bool8 S9xUnfreezeGame (const char * filename)
 {
 	STREAM	stream = NULL;
-	char	drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], def[_MAX_FNAME + 1], ext[_MAX_EXT + 1];
+	char	drive[_MAX_DRIVE + 1], dir[PATH_MAX + 1], def[PATH_MAX + 1], ext[PATH_MAX + 1];
 
 	_splitpath(filename, drive, dir, def, ext);
 
@@ -1390,11 +1391,14 @@ bool8 S9xUnfreezeGame (const char * filename)
 
 static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
 {
-	char	buffer[20];
-	int		len = 0, rem = 0;
+	char	buffer[20], *junk;
+	int	len, rem;
+	size_t	l;
 	long	rewind = FIND_STREAM(stream);
 
-	size_t	l = READ_STREAM(buffer, 11, stream);
+	len = 0;
+	rem = 0;
+	l = READ_STREAM(buffer, 11, stream);
 	buffer[l] = 0;
 
 	if (l != 11 || strncmp(buffer, name, 3) != 0 || buffer[3] != ':')
@@ -1434,7 +1438,7 @@ static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int siz
 
 	if (rem)
 	{
-		char	*junk = (char*)malloc(rem);
+		junk = (char*)malloc(rem);
 		len = READ_STREAM(junk, rem, stream);
 		free(junk);
 		if (len != rem)
@@ -1466,8 +1470,9 @@ static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, in
 
 static int UnfreezeStructCopy (STREAM stream, const char *name, uint8 **block, FreezeData *fields, int num_fields, int version)
 {
-	int i;
-	int	len = 0;
+	int i, len;
+
+	len = 0;
 
 	for ( i = 0; i < num_fields; i++)
 	{
@@ -1624,8 +1629,14 @@ int S9xUnfreezeFromStream (STREAM stream)
 {
 	int		result = SUCCESS;
 	int		version, len;
-	char	buffer[PATH_MAX + 1];
-	uint8 *local_cpu, *local_registers, *local_ppu, *local_dma;
+	char		buffer[PATH_MAX + 1];
+	uint8		*local_cpu, *local_registers, *local_ppu, *local_dma,
+			*local_vram, *local_ram, *local_sram, *local_fillram,
+			*local_apu_sound, *local_control_data, *local_timing_data,
+			*local_superfx, *local_sa1, *local_sa1_registers, *local_dsp1,
+			*local_dsp2, *local_dsp4, *local_cx4_data, *local_st010,
+			*local_obc1, *local_obc1_data, *local_spc7110, *local_srtc,
+			*local_rtc_data, *local_bsx_data;
 
 	len = strlen(SNAPSHOT_MAGIC) + 1 + 4 + 1;
 	if (READ_STREAM(buffer, len, stream) != len)
@@ -1646,27 +1657,27 @@ int S9xUnfreezeFromStream (STREAM stream)
 	local_registers     = NULL;
 	local_ppu           = NULL;
 	local_dma           = NULL;
-	uint8	*local_vram          = NULL;
-	uint8	*local_ram           = NULL;
-	uint8	*local_sram          = NULL;
-	uint8	*local_fillram       = NULL;
-	uint8	*local_apu_sound     = NULL;
-	uint8	*local_control_data  = NULL;
-	uint8	*local_timing_data   = NULL;
-	uint8	*local_superfx       = NULL;
-	uint8	*local_sa1           = NULL;
-	uint8	*local_sa1_registers = NULL;
-	uint8	*local_dsp1          = NULL;
-	uint8	*local_dsp2          = NULL;
-	uint8	*local_dsp4          = NULL;
-	uint8	*local_cx4_data      = NULL;
-	uint8	*local_st010         = NULL;
-	uint8	*local_obc1          = NULL;
-	uint8	*local_obc1_data     = NULL;
-	uint8	*local_spc7110       = NULL;
-	uint8	*local_srtc          = NULL;
-	uint8	*local_rtc_data      = NULL;
-	uint8	*local_bsx_data      = NULL;
+	local_vram          = NULL;
+	local_ram           = NULL;
+	local_sram          = NULL;
+	local_fillram       = NULL;
+	local_apu_sound     = NULL;
+	local_control_data  = NULL;
+	local_timing_data   = NULL;
+	local_superfx       = NULL;
+	local_sa1           = NULL;
+	local_sa1_registers = NULL;
+	local_dsp1          = NULL;
+	local_dsp2          = NULL;
+	local_dsp4          = NULL;
+	local_cx4_data      = NULL;
+	local_st010         = NULL;
+	local_obc1          = NULL;
+	local_obc1_data     = NULL;
+	local_spc7110       = NULL;
+	local_srtc          = NULL;
+	local_rtc_data      = NULL;
+	local_bsx_data      = NULL;
 
 	do
 	{
