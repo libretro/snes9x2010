@@ -1344,16 +1344,18 @@ static void s7_mmio_write(unsigned addr, uint8 data)
 								     	s7_update_time(+1);
 
 								     /*round minute counter*/
-								     if(data & 8) {
+								     if(data & 8)
+								     {
+									     unsigned second;
 									     s7_update_time(0);
 
-									     unsigned second = memory_cartrtc_read( 0) + memory_cartrtc_read( 1) * 10;
+									     second = memory_cartrtc_read( 0) + memory_cartrtc_read( 1) * 10;
 									     /*clear seconds*/
 									     memory_cartrtc_write(0, 0);
 									     memory_cartrtc_write(1, 0);
 
 									     if(second >= 30)
-									     	s7_update_time(+60);
+										     s7_update_time(+60);
 								     }
 							     }
 

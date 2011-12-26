@@ -205,6 +205,8 @@ static int counter = 0;
 
 bool8 S9xGraphicsInit (void)
 {
+	uint32 r, g, b;
+
 	S9xInitTileRenderer();
 
 	GFX.DoInterlace = 0;
@@ -230,19 +232,19 @@ bool8 S9xGraphicsInit (void)
 
 	/* Lookup table for color addition */
 	ZeroMemory(GFX.X2, 0x10000 * sizeof(uint16));
-	for (uint32 r = 0; r <= MAX_RED; r++)
+	for ( r = 0; r <= MAX_RED; r++)
 	{
 		uint32	r2 = r << 1;
 		if (r2 > MAX_RED)
 			r2 = MAX_RED;
 
-		for (uint32 g = 0; g <= MAX_GREEN; g++)
+		for ( g = 0; g <= MAX_GREEN; g++)
 		{
 			uint32	g2 = g << 1;
 			if (g2 > MAX_GREEN)
 				g2 = MAX_GREEN;
 
-			for (uint32 b = 0; b <= MAX_BLUE; b++)
+			for ( b = 0; b <= MAX_BLUE; b++)
 			{
 				uint32	b2 = b << 1;
 				if (b2 > MAX_BLUE)
@@ -256,7 +258,7 @@ bool8 S9xGraphicsInit (void)
 
 	/* Lookup table for 1/2 color subtraction */
 	ZeroMemory(GFX.ZERO, 0x10000 * sizeof(uint16));
-	for (uint32 r = 0; r <= MAX_RED; r++)
+	for ( r = 0; r <= MAX_RED; r++)
 	{
 		uint32	r2 = r;
 		if (r2 & 0x10)
@@ -264,7 +266,7 @@ bool8 S9xGraphicsInit (void)
 		else
 			r2 = 0;
 
-		for (uint32 g = 0; g <= MAX_GREEN; g++)
+		for ( g = 0; g <= MAX_GREEN; g++)
 		{
 			uint32	g2 = g;
 			if (g2 & GREEN_HI_BIT)
@@ -272,7 +274,7 @@ bool8 S9xGraphicsInit (void)
 			else
 				g2 = 0;
 
-			for (uint32 b = 0; b <= MAX_BLUE; b++)
+			for ( b = 0; b <= MAX_BLUE; b++)
 			{
 				uint32	b2 = b;
 				if (b2 & 0x10)
@@ -291,8 +293,18 @@ bool8 S9xGraphicsInit (void)
 
 void S9xGraphicsDeinit (void)
 {
-	if (GFX.X2)         { free(GFX.X2);         GFX.X2         = NULL; }
-	if (GFX.ZERO)       { free(GFX.ZERO);       GFX.ZERO       = NULL; }
+	if (GFX.X2)
+	{
+		free(GFX.X2);
+		GFX.X2 = NULL;
+	}
+
+	if (GFX.ZERO)
+	{
+		free(GFX.ZERO);
+		GFX.ZERO = NULL;
+	}
+
 	if (GFX.SubScreen)  { free(GFX.SubScreen);  GFX.SubScreen  = NULL; }
 	if (GFX.ZBuffer)    { free(GFX.ZBuffer);    GFX.ZBuffer    = NULL; }
 	if (GFX.SubZBuffer) { free(GFX.SubZBuffer); GFX.SubZBuffer = NULL; }
@@ -311,11 +323,14 @@ static int objsize_array[8][4] = {
 
 static void SetupOBJ (void)
 {
+	int	Height, Y_two, SmallWidth, SmallHeight, LargeWidth, LargeHeight, inc, startline;
+	uint8	S, Y_one, line;
+
 	/* default */
-	int	SmallWidth	= objsize_array[4][0];
-	int	SmallHeight	= objsize_array[4][1];
-	int	LargeWidth	= objsize_array[4][2];
-	int	LargeHeight	= objsize_array[4][3];
+	SmallWidth	= objsize_array[4][0];
+	SmallHeight	= objsize_array[4][1];
+	LargeWidth	= objsize_array[4][2];
+	LargeHeight	= objsize_array[4][3];
 
 	if(PPU.OBJSizeSelect < 8)
 	{
@@ -325,9 +340,8 @@ static void SetupOBJ (void)
 		LargeHeight	= objsize_array[PPU.OBJSizeSelect][3];
 	}
 
-	int	inc = IPPU.InterlaceOBJ ? 2 : 1;
-
-	int startline = (IPPU.InterlaceOBJ && GFX.InterlaceFrame) ? 1 : 0;
+	inc = IPPU.InterlaceOBJ ? 2 : 1;
+	startline = (IPPU.InterlaceOBJ && GFX.InterlaceFrame) ? 1 : 0;
 
 	/* OK, we have three cases here. Either there's no priority, priority 
 	   is normal FirstSprite, or priority is FirstSprite+Y. The first two 
@@ -335,23 +349,23 @@ static void SetupOBJ (void)
 	   
 	   So we split them up. */
 
-	int		Height;
-	uint8	S;
 
 	if (!PPU.OAMPriorityRotation || !(PPU.OAMFlip & PPU.OAMAddr & 1)) /* normal case*/
 	{
-		uint8	LineOBJ[SNES_HEIGHT_EXTENDED];
+		int i, j;
+		uint8	LineOBJ[SNES_HEIGHT_EXTENDED], FirstSprite;
+
 		ZeroMemory(LineOBJ, sizeof(LineOBJ));
 
-		for (int i = 0; i < SNES_HEIGHT_EXTENDED; i++)
+		for ( i = 0; i < SNES_HEIGHT_EXTENDED; i++)
 		{
 			GFX.OBJLines[i].RTOFlags = 0;
 			GFX.OBJLines[i].Tiles = 34;
-			for (int j = 0; j < 32; j++)
+			for ( j = 0; j < 32; j++)
 				GFX.OBJLines[i].OBJ[j].Sprite = -1;
 		}
 
-		uint8	FirstSprite = PPU.FirstSprite;
+		FirstSprite = PPU.FirstSprite;
 		S = FirstSprite;
 
 		do
@@ -381,38 +395,38 @@ static void SetupOBJ (void)
 				else
 					GFX.OBJVisibleTiles[S] = GFX.OBJWidths[S] >> 3;
 
-				for (uint8 line = startline, Y = (uint8) (PPU.OBJ[S].VPos & 0xff); line < Height; Y++, line += inc)
+				for (line = startline, Y_one = (uint8) (PPU.OBJ[S].VPos & 0xff); line < Height; Y_one++, line += inc)
 				{
-					if (Y >= SNES_HEIGHT_EXTENDED)
+					if (Y_one >= SNES_HEIGHT_EXTENDED)
 						continue;
 
-					if (LineOBJ[Y] >= 32)
+					if (LineOBJ[Y_one] >= 32)
 					{
-						GFX.OBJLines[Y].RTOFlags |= 0x40;
+						GFX.OBJLines[Y_one].RTOFlags |= 0x40;
 						continue;
 					}
 
-					GFX.OBJLines[Y].Tiles -= GFX.OBJVisibleTiles[S];
-					if (GFX.OBJLines[Y].Tiles < 0)
-						GFX.OBJLines[Y].RTOFlags |= 0x80;
+					GFX.OBJLines[Y_one].Tiles -= GFX.OBJVisibleTiles[S];
+					if (GFX.OBJLines[Y_one].Tiles < 0)
+						GFX.OBJLines[Y_one].RTOFlags |= 0x80;
 
-					GFX.OBJLines[Y].OBJ[LineOBJ[Y]].Sprite = S;
+					GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Sprite = S;
 					if (PPU.OBJ[S].VFlip)
 						/* Yes, Width not Height. It so happens that the*/
 						/* sprites with H=2*W flip as two WxW sprites.*/
-						GFX.OBJLines[Y].OBJ[LineOBJ[Y]].Line = line ^ (GFX.OBJWidths[S] - 1);
+						GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Line = line ^ (GFX.OBJWidths[S] - 1);
 					else
-						GFX.OBJLines[Y].OBJ[LineOBJ[Y]].Line = line;
+						GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Line = line;
 
-					LineOBJ[Y]++;
+					LineOBJ[Y_one]++;
 				}
 			}
 
 			S = (S + 1) & 0x7f;
 		} while (S != FirstSprite);
 
-		for (int Y = 1; Y < SNES_HEIGHT_EXTENDED; Y++)
-			GFX.OBJLines[Y].RTOFlags |= GFX.OBJLines[Y - 1].RTOFlags;
+		for (Y_two = 1; Y_two < SNES_HEIGHT_EXTENDED; Y_two++)
+			GFX.OBJLines[Y_two].RTOFlags |= GFX.OBJLines[Y_two - 1].RTOFlags;
 	}
 	else /* evil FirstSprite+Y case*/
 	{
@@ -422,6 +436,8 @@ static void SetupOBJ (void)
 
 		for (S = 0; S < 128; S++)
 		{
+			int HPos;
+
 			if (PPU.OBJ[S].Size)
 			{
 				GFX.OBJWidths[S] = LargeWidth;
@@ -433,7 +449,7 @@ static void SetupOBJ (void)
 				Height = SmallHeight;
 			}
 
-			int	HPos = PPU.OBJ[S].HPos;
+			HPos = PPU.OBJ[S].HPos;
 			if (HPos == -256)
 				HPos = 256;
 
@@ -447,54 +463,56 @@ static void SetupOBJ (void)
 				else
 					GFX.OBJVisibleTiles[S] = GFX.OBJWidths[S] >> 3;
 
-				for (uint8 line = startline, Y = (uint8) (PPU.OBJ[S].VPos & 0xff); line < Height; Y++, line += inc)
+				for (line = startline, Y_one = (uint8) (PPU.OBJ[S].VPos & 0xff); line < Height; Y_one++, line += inc)
 				{
-					if (Y >= SNES_HEIGHT_EXTENDED)
+					if (Y_one >= SNES_HEIGHT_EXTENDED)
 						continue;
 
 					if (PPU.OBJ[S].VFlip)
 						/* Yes, Width not Height. It so happens that the*/
 						/* sprites with H=2*W flip as two WxW sprites.*/
-						OBJOnLine[Y][S] = (line ^ (GFX.OBJWidths[S] - 1)) | 0x80;
+						OBJOnLine[Y_one][S] = (line ^ (GFX.OBJWidths[S] - 1)) | 0x80;
 					else
-						OBJOnLine[Y][S] = line | 0x80;
+						OBJOnLine[Y_one][S] = line | 0x80;
 				}
 			}
 		}
 
 		/* Now go through and pull out those OBJ that are actually visible.*/
 		int	j;
-		for (int Y = 0; Y < SNES_HEIGHT_EXTENDED; Y++)
+		for (Y_two = 0; Y_two < SNES_HEIGHT_EXTENDED; Y_two++)
 		{
-			GFX.OBJLines[Y].RTOFlags = Y ? GFX.OBJLines[Y - 1].RTOFlags : 0;
-			GFX.OBJLines[Y].Tiles = 34;
+			uint8 FirstSprite;
 
-			uint8	FirstSprite = (PPU.FirstSprite + Y) & 0x7f;
+			GFX.OBJLines[Y_two].RTOFlags = Y_two ? GFX.OBJLines[Y_two - 1].RTOFlags : 0;
+			GFX.OBJLines[Y_two].Tiles = 34;
+
+			FirstSprite = (PPU.FirstSprite + Y_two) & 0x7f;
 			S = FirstSprite;
 			j = 0;
 
 			do
 			{
-				if (OBJOnLine[Y][S])
+				if (OBJOnLine[Y_two][S])
 				{
 					if (j >= 32)
 					{
-						GFX.OBJLines[Y].RTOFlags |= 0x40;
+						GFX.OBJLines[Y_two].RTOFlags |= 0x40;
 						break;
 					}
 
-					GFX.OBJLines[Y].Tiles -= GFX.OBJVisibleTiles[S];
-					if (GFX.OBJLines[Y].Tiles < 0)
-						GFX.OBJLines[Y].RTOFlags |= 0x80;
-					GFX.OBJLines[Y].OBJ[j].Sprite = S;
-					GFX.OBJLines[Y].OBJ[j++].Line = OBJOnLine[Y][S] & ~0x80;
+					GFX.OBJLines[Y_two].Tiles -= GFX.OBJVisibleTiles[S];
+					if (GFX.OBJLines[Y_two].Tiles < 0)
+						GFX.OBJLines[Y_two].RTOFlags |= 0x80;
+					GFX.OBJLines[Y_two].OBJ[j].Sprite = S;
+					GFX.OBJLines[Y_two].OBJ[j++].Line = OBJOnLine[Y_two][S] & ~0x80;
 				}
 
 				S = (S + 1) & 0x7f;
 			} while (S != FirstSprite);
 
 			if (j < 32)
-				GFX.OBJLines[Y].OBJ[j].Sprite = -1;
+				GFX.OBJLines[Y_two].OBJ[j].Sprite = -1;
 		}
 	}
 
@@ -505,29 +523,32 @@ static void SetupOBJ (void)
 static void DrawOBJS (int D)
 {
 	uint32 Y, Offset;
-	int O, S, t, x;
+	int O, S, t, x, PixWidth;
 	void (*DrawTile) (uint32, uint32, uint32, uint32) = NULL;
 	void (*DrawClippedTile) (uint32, uint32, uint32, uint32, uint32, uint32) = NULL;
 
-	int	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
 	BG.InterlaceLine = GFX.InterlaceFrame ? 8 : 0;
 	GFX.Z1 = 2;
 
 	for ( Y = GFX.StartY, Offset = Y * GFX.PPL; Y <= GFX.EndY; Y++, Offset += GFX.PPL)
 	{
-		int	I = 0;
-		int	tiles = GFX.OBJLines[Y].Tiles;
+		int I, tiles;
+
+		I = 0;
+		tiles = GFX.OBJLines[Y].Tiles;
 
 		for ( S = GFX.OBJLines[Y].OBJ[I].Sprite; S >= 0 && I < 32; S = GFX.OBJLines[Y].OBJ[++I].Sprite)
 		{
+			int	BaseTile, TileX, TileLine, TileInc, DrawMode, clip, next_clip, X;
 			tiles += GFX.OBJVisibleTiles[S];
 			if (tiles <= 0)
 				continue;
 
-			int	BaseTile = (((GFX.OBJLines[Y].OBJ[I].Line << 1) + (PPU.OBJ[S].Name & 0xf0)) & 0xf0) | (PPU.OBJ[S].Name & 0x100) | (PPU.OBJ[S].Palette << 10);
-			int	TileX = PPU.OBJ[S].Name & 0x0f;
-			int	TileLine = (GFX.OBJLines[Y].OBJ[I].Line & 7) * 8;
-			int	TileInc = 1;
+			BaseTile = (((GFX.OBJLines[Y].OBJ[I].Line << 1) + (PPU.OBJ[S].Name & 0xf0)) & 0xf0) | (PPU.OBJ[S].Name & 0x100) | (PPU.OBJ[S].Palette << 10);
+			TileX = PPU.OBJ[S].Name & 0x0f;
+			TileLine = (GFX.OBJLines[Y].OBJ[I].Line & 7) * 8;
+			TileInc = 1;
 
 			if (PPU.OBJ[S].HFlip)
 			{
@@ -538,9 +559,11 @@ static void DrawOBJS (int D)
 
 			GFX.Z2 = D + PPU.OBJ[S].Priority * 4;
 
-			int	DrawMode = 3;
-			int	clip = 0, next_clip = -1000;
-			int	X = PPU.OBJ[S].HPos;
+			DrawMode = 3;
+			clip = 0;
+			next_clip = -1000;
+			X = PPU.OBJ[S].HPos;
+
 			if (X == -256)
 				X = 256;
 
@@ -599,11 +622,12 @@ static void DrawOBJS (int D)
 
 static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 {
-	int clip;
-	BG.TileAddress = PPU.BG[bg].NameBase << 1;
-
-	uint32	Tile, Y;
+	int clip, OffsetMask, OffsetShift, PixWidth;
+	uint32	Lines, Tile, Y;
 	uint16	*SC0, *SC1, *SC2, *SC3;
+	bool8 HiresInterlace;
+
+	BG.TileAddress = PPU.BG[bg].NameBase << 1;
 
 	SC0 = (uint16 *) &Memory.VRAM[PPU.BG[bg].SCBase << 1];
 	SC1 = (PPU.BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
@@ -616,11 +640,10 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 	if (SC3 >= (uint16 *) (Memory.VRAM + 0x10000))
 		SC3 -= 0x8000;
 
-	uint32	Lines;
-	int		OffsetMask  = (BG.TileSizeH == 16) ? 0x3ff : 0x1ff;
-	int		OffsetShift = (BG.TileSizeV == 16) ? 4 : 3;
-	int		PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
-	bool8		HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
+	OffsetMask  = (BG.TileSizeH == 16) ? 0x3ff : 0x1ff;
+	OffsetShift = (BG.TileSizeV == 16) ? 4 : 3;
+	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
 
 	void (*DrawTile) (uint32, uint32, uint32, uint32);
 	void (*DrawClippedTile) (uint32, uint32, uint32, uint32, uint32, uint32);
@@ -642,10 +665,15 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 
 		for ( Y = GFX.StartY; Y <= GFX.EndY; Y += Lines)
 		{
-			uint32	Y2 = HiresInterlace ? Y * 2 + GFX.InterlaceFrame : Y;
-			uint32	VOffset = LineData[Y].BG[bg].VOffset + (HiresInterlace ? 1 : 0);
-			uint32	HOffset = LineData[Y].BG[bg].HOffset;
-			int		VirtAlign = ((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0);
+			uint32 Y2, VOffset, HOffset, t1, t2, TilemapRow, Left, Right,
+			Offset, HPos, HTile, Width;
+			uint16	*b1, *b2, *t;
+			int VirtAlign;
+
+			Y2 = HiresInterlace ? Y * 2 + GFX.InterlaceFrame : Y;
+			VOffset = LineData[Y].BG[bg].VOffset + (HiresInterlace ? 1 : 0);
+			HOffset = LineData[Y].BG[bg].HOffset;
+			VirtAlign = ((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0);
 
 			for (Lines = 1; Lines < GFX.LinesPerTile - VirtAlign; Lines++)
 			{
@@ -658,8 +686,7 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 
 			VirtAlign <<= 3;
 
-			uint32	t1, t2;
-			uint32	TilemapRow = (VOffset + Y2) >> OffsetShift;
+			TilemapRow = (VOffset + Y2) >> OffsetShift;
 			BG.InterlaceLine = ((VOffset + Y2) & 1) << 3;
 
 			if ((VOffset + Y2) & 8)
@@ -673,7 +700,6 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 				t2 = 16;
 			}
 
-			uint16	*b1, *b2;
 
 			if (TilemapRow & 0x20)
 			{
@@ -689,12 +715,11 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 			b1 += (TilemapRow & 0x1f) << 5;
 			b2 += (TilemapRow & 0x1f) << 5;
 
-			uint32	Left   = GFX.Clip[bg].Left[clip];
-			uint32	Right  = GFX.Clip[bg].Right[clip];
-			uint32	Offset = Left * PixWidth + Y * GFX.PPL;
-			uint32	HPos   = (HOffset + Left) & OffsetMask;
-			uint32	HTile  = HPos >> 3;
-			uint16	*t;
+			Left   = GFX.Clip[bg].Left[clip];
+			Right  = GFX.Clip[bg].Right[clip];
+			Offset = Left * PixWidth + Y * GFX.PPL;
+			HPos   = (HOffset + Left) & OffsetMask;
+			HTile  = HPos >> 3;
 
 			if (BG.TileSizeH == 8)
 			{
@@ -711,12 +736,15 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 					t = b1 + (HTile >> 1);
 			}
 
-			uint32	Width = Right - Left;
+			Width = Right - Left;
 
 			if (HPos & 7)
 			{
-				uint32	l = HPos & 7;
-				uint32	w = 8 - l;
+				uint32 l, w;
+
+				l = HPos & 7;
+				w = 8 - l;
+
 				if (w > Width)
 					w = Width;
 
@@ -839,10 +867,12 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 
 static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 {
-	BG.TileAddress = PPU.BG[bg].NameBase << 1;
-
 	uint32	Tile, Y;
 	uint16	*SC0, *SC1, *SC2, *SC3;
+	int	clip, Lines, OffsetMask, OffsetShift, PixWidth, MosaicStart;
+	bool8 HiresInterlace;
+
+	BG.TileAddress = PPU.BG[bg].NameBase << 1;
 
 	SC0 = (uint16 *) &Memory.VRAM[PPU.BG[bg].SCBase << 1];
 	SC1 = (PPU.BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
@@ -855,15 +885,14 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 	if (SC3 >= (uint16 *) (Memory.VRAM + 0x10000))
 		SC3 -= 0x8000;
 
-	int	clip, Lines;
-	int	OffsetMask  = (BG.TileSizeH == 16) ? 0x3ff : 0x1ff;
-	int	OffsetShift = (BG.TileSizeV == 16) ? 4 : 3;
-	int	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
-	bool8 HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
+	OffsetMask  = (BG.TileSizeH == 16) ? 0x3ff : 0x1ff;
+	OffsetShift = (BG.TileSizeV == 16) ? 4 : 3;
+	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
 
 	void (*DrawPix) (uint32, uint32, uint32, uint32, uint32, uint32);
 
-	int	MosaicStart = ((uint32) GFX.StartY - PPU.MosaicStart) % PPU.Mosaic;
+	MosaicStart = ((uint32) GFX.StartY - PPU.MosaicStart) % PPU.Mosaic;
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
@@ -876,18 +905,22 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 
 		for ( Y = GFX.StartY - MosaicStart; Y <= GFX.EndY; Y += PPU.Mosaic)
 		{
-			uint32	Y2 = HiresInterlace ? Y * 2 : Y;
-			uint32	VOffset = LineData[Y].BG[bg].VOffset + (HiresInterlace ? 1 : 0);
-			uint32	HOffset = LineData[Y].BG[bg].HOffset;
+			uint32	t1, t2, Y2, VOffset, HOffset, TilemapRow,
+			Left, Right, Offset, HPos, HTile, Width;
+			uint16 *b1, *b2, *t;
+			int VirtAlign;
+
+			Y2 = HiresInterlace ? Y * 2 : Y;
+			VOffset = LineData[Y].BG[bg].VOffset + (HiresInterlace ? 1 : 0);
+			HOffset = LineData[Y].BG[bg].HOffset;
 
 			Lines = PPU.Mosaic - MosaicStart;
 			if (Y + MosaicStart + Lines > GFX.EndY)
 				Lines = GFX.EndY - Y - MosaicStart + 1;
 
-			int	VirtAlign = (((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0)) << 3;
+			VirtAlign = (((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0)) << 3;
 
-			uint32	t1, t2;
-			uint32	TilemapRow = (VOffset + Y2) >> OffsetShift;
+			TilemapRow = (VOffset + Y2) >> OffsetShift;
 			BG.InterlaceLine = ((VOffset + Y2) & 1) << 3;
 
 			if ((VOffset + Y2) & 8)
@@ -900,8 +933,6 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 				t1 = 0;
 				t2 = 16;
 			}
-
-			uint16	*b1, *b2;
 
 			if (TilemapRow & 0x20)
 			{
@@ -917,12 +948,11 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 			b1 += (TilemapRow & 0x1f) << 5;
 			b2 += (TilemapRow & 0x1f) << 5;
 
-			uint32	Left   = GFX.Clip[bg].Left[clip];
-			uint32	Right  = GFX.Clip[bg].Right[clip];
-			uint32	Offset = Left * PixWidth + (Y + MosaicStart) * GFX.PPL;
-			uint32	HPos   = (HOffset + Left - (Left % PPU.Mosaic)) & OffsetMask;
-			uint32	HTile  = HPos >> 3;
-			uint16	*t;
+			Left   = GFX.Clip[bg].Left[clip];
+			Right  = GFX.Clip[bg].Right[clip];
+			Offset = Left * PixWidth + (Y + MosaicStart) * GFX.PPL;
+			HPos   = (HOffset + Left - (Left % PPU.Mosaic)) & OffsetMask;
+			HTile  = HPos >> 3;
 
 			if (BG.TileSizeH == 8)
 			{
@@ -939,7 +969,7 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 					t = b1 + (HTile >> 1);
 			}
 
-			uint32	Width = Right - Left;
+			Width = Right - Left;
 
 			HPos &= 7;
 
@@ -1005,12 +1035,14 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 
 static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 {
-	int clip;
-	BG.TileAddress = PPU.BG[bg].NameBase << 1;
-
+	int clip, OffsetMask, OffsetShift, Offset2Mask, Offset2Shift,
+	OffsetEnableMask, PixWidth;
 	uint32	Tile, Y;
+	bool8	HiresInterlace;
 	uint16	*SC0, *SC1, *SC2, *SC3;
 	uint16	*BPS0, *BPS1, *BPS2, *BPS3;
+
+	BG.TileAddress = PPU.BG[bg].NameBase << 1;
 
 	BPS0 = (uint16 *) &Memory.VRAM[PPU.BG[2].SCBase << 1];
 	BPS1 = (PPU.BG[2].SCSize & 1) ? BPS0 + 1024 : BPS0;
@@ -1034,13 +1066,13 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 	if (SC3 >= (uint16 *) (Memory.VRAM + 0x10000))
 		SC3 -= 0x8000;
 
-	int	OffsetMask   = (BG.TileSizeH   == 16) ? 0x3ff : 0x1ff;
-	int	OffsetShift  = (BG.TileSizeV   == 16) ? 4 : 3;
-	int	Offset2Mask  = (BG.OffsetSizeH == 16) ? 0x3ff : 0x1ff;
-	int	Offset2Shift = (BG.OffsetSizeV == 16) ? 4 : 3;
-	int	OffsetEnableMask = 0x2000 << bg;
-	int	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
-	bool8	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
+	OffsetMask   = (BG.TileSizeH   == 16) ? 0x3ff : 0x1ff;
+	OffsetShift  = (BG.TileSizeV   == 16) ? 4 : 3;
+	Offset2Mask  = (BG.OffsetSizeH == 16) ? 0x3ff : 0x1ff;
+	Offset2Shift = (BG.OffsetSizeV == 16) ? 4 : 3;
+	OffsetEnableMask = 0x2000 << bg;
+	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
 
 	void (*DrawClippedTile) (uint32, uint32, uint32, uint32, uint32, uint32);
 
@@ -1055,12 +1087,18 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 
 		for ( Y = GFX.StartY; Y <= GFX.EndY; Y++)
 		{
-			uint32	Y2 = HiresInterlace ? Y * 2 + GFX.InterlaceFrame : Y;
-			uint32	VOff = LineData[Y].BG[2].VOffset - 1;
-			uint32	HOff = LineData[Y].BG[2].HOffset;
-			uint32	HOffsetRow = VOff >> Offset2Shift;
-			uint32	VOffsetRow = (VOff + VOffOff) >> Offset2Shift;
+			uint32 Y2, VOff, HOff, HOffsetRow, VOffsetRow,
+			Left, Right, Offset, LineHOffset, Width;
 			uint16	*s, *s1, *s2;
+			int32 VOffsetOffset;
+			bool8 left_edge;
+
+			Y2 = HiresInterlace ? Y * 2 + GFX.InterlaceFrame : Y;
+			VOff = LineData[Y].BG[2].VOffset - 1;
+			HOff = LineData[Y].BG[2].HOffset;
+			HOffsetRow = VOff >> Offset2Shift;
+			VOffsetRow = (VOff + VOffOff) >> Offset2Shift;
+
 
 			if (HOffsetRow & 0x20)
 			{
@@ -1076,18 +1114,20 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 			s1 += (HOffsetRow & 0x1f) << 5;
 			s2 += (HOffsetRow & 0x1f) << 5;
 			s = ((VOffsetRow & 0x20) ? BPS2 : BPS0) + ((VOffsetRow & 0x1f) << 5);
-			int32	VOffsetOffset = s - s1;
+			VOffsetOffset = s - s1;
 
-			uint32	Left  = GFX.Clip[bg].Left[clip];
-			uint32	Right = GFX.Clip[bg].Right[clip];
-			uint32	Offset = Left * PixWidth + Y * GFX.PPL;
-			uint32	LineHOffset = LineData[Y].BG[bg].HOffset;
-			bool8	left_edge = (Left < (8 - (LineHOffset & 7)));
-			uint32	Width = Right - Left;
+			Left  = GFX.Clip[bg].Left[clip];
+			Right = GFX.Clip[bg].Right[clip];
+			Offset = Left * PixWidth + Y * GFX.PPL;
+			LineHOffset = LineData[Y].BG[bg].HOffset;
+			left_edge = (Left < (8 - (LineHOffset & 7)));
+			Width = Right - Left;
 
 			while (Left < Right)
 			{
-				uint32	VOffset, HOffset;
+				uint32	VOffset, HOffset, t1, t2, HPos, HTile, l, w;
+				uint16 HCellOffset, VCellOffset, *t, *b1, *b2;
+				int HOffTile, VirtAlign, TilemapRow;
 
 				if (left_edge)
 				{
@@ -1098,7 +1138,7 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 				}
 				else
 				{
-					int	HOffTile = ((HOff + Left - 1) & Offset2Mask) >> 3;
+					HOffTile = ((HOff + Left - 1) & Offset2Mask) >> 3;
 
 					if (BG.OffsetSizeH == 8)
 					{
@@ -1115,20 +1155,15 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 							s = s1 + (HOffTile >> 1);
 					}
 
-					uint16	HCellOffset = READ_WORD(s);
-					uint16	VCellOffset;
+					HCellOffset = READ_WORD(s);
+					VCellOffset = 0;
 
 					if (VOffOff)
 						VCellOffset = READ_WORD(s + VOffsetOffset);
-					else
+					else if (HCellOffset & 0x8000)
 					{
-						if (HCellOffset & 0x8000)
-						{
-							VCellOffset = HCellOffset;
-							HCellOffset = 0;
-						}
-						else
-							VCellOffset = 0;
+						VCellOffset = HCellOffset;
+						HCellOffset = 0;
 					}
 
 					if (VCellOffset & OffsetEnableMask)
@@ -1145,9 +1180,9 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 				if (HiresInterlace)
 					VOffset++;
 
-				uint32	t1, t2;
-				int		VirtAlign = (((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0)) << 3;
-				int		TilemapRow = (VOffset + Y2) >> OffsetShift;
+
+				VirtAlign = (((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0)) << 3;
+				TilemapRow = (VOffset + Y2) >> OffsetShift;
 				BG.InterlaceLine = ((VOffset + Y2) & 1) << 3;
 
 				if ((VOffset + Y2) & 8)
@@ -1161,7 +1196,6 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 					t2 = 16;
 				}
 
-				uint16	*b1, *b2;
 
 				if (TilemapRow & 0x20)
 				{
@@ -1177,9 +1211,8 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 				b1 += (TilemapRow & 0x1f) << 5;
 				b2 += (TilemapRow & 0x1f) << 5;
 
-				uint32	HPos = (HOffset + Left) & OffsetMask;
-				uint32	HTile = HPos >> 3;
-				uint16	*t;
+				HPos = (HOffset + Left) & OffsetMask;
+				HTile = HPos >> 3;
 
 				if (BG.TileSizeH == 8)
 				{
@@ -1196,8 +1229,9 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 						t = b1 + (HTile >> 1);
 				}
 
-				uint32	l = HPos & 7;
-				uint32	w = 8 - l;
+				l = HPos & 7;
+				w = 8 - l;
+
 				if (w > Width)
 					w = Width;
 
@@ -1230,12 +1264,13 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 
 static void DrawBackgroundOffsetMosaic (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 {
-	int clip;
-	BG.TileAddress = PPU.BG[bg].NameBase << 1;
+	int clip, Lines, OffsetMask, OffsetShift, Offset2Mask, Offset2Shift,
+	OffsetEnableMask, PixWidth;
+	uint32	Tile, Y, MosaicStart;
+	uint16	*SC0, *SC1, *SC2, *SC3, *BPS0, *BPS1, *BPS2, *BPS3;
+	bool8 HiresInterlace;
 
-	uint32	Tile, Y;
-	uint16	*SC0, *SC1, *SC2, *SC3;
-	uint16	*BPS0, *BPS1, *BPS2, *BPS3;
+	BG.TileAddress = PPU.BG[bg].NameBase << 1;
 
 	BPS0 = (uint16 *) &Memory.VRAM[PPU.BG[2].SCBase << 1];
 	BPS1 = (PPU.BG[2].SCSize & 1) ? BPS0 + 1024 : BPS0;
@@ -1259,18 +1294,17 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 	if (SC3 >= (uint16 *) (Memory.VRAM + 0x10000))
 		SC3 -= 0x8000;
 
-	int	Lines;
-	int	OffsetMask   = (BG.TileSizeH   == 16) ? 0x3ff : 0x1ff;
-	int	OffsetShift  = (BG.TileSizeV   == 16) ? 4 : 3;
-	int	Offset2Mask  = (BG.OffsetSizeH == 16) ? 0x3ff : 0x1ff;
-	int	Offset2Shift = (BG.OffsetSizeV == 16) ? 4 : 3;
-	int	OffsetEnableMask = 0x2000 << bg;
-	int	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
-	bool8	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
+	OffsetMask   = (BG.TileSizeH   == 16) ? 0x3ff : 0x1ff;
+	OffsetShift  = (BG.TileSizeV   == 16) ? 4 : 3;
+	Offset2Mask  = (BG.OffsetSizeH == 16) ? 0x3ff : 0x1ff;
+	Offset2Shift = (BG.OffsetSizeV == 16) ? 4 : 3;
+	OffsetEnableMask = 0x2000 << bg;
+	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
 
 	void (*DrawPix) (uint32, uint32, uint32, uint32, uint32, uint32);
 
-	int	MosaicStart = ((uint32) GFX.StartY - PPU.MosaicStart) % PPU.Mosaic;
+	MosaicStart = ((uint32) GFX.StartY - PPU.MosaicStart) % PPU.Mosaic;
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
@@ -1379,8 +1413,11 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 					VOffset++;
 
 				uint32	t1, t2;
-				int		VirtAlign = (((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0)) << 3;
-				int		TilemapRow = (VOffset + Y2) >> OffsetShift;
+				uint16	*b1, *b2;
+				int VirtAlign, TilemapRow;
+
+				VirtAlign = (((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0)) << 3;
+				TilemapRow = (VOffset + Y2) >> OffsetShift;
 				BG.InterlaceLine = ((VOffset + Y2) & 1) << 3;
 
 				if ((VOffset + Y2) & 8)
@@ -1393,8 +1430,6 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 					t1 = 0;
 					t2 = 16;
 				}
-
-				uint16	*b1, *b2;
 
 				if (TilemapRow & 0x20)
 				{
@@ -1966,12 +2001,14 @@ static INLINE void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_
 
 #define StoreWindowRegions_StoreMode1_Mask0(Clip, Clip2) \
 { \
-	int	ct = 0; \
-	int	ct2 = 0; \
-	int	k = 0; \
+	int ct, ct2, k; \
+	ct = 0; \
+	ct2 = 0; \
+	k = 0; \
 	do{ \
-		int	DrawMode = drawing_modes[k]; \
-		int	DrawMode2 = drawing_modes[k]; \
+		int DrawMode, DrawMode2; \
+		DrawMode = drawing_modes[k]; \
+		DrawMode2 = drawing_modes[k]; \
 		DrawMode2 |= 1; \
 		\
 		if (ct > 0 && Clip.Right[ct - 1] == windows[k] && Clip.DrawMode[ct - 1] == DrawMode) \
@@ -2003,8 +2040,9 @@ static INLINE void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_
 
 #define StoreWindowRegions_Sub0_StoreMode0(Mask, Clip) \
 { \
-	int	ct = 0; \
-	int	k = 0; \
+	int ct, k; \
+	ct = 0; \
+	k = 0; \
 	\
 	do{ \
 		int	DrawMode = drawing_modes[k]; \
@@ -2031,8 +2069,9 @@ static INLINE void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_
 
 #define StoreWindowRegions_Sub1_StoreMode0(Mask, Clip) \
 { \
-	int	ct = 0; \
-	int	k = 0; \
+	int ct, k; \
+	ct = 0; \
+	k = 0; \
 	\
 	do \
 	{ \
@@ -2072,8 +2111,10 @@ static void S9xComputeClipWindows (void)
 {
 	int16	windows[6] = { 0, 256, 256, 256, 256, 256 };
 	uint8	drawing_modes[5] = { 0, 0, 0, 0, 0 };
-	int		n_regions = 1;
-	int		i, j;
+	int	i, j, n_regions;
+	uint8	W1, W2, CW, CW_color, CW_math;
+
+	n_regions = 1;
 
 	/* Calculate window regions. We have at most 5 regions, because we have 6 control points*/
 	/* (screen edges, window 1 left & right, and window 2 left & right).*/
@@ -2130,7 +2171,8 @@ static void S9xComputeClipWindows (void)
 
 	/* Get a bitmap of which regions correspond to each window.*/
 
-	uint8	W1 = 0, W2 = 0;
+	W1 = 0;
+	W2 = 0;
 
 	if (PPU.Window1Left <= PPU.Window1Right)
 	{
@@ -2149,8 +2191,9 @@ static void S9xComputeClipWindows (void)
 	/* Color Window affects the drawing mode for each region.*/
 	/* Modes are: 3=Draw as normal, 2=clip color (math only), 1=no math (draw only), 0=nothing.*/
 
-	uint8	CW_color = 0, CW_math = 0;
-	uint8	CW = CalcWindowMask(5, W1, W2);
+	CW_color = 0;
+	CW_math = 0;
+	CW = CalcWindowMask(5, W1, W2);
 
 	switch (Memory.FillRAM[0x2130] & 0xc0)
 	{
@@ -2185,9 +2228,11 @@ static void S9xComputeClipWindows (void)
 
 	for (j = 0; j < 5; j++)
 	{
-		uint8	W = CalcWindowMask(j, W1, W2);
-		uint8 mask_a = 0;
-		uint8 mask_b = 0;
+		uint8 W, mask_a, mask_b;
+
+		W = CalcWindowMask(j, W1, W2);
+		mask_a = 0;
+		mask_b = 0;
 
 		if (Memory.FillRAM[0x212e] & (1 << j))
 			mask_a = W;
@@ -2231,8 +2276,10 @@ void S9xUpdateScreen (void)
 			/* Have to back out of the regular speed hack */
 			for ( y = 0; y < GFX.StartY; y++)
 			{
-				register uint16	*p = GFX.Screen + y * GFX.PPL + 255;
-				register uint16	*q = GFX.Screen + y * GFX.PPL + 510;
+				register uint16 *p, *q;
+
+				p = GFX.Screen + y * GFX.PPL + 255;
+				q = GFX.Screen + y * GFX.PPL + 510;
 
 				for ( x = 255; x >= 0; x--, p--, q -= 2)
 					*q = *(q + 1) = *p;
@@ -2244,12 +2291,12 @@ void S9xUpdateScreen (void)
 
 		if (!IPPU.DoubleHeightPixels && IPPU.Interlace && (PPU.BGMode == 5 || PPU.BGMode == 6))
 		{
+			register int32 y;
+
 			IPPU.DoubleHeightPixels = TRUE;
 			IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
 			GFX.PPL = GFX.RealPPL << 1;
 			GFX.DoInterlace = 2;
-
-			register int32 y;
 
 			for ( y = (int32) GFX.StartY - 1; y >= 0; y--)
 				memmove(GFX.Screen + y * GFX.PPL, GFX.Screen + y * GFX.RealPPL, IPPU.RenderedScreenWidth * sizeof(uint16));
@@ -2374,6 +2421,7 @@ void S9xDrawCrosshair (const char *crosshair, uint8 fgcolor, uint8 bgcolor, int1
 
 static INLINE void S9xLatchCounters (void)
 {
+	int32 hc;
 	/* Latch h and v counters, like the gun */
 
 	PPU.HVBeamCounterLatched = 1;
@@ -2390,7 +2438,7 @@ static INLINE void S9xLatchCounters (void)
 	   1360 cycles long, instead of 1364 like all other scanlines.
 
 	   This makes the effective range of hscan_pos 0-339 at all times. */
-	int32	hc = CPU.Cycles;
+	hc = CPU.Cycles;
 
 	if (Timings.H_Max == Timings.H_Max_Master) /* 1364 */
 	{
@@ -2605,11 +2653,11 @@ static INLINE void REGISTER_2122 (uint8 Byte)
 
 static INLINE void REGISTER_2118 (uint8 Byte)
 {
-	uint32	address;
+	uint32	address, rem;
 
 	if (PPU.VMA.FullGraphicCount)
 	{
-		uint32 rem = PPU.VMA.Address & PPU.VMA.Mask1;
+		rem = PPU.VMA.Address & PPU.VMA.Mask1;
 		address = (((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) & 0xffff;
 		Memory.VRAM[address] = Byte;
 	}
@@ -2636,11 +2684,11 @@ static INLINE void REGISTER_2118 (uint8 Byte)
 
 static INLINE void REGISTER_2119 (uint8 Byte)
 {
-	uint32	address;
+	uint32	address, rem;
 
 	if (PPU.VMA.FullGraphicCount)
 	{
-		uint32 rem = PPU.VMA.Address & PPU.VMA.Mask1;
+		rem = PPU.VMA.Address & PPU.VMA.Mask1;
 		address = ((((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) + 1) & 0xffff;
 		Memory.VRAM[address] = Byte;
 	}
@@ -2668,9 +2716,11 @@ static INLINE void REGISTER_2119 (uint8 Byte)
 static INLINE void REGISTER_2104 (uint8 Byte)
 {
 	uint16 SignExtend[2] = {0x0000,0xff00};
+	int addr;
+
 	if (PPU.OAMAddr & 0x100)
 	{
-		int addr = ((PPU.OAMAddr & 0x10f) << 1) + (PPU.OAMFlip & 1);
+		addr = ((PPU.OAMAddr & 0x10f) << 1) + (PPU.OAMFlip & 1);
 		if (Byte != PPU.OAMData[addr])
 		{
 			FLUSH_REDRAW();
@@ -2721,7 +2771,7 @@ static INLINE void REGISTER_2104 (uint8 Byte)
 		uint8 highbyte = Byte;
 		PPU.OAMWriteRegister |= Byte << 8;
 
-		int addr = (PPU.OAMAddr << 1);
+		addr = (PPU.OAMAddr << 1);
 		if (lowbyte != PPU.OAMData[addr] || highbyte != PPU.OAMData[addr + 1])
 		{
 			FLUSH_REDRAW();
@@ -3484,7 +3534,10 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 static uint8 S9xGetSuperFX (uint16 address)
 {
-	uint8	byte = Memory.FillRAM[address];
+	uint8 byte;
+
+	byte = Memory.FillRAM[address];
+
 	if (address == 0x3031)
 	{
 		S9X_CLEAR_IRQ(GSU_IRQ_SOURCE);
@@ -3806,7 +3859,9 @@ static INLINE bool8 addCyclesInDMA (uint8 dma_channel)
 
 static INLINE void REGISTER_2119_linear (uint8 Byte)
 {
-	uint32	address = ((PPU.VMA.Address << 1) + 1) & 0xffff;
+	uint32 address;
+
+	address = ((PPU.VMA.Address << 1) + 1) & 0xffff;
 
 	Memory.VRAM[address] = Byte;
 
@@ -3828,7 +3883,9 @@ static INLINE void REGISTER_2119_linear (uint8 Byte)
 
 static INLINE void REGISTER_2118_linear (uint8 Byte)
 {
-	uint32	address = (PPU.VMA.Address << 1) & 0xffff;
+	uint32 address;
+
+	address = (PPU.VMA.Address << 1) & 0xffff;
 
 	Memory.VRAM[address] = Byte;
 
@@ -3850,8 +3907,10 @@ static INLINE void REGISTER_2118_linear (uint8 Byte)
 
 static INLINE void REGISTER_2118_tile (uint8 Byte)
 {
-	uint32 rem = PPU.VMA.Address & PPU.VMA.Mask1;
-	uint32 address = (((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) & 0xffff;
+	uint32 address, rem;
+
+	rem = PPU.VMA.Address & PPU.VMA.Mask1;
+	address = (((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) & 0xffff;
 
 	Memory.VRAM[address] = Byte;
 
@@ -3873,8 +3932,10 @@ static INLINE void REGISTER_2118_tile (uint8 Byte)
 
 static INLINE void REGISTER_2119_tile (uint8 Byte)
 {
-	uint32 rem = PPU.VMA.Address & PPU.VMA.Mask1;
-	uint32 address = ((((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) + 1) & 0xffff;
+	uint32 address, rem;
+
+	rem = PPU.VMA.Address & PPU.VMA.Mask1;
+	address = ((((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) + 1) & 0xffff;
 
 	Memory.VRAM[address] = Byte;
 
@@ -3904,15 +3965,19 @@ static void S9xDoDMA (void)
 		if(dma_channels_to_be_used[Channel] != 1)
 			continue;
 
+		struct SDMA	*d = &DMA[Channel];
+		int32 inc, count;
+		bool8	in_sa1_dma;
+		uint8	*in_sdd1_dma, *spc7110_dma;
+
 		CPU.InDMA = TRUE;
 		CPU.InDMAorHDMA = TRUE;
 		CPU.CurrentDMAorHDMAChannel = Channel;
 
-		struct SDMA	*d = &DMA[Channel];
-
 		/* Check invalid DMA first */
 		if ((d->ABank == 0x7E || d->ABank == 0x7F) && d->BAddress == 0x80 && !d->ReverseTransfer)
 		{
+			int32 c;
 			/* Attempting a DMA from WRAM to $2180 will not work, WRAM will not be written.*/
 			/* Attempting a DMA from $2180 to WRAM will similarly not work,*/
 			/* the value written is (initially) the OpenBus value.*/
@@ -3923,7 +3988,7 @@ static void S9xDoDMA (void)
 			/* not being able to read and write itself at the same time*/
 			/* And no, PPU.WRAM should not be updated.*/
 
-			int32	c = d->TransferBytes;
+			c = d->TransferBytes;
 			/* Writing $0000 to $43x5 actually results in a transfer of $10000 bytes, not 0. */
 			if (c == 0)
 				c = 0x10000;
@@ -3962,16 +4027,16 @@ static void S9xDoDMA (void)
 				break;
 		}
 
-		int32	inc = d->AAddressFixed ? 0 : (!d->AAddressDecrement ? 1 : -1);
-		int32	count = d->TransferBytes;
+		inc = d->AAddressFixed ? 0 : (!d->AAddressDecrement ? 1 : -1);
+		count = d->TransferBytes;
 		/* Writing $0000 to $43x5 actually results in a transfer of $10000 bytes, not 0. */
 		if (count == 0)
 			count = 0x10000;
 
 		/* Prepare for custom chip DMA */
-		uint8	*in_sdd1_dma = NULL;
-		uint8	*spc7110_dma = NULL;
-		bool8	in_sa1_dma = FALSE;
+		in_sdd1_dma = NULL;
+		spc7110_dma = NULL;
+		in_sa1_dma = FALSE;
 
 		/* S-DD1 */
 		if(special_chips_active)
@@ -4004,8 +4069,10 @@ static void S9xDoDMA (void)
 			{
 				if (d->AAddress == 0x4800 || d->ABank == 0x50)
 				{
+					int i;
 					spc7110_dma = (uint8*)malloc(d->TransferBytes);
-					for (int i = 0; i < d->TransferBytes; i++)
+
+					for ( i = 0; i < d->TransferBytes; i++)
 						spc7110_dma[i] = spc7110_decomp_read();
 
 					int32	icount = r4809 | (r480a << 8);
@@ -4024,14 +4091,19 @@ static void S9xDoDMA (void)
 			{
 				if (SA1.in_char_dma && d->BAddress == 0x18 && (d->ABank & 0xf0) == 0x40)
 				{
+					int32 num_chars, depth, bytes_per_char, bytes_per_line, char_line_bytes,
+					i, j, l, b;
+					uint32 addr, inc_sa1, char_count;
+					uint8 *buffer, *p;
+
 					/* Perform packed bitmap to PPU character format conversion on the data
 					   before transmitting it to V-RAM via-DMA. */
-					int32	num_chars = 1 << ((Memory.FillRAM[0x2231] >> 2) & 7);
-					int32	depth = (Memory.FillRAM[0x2231] & 3) == 0 ? 8 : (Memory.FillRAM[0x2231] & 3) == 1 ? 4 : 2;
-					int32	bytes_per_char = 8 * depth;
-					int32	bytes_per_line = depth * num_chars;
-					int32	char_line_bytes = bytes_per_char * num_chars;
-					uint32	addr = (d->AAddress / char_line_bytes) * char_line_bytes;
+					num_chars = 1 << ((Memory.FillRAM[0x2231] >> 2) & 7);
+					depth = (Memory.FillRAM[0x2231] & 3) == 0 ? 8 : (Memory.FillRAM[0x2231] & 3) == 1 ? 4 : 2;
+					bytes_per_char = 8 * depth;
+					bytes_per_line = depth * num_chars;
+					char_line_bytes = bytes_per_char * num_chars;
+					addr = (d->AAddress / char_line_bytes) * char_line_bytes;
 
 					uint8	*base = S9xGetBasePointer((d->ABank << 16) + addr);
 					if (!base)
@@ -4042,14 +4114,13 @@ static void S9xDoDMA (void)
 
 					base += addr;
 
-					uint8	*buffer = &Memory.ROM[MAX_ROM_SIZE - 0x10000];
-					uint8	*p = buffer;
-					uint32	inc_sa1 = char_line_bytes - (d->AAddress % char_line_bytes);
-					uint32	char_count = inc_sa1 / bytes_per_char;
+					buffer = &Memory.ROM[MAX_ROM_SIZE - 0x10000];
+					p = buffer;
+					inc_sa1 = char_line_bytes - (d->AAddress % char_line_bytes);
+					char_count = inc_sa1 / bytes_per_char;
 
 					in_sa1_dma = TRUE;
 
-					int32 i, j, l, b;
 					switch (depth)
 					{
 						case 2:
@@ -4156,12 +4227,13 @@ static void S9xDoDMA (void)
 
 		if (!d->ReverseTransfer)
 		{
+			int32 b, rem;
 			/* CPU -> PPU */
-			int32	b = 0;
+			b = 0;
 			uint16	p = d->AAddress;
 			uint8	*base = S9xGetBasePointer((d->ABank << 16) + d->AAddress);
 
-			int32	rem = count;
+			rem = count;
 			/* Transfer per block if d->AAdressFixed is FALSE */
 			count = d->AAddressFixed ? rem : (d->AAddressDecrement ? ((p & MEMMAP_MASK) + 1) : (MEMMAP_BLOCK_SIZE - (p & MEMMAP_MASK)));
 
@@ -4936,7 +5008,9 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 		if (CPU.InDMAorHDMA)
 			return;
 
-		int	d = (Address >> 4) & 0x7;
+		int d;
+
+		d = (Address >> 4) & 0x7;
 
 		switch (Address & 0xf)
 		{
@@ -5229,7 +5303,9 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 
 static INLINE uint8 REGISTER_4212 (void)
 {
-	uint8	byte = 0;
+	uint8 byte;
+
+	byte = 0;
 
 	if ((CPU.V_Counter >= PPU.ScreenHeight + FIRST_VISIBLE_LINE) && (CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE + 3))
 		byte = 1;
@@ -5243,7 +5319,9 @@ static INLINE uint8 REGISTER_4212 (void)
 
 uint8 S9xGetCPU (uint16 Address)
 {
-	int	d = (Address >> 4) & 0x7;
+	int d;
+
+	d = (Address >> 4) & 0x7;
 
 	switch (Address & 0xf)
 	{
@@ -5350,6 +5428,8 @@ void S9xResetPPU (void)
 
 void S9xSoftResetPPU (void)
 {
+	int c;
+
 	S9xControlsSoftReset();
 
 	PPU.VMA.High = 0;
@@ -5360,7 +5440,7 @@ void S9xSoftResetPPU (void)
 
 	PPU.WRAM = 0;
 
-	for (int c = 0; c < 4; c++)
+	for ( c = 0; c < 4; c++)
 	{
 		PPU.BG[c].SCBase = 0;
 		PPU.BG[c].HOffset = 0;
@@ -5377,7 +5457,7 @@ void S9xSoftResetPPU (void)
 	PPU.CGFLIPRead = 0;
 	PPU.CGADD = 0;
 
-	for (int c = 0; c < 256; c++)
+	for ( c = 0; c < 256; c++)
 	{
 		IPPU.Red[c]   = (c & 7) << 2;
 		IPPU.Green[c] = ((c >> 3) & 7) << 2;
@@ -5385,7 +5465,7 @@ void S9xSoftResetPPU (void)
 		PPU.CGDATA[c] = IPPU.Red[c] | (IPPU.Green[c] << 5) | (IPPU.Blue[c] << 10);
 	}
 
-	for (int c = 0; c < 128; c++)
+	for ( c = 0; c < 128; c++)
 	{
 		PPU.OBJ[c].HPos = 0;
 		PPU.OBJ[c].VPos = 0;
@@ -5454,7 +5534,7 @@ void S9xSoftResetPPU (void)
 	PPU.Window2Right = 0;
 	PPU.RecomputeClipWindows = TRUE;
 
-	for (int c = 0; c < 6; c++)
+	for ( c = 0; c < 6; c++)
 	{
 		PPU.ClipCounts[c] = 0;
 		PPU.ClipWindowOverlapLogic[c] = CLIP_OR;
@@ -5481,7 +5561,7 @@ void S9xSoftResetPPU (void)
 	PPU.OpenBus1 = 0;
 	PPU.OpenBus2 = 0;
 
-	for (int c = 0; c < 2; c++)
+	for ( c = 0; c < 2; c++)
 		memset(&IPPU.Clip[c], 0, sizeof(struct ClipData));
 	IPPU.OBJChanged = TRUE;
 	IPPU.DirectColourMapsNeedRebuild = TRUE;
@@ -5504,7 +5584,7 @@ void S9xSoftResetPPU (void)
 	IPPU.CurrentLine = 0;
 	IPPU.PreviousLine = 0;
 	IPPU.XB = NULL;
-	for (int c = 0; c < 256; c++)
+	for ( c = 0; c < 256; c++)
 		IPPU.ScreenColors[c] = c;
 	IPPU.MaxBrightness = 0;
 	IPPU.RenderedScreenWidth = SNES_WIDTH;
@@ -5512,7 +5592,7 @@ void S9xSoftResetPPU (void)
 
 	S9xFixColourBrightness();
 
-	for (int c = 0; c < 0x8000; c += 0x100)
+	for ( c = 0; c < 0x8000; c += 0x100)
 		memset(&Memory.FillRAM[c], c >> 8, 0x100);
 	ZeroMemory(&Memory.FillRAM[0x2100], 0x100);
 	ZeroMemory(&Memory.FillRAM[0x4200], 0x100);
