@@ -1668,8 +1668,6 @@ const char *S9xChooseFilename (bool8 read_only)
 
 void _splitpath (const char *path, char *drive, char *dir, char *fname, char *ext)
 {
-	*drive = 0;
-
 	const char	*slash = strrchr(path, SLASH_CHAR);
 	const char	*dot   = strrchr(path, '.');
 

@@ -234,9 +234,12 @@ const char * S9xGoldFingerToRaw (const char *code, uint32 * address, bool8 * sra
 	return (NULL);
 }
 
+static const char	*real_hex  = "0123456789ABCDEF";
+static const char	*genie_hex = "DF4709156BC8A23E";
+
 const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte)
 {
-	int i;
+	int i, j;
 	uint32 data;
 	char	new_code[12];
 
@@ -247,15 +250,12 @@ const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte
 	strncpy(new_code + 2, code, 4);
 	strcpy(new_code + 6, code + 5);
 
-	static const char	*real_hex  = "0123456789ABCDEF";
-	static const char	*genie_hex = "DF4709156BC8A23E";
 
 	for ( i = 2; i < 10; i++)
 	{
 		if (islower(new_code[i]))
 			new_code[i] = toupper(new_code[i]);
 
-		int j;
 		for (j = 0; j < 16; j++)
 		{
 			if (new_code[i] == genie_hex[j])
@@ -281,7 +281,7 @@ const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte
 			  ((*address & 0x0f0000) >> 12) +
 			  ((*address & 0x0003c0) >>  6);
 
-	return (NULL);
+	return NULL;
 }
 
 static uint8 S9xGetByteFree (uint32 address)
@@ -462,6 +462,7 @@ bool8 S9xLoadCheatFile (const char *filename)
 
 bool8 S9xSaveCheatFile (const char *filename)
 {
+	uint32 i;
 	FILE	*fs;
 	uint8 data[28];
 
@@ -475,7 +476,6 @@ bool8 S9xSaveCheatFile (const char *filename)
 	if (!fs)
 		return (FALSE);
 
-	uint32 i;
 	for ( i = 0; i < Cheat.num_cheats; i++)
 	{
 		ZeroMemory(data, 28);

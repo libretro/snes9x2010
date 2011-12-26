@@ -207,37 +207,37 @@ void snes_cheat_reset()
 
 void snes_cheat_set(unsigned unused, bool unused1, const char* unused2) {}
 
-bool8 snes_load_cartridge_bsx_slotted(
+bool snes_load_cartridge_bsx_slotted(
       const char * a, const uint8_t * b, unsigned c,
       const char * d, const uint8_t * e, unsigned f
       )
 {
-   return FALSE;
+   return false;
 }
 
-bool8 snes_load_cartridge_bsx(
+bool snes_load_cartridge_bsx(
       const char * a, const uint8_t * b, unsigned c,
       const char * d, const uint8_t * e, unsigned f
       )
 {
-   return FALSE;
+   return false;
 }
 
-bool8 snes_load_cartridge_sufami_turbo(
+bool snes_load_cartridge_sufami_turbo(
       const char * a, const uint8_t * b, unsigned c,
       const char * d, const uint8_t * e, unsigned f,
       const char * g, const uint8_t * h, unsigned i
       )
 {
-   return FALSE;
+   return false;
 }
 
-bool8 snes_load_cartridge_super_game_boy(
+bool snes_load_cartridge_super_game_boy(
       const char * a, const uint8_t * b, unsigned c,
       const char * d, const uint8_t * e, unsigned f 
       )
 {
-   return FALSE;
+   return false;
 }
 
 static void map_buttons()
@@ -446,7 +446,7 @@ static void report_buttons()
 	}
 }
 
-bool8 snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigned rom_size)
+bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigned rom_size)
 {
 	int loaded;
    /* Hack. S9x cannot do stuff from RAM. <_< */
@@ -456,7 +456,7 @@ bool8 snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsign
    if (!loaded)
    {
       fprintf(stderr, "[libsnes]: Rom loading failed...\n");
-      return FALSE;
+      return false;
    }
 
    if (environ_cb)
@@ -471,7 +471,7 @@ bool8 snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsign
 	   environ_cb(SNES_ENVIRONMENT_SET_TIMING, &timing);
    }
    
-   return TRUE;
+   return true;
 }
 
 void snes_run()
@@ -582,21 +582,22 @@ unsigned snes_serialize_size (void)
    return memstream_get_last_size();
 }
 
-bool8 snes_serialize(uint8_t *data, unsigned size)
+bool snes_serialize(uint8_t *data, unsigned size)
 { 
    memstream_set_buffer(data, size);
    if (S9xFreezeGame("foo") == FALSE)
-      return FALSE;
+      return false;
 
-   return TRUE;
+   return true;
 }
 
-bool8 snes_unserialize(const uint8_t* data, unsigned size)
+bool snes_unserialize(const uint8_t* data, unsigned size)
 { 
    memstream_set_buffer((uint8_t*)data, size);
    if (S9xUnfreezeGame("foo") == FALSE)
-      return FALSE;
-   return TRUE;
+      return false;
+
+   return true;
 }
 
 /* Pitch 2048 -> 1024, only done once per res-change. */
@@ -674,64 +675,62 @@ void S9xMessage(int a, int b, const char* msg)
 }
 
 /* S9x weirdness. */
-void _splitpath (char *path, char *drive, char *dir, char *fname, char *ext)
+void _splitpath (const char * path, char * drive, char * dir, char * fname, char * ext)
 {
-	char * slash;
-	char * dot;
-   *drive = 0;
+	char *slash, *dot;
 
-   slash = strrchr(path, SLASH_CHAR);
-   dot   = strrchr(path, '.');
+	slash = strrchr(path, SLASH_CHAR);
+	dot   = strrchr(path, '.');
 
-   if (dot && slash && dot < slash)
-      dot = NULL;
+	if (dot && slash && dot < slash)
+		dot = NULL;
 
-   if (!slash)
-   {
-      *dir = 0;
+	if (!slash)
+	{
+		*dir = 0;
 
-      strcpy(fname, path);
+		strcpy(fname, path);
 
-      if (dot)
-      {
-         fname[dot - path] = 0;
-         strcpy(ext, dot + 1);
-      }
-      else
-         *ext = 0;
-   }
-   else
-   {
-      strcpy(dir, path);
-      dir[slash - path] = 0;
+		if (dot)
+		{
+			fname[dot - path] = 0;
+			strcpy(ext, dot + 1);
+		}
+		else
+			*ext = 0;
+	}
+	else
+	{
+		strcpy(dir, path);
+		dir[slash - path] = 0;
 
-      strcpy(fname, slash + 1);
+		strcpy(fname, slash + 1);
 
-      if (dot)
-      {
-         fname[dot - slash - 1] = 0;
-         strcpy(ext, dot + 1);
-      }
-      else
-         *ext = 0;
-   }
+		if (dot)
+		{
+			fname[dot - slash - 1] = 0;
+			strcpy(ext, dot + 1);
+		}
+		else
+			*ext = 0;
+	}
 }
 
 void _makepath (char *path, const char * a, const char *dir, const char *fname, const char *ext)
 {
-   if (dir && *dir)
-   {
-      strcpy(path, dir);
-      strcat(path, SLASH_STR);
-   }
-   else
-      *path = 0;
+	if (dir && *dir)
+	{
+		strcpy(path, dir);
+		strcat(path, SLASH_STR);
+	}
+	else
+		*path = 0;
 
-   strcat(path, fname);
+	strcat(path, fname);
 
-   if (ext && *ext)
-   {
-      strcat(path, ".");
-      strcat(path, ext);
-   }
+	if (ext && *ext)
+	{
+		strcat(path, ".");
+		strcat(path, ext);
+	}
 }

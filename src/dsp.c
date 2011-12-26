@@ -1934,10 +1934,11 @@ static void DSP2_Op06 (void)
 /* multiply*/
 static void DSP2_Op09 (void)
 {
+	uint32 temp;
 	DSP2.Op09Word1 = DSP2.parameters[0] | (DSP2.parameters[1] << 8);
 	DSP2.Op09Word2 = DSP2.parameters[2] | (DSP2.parameters[3] << 8);
 
-	uint32	temp = DSP2.Op09Word1 * DSP2.Op09Word2;
+	temp = DSP2.Op09Word1 * DSP2.Op09Word2;
 	DSP2.output[0] =  temp        & 0xFF;
 	DSP2.output[1] = (temp >>  8) & 0xFF;
 	DSP2.output[2] = (temp >> 16) & 0xFF;
@@ -5119,10 +5120,11 @@ static void DSP4_SetByte (void)
 			/* unknown*/
 			case 0x000A:
 			{
+				int16 in2a, out1a, out2a, out3a, out4a;
+
 				DSP4_READ_WORD();
-				int16	in2a = DSP4_READ_WORD();
+				in2a = DSP4_READ_WORD();
 				DSP4_READ_WORD();
-				int16	out1a, out2a, out3a, out4a;
 
 				DSP4_OP0A(in2a, &out2a, &out1a, &out4a, &out3a);
 

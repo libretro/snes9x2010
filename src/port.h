@@ -260,8 +260,8 @@ typedef unsigned long long	uint64;
 #define _MAX_PATH	PATH_MAX
 
 #define ZeroMemory(a, b)	memset((a), 0, (b))
-void _splitpath (const char *, char *, char *, char *, char *);
-void _makepath (char *, const char *, const char *, const char *, const char *);
+void _splitpath (const char * path, char * drive, char * dir, char * fname, char * ext);
+void _makepath (char * path, const char * a, const char * dir, const char * fname, const char * ext);
 
 #ifdef __DJGPP
 #define SLASH_STR	"\\"

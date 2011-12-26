@@ -451,7 +451,7 @@ struct SSNESGameFixes
 	uint8	Uniracers;
 };
 
-void S9xMessage(int, int, const char *);
+void S9xMessage (int type, int number, const char *message);
 
 extern struct SSettings			Settings;
 extern struct SCPUState			CPU;

@@ -431,7 +431,7 @@ typedef struct
 
 	int         extra_clocks;
 	short*   buf_begin;
-	short const* buf_end;
+	short*	buf_end;
 	short*   extra_pos;
 	short    extra_buf [EXTRA_SIZE];
 

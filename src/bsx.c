@@ -184,8 +184,10 @@
 
 #include "snes9x.h"
 #include "memmap.h"
-#include "getset.h"
+#include "bsx.h"
 #include "display.h"
+
+extern uint8 OpenBus;
 
 /* #define BSX_DEBUG */
 
@@ -1035,6 +1037,11 @@ static int is_bsx (unsigned char *p)
 
 void S9xInitBSX (void)
 {
+	int r1, r2;
+	uint8 *header;
+	time_t		t;
+	struct tm	*tmr;
+
 	Settings.BS = FALSE;
 
 	if (!memcmp(&Memory.ROM[0x7FC0], "Satellaview BS-X     ", 21))
@@ -1058,8 +1065,6 @@ void S9xInitBSX (void)
 	{
 		Settings.BSXItself = FALSE;
 
-		int	r1, r2;
-
 		r1 = (is_bsx(Memory.ROM + 0x7FC0) == 1);
 		r2 = (is_bsx(Memory.ROM + 0xFFC0) == 1);
 		Settings.BS = (r1 | r2) ? TRUE : FALSE;
@@ -1071,7 +1076,7 @@ void S9xInitBSX (void)
 			Memory.LoROM = r1 ? TRUE : FALSE;
 			Memory.HiROM = r2 ? TRUE : FALSE;
 
-			uint8	*header = r1 ? Memory.ROM + 0x7FC0 : Memory.ROM + 0xFFC0;
+			header = r1 ? Memory.ROM + 0x7FC0 : Memory.ROM + 0xFFC0;
 
 			FlashMode = (header[0x18] & 0xEF) == 0x20 ? FALSE : TRUE;
 			FlashSize = (header[0x19] & 0x20) ? PSRAM_SIZE : FLASH_SIZE;
@@ -1096,9 +1101,6 @@ void S9xInitBSX (void)
 	{
 		MapROM = NULL;
 		FlashROM = Memory.ROM;
-
-		time_t		t;
-		struct tm	*tmr;
 
 		time(&t);
 		tmr = localtime(&t);

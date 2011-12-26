@@ -432,19 +432,20 @@ static INLINE void dsp_decode_brr( dsp_voice_t* v )
 	/* Decode four samples */
 	for ( end = pos + 4; pos < end; pos++, nybbles <<= 4 )
 	{
+		int filter, p1, p2, s, shift;
 		/* Extract nybble and sign-extend */
-		int s = (int16_t) nybbles >> 12;
+		s = (int16_t) nybbles >> 12;
 		
 		/* Shift sample based on header */
-		int const shift = header >> 4;
+		shift = header >> 4;
 		s = (s << shift) >> 1;
 		if ( shift >= 0xD ) /* handle invalid range */
 			s = (s >> 25) << 11; /* same as: s = (s < 0 ? -0x800 : 0) */
 		
 		/* Apply IIR filter (8 is the most commonly used) */
-		int const filter = header & 0x0C;
-		int const p1 = pos [BRR_BUF_SIZE - 1];
-		int const p2 = pos [BRR_BUF_SIZE - 2] >> 1;
+		filter = header & 0x0C;
+		p1 = pos [BRR_BUF_SIZE - 1];
+		p2 = pos [BRR_BUF_SIZE - 2] >> 1;
 		if ( filter >= 8 )
 		{
 			s += p1;
@@ -541,6 +542,8 @@ static INLINE void dsp_voice_V3b( dsp_voice_t* const v )
 
 static void dsp_voice_V3c( dsp_voice_t* const v )
 {
+	int output;
+
 	/* Pitch modulation using previous voice's output */
 	if ( dsp_m.t_pmon & v->vbit )
 		dsp_m.t_pitch += ((dsp_m.t_output >> 5) * dsp_m.t_pitch) >> 10;
@@ -569,7 +572,7 @@ static void dsp_voice_V3c( dsp_voice_t* const v )
 		dsp_m.t_pitch = 0;
 	}
 	
-	int output = dsp_interpolate( v );
+	output = dsp_interpolate( v );
 
 	/* Noise */
 	if ( dsp_m.t_non & v->vbit )
@@ -750,22 +753,23 @@ static void dsp_voice_V9_V6_V3( dsp_voice_t* const v )
 /* Calculate FIR point for left/right channel */
 #define CALC_FIR( i, ch )   ((ECHO_FIR( i + 1 ) [ch] * (int8_t) REG(FIR + i * 0x10)) >> 6)
 
-#define ECHO_READ(ch) \
-	int s = GET_LE16SA( ECHO_PTR( ch ) ); \
-	/* second copy simplifies wrap-around handling */ \
-	(dsp_m.echo_hist_pos [0]) [ch] = (dsp_m.echo_hist_pos [8]) [ch] = s >> 1;
-
 static INLINE void dsp_echo_22 (void)
 {
+	int l, r, s;
+
 	if ( ++dsp_m.echo_hist_pos >= &dsp_m.echo_hist [ECHO_HIST_SIZE] )
 		dsp_m.echo_hist_pos = dsp_m.echo_hist;
 
 	dsp_m.t_echo_ptr = (dsp_m.t_esa * 0x100 + dsp_m.echo_offset) & 0xFFFF;
-	ECHO_READ(0);
 
+	/* ECHO_READ (0) */
+	s = GET_LE16SA( ECHO_PTR(0) );
+	/* second copy simplifies wrap-around handling */ \
+	(dsp_m.echo_hist_pos [0]) [0] = (dsp_m.echo_hist_pos [8]) [0] = s >> 1;
+	/* EOF ECHO_READ (0) */
 
-	int l = (((dsp_m.echo_hist_pos [0 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6);
-	int r = (((dsp_m.echo_hist_pos [0 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6);
+	l = (((dsp_m.echo_hist_pos [0 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6);
+	r = (((dsp_m.echo_hist_pos [0 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6);
 
 	dsp_m.t_echo_in [0] = l;
 	dsp_m.t_echo_in [1] = r;
@@ -773,19 +777,27 @@ static INLINE void dsp_echo_22 (void)
 
 static INLINE void dsp_echo_23 (void)
 {
-	int l = (((dsp_m.echo_hist_pos [1 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
-	int r = (((dsp_m.echo_hist_pos [1 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
+	int l, r, s;
+
+	l = (((dsp_m.echo_hist_pos [1 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
+	r = (((dsp_m.echo_hist_pos [1 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
 
 	dsp_m.t_echo_in [0] += l;
 	dsp_m.t_echo_in [1] += r;
 
-	ECHO_READ(1);
+	/* ECHO_READ (1) */
+	s = GET_LE16SA( ECHO_PTR( 1 ) ); \
+	/* second copy simplifies wrap-around handling */ \
+	(dsp_m.echo_hist_pos [0]) [1] = (dsp_m.echo_hist_pos [8]) [1] = s >> 1;
+	/* EOF ECHO_READ (1) */
 }
 
 static INLINE void dsp_echo_24 (void)
 {
-	int l = (((dsp_m.echo_hist_pos [3 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6);
-	int r = (((dsp_m.echo_hist_pos [3 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6);
+	int l, r;
+
+	l = (((dsp_m.echo_hist_pos [3 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6);
+	r = (((dsp_m.echo_hist_pos [3 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6);
 
 	dsp_m.t_echo_in [0] += l;
 	dsp_m.t_echo_in [1] += r;
@@ -819,10 +831,12 @@ static INLINE void dsp_echo_25 (void)
 
 static INLINE void dsp_echo_26 (void)
 {
+	int l, r;
+
 	ECHO_OUTPUT(dsp_m.t_main_out[0], 0 );
 
-	int l = dsp_m.t_echo_out [0] + (int16_t) ((dsp_m.t_echo_in [0] * (int8_t) dsp_m.regs [R_EFB]) >> 7);
-	int r = dsp_m.t_echo_out [1] + (int16_t) ((dsp_m.t_echo_in [1] * (int8_t) dsp_m.regs [R_EFB]) >> 7);
+	l = dsp_m.t_echo_out [0] + (int16_t) ((dsp_m.t_echo_in [0] * (int8_t) dsp_m.regs [R_EFB]) >> 7);
+	r = dsp_m.t_echo_out [1] + (int16_t) ((dsp_m.t_echo_in [1] * (int8_t) dsp_m.regs [R_EFB]) >> 7);
 
 	if ( (int16_t) l != l ) l = (l >> 31) ^ 0x7FFF;
 	if ( (int16_t) r != r ) r = (r >> 31) ^ 0x7FFF;
@@ -833,8 +847,10 @@ static INLINE void dsp_echo_26 (void)
 
 static INLINE void dsp_echo_27 (void)
 {
-	int r;
-	int l = dsp_m.t_main_out [0];
+	int l, r;
+	short * out;
+
+	l = dsp_m.t_main_out [0];
 	ECHO_OUTPUT(r, 1);
 	dsp_m.t_main_out [0] = 0;
 	dsp_m.t_main_out [1] = 0;
@@ -845,7 +861,7 @@ static INLINE void dsp_echo_27 (void)
 		r = 0;
 	}
 
-	short * out = dsp_m.out;
+	out = dsp_m.out;
 	out [0] = l;
 	out [1] = r;
 	out += 2;
@@ -1498,9 +1514,10 @@ static int const bits_in_int = CHAR_BIT * sizeof (int);
 
 static void spc_cpu_write( int data, int addr, int time )
 {
+	int reg;
 	/* RAM */
 	m.ram.ram[addr] = (uint8_t) data;
-	int reg = addr - 0xF0;
+	reg = addr - 0xF0;
 	if ( reg >= 0 ) /* 64% */
 	{
 		/* $F0-$FF */
@@ -1605,9 +1622,10 @@ static int spc_cpu_read( int addr, int time )
 
 #define CPU_READ_TIMER( time, offset, addr_, out )\
 {\
-	int adj_time = time + offset;\
-	int dp_addr = addr_;\
-	int ti = dp_addr - (R_T0OUT + 0xF0);\
+	int adj_time, dp_addr, ti; \
+	adj_time = time + offset;\
+	dp_addr = addr_;\
+	ti = dp_addr - (R_T0OUT + 0xF0);\
 	if ( (unsigned) ti < TIMER_COUNT )\
 	{\
 		Timer* t = &m.timers [ti];\
@@ -1618,11 +1636,12 @@ static int spc_cpu_read( int addr, int time )
 	}\
 	else\
 	{\
+		int i, reg; \
 		out = ram [dp_addr];\
-		int i = dp_addr - 0xF0;\
+		i = dp_addr - 0xF0;\
 		if ( (unsigned) i < 0x10 )\
 		{ \
-			int reg = i;  \
+			reg = i;  \
 			out = m.smp_regs[1][reg]; \
 			reg -= R_DSPADDR; \
 			/* DSP addr and data */ \
@@ -1691,7 +1710,7 @@ static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
 static uint8_t* spc_run_until_( int end_time )
 {
 	int dp, nz, c, psw, a, x, y;
-	uint8_t* ram;
+	uint8_t *ram, *pc, *sp;
 	int rel_time = m.spc_time - end_time;
 	m.spc_time = end_time;
 	m.dsp_time += rel_time;
@@ -1702,8 +1721,6 @@ static uint8_t* spc_run_until_( int end_time )
 	a = m.cpu_regs.a;
 	x = m.cpu_regs.x;
 	y = m.cpu_regs.y;
-	uint8_t const* pc;
-	uint8_t* sp;
 
 	SET_PC( m.cpu_regs.pc );
 	SET_SP( m.cpu_regs.sp );
@@ -1778,10 +1795,11 @@ loop:
 				  /* fall through */
 			case 0x8F:
 				  { /* MOV dp,#imm */
-					  int temp = READ_PC( pc + 1 );
+					  int i, temp;
+					  temp = READ_PC( pc + 1 );
 					  pc += 2;
 
-					  int i = dp + temp;
+					  i = dp + temp;
 					  ram [i] = (uint8_t) data;
 					  i -= 0xF0;
 					  if ( (unsigned) i < 0x10 ) /* 76% */
@@ -2750,9 +2768,10 @@ static void spc_end_frame( int end_time )
 	/* Save any extra samples beyond what should be generated */
 	if ( m.buf_begin )
 	{
+		short *main_end, *dsp_end, *out, *in;
 		/* Get end pointers */
-		short const* main_end = m.buf_end;	/* end of data written to buf */
-		short const* dsp_end  = dsp_m.out;	/* end of data written to dsp.extra() */
+		main_end = m.buf_end;	/* end of data written to buf */
+		dsp_end  = dsp_m.out;	/* end of data written to dsp.extra() */
 		if ( m.buf_begin <= dsp_end && dsp_end <= main_end )
 		{
 			main_end = dsp_end;
@@ -2760,8 +2779,7 @@ static void spc_end_frame( int end_time )
 		}
 
 		/* Copy any extra samples at these ends into extra_buf */
-		short* out = m.extra_buf;
-		short const* in;
+		out = m.extra_buf;
 		for ( in = m.buf_begin + SPC_SAMPLE_COUNT(); in < main_end; in++ )
 			*out++ = *in;
 		for ( in = dsp_m.extra; in < dsp_end ; in++ )
@@ -2795,9 +2813,10 @@ static void spc_reset_buffer(void)
 
 static void spc_set_tempo( int t )
 {
+	int timer2_shift, other_shift;
 	m.tempo = t;
-	int const timer2_shift = 4; /* 64 kHz */
-	int const other_shift  = 3; /*  8 kHz */
+	timer2_shift = 4; /* 64 kHz */
+	other_shift  = 3; /*  8 kHz */
 	
 	m.timers [2].prescaler = timer2_shift;
 	m.timers [1].prescaler = timer2_shift + other_shift;
@@ -3111,14 +3130,17 @@ static void resampler_new(int num_samples)
 
 static INLINE bool8 resampler_push(short *src, int num_samples)
 {
-	int bytes = num_samples << 1;
+	int bytes, end, first_write_size;
+	unsigned char *src_ring;
+
+	bytes = num_samples << 1;
 	if (MAX_WRITE() < num_samples || SPACE_EMPTY() < bytes)
 		return FALSE;
 
 	/* Ring buffer push */
-	unsigned char * src_ring = (unsigned char*)src; 
-	int end = (rb_start + rb_size) % rb_buffer_size;
-	int first_write_size = RESAMPLER_MIN(bytes, rb_buffer_size - end);
+	src_ring = (unsigned char*)src; 
+	end = (rb_start + rb_size) % rb_buffer_size;
+	first_write_size = RESAMPLER_MIN(bytes, rb_buffer_size - end);
 
 	memcpy (rb_buffer + end, src_ring, first_write_size);
 
@@ -3132,7 +3154,8 @@ static INLINE bool8 resampler_push(short *src, int num_samples)
 
 static INLINE void resampler_resize (int num_samples)
 {
-	int size = num_samples << 1;
+	/* int size; */
+	/* size = num_samples << 1; */
 	free(rb_buffer);
 	rb_buffer_size = rb_size;
 	rb_buffer = (unsigned char*)malloc(rb_buffer_size);
@@ -3175,12 +3198,14 @@ int S9xGetSampleCount (void)
 
 static void spc_set_output( short* out, int size )
 {
-	short const* out_end = out + size;
+	short *out_end, *in;
+
+	out_end = out + size;
 	m.buf_begin = out;
 	m.buf_end   = out_end;
 
 	/* Copy extra to output */
-	short const* in = m.extra_buf;
+	in = m.extra_buf;
 	while ( in < m.extra_pos && out < out_end )
 		*out++ = *in++;
 
@@ -3238,10 +3263,11 @@ void S9xSetSamplesAvailableCallback (apu_callback callback)
 
 static void UpdatePlaybackRate (void)
 {
+	double time_ratio;
 	if (Settings.SoundInputRate == 0)
 		Settings.SoundInputRate = APU_DEFAULT_INPUT_RATE;
 
-	double time_ratio = (double) Settings.SoundInputRate * TEMPO_UNIT / (Settings.SoundPlaybackRate * timing_hack_denominator);
+	time_ratio = (double) Settings.SoundInputRate * TEMPO_UNIT / (Settings.SoundPlaybackRate * timing_hack_denominator);
 	resampler_time_ratio(time_ratio);
 }
 
@@ -3294,76 +3320,50 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 }
 
 /* Must be called once before using */
+static unsigned char cycle_table [128] =
+{/*   01   23   45   67   89   AB   CD   EF */
+	0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x68, /* 0 */
+	0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x46, /* 1 */
+	0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x74, /* 2 */
+	0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x38, /* 3 */
+	0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x66, /* 4 */
+	0x48,0x47,0x45,0x56,0x55,0x45,0x22,0x43, /* 5 */
+	0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x75, /* 6 */
+	0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x36, /* 7 */
+	0x28,0x47,0x34,0x36,0x26,0x54,0x52,0x45, /* 8 */
+	0x48,0x47,0x45,0x56,0x55,0x55,0x22,0xC5, /* 9 */
+	0x38,0x47,0x34,0x36,0x26,0x44,0x52,0x44, /* A */
+	0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x34, /* B */
+	0x38,0x47,0x45,0x47,0x25,0x64,0x52,0x49, /* C */
+	0x48,0x47,0x56,0x67,0x45,0x55,0x22,0x83, /* D */
+	0x28,0x47,0x34,0x36,0x24,0x53,0x43,0x40, /* E */
+	0x48,0x47,0x45,0x56,0x34,0x54,0x22,0x60, /* F */
+};
+
+static signed char const reg_times_ [256] =
+{
+	-1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
+	2,  3,  0,  1,-12,  0,  1,  1,  7,  6, 14, 14, 27, 14, 14, 23,
+	5,  6,  3,  4, -1,  3,  4,  4, 10,  9, 14, 14, 26, -5, 14, 23,
+	8,  9,  6,  7,  2,  6,  7,  7, 13, 12, 14, 14, 27, -4, 14, 24,
+	11, 12,  9, 10,  5,  9, 10, 10, 16, 15, 14, 14, -2, -4, 14, 24,
+	14, 15, 12, 13,  8, 12, 13, 13, 19, 18, 14, 14, -2,-36, 14, 24,
+	17, 18, 15, 16, 11, 15, 16, 16, 22, 21, 14, 14, 28, -3, 14, 25,
+	20, 21, 18, 19, 14, 18, 19, 19, 25, 24, 14, 14, 14, 29, 14, 25,
+
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+};
 
 bool8 S9xInitAPU (void)
 {
 	int i;
-
-	memset( &m, 0, sizeof m );
-	dsp_init( m.ram.ram );
-	
-	m.tempo = TEMPO_UNIT;
-	
-	/*	Most SPC music doesn't need ROM, and almost all the rest only 
-		rely on these two bytes */
-
-	m.rom [0x3E] = 0xFF;
-	m.rom [0x3F] = 0xC0;
-	
-	static unsigned char const cycle_table [128] =
-	{/*   01   23   45   67   89   AB   CD   EF */
-	    0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x68, /* 0 */
-	    0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x46, /* 1 */
-	    0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x74, /* 2 */
-	    0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x38, /* 3 */
-	    0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x66, /* 4 */
-	    0x48,0x47,0x45,0x56,0x55,0x45,0x22,0x43, /* 5 */
-	    0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x75, /* 6 */
-	    0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x36, /* 7 */
-	    0x28,0x47,0x34,0x36,0x26,0x54,0x52,0x45, /* 8 */
-	    0x48,0x47,0x45,0x56,0x55,0x55,0x22,0xC5, /* 9 */
-	    0x38,0x47,0x34,0x36,0x26,0x44,0x52,0x44, /* A */
-	    0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x34, /* B */
-	    0x38,0x47,0x45,0x47,0x25,0x64,0x52,0x49, /* C */
-	    0x48,0x47,0x56,0x67,0x45,0x55,0x22,0x83, /* D */
-	    0x28,0x47,0x34,0x36,0x24,0x53,0x43,0x40, /* E */
-	    0x48,0x47,0x45,0x56,0x34,0x54,0x22,0x60, /* F */
-	};
-	
-	/* unpack cycle table */
-	for ( i = 0; i < 128; i++ )
-	{
-		int n = cycle_table [i];
-		m.cycle_table [i * 2 + 0] = n >> 4;
-		m.cycle_table [i * 2 + 1] = n & 0x0F;
-	}
-
-	allow_time_overflow = FALSE;
-
-	signed char const reg_times_ [256] =
-	{
-		-1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
-		2,  3,  0,  1,-12,  0,  1,  1,  7,  6, 14, 14, 27, 14, 14, 23,
-		5,  6,  3,  4, -1,  3,  4,  4, 10,  9, 14, 14, 26, -5, 14, 23,
-		8,  9,  6,  7,  2,  6,  7,  7, 13, 12, 14, 14, 27, -4, 14, 24,
-		11, 12,  9, 10,  5,  9, 10, 10, 16, 15, 14, 14, -2, -4, 14, 24,
-		14, 15, 12, 13,  8, 12, 13, 13, 19, 18, 14, 14, -2,-36, 14, 24,
-		17, 18, 15, 16, 11, 15, 16, 16, 22, 21, 14, 14, 28, -3, 14, 25,
-		20, 21, 18, 19, 14, 18, 19, 19, 25, 24, 14, 14, 14, 29, 14, 25,
-
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-		29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-	};
-	
-	memcpy( reg_times, reg_times_, sizeof reg_times );
-	
-	spc_reset();
 
 	uint8_t APUROM[64] =
 	{
@@ -3376,6 +3376,34 @@ bool8 S9xInitAPU (void)
 		0xF6, 0xDA, 0x00, 0xBA, 0xF4, 0xC4, 0xF4, 0xDD,
 		0x5D, 0xD0, 0xDB, 0x1F, 0x00, 0x00, 0xC0, 0xFF
 	};
+
+	memset( &m, 0, sizeof m );
+	dsp_init( m.ram.ram );
+	
+	m.tempo = TEMPO_UNIT;
+	
+	/*	Most SPC music doesn't need ROM, and almost all the rest only 
+		rely on these two bytes */
+
+	m.rom [0x3E] = 0xFF;
+	m.rom [0x3F] = 0xC0;
+	
+	
+	/* unpack cycle table */
+	for ( i = 0; i < 128; i++ )
+	{
+		int n = cycle_table [i];
+		m.cycle_table [i * 2 + 0] = n >> 4;
+		m.cycle_table [i * 2 + 1] = n & 0x0F;
+	}
+
+	allow_time_overflow = FALSE;
+
+	
+	memcpy( reg_times, reg_times_, sizeof reg_times );
+	
+	spc_reset();
+
 
 	memcpy( m.rom, APUROM, sizeof m.rom );
 

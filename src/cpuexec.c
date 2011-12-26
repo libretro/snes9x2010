@@ -195,6 +195,9 @@ void S9xMainLoop (void)
 {
 	do
 	{
+		register uint8	Op;
+		register struct	SOpcodes *Opcodes;
+
 		if (CPU.Flags)
 		{
 			if (CPU.Flags & NMI_FLAG)
@@ -242,8 +245,7 @@ void S9xMainLoop (void)
 
 		}
 
-		register uint8				Op;
-		register struct	SOpcodes	*Opcodes = S9xOpcodesSlow;
+		Opcodes = S9xOpcodesSlow;
 
 		CPU.PrevCycles = CPU.Cycles;
 
@@ -534,12 +536,15 @@ static INLINE bool8 HDMAReadLineCount (int d)
 static void S9xStartHDMA (void)
 {
 	uint8 i;
+	int32 tmpch;
+
 	PPU.HDMA = Memory.FillRAM[0x420c];
 	PPU.HDMAEnded = 0;
 
 	CPU.InHDMA = TRUE;
 	CPU.InDMAorHDMA = TRUE;
-	int32 tmpch = CPU.CurrentDMAorHDMAChannel;
+
+	tmpch = CPU.CurrentDMAorHDMAChannel;
 
 	/* XXX: Not quite right... */
 	if (PPU.HDMA != 0)
@@ -859,6 +864,8 @@ static uint8 S9xDoHDMA (uint8 byte)
 
 void S9xDoHEventProcessing (void)
 {
+	uint8 tmp;
+
 	switch (CPU.WhichEvent)
 	{
 		case HC_HBLANK_START_EVENT:
@@ -973,7 +980,7 @@ void S9xDoHEventProcessing (void)
 				{
 					PPU.OAMAddr = PPU.SavedOAMAddr;
 
-					uint8	tmp = 0;
+					tmp = 0;
 
 					if (PPU.OAMPriorityRotation)
 						tmp = (PPU.OAMAddr & 0xFE) >> 1;

@@ -1178,8 +1178,9 @@ rOPM (13Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, ORA)
 
 static void Op2AM1 (void)
 {
+	uint16 w;
 	AddCycles(ONE_CYCLE);
-	uint16	w = (((uint16) Registers.AL) << 1) | CheckCarry();
+	w = (((uint16) Registers.AL) << 1) | CheckCarry();
 	ICPU._Carry = w >= 0x100;
 	Registers.AL = (uint8) w;
 	SetZN8(Registers.AL);
@@ -1187,8 +1188,9 @@ static void Op2AM1 (void)
 
 static void Op2AM0 (void)
 {
+	uint32 w;
 	AddCycles(ONE_CYCLE);
-	uint32	w = (((uint32) Registers.A.W) << 1) | CheckCarry();
+	w = (((uint32) Registers.A.W) << 1) | CheckCarry();
 	ICPU._Carry = w >= 0x10000;
 	Registers.A.W = (uint16) w;
 	SetZN16(Registers.A.W);
@@ -1237,8 +1239,9 @@ mOPM (3ESlow,   AbsoluteIndexedXSlow,             WRAP_NONE, ROL)
 
 static void Op6AM1 (void)
 {
+	uint16 w;
 	AddCycles(ONE_CYCLE);
-	uint16	w = ((uint16) Registers.AL) | (((uint16) CheckCarry()) << 8);
+	w = ((uint16) Registers.AL) | (((uint16) CheckCarry()) << 8);
 	ICPU._Carry = w & 1;
 	w >>= 1;
 	Registers.AL = (uint8) w;
@@ -1247,8 +1250,9 @@ static void Op6AM1 (void)
 
 static void Op6AM0 (void)
 {
+	uint32 w;
 	AddCycles(ONE_CYCLE);
-	uint32	w = ((uint32) Registers.A.W) | (((uint32) CheckCarry()) << 16);
+	w = ((uint32) Registers.A.W) | (((uint32) CheckCarry()) << 16);
 	ICPU._Carry = w & 1;
 	w >>= 1;
 	Registers.A.W = (uint16) w;
