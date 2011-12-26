@@ -27,7 +27,7 @@ typedef uint32_t (*resampler_cb_t) (void *cb_data, float **data);
 typedef struct resampler resampler_t;
 
 resampler_t* resampler_new(resampler_cb_t func, double ratio, int channels, void* cb_data);
-uint32_t resampler_cb_read(resampler_t *state, uint32_t frames, float *data);
+int32_t resampler_cb_read(resampler_t *state, uint32_t frames, float *data);
 void resampler_free(resampler_t* state);
 
 static inline void resampler_float_to_int16_t(int16_t * restrict out, const float * restrict in)

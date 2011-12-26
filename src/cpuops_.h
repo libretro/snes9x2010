@@ -471,14 +471,18 @@ rOPM (3CSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, BIT)
 
 static void OpC9M1 (void)
 {
-	int16	Int16 = (int16) Registers.AL - (int16) Immediate8(READ);
+	int16 Int16;
+
+	Int16 = (int16) Registers.AL - (int16) Immediate8(READ);
 	ICPU._Carry = Int16 >= 0;
 	SetZN8((uint8) Int16);
 }
 
 static void OpC9M0 (void)
 {
-	int32	Int32 = (int32) Registers.A.W - (int32) Immediate16(READ);
+	int32 Int32;
+
+	Int32 = (int32) Registers.A.W - (int32) Immediate16(READ);
 	ICPU._Carry = Int32 >= 0;
 	SetZN16((uint16) Int32);
 }

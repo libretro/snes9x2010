@@ -56,10 +56,10 @@ endif
 OBJECTS    = ./src/apu.o ./src/bsx.o ./src/c4emu.o ./src/cheats.o ./src/controls.o ./src/cpu.o ./src/cpuexec.o ./src/dsp.o ./src/fxemu.o ./src/globals.o ./src/memmap.o ./src/obc1.o ./src/ppu.o ./src/sa1.o ./src/sdd1.o ./src/seta.o ./src/snapshot.o ./src/spc7110.o ./src/srtc.o ./src/tile.o libsnes/libsnes.o libsnes/memstream.o
 
 INCLUDES   = -I. -I.. -I../apu/
-DEFINES    = -DHAVE_STRINGS_H -DHAVE_STDINT_H -DHAVE_INTTYPES_H -D__LIBSNES__ -DRIGHTSHIFT_IS_SAR -DINLINE=inline
+DEFINES    = -DHAVE_STRINGS_H -DHAVE_STDINT_H -DHAVE_INTTYPES_H -D__LIBSNES__ -DRIGHTSHIFT_IS_SAR -DINLINE=
 COMMON_DEFINES += -fomit-frame-pointer -Wall -W -Wno-unused-parameter -DNDEBUG=1 $(fpic)
 
-CFLAGS     += $(DEFINES) $(COMMON_DEFINES) -std=gnu99
+CFLAGS     += $(DEFINES) $(COMMON_DEFINES) -pedantic -ansi -std=c89
 
 all: $(TARGET)
 

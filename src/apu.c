@@ -280,13 +280,15 @@ static short const gauss [512] =
 
 static INLINE int dsp_interpolate( dsp_voice_t const* v )
 {
+	int offset, out;
+
 	/* Make pointers into gaussian based on fractional position between samples */
-	int offset = v->interp_pos >> 4 & 0xFF;
+	offset = v->interp_pos >> 4 & 0xFF;
 	short const* fwd = gauss + 255 - offset;
 	short const* rev = gauss       + offset; /* mirror left half of gaussian */
 	
 	int const* in = &v->buf [(v->interp_pos >> 12) + v->buf_pos];
-	int out  = (fwd [  0] * in [0]) >> 11;
+	out  = (fwd [  0] * in [0]) >> 11;
 	out += (fwd [256] * in [1]) >> 11;
 	out += (rev [256] * in [2]) >> 11;
 	out = (int16_t) out;
@@ -345,10 +347,11 @@ static unsigned const counter_offsets [32] =
 
 static INLINE void dsp_run_envelope( dsp_voice_t* const v )
 {
-	int env = v->env;
+	int env, rate, env_data;
 
-	int rate;
-	int env_data = v->regs[V_ADSR1];
+	env = v->env;
+	env_data = v->regs[V_ADSR1];
+
 	if ( dsp_m.t_adsr0 & 0x80 ) /* 99% ADSR */
 	{
 		if ( v->env_mode >= ENV_DECAY ) /* 99% */
@@ -418,14 +421,16 @@ static INLINE void dsp_run_envelope( dsp_voice_t* const v )
 
 static INLINE void dsp_decode_brr( dsp_voice_t* v )
 {
+	int nybbles, *pos, *end, header;
+
 	/* Arrange the four input nybbles in 0xABCD order for easy decoding */
-	int nybbles = dsp_m.t_brr_byte * 0x100 + dsp_m.ram [(v->brr_addr + v->brr_offset + 1) & 0xFFFF];
+	nybbles = dsp_m.t_brr_byte * 0x100 + dsp_m.ram [(v->brr_addr + v->brr_offset + 1) & 0xFFFF];
 	
-	int const header = dsp_m.t_brr_header;
+	header = dsp_m.t_brr_header;
 	
 	/* Write to next four samples in circular buffer */
-	int* pos = &v->buf [v->buf_pos];
-	int* end;
+	pos = &v->buf [v->buf_pos];
+
 	if ( (v->buf_pos += 4) >= BRR_BUF_SIZE )
 		v->buf_pos = 0;
 	
@@ -622,8 +627,10 @@ static void dsp_voice_V3c( dsp_voice_t* const v )
 
 static INLINE void dsp_voice_output( dsp_voice_t const* v, int ch )
 {
+	int amp;
+
 	/* Apply left/right volume */
-	int amp = (dsp_m.t_output * (int8_t) VREG(v->regs,VOLL + ch)) >> 7;
+	amp = (dsp_m.t_output * (int8_t) VREG(v->regs,VOLL + ch)) >> 7;
 
 	/* Add to output total */
 	dsp_m.t_main_out [ch] += amp;
@@ -848,7 +855,7 @@ static INLINE void dsp_echo_26 (void)
 static INLINE void dsp_echo_27 (void)
 {
 	int l, r;
-	short * out;
+	short *out;
 
 	l = dsp_m.t_main_out [0];
 	ECHO_OUTPUT(r, 1);
@@ -916,8 +923,11 @@ V(V9_V6_V3,2) -> V(V9,2) V(V6,3) V(V3,4) */
 
 static void dsp_run( int clocks_remain )
 {
-	int const phase = dsp_m.phase;
+	int phase;
+
+	phase = dsp_m.phase;
 	dsp_m.phase = (phase + clocks_remain) & 31;
+
 	switch ( phase )
 	{
 loop:
@@ -1215,12 +1225,16 @@ static void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	/* Voices */
 	for ( i = 0; i < VOICE_COUNT; i++ )
 	{
-		dsp_voice_t* v = &dsp_m.voices [i];
+		dsp_voice_t* v;
+		
+		v = &dsp_m.voices [i];
 		
 		/* BRR buffer */
 		for ( j = 0; j < BRR_BUF_SIZE; j++ )
 		{
-			int s = v->buf [j];
+			int s;
+
+			s = v->buf [j];
 			SPC_COPY(  int16_t, s );
 			v->buf [j] = v->buf [j + BRR_BUF_SIZE] = s;
 		}
@@ -1233,7 +1247,9 @@ static void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 		SPC_COPY(  uint8_t, v->brr_offset );
 		SPC_COPY(  uint8_t, v->kon_delay );
 		{
-			int m = v->env_mode;
+			int m;
+
+			m = v->env_mode;
 			SPC_COPY(  uint8_t, m );
 			v->env_mode = m;
 		}
@@ -1245,8 +1261,10 @@ static void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	/* Echo history */
 	for ( i = 0; i < ECHO_HIST_SIZE; i++ )
 	{
-		int s = dsp_m.echo_hist_pos [i] [0];
-		int s2 = dsp_m.echo_hist_pos [i] [1];
+		int s, s2;
+
+		s = dsp_m.echo_hist_pos [i] [0];
+		s2 = dsp_m.echo_hist_pos [i] [1];
 
 		SPC_COPY( int16_t, s );
 		dsp_m.echo_hist [i] [0] = s; /* write back at offset 0 */
@@ -1336,17 +1354,21 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 static Timer* spc_run_timer_( Timer* t, int time )
 {
-	int elapsed = TIMER_DIV( t, time - t->next_time ) + 1;
+	int elapsed;
+
+	elapsed = TIMER_DIV( t, time - t->next_time ) + 1;
 	t->next_time += TIMER_MUL( t, elapsed );
 	
 	if ( t->enabled )
 	{
-		int remain = IF_0_THEN_256( t->period - t->divider );
-		int divider = t->divider + elapsed;
-		int over = elapsed - remain;
+		int remain, divider, over, n;
+
+		remain = IF_0_THEN_256( t->period - t->divider );
+		divider = t->divider + elapsed;
+		over = elapsed - remain;
 		if ( over >= 0 )
 		{
-			int n = over / t->period;
+			n = over / t->period;
 			t->counter = (t->counter + 1 + n) & 0x0F;
 			divider = over - n * t->period;
 		}
@@ -1385,8 +1407,10 @@ void spc_enable_rom( int enable )
 
 static INLINE void spc_dsp_write( int data, int time )
 {
+	int addr;
+
 	/* Writes DSP registers. */
-	int addr = m.smp_regs[0][R_DSPADDR];
+	addr = m.smp_regs[0][R_DSPADDR];
 	dsp_m.regs [addr] = (uint8_t) data;
 	switch ( addr & 0x0F )
 	{
@@ -1433,8 +1457,12 @@ static void spc_cpu_write_smp_reg_( int data, int time, int addr )
 		case R_T1TARGET:
 		case R_T2TARGET:
 			{
-				Timer* t = &m.timers [addr - R_T0TARGET];
-				int period = IF_0_THEN_256( data );
+				int period;
+				Timer *t;
+
+				t = &m.timers [addr - R_T0TARGET];
+				period = IF_0_THEN_256( data );
+
 				if ( t->period != period )
 				{
 					if ( time >= t->next_time )
@@ -1567,9 +1595,12 @@ static void spc_cpu_write( int data, int addr, int time )
 
 static int spc_cpu_read( int addr, int time )
 {
+	int result, reg;
+
 	/* RAM */
-	int result = m.ram.ram[addr];
-	int reg = addr - 0xF0;
+	result = m.ram.ram[addr];
+	reg = addr - 0xF0;
+
 	if ( reg >= 0 ) /* 40% */
 	{
 		reg -= 0x10;
@@ -1589,7 +1620,9 @@ static int spc_cpu_read( int addr, int time )
 			/* Other registers */
 			else if ( reg < 0 ) /* 10% */
 			{
-				int reg_tmp = reg + R_T0OUT;
+				int reg_tmp;
+
+				reg_tmp = reg + R_T0OUT;
 				result = m.smp_regs[1][reg_tmp];
 				reg_tmp -= R_DSPADDR;
 				/* DSP addr and data */
@@ -1664,8 +1697,10 @@ static int spc_cpu_read( int addr, int time )
 
 static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
 {
-	unsigned addr = GET_LE16( pc );
-	unsigned t = READ( 0, addr & 0x1FFF ) >> (addr >> 13);
+	unsigned addr, t;
+
+	addr = GET_LE16( pc );
+	t = READ( 0, addr & 0x1FFF ) >> (addr >> 13);
 	return t << 8 & 0x100;
 }
 
@@ -1737,8 +1772,9 @@ inc_pc_loop:
 	pc++;
 loop:
 	{
-		unsigned opcode = *pc;
-		unsigned data;
+		unsigned opcode, data;
+
+		opcode = *pc;
 
 		if (allow_time_overflow && rel_time >= 0 )
 			goto stop;
@@ -1769,13 +1805,14 @@ loop:
 			case 0xD0: /* BNE */
 					BRANCH( (uint8_t) nz )
 
-			case 0x3F:{ /* CALL */
-					  int old_addr = GET_PC() + 2;
-					  SET_PC( GET_LE16( pc ) );
-					  PUSH16( old_addr );
-					  goto loop;
-				  }
-
+			case 0x3F:
+					{ /* CALL */
+						int old_addr;
+						old_addr = GET_PC() + 2;
+						SET_PC( GET_LE16( pc ) );
+						PUSH16( old_addr );
+						goto loop;
+					}
 			case 0x6F: /* RET */
 					SET_PC( GET_LE16( sp ) );
 					sp += 2;
@@ -1826,12 +1863,14 @@ loop:
 			case 0xC4: /* MOV dp,a */
 				  ++pc;
 				  {
-					  int i = dp + data;
+					  int i;
+					  i = dp + data;
 					  ram [i] = (uint8_t) a;
 					  i -= 0xF0;
 					  if ( (unsigned) i < 0x10 ) /* 39% */
 					  {
-						  unsigned sel = i - 2;
+						  unsigned sel;
+						  sel = i - 2;
 						  m.smp_regs[0][i] = (uint8_t) a;
 
 						  if ( sel == 1 ) /* 51% $F3 */
@@ -1893,7 +1932,8 @@ loop:
 			case 0xBF:
 				  {
 					  /* MOV A,(X)+ */
-					  int temp = x + dp;
+					  int temp;
+					  temp = x + dp;
 					  x = (uint8_t) (x + 1);
 					  a = nz = READ( -1, temp );
 					  goto loop;
@@ -1927,8 +1967,10 @@ loop:
 				  READ_DP_TIMER( 0, data, y = nz );
 				  goto loop;
 
-			case 0xEC:{ /* MOV Y,abs */
-					  int temp = GET_LE16( pc );
+			case 0xEC:
+				  { /* MOV Y,abs */
+					  int temp;
+					  temp = GET_LE16( pc );
 					  pc += 2;
 					  READ_TIMER( 0, temp, y = nz );
 					  /* y = nz = READ( 0, temp ); */
@@ -2189,8 +2231,10 @@ inc_abs:
 
 			case 0x1C: /* ASL A */
 				  c = 0;
-			case 0x3C:{/* ROL A */
-					  int temp = c >> 8 & 1;
+			case 0x3C:
+				  {/* ROL A */
+					  int temp;
+					  temp = c >> 8 & 1;
 					  c = a << 1;
 					  nz = c | temp;
 					  a = (uint8_t) nz;
@@ -2283,11 +2327,11 @@ ror_mem: {
 				  }
 
 			case 0x7A: /* ADDW YA,dp */
-			case 0x9A:{/* SUBW YA,dp */
-					  int lo = READ_DP( -2, data );
-					  int hi = READ_DP( 0, (uint8_t) (data + 1) );
-					  int result;
-					  int flags;
+			case 0x9A:
+				  {/* SUBW YA,dp */
+					  int lo, hi, result, flags;
+					  lo = READ_DP( -2, data );
+					  hi = READ_DP( 0, (uint8_t) (data + 1) );
 
 					  if ( opcode == 0x9A ) /* SUBW */
 					  {
@@ -2311,16 +2355,18 @@ ror_mem: {
 					  goto inc_pc_loop;
 				  }
 
-			case 0x5A: { /* CMPW YA,dp */
-					   int temp = a - READ_DP( -1, data );
-					   nz = ((temp >> 1) | temp) & 0x7F;
-					   temp = y + (temp >> 8);
-					   temp -= READ_DP( 0, (uint8_t) (data + 1) );
-					   nz |= temp;
-					   c  = ~temp;
-					   nz &= 0xFF;
-					   goto inc_pc_loop;
-				   }
+			case 0x5A:
+				  { /* CMPW YA,dp */
+					  int temp;
+					  temp = a - READ_DP( -1, data );
+					  nz = ((temp >> 1) | temp) & 0x7F;
+					  temp = y + (temp >> 8);
+					  temp -= READ_DP( 0, (uint8_t) (data + 1) );
+					  nz |= temp;
+					  c  = ~temp;
+					  nz &= 0xFF;
+					  goto inc_pc_loop;
+				  }
 
 				   /* 10. MULTIPLICATION & DIVISON COMMANDS */
 
@@ -2578,9 +2624,11 @@ set_psw:
 			case 0x92:
 			case 0xB2:
 			case 0xD2:
-			case 0xF2: {
-					   int bit = 1 << (opcode >> 5);
-					   int mask = ~bit;
+			case 0xF2:
+				   {
+					   int bit, mask;
+					   bit = 1 << (opcode >> 5);
+					   mask = ~bit;
 					   if ( opcode & 0x10 )
 						   bit = 0;
 					   data += dp;
@@ -2641,8 +2689,9 @@ set_psw:
 				   data = GET_LE16( pc );
 				   pc += 2;
 				   {
-					   unsigned temp = READ( -2, data & 0x1FFF );
-					   unsigned bit = data >> 13;
+					   unsigned temp, bit;
+					   temp = READ( -2, data & 0x1FFF );
+					   bit = data >> 13;
 					   temp = (temp & ~(1 << bit)) | ((c >> 8 & 1) << bit);
 					   WRITE( 0, data & 0x1FFF, temp + NO_READ_BEFORE_WRITE  );
 				   }
@@ -2800,8 +2849,9 @@ uint8_t * spc_apuram()
 
 static void spc_reset_buffer(void)
 {
+	short *out;
 	/* Start with half extra buffer of silence */
-	short* out = m.extra_buf;
+	out = m.extra_buf;
 	while ( out < &m.extra_buf [EXTRA_SIZE_DIV_2] )
 		*out++ = 0;
 	m.extra_pos = out;
@@ -2932,8 +2982,7 @@ void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	
 	{
 		/* SMP registers */
-		uint8_t regs [REG_COUNT];
-		uint8_t regs_in [REG_COUNT];
+		uint8_t regs [REG_COUNT], regs_in [REG_COUNT];
 
 		memcpy( regs, m.smp_regs[0], REG_COUNT );
 		memcpy( regs_in, m.smp_regs[1], REG_COUNT );
@@ -2965,7 +3014,9 @@ void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	/* Timers */
 	for ( i = 0; i < TIMER_COUNT; i++ )
 	{
-		Timer* t = &m.timers [i];
+		Timer *t;
+
+		t = &m.timers [i];
 		t->period  = IF_0_THEN_256( m.smp_regs[0][R_T0TARGET + i] );
 		t->enabled = m.smp_regs[0][R_CONTROL] >> i & 1;
 		SPC_COPY( int16_t, t->next_time );
@@ -3037,6 +3088,7 @@ static int    r_left[4], r_right[4];
 static float hermite (float mu1, float a, float b, float c, float d)
 {
 	float mu2, mu3, m0, m1, a0, a1, a2, a3;
+
 	mu2 = mu1 * mu1;
 	mu3 = mu2 * mu1;
 	m0  = (c - a) * 0.5;
@@ -3067,16 +3119,21 @@ static void resampler_time_ratio(double ratio)
 
 static void resampler_read(short *data, int num_samples)
 {
-	int i_position = rb_start >> 1;
-	short *internal_buffer = (short *)rb_buffer;
-	int o_position = 0;
-	int consumed = 0;
+	int i_position, o_position, consumed;
+	short *internal_buffer;
+
+	i_position = rb_start >> 1;
+	internal_buffer = (short *)rb_buffer;
+	o_position = 0;
+	consumed = 0;
 
 	while (o_position < num_samples && consumed < rb_buffer_size)
 	{
-		int s_left = internal_buffer[i_position];
-		int s_right = internal_buffer[i_position + 1];
-		int max_samples = rb_buffer_size >> 1;
+		int s_left, s_right, max_samples;
+
+		s_left = internal_buffer[i_position];
+		s_right = internal_buffer[i_position + 1];
+		max_samples = rb_buffer_size >> 1;
 
 		while (r_frac <= 1.0 && o_position < num_samples)
 		{
@@ -3226,7 +3283,9 @@ static void spc_set_output( short* out, int size )
 
 void S9xFinalizeSamples (void)
 {
-	bool8 ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
+	bool8 ret;
+
+	ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
 	sound_in_sync = FALSE;
 
 	/* We weren't able to process the entire buffer. Potential overrun. */
@@ -3275,9 +3334,10 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 {
 	/*	buffer_ms : buffer size given in millisecond
 		lag_ms    : allowable time-lag given in millisecond */
+	int sample_count, lag_sample_count;
 
-	int	sample_count     = buffer_ms * 32000 / 1000;
-	int	lag_sample_count = lag_ms    * 32000 / 1000;
+	sample_count     = buffer_ms * 32000 / 1000;
+	lag_sample_count = lag_ms    * 32000 / 1000;
 
 	lag_master = lag_sample_count;
 
@@ -3392,7 +3452,8 @@ bool8 S9xInitAPU (void)
 	/* unpack cycle table */
 	for ( i = 0; i < 128; i++ )
 	{
-		int n = cycle_table [i];
+		int n;
+		n = cycle_table [i];
 		m.cycle_table [i * 2 + 0] = n >> 4;
 		m.cycle_table [i * 2 + 1] = n & 0x0F;
 	}
@@ -3518,7 +3579,9 @@ static void to_apu_from_state (uint8 **buf, void *var, size_t size)
 
 void S9xAPUSaveState (uint8 *block)
 {
-	uint8	*ptr = block;
+	uint8 *ptr;
+
+	ptr = block;
 
 	spc_copy_state(&ptr, from_apu_to_state);
 
@@ -3529,7 +3592,9 @@ void S9xAPUSaveState (uint8 *block)
 
 void S9xAPULoadState (uint8 *block)
 {
-	uint8	*ptr = block;
+	uint8 *ptr;
+
+	ptr = block;
 
 	S9xResetAPU();
 

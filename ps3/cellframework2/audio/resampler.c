@@ -140,7 +140,7 @@ static uint32_t resampler_process(resampler_t *state, uint32_t frames, float *ou
    return frames_used;
 }
 
-uint32_t resampler_cb_read(resampler_t *state, uint32_t frames, float *data)
+int32_t resampler_cb_read(resampler_t *state, uint32_t frames, float *data)
 {
    // How many frames must we have to resample?
    uint32_t req_frames = resampler_get_required_frames(state, frames);

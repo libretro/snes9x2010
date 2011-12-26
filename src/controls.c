@@ -256,14 +256,12 @@ static void DoGunLatch (int x, int y)
 
 	if (x > 295)
 		x = 295;
-	else
-	if (x < 40)
+	else if (x < 40)
 		x = 40;
 
 	if (y > PPU.ScreenHeight - 1)
 		y = PPU.ScreenHeight - 1;
-	else
-	if (y < 0)
+	else if (y < 0)
 		y = 0;
 
 	PPU.GunVLatch = (uint16) (y + 1);
@@ -414,8 +412,10 @@ void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 i
 
 bool8 S9xVerifyControllers (void)
 {
-	bool8	ret = FALSE;
+	bool8	ret;
 	int	port, i, used[NUMCTLS];
+
+	ret = FALSE;
 
 	for (i = 0; i < NUMCTLS; used[i++] = 0) ;
 
@@ -667,7 +667,9 @@ static void S9xUnmapID (uint32 id)
 
 bool8 S9xMapButton (uint32 id, s9xcommand_t mapping)
 {
-	int	t = maptype(mapping.type);
+	int t;
+
+	t = maptype(mapping.type);
 
 	if (t != MAP_BUTTON)
 		return FALSE;
@@ -692,7 +694,9 @@ void S9xReportButton (uint32 id, bool8 pressed)
 
 bool8 S9xMapPointer (uint32 id, s9xcommand_t mapping)
 {
-	int	t = maptype(mapping.type);
+	int t;
+
+	t = maptype(mapping.type);
 
 	if (t != MAP_POINTER)
 		return FALSE;
@@ -756,7 +760,9 @@ void S9xReportPointer (uint32 id, int16 x, int16 y)
 
 void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 {
-	int i = 0;
+	int i;
+
+	i = 0;
 
 	switch (cmd.type)
 	{
@@ -868,7 +874,9 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 static void UpdatePolledMouse (int i)
 {
-	int16	j = mouse[i - MOUSE0].cur_x - mouse[i - MOUSE0].old_x;
+	int16 j;
+
+	j = mouse[i - MOUSE0].cur_x - mouse[i - MOUSE0].old_x;
 
 	if (j < -127)
 	{
@@ -1580,8 +1588,10 @@ do_justifier:
 
 void S9xControlPreSaveState (struct SControlSnapshot *s)
 {
-	int	i = 0;
-	int	j = 0;
+	int i, j;
+
+	i = 0;
+	j = 0;
 	ZeroMemory(s, sizeof(*s));
 	s->ver = 3;
 
@@ -1642,8 +1652,10 @@ void S9xControlPreSaveState (struct SControlSnapshot *s)
 
 void S9xControlPostLoadState (struct SControlSnapshot *s)
 {
-	int	i = 0;
-	int	j = 0;
+	int i, j;
+
+	i = 0;
+	j = 0;
 
 	if (curcontrollers[0] == MP5 && s->ver < 1)
 	{
