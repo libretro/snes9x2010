@@ -1,0 +1,231 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A7E1411B-9741-47D3-AE2A-47176517D89D}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>msvc2010</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;MSVC2010_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS;_WINDOWS;_USRDLL;MSVC2010_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="libsnes\libsnes.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="libsnes\memstream.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\apu.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\bsx.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\c4emu.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\cheats.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\controls.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\cpu.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\cpuexec.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\dsp.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\fxemu.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\globals.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\memmap.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\obc1.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\ppu.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\sa1.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\sdd1.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\seta.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\snapshot.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\spc7110.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\srtc.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="src\tile.c">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;__LIBSNES__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">INLINE=_inline;HAVE_INTTYPES_H;HAVE_STDINT_H;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="libsnes\libsnes.h" />
+    <ClInclude Include="libsnes\memstream.h" />
+    <ClInclude Include="src\65c816.h" />
+    <ClInclude Include="src\apu.h" />
+    <ClInclude Include="src\blargg_endian.h" />
+    <ClInclude Include="src\bsx.h" />
+    <ClInclude Include="src\c4.h" />
+    <ClInclude Include="src\cheats.h" />
+    <ClInclude Include="src\controls.h" />
+    <ClInclude Include="src\cpuaddr.h" />
+    <ClInclude Include="src\cpuexec.h" />
+    <ClInclude Include="src\cpumacro.h" />
+    <ClInclude Include="src\cpuops.h" />
+    <ClInclude Include="src\cpuops_.h" />
+    <ClInclude Include="src\crosshairs.h" />
+    <ClInclude Include="src\display.h" />
+    <ClInclude Include="src\dma.h" />
+    <ClInclude Include="src\dsp.h" />
+    <ClInclude Include="src\fxemu.h" />
+    <ClInclude Include="src\fxinst.h" />
+    <ClInclude Include="src\getset.h" />
+    <ClInclude Include="src\memmap.h" />
+    <ClInclude Include="src\messages.h" />
+    <ClInclude Include="src\obc1.h" />
+    <ClInclude Include="src\pixform.h" />
+    <ClInclude Include="src\port.h" />
+    <ClInclude Include="src\ppu.h" />
+    <ClInclude Include="src\sa1.h" />
+    <ClInclude Include="src\sdd1.h" />
+    <ClInclude Include="src\sdd1emu.h" />
+    <ClInclude Include="src\seta.h" />
+    <ClInclude Include="src\snapshot.h" />
+    <ClInclude Include="src\snes9x.h" />
+    <ClInclude Include="src\spc7110.h" />
+    <ClInclude Include="src\spc7110dec.h" />
+    <ClInclude Include="src\spc7110emu.h" />
+    <ClInclude Include="src\srtc.h" />
+    <ClInclude Include="src\tile.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

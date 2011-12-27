@@ -263,8 +263,10 @@ typedef unsigned long long	uint64;
 #endif
 
 #define ZeroMemory(a, b)	memset((a), 0, (b))
+#ifndef _MSC_VER
 void _splitpath (const char * path, char * drive, char * dir, char * fname, char * ext);
 void _makepath (char * path, const char * a, const char * dir, const char * fname, const char * ext);
+#endif
 
 #ifdef __DJGPP
 #define SLASH_STR	"\\"
@@ -279,6 +281,12 @@ void _makepath (char * path, const char * a, const char * dir, const char * fnam
 #define FAST_LSB_WORD_ACCESS
 #else
 #define MSB_FIRST
+#endif
+
+#ifdef _MSC_VER
+#define snprintf _snprintf
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
 #endif
 
 #ifdef FAST_LSB_WORD_ACCESS

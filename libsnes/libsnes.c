@@ -681,6 +681,7 @@ void S9xMessage(int a, int b, const char* msg)
 }
 
 /* S9x weirdness. */
+#ifndef _MSC_VER
 void _splitpath (const char * path, char * drive, char * dir, char * fname, char * ext)
 {
 	char *slash, *dot;
@@ -740,3 +741,4 @@ void _makepath (char *path, const char * a, const char *dir, const char *fname, 
 		strcat(path, ext);
 	}
 }
+#endif
