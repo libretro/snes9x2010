@@ -24,6 +24,10 @@
 #include "../src/cheats.h"
 #include "../src/display.h"
 
+#ifdef _MSC_VER
+typedef unsigned char bool;
+#endif
+
 static snes_video_refresh_t s9x_video_cb = NULL;
 static snes_audio_sample_t s9x_audio_cb = NULL;
 static snes_input_poll_t s9x_poller_cb = NULL;
@@ -212,7 +216,7 @@ bool snes_load_cartridge_bsx_slotted(
       const char * d, const uint8_t * e, unsigned f
       )
 {
-   return false;
+   return FALSE;
 }
 
 bool snes_load_cartridge_bsx(
@@ -220,7 +224,7 @@ bool snes_load_cartridge_bsx(
       const char * d, const uint8_t * e, unsigned f
       )
 {
-   return false;
+   return FALSE;
 }
 
 bool snes_load_cartridge_sufami_turbo(
@@ -229,7 +233,7 @@ bool snes_load_cartridge_sufami_turbo(
       const char * g, const uint8_t * h, unsigned i
       )
 {
-   return false;
+   return FALSE;
 }
 
 bool snes_load_cartridge_super_game_boy(
@@ -237,7 +241,7 @@ bool snes_load_cartridge_super_game_boy(
       const char * d, const uint8_t * e, unsigned f 
       )
 {
-   return false;
+   return FALSE;
 }
 
 static void map_buttons()
@@ -456,7 +460,7 @@ bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigne
    if (!loaded)
    {
       fprintf(stderr, "[libsnes]: Rom loading failed...\n");
-      return false;
+      return FALSE;
    }
 
    if (environ_cb)
@@ -471,7 +475,7 @@ bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigne
 	   environ_cb(SNES_ENVIRONMENT_SET_TIMING, &timing);
    }
    
-   return true;
+   return TRUE;
 }
 
 void snes_run()
@@ -575,7 +579,9 @@ void snes_set_cartridge_basename(const char* a) {}
 
 unsigned snes_serialize_size (void)
 {
-   uint8_t *tmpbuf = (uint8_t*)malloc(5000000);
+   uint8_t *tmpbuf;
+
+   tmpbuf = (uint8_t*)malloc(5000000);
    memstream_set_buffer(tmpbuf, 5000000);
    S9xFreezeGame("foo");
    free(tmpbuf);
@@ -586,18 +592,18 @@ bool snes_serialize(uint8_t *data, unsigned size)
 { 
    memstream_set_buffer(data, size);
    if (S9xFreezeGame("foo") == FALSE)
-      return false;
+      return FALSE;
 
-   return true;
+   return TRUE;
 }
 
 bool snes_unserialize(const uint8_t* data, unsigned size)
 { 
    memstream_set_buffer((uint8_t*)data, size);
    if (S9xUnfreezeGame("foo") == FALSE)
-      return false;
+      return FALSE;
 
-   return true;
+   return TRUE;
 }
 
 /* Pitch 2048 -> 1024, only done once per res-change. */
