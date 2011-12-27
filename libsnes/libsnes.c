@@ -11,6 +11,15 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+
+#define LIBSNES_CORE 1
+
+#if defined(_MSC_VER) && defined(LIBSNES_CORE)
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
 #include "libsnes.h"
 
 #include "../src/snes9x.h"
@@ -313,7 +322,7 @@ static void map_buttons()
 
 }
 
-void snes_init()
+EXPORT void snes_init()
 {
 	int i;
 	if(environ_cb)
@@ -450,7 +459,7 @@ static void report_buttons()
 	}
 }
 
-bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigned rom_size)
+EXPORT bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigned rom_size)
 {
 	int loaded;
    /* Hack. S9x cannot do stuff from RAM. <_< */
@@ -478,7 +487,7 @@ bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, unsigne
    return TRUE;
 }
 
-void snes_run()
+EXPORT void snes_run()
 {
    S9xMainLoop();
    s9x_poller_cb();
@@ -488,7 +497,7 @@ void snes_run()
    }
 }
 
-void snes_term()
+EXPORT void snes_term()
 {
    S9xDeinitAPU();
    Deinit();
@@ -497,12 +506,12 @@ void snes_term()
 }
 
 
-bool snes_get_region()
+EXPORT bool snes_get_region()
 { 
    return Settings.PAL ? SNES_REGION_PAL : SNES_REGION_NTSC; 
 }
 
-uint8_t* snes_get_memory_data(unsigned type)
+EXPORT uint8_t* snes_get_memory_data(unsigned type)
 {
    uint8_t* data;
 
@@ -536,12 +545,12 @@ uint8_t* snes_get_memory_data(unsigned type)
    return data;
 }
 
-void snes_unload_cartridge()
+EXPORT void snes_unload_cartridge()
 {
 
 }
 
-unsigned snes_get_memory_size(unsigned type)
+EXPORT unsigned snes_get_memory_size(unsigned type)
 {
    unsigned size;
 
@@ -577,7 +586,7 @@ unsigned snes_get_memory_size(unsigned type)
 
 void snes_set_cartridge_basename(const char* a) {}
 
-unsigned snes_serialize_size (void)
+EXPORT unsigned snes_serialize_size (void)
 {
    uint8_t *tmpbuf;
 
@@ -588,7 +597,7 @@ unsigned snes_serialize_size (void)
    return memstream_get_last_size();
 }
 
-bool snes_serialize(uint8_t *data, unsigned size)
+EXPORT bool snes_serialize(uint8_t *data, unsigned size)
 { 
    memstream_set_buffer(data, size);
    if (S9xFreezeGame("foo") == FALSE)
@@ -597,7 +606,7 @@ bool snes_serialize(uint8_t *data, unsigned size)
    return TRUE;
 }
 
-bool snes_unserialize(const uint8_t* data, unsigned size)
+EXPORT bool snes_unserialize(const uint8_t* data, unsigned size)
 { 
    memstream_set_buffer((uint8_t*)data, size);
    if (S9xUnfreezeGame("foo") == FALSE)
