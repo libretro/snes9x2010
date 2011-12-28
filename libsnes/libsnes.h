@@ -1,7 +1,7 @@
 #ifndef LIBSNES_HPP
 #define LIBSNES_HPP
 
-#ifdef WIN32
+#ifdef _MSC_VER
 #include <stddef.h>
 typedef unsigned char bool;
 #endif

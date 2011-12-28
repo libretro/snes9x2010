@@ -179,7 +179,7 @@
 #define _PORT_H_
 
 #include <stdio.h>
-#ifndef WIN32
+#ifndef _MSC_VER
 #include <stdbool.h>
 #endif
 #include <limits.h>

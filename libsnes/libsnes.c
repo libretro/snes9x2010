@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <stdint.h>
-#ifndef WIN32
+#ifndef _MSC_VER
 #include <stdbool.h>
+#include <unistd.h>
 #endif
 #include <stdlib.h>
 #include <string.h>
-#ifndef WIN32
-#include <unistd.h>
-#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>

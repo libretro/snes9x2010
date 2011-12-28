@@ -3285,7 +3285,7 @@ uint8 DSP3GetByte (uint16 address)
 	{ memcpy(DSP4.output + DSP4.out_count, (d), 32); DSP4.out_count += 32; }
 #else
 #define DSP4_WRITE_16_WORD(d) \
-	{ for (int p = 0; p < 16; p++) DSP4_WRITE_WORD((d)[p]); }
+	{ int p; for ( p = 0; p < 16; p++) DSP4_WRITE_WORD((d)[p]); }
 #endif
 
 /* used to wait for dsp i/o */

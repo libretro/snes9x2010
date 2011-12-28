@@ -668,14 +668,13 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 		/*	*/
 			case 0x01:
 			{
+				int16	x1, y1, Quadrant, Theta;
 				Memory.SRAM[0x0006] = Memory.SRAM[0x0002];
 				Memory.SRAM[0x0007] = Memory.SRAM[0x0003];
 
 			#ifdef FAST_LSB_WORD_ACCESS
 				ST010_OP01(*(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int16 *)Memory.SRAM[0x0000], (int16 *) Memory.SRAM[0x0002], (int16 *) Memory.SRAM[0x0004], (int16 *) Memory.SRAM[0x0010]);
 			#else
-				int16	x1, y1, Quadrant, Theta;
-
 				ST010_OP01(ST010_WORD(0x0000), ST010_WORD(0x0002), &x1, &y1, &Quadrant, &Theta);
 
 				Memory.SRAM[0x0000] = (uint8) (x1);
