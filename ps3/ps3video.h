@@ -143,4 +143,8 @@ extern snes_tracker_t *tracker; // State tracker
 extern char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 extern char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 
+extern PSGLdevice * psgl_device;
+
+extern void _jsPlatformSwapBuffers( PSGLdevice* device);
+
 #endif
