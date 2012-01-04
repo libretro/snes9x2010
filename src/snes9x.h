@@ -397,6 +397,7 @@ struct SSettings
 	int32_t	Crosshair;
 
 	#ifdef __CELLOS_LV2__
+	uint32_t	Orientation;
 	uint32_t	PS3KeepAspect;
 	uint32_t	PS3Smooth;
 	uint32_t	PS3Smooth2;
