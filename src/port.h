@@ -191,7 +191,7 @@
 #define RIGHTSHIFT_int32_IS_SAR
 #endif
 
-#ifdef GEKKO
+#if defined(GEKKO) && !defined(__LIBSNES__)
 #define PIXEL_FORMAT RGB565
 #else
 #define PIXEL_FORMAT RGB555
