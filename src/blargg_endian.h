@@ -117,10 +117,10 @@
 		#if BLARGG_CPU_POWERPC
 			/* PowerPC has special byte-reversed instructions */
 			#if defined (__SNC__)
-				#define GET_LE16( addr )        ({unsigned ppc_lhbrx_ = __lhbrx(addr); ppc_lhbrx_;})
-				#define GET_LE32( addr )        ({unsigned ppc_lwbrx_ = __lwbrx(addr); ppc_lwbrx_;})
-				#define SET_LE16( addr, in )    ({__sthbrx(addr, in);})
-				#define SET_LE32( addr, in )    ({__stwbrx(addr, in);})
+				#define GET_LE16( addr )        (__builtin_lhbrx(addr, 0))
+				#define GET_LE32( addr )        (__builtin_lwbrx(addr, 0))
+				#define SET_LE16( addr, in )    (__builtin_sthbrx(in, addr, 0))
+				#define SET_LE32( addr, in )    (__builtin_stwbrx(in, addr, 0))
 			#elif defined (__MWERKS__)
 				#define GET_LE16( addr )        (__lhbrx( addr, 0 ))
 				#define GET_LE32( addr )        (__lwbrx( addr, 0 ))
