@@ -354,7 +354,7 @@ struct SControlSnapshot
 	uint8	mouse_speed[2];
 	uint8	justifier_select;
 	uint8	dummy3[8];
-	bool8	pad_read, pad_read_last;
+	bool8	pad_read;
 	uint8	internal[60];		/* yes, we need to save this! */
 };
 

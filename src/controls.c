@@ -203,7 +203,7 @@
 #define FLAG_IOBIT1			(Memory.FillRAM[0x4213] & 0x80)
 #define FLAG_IOBIT(n)			((n) ? (FLAG_IOBIT1) : (FLAG_IOBIT0))
 
-bool8	pad_read = 0, pad_read_last = 0;
+bool8	pad_read = 0;
 uint8	read_idx[2 /* ports */][2 /* per port */];
 
 struct crosshair
@@ -1582,7 +1582,6 @@ do_justifier:
 		}
 	}
 
-	pad_read_last = pad_read;
 	pad_read      = FALSE;
 }
 
@@ -1647,7 +1646,6 @@ void S9xControlPreSaveState (struct SControlSnapshot *s)
 #undef COPY
 
 	s->pad_read      = pad_read;
-	s->pad_read_last = pad_read_last;
 }
 
 void S9xControlPostLoadState (struct SControlSnapshot *s)
@@ -1726,6 +1724,5 @@ void S9xControlPostLoadState (struct SControlSnapshot *s)
 	if (s->ver > 2)
 	{
 		pad_read      = s->pad_read;
-		pad_read_last = s->pad_read_last;
 	}
 }

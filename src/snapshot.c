@@ -535,7 +535,6 @@ static FreezeData	SnapControls[] =
 	INT_ENTRY(6, justifier_select),
 	ARRAY_ENTRY(6, dummy3, 8, uint8_ARRAY_V),
 	INT_ENTRY(6, pad_read),
-	INT_ENTRY(6, pad_read_last),
 	ARRAY_ENTRY(6, internal, 60, uint8_ARRAY_V)
 };
 

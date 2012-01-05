@@ -384,7 +384,6 @@ static int16_t snes_scope_state[2] = {0};
 static int16_t snes_justifier_state[2][2] = {{0}, {0}};
 extern uint16_t joypad[8];
 extern s9xcommand_t keymap[1024];
-extern bool8 pad_read_last;
 
 static void report_buttons()
 {
@@ -489,10 +488,7 @@ EXPORT void snes_run()
 {
    S9xMainLoop();
    s9x_poller_cb();
-   if(pad_read_last)
-   {
-	   report_buttons();
-   }
+   report_buttons();
 }
 
 EXPORT void snes_term()

@@ -87,7 +87,6 @@ uint64_t ingame_menu_item = 0;
 bool need_load_settings = true;				// needs settings loaded
 static uint32_t controller_settings = NO_JOYSTICKS;	// controller mode to run emulator in
 bool audio_active = false;
-extern bool8 pad_read_last;
 
 /* emulator-specific */
 extern s9xcommand_t keymap[1024];
@@ -1792,18 +1791,15 @@ static void emulator_start(void)
 
 	do{
 		S9xMainLoop();
-		if(pad_read_last)
-		{
-			// Port 1
-			if(snes_devices[0] == CTL_JOYPAD)
-					emulator_implementation_input_loop();
-			else if(snes_devices[0] == CTL_MOUSE)
-					emulator_implementation_input_loop_mouse(0, snes_devices[0]);
+		// Port 1
+		if(snes_devices[0] == CTL_JOYPAD)
+			emulator_implementation_input_loop();
+		else if(snes_devices[0] == CTL_MOUSE)
+			emulator_implementation_input_loop_mouse(0, snes_devices[0]);
 
-			// Port 2
-			if(snes_devices[1] == CTL_MOUSE || snes_devices[1] == CTL_SUPERSCOPE)
-					emulator_implementation_input_loop_mouse(1, snes_devices[1]);
-		}
+		// Port 2
+		if(snes_devices[1] == CTL_MOUSE || snes_devices[1] == CTL_SUPERSCOPE)
+			emulator_implementation_input_loop_mouse(1, snes_devices[1]);
 		cell_console_poll();
 		cellSysutilCheckCallback();
 	}while(is_running);
