@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="SNES Next"
+	Name="SNES9x Next PS3"
 	ProjectGUID="{EF6C8260-1E00-40A7-81E5-2A3C856567D5}"
 	RootNamespace="SNES Next"
 	TargetFrameworkVersion="196613"
@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-g -Xc-=rtti"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\utils\zlib&quot;"
-				PreprocessorDefinitions="SN_TARGET_PS3;_DEBUG;__SNC__;__CELL_ASSERT__;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;WORDS_BIGENDIAN;BLARGG_BIG_ENDIAN;NO_LOGGER;__POWERPC__;__ppc__;ZLIB;UNZIP_SUPPORT;JMA_SUPPORT;USE_FILE32API;SNES9X_NEXT;CLUNKY_FILE_ABSTRACTION"
+				PreprocessorDefinitions="SN_TARGET_PS3;_DEBUG;__SNC__;__CELL_ASSERT__;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;WORDS_BIGENDIAN;BLARGG_BIG_ENDIAN;__POWERPC__;__ppc__;ZLIB;UNZIP_SUPPORT;USE_FILE32API;SNES9X_NEXT;CLUNKY_FILE_ABSTRACTION;INLINE=inline"
 				ExceptionHandling="0"
 				ProgramDataBaseFileName=""
 				CompileAs="0"
@@ -111,7 +111,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-O2 -Xc-=rtti"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\..\utils\zlib&quot;"
-				PreprocessorDefinitions="SN_TARGET_PS3;NDEBUG;__SNC__;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;WORDS_BIGENDIAN;BLARGG_BIG_ENDIAN;NO_LOGGER;__POWERPC__;__ppc__;ZLIB;UNZIP_SUPPORT;JMA_SUPPORT;USE_FILE32API;unix;SNES9X_NEXT;CLUNKY_FILE_ABSTRACTION"
+				PreprocessorDefinitions="SN_TARGET_PS3;NDEBUG;__SNC__;CORRECT_VRAM_READS;RIGHTSHIFT_IS_SAR;WORDS_BIGENDIAN;BLARGG_BIG_ENDIAN;NO_LOGGER;__POWERPC__;__ppc__;ZLIB;UNZIP_SUPPORT;USE_FILE32API;unix;SNES9X_NEXT;CLUNKY_FILE_ABSTRACTION;INLINE=inline"
 				ExceptionHandling="0"
 				ProgramDataBaseFileName=""
 				CompileAs="0"
@@ -167,15 +167,7 @@
 				Name="cellemuframework"
 				>
 				<File
-					RelativePath="..\..\..\src\emu-ps3-next.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\menu.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\ps3input.c"
+					RelativePath="..\..\..\emu-ps3.c"
 					>
 					<FileConfiguration
 						Name="PS3 SNC Debug|Win32"
@@ -195,14 +187,70 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\..\..\src\ps3video.cpp"
+					RelativePath="..\..\..\menu.c"
 					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\ps3input.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\ps3video.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
 				</File>
 				<Filter
 					Name="conf"
 					>
 					<File
-						RelativePath="..\..\..\src\snes_state\config_file.c"
+						RelativePath="..\..\..\snes_state\config_file.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -222,7 +270,7 @@
 						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes_state\snes_state.c"
+						RelativePath="..\..\..\snes_state\snes_state.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -240,18 +288,6 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
-					</File>
-				</Filter>
-			</Filter>
-			<Filter
-				Name="cellframework"
-				>
-				<Filter
-					Name="fileio"
-					>
-					<File
-						RelativePath="..\..\..\src\cellframework\fileio\FileBrowser.cpp"
-						>
 					</File>
 				</Filter>
 			</Filter>
@@ -262,7 +298,7 @@
 					Name="audio"
 					>
 					<File
-						RelativePath="..\..\..\src\cellframework2\audio\audioport.c"
+						RelativePath="..\..\..\cellframework2\audio\audioport.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -282,7 +318,7 @@
 						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\src\cellframework2\audio\buffer.c"
+						RelativePath="..\..\..\cellframework2\audio\buffer.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -302,7 +338,7 @@
 						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\src\cellframework2\audio\librsound.c"
+						RelativePath="..\..\..\cellframework2\audio\librsound.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -322,7 +358,7 @@
 						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\src\cellframework2\audio\resampler.c"
+						RelativePath="..\..\..\cellframework2\audio\resampler.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -342,7 +378,7 @@
 						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\src\cellframework2\audio\rsound.c"
+						RelativePath="..\..\..\cellframework2\audio\rsound.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -366,7 +402,7 @@
 					Name="input"
 					>
 					<File
-						RelativePath="..\..\..\src\cellframework2\input\mouse_input.c"
+						RelativePath="..\..\..\cellframework2\input\mouse_input.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -386,7 +422,7 @@
 						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\src\cellframework2\input\pad_input.c"
+						RelativePath="..\..\..\cellframework2\input\pad_input.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -410,7 +446,31 @@
 					Name="utility"
 					>
 					<File
-						RelativePath="..\..\..\src\cellframework2\utility\oskutil.c"
+						RelativePath="..\..\..\cellframework2\utility\oskutil.c"
+						>
+						<FileConfiguration
+							Name="PS3 SNC Debug|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
+					</File>
+				</Filter>
+				<Filter
+					Name="fileio"
+					>
+					<File
+						RelativePath="..\..\..\cellframework2\fileio\file_browser.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -435,189 +495,405 @@
 				Name="emu"
 				>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\bsx.cpp"
+					RelativePath="..\..\..\..\src\apu.c"
 					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\c4.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\c4emu.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\cheats.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\cheats2.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\clip.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\controls.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\cpu.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\cpuexec.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\cpuops.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\crosshairs.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\dma.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\dsp.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\dsp1.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\dsp2.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\dsp3.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\dsp4.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\fxemu.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\fxinst.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\gfx.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\globals.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\loadzip.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\memmap.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\obc1.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\ppu.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\reader.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\sa1.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\sa1cpu.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\sdd1.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\sdd1emu.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\seta.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\seta010.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\seta011.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\seta018.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\snapshot.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\snes9x.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\spc7110.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\spc7110dec.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\srtc.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\tile.cpp"
-					>
-				</File>
-				<Filter
-					Name="apu"
-					>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\apu.cpp"
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
 						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\SNES_SPC.cpp"
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
 						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\SNES_SPC_misc.cpp"
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\bsx.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
 						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\SNES_SPC_state.cpp"
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
 						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\SPC_DSP.cpp"
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\c4emu.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
 						>
-					</File>
-				</Filter>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\cheats.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\controls.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\cpu.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\cpuexec.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\dsp.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\fxemu.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\globals.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\memmap.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\obc1.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\ppu.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\sa1.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\sdd1.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\seta.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\snapshot.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\spc7110.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\srtc.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\..\src\tile.c"
+					>
+					<FileConfiguration
+						Name="PS3 SNC Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="PS3 SNC Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							CompileAs="1"
+						/>
+					</FileConfiguration>
+				</File>
 			</Filter>
 			<Filter
 				Name="utils"
@@ -626,7 +902,7 @@
 					Name="zlib"
 					>
 					<File
-						RelativePath="..\..\..\utils\zlib\adler32.c"
+						RelativePath="..\..\..\..\utils\zlib\adler32.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -636,9 +912,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\compress.c"
+						RelativePath="..\..\..\..\utils\zlib\compress.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -648,9 +932,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\crc32.c"
+						RelativePath="..\..\..\..\utils\zlib\crc32.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -660,9 +952,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\deflate.c"
+						RelativePath="..\..\..\..\utils\zlib\deflate.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -672,9 +972,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\gzclose.c"
+						RelativePath="..\..\..\..\utils\zlib\gzclose.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -684,9 +992,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\gzlib.c"
+						RelativePath="..\..\..\..\utils\zlib\gzlib.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -696,9 +1012,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\gzread.c"
+						RelativePath="..\..\..\..\utils\zlib\gzread.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -708,9 +1032,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\gzwrite.c"
+						RelativePath="..\..\..\..\utils\zlib\gzwrite.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -720,9 +1052,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\infback.c"
+						RelativePath="..\..\..\..\utils\zlib\infback.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -732,9 +1072,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\inffast.c"
+						RelativePath="..\..\..\..\utils\zlib\inffast.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -744,9 +1092,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\inflate.c"
+						RelativePath="..\..\..\..\utils\zlib\inflate.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -756,9 +1112,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\inftrees.c"
+						RelativePath="..\..\..\..\utils\zlib\inftrees.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -768,9 +1132,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\trees.c"
+						RelativePath="..\..\..\..\utils\zlib\trees.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -780,9 +1152,17 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\uncompr.c"
+						RelativePath="..\..\..\..\utils\zlib\uncompr.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
@@ -792,12 +1172,28 @@
 								CompileAs="1"
 							/>
 						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\zutil.c"
+						RelativePath="..\..\..\..\utils\zlib\zutil.c"
 						>
 						<FileConfiguration
 							Name="PS3 SNC Debug|Win32"
+							>
+							<Tool
+								Name="VCCLCompilerTool"
+								CompileAs="1"
+							/>
+						</FileConfiguration>
+						<FileConfiguration
+							Name="PS3 SNC Release|Win32"
 							>
 							<Tool
 								Name="VCCLCompilerTool"
@@ -809,7 +1205,7 @@
 						Name="contrib"
 						>
 						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\ioapi.c"
+							RelativePath="..\..\..\..\utils\zlib\contrib\minizip\ioapi.c"
 							>
 							<FileConfiguration
 								Name="PS3 SNC Debug|Win32"
@@ -819,9 +1215,17 @@
 									CompileAs="1"
 								/>
 							</FileConfiguration>
+							<FileConfiguration
+								Name="PS3 SNC Release|Win32"
+								>
+								<Tool
+									Name="VCCLCompilerTool"
+									CompileAs="1"
+								/>
+							</FileConfiguration>
 						</File>
 						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\mztools.c"
+							RelativePath="..\..\..\..\utils\zlib\contrib\minizip\unzip.c"
 							>
 							<FileConfiguration
 								Name="PS3 SNC Debug|Win32"
@@ -831,24 +1235,8 @@
 									CompileAs="1"
 								/>
 							</FileConfiguration>
-						</File>
-						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\unzip.c"
-							>
 							<FileConfiguration
-								Name="PS3 SNC Debug|Win32"
-								>
-								<Tool
-									Name="VCCLCompilerTool"
-									CompileAs="1"
-								/>
-							</FileConfiguration>
-						</File>
-						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\zip.c"
-							>
-							<FileConfiguration
-								Name="PS3 SNC Debug|Win32"
+								Name="PS3 SNC Release|Win32"
 								>
 								<Tool
 									Name="VCCLCompilerTool"
@@ -868,50 +1256,42 @@
 				Name="cellemuframework"
 				>
 				<File
+					RelativePath="..\..\..\colors.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\..\src\colors.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\emu-ps3-constants.h"
+					RelativePath="..\..\..\emu-ps3-constants.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\emu-ps3.hpp"
+					RelativePath="..\..\..\emu-ps3.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\menu.hpp"
+					RelativePath="..\..\..\menu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\ps3input.h"
+					RelativePath="..\..\..\ps3input.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\ps3video.hpp"
+					RelativePath="..\..\..\ps3video.h"
 					>
 				</File>
 				<Filter
 					Name="conf"
 					>
 					<File
-						RelativePath="..\..\..\src\snes_state\config_file.h"
+						RelativePath="..\..\..\snes_state\config_file.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes_state\snes_state.h"
-						>
-					</File>
-				</Filter>
-			</Filter>
-			<Filter
-				Name="cellframework"
-				>
-				<Filter
-					Name="fileio"
-					>
-					<File
-						RelativePath="..\..\..\src\cellframework\fileio\FileBrowser.hpp"
+						RelativePath="..\..\..\snes_state\snes_state.h"
 						>
 					</File>
 				</Filter>
@@ -923,19 +1303,19 @@
 					Name="audio"
 					>
 					<File
-						RelativePath="..\..\..\src\cellframework2\audio\buffer.h"
+						RelativePath="..\..\..\cellframework2\audio\buffer.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\cellframework2\audio\resampler.h"
+						RelativePath="..\..\..\cellframework2\audio\resampler.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\cellframework2\audio\rsound.h"
+						RelativePath="..\..\..\cellframework2\audio\rsound.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\cellframework2\audio\stream.h"
+						RelativePath="..\..\..\cellframework2\audio\stream.h"
 						>
 					</File>
 				</Filter>
@@ -943,11 +1323,11 @@
 					Name="input"
 					>
 					<File
-						RelativePath="..\..\..\src\cellframework2\input\mouse_input.h"
+						RelativePath="..\..\..\cellframework2\input\mouse_input.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\cellframework2\input\pad_input.h"
+						RelativePath="..\..\..\cellframework2\input\pad_input.h"
 						>
 					</File>
 				</Filter>
@@ -955,7 +1335,15 @@
 					Name="utility"
 					>
 					<File
-						RelativePath="..\..\..\src\cellframework2\utility\oskutil.h"
+						RelativePath="..\..\..\cellframework2\utility\oskutil.h"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="fileio"
+					>
+					<File
+						RelativePath="..\..\..\cellframework2\fileio\file_browser.h"
 						>
 					</File>
 				</Filter>
@@ -964,230 +1352,182 @@
 				Name="emu"
 				>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\65c816.h"
+					RelativePath="..\..\..\..\src\65c816.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\bsx.h"
+					RelativePath="..\..\..\..\src\apu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\c4.h"
+					RelativePath="..\..\..\..\src\blargg_endian.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\cheats.h"
+					RelativePath="..\..\..\..\src\bsx.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\controls.h"
+					RelativePath="..\..\..\..\src\c4.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\cpuaddr.h"
+					RelativePath="..\..\..\..\src\cheats.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\cpuexec.h"
+					RelativePath="..\..\..\..\src\controls.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\cpumacro.h"
+					RelativePath="..\..\..\..\src\cpuaddr.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\cpuops.h"
+					RelativePath="..\..\..\..\src\cpuexec.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\crosshairs.h"
+					RelativePath="..\..\..\..\src\cpumacro.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\display.h"
+					RelativePath="..\..\..\..\src\cpuops.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\dma.h"
+					RelativePath="..\..\..\..\src\cpuops_.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\dsp.h"
+					RelativePath="..\..\..\..\src\crosshairs.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\font.h"
+					RelativePath="..\..\..\..\src\display.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\fxemu.h"
+					RelativePath="..\..\..\..\src\dma.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\fxinst.h"
+					RelativePath="..\..\..\..\src\dsp.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\getset.h"
+					RelativePath="..\..\..\..\src\fxemu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\gfx.h"
+					RelativePath="..\..\..\..\src\fxinst.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\language.h"
+					RelativePath="..\..\..\..\src\getset.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\memmap.h"
+					RelativePath="..\..\..\..\src\memmap.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\messages.h"
+					RelativePath="..\..\..\..\src\messages.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\obc1.h"
+					RelativePath="..\..\..\..\src\obc1.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\pixform.h"
+					RelativePath="..\..\..\..\src\pixform.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\port.h"
+					RelativePath="..\..\..\..\src\port.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\ppu.h"
+					RelativePath="..\..\..\..\src\ppu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\reader.h"
+					RelativePath="..\..\..\..\src\sa1.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\sa1.h"
+					RelativePath="..\..\..\..\src\sdd1.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\sar.h"
+					RelativePath="..\..\..\..\src\sdd1emu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\sdd1.h"
+					RelativePath="..\..\..\..\src\seta.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\sdd1emu.h"
+					RelativePath="..\..\..\..\src\snapshot.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\seta.h"
+					RelativePath="..\..\..\..\src\snes9x.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\snapshot.h"
+					RelativePath="..\..\..\..\src\spc7110.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\snes9x.h"
+					RelativePath="..\..\..\..\src\spc7110dec.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\spc7110.h"
+					RelativePath="..\..\..\..\src\spc7110emu.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\spc7110dec.h"
+					RelativePath="..\..\..\..\src\srtc.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\src\snes9x-next\spc7110emu.h"
+					RelativePath="..\..\..\..\src\tile.h"
 					>
 				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\srtc.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\srtcemu.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\..\src\snes9x-next\tile.h"
-					>
-				</File>
-				<Filter
-					Name="apu"
-					>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\apu.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\blargg_common.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\blargg_config.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\blargg_endian.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\blargg_source.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\SNES_SPC.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\SPC_CPU.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\..\src\snes9x-next\apu\SPC_DSP.h"
-						>
-					</File>
-				</Filter>
 				<Filter
 					Name="unzip"
 					>
 					<File
-						RelativePath="..\..\..\src\snes9x-next\unzip\crypt.h"
+						RelativePath="..\..\..\..\src\unzip\crypt.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x-next\unzip\ioapi.h"
+						RelativePath="..\..\..\..\src\unzip\ioapi.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x-next\unzip\iowin32.h"
+						RelativePath="..\..\..\..\src\unzip\iowin32.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x-next\unzip\mztools.h"
+						RelativePath="..\..\..\..\src\unzip\mztools.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x-next\unzip\unzip.h"
+						RelativePath="..\..\..\..\src\unzip\unzip.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x-next\unzip\zconf.h"
+						RelativePath="..\..\..\..\src\unzip\zconf.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x-next\unzip\zip.h"
+						RelativePath="..\..\..\..\src\unzip\zip.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\src\snes9x-next\unzip\zlib.h"
+						RelativePath="..\..\..\..\src\unzip\zlib.h"
 						>
 					</File>
 				</Filter>
@@ -1199,77 +1539,49 @@
 					Name="zlib"
 					>
 					<File
-						RelativePath="..\..\..\utils\zlib\deflate.h"
+						RelativePath="..\..\..\..\utils\zlib\crc32.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\gzguts.h"
+						RelativePath="..\..\..\..\utils\zlib\deflate.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\inffast.h"
+						RelativePath="..\..\..\..\utils\zlib\gzguts.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\inffixed.h"
+						RelativePath="..\..\..\..\utils\zlib\inffast.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\inflate.h"
+						RelativePath="..\..\..\..\utils\zlib\inffixed.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\inftrees.h"
+						RelativePath="..\..\..\..\utils\zlib\inflate.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\trees.h"
+						RelativePath="..\..\..\..\utils\zlib\inftrees.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\zconf.h"
+						RelativePath="..\..\..\..\utils\zlib\trees.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\zlib.h"
+						RelativePath="..\..\..\..\utils\zlib\zconf.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\..\utils\zlib\zutil.h"
+						RelativePath="..\..\..\..\utils\zlib\zlib.h"
 						>
 					</File>
-					<Filter
-						Name="contrib"
+					<File
+						RelativePath="..\..\..\..\utils\zlib\zutil.h"
 						>
-						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\crypt.h"
-							>
-						</File>
-						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\ioapi.h"
-							>
-						</File>
-						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\mztools.h"
-							>
-						</File>
-						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\unzip.h"
-							>
-						</File>
-						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\zconf.h"
-							>
-						</File>
-						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\zip.h"
-							>
-						</File>
-						<File
-							RelativePath="..\..\..\utils\zlib\contrib\minizip\zlib.h"
-							>
-						</File>
-					</Filter>
+					</File>
 				</Filter>
 			</Filter>
 		</Filter>
