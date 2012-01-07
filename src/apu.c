@@ -528,6 +528,7 @@ static INLINE void dsp_voice_V2( dsp_voice_t* const v )
 	entry = &dsp_m.ram [dsp_m.t_dir_addr];
 	if ( !v->kon_delay )
 		entry += 2;
+
 	dsp_m.t_brr_next_addr = GET_LE16( entry );
 
 	dsp_m.t_adsr0 = v->regs [V_ADSR0];
