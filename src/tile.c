@@ -1302,16 +1302,15 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic) \
 	{ \
 		int xx, yy, starty, AA, BB, CC, DD; \
+		int32 HOffset, VOffset, CentreX, CentreY; \
 		uint8 Pix, ctr; \
 		if (Line + VMosaic > GFX.EndY) \
 			VMosaic = GFX.EndY - Line + 1; \
 		\
-		\
-		int32	HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
-		int32	VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
-		\
-		int32	CentreX = ((int32) l->CentreX << 19) >> 19; \
-		int32	CentreY = ((int32) l->CentreY << 19) >> 19; \
+		HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
+		VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
+		CentreX = ((int32) l->CentreX << 19) >> 19; \
+		CentreY = ((int32) l->CentreY << 19) >> 19; \
 		\
 		if (PPU.Mode7VFlip) \
 			starty = 255 - (int) (Line + 1); \
