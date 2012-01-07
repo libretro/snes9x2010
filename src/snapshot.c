@@ -1251,7 +1251,7 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 	free(block);
 }
 
-static void S9xFreezeToStream (STREAM stream)
+void S9xFreezeToStream (STREAM stream)
 {
 	struct SDMASnapshot	dma_snap;
 	struct SControlSnapshot	ctl_snap;

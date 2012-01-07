@@ -277,6 +277,8 @@ void	InitROM (void);
 
 void	map_WriteProtectROM (void);
 
+uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf);
+
 struct SMulti
 {
 	int	cartType;

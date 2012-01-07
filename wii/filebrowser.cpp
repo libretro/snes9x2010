@@ -31,20 +31,19 @@
 #include "freeze.h"
 #include "sram.h"
 
+extern "C" {
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
 #include "../src/cheats.h"
-#include "../src/reader.h"
+}
 
 BROWSERINFO browser;
 BROWSERENTRY * browserList = NULL; // list of files/folders in browser
 
-unsigned long SNESROMSize = 0;
+uint32 SNESROMSize = 0;
 bool loadingFile = false;
 
 extern char * GetFirstZipFilename();
-extern bool8 ReadIPSPatch(Reader *r, long offset, int32 &rom_size);
-extern bool8 ReadUPSPatch(Reader *r, long, int32 &rom_size);
 
 /****************************************************************************
 * autoLoadMethod()
@@ -409,12 +408,11 @@ void StripExt(char* returnstring, char * inputstring)
 		*loc_dot = 0; // strip file extension
 }
 
-int CustomFileLoader()
+extern "C" int CustomFileLoader()
 {
 	int size;
 	char filepath[1024];
 
-	memset(Memory.NSRTHeader, 0, sizeof(Memory.NSRTHeader));
 	Memory.HeaderCount = 0;
 	loadingFile = true;
 
@@ -427,10 +425,11 @@ int CustomFileLoader()
 	if(size <= 0)
 		return 0;
 
-	SNESROMSize = Memory.HeaderRemove(size, Memory.HeaderCount, Memory.ROM);
+	SNESROMSize = HeaderRemove(size, &Memory.HeaderCount, Memory.ROM);
 	return SNESROMSize;
 }
 
+#if 0
 void CustomCheckForAnyPatch(unsigned char header, int32 rom_size)
 {
 	int patchtype;
@@ -454,6 +453,11 @@ void CustomCheckForAnyPatch(unsigned char header, int32 rom_size)
 		}
 	}
 }
+#endif
+extern "C" void CustomCheckForAnyPatch(unsigned char header, int32 rom_size)
+{
+}
+
 
 /****************************************************************************
  * BrowserLoadFile
@@ -480,7 +484,7 @@ int BrowserLoadFile()
 
 	SNESROMSize = 0;
 	S9xDeleteCheats();
-	Memory.LoadROM("ROM");
+	LoadROM("ROM");
 
 	if (SNESROMSize <= 0)
 	{

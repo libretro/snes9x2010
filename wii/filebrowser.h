@@ -52,7 +52,7 @@ enum
 	ICON_SMB
 };
 
-extern unsigned long SNESROMSize;
+extern uint32 SNESROMSize;
 extern bool loadingFile;
 
 bool MakeFilePath(char filepath[], int type, char * filename = NULL, int filenum = -2);

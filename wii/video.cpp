@@ -622,7 +622,7 @@ void MakeTexture (const void *src, void *dst, s32 width, s32 height)
 /****************************************************************************
  * Update Video
  ***************************************************************************/
-void S9xDeinitUpdate(int width, int height)
+extern "C" void S9xDeinitUpdate(int width, int height)
 {
 	vwidth = width;
 	vheight = height;

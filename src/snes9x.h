@@ -182,6 +182,10 @@
 #define VERSION	"Next"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "port.h"
 #include "65c816.h"
 #include "messages.h"
@@ -466,5 +470,9 @@ extern void S9xSetJoypadLatch (bool8 latch);
 extern uint8 S9xReadJOYSERn (int n);
 
 extern bool8 pad_read;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

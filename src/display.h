@@ -178,6 +178,10 @@
 #ifndef _DISPLAY_H_
 #define _DISPLAY_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum s9x_getdirtype
 {
 	DEFAULT_DIR = 0,
@@ -206,6 +210,10 @@ int CustomFileLoader(void);
 void S9xCustomLoadCheatFile(void);
 void CustomCheckForAnyPatch(bool8 header, int32 rom_size);
 bool8 CustomBSX_LoadBIOS(void);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

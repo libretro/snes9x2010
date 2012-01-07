@@ -730,7 +730,7 @@ static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, i
 	return (score);
 }
 
-static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
+uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
 {
 	uint32 calc_size;
 

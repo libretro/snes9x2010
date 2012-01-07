@@ -289,7 +289,7 @@ void _makepath (char * path, const char * a, const char * dir, const char * fnam
 #define strncasecmp _strnicmp
 #endif
 
-#if FAST_LSB_WORD_ACCESS
+#if defined(FAST_LSB_WORD_ACCESS)
 #define READ_WORD(s)		(*(uint16 *) (s))
 #define WRITE_WORD(s, d)	*(uint16 *) (s) = (d)
 #elif __SNC__
@@ -301,7 +301,7 @@ void _makepath (char * path, const char * a, const char * dir, const char * fnam
 #define WRITE_WORD(s, d)	*(uint8 *) (s) = (uint8) (d), *((uint8 *) (s) + 1) = (uint8) ((d) >> 8)
 #endif
 
-#if FAST_LSB_WORD_ACCESS
+#if defined(FAST_LSB_WORD_ACCESS)
 #define READ_3WORD(s)		(*(uint32 *) (s) & 0x00ffffff)
 #define READ_DWORD(s)		(*(uint32 *) (s))
 #define WRITE_3WORD(s, d)	*(uint16 *) (s) = (uint16) (d), *((uint8 *) (s) + 2) = (uint8) ((d) >> 16)

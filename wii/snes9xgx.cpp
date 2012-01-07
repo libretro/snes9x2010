@@ -42,14 +42,17 @@
 #include "input.h"
 #include "utils/FreeTypeGX.h"
 
-#include "../src/cheats.h"
 #include "../src/snes9x.h"
+extern "C" {
+#include "../src/cheats.h"
 #include "../src/memmap.h"
 #include "../src/apu.h"
 #include "../src/controls.h"
 #include "../src/snapshot.h"
 #include "../src/display.h"
 #include "../src/srtc.h"
+#include "../src/cpuexec.h"
+}
 
 #define MAX_MESSAGE_LEN (36 * 3)
 
@@ -82,7 +85,7 @@ static mutex_t audiomutex = LWP_MUTEX_NULL;
  * MixSamples
  * This continually calls S9xMixSamples On each DMA Completion
  ***************************************************************************/
-static void MixSamples()
+static void MixSamples (void)
 {
 	whichab ^= 1;
 	AUDIO_InitDMA ((u32) soundbuffer[whichab], AUDIOBUFFER);
@@ -100,7 +103,7 @@ static void FinalizeSamplesCallback(void)
 	LWP_MutexUnlock(audiomutex);
 }
 
-static void InitAudio ()
+static void InitAudio (void)
 {
 	AUDIO_Init(NULL);
 	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
@@ -139,7 +142,7 @@ static void SwitchAudioMode(int mode)
  *
  * Called to kick off the Audio Queue
  ***************************************************************************/
-static void AudioStart ()
+static void AudioStart (void)
 {
 	memset (soundbuffer[whichab], 0, AUDIOBUFFER);
 	MixSamples();
@@ -148,7 +151,7 @@ static void AudioStart ()
 /****************************************************************************
  * SNES9x implementation
  ***************************************************************************/
-void S9xMessage(int /*type */, int /*number */, const char *message)
+void S9xMessage(int type, int number, const char *message)
 {
 	static char buffer[MAX_MESSAGE_LEN + 1];
 	snprintf(buffer, MAX_MESSAGE_LEN, "%s", message);
@@ -228,7 +231,8 @@ bool LoadSRAM (char * filepath, bool silent)
 	if(!FindDevice(filepath, &device))
 		return 0;
 
-	ClearSRAM();
+	/* Clear SRAM */
+	memset(Memory.SRAM, SNESGameFixes.SRAMInitialValue, 0x20000);
 
 	int size = Memory.SRAMSize ? (1 << (Memory.SRAMSize + 3)) * 128 : 0;
 
@@ -506,7 +510,7 @@ int LoadSnapshotAuto (bool silent)
  * Shutdown / Reboot / Exit
  ***************************************************************************/
 
-void ExitCleanup()
+void ExitCleanup (void)
 {
 	AUDIO_StopDMA();
 	StopGX();
@@ -517,7 +521,7 @@ void ExitCleanup()
 	DI_Close();
 }
 
-void ExitApp()
+void ExitApp (void)
 {
 	ShutoffRumble();
 
@@ -562,11 +566,11 @@ void ExitApp()
 	}
 }
 
-void ShutdownCB()
+void ShutdownCB (void)
 {
 	ShutdownRequested = 1;
 }
-void ResetCB()
+void ResetCB (void)
 {
 	ResetRequested = 1;
 }
@@ -702,7 +706,7 @@ int main(int argc, char *argv[])
 	SetDefaultButtonMap ();
 
 	// Allocate SNES Memory
-	if (!Memory.Init ())
+	if (!Init ())
 		ExitApp();
 
 	// Allocate APU
@@ -760,7 +764,7 @@ int main(int argc, char *argv[])
 
 		do
 		{
-			S9xMainLoop ();
+			S9xMainLoop();
 			ReportButtons ();
 			while(!S9xSyncSound())
 				LWP_ThreadSleep(audioqueue);
