@@ -192,7 +192,9 @@
 
 static INLINE uint16 COLOR_SUB (uint16 C1, uint16 C2)
 {
-	uint16	mC1, mC2, v = ALPHA_BITS_MASK;
+	uint16	mC1, mC2, v;
+	
+	v = ALPHA_BITS_MASK;
 
 	mC1 = C1 & FIRST_COLOR_MASK;
 	mC2 = C2 & FIRST_COLOR_MASK;
@@ -217,10 +219,12 @@ static uint16 BlackColourMap[256] = {0};
 
 static void S9xBuildDirectColourMaps (void)
 {
+	uint32 p, c;
+
 	IPPU.XB = mul_brightness[PPU.Brightness];
 
-	for (uint32 p = 0; p < 8; p++)
-		for (uint32 c = 0; c < 256; c++)
+	for (p = 0; p < 8; p++)
+		for (c = 0; c < 256; c++)
 			DirectColourMaps[p][c] = BUILD_PIXEL(IPPU.XB[((c & 7) << 2) | ((p & 1) << 1)], IPPU.XB[((c & 0x38) >> 1) | (p & 2)], IPPU.XB[((c & 0xc0) >> 3) | (p & 4)]);
 
 	IPPU.DirectColourMapsNeedRebuild = FALSE;
@@ -232,11 +236,14 @@ static uint8	hrbit_even[256];
 
 void S9xInitTileRenderer (void)
 {
-	register int	i;
+	int	i;
 
 	for (i = 0; i < 16; i++)
 	{
-		register uint32	b = 0;
+		uint32 b;
+		uint8 bitshift;
+
+		b = 0;
 
 	#ifdef LSB_FIRST
 		if (i & 8)
@@ -258,14 +265,16 @@ void S9xInitTileRenderer (void)
 			b |= 1;
 	#endif
 
-		for (uint8 bitshift = 0; bitshift < 8; bitshift++)
+		for (bitshift = 0; bitshift < 8; bitshift++)
 			pixbit[bitshift][i] = b << bitshift;
 	}
 
 	for (i = 0; i < 256; i++)
 	{
-		register uint8	m = 0;
-		register uint8	s = 0;
+		uint8 m, s;
+
+		m = 0;
+		s = 0;
 
 		if (i & 0x80)
 			s |= 8;
@@ -302,16 +311,21 @@ void S9xInitTileRenderer (void)
 
 static uint8 ConvertTile2 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
-	register uint8	*tp      = &Memory.VRAM[TileAddr];
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	uint32 *p, non_zero;
+	uint8 line, *tp;
+
+	tp = &Memory.VRAM[TileAddr];
+
+	p       = (uint32 *) pCache;
+	non_zero = 0;
 
 	for (line = 8; line != 0; line--, tp += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
-		register uint8	pix;
+		uint32 p1, p2;
+		uint8 pix;
+
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -325,16 +339,20 @@ static uint8 ConvertTile2 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 
 static uint8 ConvertTile4 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
-	register uint8	*tp      = &Memory.VRAM[TileAddr];
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	uint8 line, *tp;
+	uint32 *p, non_zero;
+
+	tp      = &Memory.VRAM[TileAddr];
+	p       = (uint32 *) pCache;
+	non_zero = 0;
 
 	for (line = 8; line != 0; line--, tp += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
-		register uint8	pix;
+		uint32 p1, p2;
+		uint8 pix;
+
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -350,16 +368,20 @@ static uint8 ConvertTile4 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 
 static uint8 ConvertTile8 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
-	register uint8	*tp      = &Memory.VRAM[TileAddr];
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	uint8 *tp, line;
+	uint32 *p, non_zero;
+
+	tp      = &Memory.VRAM[TileAddr];
+	p       = (uint32 *) pCache;
+	non_zero = 0;
 
 	for (line = 8; line != 0; line--, tp += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
-		register uint8	pix;
+		uint32 p1, p2;
+		uint8	pix;
+
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -387,10 +409,12 @@ static uint8 ConvertTile8 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 
 static uint8 ConvertTile2h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 {
-	register uint8	*tp1     = &Memory.VRAM[TileAddr], *tp2;
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	uint8 *tp1, *tp2, line;
+	uint32 *p, non_zero;
+
+	tp1     = &Memory.VRAM[TileAddr];
+	p       = (uint32 *) pCache;
+	non_zero = 0;
 
 	if (Tile == 0x3ff)
 		tp2 = tp1 - (0x3ff << 4);
@@ -399,9 +423,11 @@ static uint8 ConvertTile2h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
-		register uint8	pix;
+		uint32 p1, p2;
+		uint8 pix;
+
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -415,10 +441,12 @@ static uint8 ConvertTile2h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 static uint8 ConvertTile4h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 {
-	register uint8	*tp1     = &Memory.VRAM[TileAddr], *tp2;
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	uint8 *tp1, *tp2, line;
+	uint32 *p, non_zero;
+
+	tp1     = &Memory.VRAM[TileAddr];
+	p       = (uint32 *) pCache;
+	non_zero = 0;
 
 	if (Tile == 0x3ff)
 		tp2 = tp1 - (0x3ff << 5);
@@ -427,9 +455,11 @@ static uint8 ConvertTile4h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
-		register uint8	pix;
+		uint32 p1, p2;
+		uint8	pix;
+
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -453,10 +483,12 @@ static uint8 ConvertTile4h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 static uint8 ConvertTile2h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 {
-	register uint8	*tp1     = &Memory.VRAM[TileAddr], *tp2;
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	uint8 *tp1, *tp2, line;
+	uint32 *p, non_zero;
+
+	tp1 = &Memory.VRAM[TileAddr];
+	p       = (uint32 *) pCache;
+	non_zero = 0;
 
 	if (Tile == 0x3ff)
 		tp2 = tp1 - (0x3ff << 4);
@@ -465,9 +497,11 @@ static uint8 ConvertTile2h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
-		register uint8	pix;
+		uint32 p1, p2;
+		uint8	pix;
+
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -481,10 +515,12 @@ static uint8 ConvertTile2h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 {
-	register uint8	*tp1     = &Memory.VRAM[TileAddr], *tp2;
-	uint32			*p       = (uint32 *) pCache;
-	uint32			non_zero = 0;
-	uint8			line;
+	uint8 *tp1, *tp2, line;
+	uint32 *p, non_zero;
+
+	tp1     = &Memory.VRAM[TileAddr];
+	p       = (uint32 *) pCache;
+	non_zero = 0;
 
 	if (Tile == 0x3ff)
 		tp2 = tp1 - (0x3ff << 5);
@@ -493,9 +529,11 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
-		uint32			p1 = 0;
-		uint32			p2 = 0;
-		register uint8	pix;
+		uint32 p1, p2;
+		uint8	pix;
+
+		p1 = 0;
+		p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -522,6 +560,7 @@ void S9xSelectTileRenderers_SFXSpeedup()
 	void	(**DT)		(uint32, uint32, uint32, uint32);
 	void	(**DCT)		(uint32, uint32, uint32, uint32, uint32, uint32);
 	void	(**DB)		(uint32, uint32, uint32);
+	int i;
 
 	DT     = Renderers_DrawTile16Normal1x1;
 	DCT    = Renderers_DrawClippedTile16Normal1x1;
@@ -532,7 +571,7 @@ void S9xSelectTileRenderers_SFXSpeedup()
 	GFX.DrawClippedTileNomath = DCT[0];
 	GFX.DrawBackdropNomath    = DB[0];
 
-	int	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
+	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
 	if (Memory.FillRAM[0x2131] & 0x40)
 	{
 		i++;
@@ -553,13 +592,14 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	void	(**DB)		(uint32, uint32, uint32);
 	void	(**DM7BG1)	(uint32, uint32, int);
 	void	(**DM7BG2)	(uint32, uint32, int);
-	bool8	M7M1, M7M2;
+	int i;
+	bool8	M7M1, M7M2, interlace, hires;
 
 	M7M1 = PPU.BGMosaic[0] && PPU.Mosaic > 1;
 	M7M2 = PPU.BGMosaic[1] && PPU.Mosaic > 1;
 
-	bool8 interlace = obj ? FALSE : IPPU.Interlace;
-	bool8 hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
+	interlace = obj ? FALSE : IPPU.Interlace;
+	hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
 
 	if (!IPPU.DoubleWidthPixels)	// normal width
 	{
@@ -625,7 +665,7 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	GFX.DrawMode7BG1Nomath    = DM7BG1[0];
 	GFX.DrawMode7BG2Nomath    = DM7BG2[0];
 
-	int	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
+	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
 	if (Memory.FillRAM[0x2131] & 0x40)
 	{
 		i++;
@@ -758,8 +798,8 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 /*****************************************************************************/
 
 #define GET_CACHED_TILE() \
-	uint32	TileNumber; \
-	uint32	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift); \
+	uint32	TileNumber, TileAddr; \
+	TileAddr = BG.TileAddress + ((Tile & 0x3ff) << BG.TileShift); \
 	if (Tile & 0x100) \
 		TileAddr += BG.NameSelect; \
 	TileAddr &= 0xffff; \
@@ -823,9 +863,8 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #define Z2	GFX.Z2
 
 #define DRAW_TILE() \
-	uint8			*pCache; \
-	register int32	l; \
-	register uint8	*bp, Pix; \
+	uint8	*pCache, *bp, Pix; \
+	int32	l; \
 	\
 	GET_CACHED_TILE(); \
 	if (IS_BLANK_TILE()) \
@@ -914,9 +953,8 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #define Z2	GFX.Z2
 
 #define DRAW_TILE() \
-	uint8			*pCache; \
-	register int32	l; \
-	register uint8	*bp, Pix, w; \
+	uint8	*pCache, *bp, Pix, w; \
+	int32	l; \
 	\
 	GET_CACHED_TILE(); \
 	if (IS_BLANK_TILE()) \
@@ -1022,9 +1060,8 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #define Z2	GFX.Z2
 
 #define DRAW_TILE() \
-	uint8			*pCache; \
-	register int32	l, w; \
-	register uint8	Pix; \
+	uint8	*pCache, Pix; \
+	int32	l, w; \
 	\
 	GET_CACHED_TILE(); \
 	if (IS_BLANK_TILE()) \
@@ -1076,7 +1113,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #define Pix				0
 
 #define DRAW_TILE() \
-	register uint32	l, x; \
+	uint32	l, x; \
 	\
 	GFX.RealScreenColors = IPPU.ScreenColors; \
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
@@ -1115,15 +1152,18 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 extern struct SLineMatrixData	LineMatrixData[240];
 
 #define NO_INTERLACE	1
-#define Z1				(D + 7)
-#define Z2				(D + 7)
-#define MASK			0xff
-#define DCMODE			(Memory.FillRAM[0x2130] & 1)
-#define BG				0
+#define Z1		(D + 7)
+#define Z2		(D + 7)
+#define MASK		0xff
+#define DCMODE		(Memory.FillRAM[0x2130] & 1)
+#define BG		0
 
 #define DRAW_TILE_NORMAL() \
-	uint32 x, Line; \
-	uint8	*VRAM1 = Memory.VRAM + 1; \
+	struct SLineMatrixData *l; \
+	uint32 x, Line, Offset; \
+	uint8	*VRAM1; \
+	int aa, cc, startx; \
+	VRAM1 = Memory.VRAM + 1; \
 	\
 	if (DCMODE) \
 	{ \
@@ -1135,22 +1175,19 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		GFX.RealScreenColors = IPPU.ScreenColors; \
 	\
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
-	\
-	int	aa, cc; \
-	int	startx; \
-	\
-	uint32	Offset = GFX.StartY * GFX.PPL; \
-	struct SLineMatrixData	*l = &LineMatrixData[GFX.StartY]; \
+	Offset = GFX.StartY * GFX.PPL; \
+	l = &LineMatrixData[GFX.StartY]; \
 	\
 	for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
 	{ \
-		int	yy, starty; \
+		int AA, BB, CC, DD, xx, yy, starty; \
+		int32 HOffset, VOffset, CentreX, CentreY; \
+		uint8 Pix; \
 		\
-		int32	HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
-		int32	VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
-		\
-		int32	CentreX = ((int32) l->CentreX << 19) >> 19; \
-		int32	CentreY = ((int32) l->CentreY << 19) >> 19; \
+		HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
+		VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
+		CentreX = ((int32) l->CentreX << 19) >> 19; \
+		CentreY = ((int32) l->CentreY << 19) >> 19; \
 		\
 		if (PPU.Mode7VFlip) \
 			starty = 255 - (int) (Line + 1); \
@@ -1158,9 +1195,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
 			starty = Line + 1; \
 		\
 		yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
-		\
-		int	BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
-		int	DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
 		\
 		if (PPU.Mode7HFlip) \
 		{ \
@@ -1174,22 +1210,21 @@ extern struct SLineMatrixData	LineMatrixData[240];
 			aa = l->MatrixA; \
 			cc = l->MatrixC; \
 		} \
-		\
-		int	xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
-		int	AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
-		int	CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
-		\
-		uint8	Pix; \
-		\
+		xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
 		if (!PPU.Mode7Repeat) \
 		{ \
 			for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
 			{ \
-				int	X = ((AA + BB) >> 8) & 0x3ff; \
-				int	Y = ((CC + DD) >> 8) & 0x3ff; \
+				int X, Y; \
+				uint8 *TileData, b; \
 				\
-				uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
-				uint8	b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+				X = ((AA + BB) >> 8) & 0x3ff; \
+				Y = ((CC + DD) >> 8) & 0x3ff; \
+				\
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
 				\
 				DRAW_PIXEL(x, Pix = (b & MASK)); \
 			} \
@@ -1198,14 +1233,14 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		{ \
 			for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
 			{ \
-				int	X = ((AA + BB) >> 8); \
-				int	Y = ((CC + DD) >> 8); \
-				\
-				uint8	b; \
+				int X, Y; \
+				uint8 *TileData, b; \
+				X = ((AA + BB) >> 8); \
+				Y = ((CC + DD) >> 8); \
 				\
 				if (((X | Y) & ~0x3ff) == 0) \
 				{ \
-					uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
 				} \
 				else \
@@ -1220,9 +1255,12 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	}
 
 #define DRAW_TILE_MOSAIC() \
-	uint32 Line; \
-	int32 h, w, x; \
-	uint8	*VRAM1 = Memory.VRAM + 1; \
+	struct SLineMatrixData *l; \
+	uint32 Line, Offset; \
+	int32 h, w, x, MLeft, MRight; \
+	int	aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart; \
+	uint8 *VRAM1; \
+	VRAM1 = Memory.VRAM + 1; \
 	\
 	if (DCMODE) \
 	{ \
@@ -1235,11 +1273,13 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	\
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
 	\
-	int	aa, cc; \
-	int	startx, StartY = GFX.StartY; \
 	\
-	int		HMosaic = 1, VMosaic = 1, MosaicStart = 0; \
-	int32	MLeft = Left, MRight = Right; \
+	StartY = GFX.StartY; \
+	HMosaic = 1; \
+	VMosaic = 1; \
+	MosaicStart = 0; \
+	MLeft = Left; \
+	MRight = Right; \
 	\
 	if (PPU.BGMosaic[0]) \
 	{ \
@@ -1256,15 +1296,16 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		MRight -= MRight % HMosaic; \
 	} \
 	\
-	uint32	Offset = StartY * GFX.PPL; \
-	struct SLineMatrixData	*l = &LineMatrixData[StartY]; \
+	Offset = StartY * GFX.PPL; \
+	l = &LineMatrixData[StartY]; \
 	\
 	for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic) \
 	{ \
+		int xx, yy, starty, AA, BB, CC, DD; \
+		uint8 Pix, ctr; \
 		if (Line + VMosaic > GFX.EndY) \
 			VMosaic = GFX.EndY - Line + 1; \
 		\
-		int	yy, starty; \
 		\
 		int32	HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
 		int32	VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
@@ -1278,9 +1319,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
 			starty = Line + 1; \
 		\
 		yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
-		\
-		int	BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
-		int	DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
 		\
 		if (PPU.Mode7HFlip) \
 		{ \
@@ -1295,26 +1335,25 @@ extern struct SLineMatrixData	LineMatrixData[240];
 			cc = l->MatrixC; \
 		} \
 		\
-		int	xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
-		int	AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
-		int	CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
-		\
-		uint8	Pix; \
-		uint8	ctr = 1; \
+		xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
+		ctr = 1; \
 		\
 		if (!PPU.Mode7Repeat) \
 		{ \
 			for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc) \
 			{ \
+				int X, Y; \
+				uint8 *TileData, b; \
 				if (--ctr) \
 					continue; \
 				ctr = HMosaic; \
 				\
-				int	X = ((AA + BB) >> 8) & 0x3ff; \
-				int	Y = ((CC + DD) >> 8) & 0x3ff; \
-				\
-				uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
-				uint8	b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+				X = ((AA + BB) >> 8) & 0x3ff; \
+				Y = ((CC + DD) >> 8) & 0x3ff; \
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
 				\
 				if ((Pix = (b & MASK))) \
 				{ \
@@ -1330,18 +1369,17 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		{ \
 			for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc) \
 			{ \
+				int X, Y; \
+				uint8 b, *TileData; \
 				if (--ctr) \
 					continue; \
 				ctr = HMosaic; \
-				\
-				int	X = ((AA + BB) >> 8); \
-				int	Y = ((CC + DD) >> 8); \
-				\
-				uint8	b; \
+				X = ((AA + BB) >> 8); \
+				Y = ((CC + DD) >> 8); \
 				\
 				if (((X | Y) & ~0x3ff) == 0) \
 				{ \
-					uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
 					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
 				} \
 				else \
