@@ -31,12 +31,12 @@ else ifeq ($(platform), xenon)
    TARGET := libsnes.a
    CC = xenon-gcc
    AR = xenon-ar
-   CFLAGS += -D__LIBXENON__ -m32
+   CFLAGS += -D__LIBXENON__ -m32 -D__ppc__
 else ifeq ($(platform), wii)
    TARGET := libsnes.a
    CC = powerpc-eabi-gcc
    AR = powerpc-eabi-ar
-   CFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+   CFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float -DBLARGG_BIG_ENDIAN=1 -D__ppc__
 else
    TARGET := snes.dll
    CC = gcc
