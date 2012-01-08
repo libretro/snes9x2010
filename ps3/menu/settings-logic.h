@@ -18,9 +18,9 @@ static void apply_scaling(void)
 
 static void producesettingentry(uint64_t switchvalue)
 {
-	uint64_t state = cell_pad_input_poll_device(0);
-	//static uint64_t old_state = 0;
-	//uint64_t diff_state = old_state ^ state;
+	uint64_t state;
+
+	state = cell_pad_input_poll_device(0);
 
 	switch(switchvalue)
 	{
@@ -30,12 +30,12 @@ static void producesettingentry(uint64_t switchvalue)
 				if(Settings.CurrentSaveStateSlot != 0)
 					Settings.CurrentSaveStateSlot--;
 
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				Settings.CurrentSaveStateSlot++;
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 
 			if(CTRL_START(state))
@@ -46,12 +46,12 @@ static void producesettingentry(uint64_t switchvalue)
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) )
 			{
 				ps3graphics_next_resolution();
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) )
 			{
 				ps3graphics_previous_resolution();
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_CROSS(state))
 			{
@@ -176,7 +176,7 @@ static void producesettingentry(uint64_t switchvalue)
 				if(Settings.PS3FontSize > 0) 
 				{
 					Settings.PS3FontSize--;
-					sys_timer_usleep(FILEBROWSER_DELAY);
+					set_text_message("", 7);
 				}
 			}
 			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -184,7 +184,7 @@ static void producesettingentry(uint64_t switchvalue)
 				if((Settings.PS3FontSize < 200))
 				{
 					Settings.PS3FontSize++;
-					sys_timer_usleep(FILEBROWSER_DELAY);
+					set_text_message("", 7);
 				}
 			}
 			if(CTRL_START(state))
@@ -197,7 +197,7 @@ static void producesettingentry(uint64_t switchvalue)
 				{
 					Settings.PS3KeepAspect--;
 					ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, SCREEN_RENDER_TEXTURE_WIDTH, SCREEN_RENDER_TEXTURE_HEIGHT, 1);
-					sys_timer_usleep(SETTINGS_DELAY);
+					set_text_message("", 7);
 				}
 			}
 			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state))
@@ -206,14 +206,14 @@ static void producesettingentry(uint64_t switchvalue)
 				{
 					Settings.PS3KeepAspect++;
 					ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, SCREEN_RENDER_TEXTURE_WIDTH, SCREEN_RENDER_TEXTURE_HEIGHT, 1);
-					sys_timer_usleep(SETTINGS_DELAY);
+					set_text_message("", 7);
 				}
 			}
 			if(CTRL_START(state))
 			{
 				Settings.PS3KeepAspect = ASPECT_RATIO_4_3;
 				ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, SCREEN_RENDER_TEXTURE_WIDTH, SCREEN_RENDER_TEXTURE_HEIGHT, 1);
-				sys_timer_usleep(SETTINGS_DELAY);
+				set_text_message("", 7);
 			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
@@ -221,7 +221,7 @@ static void producesettingentry(uint64_t switchvalue)
 			{
 				Settings.PS3Smooth = !Settings.PS3Smooth;
 				ps3graphics_set_smooth(Settings.PS3Smooth, 0);
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 			{
@@ -234,7 +234,7 @@ static void producesettingentry(uint64_t switchvalue)
 			{
 				Settings.PS3Smooth2 = !Settings.PS3Smooth2;
 				ps3graphics_set_smooth(Settings.PS3Smooth2, 1);
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 			{
@@ -254,7 +254,7 @@ static void producesettingentry(uint64_t switchvalue)
 					Settings.ScaleFactor = 1;
 					ps3graphics_set_fbo_scale(0, 2);
 				}
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 			{
@@ -271,7 +271,7 @@ static void producesettingentry(uint64_t switchvalue)
 					Settings.ScaleFactor -= 1;
 					apply_scaling();
 				}
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
@@ -280,7 +280,7 @@ static void producesettingentry(uint64_t switchvalue)
 					Settings.ScaleFactor += 1;
 					apply_scaling();
 				}
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 			{
@@ -298,7 +298,7 @@ static void producesettingentry(uint64_t switchvalue)
 					Settings.PS3OverscanEnabled = 0;
 
 				ps3graphics_set_overscan(Settings.PS3OverscanEnabled, (float)Settings.PS3OverscanAmount/100, 1);
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
@@ -324,7 +324,7 @@ static void producesettingentry(uint64_t switchvalue)
 				{
 					Settings.SoundMode--;
 					emulator_toggle_sound(Settings.SoundMode);
-					sys_timer_usleep(FILEBROWSER_DELAY);
+					set_text_message("", 7);
 				}
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
@@ -333,14 +333,14 @@ static void producesettingentry(uint64_t switchvalue)
 				{
 					Settings.SoundMode++;
 					emulator_toggle_sound(Settings.SoundMode);
-					sys_timer_usleep(FILEBROWSER_DELAY);
+					set_text_message("", 7);
 				}
 			}
 			if(CTRL_START(state))
 			{
 				Settings.SoundMode = SOUND_MODE_NORMAL;
 				emulator_toggle_sound(Settings.SoundMode);
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			break;
 		case SETTING_RSOUND_SERVER_IP_ADDRESS:
@@ -369,7 +369,7 @@ static void producesettingentry(uint64_t switchvalue)
 			{
 				Settings.Throttled = !Settings.Throttled;
 				ps3graphics_set_vsync(Settings.Throttled);
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 			{
@@ -383,7 +383,7 @@ static void producesettingentry(uint64_t switchvalue)
 				Settings.TripleBuffering = !Settings.TripleBuffering;
 				ps3graphics_set_triple_buffering(Settings.TripleBuffering);
 				ps3graphics_switch_resolution(ps3graphics_get_current_resolution(), Settings.PS3PALTemporalMode60Hz, Settings.TripleBuffering, Settings.ScaleEnabled, Settings.ScaleFactor);
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 			{
@@ -416,7 +416,7 @@ static void producesettingentry(uint64_t switchvalue)
 					cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 				}
 
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 #endif
 			}
 			if(CTRL_START(state))
@@ -496,21 +496,20 @@ static void producesettingentry(uint64_t switchvalue)
 				emulator_toggle_sound(Settings.SoundMode);
 			}
 			break;
-			// display framerate on/off
 		case SETTING_SNES9X_SOUND_INPUT_RATE:
 			if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state) )
 			{
 				if(Settings.SoundInputRate > 30000)
 					Settings.SoundInputRate--;
 
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
 				if(Settings.SoundInputRate < 32000) // SNES APU has an input rate of 32000, no higher
 					Settings.SoundInputRate++;
 
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 
 			if(CTRL_START(state))
@@ -521,7 +520,7 @@ static void producesettingentry(uint64_t switchvalue)
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
 			{
 				*(menu_emu_audiosettings.items[switchvalue].setting_ptr) = !(*(menu_emu_audiosettings.items[switchvalue].setting_ptr));
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 
 			if(CTRL_START(state))
@@ -533,7 +532,7 @@ static void producesettingentry(uint64_t switchvalue)
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state) || CTRL_CROSS(state))
 			{
 				*(menu_emu_settings.items[switchvalue].setting_ptr) = !(*(menu_emu_settings.items[switchvalue].setting_ptr));
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 
 			if(CTRL_START(state))
@@ -545,7 +544,7 @@ static void producesettingentry(uint64_t switchvalue)
 				Settings.ForcePAL = !Settings.ForcePAL;
 				if(Settings.ForceNTSC)
 					Settings.ForceNTSC = 0;
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 
 			if(CTRL_START(state))
@@ -557,7 +556,7 @@ static void producesettingentry(uint64_t switchvalue)
 				Settings.ForceNTSC = !Settings.ForceNTSC;
 				if(Settings.ForcePAL)
 					Settings.ForcePAL = 0;
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 
 			if(CTRL_START(state))
@@ -568,12 +567,12 @@ static void producesettingentry(uint64_t switchvalue)
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) )
 			{
 				Settings.FrameTimePAL = 16667;
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) )
 			{
 				Settings.FrameTimePAL = 20000;
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 				Settings.FrameTimePAL = 20000;
@@ -584,13 +583,13 @@ static void producesettingentry(uint64_t switchvalue)
 			{
 				if(Settings.AccessoryAutoDetection != ACCESSORY_AUTODETECTION_CONFIRM)
 					Settings.AccessoryAutoDetection--;
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				if(Settings.AccessoryAutoDetection != ACCESSORY_AUTODETECTION_NONE)
 					Settings.AccessoryAutoDetection++;
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 				Settings.AccessoryAutoDetection = ACCESSORY_AUTODETECTION_CONFIRM;
@@ -602,7 +601,7 @@ static void producesettingentry(uint64_t switchvalue)
 					Settings.AccessoryType = 0;
 				else
 					Settings.AccessoryType = 1;
-				sys_timer_usleep(FILEBROWSER_DELAY);
+				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 				Settings.AccessoryType = 0;
@@ -689,5 +688,5 @@ static void producesettingentry(uint64_t switchvalue)
 				strcpy(Settings.PS3PathSRAM, "");
 			}
 			break;
-	} // end of switch
+	}
 }

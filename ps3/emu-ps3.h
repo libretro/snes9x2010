@@ -104,7 +104,7 @@ extern char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 extern oskutil_params oskutil_handle;
 extern uint64_t mode_switch;
 
-extern uint32_t special_action_msg_expired;			// time at which the message no longer needs to be overlaid onscreen
+extern uint32_t special_action_msg_expired; /* time at which the message no longer needs to be overlaid onscreen */
 
 #endif /* EMULATOR_IMPLEMENTATION_H_ */
 

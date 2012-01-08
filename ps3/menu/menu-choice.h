@@ -1,6 +1,13 @@
 static void do_select_file(uint32_t menu_id)
 {
-	char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH];
+	char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
+	path[MAX_PATH_LENGTH], *separatorslash;
+	uint64_t state, diff_state, button_was_pressed;
+	static uint64_t old_state = 0;
+
+	state = cell_pad_input_poll_device(0);
+	diff_state = old_state ^ state;
+	button_was_pressed = old_state & diff_state;
 
 	switch(menu_id)
 	{
@@ -50,13 +57,6 @@ static void do_select_file(uint32_t menu_id)
 		set_initial_dir_tmpbrowser = false;
 	}
 
-	char path[MAX_PATH_LENGTH];
-
-	uint64_t state = cell_pad_input_poll_device(0);
-	static uint64_t old_state = 0;
-	uint64_t diff_state = old_state ^ state;
-	uint64_t button_was_pressed = old_state & diff_state;
-
 	UpdateBrowser(&tmpBrowser);
 
 	if (CTRL_START(button_was_pressed))
@@ -66,7 +66,8 @@ static void do_select_file(uint32_t menu_id)
 	{
 		if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
 		{
-			//if 'filename' is in fact '..' - then pop back directory instead of adding '..' to filename path
+			/*if 'filename' is in fact '..' - then pop back directory instead of 
+			adding '..' to filename path */
 			if(tmpBrowser.currently_selected == 0)
 			{
 				old_state = state;
@@ -74,7 +75,7 @@ static void do_select_file(uint32_t menu_id)
 			}
 			else
 			{
-                                const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
+                                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
 				snprintf(path, sizeof(path), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
 				filebrowser_push_directory(&tmpBrowser, path, true);
 			}
@@ -128,19 +129,19 @@ static void do_select_file(uint32_t menu_id)
 
 static void do_pathChoice(uint32_t menu_id)
 {
+        char path[1024], newpath[1024], *separatorslash;
+	uint64_t state, diff_state, button_was_pressed;
+        static uint64_t old_state = 0;
+
+        state = cell_pad_input_poll_device(0);
+        diff_state = old_state ^ state;
+        button_was_pressed = old_state & diff_state;
+
 	if(set_initial_dir_tmpbrowser)
 	{
 		filebrowser_new(&tmpBrowser, "/\0", "empty");
 		set_initial_dir_tmpbrowser = false;
 	}
-
-        char path[1024];
-        char newpath[1024];
-
-        uint64_t state = cell_pad_input_poll_device(0);
-        static uint64_t old_state = 0;
-        uint64_t diff_state = old_state ^ state;
-        uint64_t button_was_pressed = old_state & diff_state;
 
         UpdateBrowser(&tmpBrowser);
 
@@ -194,7 +195,9 @@ static void do_pathChoice(uint32_t menu_id)
         {
                 if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(tmpBrowser))
                 {
-                        //if 'filename' is in fact '..' - then pop back directory instead of adding '..' to filename path
+                        /* if 'filename' is in fact '..' - then pop back 
+			directory instead of adding '..' to filename path */
+
                         if(tmpBrowser.currently_selected == 0)
                         {
                                 old_state = state;
@@ -202,18 +205,20 @@ static void do_pathChoice(uint32_t menu_id)
                         }
                         else
                         {
-                                const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
+                                separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser),"/") == 0) ? "" : "/";
                                 snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(tmpBrowser));
                                 filebrowser_push_directory(&tmpBrowser, newpath, false);
                         }
                 }
         }
 
-        cellDbgFontPrintf (0.09f,  0.09f, Emulator_GetFontSize(), YELLOW,  "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
+        cellDbgFontPrintf (0.09f,  0.09f, Emulator_GetFontSize(), YELLOW, 
+	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(tmpBrowser));
         cellDbgFontPuts (0.09f, 0.05f,  Emulator_GetFontSize(), RED,    "DIRECTORY SELECTION");
-        cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,"X - Enter dir  /\\ - return to settings  START - Reset Startdir");
+        cellDbgFontPuts(0.09f, 0.93f, 0.92f, YELLOW,
+	"X - Enter dir  /\\ - return to settings  START - Reset Startdir");
         cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s",
-                        "INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
+	"INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
         cellDbgFontDraw();
 
         RenderBrowser(&tmpBrowser);

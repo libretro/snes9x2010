@@ -61,7 +61,6 @@ static void DisplayHelpMessage(int currentsetting)
 			print_help_message(menu_generalaudiosettings, currentsetting);
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-			//case SETTING_SNES9X_SKIP_FRAMES:
 		case SETTING_SNES9X_PAL_TIMING:
 		case SETTING_EMU_DEFAULT_ALL:
 			print_help_message(menu_emu_settings, currentsetting);

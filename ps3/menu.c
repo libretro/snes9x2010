@@ -9,7 +9,7 @@
 
 #include "cellframework2/input/pad_input.h"
 
-//emulator-specific
+/*emulator-specific*/
 #include "../src/snes9x.h"
 #include "emu-ps3.h"
 
@@ -22,28 +22,114 @@
 
 #define NUM_ENTRY_PER_PAGE 19
 
+#define ROM_EXTENSIONS "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|jma|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP|JMA"
+
 menu menuStack[25];
 int menuStackindex = 0;
-uint32_t menu_is_running = false;		// is the menu running?
+uint32_t menu_is_running = false;		/* is the menu running?*/
 bool update_item_colors = true;
 static bool set_initial_dir_tmpbrowser;
-filebrowser_t browser;				// main file browser->for rom browser
-filebrowser_t tmpBrowser;			// tmp file browser->for everything else
+filebrowser_t browser;				/* main file browser->for rom browser*/
+filebrowser_t tmpBrowser;			/* tmp file browser->for everything else*/
+uint32_t set_shader = 0;
+static uint32_t currently_selected_controller_menu = 0;
 
-#include "menu/menu-logic.h"
+#include "menu/menu-entries.h"
 
-#define FILEBROWSER_DELAY              100000
-#define FILEBROWSER_DELAY_DIVIDED_BY_3 33333
-#define SETTINGS_DELAY                 150000	
+static menu menu_filebrowser = {
+	"FILE BROWSER |",		// title
+	FILE_BROWSER_MENU,		// enum
+	0,				// selected item
+	0,				// page
+	1,				// refreshpage
+	NULL				// items
+};
 
-#define ROM_EXTENSIONS "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|jma|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP|JMA"
+static menu menu_generalvideosettings = {
+	"VIDEO |",			// title
+	GENERAL_VIDEO_MENU,		// enum
+	FIRST_VIDEO_SETTING,		// selected item
+	0,				// page
+	1,				// refreshpage
+	FIRST_VIDEO_SETTING,		// first setting
+	MAX_NO_OF_VIDEO_SETTINGS,	// max no of path settings
+	items_generalsettings		// items
+};
+
+static menu menu_generalaudiosettings = {
+	"AUDIO |",			// title
+	GENERAL_AUDIO_MENU,		// enum
+	FIRST_AUDIO_SETTING,		// selected item
+	0,				// page
+	1,				// refreshpage
+	FIRST_AUDIO_SETTING,		// first setting
+	MAX_NO_OF_AUDIO_SETTINGS,	// max no of path settings
+	items_generalsettings		// items
+};
+
+static menu menu_emu_settings = {
+	"SNES9X |",			// title
+	EMU_GENERAL_MENU,		// enum
+	FIRST_EMU_SETTING,		// selected item
+	0,				// page
+	1,                      	// refreshpage
+	FIRST_EMU_SETTING,		// first setting
+	MAX_NO_OF_EMU_SETTINGS,		// max no of path settings
+	items_generalsettings		// items
+};
+
+static menu menu_emu_audiosettings = {
+	"SNES9X AUDIO |",		// title
+	EMU_AUDIO_MENU,			// enum
+	FIRST_EMU_AUDIO_SETTING,	// selected item
+	0,				// page
+	1,				// refreshpage
+	FIRST_EMU_AUDIO_SETTING,	// first setting
+	MAX_NO_OF_EMU_AUDIO_SETTINGS,	// max no of path settings
+	items_generalsettings		// items
+};
+
+static menu menu_pathsettings = {
+	"PATH |",			// title
+	PATH_MENU,			// enum
+	FIRST_PATH_SETTING,		// selected item
+	0,				// page
+	1,				// refreshpage
+	FIRST_PATH_SETTING,		// first setting
+	MAX_NO_OF_PATH_SETTINGS,	// max no of path settings
+	items_generalsettings		// items
+};
+
+static menu menu_controlssettings = {
+	"CONTROLS |",			// title
+	CONTROLS_MENU,			// enum
+	FIRST_CONTROLS_SETTING_PAGE_1,	// selected item
+	0,				// page
+	1,				// refreshpage
+	FIRST_CONTROLS_SETTING_PAGE_1,	// first setting
+	MAX_NO_OF_CONTROLS_SETTINGS,	// max no of path settings
+	items_generalsettings		// items
+};
+
+static void produce_menubar(uint32_t menu_enum)
+{
+	cellDbgFontPuts    (0.09f,  0.05f,  Emulator_GetFontSize(),  menu_enum == GENERAL_VIDEO_MENU ? RED : GREEN,   menu_generalvideosettings.title);
+	cellDbgFontPuts    (0.19f,  0.05f,  Emulator_GetFontSize(),  menu_enum == GENERAL_AUDIO_MENU ? RED : GREEN,  menu_generalaudiosettings.title);
+	cellDbgFontPuts    (0.29f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_GENERAL_MENU ? RED : GREEN,  menu_emu_settings.title);
+	cellDbgFontPuts    (0.40f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_AUDIO_MENU ? RED : GREEN,   menu_emu_audiosettings.title);
+	cellDbgFontPuts    (0.60f,  0.05f,  Emulator_GetFontSize(),  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
+	cellDbgFontPuts    (0.70f,  0.05f,  Emulator_GetFontSize(), menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
+	cellDbgFontDraw();
+}
 
 static void UpdateBrowser(filebrowser_t * b)
 {
 	static uint64_t old_state = 0;
-	uint64_t state = cell_pad_input_poll_device(0);
-	uint64_t diff_state = old_state ^ state;
-	uint64_t button_was_pressed = old_state & diff_state;
+	uint64_t state, diff_state, button_was_pressed;
+
+	state = cell_pad_input_poll_device(0);
+	diff_state = old_state ^ state;
+	button_was_pressed = old_state & diff_state;
 
 	if(frame_count < special_action_msg_expired)
 	{
@@ -143,7 +229,7 @@ static void UpdateBrowser(filebrowser_t * b)
 
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
-			// if a rom is loaded then resume it
+			/* if a rom is loaded then resume it */
 			if (Emulator_IsROMLoaded())
 			{
 				menu_is_running = 0;
@@ -159,15 +245,18 @@ static void UpdateBrowser(filebrowser_t * b)
 static void RenderBrowser(filebrowser_t * b)
 {
 	uint32_t file_count = b->file_count;
-	int current_index = b->currently_selected;
+	int current_index, page_number, page_base, i;
+	float currentX, currentY, ySpacing;
 
-	int page_number = current_index / NUM_ENTRY_PER_PAGE;
-	int page_base = page_number * NUM_ENTRY_PER_PAGE;
-	float currentX = 0.09f;
-	float currentY = 0.09f;
-	float ySpacing = 0.035f;
+	current_index = b->currently_selected;
+	page_number = current_index / NUM_ENTRY_PER_PAGE;
+	page_base = page_number * NUM_ENTRY_PER_PAGE;
 
-	for (int i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
+	currentX = 0.09f;
+	currentY = 0.09f;
+	ySpacing = 0.035f;
+
+	for ( i = page_base; i < file_count && i < page_base + NUM_ENTRY_PER_PAGE; ++i)
 	{
 		currentY = currentY + ySpacing;
 		cellDbgFontPuts(currentX, currentY, Emulator_GetFontSize(), i == current_index ? RED : b->cur[i].d_type == CELL_FS_TYPE_DIRECTORY ? GREEN : WHITE, b->cur[i].d_name);
@@ -198,17 +287,19 @@ static void RenderBrowser(filebrowser_t * b)
 
 static void do_controls_settings(void)
 {
-	uint64_t state = cell_pad_input_poll_device(0);
+	uint64_t state, diff_state, button_was_pressed;
 	static uint64_t old_state = 0;
-	uint64_t diff_state = old_state ^ state;
-	uint64_t button_was_pressed = old_state & diff_state;
+
+	state = cell_pad_input_poll_device(0);
+	diff_state = old_state ^ state;
+	button_was_pressed = old_state & diff_state;
 
 	if(frame_count < special_action_msg_expired)
 	{
 	}
 	else
 	{
-		// back to ROM menu if CIRCLE is pressed
+		/* back to ROM menu if CIRCLE is pressed*/
 		if (CTRL_L1(button_was_pressed) || CTRL_CIRCLE(button_was_pressed))
 		{
 			menuStackindex--;
@@ -216,7 +307,7 @@ static void do_controls_settings(void)
 			return;
 		}
 
-		if (CTRL_DOWN(state)  || CTRL_LSTICK_DOWN(state))	// down to next setting
+		if (CTRL_DOWN(state)  || CTRL_LSTICK_DOWN(state))	/* down to next setting*/
 		{
 			menu_controlssettings.selected++;
 
@@ -241,7 +332,7 @@ static void do_controls_settings(void)
 			}
 		}
 
-		if (CTRL_UP(state)  || CTRL_LSTICK_UP(state))	// up to previous setting
+		if (CTRL_UP(state)  || CTRL_LSTICK_UP(state))	/* up to previous setting*/
 		{
 			menu_controlssettings.selected--;
 
@@ -282,7 +373,7 @@ static void do_controls_settings(void)
 
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
-			// if a rom is loaded then resume it
+			/* if a rom is loaded then resume it*/
 			if (Emulator_IsROMLoaded())
 			{
 				menu_is_running = 0;
@@ -385,13 +476,13 @@ static void do_controls_settings(void)
 					emulator_set_controls("", SET_ALL_CONTROLS_TO_DEFAULT, "Default");
 				}
 				break;
-		} // end of switch 
+		}
 	}
 
 	produce_menubar(menu_controlssettings.enum_id);
 	cellDbgFontDraw();
 
-//PAGE 1
+/*PAGE 1*/
 if(menu_controlssettings.page == 0)
 {
 	cellDbgFontPuts(0.09f,	menu_controlssettings.items[SETTING_CONTROLS_SCHEME].text_ypos,	Emulator_GetFontSize(),	menu_controlssettings.selected == SETTING_CONTROLS_SCHEME ? YELLOW : WHITE,	menu_controlssettings.items[SETTING_CONTROLS_SCHEME].text);
@@ -408,7 +499,7 @@ if(menu_controlssettings.page == 0)
 	}
 }
 
-//PAGE 2
+/*PAGE 2*/
 if(menu_controlssettings.page == 1)
 {
 	for(int i = FIRST_CONTROLS_SETTING_PAGE_2; i < SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS; i++)
@@ -439,10 +530,13 @@ if(menu_controlssettings.page == 1)
 
 static void do_settings(menu * menu_obj)
 {
-	uint64_t state = cell_pad_input_poll_device(0);
+	uint64_t state, diff_state, button_was_pressed, i;
 	static uint64_t old_state = 0;
-	uint64_t diff_state = old_state ^ state;
-	uint64_t button_was_pressed = old_state & diff_state;
+	float increment;
+
+	state = cell_pad_input_poll_device(0);
+	diff_state = old_state ^ state;
+	button_was_pressed = old_state & diff_state;
 
 	if(update_item_colors)
 	{
@@ -452,8 +546,8 @@ static void do_settings(menu * menu_obj)
 
 	if (menu_obj->refreshpage)
 	{
-		float increment = 0.13f;
-		for (int i= menu_obj->first_setting; i < menu_obj->max_settings; i++)
+		increment = 0.13f;
+		for ( i= menu_obj->first_setting; i < menu_obj->max_settings; i++)
 		{
 			menu_obj->items[i].text_xpos = 0.09f;
 			menu_obj->items[i].text_ypos = increment; 
@@ -467,7 +561,7 @@ static void do_settings(menu * menu_obj)
 	}
 	else
 	{
-		// back to ROM menu if CIRCLE is pressed
+		/* back to ROM menu if CIRCLE is pressed */
 		if (CTRL_L1(button_was_pressed) || CTRL_CIRCLE(button_was_pressed))
 		{
 			menuStackindex--;
@@ -503,7 +597,7 @@ static void do_settings(menu * menu_obj)
 			}
 		}
 
-		if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))	// down to next settin
+		if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))	/* down to next setting */
 		{
 			menu_obj->selected++;
 
@@ -516,7 +610,7 @@ static void do_settings(menu * menu_obj)
 			set_text_message("", 7);
 		}
 
-		if (CTRL_UP(state) || CTRL_LSTICK_UP(state))	// up to previous setting
+		if (CTRL_UP(state) || CTRL_LSTICK_UP(state))	/* up to previous setting */
 		{
 			if (menu_obj->selected == menu_obj->first_setting)
 				menu_obj->selected = menu_obj->max_settings-1;
@@ -531,7 +625,7 @@ static void do_settings(menu * menu_obj)
 
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
-			// if a rom is loaded then resume it
+			/* if a rom is loaded then resume it */
 			if (Emulator_IsROMLoaded())
 			{
 				menu_is_running = 0;
@@ -549,7 +643,7 @@ static void do_settings(menu * menu_obj)
 	produce_menubar(menu_obj->enum_id);
 	cellDbgFontDraw();
 
-	for (int i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
+	for ( i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
 	{
 		cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->selected == menu_obj->items[i].enum_id ? menu_obj->items[i].text_selected_color : menu_obj->items[i].text_unselected_color, menu_obj->items[i].text);
 		producelabelvalue(i);
@@ -565,13 +659,13 @@ static void do_settings(menu * menu_obj)
 
 static void do_ROMMenu(void)
 {
-	char rom_path[MAX_PATH_LENGTH];
-	char newpath[1024];
-
-	uint64_t state = cell_pad_input_poll_device(0);
+	char rom_path[MAX_PATH_LENGTH], newpath[1024], *separatorslash;
+	uint64_t state, diff_state, button_was_pressed;
 	static uint64_t old_state = 0;
-	uint64_t diff_state = old_state ^ state;
-	uint64_t button_was_pressed = old_state & diff_state;
+
+	state = cell_pad_input_poll_device(0);
+	diff_state = old_state ^ state;
+	button_was_pressed = old_state & diff_state;
 
 	UpdateBrowser(&browser);
 
@@ -588,7 +682,9 @@ static void do_ROMMenu(void)
 	{
 		if(FILEBROWSER_IS_CURRENT_A_DIRECTORY(browser))
 		{
-			//if 'filename' is in fact '..' - then pop back directory instead of adding '..' to filename path
+			/*if 'filename' is in fact '..' - then pop back directory 
+			instead of adding '..' to filename path */
+
 			if(browser.currently_selected == 0)
 			{
 				old_state = state;
@@ -596,7 +692,7 @@ static void do_ROMMenu(void)
 			}
 			else
 			{
-				const char * separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
+				separatorslash = (strcmp(FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser),"/") == 0) ? "" : "/";
 				snprintf(newpath, sizeof(newpath), "%s%s%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), separatorslash, FILEBROWSER_GET_CURRENT_FILENAME(browser));
 				filebrowser_push_directory(&browser, newpath, true);
 			}
@@ -607,7 +703,7 @@ static void do_ROMMenu(void)
 
 			menu_is_running = 0;
 
-			// switch emulator to emulate mode
+			/* switch emulator to emulate mode*/
 			Emulator_StartROMRunning(1);
 
 			Emulator_RequestLoadROM(rom_path);
@@ -633,7 +729,8 @@ static void do_ROMMenu(void)
 
 	cellDbgFontPuts	(0.09f,	0.05f,	Emulator_GetFontSize(),	RED,	"FILE BROWSER");
 	cellDbgFontPrintf (0.7f, 0.05f, 0.82f, WHITE, "%s v%s", EMULATOR_NAME, EMULATOR_VERSION);
-	cellDbgFontPrintf (0.09f, 0.09f, Emulator_GetFontSize(), YELLOW, "PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
+	cellDbgFontPrintf (0.09f, 0.09f, Emulator_GetFontSize(), YELLOW,
+	"PATH: %s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser));
 	cellDbgFontPuts   (0.09f, 0.93f, Emulator_GetFontSize(), YELLOW,
 	"L3 + R3 - resume game           SELECT - Settings screen");
 	cellDbgFontDraw();
@@ -652,7 +749,6 @@ void MenuMainLoop(void)
 	menuStack[0] = menu_filebrowser;
 	menuStack[0].enum_id = FILE_BROWSER_MENU;
 
-	// menu loop
 	menu_is_running = true;
 
 	do
