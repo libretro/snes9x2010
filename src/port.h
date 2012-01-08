@@ -296,6 +296,10 @@ void _makepath (char * path, const char * a, const char * dir, const char * fnam
 #include <ppu_intrinsics.h>
 #define READ_WORD(s)		(__builtin_lhbrx(s, 0))
 #define WRITE_WORD(s, d)	(__builtin_sthbrx(d, s, 0))
+#elif _XBOX
+#include <PPCIntrinsics.h>
+#define READ_WORD( s )        (__loadshortbytereverse(0, s))
+#define WRITE_WORD( s, d )    (__storeshortbytereverse(d, 0, s))
 #else
 #define READ_WORD(s)		(*(uint8 *) (s) | (*((uint8 *) (s) + 1) << 8))
 #define WRITE_WORD(s, d)	*(uint8 *) (s) = (uint8) (d), *((uint8 *) (s) + 1) = (uint8) ((d) >> 8)
