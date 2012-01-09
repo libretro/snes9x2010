@@ -1,5 +1,5 @@
 /******************************************************************************* 
- * menu.c - SNES9x PS3
+ * menu.c - SNES9x Next PS3
  *
  *  Created on: Oct 10, 2010
 ********************************************************************************/
@@ -84,6 +84,18 @@ static menu menu_emu_settings = {
 	items_generalsettings					/* items*/
 };
 
+static menu menu_emu_videosettings = {
+	VIDEO_MENU_TITLE,					/* title*/
+	EMU_VIDEO_MENU,						/* enum */
+	FIRST_EMU_VIDEO_SETTING,				/* selected item*/
+	0,							/* page*/
+	MAX_NO_OF_EMU_VIDEO_SETTINGS/NUM_ENTRY_PER_PAGE,	/* max pages */
+	1,							/* refreshpage*/
+	FIRST_EMU_VIDEO_SETTING,				/* first setting*/
+	MAX_NO_OF_EMU_VIDEO_SETTINGS,				/* max no of settings*/
+	items_generalsettings					/* items*/
+};
+
 static menu menu_emu_audiosettings = {
 	AUDIO_MENU_TITLE,					/* title*/
 	EMU_AUDIO_MENU,						/* enum*/
@@ -125,9 +137,10 @@ static void display_menubar(uint32_t menu_enum)
 	cellDbgFontPuts    (0.09f,  0.05f,  Emulator_GetFontSize(),  menu_enum == GENERAL_VIDEO_MENU ? RED : GREEN,   menu_generalvideosettings.title);
 	cellDbgFontPuts    (0.19f,  0.05f,  Emulator_GetFontSize(),  menu_enum == GENERAL_AUDIO_MENU ? RED : GREEN,  menu_generalaudiosettings.title);
 	cellDbgFontPuts    (0.29f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_GENERAL_MENU ? RED : GREEN,  menu_emu_settings.title);
-	cellDbgFontPuts    (0.40f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_AUDIO_MENU ? RED : GREEN,   menu_emu_audiosettings.title);
-	cellDbgFontPuts    (0.60f,  0.05f,  Emulator_GetFontSize(),  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
-	cellDbgFontPuts    (0.70f,  0.05f,  Emulator_GetFontSize(), menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
+	cellDbgFontPuts    (0.39f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_VIDEO_MENU ? RED : GREEN,   menu_emu_videosettings.title);
+	cellDbgFontPuts    (0.57f,  0.05f,  Emulator_GetFontSize(),  menu_enum == EMU_AUDIO_MENU ? RED : GREEN,   menu_emu_audiosettings.title);
+	cellDbgFontPuts    (0.75f,  0.05f,  Emulator_GetFontSize(),  menu_enum == PATH_MENU ? RED : GREEN,  menu_pathsettings.title);
+	cellDbgFontPuts    (0.84f,  0.05f,  Emulator_GetFontSize(), menu_enum == CONTROLS_MENU ? RED : GREEN,  menu_controlssettings.title); 
 	cellDbgFontDraw();
 }
 
@@ -545,6 +558,9 @@ static void display_help_text(int currentsetting)
 		case SETTING_EMU_DEFAULT_ALL:
 			PRINT_HELP_MESSAGE(menu_emu_settings, currentsetting);
 			break;
+		case SETTING_EMU_VIDEO_DEFAULT_ALL:
+			PRINT_HELP_MESSAGE(menu_emu_videosettings, currentsetting);
+			break;
 		case SETTING_EMU_AUDIO_DEFAULT_ALL:
 			PRINT_HELP_MESSAGE(menu_emu_audiosettings, currentsetting);
 			break;
@@ -791,6 +807,11 @@ static void select_setting(menu * menu_obj)
 					break;
 				case EMU_GENERAL_MENU:
 					menuStackindex++;
+					menuStack[menuStackindex] = menu_emu_videosettings;
+					old_state = state;
+					break;
+				case EMU_VIDEO_MENU:
+					menuStackindex++;
 					menuStack[menuStackindex] = menu_emu_audiosettings;
 					old_state = state;
 					break;
@@ -994,6 +1015,7 @@ void menu_init(void)
 	menu_init_settings_pages(&menu_generalvideosettings);
 	menu_init_settings_pages(&menu_generalaudiosettings);
 	menu_init_settings_pages(&menu_emu_settings);
+	menu_init_settings_pages(&menu_emu_videosettings);
 	menu_init_settings_pages(&menu_emu_audiosettings);
 	menu_init_settings_pages(&menu_pathsettings);
 	menu_init_settings_pages(&menu_controlssettings);
@@ -1019,6 +1041,7 @@ void menu_loop(void)
 			case GENERAL_VIDEO_MENU:
 			case GENERAL_AUDIO_MENU:
 			case EMU_GENERAL_MENU:
+			case EMU_VIDEO_MENU:
 			case EMU_AUDIO_MENU:
 			case PATH_MENU:
 			case CONTROLS_MENU:
