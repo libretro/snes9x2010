@@ -497,6 +497,9 @@ static void do_settings(menu * menu_obj)
 			if (menu_obj->selected >= menu_obj->max_settings)
 				menu_obj->selected = menu_obj->first_setting; 
 
+			if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
+				menu_obj->page = menu_obj->items[menu_obj->selected].page;
+
 			set_text_message("", 7);
 		}
 
@@ -509,6 +512,9 @@ static void do_settings(menu * menu_obj)
 
 			while (menu_obj->items[menu_obj->selected].enabled == 0)
 				menu_obj->selected--;
+
+			if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
+				menu_obj->page = menu_obj->items[menu_obj->selected].page;
 
 			set_text_message("", 7);
 		}
@@ -535,8 +541,11 @@ static void do_settings(menu * menu_obj)
 
 	for ( i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
 	{
-		cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->selected == menu_obj->items[i].enum_id ? menu_obj->items[i].text_selected_color : menu_obj->items[i].text_unselected_color, menu_obj->items[i].text);
-		producelabelvalue(i);
+		if(menu_obj->items[i].page == menu_obj->page)
+		{
+			cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->selected == menu_obj->items[i].enum_id ? menu_obj->items[i].text_selected_color : menu_obj->items[i].text_unselected_color, menu_obj->items[i].text);
+			producelabelvalue(i);
+		}
 	}
 
 	DisplayHelpMessage(menu_obj->selected);
