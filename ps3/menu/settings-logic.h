@@ -1,14 +1,3 @@
-#define toggle_settings_items() \
-	for(int i = 0; i < MAX_NO_OF_CONTROLS_SETTINGS; i++) \
-			items_generalsettings[i].enabled = 1;	 \
-	\
-	menu_generalvideosettings.items[SETTING_SHADER_2].enabled = Settings.ScaleEnabled; \
-	menu_generalvideosettings.items[SETTING_SHADER_PRESETS].enabled = Settings.ScaleEnabled; \
-	menu_generalvideosettings.items[SETTING_HW_TEXTURE_FILTER_2].enabled = Settings.ScaleEnabled; \
-	menu_generalvideosettings.items[SETTING_SCALE_FACTOR].enabled = Settings.ScaleEnabled; \
-	menu_generalvideosettings.items[SETTING_GAME_AWARE_SHADER].enabled = Settings.ScaleEnabled; \
-	update_item_colors = false;
-
 static void apply_scaling(void)
 {
 	ps3graphics_set_fbo_scale(Settings.ScaleEnabled, Settings.ScaleFactor);

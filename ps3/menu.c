@@ -277,23 +277,6 @@ static void RenderBrowser(filebrowser_t * b)
 #include "menu/menu-helpmessages.h"
 #include "menu/settings-logic.h"
 
-#define do_controls_refreshpage(beginvalue, endvalue) \
-{ \
-	float increment = 0.13f; \
-	for (int i= beginvalue; i < endvalue; i++) \
-	{ \
-		menu_controlssettings.items[i].text_xpos = 0.09f; \
-		menu_controlssettings.items[i].text_ypos = increment;  \
-		increment += 0.03f; \
-	} \
-	menu_controlssettings.refreshpage = 0; \
-}
-
-#define FIRST_CONTROLS_SETTING_PAGE_2 menu_controlssettings.items[FIRST_CONTROLS_SETTING_PAGE_1+18].enum_id
-#define FIRST_CONTROLS_SETTING_PAGE_3 menu_controlssettings.items[FIRST_CONTROLS_SETTING_PAGE_1+36].enum_id
-
-#define IS_PAGE(x) (x/NUM_ENTRY_PER_PAGE)
-
 static void do_controls_settings(void)
 {
 	uint64_t state, diff_state, button_was_pressed;
@@ -343,29 +326,6 @@ static void do_controls_settings(void)
 			set_text_message("", 7);
 		}
 
-		if (menu_controlssettings.refreshpage)
-		{
-			int i, j, page;
-			float increment;
-
-			page = 0;
-
-			i = menu_controlssettings.first_setting;
-
-			do{
-				for ( j = 0, increment = 0.13f; j < (NUM_ENTRY_PER_PAGE); j++)
-				{
-					menu_controlssettings.items[i].text_xpos = 0.09f;
-					menu_controlssettings.items[i].text_ypos = increment; 
-					menu_controlssettings.items[i].page = page;
-					increment += 0.03f;
-					i++;
-				}
-				page++;
-			}while(i < menu_controlssettings.max_settings);
-			menu_controlssettings.refreshpage = 0;
-		}
-
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
 			/* if a rom is loaded then resume it*/
@@ -395,8 +355,6 @@ static void do_controls_settings(void)
 		}
 	}
 
-	cellDbgFontDraw();
-
 	DisplayHelpMessage(menu_controlssettings.selected);
 
 	cellDbgFontPuts(0.09f, 0.91f, Emulator_GetFontSize(), YELLOW,
@@ -410,41 +368,13 @@ static void do_controls_settings(void)
 
 static void do_settings(menu * menu_obj)
 {
-	uint64_t state, diff_state, button_was_pressed, i, j;
+	uint64_t state, diff_state, button_was_pressed, i;
 	static uint64_t old_state = 0;
-	float increment;
 
 	state = cell_pad_input_poll_device(0);
 	diff_state = old_state ^ state;
 	button_was_pressed = old_state & diff_state;
 
-	if(update_item_colors)
-	{
-		toggle_settings_items();
-	}
-
-
-	if (menu_obj->refreshpage)
-	{
-		int page;
-		
-		page = 0;
-
-		i = menu_obj->first_setting;
-
-		do{
-			for ( j = 0, increment = 0.13f; j < (NUM_ENTRY_PER_PAGE); j++)
-			{
-				menu_obj->items[i].text_xpos = 0.09f;
-				menu_obj->items[i].text_ypos = increment; 
-				menu_obj->items[i].page = page;
-				increment += 0.03f;
-				i++;
-			}
-			page++;
-		}while(i < menu_obj->max_settings);
-		menu_obj->refreshpage = 0;
-	}
 
 	if(frame_count < special_action_msg_expired)
 	{
@@ -491,9 +421,6 @@ static void do_settings(menu * menu_obj)
 		{
 			menu_obj->selected++;
 
-			while(menu_obj->items[menu_obj->selected].enabled == 0)
-				menu_obj->selected++;
-
 			if (menu_obj->selected >= menu_obj->max_settings)
 				menu_obj->selected = menu_obj->first_setting; 
 
@@ -508,9 +435,6 @@ static void do_settings(menu * menu_obj)
 			if (menu_obj->selected == menu_obj->first_setting)
 				menu_obj->selected = menu_obj->max_settings-1;
 			else
-				menu_obj->selected--;
-
-			while (menu_obj->items[menu_obj->selected].enabled == 0)
 				menu_obj->selected--;
 
 			if (menu_obj->items[menu_obj->selected].page != menu_obj->page)
@@ -638,9 +562,43 @@ static void do_ROMMenu(void)
 	old_state = state;
 }
 
+static void init_pages(menu * menu_obj)
+{
+	int page, i, j;
+	float increment;
+
+	page = 0;
+	j = 0;
+	increment = 0.13f;
+
+	for(i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
+	{
+		if(!(j < (NUM_ENTRY_PER_PAGE)))
+		{
+			j = 0;
+			increment = 0.13f;
+			page++;
+		}
+
+		menu_obj->items[i].text_xpos = 0.09f;
+		menu_obj->items[i].text_ypos = increment; 
+		menu_obj->items[i].page = page;
+		increment += 0.03f;
+		j++;
+	}
+	menu_obj->refreshpage = 0;
+}
+
 void MenuInit(void)
 {
 	filebrowser_new(&browser, Settings.PS3PathROMDirectory, ROM_EXTENSIONS);
+
+	init_pages(&menu_generalvideosettings);
+	init_pages(&menu_generalaudiosettings);
+	init_pages(&menu_emu_settings);
+	init_pages(&menu_emu_audiosettings);
+	init_pages(&menu_pathsettings);
+	init_pages(&menu_controlssettings);
 }
 
 void MenuMainLoop(void)

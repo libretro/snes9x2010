@@ -26,7 +26,6 @@ typedef struct
 	char comment_yes[256];			/* item comment (yes - if setting_ptr true)	*/
 	char comment_no[256];			/* item comment (no - if setting_ptr false)	*/
 	uint32_t default_value;			/* default value of item			*/
-	uint32_t enabled;			/* is the item enabled?				*/
 	uint32_t page;				/* page						*/
 } item;
 
