@@ -228,20 +228,18 @@ static void producesettingentry(uint64_t switchvalue)
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 			{
 				Settings.ScaleEnabled = !Settings.ScaleEnabled;
+
 				if(Settings.ScaleEnabled)
 					ps3graphics_set_fbo_scale(1, Settings.ScaleFactor);
 				else
-				{
-					ps3graphics_load_fragment_shader(DEFAULT_SHADER_FILE, 1);
-					Settings.ScaleFactor = 1;
-					ps3graphics_set_fbo_scale(0, 2);
-				}
+					ps3graphics_set_fbo_scale(0, 0);
+
 				set_text_message("", 7);
 			}
 			if(CTRL_START(state))
 			{
-				Settings.ScaleEnabled = 1;
-				ps3graphics_set_fbo_scale(0, 2);
+				Settings.ScaleEnabled = 2;
+				ps3graphics_set_fbo_scale(1, Settings.ScaleFactor);
 			}
 			update_item_colors = 1;
 			break;
@@ -250,7 +248,7 @@ static void producesettingentry(uint64_t switchvalue)
 			{
 				if((Settings.ScaleFactor > 1) && Settings.ScaleEnabled)
 				{
-					Settings.ScaleFactor -= 1;
+					Settings.ScaleFactor--;
 					apply_scaling();
 				}
 				set_text_message("", 7);
@@ -259,7 +257,7 @@ static void producesettingentry(uint64_t switchvalue)
 			{
 				if((Settings.ScaleFactor < 5) && Settings.ScaleEnabled)
 				{
-					Settings.ScaleFactor += 1;
+					Settings.ScaleFactor++;
 					apply_scaling();
 				}
 				set_text_message("", 7);
