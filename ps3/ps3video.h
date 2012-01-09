@@ -152,7 +152,9 @@ unsigned ps3graphics_get_orientation_name (void);
 void ps3graphics_init_dbgfont (void);
 
 extern uint32_t frame_count;
-extern snes_tracker_t *tracker; // State tracker
+
+/* State tracker*/
+extern snes_tracker_t *tracker; 
 
 extern char DEFAULT_SHADER_FILE[MAX_PATH_LENGTH];
 extern char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
