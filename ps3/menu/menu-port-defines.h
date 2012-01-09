@@ -16,28 +16,30 @@
 /* fill in the extra menu settings here for your port */
 #define EMU_EXTRA_SETTINGS \
 	SETTING_EMU_CURRENT_SAVE_STATE_SLOT, \
-	SETTING_SNES9X_FORCE_PAL, \
-	SETTING_SNES9X_FORCE_NTSC, \
-	SETTING_SNES9X_PAL_TIMING, \
 	SETTING_SNES9X_AUTO_APPLY_CHEATS, \
 	SETTING_SNES9X_AUTO_APPLY_PATCH, \
 	SETTING_SNES9X_SRAM_WRITEPROTECT, \
 	SETTING_SNES9X_ACCESSORY_AUTODETECTION, \
 	SETTING_SNES9X_ACCESSORY_TYPE, \
 	SETTING_EMU_DEFAULT_ALL, \
+	SETTING_SNES9X_FORCE_PAL, \
+	SETTING_SNES9X_FORCE_NTSC, \
+	SETTING_SNES9X_PAL_TIMING, \
 	SETTING_EMU_VIDEO_DEFAULT_ALL, \
 	SETTING_SNES9X_SOUND_INPUT_RATE, \
 	SETTING_SNES9X_MUTE_SOUND, \
 	SETTING_EMU_AUDIO_DEFAULT_ALL
 
 #define EMU_DISPLAY_HELP_TEXT() \
-		case SETTING_SNES9X_FORCE_PAL: \
-		case SETTING_SNES9X_FORCE_NTSC: \
 		case SETTING_SNES9X_AUTO_APPLY_CHEATS: \
 		case SETTING_SNES9X_AUTO_APPLY_PATCH: \
 		case SETTING_SNES9X_SRAM_WRITEPROTECT: \
 		case SETTING_SNES9X_ACCESSORY_TYPE: \
 			PRINT_HELP_MESSAGE_YESNO(menu_emu_settings, currentsetting); \
+			break; \
+		case SETTING_SNES9X_FORCE_PAL: \
+		case SETTING_SNES9X_FORCE_NTSC: \
+			PRINT_HELP_MESSAGE_YESNO(menu_emu_videosettings, currentsetting); \
 			break; \
 		case SETTING_SNES9X_ACCESSORY_AUTODETECTION: \
 			if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED) \
@@ -48,7 +50,7 @@
 				cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "%s", "INFO - Accessory Autodetection is set to 'OFF'. Accessories will not be\ndetected or enabled - standard two joypad controls."); \
 			break; \
 		case SETTING_SNES9X_PAL_TIMING: \
-			PRINT_HELP_MESSAGE(menu_emu_settings, currentsetting); \
+			PRINT_HELP_MESSAGE(menu_emu_videosettings, currentsetting); \
 			break; \
 		case SETTING_SNES9X_SOUND_INPUT_RATE: \
 		case SETTING_SNES9X_MUTE_SOUND: \
@@ -69,12 +71,15 @@
 			break; \
 		case SETTING_SNES9X_FORCE_PAL: \
 		case SETTING_SNES9X_FORCE_NTSC: \
+			cellDbgFontPuts(0.5f,  menu_emu_videosettings.items[switchvalue].text_ypos, Emulator_GetFontSize(), *(menu_emu_videosettings.items[switchvalue].setting_ptr) == 0 ? GREEN : ORANGE, *(menu_emu_videosettings.items[switchvalue].setting_ptr) ? "ON" : "OFF"); \
+			cellDbgFontDraw(); \
+			break; \
 		case SETTING_SNES9X_SRAM_WRITEPROTECT: \
 			cellDbgFontPuts(0.5f,  menu_emu_settings.items[switchvalue].text_ypos, Emulator_GetFontSize(), *(menu_emu_settings.items[switchvalue].setting_ptr) == 0 ? GREEN : ORANGE, *(menu_emu_settings.items[switchvalue].setting_ptr) ? "ON" : "OFF"); \
 			cellDbgFontDraw(); \
 			break; \
 		case SETTING_SNES9X_PAL_TIMING: \
-			cellDbgFontPrintf(0.5f, menu_emu_settings.items[switchvalue].text_ypos, Emulator_GetFontSize(), Settings.FrameTimePAL == 20000 ? GREEN : ORANGE, "%d", Settings.FrameTimePAL); \
+			cellDbgFontPrintf(0.5f, menu_emu_videosettings.items[switchvalue].text_ypos, Emulator_GetFontSize(), Settings.FrameTimePAL == 20000 ? GREEN : ORANGE, "%d", Settings.FrameTimePAL); \
 			break; \
 		case SETTING_SNES9X_ACCESSORY_AUTODETECTION: \
 			cellDbgFontPrintf(0.5f,	menu_emu_settings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM ? GREEN : ORANGE, "%s", Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED ? "ON" : Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM ? "Confirm" : "OFF"); \

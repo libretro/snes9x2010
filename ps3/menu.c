@@ -232,6 +232,22 @@ static void browser_update(filebrowser_t * b)
 			set_text_message("", 7);
 		}
 
+		if (CTRL_R2(state))
+		{
+			b->currently_selected = (MIN(b->currently_selected + 50, b->file_count-1));
+			set_text_message("", 7);
+		}
+
+		if (CTRL_L2(state))
+		{
+			if (b->currently_selected <= NUM_ENTRY_PER_PAGE)
+				b->currently_selected= 0;
+			else
+				b->currently_selected -= 50;
+
+			set_text_message("", 7);
+		}
+
 		if (CTRL_L1(state))
 		{
 			if (b->currently_selected <= NUM_ENTRY_PER_PAGE)
