@@ -35,6 +35,7 @@ typedef struct
 	uint32_t enum_id;		/* enum ID of menu				*/
 	uint32_t selected;		/* index of selected item			*/
 	uint32_t page;			/* page						*/
+	uint32_t max_pages;		/* max pages					*/
 	uint32_t refreshpage;		/* bit whether or not to refresh page		*/
 	uint32_t first_setting;		/* first setting				*/
 	uint32_t max_settings;		/* max no of settings in menu			*/
@@ -102,7 +103,7 @@ enum
 	SETTING_PATH_SRAM_DIRECTORY,
 	SETTING_PATH_CHEATS,
 	SETTING_PATH_DEFAULT_ALL,
-	SETTING_CONTROLS_SCHEME,                  // CONTROLS settings
+	SETTING_CONTROLS_SCHEME,
 	SETTING_CONTROLS_NUMBER,
 	SETTING_CONTROLS_DPAD_UP,
 	SETTING_CONTROLS_DPAD_DOWN,

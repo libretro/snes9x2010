@@ -688,5 +688,95 @@ static void producesettingentry(uint64_t switchvalue)
 				strcpy(Settings.PS3PathSRAM, "");
 			}
 			break;
+		case SETTING_CONTROLS_SCHEME:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state) | CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				menuStackindex++;
+				menuStack[menuStackindex] = menu_filebrowser;
+				menuStack[menuStackindex].enum_id = INPUT_PRESET_CHOICE;
+				set_initial_dir_tmpbrowser = true;
+			}
+			if(CTRL_START(state))
+			{
+				snprintf(Settings.PS3CurrentInputPresetTitle, sizeof(Settings.PS3CurrentInputPresetTitle), "%s", "Default");
+				emulator_set_controls("", SET_ALL_CONTROLS_TO_DEFAULT, "Default");
+			}
+			break;
+		case SETTING_CONTROLS_NUMBER:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state))
+			{
+				if(currently_selected_controller_menu != 0)
+					currently_selected_controller_menu--;
+				set_text_message("", 7);
+			}
+
+			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				if(currently_selected_controller_menu < 6)
+					currently_selected_controller_menu++;
+				set_text_message("", 7);
+			}
+
+			if(CTRL_START(state))
+				currently_selected_controller_menu = 0;
+
+			break; 
+		case SETTING_CONTROLS_DPAD_UP:
+		case SETTING_CONTROLS_DPAD_DOWN:
+		case SETTING_CONTROLS_DPAD_LEFT:
+		case SETTING_CONTROLS_DPAD_RIGHT:
+		case SETTING_CONTROLS_BUTTON_CIRCLE:
+		case SETTING_CONTROLS_BUTTON_CROSS:
+		case SETTING_CONTROLS_BUTTON_TRIANGLE:
+		case SETTING_CONTROLS_BUTTON_SQUARE:
+		case SETTING_CONTROLS_BUTTON_SELECT:
+		case SETTING_CONTROLS_BUTTON_START:
+		case SETTING_CONTROLS_BUTTON_L1:
+		case SETTING_CONTROLS_BUTTON_R1:
+		case SETTING_CONTROLS_BUTTON_L2:
+		case SETTING_CONTROLS_BUTTON_R2:
+		case SETTING_CONTROLS_BUTTON_L3:
+		case SETTING_CONTROLS_BUTTON_R3:
+		case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
+		case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP:
+		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP:
+		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN:
+		case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
+		case SETTING_CONTROLS_BUTTON_R3_BUTTON_L3:
+		case SETTING_CONTROLS_ANALOG_R_UP:
+		case SETTING_CONTROLS_ANALOG_R_DOWN:
+		case SETTING_CONTROLS_ANALOG_R_LEFT:
+		case SETTING_CONTROLS_ANALOG_R_RIGHT:
+			if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
+			{
+				Input_MapButton(control_binds[currently_selected_controller_menu][(switchvalue-SETTING_CONTROLS_DPAD_UP)],false,NULL);
+				set_text_message("", 7);
+			}
+			if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				Input_MapButton(control_binds[currently_selected_controller_menu][(switchvalue-SETTING_CONTROLS_DPAD_UP)],true,NULL);
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+			{
+				Input_MapButton(control_binds[currently_selected_controller_menu][(switchvalue-SETTING_CONTROLS_DPAD_UP)],true, default_control_binds[switchvalue-SETTING_CONTROLS_DPAD_UP]);
+			}
+			break;
+		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
+				emulator_save_settings(INPUT_PRESET_FILE);
+			break;
+		case SETTING_CONTROLS_DEFAULT_ALL:
+			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
+			{
+				emulator_set_controls("", SET_ALL_CONTROLS_TO_DEFAULT, "Default");
+			}
+			break;
 	}
 }

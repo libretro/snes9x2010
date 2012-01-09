@@ -37,78 +37,85 @@ static uint32_t currently_selected_controller_menu = 0;
 #include "menu/menu-entries.h"
 
 static menu menu_filebrowser = {
-	"FILE BROWSER |",		// title
-	FILE_BROWSER_MENU,		// enum
-	0,				// selected item
-	0,				// page
-	1,				// refreshpage
-	NULL				// items
+	"FILE BROWSER |",		/* title*/
+	FILE_BROWSER_MENU,		/* enum*/
+	0,				/* selected item*/
+	0,				/* page*/
+	1,				/* maxpages */
+	1,				/* refreshpage*/
+	NULL				/* items*/
 };
 
 static menu menu_generalvideosettings = {
-	"VIDEO |",			// title
-	GENERAL_VIDEO_MENU,		// enum
-	FIRST_VIDEO_SETTING,		// selected item
-	0,				// page
-	1,				// refreshpage
-	FIRST_VIDEO_SETTING,		// first setting
-	MAX_NO_OF_VIDEO_SETTINGS,	// max no of path settings
-	items_generalsettings		// items
+	"VIDEO |",			/* title*/
+	GENERAL_VIDEO_MENU,		/* enum*/
+	FIRST_VIDEO_SETTING,		/* selected item*/
+	0,				/* page*/
+	MAX_NO_OF_VIDEO_SETTINGS/NUM_ENTRY_PER_PAGE,	/* max pages */
+	1,				/* refreshpage*/
+	FIRST_VIDEO_SETTING,		/* first setting*/
+	MAX_NO_OF_VIDEO_SETTINGS,	/* max no of path settings*/
+	items_generalsettings		/* items*/
 };
 
 static menu menu_generalaudiosettings = {
-	"AUDIO |",			// title
-	GENERAL_AUDIO_MENU,		// enum
-	FIRST_AUDIO_SETTING,		// selected item
-	0,				// page
-	1,				// refreshpage
-	FIRST_AUDIO_SETTING,		// first setting
-	MAX_NO_OF_AUDIO_SETTINGS,	// max no of path settings
-	items_generalsettings		// items
+	"AUDIO |",			/* title*/
+	GENERAL_AUDIO_MENU,		/* enum*/
+	FIRST_AUDIO_SETTING,		/* selected item*/
+	0,				/* page*/
+	MAX_NO_OF_AUDIO_SETTINGS/NUM_ENTRY_PER_PAGE,	/* max pages */
+	1,				/* refreshpage*/
+	FIRST_AUDIO_SETTING,		/* first setting*/
+	MAX_NO_OF_AUDIO_SETTINGS,	/* max no of path settings*/
+	items_generalsettings		/* items*/
 };
 
 static menu menu_emu_settings = {
-	"SNES9X |",			// title
-	EMU_GENERAL_MENU,		// enum
-	FIRST_EMU_SETTING,		// selected item
-	0,				// page
-	1,                      	// refreshpage
-	FIRST_EMU_SETTING,		// first setting
-	MAX_NO_OF_EMU_SETTINGS,		// max no of path settings
-	items_generalsettings		// items
+	"SNES9X |",						/* title*/
+	EMU_GENERAL_MENU,					/* enum*/
+	FIRST_EMU_SETTING,					/* selected item*/
+	0,							/* page*/
+	MAX_NO_OF_EMU_SETTINGS/NUM_ENTRY_PER_PAGE,		/* max pages*/
+	1,                      				/* refreshpage*/
+	FIRST_EMU_SETTING,					/* first setting*/
+	MAX_NO_OF_EMU_SETTINGS,					/* max no of path settings*/
+	items_generalsettings					/* items*/
 };
 
 static menu menu_emu_audiosettings = {
-	"SNES9X AUDIO |",		// title
-	EMU_AUDIO_MENU,			// enum
-	FIRST_EMU_AUDIO_SETTING,	// selected item
-	0,				// page
-	1,				// refreshpage
-	FIRST_EMU_AUDIO_SETTING,	// first setting
-	MAX_NO_OF_EMU_AUDIO_SETTINGS,	// max no of path settings
-	items_generalsettings		// items
+	"SNES9X AUDIO |",					/* title*/
+	EMU_AUDIO_MENU,						/* enum*/
+	FIRST_EMU_AUDIO_SETTING,				/* selected item*/
+	0,							/* page*/
+	MAX_NO_OF_EMU_AUDIO_SETTINGS/NUM_ENTRY_PER_PAGE,	/* max pages*/
+	1,							/* refreshpage*/
+	FIRST_EMU_AUDIO_SETTING,				/* first setting*/
+	MAX_NO_OF_EMU_AUDIO_SETTINGS,				/* max no of path settings*/
+	items_generalsettings					/* items*/
 };
 
 static menu menu_pathsettings = {
-	"PATH |",			// title
-	PATH_MENU,			// enum
-	FIRST_PATH_SETTING,		// selected item
-	0,				// page
-	1,				// refreshpage
-	FIRST_PATH_SETTING,		// first setting
-	MAX_NO_OF_PATH_SETTINGS,	// max no of path settings
-	items_generalsettings		// items
+	"PATH |",						/* title*/
+	PATH_MENU,						/* enum*/
+	FIRST_PATH_SETTING,					/* selected item*/
+	0,							/* page*/
+	MAX_NO_OF_PATH_SETTINGS/NUM_ENTRY_PER_PAGE,		/* max pages*/
+	1,							/* refreshpage*/
+	FIRST_PATH_SETTING,					/* first setting*/
+	MAX_NO_OF_PATH_SETTINGS,				/* max no of path settings*/
+	items_generalsettings					/* items*/
 };
 
 static menu menu_controlssettings = {
-	"CONTROLS |",			// title
-	CONTROLS_MENU,			// enum
-	FIRST_CONTROLS_SETTING_PAGE_1,	// selected item
-	0,				// page
-	1,				// refreshpage
-	FIRST_CONTROLS_SETTING_PAGE_1,	// first setting
-	MAX_NO_OF_CONTROLS_SETTINGS,	// max no of path settings
-	items_generalsettings		// items
+	"CONTROLS |",						/* title*/
+	CONTROLS_MENU,						/* enum*/
+	FIRST_CONTROLS_SETTING_PAGE_1,				/* selected item*/
+	0,							/* page*/
+	MAX_NO_OF_CONTROLS_SETTINGS/NUM_ENTRY_PER_PAGE,		/* max pages*/
+	1,							/* refreshpage*/
+	FIRST_CONTROLS_SETTING_PAGE_1,				/* first setting*/
+	MAX_NO_OF_CONTROLS_SETTINGS,				/* max no of path settings*/
+	items_generalsettings					/* items*/
 };
 
 static void produce_menubar(uint32_t menu_enum)
@@ -267,8 +274,8 @@ static void RenderBrowser(filebrowser_t * b)
 
 
 #include "menu/menu-choice.h"
-
 #include "menu/menu-helpmessages.h"
+#include "menu/settings-logic.h"
 
 #define do_controls_refreshpage(beginvalue, endvalue) \
 { \
@@ -284,6 +291,8 @@ static void RenderBrowser(filebrowser_t * b)
 
 #define FIRST_CONTROLS_SETTING_PAGE_2 menu_controlssettings.items[FIRST_CONTROLS_SETTING_PAGE_1+18].enum_id
 #define FIRST_CONTROLS_SETTING_PAGE_3 menu_controlssettings.items[FIRST_CONTROLS_SETTING_PAGE_1+36].enum_id
+
+#define IS_PAGE(x) (x/NUM_ENTRY_PER_PAGE)
 
 static void do_controls_settings(void)
 {
@@ -383,100 +392,8 @@ static void do_controls_settings(void)
 			old_state = state;
 			return;
 		}
-		switch(menu_controlssettings.selected)
-		{
-			case SETTING_CONTROLS_SCHEME:
-				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(button_was_pressed) | CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(button_was_pressed))
-				{
-					menuStackindex++;
-					menuStack[menuStackindex] = menu_filebrowser;
-					menuStack[menuStackindex].enum_id = INPUT_PRESET_CHOICE;
-					set_initial_dir_tmpbrowser = true;
-				}
-				if(CTRL_START(state))
-				{
-					snprintf(Settings.PS3CurrentInputPresetTitle, sizeof(Settings.PS3CurrentInputPresetTitle), "%s", "Default");
-					emulator_set_controls("", SET_ALL_CONTROLS_TO_DEFAULT, "Default");
-				}
-				break;
-			case SETTING_CONTROLS_NUMBER:
-				if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(button_was_pressed))
-				{
-					if(currently_selected_controller_menu != 0)
-						currently_selected_controller_menu--;
-					set_text_message("", 7);
-				}
 
-				if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(button_was_pressed))
-				{
-					if(currently_selected_controller_menu < 6)
-						currently_selected_controller_menu++;
-					set_text_message("", 7);
-				}
-
-				if(CTRL_START(state))
-					currently_selected_controller_menu = 0;
-
-				break; 
-			case SETTING_CONTROLS_DPAD_UP:
-			case SETTING_CONTROLS_DPAD_DOWN:
-			case SETTING_CONTROLS_DPAD_LEFT:
-			case SETTING_CONTROLS_DPAD_RIGHT:
-			case SETTING_CONTROLS_BUTTON_CIRCLE:
-			case SETTING_CONTROLS_BUTTON_CROSS:
-			case SETTING_CONTROLS_BUTTON_TRIANGLE:
-			case SETTING_CONTROLS_BUTTON_SQUARE:
-			case SETTING_CONTROLS_BUTTON_SELECT:
-			case SETTING_CONTROLS_BUTTON_START:
-			case SETTING_CONTROLS_BUTTON_L1:
-			case SETTING_CONTROLS_BUTTON_R1:
-			case SETTING_CONTROLS_BUTTON_L2:
-			case SETTING_CONTROLS_BUTTON_R2:
-			case SETTING_CONTROLS_BUTTON_L3:
-			case SETTING_CONTROLS_BUTTON_R3:
-			case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
-			case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
-			case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT:
-			case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT:
-			case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP:
-			case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN:
-			case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT:
-			case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT:
-			case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP:
-			case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN:
-			case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
-			case SETTING_CONTROLS_BUTTON_R3_BUTTON_L3:
-			case SETTING_CONTROLS_ANALOG_R_UP:
-			case SETTING_CONTROLS_ANALOG_R_DOWN:
-			case SETTING_CONTROLS_ANALOG_R_LEFT:
-			case SETTING_CONTROLS_ANALOG_R_RIGHT:
-				if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
-				{
-					Input_MapButton(control_binds[currently_selected_controller_menu][(menu_controlssettings.selected-SETTING_CONTROLS_DPAD_UP)],false,NULL);
-					set_text_message("", 7);
-				}
-				if(CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(button_was_pressed))
-				{
-					Input_MapButton(control_binds[currently_selected_controller_menu][(menu_controlssettings.selected-SETTING_CONTROLS_DPAD_UP)],true,NULL);
-					set_text_message("", 7);
-				}
-				if(CTRL_START(state))
-				{
-					Input_MapButton(control_binds[currently_selected_controller_menu][(menu_controlssettings.selected-SETTING_CONTROLS_DPAD_UP)],true, default_control_binds[menu_controlssettings.selected-SETTING_CONTROLS_DPAD_UP]);
-				}
-				old_state = state;
-				break;
-			case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-				if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed) || CTRL_RIGHT(button_was_pressed) ||  CTRL_LSTICK_RIGHT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_START(state))
-					emulator_save_settings(INPUT_PRESET_FILE);
-				break;
-			case SETTING_CONTROLS_DEFAULT_ALL:
-				if(CTRL_LEFT(button_was_pressed)  || CTRL_LSTICK_LEFT(button_was_pressed) || CTRL_RIGHT(button_was_pressed)  || CTRL_LSTICK_RIGHT(button_was_pressed) || CTRL_CROSS(button_was_pressed) || CTRL_START(state))
-				{
-					emulator_set_controls("", SET_ALL_CONTROLS_TO_DEFAULT, "Default");
-				}
-				break;
-		}
+		producesettingentry(menu_controlssettings.selected);
 	}
 
 	produce_menubar(menu_controlssettings.enum_id);
@@ -485,16 +402,10 @@ static void do_controls_settings(void)
 /*PAGE 1*/
 if(menu_controlssettings.page == 0)
 {
-	cellDbgFontPuts(0.09f,	menu_controlssettings.items[SETTING_CONTROLS_SCHEME].text_ypos,	Emulator_GetFontSize(),	menu_controlssettings.selected == SETTING_CONTROLS_SCHEME ? YELLOW : WHITE,	menu_controlssettings.items[SETTING_CONTROLS_SCHEME].text);
-	cellDbgFontPrintf(0.5f,   menu_controlssettings.items[SETTING_CONTROLS_SCHEME].text_ypos,   Emulator_GetFontSize(), Settings.ControlScheme == CONTROL_SCHEME_DEFAULT ? GREEN : ORANGE, Settings.PS3CurrentInputPresetTitle);
-
-	cellDbgFontPuts(0.09f,	menu_controlssettings.items[SETTING_CONTROLS_NUMBER].text_ypos,	Emulator_GetFontSize(),	menu_controlssettings.selected == SETTING_CONTROLS_NUMBER ? YELLOW : WHITE,	menu_controlssettings.items[SETTING_CONTROLS_NUMBER].text);
-	cellDbgFontPrintf(0.5f,	menu_controlssettings.items[SETTING_CONTROLS_NUMBER].text_ypos,	Emulator_GetFontSize(),	currently_selected_controller_menu == 0 ? GREEN : ORANGE, "%d", currently_selected_controller_menu+1);
-
-	for(int i = SETTING_CONTROLS_DPAD_UP; i < FIRST_CONTROLS_SETTING_PAGE_2; i++)
+	for(int i = SETTING_CONTROLS_SCHEME; i < FIRST_CONTROLS_SETTING_PAGE_2; i++)
 	{
 		cellDbgFontPuts(0.09f,	menu_controlssettings.items[i].text_ypos,	Emulator_GetFontSize(),	menu_controlssettings.selected == menu_controlssettings.items[i].enum_id ? YELLOW : WHITE,	menu_controlssettings.items[i].text);
-		cellDbgFontPuts(0.5f,	menu_controlssettings.items[i].text_ypos,	Emulator_GetFontSize(),	control_binds[currently_selected_controller_menu][i-(FIRST_CONTROL_BIND)] == default_control_binds[i-FIRST_CONTROL_BIND] ? GREEN : ORANGE, Input_PrintMappedButton(control_binds[currently_selected_controller_menu][i-FIRST_CONTROL_BIND]));
+		producelabelvalue(i);
 		cellDbgFontDraw();
 	}
 }
@@ -502,19 +413,15 @@ if(menu_controlssettings.page == 0)
 /*PAGE 2*/
 if(menu_controlssettings.page == 1)
 {
-	for(int i = FIRST_CONTROLS_SETTING_PAGE_2; i < SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS; i++)
+	for(int i = FIRST_CONTROLS_SETTING_PAGE_2; i < SETTING_CONTROLS_DEFAULT_ALL+1; i++)
 	{
 		cellDbgFontPuts		(0.09f,	menu_controlssettings.items[i].text_ypos,	Emulator_GetFontSize(),	menu_controlssettings.selected == menu_controlssettings.items[i].enum_id ? YELLOW : WHITE,	menu_controlssettings.items[i].text);
-		cellDbgFontPuts		(0.5f,	menu_controlssettings.items[i].text_ypos,	Emulator_GetFontSize(),	control_binds[currently_selected_controller_menu][i-FIRST_CONTROL_BIND] == default_control_binds[i-FIRST_CONTROL_BIND] ? GREEN : ORANGE, Input_PrintMappedButton(control_binds[currently_selected_controller_menu][i-FIRST_CONTROL_BIND]));
+		producelabelvalue(i);
 		cellDbgFontDraw();
 	}
-
-	cellDbgFontPrintf(0.09f, menu_controlssettings.items[SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS].text_ypos, Emulator_GetFontSize(), menu_controlssettings.selected == SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS ? YELLOW : GREEN, menu_controlssettings.items[SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS].text);
-
-	cellDbgFontPrintf(0.09f, menu_controlssettings.items[SETTING_CONTROLS_DEFAULT_ALL].text_ypos, Emulator_GetFontSize(), menu_controlssettings.selected == SETTING_CONTROLS_DEFAULT_ALL ? YELLOW : GREEN, menu_controlssettings.items[SETTING_CONTROLS_DEFAULT_ALL].text);
-	cellDbgFontDraw();
-
 }
+
+	cellDbgFontDraw();
 
 	DisplayHelpMessage(menu_controlssettings.selected);
 
@@ -526,7 +433,6 @@ if(menu_controlssettings.page == 1)
 	old_state = state;
 }
 
-#include "menu/settings-logic.h"
 
 static void do_settings(menu * menu_obj)
 {
