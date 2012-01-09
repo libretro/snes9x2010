@@ -11,17 +11,13 @@
 #include "cellframework2/fileio/file_browser.h"
 
 #include "emu-ps3.h"
+#include "menu/menu-port-defines.h"
 #include "menu.h"
-
-/*emulator-specific*/
-#include "../src/snes9x.h"
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 
 #define NUM_ENTRY_PER_PAGE 19
-
-#define ROM_EXTENSIONS "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|jma|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP|JMA"
 
 #define PRINT_HELP_MESSAGE(menu, currentsetting) \
 			cellDbgFontPrintf(menu.items[currentsetting].comment_xpos, menu.items[currentsetting].comment_ypos, menu.items[currentsetting].comment_scalefont, menu.items[currentsetting].comment_color, menu.items[currentsetting].comment);
@@ -77,7 +73,7 @@ static menu menu_generalaudiosettings = {
 };
 
 static menu menu_emu_settings = {
-	"SNES9X |",						/* title*/
+	EMU_MENU_TITLE,						/* title*/
 	EMU_GENERAL_MENU,					/* enum*/
 	FIRST_EMU_SETTING,					/* selected item*/
 	0,							/* page*/
@@ -89,7 +85,7 @@ static menu menu_emu_settings = {
 };
 
 static menu menu_emu_audiosettings = {
-	"SNES9X AUDIO |",					/* title*/
+	AUDIO_MENU_TITLE,					/* title*/
 	EMU_AUDIO_MENU,						/* enum*/
 	FIRST_EMU_AUDIO_SETTING,				/* selected item*/
 	0,							/* page*/
@@ -509,22 +505,7 @@ static void display_help_text(int currentsetting)
 {
 	switch(currentsetting)
 	{
-		case SETTING_SNES9X_FORCE_PAL:
-		case SETTING_SNES9X_FORCE_NTSC:
-		case SETTING_SNES9X_AUTO_APPLY_CHEATS:
-		case SETTING_SNES9X_AUTO_APPLY_PATCH:
-		case SETTING_SNES9X_SRAM_WRITEPROTECT:
-		case SETTING_SNES9X_ACCESSORY_TYPE:
-			PRINT_HELP_MESSAGE_YESNO(menu_emu_settings, currentsetting);
-			break;
-		case SETTING_SNES9X_ACCESSORY_AUTODETECTION:
-			if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED)
-				cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "%s", "INFO - Accessory Autodetection is set to 'ON'. Games which support\nMouse/Scope/Multitap will be automatically detected and enabled.");
-			else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
-				cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "%s", "INFO - Accessory Autodetection is set to 'Confirm'. When detecting a Mouse/\nScope/Multitap-compatible game, you are asked if you want to enable it.");
-			else if(Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_NONE)
-				cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "%s", "INFO - Accessory Autodetection is set to 'OFF'. Accessories will not be\ndetected or enabled - standard two joypad controls.");
-			break;
+		EMU_DISPLAY_HELP_TEXT();
 		case SETTING_HW_TEXTURE_FILTER:
 		case SETTING_HW_TEXTURE_FILTER_2:
 		case SETTING_SCALE_ENABLED:
@@ -561,13 +542,10 @@ static void display_help_text(int currentsetting)
 			PRINT_HELP_MESSAGE(menu_generalaudiosettings, currentsetting);
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-		case SETTING_SNES9X_PAL_TIMING:
 		case SETTING_EMU_DEFAULT_ALL:
 			PRINT_HELP_MESSAGE(menu_emu_settings, currentsetting);
 			break;
 		case SETTING_EMU_AUDIO_DEFAULT_ALL:
-		case SETTING_SNES9X_SOUND_INPUT_RATE:
-		case SETTING_SNES9X_MUTE_SOUND:
 			PRINT_HELP_MESSAGE(menu_emu_audiosettings, currentsetting);
 			break;
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
@@ -633,6 +611,7 @@ static void display_label_value(uint64_t switchvalue)
 {
 	switch(switchvalue)
 	{
+		EMU_DISPLAY_LABEL_VALUE();
 		case SETTING_CHANGE_RESOLUTION:
 			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, Emulator_GetFontSize(), ps3graphics_get_initial_resolution() == ps3graphics_get_current_resolution() ? GREEN : ORANGE, ps3graphics_get_resolution_label(ps3graphics_get_current_resolution()));
 			cellDbgFontDraw();
@@ -669,34 +648,6 @@ static void display_label_value(uint64_t switchvalue)
 			break;
 		case SETTING_FONT_SIZE:
 			cellDbgFontPrintf(0.5f,	menu_generalvideosettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	Settings.PS3FontSize == 100 ? GREEN : ORANGE, "%f", Emulator_GetFontSize());
-			break;
-		case SETTING_SNES9X_SOUND_INPUT_RATE:
-			cellDbgFontPrintf	(0.5f,	menu_emu_audiosettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	Settings.SoundInputRate == 31950 ? GREEN : ORANGE, "%d", Settings.SoundInputRate);
-			cellDbgFontDraw();
-			break;
-		case SETTING_SNES9X_MUTE_SOUND:
-			cellDbgFontPrintf	(0.5f,	menu_emu_audiosettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	*(menu_emu_audiosettings.items[switchvalue].setting_ptr) ? GREEN : ORANGE, *(menu_emu_audiosettings.items[switchvalue].setting_ptr) ? "OFF" : "ON");
-			break;
-		case SETTING_SNES9X_AUTO_APPLY_PATCH:
-		case SETTING_SNES9X_AUTO_APPLY_CHEATS:
-			cellDbgFontPuts(0.5f,  menu_emu_settings.items[switchvalue].text_ypos, Emulator_GetFontSize(), *(menu_emu_settings.items[switchvalue].setting_ptr) ? ORANGE : GREEN, *(menu_emu_settings.items[switchvalue].setting_ptr) ? "OFF" : "ON");
-			break;
-		case SETTING_SNES9X_FORCE_PAL:
-		case SETTING_SNES9X_FORCE_NTSC:
-		case SETTING_SNES9X_SRAM_WRITEPROTECT:
-			cellDbgFontPuts(0.5f,  menu_emu_settings.items[switchvalue].text_ypos, Emulator_GetFontSize(), *(menu_emu_settings.items[switchvalue].setting_ptr) == 0 ? GREEN : ORANGE, *(menu_emu_settings.items[switchvalue].setting_ptr) ? "ON" : "OFF");
-			cellDbgFontDraw();
-			break;
-		case SETTING_SNES9X_PAL_TIMING:
-			cellDbgFontPrintf(0.5f, menu_emu_settings.items[switchvalue].text_ypos, Emulator_GetFontSize(), Settings.FrameTimePAL == 20000 ? GREEN : ORANGE, "%d", Settings.FrameTimePAL);
-			break;
-		case SETTING_SNES9X_ACCESSORY_AUTODETECTION:
-			cellDbgFontPrintf	(0.5f,	menu_emu_settings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM ? GREEN : ORANGE, "%s", Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_ENABLED ? "ON" : Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM ? "Confirm" : "OFF");
-			cellDbgFontDraw();
-			break;
-		case SETTING_SNES9X_ACCESSORY_TYPE:
-			cellDbgFontPrintf	(0.5f,	menu_emu_settings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	Settings.AccessoryAutoDetection == SETTING_SNES9X_ACCESSORY_TYPE ? ORANGE : GREEN,  Settings.AccessoryType ? "USB/Bluetooth Mouse" : "Left analog stick");
-			cellDbgFontDraw();
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
 			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, 0.91f, ps3graphics_get_aspect_ratio_float(Settings.PS3KeepAspect) == SCREEN_4_3_ASPECT_RATIO ? GREEN : ORANGE, "%s%d:%d", ps3graphics_calculate_aspect_ratio_before_game_load() ? "(Auto)" : "", (int)ps3graphics_get_aspect_ratio_int(0), (int)ps3graphics_get_aspect_ratio_int(1));
