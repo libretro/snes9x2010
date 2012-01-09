@@ -356,6 +356,7 @@ static void select_file(uint32_t menu_id)
 			strncpy(object, "Border image file", sizeof(object));
 			strncpy(comment, "INFO - Select a border image file from the menu by pressing the X button. ", sizeof(comment));
 			break;
+		EXTRA_SELECT_FILE_PART1();
 	}
 
 	if(set_initial_dir_tmpbrowser)
@@ -417,7 +418,8 @@ static void select_file(uint32_t menu_id)
 					strncpy(Settings.PS3CurrentBorder, path, sizeof(Settings.PS3CurrentBorder));
 					emulator_implementation_set_texture(path);
 					break;
-			}	
+				EXTRA_SELECT_FILE_PART2();
+			}
 
 			menuStackindex--;
 		}
