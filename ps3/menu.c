@@ -323,12 +323,11 @@ static void do_controls_settings(void)
 			if (menu_controlssettings.selected >= MAX_NO_OF_CONTROLS_SETTINGS)
 				menu_controlssettings.selected = FIRST_CONTROLS_SETTING_PAGE_1;
 
+			if (menu_controlssettings.items[menu_controlssettings.selected].page != menu_controlssettings.page)
+				menu_controlssettings.page = menu_controlssettings.items[menu_controlssettings.selected].page;
+
 			set_text_message("", 7);
 
-			if(menu_controlssettings.selected < FIRST_CONTROLS_SETTING_PAGE_2)
-				menu_controlssettings.page = 0;
-			else if(menu_controlssettings.selected < MAX_NO_OF_CONTROLS_SETTINGS)
-				menu_controlssettings.page = 1;
 		}
 
 		if (CTRL_UP(state)  || CTRL_LSTICK_UP(state))	/* up to previous setting*/
@@ -338,12 +337,10 @@ static void do_controls_settings(void)
 			if (menu_controlssettings.selected < FIRST_CONTROLS_SETTING_PAGE_1)
 				menu_controlssettings.selected = MAX_NO_OF_CONTROLS_SETTINGS-1;
 
-			set_text_message("", 7);
+			if (menu_controlssettings.items[menu_controlssettings.selected].page != menu_controlssettings.page)
+				menu_controlssettings.page = menu_controlssettings.items[menu_controlssettings.selected].page;
 
-			if(menu_controlssettings.selected < FIRST_CONTROLS_SETTING_PAGE_2)
-				menu_controlssettings.page = 0;
-			else if(menu_controlssettings.selected < MAX_NO_OF_CONTROLS_SETTINGS)
-				menu_controlssettings.page = 1;
+			set_text_message("", 7);
 		}
 
 		if (menu_controlssettings.refreshpage)
