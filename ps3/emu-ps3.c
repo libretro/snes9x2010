@@ -2455,14 +2455,14 @@ int main(int argc, char **argv)
 	sys_lwmutex_attribute_initialize(attr);
 	sys_lwmutex_create(&audio_lock, &attr);
 
-	MenuInit();
+	menu_init();
 
 	do{
 		switch(mode_switch)
 		{
 			case MODE_MENU:
 				ps3graphics_set_orientation(NORMAL);
-				MenuMainLoop();
+				menu_loop();
 				break;
 			case MODE_EMULATION:
 				if(ingame_menu_item != 0)

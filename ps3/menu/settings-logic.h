@@ -1,10 +1,3 @@
-static void apply_scaling(void)
-{
-	ps3graphics_set_fbo_scale(Settings.ScaleEnabled, Settings.ScaleFactor);
-	ps3graphics_set_smooth(Settings.PS3Smooth, 0);
-	ps3graphics_set_smooth(Settings.PS3Smooth2, 1);
-}
-
 static void producesettingentry(uint64_t switchvalue)
 {
 	uint64_t state;
@@ -394,8 +387,8 @@ static void producesettingentry(uint64_t switchvalue)
 					cellSysmoduleLoadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
 					CellScreenShotSetParam screenshot_param = {0, 0, 0, 0};
 
-					screenshot_param.photo_title = "SNES9x PS3";
-					screenshot_param.game_title = "SNES9x PS3";
+					screenshot_param.photo_title = "SNES9x Next PS3";
+					screenshot_param.game_title = "SNES9x Next PS3";
 					cellScreenShotSetParameter (&screenshot_param);
 					cellScreenShotEnable();
 				}

@@ -156,8 +156,8 @@ enum
 #define MAX_NO_OF_PATH_SETTINGS				SETTING_PATH_DEFAULT_ALL+1
 #define MAX_NO_OF_CONTROLS_SETTINGS			SETTING_CONTROLS_DEFAULT_ALL+1
 
-void MenuInit(void);
-void MenuMainLoop(void);
+void menu_init (void);
+void menu_loop (void);
 
 extern uint32_t menu_is_running;
 

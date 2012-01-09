@@ -8,14 +8,13 @@
 #include <sysutil/sysutil_screenshot.h>
 
 #include "cellframework2/input/pad_input.h"
+#include "cellframework2/fileio/file_browser.h"
+
+#include "emu-ps3.h"
+#include "menu.h"
 
 /*emulator-specific*/
 #include "../src/snes9x.h"
-#include "emu-ps3.h"
-
-#include "menu.h"
-
-#include "cellframework2/fileio/file_browser.h"
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
@@ -125,7 +124,7 @@ static menu menu_controlssettings = {
 	items_generalsettings					/* items*/
 };
 
-static void produce_menubar(uint32_t menu_enum)
+static void display_menubar(uint32_t menu_enum)
 {
 	cellDbgFontPuts    (0.09f,  0.05f,  Emulator_GetFontSize(),  menu_enum == GENERAL_VIDEO_MENU ? RED : GREEN,   menu_generalvideosettings.title);
 	cellDbgFontPuts    (0.19f,  0.05f,  Emulator_GetFontSize(),  menu_enum == GENERAL_AUDIO_MENU ? RED : GREEN,  menu_generalaudiosettings.title);
@@ -136,7 +135,7 @@ static void produce_menubar(uint32_t menu_enum)
 	cellDbgFontDraw();
 }
 
-static void UpdateBrowser(filebrowser_t * b)
+static void browser_update(filebrowser_t * b)
 {
 	static uint64_t old_state = 0;
 	uint64_t state, diff_state, button_was_pressed;
@@ -256,7 +255,7 @@ static void UpdateBrowser(filebrowser_t * b)
 	}
 }
 
-static void RenderBrowser(filebrowser_t * b)
+static void browser_render(filebrowser_t * b)
 {
 	uint32_t file_count = b->file_count;
 	int current_index, page_number, page_base, i;
@@ -279,7 +278,7 @@ static void RenderBrowser(filebrowser_t * b)
 	cellDbgFontDraw();
 }
 
-static void do_select_file(uint32_t menu_id)
+static void select_file(uint32_t menu_id)
 {
 	char extensions[256], title[256], object[256], comment[256], dir_path[MAX_PATH_LENGTH],
 	path[MAX_PATH_LENGTH], *separatorslash;
@@ -338,7 +337,7 @@ static void do_select_file(uint32_t menu_id)
 		set_initial_dir_tmpbrowser = false;
 	}
 
-	UpdateBrowser(&tmpBrowser);
+	browser_update(&tmpBrowser);
 
 	if (CTRL_START(button_was_pressed))
 		filebrowser_reset_start_directory(&tmpBrowser, "/", extensions);
@@ -404,11 +403,11 @@ static void do_select_file(uint32_t menu_id)
 	cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "%s", comment);
 	cellDbgFontDraw();
 
-	RenderBrowser(&tmpBrowser);
+	browser_render(&tmpBrowser);
 	old_state = state;
 }
 
-static void do_pathChoice(uint32_t menu_id)
+static void select_directory(uint32_t menu_id)
 {
         char path[1024], newpath[1024], *separatorslash;
 	uint64_t state, diff_state, button_was_pressed;
@@ -424,7 +423,7 @@ static void do_pathChoice(uint32_t menu_id)
 		set_initial_dir_tmpbrowser = false;
 	}
 
-        UpdateBrowser(&tmpBrowser);
+        browser_update(&tmpBrowser);
 
         if (CTRL_START(button_was_pressed))
 		filebrowser_reset_start_directory(&tmpBrowser, "/","empty");
@@ -502,11 +501,11 @@ static void do_pathChoice(uint32_t menu_id)
 	"INFO - Browse to a directory and assign it as the path by\npressing SQUARE button.");
         cellDbgFontDraw();
 
-        RenderBrowser(&tmpBrowser);
+        browser_render(&tmpBrowser);
         old_state = state;
 }
 
-static void DisplayHelpMessage(int currentsetting)
+static void display_help_text(int currentsetting)
 {
 	switch(currentsetting)
 	{
@@ -630,7 +629,7 @@ static void DisplayHelpMessage(int currentsetting)
 	}
 }
 
-static void producelabelvalue(uint64_t switchvalue)
+static void display_label_value(uint64_t switchvalue)
 {
 	switch(switchvalue)
 	{
@@ -665,7 +664,7 @@ static void producelabelvalue(uint64_t switchvalue)
 		case SETTING_SHADER_2:
 			{
 				extract_filename_only(ps3graphics_get_fragment_shader_path(1));
-				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, Emulator_GetFontSize(), !(Settings.ScaleEnabled) ? SILVER : GREEN, "%s", fname_without_path_extension);
+				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, Emulator_GetFontSize(), GREEN, "%s", fname_without_path_extension);
 			}
 			break;
 		case SETTING_FONT_SIZE:
@@ -682,14 +681,6 @@ static void producelabelvalue(uint64_t switchvalue)
 		case SETTING_SNES9X_AUTO_APPLY_CHEATS:
 			cellDbgFontPuts(0.5f,  menu_emu_settings.items[switchvalue].text_ypos, Emulator_GetFontSize(), *(menu_emu_settings.items[switchvalue].setting_ptr) ? ORANGE : GREEN, *(menu_emu_settings.items[switchvalue].setting_ptr) ? "OFF" : "ON");
 			break;
-#if 0
-		case SETTING_SNES9X_SKIP_FRAMES:
-			if(Settings.SkipFrames == AUTO_FRAMERATE)
-				cellDbgFontPuts(0.5f, menu_emu_settings.items[switchvalue].text_ypos, Emulator_GetFontSize(), GREEN, "AUTO");
-			else
-				cellDbgFontPrintf(0.5f, menu_emu_settings.items[switchvalue].text_ypos, Emulator_GetFontSize(), ORANGE, "%d", Settings.SkipFrames);
-			break;
-#endif
 		case SETTING_SNES9X_FORCE_PAL:
 		case SETTING_SNES9X_FORCE_NTSC:
 		case SETTING_SNES9X_SRAM_WRITEPROTECT:
@@ -801,9 +792,16 @@ static void producelabelvalue(uint64_t switchvalue)
 	}
 }
 
+static void apply_scaling(void)
+{
+	ps3graphics_set_fbo_scale(Settings.ScaleEnabled, Settings.ScaleFactor);
+	ps3graphics_set_smooth(Settings.PS3Smooth, 0);
+	ps3graphics_set_smooth(Settings.PS3Smooth2, 1);
+}
+
 #include "menu/settings-logic.h"
 
-static void do_settings(menu * menu_obj)
+static void select_setting(menu * menu_obj)
 {
 	uint64_t state, diff_state, button_was_pressed, i;
 	static uint64_t old_state = 0;
@@ -860,7 +858,9 @@ static void do_settings(menu * menu_obj)
 			}
 		}
 
-		if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))	/* down to next setting */
+		/* down to next setting */
+
+		if (CTRL_DOWN(state) || CTRL_LSTICK_DOWN(state))
 		{
 			menu_obj->selected++;
 
@@ -873,7 +873,9 @@ static void do_settings(menu * menu_obj)
 			set_text_message("", 7);
 		}
 
-		if (CTRL_UP(state) || CTRL_LSTICK_UP(state))	/* up to previous setting */
+		/* up to previous setting */
+
+		if (CTRL_UP(state) || CTRL_LSTICK_UP(state))
 		{
 			if (menu_obj->selected == menu_obj->first_setting)
 				menu_obj->selected = menu_obj->max_settings-1;
@@ -886,9 +888,10 @@ static void do_settings(menu * menu_obj)
 			set_text_message("", 7);
 		}
 
+		/* if a rom is loaded then resume it */
+
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
-			/* if a rom is loaded then resume it */
 			if (Emulator_IsROMLoaded())
 			{
 				menu_is_running = 0;
@@ -903,7 +906,7 @@ static void do_settings(menu * menu_obj)
 		producesettingentry(menu_obj->selected);
 	}
 
-	produce_menubar(menu_obj->enum_id);
+	display_menubar(menu_obj->enum_id);
 	cellDbgFontDraw();
 
 	for ( i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
@@ -911,12 +914,12 @@ static void do_settings(menu * menu_obj)
 		if(menu_obj->items[i].page == menu_obj->page)
 		{
 			cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->selected == menu_obj->items[i].enum_id ? menu_obj->items[i].text_selected_color : menu_obj->items[i].text_unselected_color, menu_obj->items[i].text);
-			producelabelvalue(i);
+			display_label_value(i);
 			cellDbgFontDraw();
 		}
 	}
 
-	DisplayHelpMessage(menu_obj->selected);
+	display_help_text(menu_obj->selected);
 
 	cellDbgFontPuts(0.09f, 0.91f, Emulator_GetFontSize(), YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
 	cellDbgFontPuts(0.09f, 0.95f, Emulator_GetFontSize(), YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
@@ -924,7 +927,7 @@ static void do_settings(menu * menu_obj)
 	old_state = state;
 }
 
-static void do_ROMMenu(void)
+static void select_rom(void)
 {
 	char rom_path[MAX_PATH_LENGTH], newpath[1024], *separatorslash;
 	uint64_t state, diff_state, button_was_pressed;
@@ -934,7 +937,7 @@ static void do_ROMMenu(void)
 	diff_state = old_state ^ state;
 	button_was_pressed = old_state & diff_state;
 
-	UpdateBrowser(&browser);
+	browser_update(&browser);
 
 	if (CTRL_SELECT(button_was_pressed))
 	{
@@ -1002,11 +1005,11 @@ static void do_ROMMenu(void)
 	"L3 + R3 - resume game           SELECT - Settings screen");
 	cellDbgFontDraw();
 
-	RenderBrowser(&browser);
+	browser_render(&browser);
 	old_state = state;
 }
 
-static void init_settings_pages(menu * menu_obj)
+static void menu_init_settings_pages(menu * menu_obj)
 {
 	int page, i, j;
 	float increment;
@@ -1033,19 +1036,19 @@ static void init_settings_pages(menu * menu_obj)
 	menu_obj->refreshpage = 0;
 }
 
-void MenuInit(void)
+void menu_init(void)
 {
 	filebrowser_new(&browser, Settings.PS3PathROMDirectory, ROM_EXTENSIONS);
 
-	init_settings_pages(&menu_generalvideosettings);
-	init_settings_pages(&menu_generalaudiosettings);
-	init_settings_pages(&menu_emu_settings);
-	init_settings_pages(&menu_emu_audiosettings);
-	init_settings_pages(&menu_pathsettings);
-	init_settings_pages(&menu_controlssettings);
+	menu_init_settings_pages(&menu_generalvideosettings);
+	menu_init_settings_pages(&menu_generalaudiosettings);
+	menu_init_settings_pages(&menu_emu_settings);
+	menu_init_settings_pages(&menu_emu_audiosettings);
+	menu_init_settings_pages(&menu_pathsettings);
+	menu_init_settings_pages(&menu_controlssettings);
 }
 
-void MenuMainLoop(void)
+void menu_loop(void)
 {
 	menuStack[0] = menu_filebrowser;
 	menuStack[0].enum_id = FILE_BROWSER_MENU;
@@ -1060,7 +1063,7 @@ void MenuMainLoop(void)
 		switch(menuStack[menuStackindex].enum_id)
 		{
 			case FILE_BROWSER_MENU:
-				do_ROMMenu();
+				select_rom();
 				break;
 			case GENERAL_VIDEO_MENU:
 			case GENERAL_AUDIO_MENU:
@@ -1068,20 +1071,20 @@ void MenuMainLoop(void)
 			case EMU_AUDIO_MENU:
 			case PATH_MENU:
 			case CONTROLS_MENU:
-				do_settings(&menuStack[menuStackindex]);
+				select_setting(&menuStack[menuStackindex]);
 				break;
 			case GAME_AWARE_SHADER_CHOICE:
 			case SHADER_CHOICE:
 			case PRESET_CHOICE:
 			case BORDER_CHOICE:
 			case INPUT_PRESET_CHOICE:
-				do_select_file(menuStack[menuStackindex].enum_id);
+				select_file(menuStack[menuStackindex].enum_id);
 				break;
 			case PATH_SAVESTATES_DIR_CHOICE:
 			case PATH_DEFAULT_ROM_DIR_CHOICE:
 			case PATH_CHEATS_DIR_CHOICE:
 			case PATH_SRAM_DIR_CHOICE:
-				do_pathChoice(menuStack[menuStackindex].enum_id);
+				select_directory(menuStack[menuStackindex].enum_id);
 				break;
 		}
 
