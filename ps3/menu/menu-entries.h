@@ -91,6 +91,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0,
 		1
 	},
+#ifdef HAVE_GAMEAWARE
 	{
 		SETTING_GAME_AWARE_SHADER,
 		"Game Aware Shader Script",
@@ -109,6 +110,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		0,
 		1
 	},
+#endif
 	{
 		SETTING_FONT_SIZE,
 		"Font Size",

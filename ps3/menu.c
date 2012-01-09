@@ -316,6 +316,7 @@ static void select_file(uint32_t menu_id)
 
 	switch(menu_id)
 	{
+#ifdef HAVE_GAMEAWARE
 		case GAME_AWARE_SHADER_CHOICE:
 			strncpy(dir_path, GAME_AWARE_SHADER_DIR_PATH, sizeof(dir_path));
 			strncpy(extensions, "cfg|CFG", sizeof(extensions));
@@ -323,6 +324,7 @@ static void select_file(uint32_t menu_id)
 			strncpy(object, "Game Aware Shader", sizeof(object));
 			strncpy(comment, "INFO - Select a 'Game Aware Shader' script from the menu by pressing X.", sizeof(comment));
 			break;
+#endif
 		case SHADER_CHOICE:
 			strncpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
 			strncpy(extensions, "cg|CG", sizeof(extensions));
@@ -392,10 +394,12 @@ static void select_file(uint32_t menu_id)
 
 			switch(menu_id)
 			{
+#ifdef HAVE_GAMEAWARE
 				case GAME_AWARE_SHADER_CHOICE:
 					emulator_implementation_set_gameaware(path);
 					strncpy(Settings.GameAwareShaderPath, path, sizeof(Settings.GameAwareShaderPath));
 					break;
+#endif
 				case SHADER_CHOICE:
 					if(set_shader)
 						strncpy(Settings.PS3CurrentShader2, path, sizeof(Settings.PS3CurrentShader2));
@@ -560,7 +564,9 @@ static void display_help_text(int currentsetting)
 			PRINT_HELP_MESSAGE(menu_generalaudiosettings, currentsetting);
 			break;
 		case SETTING_BORDER:
+#ifdef HAVE_GAMEAWARE
 		case SETTING_GAME_AWARE_SHADER:
+#endif
 		case SETTING_SHADER:
 		case SETTING_SHADER_2:
 		case SETTING_FONT_SIZE:
@@ -660,9 +666,11 @@ static void display_label_value(uint64_t switchvalue)
 			cellDbgFontPrintf	(0.5f,	menu_generalvideosettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	Settings.PS3PALTemporalMode60Hz ? ORANGE : GREEN, Settings.PS3PALTemporalMode60Hz ? "ON" : "OFF");
 			break;
 #endif
+#ifdef HAVE_GAMEAWARE
 		case SETTING_GAME_AWARE_SHADER:
 			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, Emulator_GetFontSize(), (strcmp(Settings.GameAwareShaderPath, "") == 0) ? GREEN : ORANGE, Settings.GameAwareShaderPath);
 			break;
+#endif
 		case SETTING_SHADER_PRESETS:
 			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, Emulator_GetFontSize(), Settings.ShaderPresetPath == DEFAULT_PRESET_FILE ? GREEN : ORANGE, "%s", Settings.ShaderPresetTitle);
 			break;
@@ -1071,7 +1079,9 @@ void menu_loop(void)
 			case CONTROLS_MENU:
 				select_setting(&menuStack[menuStackindex]);
 				break;
+#ifdef HAVE_GAMEAWARE
 			case GAME_AWARE_SHADER_CHOICE:
+#endif
 			case SHADER_CHOICE:
 			case PRESET_CHOICE:
 			case BORDER_CHOICE:

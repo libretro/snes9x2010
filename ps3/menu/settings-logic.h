@@ -75,6 +75,7 @@ static void producesettingentry(uint64_t switchvalue)
 		   }
 		   break;
 		 */
+#ifdef HAVE_GAMEAWARE
 		case SETTING_GAME_AWARE_SHADER:
 		if((CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_CROSS(state)) && Settings.ScaleEnabled)
 		{
@@ -90,6 +91,7 @@ static void producesettingentry(uint64_t switchvalue)
 			strcpy(Settings.PS3CurrentShader2, DEFAULT_SHADER_FILE);
 		}
 		break;
+#endif
 		case SETTING_SHADER_PRESETS:
 		if(Settings.ScaleEnabled)
 		{
