@@ -326,19 +326,9 @@ static void do_controls_settings(void)
 			set_text_message("", 7);
 
 			if(menu_controlssettings.selected < FIRST_CONTROLS_SETTING_PAGE_2)
-			{
-				if(menu_controlssettings.page != 0)
-					menu_controlssettings.refreshpage = 1;
-
 				menu_controlssettings.page = 0;
-			}
 			else if(menu_controlssettings.selected < MAX_NO_OF_CONTROLS_SETTINGS)
-			{
-				if(menu_controlssettings.page != 1)
-					menu_controlssettings.refreshpage = 1;
-
 				menu_controlssettings.page = 1;
-			}
 		}
 
 		if (CTRL_UP(state)  || CTRL_LSTICK_UP(state))	/* up to previous setting*/
@@ -351,32 +341,31 @@ static void do_controls_settings(void)
 			set_text_message("", 7);
 
 			if(menu_controlssettings.selected < FIRST_CONTROLS_SETTING_PAGE_2)
-			{
-				if(menu_controlssettings.page != 0)
-					menu_controlssettings.refreshpage = 1;
-
 				menu_controlssettings.page = 0;
-			}
 			else if(menu_controlssettings.selected < MAX_NO_OF_CONTROLS_SETTINGS)
-			{
-				if(menu_controlssettings.page != 1)
-					menu_controlssettings.refreshpage = 1;
-
 				menu_controlssettings.page = 1;
-			}
 		}
 
 		if (menu_controlssettings.refreshpage)
 		{
-			switch(menu_controlssettings.page)
-			{
-				case 0:
-					do_controls_refreshpage(FIRST_CONTROLS_SETTING_PAGE_1,SETTING_CONTROLS_BUTTON_L2_BUTTON_L3+1);
-					break;
-				case 1:
-					do_controls_refreshpage(SETTING_CONTROLS_BUTTON_L2_BUTTON_L3,SETTING_CONTROLS_DEFAULT_ALL+1);
-					break;
-			}
+			int i, j, page;
+			float increment;
+
+			page = 0;
+
+			i = menu_controlssettings.first_setting;
+
+			do{
+				for ( j = 0, increment = 0.13f; j < (NUM_ENTRY_PER_PAGE); j++)
+				{
+					menu_controlssettings.items[i].text_xpos = 0.09f;
+					menu_controlssettings.items[i].text_ypos = increment; 
+					menu_controlssettings.items[i].page = page;
+					increment += 0.03f;
+					i++;
+				}
+				page++;
+			}while(i < menu_controlssettings.max_settings);
 			menu_controlssettings.refreshpage = 0;
 		}
 
@@ -399,27 +388,15 @@ static void do_controls_settings(void)
 	produce_menubar(menu_controlssettings.enum_id);
 	cellDbgFontDraw();
 
-/*PAGE 1*/
-if(menu_controlssettings.page == 0)
-{
-	for(int i = SETTING_CONTROLS_SCHEME; i < FIRST_CONTROLS_SETTING_PAGE_2; i++)
+	for(int i = SETTING_CONTROLS_SCHEME; i < SETTING_CONTROLS_DEFAULT_ALL+1; i++)
 	{
-		cellDbgFontPuts(0.09f,	menu_controlssettings.items[i].text_ypos,	Emulator_GetFontSize(),	menu_controlssettings.selected == menu_controlssettings.items[i].enum_id ? YELLOW : WHITE,	menu_controlssettings.items[i].text);
-		producelabelvalue(i);
-		cellDbgFontDraw();
+		if(menu_controlssettings.items[i].page == menu_controlssettings.page)
+		{
+			cellDbgFontPuts(0.09f,	menu_controlssettings.items[i].text_ypos,	Emulator_GetFontSize(),	menu_controlssettings.selected == menu_controlssettings.items[i].enum_id ? YELLOW : WHITE,	menu_controlssettings.items[i].text);
+			producelabelvalue(i);
+			cellDbgFontDraw();
+		}
 	}
-}
-
-/*PAGE 2*/
-if(menu_controlssettings.page == 1)
-{
-	for(int i = FIRST_CONTROLS_SETTING_PAGE_2; i < SETTING_CONTROLS_DEFAULT_ALL+1; i++)
-	{
-		cellDbgFontPuts		(0.09f,	menu_controlssettings.items[i].text_ypos,	Emulator_GetFontSize(),	menu_controlssettings.selected == menu_controlssettings.items[i].enum_id ? YELLOW : WHITE,	menu_controlssettings.items[i].text);
-		producelabelvalue(i);
-		cellDbgFontDraw();
-	}
-}
 
 	cellDbgFontDraw();
 
@@ -436,7 +413,7 @@ if(menu_controlssettings.page == 1)
 
 static void do_settings(menu * menu_obj)
 {
-	uint64_t state, diff_state, button_was_pressed, i;
+	uint64_t state, diff_state, button_was_pressed, i, j;
 	static uint64_t old_state = 0;
 	float increment;
 
@@ -452,13 +429,23 @@ static void do_settings(menu * menu_obj)
 
 	if (menu_obj->refreshpage)
 	{
-		increment = 0.13f;
-		for ( i= menu_obj->first_setting; i < menu_obj->max_settings; i++)
-		{
-			menu_obj->items[i].text_xpos = 0.09f;
-			menu_obj->items[i].text_ypos = increment; 
-			increment += 0.03f;
-		}
+		int page;
+		
+		page = 0;
+
+		i = menu_obj->first_setting;
+
+		do{
+			for ( j = 0, increment = 0.13f; j < (NUM_ENTRY_PER_PAGE); j++)
+			{
+				menu_obj->items[i].text_xpos = 0.09f;
+				menu_obj->items[i].text_ypos = increment; 
+				menu_obj->items[i].page = page;
+				increment += 0.03f;
+				i++;
+			}
+			page++;
+		}while(i < menu_obj->max_settings);
 		menu_obj->refreshpage = 0;
 	}
 
