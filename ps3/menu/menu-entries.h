@@ -446,6 +446,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		{0},
 		{0}
 	},
+#ifdef HAVE_CHEATS
 	{
 		SETTING_PATH_CHEATS,
 		"Cheatfile Directory",
@@ -462,6 +463,7 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		{0},
 		{0}
 	},
+#endif
 	{
 		SETTING_PATH_DEFAULT_ALL,
 		"DEFAULT",
@@ -831,7 +833,11 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},	
 		{0},
+#ifdef HAVE_CHEATS
 		BTN_INCREMENTCHEAT
+#else
+		BTN_NONE
+#endif
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT,
@@ -848,7 +854,11 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
+#ifdef HAVE_CHEATS
 		BTN_DECREMENTCHEAT
+#else
+		BTN_NONE
+#endif
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP,
@@ -865,7 +875,11 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
+#ifdef HAVE_CHEATS
 		BTN_CHEATTOGGLE
+#else
+		BTN_NONE
+#endif
 	},
 	{
 		SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN,
@@ -882,7 +896,11 @@ static item items_generalsettings[MAX_NO_OF_CONTROLS_SETTINGS] =
 		NULL, //setting ptr
 		{0},
 		{0},
+#ifdef HAVE_CHEATS
 		BTN_CHEATINPUT
+#else
+		BTN_NONE
+#endif
 	},
 	{
 		SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT,

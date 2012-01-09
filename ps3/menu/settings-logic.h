@@ -516,6 +516,7 @@ static void producesettingentry(uint64_t switchvalue)
 			strcpy(Settings.PS3PathSRAM, "");
 
 		break;
+#ifdef HAVE_CHEATS
 		case SETTING_PATH_CHEATS:
 		if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
 		{
@@ -529,12 +530,15 @@ static void producesettingentry(uint64_t switchvalue)
 			strcpy(Settings.PS3PathCheats, usrDirPath);
 
 		break;
+#endif
 		case SETTING_PATH_DEFAULT_ALL:
 		if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) ||  CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 		{
 			strcpy(Settings.PS3PathROMDirectory, "/");
 			strcpy(Settings.PS3PathSaveStates, usrDirPath);
+#ifdef HAVE_CHEATS
 			strcpy(Settings.PS3PathCheats, usrDirPath);
+#endif
 			strcpy(Settings.PS3PathSRAM, "");
 		}
 		break;

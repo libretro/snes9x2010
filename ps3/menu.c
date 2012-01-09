@@ -469,9 +469,11 @@ static void select_directory(uint32_t menu_id)
                                 case PATH_DEFAULT_ROM_DIR_CHOICE:
                                         strcpy(Settings.PS3PathROMDirectory, path);
                                         break;
+				#ifdef HAVE_CHEATS
 				case PATH_CHEATS_DIR_CHOICE:
 					strcpy(Settings.PS3PathCheats, path);
 					break;
+				#endif
                         }
                         menuStackindex--;
                 }
@@ -490,9 +492,11 @@ static void select_directory(uint32_t menu_id)
                         case PATH_DEFAULT_ROM_DIR_CHOICE:
                                 strcpy(Settings.PS3PathROMDirectory, path);
                                 break;
+#ifdef HAVE_CHEATS
 			case PATH_CHEATS_DIR_CHOICE:
 				strcpy(Settings.PS3PathCheats, path);
 				break;
+#endif
                 }
                 menuStackindex--;
         }
@@ -583,7 +587,9 @@ static void display_help_text(int currentsetting)
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
 		case SETTING_PATH_SRAM_DIRECTORY:
+#ifdef HAVE_CHEATS
 		case SETTING_PATH_CHEATS:
+#endif
 		case SETTING_PATH_DEFAULT_ALL:
 			PRINT_HELP_MESSAGE(menu_pathsettings, currentsetting);
 			break;
@@ -722,9 +728,11 @@ static void display_label_value(uint64_t switchvalue)
 		case SETTING_PATH_SRAM_DIRECTORY:
 			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	!(strcmp(Settings.PS3PathSRAM,usrDirPath)) ? GREEN : ORANGE, Settings.PS3PathSRAM);
 			break;
+#ifdef HAVE_CHEATS
 		case SETTING_PATH_CHEATS:
 			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	!(strcmp(Settings.PS3PathCheats,usrDirPath)) ? GREEN : ORANGE, Settings.PS3PathCheats);
 			break;
+#endif
 		case SETTING_DEFAULT_VIDEO_ALL:
 		case SETTING_CONTROLS_DEFAULT_ALL:
 		case SETTING_SAVE_SHADER_PRESET:
@@ -1072,7 +1080,9 @@ void menu_loop(void)
 				break;
 			case PATH_SAVESTATES_DIR_CHOICE:
 			case PATH_DEFAULT_ROM_DIR_CHOICE:
+#ifdef HAVE_CHEATS
 			case PATH_CHEATS_DIR_CHOICE:
+#endif
 			case PATH_SRAM_DIR_CHOICE:
 				select_directory(menuStack[menuStackindex].enum_id);
 				break;
