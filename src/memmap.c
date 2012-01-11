@@ -259,8 +259,10 @@ static void S9xDeinterleaveType1 (int size, uint8 *base)
 {
 	uint8 *tmp;
 	uint8	blocks[256], b;
-	int	nblocks = size >> 16;
+	int nblocks;
 	int	i, j;
+	
+	nblocks = size >> 16;
 
 	for ( i = 0; i < nblocks; i++)
 	{
