@@ -271,7 +271,8 @@ static void browser_update(filebrowser_t * b)
 			if (Emulator_IsROMLoaded())
 			{
 				menu_is_running = 0;
-				Emulator_StartROMRunning(1);
+				is_running = 1;
+				mode_switch = MODE_EMULATION;
 				set_text_message("", 15);
 			}
 		}
@@ -901,7 +902,8 @@ static void select_setting(menu * menu_obj)
 			if (Emulator_IsROMLoaded())
 			{
 				menu_is_running = 0;
-				Emulator_StartROMRunning(1);
+				is_running = 1;
+				mode_switch = MODE_EMULATION;
 				set_text_message("", 15);
 			}
 			old_state = state;
@@ -935,7 +937,7 @@ static void select_setting(menu * menu_obj)
 
 static void select_rom(void)
 {
-	char rom_path[MAX_PATH_LENGTH], newpath[1024], *separatorslash;
+	char newpath[1024], *separatorslash;
 	uint64_t state, diff_state, button_was_pressed;
 	static uint64_t old_state = 0;
 
@@ -975,14 +977,20 @@ static void select_rom(void)
 		}
 		else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 		{
-			snprintf(rom_path, sizeof(rom_path), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+			char rom_path_temp[MAX_PATH_LENGTH];
+			snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
 			menu_is_running = 0;
+			is_running =1;
+			mode_switch = MODE_EMULATION;
 
-			/* switch emulator to emulate mode*/
-			Emulator_StartROMRunning(1);
-
-			Emulator_RequestLoadROM(rom_path);
+			if (current_rom == NULL || strcmp(rom_path_temp, current_rom) != 0)
+			{
+				snprintf(current_rom, sizeof(current_rom), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
+				need_load_rom = true;
+			}
+			else
+				g_do_reset = true;
 
 			old_state = state;
 			return;

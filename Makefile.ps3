@@ -24,7 +24,7 @@ CELL_SDK             ?= /usr/local/cell
 CELL_GPU_TYPE	   	= RSX
 
 #CELL_PSGL_VERSION is debug, dpm or opt
-CELL_PSGL_VERSION	= ultra-opt
+CELL_PSGL_VERSION	= opt
 
 #Python binary - only useful for PSL1ght scripts
 PYTHONBIN	         = python2.7
@@ -161,7 +161,7 @@ L_SYSUTIL_SCREENSHOT =
 endif
 
 
-PPU_LDLIBS		+= -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/ultra-opt -ldbgfont -lPSGL -lPSGLcgc -lcgc \
+PPU_LDLIBS		+= -L. -L$(CELL_SDK)/target/ppu/lib/PSGL/RSX/opt -ldbgfont -lPSGL -lPSGLcgc -lcgc \
 			-lgcm_cmd -lgcm_sys_stub -lresc_stub -lm -lio_stub -lfs_stub -lsysutil_stub -lsysutil_game_stub $(L_SYSUTIL_SCREENSHOT) $(L_CONTROL_CONSOLE_LDLIBS) -lpngdec_stub -ljpgdec_stub \
 			-lsysmodule_stub -laudio_stub -lpthread -lnet_stub $(L_NET_CTL_LDLIBS) $(TOC_INFO) $(NOTOCRESTORE)
 

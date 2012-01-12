@@ -82,9 +82,7 @@ void emulator_toggle_sound(uint64_t soundmode);
 void emulator_implementation_set_shader_preset(const char * fname);
 void emulator_implementation_set_gameaware(const char * fname);
 float Emulator_GetFontSize(void);
-void Emulator_RequestLoadROM(const char* rom);
 bool Emulator_IsROMLoaded(void);
-void Emulator_StartROMRunning(uint32_t set_is_running);
 void emulator_save_settings(uint64_t filetosave);
 void set_text_message(const char * message, uint32_t speed);
 
@@ -103,6 +101,11 @@ extern char DEFAULT_MENU_SHADER_FILE[MAX_PATH_LENGTH];
 extern char SYS_CONFIG_FILE[MAX_PATH_LENGTH];
 extern oskutil_params oskutil_handle;
 extern uint64_t mode_switch;
+
+extern bool g_do_reset;
+extern bool need_load_rom;
+extern char current_rom[MAX_PATH_LENGTH];
+extern uint32_t is_running;
 
 extern uint32_t special_action_msg_expired; /* time at which the message no longer needs to be overlaid onscreen */
 

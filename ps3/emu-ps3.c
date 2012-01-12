@@ -73,12 +73,13 @@ uint32_t control_binds[MAX_PADS][BTN_DEF_MAX];
 
 uint64_t mode_switch = MODE_MENU;			/* mode the main loop is in */
 
-static uint32_t is_running;				/* is the ROM currently running in the emulator? */
+uint32_t is_running;					/* is the ROM currently running in the emulator? */
 static bool is_ingame_menu_running;			// is the ingame menu currently running?
 bool return_to_MM = false;				// launch multiMAN on exit if ROM is passed
 bool emulator_initialized = false;			// is the emulator loaded?
 bool need_load_rom = false;				// need to load the current rom
-char* current_rom = NULL;				// current filename of the ROM being emulated
+bool g_do_reset = false;
+char current_rom[MAX_PATH_LENGTH];			// current filename of the ROM being emulated
 bool dialog_is_running = false;				// is a dialog screen currently running?
 char special_action_msg[256];				
 uint32_t special_action_msg_expired;			// time at which the message no longer needs to be overlaid onscreen
@@ -1860,32 +1861,6 @@ static void emulator_shutdown(void)
 #endif
 }
 
-void Emulator_RequestLoadROM(const char* rom)
-{
-	if (current_rom == NULL || strcmp(rom, current_rom) != 0)
-	{
-		if (current_rom != NULL)
-			free(current_rom);
-
-		current_rom = strdup(rom);
-		need_load_rom = true;
-	}
-	else
-	{
-		need_load_rom = false;
-		S9xSoftReset();
-	}
-}
-
-void Emulator_StartROMRunning(uint32_t set_is_running)
-{
-	if(set_is_running)
-		is_running = 1;
-	mode_switch = MODE_EMULATION;
-}
-
-
-
 //FIXME: Turn GREEN into WHITE and RED into LIGHTBLUE once the overlay is in
 #define ingame_menu_reset_entry_colors(ingame_menu_item) \
 { \
@@ -1922,7 +1897,7 @@ static void ingame_menu(void)
 				is_running = 1;
 				ingame_menu_item = 0;
 				is_ingame_menu_running = 0;
-				Emulator_StartROMRunning(0);
+				mode_switch = MODE_EMULATION;
 			}
 
 			switch(ingame_menu_item)
@@ -1934,7 +1909,7 @@ static void ingame_menu(void)
 						is_running = 1;
 						ingame_menu_item = 0;
 						is_ingame_menu_running = 0;
-						Emulator_StartROMRunning(0);
+						mode_switch = MODE_EMULATION;
 					}
 					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
 					{
@@ -1957,7 +1932,7 @@ static void ingame_menu(void)
 						is_running = 1;
 						ingame_menu_item = 0;
 						is_ingame_menu_running = 0;
-						Emulator_StartROMRunning(0);
+						mode_switch = MODE_EMULATION;
 					}
 					if(CTRL_LEFT(button_was_pressed) || CTRL_LSTICK_LEFT(button_was_pressed))
 					{
@@ -2064,7 +2039,7 @@ static void ingame_menu(void)
 						is_running = 0;
 						ingame_menu_item = MENU_ITEM_FRAME_ADVANCE;
 						is_ingame_menu_running = 0;
-						Emulator_StartROMRunning(0);
+						mode_switch = MODE_EMULATION;
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
 					strcpy(comment, "Press 'CROSS', 'L2' or 'R2' button to step one frame.\nNOTE: Pressing the button rapidly will advance the frame more slowly\nand prevent buttons from being input.");
@@ -2123,7 +2098,7 @@ static void ingame_menu(void)
 						is_running = 1;
 						ingame_menu_item = 0;
 						is_ingame_menu_running = 0;
-						Emulator_StartROMRunning(0);
+						mode_switch = MODE_EMULATION;
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
 					strcpy(comment, "Press 'CROSS' to return back to the game.");
@@ -2135,7 +2110,7 @@ static void ingame_menu(void)
 						is_running = 1;
 						ingame_menu_item = 0;
 						is_ingame_menu_running = 0;
-						Emulator_StartROMRunning(0);
+						mode_switch = MODE_EMULATION;
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
 					strcpy(comment, "Press 'CROSS' to reset the game.");
@@ -2148,7 +2123,7 @@ static void ingame_menu(void)
 						need_load_rom = 1;
 						is_running = 1;
 						is_ingame_menu_running = 0;
-						Emulator_StartROMRunning(0);
+						mode_switch = MODE_EMULATION;
 						ingame_menu_item = 0;
 					}
 					ingame_menu_reset_entry_colors (ingame_menu_item);
@@ -2162,7 +2137,7 @@ static void ingame_menu(void)
 						need_load_rom = 1;
 						is_running = 1;
 						is_ingame_menu_running = 0;
-						Emulator_StartROMRunning(0);
+						mode_switch = MODE_EMULATION;
 						ingame_menu_item = 0;
 					} 
 					ingame_menu_reset_entry_colors (ingame_menu_item);
@@ -2465,6 +2440,12 @@ int main(int argc, char **argv)
 				menu_loop();
 				break;
 			case MODE_EMULATION:
+				if(g_do_reset)
+				{
+					need_load_rom = false;
+					S9xSoftReset();
+					g_do_reset = false;
+				}
 				if(ingame_menu_item != 0)
 					is_ingame_menu_running = 1;
 
@@ -2480,7 +2461,8 @@ int main(int argc, char **argv)
 				break;
 #ifdef MULTIMAN_SUPPORT
 			case MODE_MULTIMAN_STARTUP:
-				Emulator_StartROMRunning(1);
+				is_running = 1;
+				mode_switch = MODE_EMULATION;
 				Emulator_RequestLoadROM(MULTIMAN_GAME_TO_BOOT);
 				break;
 #endif
