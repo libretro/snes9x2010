@@ -18,7 +18,7 @@ typedef struct
 	float text_ypos;			/* text Y position (upper left corner)		*/
 	uint32_t text_color;			/* text color					*/
 	char comment[256];			/* item comment					*/
-	uint32_t comment_color;			/* color of item comment			*/
+	uint32_t item_color;			/* color of item 				*/
 	float comment_scalefont;		/* font scale of item comment			*/ 
 	float comment_xpos;			/* comment X position (upper left corner)	*/
 	float comment_ypos;			/* comment Y position (upper left corner)	*/
