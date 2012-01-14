@@ -77,7 +77,6 @@ uint32_t is_running;					/* is the ROM currently running in the emulator? */
 static bool is_ingame_menu_running;			// is the ingame menu currently running?
 bool return_to_MM = false;				// launch multiMAN on exit if ROM is passed
 bool emulator_initialized = false;			// is the emulator loaded?
-bool need_load_rom = false;				// need to load the current rom
 bool g_do_reset = false;
 char current_rom[MAX_PATH_LENGTH];			// current filename of the ROM being emulated
 bool dialog_is_running = false;				// is a dialog screen currently running?
@@ -890,7 +889,7 @@ static void emulator_implementation_input_loop()
    MAP_BUTTON(MAKE_BUTTON(padno, BTN_INGAME_MENU), "ExitToMenu");
 
 
-static bool emulator_init_system(void)
+bool emulator_init_system(void)
 {
 	if(Settings.AccessoryType)
 		cell_mouse_input_init();
@@ -1097,6 +1096,8 @@ static bool emulator_init_system(void)
 	map_snes9x_special_controls(PAD_1);
 	map_snes9x_special_controls(PAD_2);
 
+	emulator_initialized = 1;
+
 	return true;
 }
 
@@ -1174,15 +1175,15 @@ static void emulator_init_settings(void)
 		Settings.ForceNTSC = false;
 	}
 
-	init_setting_bool("ROM::Header", Settings.ForceHeader, false);
+	init_setting_bool("ROM::Header", Settings.ForceHeader, FALSE);
 	Settings.ForceNoHeader = !Settings.ForceHeader;
 
-	init_setting_bool("ROM::Interleaved", Settings.ForceInterleaved, false);
+	init_setting_bool("ROM::Interleaved", Settings.ForceInterleaved, FALSE);
 	Settings.ForceNotInterleaved = !Settings.ForceInterleaved;
 
 	// Settings
 
-	init_setting_bool("Settings::BSXBootup", Settings.BSXBootup, false);
+	init_setting_bool("Settings::BSXBootup", Settings.BSXBootup, FALSE);
 
 	/*
 	   if (conf.Exists("BSX::CartAName"))
@@ -1200,8 +1201,8 @@ static void emulator_init_settings(void)
 
 	// Hack
 
-	init_setting_bool("Hack::DisableGameSpecificHacks", Settings.DisableGameSpecificHacks, false);
-	init_setting_bool("Hack::BlockInvalidVRAMAccess", Settings.BlockInvalidVRAMAccessMaster, true)
+	init_setting_bool("Hack::DisableGameSpecificHacks", Settings.DisableGameSpecificHacks, FALSE);
+	init_setting_bool("Hack::BlockInvalidVRAMAccess", Settings.BlockInvalidVRAMAccessMaster, TRUE)
 	init_setting_int("Hack::HDMATiming", Settings.HDMATimingHack, 100);
 
 	char tmp_str[512];
@@ -1741,25 +1742,9 @@ void S9xDeinitUpdate(int width, int height)
 	_jsPlatformSwapBuffers(psgl_device);
 }
 
-static void Emulator_Initialize(void)
-{
-	if(emulator_init_system())
-	{
-		if(!emulator_initialized)
-			emulator_initialized = 1;
-
-		need_load_rom = false;
-	}
-	else
-		need_load_rom = true;
-}
-
 static void emulator_start(void)
 {
 	ps3graphics_set_orientation(Settings.Orientation);
-
-	if(need_load_rom)
-		Emulator_Initialize();
 
 	if (ps3graphics_get_current_resolution() == CELL_VIDEO_OUT_RESOLUTION_576)
 	{
@@ -1816,7 +1801,7 @@ float Emulator_GetFontSize(void)
 
 bool Emulator_IsROMLoaded(void)
 {
-	return current_rom != NULL && need_load_rom == false;
+	return current_rom != NULL;
 }
 
 static void emulator_shutdown(void)
@@ -2120,7 +2105,6 @@ static void ingame_menu(void)
 					{
 						Settings.ForceNTSC = false;
 						Settings.ForcePAL = true;
-						need_load_rom = 1;
 						is_running = 1;
 						is_ingame_menu_running = 0;
 						mode_switch = MODE_EMULATION;
@@ -2134,7 +2118,6 @@ static void ingame_menu(void)
 					{
 						Settings.ForceNTSC = true;
 						Settings.ForcePAL = false;
-						need_load_rom = 1;
 						is_running = 1;
 						is_ingame_menu_running = 0;
 						mode_switch = MODE_EMULATION;
@@ -2442,7 +2425,6 @@ int main(int argc, char **argv)
 			case MODE_EMULATION:
 				if(g_do_reset)
 				{
-					need_load_rom = false;
 					S9xSoftReset();
 					g_do_reset = false;
 				}

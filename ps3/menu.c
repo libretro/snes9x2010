@@ -1262,6 +1262,8 @@ static void select_rom(void)
 		else if (FILEBROWSER_IS_CURRENT_A_FILE(browser))
 		{
 			char rom_path_temp[MAX_PATH_LENGTH];
+			bool retval;
+
 			snprintf(rom_path_temp, sizeof(rom_path_temp), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
 
 			menu_is_running = 0;
@@ -1271,7 +1273,7 @@ static void select_rom(void)
 			if (current_rom == NULL || strcmp(rom_path_temp, current_rom) != 0)
 			{
 				snprintf(current_rom, sizeof(current_rom), "%s/%s", FILEBROWSER_GET_CURRENT_DIRECTORY_NAME(browser), FILEBROWSER_GET_CURRENT_FILENAME(browser));
-				need_load_rom = true;
+				retval = emulator_init_system();
 			}
 			else
 				g_do_reset = true;
