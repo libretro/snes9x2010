@@ -1309,12 +1309,9 @@ static void select_rom(void)
 	old_state = state;
 }
 
-
-void menu_init(void)
+void menu_init (void)
 {
 	filebrowser_new(&browser, Settings.PS3PathROMDirectory, ROM_EXTENSIONS);
-
-	menu_reinit_settings();
 }
 
 void menu_loop(void)
@@ -1323,6 +1320,8 @@ void menu_loop(void)
 	menuStack[0].enum_id = FILE_BROWSER_MENU;
 
 	menu_is_running = true;
+
+	menu_reinit_settings();
 
 	do
 	{
@@ -1343,9 +1342,7 @@ void menu_loop(void)
 			case CONTROLS_MENU:
 				select_setting(&menuStack[menuStackindex]);
 				break;
-#ifdef HAVE_GAMEAWARE
 			case GAME_AWARE_SHADER_CHOICE:
-#endif
 			case SHADER_CHOICE:
 			case PRESET_CHOICE:
 			case BORDER_CHOICE:
@@ -1354,9 +1351,7 @@ void menu_loop(void)
 				break;
 			case PATH_SAVESTATES_DIR_CHOICE:
 			case PATH_DEFAULT_ROM_DIR_CHOICE:
-#ifdef HAVE_CHEATS
 			case PATH_CHEATS_DIR_CHOICE:
-#endif
 			case PATH_SRAM_DIR_CHOICE:
 				select_directory(menuStack[menuStackindex].enum_id);
 				break;
