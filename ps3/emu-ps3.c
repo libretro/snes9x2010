@@ -2445,7 +2445,7 @@ int main(int argc, char **argv)
 			case MODE_MULTIMAN_STARTUP:
 				is_running = 1;
 				mode_switch = MODE_EMULATION;
-				Emulator_RequestLoadROM(MULTIMAN_GAME_TO_BOOT);
+				snprintf(current_rom, sizeof(current_rom), MULTIMAN_GAME_TO_BOOT);
 				break;
 #endif
 			case MODE_EXIT:
