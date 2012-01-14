@@ -22,7 +22,6 @@
 menu menuStack[25];
 int menuStackindex = 0;
 uint32_t menu_is_running = false;		/* is the menu running?*/
-bool update_item_colors = true;
 static bool set_initial_dir_tmpbrowser;
 filebrowser_t browser;				/* main file browser->for rom browser*/
 filebrowser_t tmpBrowser;			/* tmp file browser->for everything else*/
