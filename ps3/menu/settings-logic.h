@@ -225,7 +225,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				Settings.ScaleEnabled = 2;
 				ps3graphics_set_fbo_scale(1, Settings.ScaleFactor);
 			}
-			update_item_colors = 1;
 			break;
 		case SETTING_SCALE_FACTOR:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
@@ -397,7 +396,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				Settings.ScreenshotsEnabled = false;
 				emulator_implementation_set_texture(DEFAULT_BORDER_FILE);
 				Settings.ApplyShaderPresetOnStartup = 0;
-				update_item_colors = 1;
+
+				menu_reinit_settings();
 			}
 			break;
 		case SETTING_SOUND_MODE:
@@ -458,6 +458,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				}
 				Settings.SoundMode = SOUND_MODE_NORMAL;
 				emulator_toggle_sound(Settings.SoundMode);
+
+				menu_reinit_settings();
 			}
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
@@ -477,32 +479,6 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 				Settings.CurrentSaveStateSlot = 0;
 
-			break;
-		case SETTING_SNES9X_SOUND_INPUT_RATE:
-			if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state) )
-			{
-				if(Settings.SoundInputRate > 30000)
-					Settings.SoundInputRate--;
-				set_text_message("", 7);
-			}
-			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
-			{
-				if(Settings.SoundInputRate < 32000) /* SNES APU has an input rate of 32000, no higher */
-					Settings.SoundInputRate++;
-
-				set_text_message("", 7);
-			}
-			if(CTRL_START(state))
-				Settings.SoundInputRate = 31950;
-			break;
-		case SETTING_SNES9X_MUTE_SOUND:
-			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
-			{
-				Settings.MuteSound = !Settings.MuteSound;
-				set_text_message("", 7);
-			}
-			if(CTRL_START(state))
-				Settings.MuteSound = 1;
 			break;
 		case SETTING_SNES9X_AUTO_APPLY_CHEATS:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
@@ -530,6 +506,47 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			}
 			if(CTRL_START(state))
 				Settings.SRAMWriteProtect = 0;
+			break;
+		case SETTING_SNES9X_ACCESSORY_AUTODETECTION:
+			if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
+			{
+				if(Settings.AccessoryAutoDetection != ACCESSORY_AUTODETECTION_CONFIRM)
+					Settings.AccessoryAutoDetection--;
+				set_text_message("", 7);
+			}
+			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
+			{
+				if(Settings.AccessoryAutoDetection != ACCESSORY_AUTODETECTION_NONE)
+					Settings.AccessoryAutoDetection++;
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+				Settings.AccessoryAutoDetection = ACCESSORY_AUTODETECTION_CONFIRM;
+			break;
+		case SETTING_SNES9X_ACCESSORY_TYPE:
+			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
+			{
+				if(Settings.AccessoryType)
+					Settings.AccessoryType = 0;
+				else
+					Settings.AccessoryType = 1;
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+				Settings.AccessoryType = 0;
+			break;
+		case SETTING_EMU_DEFAULT_ALL:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_START(state) || CTRL_CROSS(state))
+			{
+				Settings.NoPatch = 0;
+				Settings.ApplyCheats = 1;
+				Settings.ResetBeforeRecordingMovie = 0;
+				Settings.AccessoryAutoDetection = ACCESSORY_AUTODETECTION_CONFIRM;
+				Settings.AccessoryType = 0;
+				Settings.SRAMWriteProtect = 0;
+
+				menu_reinit_settings();
+			}
 			break;
 		case SETTING_SNES9X_FORCE_PAL:
 			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LSTICK_LEFT(state) || CTRL_LEFT(state) || CTRL_CROSS(state))
@@ -567,54 +584,49 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_START(state))
 				Settings.FrameTimePAL = 20000;
 			break;
-		case SETTING_SNES9X_ACCESSORY_AUTODETECTION:
-			if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state))
-			{
-				if(Settings.AccessoryAutoDetection != ACCESSORY_AUTODETECTION_CONFIRM)
-					Settings.AccessoryAutoDetection--;
-				set_text_message("", 7);
-			}
-			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state))
-			{
-				if(Settings.AccessoryAutoDetection != ACCESSORY_AUTODETECTION_NONE)
-					Settings.AccessoryAutoDetection++;
-				set_text_message("", 7);
-			}
-			if(CTRL_START(state))
-				Settings.AccessoryAutoDetection = ACCESSORY_AUTODETECTION_CONFIRM;
-			break;
-		case SETTING_SNES9X_ACCESSORY_TYPE:
-			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state))
-			{
-				if(Settings.AccessoryType)
-					Settings.AccessoryType = 0;
-				else
-					Settings.AccessoryType = 1;
-				set_text_message("", 7);
-			}
-			if(CTRL_START(state))
-				Settings.AccessoryType = 0;
-			break;
-		case SETTING_EMU_DEFAULT_ALL:
+		case SETTING_EMU_VIDEO_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_START(state) || CTRL_CROSS(state))
 			{
 				Settings.ForceNTSC = 0;
 				Settings.ForcePAL = 0;
 				Settings.FrameTimePAL = 20000;
-				Settings.NoPatch = 0;
-				Settings.ApplyCheats = 1;
-				Settings.ResetBeforeRecordingMovie = 0;
-				Settings.AccessoryAutoDetection = ACCESSORY_AUTODETECTION_CONFIRM;
-				Settings.AccessoryType = 0;
-				Settings.SRAMWriteProtect = 0;
+
+				menu_reinit_settings();
 			}
 			break;
-		case SETTING_EMU_VIDEO_DEFAULT_ALL:
+		case SETTING_SNES9X_SOUND_INPUT_RATE:
+			if(CTRL_LEFT(state) | CTRL_LSTICK_LEFT(state) )
+			{
+				if(Settings.SoundInputRate > 30000)
+					Settings.SoundInputRate--;
+				set_text_message("", 7);
+			}
+			if(CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			{
+				if(Settings.SoundInputRate < 32000) /* SNES APU has an input rate of 32000, no higher */
+					Settings.SoundInputRate++;
+
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+				Settings.SoundInputRate = 31950;
+			break;
+		case SETTING_SNES9X_MUTE_SOUND:
+			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state))
+			{
+				Settings.MuteSound = !Settings.MuteSound;
+				set_text_message("", 7);
+			}
+			if(CTRL_START(state))
+				Settings.MuteSound = 1;
 			break;
 		case SETTING_EMU_AUDIO_DEFAULT_ALL:
 			if(CTRL_LEFT(state) || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state) || CTRL_LSTICK_RIGHT(state) || CTRL_START(state) || CTRL_CROSS(state))
 			{
 				Settings.SoundInputRate = 31950;
+				Settings.MuteSound = 0;
+
+				menu_reinit_settings();
 			}
 			break;
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
@@ -676,6 +688,8 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 				strcpy(Settings.PS3PathSaveStates, usrDirPath);
 				strcpy(Settings.PS3PathCheats, usrDirPath);
 				strcpy(Settings.PS3PathSRAM, "");
+
+				menu_reinit_settings();
 			}
 			break;
 		case SETTING_CONTROLS_SCHEME:
@@ -766,6 +780,7 @@ static void producesettingentry(menu * menu_obj, uint64_t switchvalue)
 			if(CTRL_LEFT(state)  || CTRL_LSTICK_LEFT(state) || CTRL_RIGHT(state)  || CTRL_LSTICK_RIGHT(state) || CTRL_CROSS(state) || CTRL_START(state))
 			{
 				emulator_set_controls("", SET_ALL_CONTROLS_TO_DEFAULT, "Default");
+				menu_reinit_settings();
 			}
 			break;
 	}

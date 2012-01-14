@@ -1040,6 +1040,45 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 	}
 }
 
+static void menu_init_settings_pages(menu * menu_obj)
+{
+	int page, i, j;
+	float increment;
+
+	page = 0;
+	j = 0;
+	increment = 0.13f;
+
+	for(i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
+	{
+		if(!(j < (NUM_ENTRY_PER_PAGE)))
+		{
+			j = 0;
+			increment = 0.13f;
+			page++;
+		}
+
+		menu_obj->items[i].text_xpos = 0.09f;
+		menu_obj->items[i].text_ypos = increment; 
+		menu_obj->items[i].page = page;
+		set_setting_label(menu_obj, i);
+		increment += 0.03f;
+		j++;
+	}
+	menu_obj->refreshpage = 0;
+}
+
+static void menu_reinit_settings (void)
+{
+	menu_init_settings_pages(&menu_generalvideosettings);
+	menu_init_settings_pages(&menu_generalaudiosettings);
+	menu_init_settings_pages(&menu_emu_settings);
+	menu_init_settings_pages(&menu_emu_videosettings);
+	menu_init_settings_pages(&menu_emu_audiosettings);
+	menu_init_settings_pages(&menu_pathsettings);
+	menu_init_settings_pages(&menu_controlssettings);
+}
+
 static void apply_scaling(void)
 {
 	ps3graphics_set_fbo_scale(Settings.ScaleEnabled, Settings.ScaleFactor);
@@ -1269,45 +1308,12 @@ static void select_rom(void)
 	old_state = state;
 }
 
-static void menu_init_settings_pages(menu * menu_obj)
-{
-	int page, i, j;
-	float increment;
-
-	page = 0;
-	j = 0;
-	increment = 0.13f;
-
-	for(i = menu_obj->first_setting; i < menu_obj->max_settings; i++)
-	{
-		if(!(j < (NUM_ENTRY_PER_PAGE)))
-		{
-			j = 0;
-			increment = 0.13f;
-			page++;
-		}
-
-		menu_obj->items[i].text_xpos = 0.09f;
-		menu_obj->items[i].text_ypos = increment; 
-		menu_obj->items[i].page = page;
-		set_setting_label(menu_obj, i);
-		increment += 0.03f;
-		j++;
-	}
-	menu_obj->refreshpage = 0;
-}
 
 void menu_init(void)
 {
 	filebrowser_new(&browser, Settings.PS3PathROMDirectory, ROM_EXTENSIONS);
 
-	menu_init_settings_pages(&menu_generalvideosettings);
-	menu_init_settings_pages(&menu_generalaudiosettings);
-	menu_init_settings_pages(&menu_emu_settings);
-	menu_init_settings_pages(&menu_emu_videosettings);
-	menu_init_settings_pages(&menu_emu_audiosettings);
-	menu_init_settings_pages(&menu_pathsettings);
-	menu_init_settings_pages(&menu_controlssettings);
+	menu_reinit_settings();
 }
 
 void menu_loop(void)
