@@ -440,6 +440,7 @@ struct SSettings
 	bool8		SaveCustomControlScheme;
 	int32_t		PS3OverscanAmount;
 	int32_t		ControlScheme;
+	bool8		MuteSound;
 	#endif
 	uint32	AccessoryType;
 	int32		AccessoryAutoDetection;

@@ -13,18 +13,15 @@ typedef struct
 {
 	uint32_t enum_id;			/* enum ID of item				*/
 	char text[256];				/* item label					*/
+	char setting_text[256];			/* setting label				*/
 	float text_xpos;			/* text X position (upper left corner)		*/
 	float text_ypos;			/* text Y position (upper left corner)		*/
-	uint32_t text_selected_color;		/* text color if selected			*/
-	uint32_t text_unselected_color;		/* text color if not selected			*/
+	uint32_t text_color;			/* text color					*/
 	char comment[256];			/* item comment					*/
 	uint32_t comment_color;			/* color of item comment			*/
 	float comment_scalefont;		/* font scale of item comment			*/ 
 	float comment_xpos;			/* comment X position (upper left corner)	*/
 	float comment_ypos;			/* comment Y position (upper left corner)	*/
-	unsigned int * setting_ptr;		/* associated pointer to setting member		*/
-	char comment_yes[256];			/* item comment (yes - if setting_ptr true)	*/
-	char comment_no[256];			/* item comment (no - if setting_ptr false)	*/
 	uint32_t default_value;			/* default value of item			*/
 	uint32_t page;				/* page						*/
 } item;
@@ -85,13 +82,26 @@ enum
 	SETTING_SOUND_MODE,
 	SETTING_RSOUND_SERVER_IP_ADDRESS,
 	SETTING_DEFAULT_AUDIO_ALL,
-	EMU_EXTRA_SETTINGS,			/* port-specific */
+	/* port-specific */
+	SETTING_EMU_CURRENT_SAVE_STATE_SLOT,
+	SETTING_SNES9X_AUTO_APPLY_CHEATS,
+	SETTING_SNES9X_AUTO_APPLY_PATCH,
+	SETTING_SNES9X_SRAM_WRITEPROTECT,
+	SETTING_SNES9X_ACCESSORY_AUTODETECTION,
+	SETTING_SNES9X_ACCESSORY_TYPE,
+	SETTING_EMU_DEFAULT_ALL,
+	SETTING_SNES9X_FORCE_PAL,
+	SETTING_SNES9X_FORCE_NTSC,
+	SETTING_SNES9X_PAL_TIMING,
+	SETTING_EMU_VIDEO_DEFAULT_ALL,
+	SETTING_SNES9X_SOUND_INPUT_RATE,
+	SETTING_SNES9X_MUTE_SOUND,
+	SETTING_EMU_AUDIO_DEFAULT_ALL,
+	/* end of port-specific */
 	SETTING_PATH_DEFAULT_ROM_DIRECTORY,
 	SETTING_PATH_SAVESTATES_DIRECTORY,
 	SETTING_PATH_SRAM_DIRECTORY,
-#ifdef HAVE_CHEATS
 	SETTING_PATH_CHEATS,
-#endif
 	SETTING_PATH_DEFAULT_ALL,
 	SETTING_CONTROLS_SCHEME,
 	SETTING_CONTROLS_NUMBER,
@@ -151,6 +161,5 @@ enum
 void menu_init (void);
 void menu_loop (void);
 
-extern uint32_t menu_is_running;
-
+extern uint32_t menu_is_running; 
 #endif /* MENU_H_ */

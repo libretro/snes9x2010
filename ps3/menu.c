@@ -19,13 +19,6 @@
 
 #define NUM_ENTRY_PER_PAGE 19
 
-#define PRINT_HELP_MESSAGE(menu, currentsetting) \
-			cellDbgFontPrintf(menu.items[currentsetting].comment_xpos, menu.items[currentsetting].comment_ypos, menu.items[currentsetting].comment_scalefont, menu.items[currentsetting].comment_color, menu.items[currentsetting].comment);
-
-#define PRINT_HELP_MESSAGE_YESNO(menu, currentsetting) \
-			snprintf(menu.items[currentsetting].comment, sizeof(menu.items[currentsetting].comment), *(menu.items[currentsetting].setting_ptr) ? menu.items[currentsetting].comment_yes : menu.items[currentsetting].comment_no); \
-			PRINT_HELP_MESSAGE(menu, currentsetting);
-
 menu menuStack[25];
 int menuStackindex = 0;
 uint32_t menu_is_running = false;		/* is the menu running?*/
@@ -121,15 +114,15 @@ static menu menu_pathsettings = {
 };
 
 static menu menu_controlssettings = {
-	"CONTROLS |",						/* title*/
-	CONTROLS_MENU,						/* enum*/
-	FIRST_CONTROLS_SETTING_PAGE_1,				/* selected item*/
-	0,							/* page*/
-	MAX_NO_OF_CONTROLS_SETTINGS/NUM_ENTRY_PER_PAGE,		/* max pages*/
-	1,							/* refreshpage*/
-	FIRST_CONTROLS_SETTING_PAGE_1,				/* first setting*/
+	"CONTROLS |",						/* title */
+	CONTROLS_MENU,						/* enum */
+	FIRST_CONTROLS_SETTING_PAGE_1,				/* selected item */
+	0,							/* page */
+	MAX_NO_OF_CONTROLS_SETTINGS/NUM_ENTRY_PER_PAGE,		/* max pages */
+	1,							/* refreshpage */
+	FIRST_CONTROLS_SETTING_PAGE_1,				/* first setting */
 	MAX_NO_OF_CONTROLS_SETTINGS,				/* max no of path settings*/
-	items_generalsettings					/* items*/
+	items_generalsettings					/* items */
 };
 
 static void display_menubar(uint32_t menu_enum)
@@ -317,7 +310,6 @@ static void select_file(uint32_t menu_id)
 
 	switch(menu_id)
 	{
-#ifdef HAVE_GAMEAWARE
 		case GAME_AWARE_SHADER_CHOICE:
 			strncpy(dir_path, GAME_AWARE_SHADER_DIR_PATH, sizeof(dir_path));
 			strncpy(extensions, "cfg|CFG", sizeof(extensions));
@@ -325,7 +317,6 @@ static void select_file(uint32_t menu_id)
 			strncpy(object, "Game Aware Shader", sizeof(object));
 			strncpy(comment, "INFO - Select a 'Game Aware Shader' script from the menu by pressing X.", sizeof(comment));
 			break;
-#endif
 		case SHADER_CHOICE:
 			strncpy(dir_path, SHADERS_DIR_PATH, sizeof(dir_path));
 			strncpy(extensions, "cg|CG", sizeof(extensions));
@@ -396,12 +387,10 @@ static void select_file(uint32_t menu_id)
 
 			switch(menu_id)
 			{
-#ifdef HAVE_GAMEAWARE
 				case GAME_AWARE_SHADER_CHOICE:
 					emulator_implementation_set_gameaware(path);
 					strncpy(Settings.GameAwareShaderPath, path, sizeof(Settings.GameAwareShaderPath));
 					break;
-#endif
 				case SHADER_CHOICE:
 					if(set_shader)
 						strncpy(Settings.PS3CurrentShader2, path, sizeof(Settings.PS3CurrentShader2));
@@ -476,11 +465,9 @@ static void select_directory(uint32_t menu_id)
                                 case PATH_DEFAULT_ROM_DIR_CHOICE:
                                         strcpy(Settings.PS3PathROMDirectory, path);
                                         break;
-				#ifdef HAVE_CHEATS
 				case PATH_CHEATS_DIR_CHOICE:
 					strcpy(Settings.PS3PathCheats, path);
 					break;
-				#endif
                         }
                         menuStackindex--;
                 }
@@ -499,11 +486,9 @@ static void select_directory(uint32_t menu_id)
                         case PATH_DEFAULT_ROM_DIR_CHOICE:
                                 strcpy(Settings.PS3PathROMDirectory, path);
                                 break;
-#ifdef HAVE_CHEATS
 			case PATH_CHEATS_DIR_CHOICE:
 				strcpy(Settings.PS3PathCheats, path);
 				break;
-#endif
                 }
                 menuStackindex--;
         }
@@ -541,221 +526,461 @@ static void select_directory(uint32_t menu_id)
         old_state = state;
 }
 
-static void display_help_text(int currentsetting)
+static void set_setting_label(menu * menu_obj, int currentsetting)
 {
 	switch(currentsetting)
 	{
-		EMU_DISPLAY_HELP_TEXT();
-		case SETTING_HW_TEXTURE_FILTER:
-		case SETTING_HW_TEXTURE_FILTER_2:
-		case SETTING_SCALE_ENABLED:
-		case SETTING_ENABLE_SCREENSHOTS:
-		case SETTING_TRIPLE_BUFFERING:
-		case SETTING_THROTTLE_MODE:
-		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
-			PRINT_HELP_MESSAGE_YESNO(menu_generalvideosettings, currentsetting);
-			break;
-		case SETTING_SCALE_FACTOR:
-			snprintf(menu_generalvideosettings.items[currentsetting].comment, sizeof(menu_generalvideosettings.items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%dx'.", Settings.ScaleFactor);
-			PRINT_HELP_MESSAGE(menu_generalvideosettings, currentsetting);
-			break;
-		case SETTING_KEEP_ASPECT_RATIO:
-			cellDbgFontPrintf(0.09f, 0.83f, 0.91f, LIGHTBLUE, "INFO - [Aspect ratio] is set to '%d:%d'.", ps3graphics_get_aspect_ratio_int(0), ps3graphics_get_aspect_ratio_int(1));
-			break;
-		case SETTING_SOUND_MODE:
-			snprintf(menu_generalaudiosettings.items[currentsetting].comment, sizeof(menu_generalaudiosettings.items[currentsetting].comment), Settings.SoundMode == SOUND_MODE_RSOUND ? "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." : Settings.SoundMode == SOUND_MODE_HEADSET ? "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset" : "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.");
-			PRINT_HELP_MESSAGE(menu_generalaudiosettings, currentsetting);
-			break;
-		case SETTING_BORDER:
-#ifdef HAVE_GAMEAWARE
-		case SETTING_GAME_AWARE_SHADER:
-#endif
-		case SETTING_SHADER:
-		case SETTING_SHADER_2:
-		case SETTING_FONT_SIZE:
 		case SETTING_CHANGE_RESOLUTION:
-		case SETTING_HW_OVERSCAN_AMOUNT:
-		case SETTING_DEFAULT_VIDEO_ALL:
-		case SETTING_SAVE_SHADER_PRESET:
-			PRINT_HELP_MESSAGE(menu_generalvideosettings, currentsetting);
-			break;
-		case SETTING_DEFAULT_AUDIO_ALL:
-		case SETTING_RSOUND_SERVER_IP_ADDRESS:
-			PRINT_HELP_MESSAGE(menu_generalaudiosettings, currentsetting);
-			break;
-		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-		case SETTING_EMU_DEFAULT_ALL:
-			PRINT_HELP_MESSAGE(menu_emu_settings, currentsetting);
-			break;
-		case SETTING_EMU_VIDEO_DEFAULT_ALL:
-			PRINT_HELP_MESSAGE(menu_emu_videosettings, currentsetting);
-			break;
-		case SETTING_EMU_AUDIO_DEFAULT_ALL:
-			PRINT_HELP_MESSAGE(menu_emu_audiosettings, currentsetting);
-			break;
-		case SETTING_PATH_SAVESTATES_DIRECTORY:
-		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-		case SETTING_PATH_SRAM_DIRECTORY:
-#ifdef HAVE_CHEATS
-		case SETTING_PATH_CHEATS:
-#endif
-		case SETTING_PATH_DEFAULT_ALL:
-			PRINT_HELP_MESSAGE(menu_pathsettings, currentsetting);
-			break;
-			/*
-			   case SETTING_PAL60_MODE:
-			   cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "%s", Settings.PS3PALTemporalMode60Hz ? "INFO - PAL 60Hz mode is enabled - 60Hz NTSC games will run correctly at 576p PAL\nresolution. NOTE: This is configured on-the-fly." : "INFO - PAL 60Hz mode disabled - 50Hz PAL games will run correctly at 576p PAL\nresolution. NOTE: This is configured on-the-fly.");
-			   break;
-			 */
-		case SETTING_CONTROLS_SCHEME:
-			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - Input Control scheme preset [%s] is selected.\n", Settings.PS3CurrentInputPresetTitle);
-			break;
-		case SETTING_CONTROLS_DPAD_UP:
-		case SETTING_CONTROLS_DPAD_DOWN:
-		case SETTING_CONTROLS_DPAD_LEFT:
-		case SETTING_CONTROLS_DPAD_RIGHT:
-		case SETTING_CONTROLS_BUTTON_CIRCLE:
-		case SETTING_CONTROLS_BUTTON_CROSS:
-		case SETTING_CONTROLS_BUTTON_TRIANGLE:
-		case SETTING_CONTROLS_BUTTON_SQUARE:
-		case SETTING_CONTROLS_BUTTON_SELECT:
-		case SETTING_CONTROLS_BUTTON_START:
-		case SETTING_CONTROLS_BUTTON_L1:
-		case SETTING_CONTROLS_BUTTON_R1:
-		case SETTING_CONTROLS_BUTTON_L2:
-		case SETTING_CONTROLS_BUTTON_R2:
-		case SETTING_CONTROLS_BUTTON_L3:
-		case SETTING_CONTROLS_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_L2_BUTTON_L3:
-		case SETTING_CONTROLS_BUTTON_L2_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_RIGHT:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_UP:
-		case SETTING_CONTROLS_BUTTON_L2_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_RIGHT:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_UP:
-		case SETTING_CONTROLS_BUTTON_R2_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_BUTTON_R2_BUTTON_R3:
-		case SETTING_CONTROLS_BUTTON_R3_BUTTON_L3:
-		case SETTING_CONTROLS_ANALOG_R_UP:
-		case SETTING_CONTROLS_ANALOG_R_DOWN:
-		case SETTING_CONTROLS_ANALOG_R_LEFT:
-		case SETTING_CONTROLS_ANALOG_R_RIGHT:
-			cellDbgFontPrintf(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_controlssettings.items[currentsetting].text, Input_PrintMappedButton(control_binds[currently_selected_controller_menu][currentsetting-FIRST_CONTROL_BIND]));
-			break;
-		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-			cellDbgFontPuts(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - Save the custom control settings.\nNOTE: This option will not do anything with Control Scheme [New] or [Default].");
-			break;
-		case SETTING_CONTROLS_DEFAULT_ALL:
-			cellDbgFontPuts(0.09f, 0.83f, 0.86f, LIGHTBLUE, "INFO - Set all 'Controls' settings back to their default values.");
-			break;
 
-	}
-}
+			if(ps3graphics_get_initial_resolution() == ps3graphics_get_current_resolution())
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
 
-static void display_label_value(uint64_t switchvalue)
-{
-	switch(switchvalue)
-	{
-		EMU_DISPLAY_LABEL_VALUE();
-		case SETTING_CHANGE_RESOLUTION:
-			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, Emulator_GetFontSize(), ps3graphics_get_initial_resolution() == ps3graphics_get_current_resolution() ? GREEN : ORANGE, ps3graphics_get_resolution_label(ps3graphics_get_current_resolution()));
-			cellDbgFontDraw();
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), ps3graphics_get_resolution_label(ps3graphics_get_current_resolution()));
 			break;
-#if 0
-		case SETTING_PAL60_MODE: 
-			cellDbgFontPuts		(menu_generalvideosettings.items[switchvalue].text_xpos,	menu_generalvideosettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	currently_selected_setting == menu_generalvideosettings.items[switchvalue].enum_id ? YELLOW : WHITE,	"PAL60 Mode (576p only)");
-			cellDbgFontPrintf	(0.5f,	menu_generalvideosettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	Settings.PS3PALTemporalMode60Hz ? ORANGE : GREEN, Settings.PS3PALTemporalMode60Hz ? "ON" : "OFF");
-			break;
-#endif
-#ifdef HAVE_GAMEAWARE
-		case SETTING_GAME_AWARE_SHADER:
-			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, Emulator_GetFontSize(), (strcmp(Settings.GameAwareShaderPath, "") == 0) ? GREEN : ORANGE, Settings.GameAwareShaderPath);
-			break;
-#endif
 		case SETTING_SHADER_PRESETS:
-			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, Emulator_GetFontSize(), Settings.ShaderPresetPath == DEFAULT_PRESET_FILE ? GREEN : ORANGE, "%s", Settings.ShaderPresetTitle);
+			if(Settings.ShaderPresetPath == DEFAULT_PRESET_FILE)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), Settings.ShaderPresetTitle);
+			/* add a comment */
 			break;
 		case SETTING_BORDER:
 			{
 				extract_filename_only(Settings.PS3CurrentBorder);
-				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, Emulator_GetFontSize(), GREEN, "%s", fname_without_path_extension);
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname_without_path_extension);
+				
+				if(strcmp(Settings.PS3CurrentBorder,DEFAULT_BORDER_FILE))
+					menu_obj->items[currentsetting].text_color = GREEN;
+				else
+					menu_obj->items[currentsetting].text_color = ORANGE;
 			}
 			break;
 		case SETTING_SHADER:
 			{
 				extract_filename_only(ps3graphics_get_fragment_shader_path(0));
-				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, Emulator_GetFontSize(), GREEN, "%s", fname_without_path_extension);
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname_without_path_extension);
+
+				if(strcmp(Settings.PS3CurrentShader,DEFAULT_SHADER_FILE) == 0)
+					menu_obj->items[currentsetting].text_color = GREEN;
+				else
+					menu_obj->items[currentsetting].text_color = ORANGE;
 			}
 			break;
 		case SETTING_SHADER_2:
 			{
 				extract_filename_only(ps3graphics_get_fragment_shader_path(1));
-				cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, Emulator_GetFontSize(), GREEN, "%s", fname_without_path_extension);
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s", fname_without_path_extension);
+
+				if(strcmp(Settings.PS3CurrentShader2,DEFAULT_SHADER_FILE) == 0)
+					menu_obj->items[currentsetting].text_color = GREEN;
+				else
+					menu_obj->items[currentsetting].text_color = ORANGE;
+			}
+			break;
+		case SETTING_GAME_AWARE_SHADER:
+
+			if(strcmp(Settings.GameAwareShaderPath, "") == 0)
+			{
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "None");
+			}
+			else
+			{
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), Settings.GameAwareShaderPath);
 			}
 			break;
 		case SETTING_FONT_SIZE:
-			cellDbgFontPrintf(0.5f,	menu_generalvideosettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	Settings.PS3FontSize == 100 ? GREEN : ORANGE, "%f", Emulator_GetFontSize());
+			if(Settings.PS3FontSize == 100)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%f", Emulator_GetFontSize());
 			break;
 		case SETTING_KEEP_ASPECT_RATIO:
-			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, 0.91f, ps3graphics_get_aspect_ratio_float(Settings.PS3KeepAspect) == SCREEN_4_3_ASPECT_RATIO ? GREEN : ORANGE, "%s%d:%d", ps3graphics_calculate_aspect_ratio_before_game_load() ? "(Auto)" : "", (int)ps3graphics_get_aspect_ratio_int(0), (int)ps3graphics_get_aspect_ratio_int(1));
-			cellDbgFontDraw();
+			if(ps3graphics_get_aspect_ratio_float(Settings.PS3KeepAspect) == SCREEN_4_3_ASPECT_RATIO)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%s%d:%d", ps3graphics_calculate_aspect_ratio_before_game_load() ? "(Auto)" : "", (int)ps3graphics_get_aspect_ratio_int(0), (int)ps3graphics_get_aspect_ratio_int(1));
+			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Aspect ratio] is set to '%d:%d'.", ps3graphics_get_aspect_ratio_int(0), ps3graphics_get_aspect_ratio_int(1));
 			break;
 		case SETTING_HW_TEXTURE_FILTER:
-			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, Emulator_GetFontSize(), Settings.PS3Smooth ? GREEN : ORANGE, Settings.PS3Smooth ? "Linear interpolation" : "Point filtering");
+
+			if(Settings.PS3Smooth)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Linear interpolation");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Point filtering");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
 			break;
 		case SETTING_HW_TEXTURE_FILTER_2:
-			cellDbgFontPrintf(0.5f, menu_generalvideosettings.items[switchvalue].text_ypos, Emulator_GetFontSize(), Settings.PS3Smooth2 ? GREEN : ORANGE, Settings.PS3Smooth2 ? "Linear interpolation" : "Point filtering");
+
+			if(Settings.PS3Smooth2)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Linear interpolation");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Point filtering");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
+			break;
+		case SETTING_SCALE_ENABLED:
+			if(Settings.ScaleEnabled)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
 			break;
 		case SETTING_SCALE_FACTOR:
-			cellDbgFontPrintf(0.5f,	menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos,	Emulator_GetFontSize(),	Settings.ScaleFactor == 2 ? GREEN : ORANGE, "%dx", Settings.ScaleFactor);
+
+			if(Settings.ScaleFactor == 2)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%dx", Settings.ScaleFactor);
+			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Custom Scaling Factor] is set to: '%dx'.", Settings.ScaleFactor);
 			break;
 		case SETTING_HW_OVERSCAN_AMOUNT:
-			cellDbgFontPrintf	(0.5f,	menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos,	Emulator_GetFontSize(),	Settings.PS3OverscanAmount == 0 ? GREEN : ORANGE, "%f", (float)Settings.PS3OverscanAmount/100);
-			break;
-		case SETTING_SOUND_MODE:
-			cellDbgFontPuts(0.5f, menu_generalaudiosettings.items[menu_generalaudiosettings.items[switchvalue].enum_id].text_ypos, Emulator_GetFontSize(), Settings.SoundMode == SOUND_MODE_NORMAL ? GREEN : ORANGE, Settings.SoundMode == SOUND_MODE_RSOUND ? "RSound" : Settings.SoundMode == SOUND_MODE_HEADSET ? "USB/Bluetooth Headset" : "Normal");
-			break;
-		case SETTING_RSOUND_SERVER_IP_ADDRESS:
-			cellDbgFontPuts(0.5f, menu_generalaudiosettings.items[menu_generalaudiosettings.items[switchvalue].enum_id].text_ypos, Emulator_GetFontSize(), strcmp(Settings.RSoundServerIPAddress,"0.0.0.0") ? ORANGE : GREEN, Settings.RSoundServerIPAddress);
+
+			if(Settings.PS3OverscanAmount == 0)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%f", (float)Settings.PS3OverscanAmount/100);
 			break;
 		case SETTING_THROTTLE_MODE:
-		case SETTING_ENABLE_SCREENSHOTS:
+			if(Settings.Throttled)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
+			break;
 		case SETTING_TRIPLE_BUFFERING:
-		case SETTING_SCALE_ENABLED:
+			if(Settings.TripleBuffering)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
+			break;
+		case SETTING_ENABLE_SCREENSHOTS:
+			if(Settings.ScreenshotsEnabled)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
+			break;
+		case SETTING_SAVE_SHADER_PRESET:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
 		case SETTING_APPLY_SHADER_PRESET_ON_STARTUP:
-			cellDbgFontPuts(0.5f, menu_generalvideosettings.items[menu_generalvideosettings.items[switchvalue].enum_id].text_ypos, Emulator_GetFontSize(), *(menu_generalvideosettings.items[switchvalue].setting_ptr) ? GREEN : ORANGE, *(menu_generalvideosettings.items[switchvalue].setting_ptr) ? "ON" : "OFF");
+			if(Settings.ApplyShaderPresetOnStartup)
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				menu_obj->items[currentsetting].text_color = GREEN;
+			}
+			else
+			{
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			}
+			break;
+		case SETTING_DEFAULT_VIDEO_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		case SETTING_SOUND_MODE:
+			switch(Settings.SoundMode)
+			{
+				case SOUND_MODE_NORMAL:
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'Normal' - normal audio output will be\nused.");
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Normal");
+					break;
+				case SOUND_MODE_RSOUND:
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'RSound' - the sound will be streamed over the\n network to the RSound audio server." );
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "RSound");
+					break;
+				case SOUND_MODE_HEADSET:
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Sound Output] is set to 'USB/Bluetooth Headset' - sound will\n be output through the headset");
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "USB/Bluetooth Headset");
+					break;
+			}
+			break;
+		case SETTING_RSOUND_SERVER_IP_ADDRESS:
+			if(strcmp(Settings.RSoundServerIPAddress,"0.0.0.0"))
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), Settings.RSoundServerIPAddress);
+			break;
+		case SETTING_DEFAULT_AUDIO_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
 			break;
 		case SETTING_EMU_CURRENT_SAVE_STATE_SLOT:
-			cellDbgFontPrintf(0.5f, menu_emu_settings.items[menu_emu_settings.items[switchvalue].enum_id].text_ypos, Emulator_GetFontSize(), Settings.CurrentSaveStateSlot == 0 ? GREEN : ORANGE, "%d", Settings.CurrentSaveStateSlot);
+			if(Settings.CurrentSaveStateSlot == 0)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", Settings.CurrentSaveStateSlot);
+			break;
+		/* emu-specific */
+		case SETTING_SNES9X_AUTO_APPLY_PATCH:
+			if(!Settings.NoPatch)
+			{
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Auto-Apply IPS/UPS Patch] is set to 'OFF'. Translation/hack IPS/UPS\npatches will not be applied.");
+			}
+			else
+			{
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [Auto-Apply IPS/UPS Patch] is set to 'ON'. Automatically applies similarly\nnamed patch files if they are in the same directory as the ROM.");
+			}
+
+			break;
+		case SETTING_SNES9X_AUTO_APPLY_CHEATS:
+			if(Settings.ApplyCheats)
+			{
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Auto-apply cheats is set to 'On'. Automatically apply cheat files if it\nhas the same name as the ROM.");
+			}
+			else
+			{
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Auto-apply cheats is set to 'Off'. Cheat files will not be applied.");
+			}
+			break;
+		case SETTING_SNES9X_SRAM_WRITEPROTECT:
+			if(Settings.SRAMWriteProtect)
+			{
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [SRAM Overwrite Protect] is set to 'ON'. If you load a savestate\n, it will not overwrite the SRAM. (NOTE: SRAM is not saved)");
+			}
+			else
+			{
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [SRAM Overwrite Protect] is set to 'OFF'. Savestates that you load\nwill immediately overwrite SRAM.");
+			}
+			break;
+		case SETTING_SNES9X_ACCESSORY_AUTODETECTION:
+			switch(Settings.AccessoryAutoDetection)
+			{
+				case ACCESSORY_AUTODETECTION_CONFIRM:
+					menu_obj->items[currentsetting].text_color = GREEN;
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Confirm");
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Accessory Autodetection is set to 'Confirm'. When detecting a Mouse/\nScope/Multitap-compatible game, you are asked if you want to enable it.");
+					break;
+				case ACCESSORY_AUTODETECTION_ENABLED:
+					menu_obj->items[currentsetting].text_color = ORANGE;
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Accessory Autodetection is set to 'ON'. Games which support\nMouse/Scope/Multitap will be automatically detected and enabled.");
+					break;
+				case ACCESSORY_AUTODETECTION_NONE:
+					menu_obj->items[currentsetting].text_color = ORANGE;
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Accessory Autodetection is set to 'OFF'. Accessories will not be\ndetected or enabled - standard two joypad controls.");
+					break;
+			}
+			break;
+		case SETTING_SNES9X_ACCESSORY_TYPE:
+
+			if(Settings.AccessoryAutoDetection == SETTING_SNES9X_ACCESSORY_TYPE)
+					menu_obj->items[currentsetting].text_color = ORANGE;
+			else
+					menu_obj->items[currentsetting].text_color = GREEN;
+
+			switch(Settings.AccessoryType)
+			{
+				case 0:
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "USB/Bluetooth Mouse");
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Accessory Type is set to 'USB/Bluetooth Mouse. The mouse will be\nused for SuperScope/Mouse games..");
+					break;
+				case 1:	
+					snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "Left analog stick");
+					snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Accessory Type is set to 'Left analog stick'. The left analog stick\non controller 1 will be used for SuperScope/Mouse games.");
+					break;
+			}
+			break;
+		case SETTING_EMU_DEFAULT_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		case SETTING_SNES9X_FORCE_PAL:
+			if(Settings.ForcePAL)
+			{
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Force PAL is set to 'On' - this will force NTSC games to run at PAL\nfrequencies (50Hz). NOTE: This needs to be set per-game.");
+			}
+			else
+			{
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Force PAL is set to 'Off'.");
+			}
+			break;
+		case SETTING_SNES9X_FORCE_NTSC:
+			if(Settings.ForceNTSC)
+			{
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Force NTSC is set to 'On' - this will force PAL games to run at \nNTSC frequencies (60Hz). NOTE: This needs to be set per-game.");
+			}
+			else
+			{
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+				snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Force NTSC is set to 'Off'.");
+			}
+			break;
+		case SETTING_SNES9X_PAL_TIMING:
+			if(Settings.FrameTimePAL == 20000)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", Settings.FrameTimePAL);
+			break;
+		case SETTING_EMU_VIDEO_DEFAULT_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		case SETTING_SNES9X_SOUND_INPUT_RATE:
+			if(Settings.SoundInputRate == 31950)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", Settings.SoundInputRate);
+			break;
+		case SETTING_SNES9X_MUTE_SOUND:
+			if(Settings.MuteSound)
+			{
+				menu_obj->items[currentsetting].text_color = ORANGE;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "ON");
+			}
+			else
+			{
+				menu_obj->items[currentsetting].text_color = GREEN;
+				snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "OFF");
+			}
+			break;
+		case SETTING_EMU_AUDIO_DEFAULT_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
 			break;
 		case SETTING_PATH_DEFAULT_ROM_DIRECTORY:
-			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	!(strcmp(Settings.PS3PathROMDirectory,"/")) ? GREEN : ORANGE, Settings.PS3PathROMDirectory);
+			if(!(strcmp(Settings.PS3PathROMDirectory, "/")))
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), Settings.PS3PathROMDirectory);
 			break;
 		case SETTING_PATH_SAVESTATES_DIRECTORY:
-			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	!(strcmp(Settings.PS3PathSaveStates,usrDirPath)) ? GREEN : ORANGE, Settings.PS3PathSaveStates);
+			if(!(strcmp(Settings.PS3PathSaveStates, usrDirPath)))
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), Settings.PS3PathSaveStates);
 			break;
 		case SETTING_PATH_SRAM_DIRECTORY:
-			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	!(strcmp(Settings.PS3PathSRAM,usrDirPath)) ? GREEN : ORANGE, Settings.PS3PathSRAM);
+			if(!(strcmp(Settings.PS3PathSRAM, usrDirPath)))
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), Settings.PS3PathSRAM);
 			break;
-#ifdef HAVE_CHEATS
 		case SETTING_PATH_CHEATS:
-			cellDbgFontPuts		(0.5f,	menu_pathsettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	!(strcmp(Settings.PS3PathCheats,usrDirPath)) ? GREEN : ORANGE, Settings.PS3PathCheats);
+
+			if(!(strcmp(Settings.PS3PathCheats, usrDirPath)))
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), Settings.PS3PathCheats);
 			break;
-#endif
-		case SETTING_DEFAULT_VIDEO_ALL:
-		case SETTING_CONTROLS_DEFAULT_ALL:
-		case SETTING_SAVE_SHADER_PRESET:
-		case SETTING_DEFAULT_AUDIO_ALL:
-		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
-			cellDbgFontDraw();
+		case SETTING_PATH_DEFAULT_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
 			break;
 		case SETTING_CONTROLS_SCHEME:
-			cellDbgFontPrintf(0.5f,   menu_controlssettings.items[switchvalue].text_ypos,   Emulator_GetFontSize(), Settings.ControlScheme == CONTROL_SCHEME_DEFAULT ? GREEN : ORANGE, Settings.PS3CurrentInputPresetTitle);
+
+			if(Settings.ControlScheme == CONTROL_SCHEME_DEFAULT)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - Input Control scheme preset [%s] is selected.", Settings.PS3CurrentInputPresetTitle);
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), Settings.PS3CurrentInputPresetTitle);
 			break;
 		case SETTING_CONTROLS_NUMBER:
-			cellDbgFontPrintf(0.5f,	menu_controlssettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	currently_selected_controller_menu == 0 ? GREEN : ORANGE, "%d", currently_selected_controller_menu+1);
+
+			if(currently_selected_controller_menu == 0)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "%d", currently_selected_controller_menu+1);
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), "%d", currently_selected_controller_menu+1);
 			break;
 		case SETTING_CONTROLS_DPAD_UP:
 		case SETTING_CONTROLS_DPAD_DOWN:
@@ -789,7 +1014,28 @@ static void display_label_value(uint64_t switchvalue)
 		case SETTING_CONTROLS_ANALOG_R_DOWN:
 		case SETTING_CONTROLS_ANALOG_R_LEFT:
 		case SETTING_CONTROLS_ANALOG_R_RIGHT:
-			cellDbgFontPuts(0.5f,	menu_controlssettings.items[switchvalue].text_ypos,	Emulator_GetFontSize(),	control_binds[currently_selected_controller_menu][switchvalue-(FIRST_CONTROL_BIND)] == default_control_binds[switchvalue-FIRST_CONTROL_BIND] ? GREEN : ORANGE, Input_PrintMappedButton(control_binds[currently_selected_controller_menu][switchvalue-FIRST_CONTROL_BIND]));
+
+			if(control_binds[currently_selected_controller_menu][currentsetting-(FIRST_CONTROL_BIND)] == default_control_binds[currentsetting-FIRST_CONTROL_BIND])
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+
+			snprintf(menu_obj->items[currentsetting].comment, sizeof(menu_obj->items[currentsetting].comment), "INFO - [%s] on the PS3 controller is mapped to action:\n[%s].", menu_obj->items[currentsetting].text, Input_PrintMappedButton(control_binds[currently_selected_controller_menu][currentsetting-FIRST_CONTROL_BIND]));
+			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), Input_PrintMappedButton(control_binds[currently_selected_controller_menu][currentsetting-FIRST_CONTROL_BIND]));
+			break;
+		case SETTING_CONTROLS_SAVE_CUSTOM_CONTROLS:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		case SETTING_CONTROLS_DEFAULT_ALL:
+			if(menu_obj->selected == currentsetting)
+				menu_obj->items[currentsetting].text_color = GREEN;
+			else
+				menu_obj->items[currentsetting].text_color = ORANGE;
+			break;
+		default:
 			break;
 	}
 }
@@ -911,7 +1157,7 @@ static void select_setting(menu * menu_obj)
 		}
 
 
-		producesettingentry(menu_obj->selected);
+		producesettingentry(menu_obj, menu_obj->selected);
 	}
 
 	display_menubar(menu_obj->enum_id);
@@ -921,13 +1167,13 @@ static void select_setting(menu * menu_obj)
 	{
 		if(menu_obj->items[i].page == menu_obj->page)
 		{
-			cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->selected == menu_obj->items[i].enum_id ? menu_obj->items[i].text_selected_color : menu_obj->items[i].text_unselected_color, menu_obj->items[i].text);
-			display_label_value(i);
+			cellDbgFontPuts(menu_obj->items[i].text_xpos, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->selected == menu_obj->items[i].enum_id ? YELLOW : WHITE, menu_obj->items[i].text);
+			cellDbgFontPuts(0.5f, menu_obj->items[i].text_ypos, Emulator_GetFontSize(), menu_obj->items[i].text_color, menu_obj->items[i].setting_text);
 			cellDbgFontDraw();
 		}
 	}
 
-	display_help_text(menu_obj->selected);
+	cellDbgFontPuts(0.09f, menu_obj->items[menu_obj->selected].comment_ypos, 0.86f, LIGHTBLUE, menu_obj->items[menu_obj->selected].comment);
 
 	cellDbgFontPuts(0.09f, 0.91f, Emulator_GetFontSize(), YELLOW, "UP/DOWN - select  L3+R3 - resume game   X/LEFT/RIGHT - change");
 	cellDbgFontPuts(0.09f, 0.95f, Emulator_GetFontSize(), YELLOW, "START - default   L1/CIRCLE - go back   R1 - go forward");
@@ -1044,6 +1290,7 @@ static void menu_init_settings_pages(menu * menu_obj)
 		menu_obj->items[i].text_xpos = 0.09f;
 		menu_obj->items[i].text_ypos = increment; 
 		menu_obj->items[i].page = page;
+		set_setting_label(menu_obj, i);
 		increment += 0.03f;
 		j++;
 	}
