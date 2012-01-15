@@ -76,7 +76,7 @@ uint64_t mode_switch = MODE_MENU;			/* mode the main loop is in */
 uint32_t is_running;					/* is the ROM currently running in the emulator? */
 static bool is_ingame_menu_running;			// is the ingame menu currently running?
 bool return_to_MM = false;				// launch multiMAN on exit if ROM is passed
-bool emulator_initialized = false;			// is the emulator loaded?
+uint32_t emulator_initialized = 0;			// is the emulator loaded?
 bool g_do_reset = false;
 char current_rom[MAX_PATH_LENGTH];			// current filename of the ROM being emulated
 bool dialog_is_running = false;				// is a dialog screen currently running?

@@ -107,6 +107,7 @@ extern bool g_do_reset;
 extern bool need_load_rom;
 extern char current_rom[MAX_PATH_LENGTH];
 extern uint32_t is_running;
+extern uint32_t emulator_initialized;
 
 extern uint32_t special_action_msg_expired; /* time at which the message no longer needs to be overlaid onscreen */
 

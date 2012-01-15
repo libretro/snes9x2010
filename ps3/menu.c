@@ -260,7 +260,7 @@ static void browser_update(filebrowser_t * b)
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
 			/* if a rom is loaded then resume it */
-			if (Emulator_IsROMLoaded())
+			if (emulator_initialized)
 			{
 				menu_is_running = 0;
 				is_running = 1;
@@ -1183,7 +1183,7 @@ static void select_setting(menu * menu_obj)
 
 		if (CTRL_L3(state) && CTRL_R3(state))
 		{
-			if (Emulator_IsROMLoaded())
+			if (emulator_initialized)
 			{
 				menu_is_running = 0;
 				is_running = 1;
