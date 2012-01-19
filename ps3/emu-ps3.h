@@ -82,7 +82,6 @@ void emulator_toggle_sound(uint64_t soundmode);
 void emulator_implementation_set_shader_preset(const char * fname);
 void emulator_implementation_set_gameaware(const char * fname);
 float Emulator_GetFontSize(void);
-bool Emulator_IsROMLoaded(void);
 bool emulator_init_system(void);
 void emulator_save_settings(uint64_t filetosave);
 void set_text_message(const char * message, uint32_t speed);

@@ -1742,109 +1742,11 @@ void S9xDeinitUpdate(int width, int height)
 	_jsPlatformSwapBuffers(psgl_device);
 }
 
-static void emulator_start(void)
-{
-	ps3graphics_set_orientation(Settings.Orientation);
-
-	if (ps3graphics_get_current_resolution() == CELL_VIDEO_OUT_RESOLUTION_576)
-	{
-		if(ps3graphics_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
-		{
-			if(Settings.PAL)
-			{
-				//Game is PAL
-				if(ps3graphics_get_pal60hz())
-					//PAL60 is ON, turn it off for PAL
-					emulator_switch_pal_60hz(false);
-			}
-			else
-			{
-				//Game is NTSC
-				if(!ps3graphics_get_pal60hz())
-					//PAL60 is OFF, turn it on for NTSC
-					emulator_switch_pal_60hz(true);
-			}
-		}
-	}
-
-	if (ps3graphics_calculate_aspect_ratio_before_game_load())
-		ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
-
-	if(Settings.Throttled)
-		audio_driver->unpause(audio_handle);
-
-	audio_active = true;
-
-	do{
-		S9xMainLoop();
-		// Port 1
-		if(snes_devices[0] == CTL_JOYPAD)
-			emulator_implementation_input_loop();
-		else if(snes_devices[0] == CTL_MOUSE)
-			emulator_implementation_input_loop_mouse(0, snes_devices[0]);
-
-		// Port 2
-		if(snes_devices[1] == CTL_MOUSE || snes_devices[1] == CTL_SUPERSCOPE)
-			emulator_implementation_input_loop_mouse(1, snes_devices[1]);
-		cell_console_poll();
-		cellSysutilCheckCallback();
-	}while(is_running);
-
-	emulator_save_sram();
-}
-
 float Emulator_GetFontSize(void)
 {
 	return Settings.PS3FontSize/100.0;
 }
 
-
-bool Emulator_IsROMLoaded(void)
-{
-	return current_rom != NULL;
-}
-
-static void emulator_shutdown(void)
-{
-	emulator_save_settings(CONFIG_FILE);
-
-#ifdef PS3_PROFILING
-	// When profiling we have to do exit(), so that gcov can be hooked properly. sys_process_exit() bypasses all this.
-	net_stdio_enable(1);
-	gfx_deinit();
-
-	cellSysmoduleUnloadModule(CELL_SYSMODULE_FS);
-	cellSysmoduleUnloadModule(CELL_SYSMODULE_IO);
-	cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
-	cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
-	cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
-	cellSysutilUnregisterCallback(0);
-
-	exit(0);
-#else
-	cellSysutilUnregisterCallback(0);
-#ifdef MULTIMAN_SUPPORT
-	if(return_to_MM)
-	{
-		audio_active = false;
-		if(audio_handle)
-		{
-			audio_driver->free(audio_handle);
-			audio_handle = NULL; 
-		}
-
-		cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
-		sys_spu_initialize(6, 0);
-		char multiMAN[512];
-		snprintf(multiMAN, sizeof(multiMAN), "%s", "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF");
-		sys_game_process_exitspawn2((char*) multiMAN, NULL, NULL, NULL, 0, 2048, SYS_PROCESS_PRIMARY_STACK_SIZE_64K);		
-		sys_process_exit(0);
-	}
-	else
-#endif
-		sys_process_exit(0);
-#endif
-}
 
 //FIXME: Turn GREEN into WHITE and RED into LIGHTBLUE once the overlay is in
 #define ingame_menu_reset_entry_colors(ingame_menu_item) \
@@ -2415,42 +2317,126 @@ int main(int argc, char **argv)
 
 	menu_init();
 
-	do{
-		switch(mode_switch)
+begin_loop:
+	if(mode_switch == MODE_EMULATION)
+	{
+		if(g_do_reset)
 		{
-			case MODE_MENU:
-				ps3graphics_set_orientation(NORMAL);
-				menu_loop();
-				break;
-			case MODE_EMULATION:
-				if(g_do_reset)
-				{
-					S9xSoftReset();
-					g_do_reset = false;
-				}
-				if(ingame_menu_item != 0)
-					is_ingame_menu_running = 1;
-
-				emulator_start();
-
-				if(Settings.Throttled)
-					audio_driver->pause(audio_handle);
-
-				if(is_ingame_menu_running)
-				{
-					ingame_menu();
-				}
-				break;
-#ifdef MULTIMAN_SUPPORT
-			case MODE_MULTIMAN_STARTUP:
-				is_running = 1;
-				mode_switch = MODE_EMULATION;
-				snprintf(current_rom, sizeof(current_rom), MULTIMAN_GAME_TO_BOOT);
-				break;
-#endif
-			case MODE_EXIT:
-				emulator_shutdown();
-				return(0);
+			S9xSoftReset();
+			g_do_reset = false;
 		}
-	}while(1);
+		if(ingame_menu_item != 0)
+			is_ingame_menu_running = 1;
+
+		ps3graphics_set_orientation(Settings.Orientation);
+
+		if (ps3graphics_get_current_resolution() == CELL_VIDEO_OUT_RESOLUTION_576)
+		{
+			if(ps3graphics_check_resolution(CELL_VIDEO_OUT_RESOLUTION_576))
+			{
+				if(Settings.PAL)
+				{
+					//Game is PAL
+					if(ps3graphics_get_pal60hz())
+						//PAL60 is ON, turn it off for PAL
+						emulator_switch_pal_60hz(false);
+				}
+				else
+				{
+					//Game is NTSC
+					if(!ps3graphics_get_pal60hz())
+						//PAL60 is OFF, turn it on for NTSC
+						emulator_switch_pal_60hz(true);
+				}
+			}
+		}
+
+		if (ps3graphics_calculate_aspect_ratio_before_game_load())
+			ps3graphics_set_aspect_ratio(Settings.PS3KeepAspect, IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight, 1);
+
+		if(Settings.Throttled)
+			audio_driver->unpause(audio_handle);
+
+		audio_active = true;
+
+		do{
+			S9xMainLoop();
+			// Port 1
+			if(snes_devices[0] == CTL_JOYPAD)
+				emulator_implementation_input_loop();
+			else if(snes_devices[0] == CTL_MOUSE)
+				emulator_implementation_input_loop_mouse(0, snes_devices[0]);
+
+			// Port 2
+			if(snes_devices[1] == CTL_MOUSE || snes_devices[1] == CTL_SUPERSCOPE)
+				emulator_implementation_input_loop_mouse(1, snes_devices[1]);
+			cell_console_poll();
+			cellSysutilCheckCallback();
+		}while(is_running);
+
+		emulator_save_sram();
+
+		if(Settings.Throttled)
+			audio_driver->pause(audio_handle);
+
+		if(is_ingame_menu_running)
+		{
+			ingame_menu();
+		}
+	}
+	else if(mode_switch == MODE_MENU)
+	{
+		ps3graphics_set_orientation(NORMAL);
+		menu_loop();
+	}
+#ifdef MULTIMAN_SUPPORT
+	else if(mode_switch == MODE_MULTIMAN_STARTUP)
+	{
+		is_running = 1;
+		mode_switch = MODE_EMULATION;
+		snprintf(current_rom, sizeof(current_rom), MULTIMAN_GAME_TO_BOOT);
+	}
+#endif
+	else
+		goto begin_shutdown;
+
+	goto begin_loop;
+
+begin_shutdown:
+	emulator_save_settings(CONFIG_FILE);
+
+#ifdef PS3_PROFILING
+	// When profiling we have to do exit(), so that gcov can be hooked properly. sys_process_exit() bypasses all this.
+	net_stdio_enable(1);
+	gfx_deinit();
+
+	cellSysmoduleUnloadModule(CELL_SYSMODULE_FS);
+	cellSysmoduleUnloadModule(CELL_SYSMODULE_IO);
+	cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
+	cellSysmoduleUnloadModule(CELL_SYSMODULE_PNGDEC);
+	cellSysmoduleUnloadModule(CELL_SYSMODULE_SYSUTIL_SCREENSHOT);
+	cellSysutilUnregisterCallback(0);
+
+	exit(0);
+#else
+	cellSysutilUnregisterCallback(0);
+#ifdef MULTIMAN_SUPPORT
+	if(return_to_MM)
+	{
+		audio_active = false;
+		if(audio_handle)
+		{
+			audio_driver->free(audio_handle);
+			audio_handle = NULL; 
+		}
+
+		cellSysmoduleUnloadModule(CELL_SYSMODULE_AVCONF_EXT);
+		sys_spu_initialize(6, 0);
+		char multiMAN[512];
+		snprintf(multiMAN, sizeof(multiMAN), "%s", "/dev_hdd0/game/BLES80608/USRDIR/RELOAD.SELF");
+		sys_game_process_exitspawn2((char*) multiMAN, NULL, NULL, NULL, 0, 2048, SYS_PROCESS_PRIMARY_STACK_SIZE_64K);		
+	}
+#endif
+	sys_process_exit(0);
+#endif
 }
