@@ -515,7 +515,7 @@ s9xcommand_t S9xGetCommandT (const char *name)
 	int		i;
 	const char	*s;
 
-	ZeroMemory(&cmd, sizeof(cmd));
+	memset(&cmd, 0, sizeof(cmd));
 	cmd.type         = S9xBadMapping;
 
 	if (!strncmp(name, "Joypad", 6))
@@ -1591,7 +1591,7 @@ void S9xControlPreSaveState (struct SControlSnapshot *s)
 
 	i = 0;
 	j = 0;
-	ZeroMemory(s, sizeof(*s));
+	memset(s, 0, sizeof(*s));
 	s->ver = 3;
 
 	s->port1_read_idx[0] = read_idx[0][0];

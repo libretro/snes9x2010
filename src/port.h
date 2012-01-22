@@ -262,7 +262,6 @@ typedef unsigned long long	uint64;
 #define _MAX_PATH	PATH_MAX
 #endif
 
-#define ZeroMemory(a, b)	memset((a), 0, (b))
 #ifndef _MSC_VER
 void _splitpath (const char * path, char * drive, char * dir, char * fname, char * ext);
 void _makepath (char * path, const char * a, const char * dir, const char * fname, const char * ext);

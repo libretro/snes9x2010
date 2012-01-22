@@ -231,7 +231,7 @@ bool8 S9xGraphicsInit (void)
 	}
 
 	/* Lookup table for color addition */
-	ZeroMemory(GFX.X2, 0x10000 * sizeof(uint16));
+	memset(GFX.X2, 0, 0x10000 * sizeof(uint16));
 	for ( r = 0; r <= MAX_RED; r++)
 	{
 		uint32	r2 = r << 1;
@@ -257,7 +257,7 @@ bool8 S9xGraphicsInit (void)
 	}
 
 	/* Lookup table for 1/2 color subtraction */
-	ZeroMemory(GFX.ZERO, 0x10000 * sizeof(uint16));
+	memset(GFX.ZERO, 0, 0x10000 * sizeof(uint16));
 	for ( r = 0; r <= MAX_RED; r++)
 	{
 		uint32	r2 = r;
@@ -357,7 +357,7 @@ static void SetupOBJ (void)
 		int i, j;
 		uint8	LineOBJ[SNES_HEIGHT_EXTENDED], FirstSprite;
 
-		ZeroMemory(LineOBJ, sizeof(LineOBJ));
+		memset(LineOBJ, 0, sizeof(LineOBJ));
 
 		for ( i = 0; i < SNES_HEIGHT_EXTENDED; i++)
 		{
@@ -435,7 +435,7 @@ static void SetupOBJ (void)
 	{
 		int	j;
 		uint8	OBJOnLine[SNES_HEIGHT_EXTENDED][128];
-		ZeroMemory(OBJOnLine, sizeof(OBJOnLine));
+		memset(OBJOnLine, 0, sizeof(OBJOnLine));
 
 		/* First, find out which sprites are on which lines*/
 
@@ -5276,7 +5276,7 @@ void S9xSoftResetPPU (void)
 	PPU.OAMReadFlip = 0;
 	PPU.OAMTileAddress = 0;
 	PPU.OAMWriteRegister = 0;
-	ZeroMemory(PPU.OAMData, 512 + 32);
+	memset(PPU.OAMData, 0, 512 + 32);
 
 	PPU.FirstSprite = 0;
 	PPU.LastSprite = 127;
@@ -5350,13 +5350,13 @@ void S9xSoftResetPPU (void)
 		memset(&IPPU.Clip[c], 0, sizeof(struct ClipData));
 	IPPU.OBJChanged = TRUE;
 	IPPU.DirectColourMapsNeedRebuild = TRUE;
-	ZeroMemory(IPPU.TileCached[TILE_2BIT], MAX_2BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_4BIT], MAX_4BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_8BIT], MAX_8BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_2BIT_EVEN], MAX_2BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_2BIT_ODD],  MAX_2BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_4BIT_EVEN], MAX_4BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_4BIT_ODD],  MAX_4BIT_TILES);
+	memset(IPPU.TileCached[TILE_2BIT], 0, MAX_2BIT_TILES);
+	memset(IPPU.TileCached[TILE_4BIT], 0, MAX_4BIT_TILES);
+	memset(IPPU.TileCached[TILE_8BIT], 0, MAX_8BIT_TILES);
+	memset(IPPU.TileCached[TILE_2BIT_EVEN], 0, MAX_2BIT_TILES);
+	memset(IPPU.TileCached[TILE_2BIT_ODD], 0,  MAX_2BIT_TILES);
+	memset(IPPU.TileCached[TILE_4BIT_EVEN], 0, MAX_4BIT_TILES);
+	memset(IPPU.TileCached[TILE_4BIT_ODD], 0,  MAX_4BIT_TILES);
 #ifdef CORRECT_VRAM_READS
 	IPPU.VRAMReadBuffer = 0; /* XXX: FIXME: anything better? */
 #else
@@ -5379,12 +5379,12 @@ void S9xSoftResetPPU (void)
 
 	for ( c = 0; c < 0x8000; c += 0x100)
 		memset(&Memory.FillRAM[c], c >> 8, 0x100);
-	ZeroMemory(&Memory.FillRAM[0x2100], 0x100);
-	ZeroMemory(&Memory.FillRAM[0x4200], 0x100);
-	ZeroMemory(&Memory.FillRAM[0x4000], 0x100);
+	memset(&Memory.FillRAM[0x2100], 0, 0x100);
+	memset(&Memory.FillRAM[0x4200], 0, 0x100);
+	memset(&Memory.FillRAM[0x4000], 0, 0x100);
 
 	/* For BS Suttehakkun 2 */
-	ZeroMemory(&Memory.FillRAM[0x1000], 0x1000);
+	memset(&Memory.FillRAM[0x1000], 0, 0x1000);
 
 	Memory.FillRAM[0x4201] = Memory.FillRAM[0x4213] = 0xff;
 }

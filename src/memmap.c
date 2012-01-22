@@ -408,26 +408,26 @@ bool8 Init (void)
 		return (FALSE);
 	}
 
-	ZeroMemory(Memory.RAM,  0x20000);
-	ZeroMemory(Memory.SRAM, 0x20000);
-	ZeroMemory(Memory.VRAM, 0x10000);
-	ZeroMemory(Memory.ROM,  MAX_ROM_SIZE + 0x200 + 0x8000);
+	memset(Memory.RAM, 0,  0x20000);
+	memset(Memory.SRAM, 0, 0x20000);
+	memset(Memory.VRAM, 0, 0x10000);
+	memset(Memory.ROM, 0,  MAX_ROM_SIZE + 0x200 + 0x8000);
 
-	ZeroMemory(IPPU.TileCache[TILE_2BIT],       MAX_2BIT_TILES * 64);
-	ZeroMemory(IPPU.TileCache[TILE_4BIT],       MAX_4BIT_TILES * 64);
-	ZeroMemory(IPPU.TileCache[TILE_8BIT],       MAX_8BIT_TILES * 64);
-	ZeroMemory(IPPU.TileCache[TILE_2BIT_EVEN],  MAX_2BIT_TILES * 64);
-	ZeroMemory(IPPU.TileCache[TILE_2BIT_ODD],   MAX_2BIT_TILES * 64);
-	ZeroMemory(IPPU.TileCache[TILE_4BIT_EVEN],  MAX_4BIT_TILES * 64);
-	ZeroMemory(IPPU.TileCache[TILE_4BIT_ODD],   MAX_4BIT_TILES * 64);
+	memset(IPPU.TileCache[TILE_2BIT], 0, MAX_2BIT_TILES * 64);
+	memset(IPPU.TileCache[TILE_4BIT], 0, MAX_4BIT_TILES * 64);
+	memset(IPPU.TileCache[TILE_8BIT], 0, MAX_8BIT_TILES * 64);
+	memset(IPPU.TileCache[TILE_2BIT_EVEN], 0,  MAX_2BIT_TILES * 64);
+	memset(IPPU.TileCache[TILE_2BIT_ODD], 0,   MAX_2BIT_TILES * 64);
+	memset(IPPU.TileCache[TILE_4BIT_EVEN], 0,  MAX_4BIT_TILES * 64);
+	memset(IPPU.TileCache[TILE_4BIT_ODD], 0,   MAX_4BIT_TILES * 64);
 
-	ZeroMemory(IPPU.TileCached[TILE_2BIT],      MAX_2BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_4BIT],      MAX_4BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_8BIT],      MAX_8BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_2BIT_EVEN], MAX_2BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_2BIT_ODD],  MAX_2BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_4BIT_EVEN], MAX_4BIT_TILES);
-	ZeroMemory(IPPU.TileCached[TILE_4BIT_ODD],  MAX_4BIT_TILES);
+	memset(IPPU.TileCached[TILE_2BIT], 0,      MAX_2BIT_TILES);
+	memset(IPPU.TileCached[TILE_4BIT], 0,      MAX_4BIT_TILES);
+	memset(IPPU.TileCached[TILE_8BIT], 0,      MAX_8BIT_TILES);
+	memset(IPPU.TileCached[TILE_2BIT_EVEN], 0, MAX_2BIT_TILES);
+	memset(IPPU.TileCached[TILE_2BIT_ODD], 0,  MAX_2BIT_TILES);
+	memset(IPPU.TileCached[TILE_4BIT_EVEN], 0, MAX_4BIT_TILES);
+	memset(IPPU.TileCached[TILE_4BIT_ODD], 0,  MAX_4BIT_TILES);
 
 	/* FillRAM uses first 32K of ROM image area, otherwise space just
 	wasted. Might be read by the SuperFX code. */
@@ -1589,8 +1589,8 @@ bool8 LoadROM (const char *filename)
 	if (!filename || !*filename)
 		return FALSE;
 
-	ZeroMemory(Memory.ROM, MAX_ROM_SIZE);
-	ZeroMemory(&Multi, sizeof(Multi));
+	memset(Memory.ROM, 0, MAX_ROM_SIZE);
+	memset(&Multi, 0, sizeof(Multi));
 
 	if (Settings.SPC7110 || Settings.SPC7110RTC)
 		spc7110_decomp_start();
@@ -1796,7 +1796,7 @@ again:
 		}
 	}
 
-	ZeroMemory(&SNESGameFixes, sizeof(SNESGameFixes));
+	memset(&SNESGameFixes, 0, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
 
 #ifdef CUSTOM_FILE_HANDLING
@@ -1821,8 +1821,8 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB)
 
 	r = TRUE;
 
-	ZeroMemory(Memory.ROM, MAX_ROM_SIZE);
-	ZeroMemory(&Multi, sizeof(Multi));
+	memset(Memory.ROM, 0, MAX_ROM_SIZE);
+	memset(&Multi, 0, sizeof(Multi));
 
 	Memory.CalculatedSize = 0;
 	Memory.ExtendedFormat = NOPE;
@@ -1869,11 +1869,11 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB)
 
 	if (!r)
 	{
-		ZeroMemory(&Multi, sizeof(Multi));
+		memset(&Multi, 0, sizeof(Multi));
 		return (FALSE);
 	}
 
-	ZeroMemory(&SNESGameFixes, sizeof(SNESGameFixes));
+	memset(&SNESGameFixes, 0, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
 
 	S9xLoadCheatFile(S9xGetFilename(".cht", CHEAT_DIR));

@@ -1030,8 +1030,8 @@ void S9xDoHEventProcessing (void)
 				PPU.RecomputeClipWindows = TRUE;
 				IPPU.PreviousLine = IPPU.CurrentLine = 0;
 
-				ZeroMemory(GFX.ZBuffer, GFX.ScreenSize);
-				ZeroMemory(GFX.SubZBuffer, GFX.ScreenSize);
+				memset(GFX.ZBuffer, 0, GFX.ScreenSize);
+				memset(GFX.SubZBuffer, 0, GFX.ScreenSize);
 			}
 
 			CPU.NextEvent = -1;
