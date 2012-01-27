@@ -3,7 +3,7 @@ CELL_DEBUG           = 0
 CELL_DEBUG_CONSOLE   = 0
 CELL_DEBUG_FPS       = 0
 NO_FRAMESKIP         = 0
-MULTIMAN_SUPPORT     = 0
+MULTIMAN_SUPPORT     = 1
 TOC_LOG              = 0
 SDK_340              = 1
 
