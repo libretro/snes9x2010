@@ -6,6 +6,7 @@ NO_FRAMESKIP         = 0
 MULTIMAN_SUPPORT     = 0
 TOC_LOG              = 0
 SDK_340              = 1
+DOWNLOAD_SHADERS	= 1
 
 #which compiler to build  with - GCC or SNC
 #set to GCC for debug builds for use with debugger
@@ -175,8 +176,10 @@ ifeq ($(MULTIMAN_SUPPORT),1)
 else
 	$(MAKE_FSELF_NPDRM) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN
 endif
-	git submodule init
-	git submodule update
+ifeq ($(DOWNLOAD_SHADERS),1)
+	rm -rf ps3/pkg/USRDIR/shaders
+	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/shaders
+endif
 	$(MAKE_PACKAGE_NPDRM) ps3/pkg/package.conf ps3/pkg
 
 #massively reduced filesize using MKSELF_GEOHOT - use this for normal jailbreak builds
@@ -187,8 +190,10 @@ ifeq ($(MULTIMAN_SUPPORT),1)
 else
 	$(MKSELF_GEOHOT) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN SNES900000
 endif
-	git submodule init
-	git submodule update
+ifeq ($(DOWNLOAD_SHADERS),1)
+	rm -rf ps3/pkg/USRDIR/shaders
+	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/shaders
+endif
 	$(PYTHONBIN) $(MKPKG_PSLIGHT) --contentid IV0002-SNES90000_00-SAMPLE0000000001 ps3/pkg/ snes9xnext-ps3-v$(EMULATOR_VERSION)-fw3.41.pkg
 
 #use this to create a PKG for use with Geohot CFW 3.55
@@ -199,7 +204,9 @@ ifeq ($(MULTIMAN_SUPPORT),1)
 else
 	$(MKSELF_GEOHOT) $(PPU_TARGET) ps3/pkg/USRDIR/EBOOT.BIN SNES900000
 endif
-	git submodule init
-	git submodule update
+ifeq ($(DOWNLOAD_SHADERS),1)
+	rm -rf ps3/pkg/USRDIR/shaders
+	git clone git://github.com/twinaphex/common-shaders.git ps3/pkg/USRDIR/shaders
+endif
 	$(PYTHONBIN) $(MKPKG_PSLIGHT) --contentid IV0002-SNES90000_00-SAMPLE0000000001 ps3/pkg/ snes9xnext-ps3-v$(EMULATOR_VERSION)-cfw3.55.pkg
 	$(PKG_FINALIZE) snes9xnext-ps3-v$(EMULATOR_VERSION)-cfw3.55.pkg
