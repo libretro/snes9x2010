@@ -947,7 +947,6 @@ static void set_setting_label(menu * menu_obj, int currentsetting)
 			snprintf(menu_obj->items[currentsetting].setting_text, sizeof(menu_obj->items[currentsetting].setting_text), Settings.PS3PathSRAM);
 			break;
 		case SETTING_PATH_CHEATS:
-
 			if(!(strcmp(Settings.PS3PathCheats, usrDirPath)))
 				menu_obj->items[currentsetting].text_color = GREEN;
 			else
