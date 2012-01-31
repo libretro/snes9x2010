@@ -235,7 +235,7 @@ static int32_t audioport_write(cell_audio_handle_t handle, const int16_t *data, 
       sys_lwmutex_unlock(&port->lock);
 
       uint32_t to_write = avail < bytes ? avail : bytes;
-      if (to_write > 0)
+      if(to_write)
       {
          sys_lwmutex_lock(&port->lock, SYS_NO_TIMEOUT);
          fifo_write(port->buffer, data, to_write);
