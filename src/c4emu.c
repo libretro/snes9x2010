@@ -472,7 +472,7 @@ static void C4ConvOAM (void)
 				}
 			}
 			else
-			if (SprCount > 0)
+			if (SprCount)
 			{
 				/* XXX: Should we be testing -16<=SprX<=272 and -16<=SprY<=224? */
 				OAMptr[0] = (uint8) SprX;
@@ -1035,7 +1035,7 @@ static void C4Op1F (void)
 {
 	if (C41FXVal == 0)
 	{
-		if (C41FYVal > 0)
+		if (C41FYVal)
 			C41FAngleRes = 0x80;
 		else
 			C41FAngleRes = 0x180;

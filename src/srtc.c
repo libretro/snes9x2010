@@ -227,7 +227,7 @@ static void srtcemu_update_time (void)
 	if(diff > (time_t)-1 / 2)
 		diff = 0;            /*compensate for underflow*/
 
-	if(diff > 0)
+	if(diff)
 	{
 		unsigned second, minute, hour, day, month, year, weekday;
 
