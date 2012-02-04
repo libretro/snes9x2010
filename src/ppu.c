@@ -2740,7 +2740,7 @@ static INLINE void REGISTER_2104 (uint8 Byte)
 			IPPU.OBJChanged = TRUE;
 
 			/* X position high bit, and sprite size (x4) */
-			pObj->HPos = (pObj->HPos & 0xFF) | SignExtend[(Byte >> 0) & 1];
+			pObj->HPos = (pObj->HPos & 0xFF) | SignExtend[Byte & 1];
 			pObj++->Size = Byte & 2;
 			pObj->HPos = (pObj->HPos & 0xFF) | SignExtend[(Byte >> 2) & 1];
 			pObj++->Size = Byte & 8;
@@ -4056,7 +4056,7 @@ static void S9xDoDMA (void)
 										for ( b = 0; b < 2; b++)
 										{
 											uint8	r = *(q + b);
-											*(p + 0) = (*(p + 0) << 1) | ((r >> 0) & 1);
+											*(p + 0) = (*(p + 0) << 1) | (r & 1);
 											*(p + 1) = (*(p + 1) << 1) | ((r >> 1) & 1);
 											*(p + 0) = (*(p + 0) << 1) | ((r >> 2) & 1);
 											*(p + 1) = (*(p + 1) << 1) | ((r >> 3) & 1);
@@ -4085,7 +4085,7 @@ static void S9xDoDMA (void)
 										for ( b = 0; b < 4; b++)
 										{
 											uint8	r = *(q + b);
-											*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
+											*(p +  0) = (*(p +  0) << 1) | (r & 1);
 											*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
 											*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
 											*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
@@ -4116,7 +4116,7 @@ static void S9xDoDMA (void)
 										for ( b = 0; b < 8; b++)
 										{
 											uint8	r = *(q + b);
-											*(p +  0) = (*(p +  0) << 1) | ((r >> 0) & 1);
+											*(p +  0) = (*(p +  0) << 1) | (r & 1);
 											*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
 											*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
 											*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);

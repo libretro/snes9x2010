@@ -562,7 +562,7 @@ static void spc7110_decomp_mode2(bool8 init)
 		spc7110_decomp_write(data >> 24);
 		spc7110_decomp_write(data >> 16);
 		bitplanebuffer[buffer_index++] = data >> 8;
-		bitplanebuffer[buffer_index++] = data >> 0;
+		bitplanebuffer[buffer_index++] = data;
 
 		if(buffer_index == 16)
 		{
@@ -681,7 +681,7 @@ void spc7110_decomp_mode1(bool8 init)
 		/*turn pixel data into bitplanes*/
 		data = MORTON_2X8(out);
 		spc7110_decomp_write(data >> 8);
-		spc7110_decomp_write(data >> 0);
+		spc7110_decomp_write(data);
 	}
 }
 

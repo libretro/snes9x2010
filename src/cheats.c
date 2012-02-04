@@ -493,7 +493,7 @@ bool8 S9xSaveCheatFile (const char *filename)
 			data[0] |= 8;
 
 		data[1] = Cheat.c[i].byte;
-		data[2] = (uint8) (Cheat.c[i].address >> 0);
+		data[2] = (uint8) (Cheat.c[i].address);
 		data[3] = (uint8) (Cheat.c[i].address >> 8);
 		data[4] = (uint8) (Cheat.c[i].address >> 16);
 		data[5] = Cheat.c[i].saved_byte;

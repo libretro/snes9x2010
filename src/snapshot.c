@@ -1103,7 +1103,7 @@ static void FreezeBlock (STREAM stream, const char *name, uint8 *block, int size
 		buffer[6] = (unsigned char) ((unsigned) size >> 24);
 		buffer[7] = (unsigned char) ((unsigned) size >> 16);
 		buffer[8] = (unsigned char) ((unsigned) size >> 8);
-		buffer[9] = (unsigned char) ((unsigned) size >> 0);
+		buffer[9] = (unsigned char) ((unsigned) size);
 	}
 
 	buffer[11] = 0;

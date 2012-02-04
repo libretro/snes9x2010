@@ -144,7 +144,7 @@ enum { snes_ntsc_burst_size = snes_ntsc_entry_size / snes_ntsc_burst_count };
 			(snes_ntsc_entry_size / 2 * sizeof (snes_ntsc_rgb_t)))
 
 #define SNES_NTSC_RGB15( ktable, n ) \
-    (snes_ntsc_rgb_t const*) (ktable + ((n & 0x001E) | (n >> 0 & 0x03E0) | (n >> 1 & 0x3C00)) * \
+    (snes_ntsc_rgb_t const*) (ktable + ((n & 0x001E) | (n & 0x03E0) | (n >> 1 & 0x3C00)) * \
             (snes_ntsc_entry_size / 2 * sizeof (snes_ntsc_rgb_t)))
 
 #define SNES_NTSC_BGR15( ktable, n ) \

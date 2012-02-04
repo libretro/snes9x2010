@@ -3249,7 +3249,7 @@ bool8 S9xMixSamples (short *buffer, int sample_count)
 	}
 	else
 	{
-		memset(buffer, 0, (sample_count << 1) >> 0);
+		memset(buffer, 0, sample_count << 1);
 		if (lag == 0)
 			lag = lag_master;
 
