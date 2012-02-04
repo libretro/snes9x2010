@@ -3083,31 +3083,31 @@ static int    r_left[4], r_right[4];
 #define SPACE_EMPTY() (rb_buffer_size - rb_size)
 #define SPACE_FILLED() (rb_size)
 #define MAX_WRITE() (SPACE_EMPTY() >> 1)
-#define AVAIL() (((((uint32_t) rb_size) << 13) - r_frac) / r_step * 2)
+#define AVAIL() (((((uint32_t) rb_size) << 14) - r_frac) / r_step * 2)
 
 #define RESAMPLER_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 #define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
 
-static inline int32_t hermite (uint32_t mu1, int32_t a, int32_t b, int32_t c, int32_t d)
+static inline int32_t hermite (int32_t mu1, int32_t a, int32_t b, int32_t c, int32_t d)
 {
-	uint32_t mu2, mu3, m0, m1, a0, a1, a2, a3;
+	int32_t mu2, mu3, m0, m1, a0, a1, a2, a3;
 
 	mu2 = (mu1 * mu1) >> 15;
 	mu3 = (mu2 * mu1) >> 15;
-	m0 = (c - a + 32768) << 14;
-	m1 = (d - b + 32768) << 14;
+
+	m0 = (c - a) << 14;
+	m1 = (d - b) << 14;
+
 	a0 = (mu3 << 1) - (3 * mu2) + 32768;
 	a1 = mu3 - (mu2 << 1) + mu1;
 	a2 = mu3 -     mu2;
 	a3 = 3 * mu2 - (mu3 << 1);
 	
-	return (int32_t) ((
-	(a0 * (b + 32768)) +
+	return ((a0 * b) +
 	((a1 * m0) >> 15) +
 	((a2 * m1) >> 15) +
-	(a3 * (c + 32768))
-	) >> 15) - 32768;
+	(a3 * c)) >> 15;
 }
 
 static void resampler_clear(void)
@@ -3116,14 +3116,14 @@ static void resampler_clear(void)
 	rb_size = 0;
 	memset (rb_buffer,  0, rb_buffer_size);
 
-	r_frac = 32768;
+	r_frac = 65536;
 	r_left [0] = r_left [1] = r_left [2] = r_left [3] = 0;
 	r_right[0] = r_right[1] = r_right[2] = r_right[3] = 0;
 }
 
 static void resampler_time_ratio(double ratio)
 {
-	r_step = 32768 * ratio;
+	r_step = 65536 * ratio;
 	resampler_clear();
 }
 
@@ -3146,11 +3146,11 @@ static void resampler_read(short *data, int num_samples)
 		s_right = internal_buffer[i_position + 1];
 		max_samples = rb_buffer_size >> 1;
 
-		while (r_frac <= 32768 && o_position < num_samples)
+		while (r_frac <= 65536 && o_position < num_samples)
 		{
-			hermite_val	= hermite(r_frac, r_left [0], r_left [1], r_left [2], r_left [3]);
+			hermite_val	= hermite(r_frac >> 1, r_left [0], r_left [1], r_left [2], r_left [3]);
 			data[o_position]     = SHORT_CLAMP (hermite_val);
-			hermite_val = hermite(r_frac, r_right[0], r_right[1], r_right[2], r_right[3]);
+			hermite_val = hermite(r_frac >> 1, r_right[0], r_right[1], r_right[2], r_right[3]);
 			data[o_position + 1] = SHORT_CLAMP (hermite_val);
 
 			o_position += 2;
@@ -3158,7 +3158,7 @@ static void resampler_read(short *data, int num_samples)
 			r_frac += r_step;
 		}
 
-		if (r_frac > 32768)
+		if (r_frac > 65536)
 		{
 			r_left [0] = r_left [1];
 			r_left [1] = r_left [2];
@@ -3170,7 +3170,7 @@ static void resampler_read(short *data, int num_samples)
 			r_right[2] = r_right[3];
 			r_right[3] = s_right;                    
 
-			r_frac -= 32768;
+			r_frac -= 65536;
 
 			i_position += 2;
 			if (i_position >= max_samples)
