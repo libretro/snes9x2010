@@ -3089,7 +3089,7 @@ static int    r_left[4], r_right[4];
 #define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 #define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
 
-static inline int32_t hermite (int32_t mu1, int32_t a, int32_t b, int32_t c, int32_t d)
+static INLINE int32_t hermite (int32_t mu1, int32_t a, int32_t b, int32_t c, int32_t d)
 {
 	int32_t mu2, mu3, m0, m1, a0, a1, a2, a3;
 
