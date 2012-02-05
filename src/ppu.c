@@ -4012,8 +4012,8 @@ static void S9xDoDMA (void)
 				if (SA1.in_char_dma && d->BAddress == 0x18 && (d->ABank & 0xf0) == 0x40)
 				{
 					int32 num_chars, depth, bytes_per_char, bytes_per_line, char_line_bytes,
-					i, j, l, b;
-					uint32 addr, inc_sa1, char_count;
+					i, l, b;
+					uint32 addr, inc_sa1, char_count, j;
 					uint8 *buffer, *p, *base;
 
 					/* Perform packed bitmap to PPU character format conversion on the data

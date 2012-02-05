@@ -668,7 +668,9 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 		/*	*/
 			case 0x01:
 			{
-				int16	x1, y1, Quadrant, Theta;
+#ifndef FAST_LSB_WORD_ACCESS
+				int16 x1, y1, Quadrant, Theta;
+#endif
 				Memory.SRAM[0x0006] = Memory.SRAM[0x0002];
 				Memory.SRAM[0x0007] = Memory.SRAM[0x0003];
 

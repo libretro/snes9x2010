@@ -479,7 +479,7 @@ bool8 S9xSyncSound (void);
 int S9xGetSampleCount (void);
 void S9xFinalizeSamples (void);
 void S9xClearSamples (void);
-bool8 S9xMixSamples (short * buffer, int sample_count);
+bool8 S9xMixSamples (short * buffer, unsigned sample_count);
 void S9xSetSamplesAvailableCallback (apu_callback);
 
 #endif

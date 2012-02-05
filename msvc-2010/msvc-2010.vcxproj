@@ -14,6 +14,7 @@
     <ProjectGuid>{A7E1411B-9741-47D3-AE2A-47176517D89D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>msvc2010</RootNamespace>
+    <ProjectName>snes9x-next</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -51,12 +52,12 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;INLINE=_inline;_USRDLL;RIGHTSHIFT_IS_SAR;CORRECT_VRAM_READS;_CRT_SECURE_NO_WARNINGS;MSVC2010_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;CORRECT_VRAM_READS;_DEBUG;_WINDOWS;INLINE=_inline;_USRDLL;RIGHTSHIFT_IS_SAR;CORRECT_VRAM_READS;_CRT_SECURE_NO_WARNINGS;MSVC2010_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <OutputFile>$(OutDir)libsnes$(TargetExt)</OutputFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -67,14 +68,14 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;INLINE=_inline;_CRT_SECURE_NO_WARNINGS;_WINDOWS;_USRDLL;RIGHTSHIFT_IS_SAR;CORRECT_VRAM_READS;MSVC2010_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;CORRECT_VRAM_READS;NDEBUG;INLINE=_inline;_CRT_SECURE_NO_WARNINGS;_WINDOWS;_USRDLL;RIGHTSHIFT_IS_SAR;CORRECT_VRAM_READS;MSVC2010_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <OutputFile>$(OutDir)libsnes$(TargetExt)</OutputFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

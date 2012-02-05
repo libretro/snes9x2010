@@ -3239,7 +3239,7 @@ static INLINE void resampler_resize (int num_samples)
 	APU
  ***********************************************************************************/
 
-bool8 S9xMixSamples (short *buffer, int sample_count)
+bool8 S9xMixSamples (short *buffer, unsigned sample_count)
 {
 	if (AVAIL() >= (sample_count + lag))
 	{
