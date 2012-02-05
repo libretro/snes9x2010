@@ -1194,7 +1194,7 @@ static void spc_copier_extra(spc_state_copy_t * copier)
 	int n = 0;
 	n = (uint8_t) spc_copier_copy_int(copier, n, sizeof (uint8_t) );
 
-	if (n)
+	if ( n > 0 )
 	{
 		char temp [64];
 		memset( temp, 0, sizeof(temp));

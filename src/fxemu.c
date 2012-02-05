@@ -4650,7 +4650,7 @@ void S9xSuperFXExec (void)
 		/* GSU executions functions*/
 		GSU.vCounter = nInstructions;
 		READR14;
-		while (TF(G) && --GSU.vCounter)
+		while (TF(G) && (GSU.vCounter-- > 0))
 		{
 			/* Execute instruction from the pipe, and fetch next byte to the pipe*/
 			uint32	vOpcode = (uint32) PIPE;

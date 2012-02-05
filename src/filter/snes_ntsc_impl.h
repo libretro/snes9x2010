@@ -205,12 +205,12 @@ static void init( init_t* impl, snes_ntsc_setup_t const* setup )
 	#endif
 	
 	impl->artifacts = (float) setup->artifacts;
-	if ( impl->artifacts)
+	if ( impl->artifacts > 0 )
 		impl->artifacts *= artifacts_max - artifacts_mid;
 	impl->artifacts = impl->artifacts * artifacts_mid + artifacts_mid;
 
 	impl->fringing = (float) setup->fringing;
-	if ( impl->fringing )
+	if ( impl->fringing > 0 )
 		impl->fringing *= fringing_max - fringing_mid;
 	impl->fringing = impl->fringing * fringing_mid + fringing_mid;
 	

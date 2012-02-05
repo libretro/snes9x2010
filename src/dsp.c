@@ -555,7 +555,7 @@ static void DSP1_Normalize (int16 m, int16 *Coefficient, int16 *Exponent)
 		}
 	}
 
-	if (e)
+	if (e > 0)
 		*Coefficient = m * DSP1ROM[0x21 + e] << 1;
 	else
 		*Coefficient = m;
@@ -589,7 +589,7 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 		}
 	}
 
-	if (e)
+	if (e > 0)
 	{
 		*Coefficient = m * DSP1ROM[0x0021 + e] << 1;
 
@@ -630,11 +630,12 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 
 static int16 DSP1_Truncate (int16 C, int16 E)
 {
-	if (E)
+	if (E > 0)
 	{
-		if (C)
+		if (C > 0)
 			return (32767);
-		else if (C < 0)
+		else
+		if (C < 0)
 			return (-32767);
 	}
 	else
@@ -3926,7 +3927,7 @@ static void DSP4_OP08 (void)
 			DSP4.segments = DSP4.poly_raster[polygon][0] - view_y[polygon];
 
 			/* prevent overdraw*/
-			if (DSP4.segments)
+			if (DSP4.segments > 0)
 			{
 				/* bump drawing cursor*/
 				DSP4.poly_raster[polygon][0] = view_y[polygon];

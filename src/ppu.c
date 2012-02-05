@@ -2013,7 +2013,7 @@ static INLINE void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_
 		DrawMode2 = drawing_modes[k]; \
 		DrawMode2 |= 1; \
 		\
-		if (ct && Clip.Right[ct - 1] == windows[k] && Clip.DrawMode[ct - 1] == DrawMode) \
+		if (ct > 0 && Clip.Right[ct - 1] == windows[k] && Clip.DrawMode[ct - 1] == DrawMode) \
 			Clip.Right[ct - 1] = windows[k + 1]; /* This region borders with and has the same drawing mode as the previous region: merge them. */ \
 		else \
 		{ \
@@ -2024,7 +2024,7 @@ static INLINE void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_
 			ct++; \
 		} \
 		\
-		if (ct2 && Clip2.Right[ct2 - 1] == windows[k] && Clip2.DrawMode[ct2 - 1] == DrawMode) \
+		if (ct2 > 0 && Clip2.Right[ct2 - 1] == windows[k] && Clip2.DrawMode[ct2 - 1] == DrawMode) \
 			Clip2.Right[ct2 - 1] = windows[k + 1]; /* This region borders with and has the same drawing mode as the previous region: merge them. */ \
 		else \
 		{ \
@@ -2052,7 +2052,7 @@ static INLINE void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_
 			DrawMode = 0; \
 		if (DrawMode) \
 		{ \
-			if (ct && Clip.Right[ct - 1] == windows[k] && Clip.DrawMode[ct - 1] == DrawMode) \
+			if (ct > 0 && Clip.Right[ct - 1] == windows[k] && Clip.DrawMode[ct - 1] == DrawMode) \
 			Clip.Right[ct - 1] = windows[k + 1]; /* This region borders with and has the same drawing mode as the previous region: merge them. */ \
 			else \
 			{ \
@@ -2084,7 +2084,7 @@ static INLINE void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_
 		\
 		if(DrawMode) \
 		{ \
-			if (ct && Clip.Right[ct - 1] == windows[k] && Clip.DrawMode[ct - 1] == DrawMode) \
+			if (ct > 0 && Clip.Right[ct - 1] == windows[k] && Clip.DrawMode[ct - 1] == DrawMode) \
 				Clip.Right[ct - 1] = windows[k + 1]; /* This region borders with and has the same drawing mode as the previous region: merge them. */ \
 			else \
 			{ \
@@ -2123,7 +2123,7 @@ static void S9xComputeClipWindows (void)
 
 	if (PPU.Window1Left <= PPU.Window1Right)
 	{
-		if (PPU.Window1Left)
+		if (PPU.Window1Left > 0)
 		{
 			windows[1] = PPU.Window1Left;
 			n_regions = 2;
@@ -3960,7 +3960,7 @@ static void S9xDoDMA (void)
 		{
 			if (Settings.SDD1)
 			{
-				if (d->AAddressFixed && Memory.FillRAM[0x4801])
+				if (d->AAddressFixed && Memory.FillRAM[0x4801] > 0)
 				{
 					uint8 *in_ptr;
 					/* XXX: Should probably verify that we're DMAing from ROM?*/
@@ -4221,7 +4221,7 @@ static void S9xDoDMA (void)
 							Work = S9xGetByte((d->ABank << 16) + p);
 							S9xSetPPU(Work, 0x2100 + d->BAddress);
 							UPDATE_COUNTERS;
-						}while(--count);
+						}while(--count > 0);
 					}
 					else
 						if (d->TransferMode == 1 || d->TransferMode == 5)
@@ -4367,7 +4367,7 @@ static void S9xDoDMA (void)
 									Work = *(base + p);
 									REGISTER_2104(Work);
 									UPDATE_COUNTERS;
-								}while(--count);
+								}while(--count > 0);
 
 								break;
 
@@ -4381,7 +4381,7 @@ static void S9xDoDMA (void)
 									if(CHECK_INBLANK)
 										REGISTER_2118(Work);
 									UPDATE_COUNTERS;
-								} while (--count);
+								} while (--count > 0);
 
 								break;
 
@@ -4395,7 +4395,7 @@ static void S9xDoDMA (void)
 									if(CHECK_INBLANK)
 										REGISTER_2119(Work);
 									UPDATE_COUNTERS;
-								} while (--count);
+								} while (--count > 0);
 
 								break;
 
@@ -4405,7 +4405,7 @@ static void S9xDoDMA (void)
 									Work = *(base + p);
 									REGISTER_2122(Work);
 									UPDATE_COUNTERS;
-								} while (--count);
+								} while (--count > 0);
 
 								break;
 
@@ -4417,14 +4417,14 @@ static void S9xDoDMA (void)
 										Work = *(base + p);
 										REGISTER_2180(Work);
 										UPDATE_COUNTERS;
-									} while (--count);
+									} while (--count > 0);
 								}
 								else
 								{
 									do
 									{
 										UPDATE_COUNTERS;
-									} while (--count);
+									} while (--count > 0);
 								}
 
 								break;
@@ -4435,7 +4435,7 @@ static void S9xDoDMA (void)
 									Work = *(base + p);
 									S9xSetPPU(Work, 0x2100 + d->BAddress);
 									UPDATE_COUNTERS;
-								} while (--count);
+								} while (--count > 0);
 
 								break;
 						}
