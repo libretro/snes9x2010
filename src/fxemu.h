@@ -178,23 +178,30 @@
 #ifndef _FXEMU_H_
 #define _FXEMU_H_
 
-/* The FxInfo_s structure, the link between the FxEmulator and the Snes Emulator */
-
+// The FxInfo_s structure, the link between the FxEmulator and the Snes Emulator
 struct FxInfo_s
 {
 	uint32	vFlags;
-	uint8	*pvRegisters;	/* 768 bytes located in the memory at address 0x3000 */
-	uint32	nRamBanks;	/* Number of 64kb-banks in GSU-RAM/BackupRAM (banks 0x70-0x73) */
-	uint8	*pvRam;		/* Pointer to GSU-RAM */
-	uint32	nRomBanks;	/* Number of 32kb-banks in Cart-ROM */
-	uint8	*pvRom;		/* Pointer to Cart-ROM */
+	uint8	*pvRegisters;	// 768 bytes located in the memory at address 0x3000
+	uint32	nRamBanks;		// Number of 64kb-banks in GSU-RAM/BackupRAM (banks 0x70-0x73)
+	uint8	*pvRam;			// Pointer to GSU-RAM
+	uint32	nRomBanks;		// Number of 32kb-banks in Cart-ROM
+	uint8	*pvRom;			// Pointer to Cart-ROM
 	uint32	speedPerLine;
 	bool8	oneLineDone;
 };
 
-#define CHECK_EXEC_SUPERFX() ((Memory.FillRAM[0x3000 + GSU_SFR] & FLG_G) && (Memory.FillRAM[0x3000 + GSU_SCMR] & 0x18) == 0x18)
-
 extern struct FxInfo_s	SuperFX;
+
+void S9xInitSuperFX (void);
+void S9xSetSuperFX (uint8, uint16);
+uint8 S9xGetSuperFX (uint16);
+void fx_flushCache (void);
+void fx_computeScreenPointers (void);
+uint32 fx_run (uint32);
+
+#define FX_BREAKPOINT			(-1)
+#define FX_ERROR_ILLEGAL_ADDRESS	(-2)
 
 void S9xResetSuperFX (void);
 void S9xSuperFXExec (void);

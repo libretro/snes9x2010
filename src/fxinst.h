@@ -296,42 +296,41 @@
  *
  */
 
-/* Number of banks in GSU RAM */
+// Number of banks in GSU RAM
 #define FX_RAM_BANKS	4
 
-/* Emulate proper R14 ROM access (slower, but safer)
-   Without this, Doom has garbled graphics */
+// Emulate proper R14 ROM access (slower, but safer)
 #define FX_DO_ROMBUFFER
 
-/* Address checking (definately slow) */
-/* #define FX_ADDRESS_CHECK */
+// Address checking (definately slow)
+//#define FX_ADDRESS_CHECK
 
 struct FxRegs_s
 {
-	/* FxChip registers */
-	uint32	avReg[16];				/* 16 Generic registers */
-	uint32	vColorReg;				/* Internal color register */
-	uint32	vPlotOptionReg;				/* Plot option register */
-	uint32	vStatusReg;				/* Status register */
-	uint32	vPrgBankReg;				/* Program bank index register */
-	uint32	vRomBankReg;				/* Rom bank index register */
-	uint32	vRamBankReg;				/* Ram bank index register */
-	uint32	vCacheBaseReg;				/* Cache base address register */
-	uint32	vCacheFlags;				/* Saying what parts of the cache was written to */
-	uint32	vLastRamAdr;				/* Last RAM address accessed */
-	uint32	*pvDreg;				/* Pointer to current destination register */
-	uint32	*pvSreg;				/* Pointer to current source register */
-	uint8	vRomBuffer;				/* Current byte read by R14 */
-	uint8	vPipe;					/* Instructionset pipe */
-	uint32	vPipeAdr;				/* The address of where the pipe was read from */
+	// FxChip registers
+	uint32	avReg[16];					// 16 Generic registers
+	uint32	vColorReg;					// Internal color register
+	uint32	vPlotOptionReg;				// Plot option register
+	uint32	vStatusReg;					// Status register
+	uint32	vPrgBankReg;				// Program bank index register
+	uint32	vRomBankReg;				// Rom bank index register
+	uint32	vRamBankReg;				// Ram bank index register
+	uint32	vCacheBaseReg;				// Cache base address register
+	uint32	vCacheFlags;				// Saying what parts of the cache was written to
+	uint32	vLastRamAdr;				// Last RAM address accessed
+	uint32	*pvDreg;					// Pointer to current destination register
+	uint32	*pvSreg;					// Pointer to current source register
+	uint8	vRomBuffer;					// Current byte read by R14
+	uint8	vPipe;						// Instructionset pipe
+	uint32	vPipeAdr;					// The address of where the pipe was read from
 
-	/* Status register optimization stuff */
-	uint32	vSign;					/* v & 0x8000 */
-	uint32	vZero;					/* v == 0 */
-	uint32	vCarry;					/* a value of 1 or 0 */
-	int32	vOverflow;				/* (v >= 0x8000 || v < -0x8000) */
+	// Status register optimization stuff
+	uint32	vSign;						// v & 0x8000
+	uint32	vZero;						// v == 0
+	uint32	vCarry;						// a value of 1 or 0
+	int32	vOverflow;					// (v >= 0x8000 || v < -0x8000)
 
-	/* Other emulator variables */
+	// Other emulator variables
 	int32	vErrorCode;
 	uint32	vIllegalAddress;
 
@@ -339,42 +338,42 @@ struct FxRegs_s
 	uint32	vBreakPoint;
 	uint32	vStepPoint;
 
-	uint8	*pvRegisters;				/* 768 bytes located in the memory at address 0x3000 */
-	uint32	nRamBanks;				/* Number of 64kb-banks in FxRam (Don't confuse it with SNES-Ram!!!) */
-	uint8	*pvRam;					/* Pointer to FxRam */
-	uint32	nRomBanks;				/* Number of 32kb-banks in Cart-ROM */
-	uint8	*pvRom;					/* Pointer to Cart-ROM */
+	uint8	*pvRegisters;				// 768 bytes located in the memory at address 0x3000
+	uint32	nRamBanks;					// Number of 64kb-banks in FxRam (Don't confuse it with SNES-Ram!!!)
+	uint8	*pvRam;						// Pointer to FxRam
+	uint32	nRomBanks;					// Number of 32kb-banks in Cart-ROM
+	uint8	*pvRom;						// Pointer to Cart-ROM
 
-	uint32	vMode;					/* Color depth/mode */
-	uint32	vPrevMode;				/* Previous depth */
+	uint32	vMode;						// Color depth/mode
+	uint32	vPrevMode;					// Previous depth
 	uint8	*pvScreenBase;
-	uint8	*apvScreen[32];				/* Pointer to each of the 32 screen colums */
+	uint8	*apvScreen[32];				// Pointer to each of the 32 screen colums
 	int32	x[32];
-	uint32	vScreenHeight;				/* 128, 160, 192 or 256 (could be overriden by cmode) */
-	uint32	vScreenRealHeight;			/* 128, 160, 192 or 256 */
+	uint32	vScreenHeight;				// 128, 160, 192 or 256 (could be overriden by cmode)
+	uint32	vScreenRealHeight;			// 128, 160, 192 or 256
 	uint32	vPrevScreenHeight;
 	uint32	vScreenSize;
 
-	uint8	*pvRamBank;				/* Pointer to current RAM-bank */
-	uint8	*pvRomBank;				/* Pointer to current ROM-bank */
-	uint8	*pvPrgBank;				/* Pointer to current program ROM-bank */
+	uint8	*pvRamBank;					// Pointer to current RAM-bank
+	uint8	*pvRomBank;					// Pointer to current ROM-bank
+	uint8	*pvPrgBank;					// Pointer to current program ROM-bank
 
-	uint8	*apvRamBank[FX_RAM_BANKS];		/* Ram bank table (max 256kb) */
-	uint8	*apvRomBank[256];			/* Rom bank table */
+	uint8	*apvRamBank[FX_RAM_BANKS];	// Ram bank table (max 256kb)
+	uint8	*apvRomBank[256];			// Rom bank table
 
 	uint8	bCacheActive;
-	uint8	*pvCache;				/* Pointer to the GSU cache */
-	uint8	avCacheBackup[512];			/* Backup of ROM when the cache has replaced it */
+	uint8	*pvCache;					// Pointer to the GSU cache
+	uint8	avCacheBackup[512];			// Backup of ROM when the cache has replaced it
 	uint32	vCounter;
 	uint32	vInstCount;
-	uint32	vSCBRDirty;				/* If SCBR is written, our cached screen pointers need updating */
+	uint32	vSCBRDirty;					// If SCBR is written, our cached screen pointers need updating
 	
-	uint8	*avRegAddr;				/* To reference avReg in snapshot.cpp */
+	uint8	*avRegAddr;					// To reference avReg in snapshot.cpp
 };
 
 extern struct FxRegs_s	GSU;
 
-/* GSU registers */
+// GSU registers
 #define GSU_R0			0x000
 #define GSU_R1			0x002
 #define GSU_R2			0x004
@@ -402,122 +401,136 @@ extern struct FxRegs_s	GSU;
 #define GSU_VCR			0x03b
 #define GSU_RAMBR		0x03c
 #define GSU_CBR			0x03e
-#define GSU_CACHERAM		0x100
+#define GSU_CACHERAM	0x100
 
-/* SFR flags */
-#define FLG_Z			2
-#define FLG_CY			4
-#define FLG_S			8
-#define FLG_OV			16
-#define FLG_G			32
-#define FLG_R			64
-#define FLG_ALT1		256
-#define FLG_ALT2		512
-#define FLG_IL			1024
-#define FLG_IH			2048
-#define FLG_B			4096
-#define FLG_IRQ			32768
+// SFR flags
+#define FLG_Z			(1 <<  1)
+#define FLG_CY			(1 <<  2)
+#define FLG_S			(1 <<  3)
+#define FLG_OV			(1 <<  4)
+#define FLG_G			(1 <<  5)
+#define FLG_R			(1 <<  6)
+#define FLG_ALT1		(1 <<  8)
+#define FLG_ALT2		(1 <<  9)
+#define FLG_IL			(1 << 10)
+#define FLG_IH			(1 << 11)
+#define FLG_B			(1 << 12)
+#define FLG_IRQ			(1 << 15)
 
-/* Test flag */
+// Test flag
 #define TF(a)			(GSU.vStatusReg &   FLG_##a)
 #define CF(a)			(GSU.vStatusReg &= ~FLG_##a)
 #define SF(a)			(GSU.vStatusReg |=  FLG_##a)
 
-/* Test and set flag if condition, clear if not */
+// Test and set flag if condition, clear if not
 #define TS(a, b)		GSU.vStatusReg = ((GSU.vStatusReg & (~FLG_##a)) | ((!!(##b)) * FLG_##a))
 
-/* Testing ALT1 & ALT2 bits */
+// Testing ALT1 & ALT2 bits
 #define ALT0			(!TF(ALT1) && !TF(ALT2))
 #define ALT1			( TF(ALT1) && !TF(ALT2))
 #define ALT2			(!TF(ALT1) &&  TF(ALT2))
 #define ALT3			( TF(ALT1) &&  TF(ALT2))
 
-/* Sign extend from 8/16 bit to 32 bit */
+// Sign extend from 8/16 bit to 32 bit
 #define SEX8(a)			((int32)  ((int8)   (a)))
 #define SEX16(a)		((int32)  ((int16)  (a)))
 
-/* Unsign extend from 8/16 bit to 32 bit */
+// Unsign extend from 8/16 bit to 32 bit
 #define USEX8(a)		((uint32) ((uint8)  (a)))
 #define USEX16(a)		((uint32) ((uint16) (a)))
 #define SUSEX16(a)		((int32)  ((uint16) (a)))
 
-/* Set/Clr Sign and Zero flag */
+// Set/Clr Sign and Zero flag
 #define TSZ(num)		TS(S, ((num) & 0x8000)); TS(Z, (!USEX16(num)))
 
-/* Clear flags */
+// Clear flags
 #define CLRFLAGS		GSU.vStatusReg &= ~(FLG_ALT1 | FLG_ALT2 | FLG_B); GSU.pvDreg = GSU.pvSreg = &R0
 
-/* Read current RAM-Bank */
+// Read current RAM-Bank
 #define RAM(adr)		GSU.pvRamBank[USEX16(adr)]
 
-/* Read current ROM-Bank */
+// Read current ROM-Bank
 #define ROM(idx)		GSU.pvRomBank[USEX16(idx)]
 
-/* Access the current value in the pipe */
+// Access the current value in the pipe
 #define PIPE			GSU.vPipe
 
-/* Access data in the current program bank */
+// Access data in the current program bank
 #define PRGBANK(idx)	GSU.pvPrgBank[USEX16(idx)]
 
-/* Update pipe from ROM */
+// Update pipe from ROM
 #define FETCHPIPE		{ PIPE = PRGBANK(R15); }
 
-/* ABS */
+// ABS
 #define ABS(x)			((x) < 0 ? -(x) : (x))
 
-/* Access source register */
+// Access source register
 #define SREG			(*GSU.pvSreg)
 
-/* Access destination register */
+// Access destination register
 #define DREG			(*GSU.pvDreg)
 
 #ifndef FX_DO_ROMBUFFER
 
-/* Don't read R14 */
+// Don't read R14
 #define READR14
 
-/* Don't test and/or read R14 */
+// Don't test and/or read R14
 #define TESTR14
 
 #else
 
-/* Read R14 */
+// Read R14
 #define READR14			GSU.vRomBuffer = ROM(R14)
 
-/* Test and/or read R14 */
+// Test and/or read R14
 #define TESTR14			if (GSU.pvDreg == &R14) READR14
 
 #endif
 
-/* Access to registers */
-#define R0			GSU.avReg[0]
-#define R1			GSU.avReg[1]
-#define R2			GSU.avReg[2]
-#define R3			GSU.avReg[3]
-#define R4			GSU.avReg[4]
-#define R5			GSU.avReg[5]
-#define R6			GSU.avReg[6]
-#define R7			GSU.avReg[7]
-#define R8			GSU.avReg[8]
-#define R9			GSU.avReg[9]
-#define R10			GSU.avReg[10]
-#define R11			GSU.avReg[11]
-#define R12			GSU.avReg[12]
-#define R13			GSU.avReg[13]
-#define R14			GSU.avReg[14]
-#define R15			GSU.avReg[15]
-#define SFR			GSU.vStatusReg
-#define PBR			GSU.vPrgBankReg
+// Access to registers
+#define R0				GSU.avReg[0]
+#define R1				GSU.avReg[1]
+#define R2				GSU.avReg[2]
+#define R3				GSU.avReg[3]
+#define R4				GSU.avReg[4]
+#define R5				GSU.avReg[5]
+#define R6				GSU.avReg[6]
+#define R7				GSU.avReg[7]
+#define R8				GSU.avReg[8]
+#define R9				GSU.avReg[9]
+#define R10				GSU.avReg[10]
+#define R11				GSU.avReg[11]
+#define R12				GSU.avReg[12]
+#define R13				GSU.avReg[13]
+#define R14				GSU.avReg[14]
+#define R15				GSU.avReg[15]
+#define SFR				GSU.vStatusReg
+#define PBR				GSU.vPrgBankReg
 #define ROMBR			GSU.vRomBankReg
 #define RAMBR			GSU.vRamBankReg
-#define CBR			GSU.vCacheBaseReg
+#define CBR				GSU.vCacheBaseReg
 #define SCBR			USEX8(GSU.pvRegisters[GSU_SCBR])
 #define SCMR			USEX8(GSU.pvRegisters[GSU_SCMR])
 #define COLR			GSU.vColorReg
-#define POR			GSU.vPlotOptionReg
+#define POR				GSU.vPlotOptionReg
 #define BRAMR			USEX8(GSU.pvRegisters[GSU_BRAMR])
-#define VCR			USEX8(GSU.pvRegisters[GSU_VCR])
+#define VCR				USEX8(GSU.pvRegisters[GSU_VCR])
 #define CFGR			USEX8(GSU.pvRegisters[GSU_CFGR])
 #define CLSR			USEX8(GSU.pvRegisters[GSU_CLSR])
+
+// Execute instruction from the pipe, and fetch next byte to the pipe
+#define FX_STEP \
+{ \
+	uint32	vOpcode = (uint32) PIPE; \
+	FETCHPIPE; \
+	(*fx_OpcodeTable[(GSU.vStatusReg & 0x300) | vOpcode])(); \
+}
+
+extern void (*fx_PlotTable[]) (void);
+extern void (*fx_OpcodeTable[]) (void);
+
+// Set this define if branches are relative to the instruction in the delay slot (I think they are)
+#define BRANCH_DELAY_RELATIVE
 
 #endif
