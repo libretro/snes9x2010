@@ -1,0 +1,52 @@
+# Fairly good and special-char-safe descriptor of the os being built on.
+OS         = `uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
+BUILDDIR   = .
+
+OBJECTS    = ../apu/apu.o ../apu/SNES_SPC.o ../apu/SNES_SPC_misc.o ../apu/SNES_SPC_state.o ../apu/SPC_DSP.o ../bsx.o ../cheats.o ../cheats2.o ../clip.o ../controls.o ../cpu.o ../cpuexec.o ../cpuops.o ../crosshairs.o ../dma.o ../dsp.o ../dsp1.o ../dsp2.o ../dsp3.o ../dsp4.o ../gfx.o ../globals.o ../memmap.o ../obc1.o ../ppu.o ../reader.o ../sa1.o ../sa1cpu.o ../sdd1.o ../sdd1emu.o ../seta.o ../seta010.o ../seta011.o ../seta018.o ../snapshot.o ../snes9x.o ../spc7110.o ../srtc.o ../tile.o libsnes.o memstream.o
+DEFS       = -DMITSHM -DCPU_SHUTDOWN -DSPC700_SHUTDOWN -DCORRECT_VRAM_READS -DHAVE_STDINT_H -DNDEBUG
+
+OBJECTS   += ../fxinst.o ../fxemu.o
+OBJECTS   += ../c4.o ../c4emu.o
+
+CC = gcc
+CCC = g++
+GASM = g++
+INCLUDES   = -I. -I.. -I../apu/
+
+CCFLAGS    = -O3 -fomit-frame-pointer -fno-exceptions -fno-rtti -pedantic -Wall -W -Wno-unused-parameter -D__WIN32__ -D__WIN32_LIBSNES__ $(DEFS)
+CFLAGS     = $(CCFLAGS)
+
+.SUFFIXES: .o .cpp .c .cc .h .m .i .s .asm .obj
+
+all: snes.dll
+
+snes.dll: $(OBJECTS)
+	$(CCC) -shared $(INCLUDES) -o $@ $(OBJECTS) -lm -lz -L../../zlib -static-libgcc -static-libstdc++
+
+.cpp.o:
+	$(CCC) $(INCLUDES) -c $(CCFLAGS) $*.cpp -o $@
+
+.c.o:
+	$(CC) $(INCLUDES) -c $(CCFLAGS) $*.c -o $@
+
+.cpp.S:
+	$(GASM) $(INCLUDES) -S $(CCFLAGS) $*.cpp -o $@
+
+.cpp.i:
+	$(GASM) $(INCLUDES) -E $(CCFLAGS) $*.cpp -o $@
+
+.S.o:
+	$(GASM) $(INCLUDES) -c $(CCFLAGS) $*.S -o $@
+
+.S.i:
+	$(GASM) $(INCLUDES) -c -E $(CCFLAGS) $*.S -o $@
+
+.s.o:
+	@echo Compiling $*.s
+	sh-elf-as -little $*.s -o $@
+
+.obj.o:
+	cp $*.obj $*.o
+
+clean:
+	rm -f $(OBJECTS) snes.dll
