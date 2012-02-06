@@ -192,13 +192,13 @@ static void fx_readRegisterSpace (void)
 	static uint32	avMult[]   = {  16,  32,  32,  64 };
 
 	uint8	*p;
-	int		n;
+	int	i, n;
 
 	GSU.vErrorCode = 0;
 
 	// Update R0-R15
 	p = GSU.pvRegisters;
-	for (int i = 0; i < 16; i++)
+	for (i = 0; i < 16; i++)
 	{
 		GSU.avReg[i] = *p++;
 		GSU.avReg[i] += ((uint32) (*p++)) << 8;
@@ -254,6 +254,7 @@ static void fx_readRegisterSpace (void)
 
 static void FxReset (struct FxInfo_s *psFxInfo)
 {
+	int i;
 	// Clear all internal variables
 	memset((uint8 *) &GSU, 0, sizeof(struct FxRegs_s));
 
@@ -280,7 +281,7 @@ static void FxReset (struct FxInfo_s *psFxInfo)
 	GSU.pvRegisters[0x3b] = 0;
 
 	// Make ROM bank table
-	for (int i = 0; i < 256; i++)
+	for (i = 0; i < 256; i++)
 	{
 		uint32	b = i & 0x7f;
 
@@ -301,7 +302,7 @@ static void FxReset (struct FxInfo_s *psFxInfo)
 	}
 
 	// Make RAM bank table
-	for (int i = 0; i < 4; i++)
+	for (i = 0; i < 4; i++)
 	{
 		GSU.apvRamBank[i] = &GSU.pvRam[(i % GSU.nRamBanks) << 16];
 		GSU.apvRomBank[0x70 + i] = GSU.apvRamBank[i];
@@ -483,10 +484,11 @@ static bool8 fx_checkStartAddress (void)
 
 static void fx_writeRegisterSpace (void)
 {
+	int i;
 	uint8	*p;
 
 	p = GSU.pvRegisters;
-	for (int i = 0; i < 16; i++)
+	for (i = 0; i < 16; i++)
 	{
 		*p++ = (uint8)  GSU.avReg[i];
 		*p++ = (uint8) (GSU.avReg[i] >> 8);
@@ -557,11 +559,12 @@ static uint32 FxEmulate (uint32 nInstructions)
 
 void S9xSuperFXExec (void)
 {
+	uint16 GSUStatus;
 	if ((Memory.FillRAM[0x3000 + GSU_SFR] & FLG_G) && (Memory.FillRAM[0x3000 + GSU_SCMR] & 0x18) == 0x18)
 	{
 		FxEmulate((Memory.FillRAM[0x3000 + GSU_CLSR] & 1) ? SuperFX.speedPerLine * 2 : SuperFX.speedPerLine);
 
-		uint16 GSUStatus = Memory.FillRAM[0x3000 + GSU_SFR] | (Memory.FillRAM[0x3000 + GSU_SFR + 1] << 8);
+		GSUStatus = Memory.FillRAM[0x3000 + GSU_SFR] | (Memory.FillRAM[0x3000 + GSU_SFR + 1] << 8);
 		if ((GSUStatus & (FLG_G | FLG_IRQ)) == FLG_IRQ)
 		{
 			S9X_SET_IRQ(GSU_IRQ_SOURCE);
@@ -573,20 +576,24 @@ void fx_computeScreenPointers (void)
 {
 	if (GSU.vMode != GSU.vPrevMode || GSU.vPrevScreenHeight != GSU.vScreenHeight || GSU.vSCBRDirty)
 	{
+		int32 condition, mask, result;
+		uint32 screenheight, incrementvalue, mul_8192, mul_4096, vmode;
+		uint8 *pvScreenBase;
+		int i;
 		GSU.vSCBRDirty = FALSE;
 
 		// Make a list of pointers to the start of each screen column
-		uint8* pvScreenBase = GSU.pvScreenBase;
-		uint32 vmode = GSU.vMode;
-		int32 condition = vmode - 2;
-		int32 mask = (condition | -condition) >> 31;
-		int32 result = (vmode & mask) | (3 & ~mask);
-		uint32 screenheight = GSU.vScreenHeight;
-		uint32 incrementvalue = screenheight+screenheight;
+		pvScreenBase = GSU.pvScreenBase;
+		vmode = GSU.vMode;
+		condition = vmode - 2;
+		mask = (condition | -condition) >> 31;
+		result = (vmode & mask) | (3 & ~mask);
+		screenheight = GSU.vScreenHeight;
+		incrementvalue = screenheight+screenheight;
 		vmode = result;
 		vmode++;
-		uint32 mul_8192 = vmode << 13;
-		uint32 mul_4096 = vmode << 12;
+		mul_8192 = vmode << 13;
+		mul_4096 = vmode << 12;
 		switch (screenheight)
 		{
 			case 128:
@@ -594,7 +601,7 @@ void fx_computeScreenPointers (void)
 			case 192:
 				{
 					uint32 tempvalue[32];
-					for(int i = 0; i < 32; i++)
+					for(i = 0; i < 32; i++)
 					{
 						tempvalue[i] = incrementvalue * i * vmode;
 						GSU.x[i] = tempvalue[i];
