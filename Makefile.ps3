@@ -53,7 +53,6 @@ PPU_SRCS		+= $(SNES9X_API_DIR)/tile.c \
 			$(SNES9X_API_DIR)/cpu.c \
 			$(SNES9X_API_DIR)/ppu.c \
 			$(SNES9X_API_DIR)/sa1.c \
-			$(SNES9X_API_DIR)/fxinst.c \
 			$(SNES9X_API_DIR)/fxemu.c \
 			$(SNES9X_API_DIR)/cpuexec.c \
 			$(SNES9X_API_DIR)/srtc.c \

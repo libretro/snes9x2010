@@ -893,7 +893,7 @@ void S9xDoHEventProcessing (void)
 		case HC_HCOUNTER_MAX_EVENT:
 			if (Settings.SuperFX)
 			{
-				if (!SuperFX.oneLineDone)
+				if (!SuperFX.oneLineDone && CHECK_EXEC_SUPERFX())
 					S9xSuperFXExec();
 				SuperFX.oneLineDone = FALSE;
 			}
