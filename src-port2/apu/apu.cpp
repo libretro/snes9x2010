@@ -176,10 +176,10 @@
 
 
 #include <math.h>
-#include "snes9x.h"
+#include "../snes9x.h"
 #include "apu.h"
-#include "snapshot.h"
-#include "display.h"
+#include "../snapshot.h"
+#include "../display.h"
 #ifdef USE_LINEAR_RESAMPLER
 #include "linear_resampler.h"
 #else

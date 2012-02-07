@@ -1943,7 +1943,7 @@ static void DisplayStringFromBottom (const char *string, int linesFromBottom, in
 void S9xDisplayMessages (uint16 *screen, int ppl, int width, int height, int scale)
 {
 	if (GFX.InfoString && *GFX.InfoString)
-		S9xDisplayString(GFX.InfoString, 5, 1, true);
+		DisplayStringFromBottom(GFX.InfoString, 5, 1, true);
 }
 
 static uint16 get_crosshair_color (uint8 color)

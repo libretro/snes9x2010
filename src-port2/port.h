@@ -275,37 +275,48 @@ typedef unsigned long long	uint64;
 #define FALSE	0
 #endif
 
-#define START_EXTERN_C	extern "C" {
-#define END_EXTERN_C	}
-
 #ifndef __WIN32__
 #ifndef PATH_MAX
 #define PATH_MAX	1024
 #endif
+
+#ifndef _MAX_DRIVE
 #define _MAX_DRIVE	1
+#endif
+
+#ifndef _MAX_DIR
 #define _MAX_DIR	PATH_MAX
+#endif
+
+#ifndef _MAX_FNAME
 #define _MAX_FNAME	PATH_MAX
+#endif
+
+#ifndef _MAX_EXT
 #define _MAX_EXT	PATH_MAX
+#endif
+
+#ifndef _MAX_PATH
 #define _MAX_PATH	PATH_MAX
+#endif
+
 #else
 #ifndef PATH_MAX
 #define PATH_MAX	_MAX_PATH
 #endif
 #endif
 
+#ifdef _MSC_VER
+#define snprintf _snprintf
+#define strcasecmp	stricmp
+#define strncasecmp	strnicmp
+#endif
+
 #ifndef __WIN32__
 #define ZeroMemory(a, b)	memset((a), 0, (b))
 void _splitpath (const char *, char *, char *, char *, char *);
 void _makepath (char *, const char *, const char *, const char *, const char *);
-#define S9xDisplayString	DisplayStringFromBottom
 #else
-#define snprintf _snprintf
-#define strcasecmp	stricmp
-#define strncasecmp	strnicmp
-void WinDisplayStringFromBottom(const char *string, int linesFromBottom, int pixelsFromLeft, bool allowWrap);
-#define S9xDisplayString	WinDisplayStringFromBottom
-void SetInfoDlgColor(unsigned char, unsigned char, unsigned char);
-#define SET_UI_COLOR(r,g,b) SetInfoDlgColor(r,g,b)
 #endif
 
 #ifdef __DJGPP

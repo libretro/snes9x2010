@@ -1,22 +1,29 @@
-#include "libsnes.hpp"
-
-#include "snes9x.h"
-#include "memmap.h"
-#include "srtc.h"
-#include "apu/apu.h"
-#include "gfx.h"
-#include "snapshot.h"
-#include "controls.h"
-#include "cheats.h"
-#include "display.h"
+#include "../snes9x.h"
+#include "../memmap.h"
+#include "../srtc.h"
+#include "../apu/apu.h"
+#include "../gfx.h"
+#include "../snapshot.h"
+#include "../controls.h"
+#include "../cheats.h"
+#include "../display.h"
 #include <stdio.h>
-#ifndef __WIN32__
+#ifndef _MSC_VER
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
 
+#define LIBSNES_CORE 1
+
+#if defined(_MSC_VER) && defined(LIBSNES_CORE)
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
+#include "libsnes.hpp"
 
 static snes_video_refresh_t s9x_video_cb = NULL;
 static snes_audio_sample_t s9x_audio_cb = NULL;
@@ -244,7 +251,7 @@ bool snes_load_cartridge_super_game_boy(
 static void map_buttons();
 
 
-void snes_init()
+EXPORT void snes_init()
 {
    memset(&Settings, 0, sizeof(Settings));
    Settings.MouseMaster = TRUE;
@@ -445,7 +452,7 @@ static void report_buttons()
    }
 }
 
-bool snes_load_cartridge_normal(const char *, const uint8_t *rom_data, unsigned rom_size)
+EXPORT bool snes_load_cartridge_normal(const char *, const uint8_t *rom_data, unsigned rom_size)
 {
    // Hack. S9x cannot do stuff from RAM. <_<
    memstream_set_buffer((uint8_t*)rom_data, rom_size);
@@ -460,14 +467,14 @@ bool snes_load_cartridge_normal(const char *, const uint8_t *rom_data, unsigned 
    return true;
 }
 
-void snes_run()
+EXPORT void snes_run()
 {
    s9x_poller_cb();
    report_buttons();
    S9xMainLoop();
 }
 
-void snes_term()
+EXPORT void snes_term()
 {
    S9xDeinitAPU();
    Memory.Deinit();
@@ -476,12 +483,12 @@ void snes_term()
 }
 
 
-bool snes_get_region()
+EXPORT bool snes_get_region()
 { 
    return Settings.PAL ? SNES_REGION_PAL : SNES_REGION_NTSC; 
 }
 
-uint8_t* snes_get_memory_data(unsigned type)
+EXPORT uint8_t* snes_get_memory_data(unsigned type)
 {
    uint8_t* data;
 
@@ -515,12 +522,12 @@ uint8_t* snes_get_memory_data(unsigned type)
    return data;
 }
 
-void snes_unload_cartridge()
+EXPORT void snes_unload_cartridge()
 {
 
 }
 
-unsigned snes_get_memory_size(unsigned type)
+EXPORT unsigned snes_get_memory_size(unsigned type)
 {
    unsigned size;
 
@@ -557,7 +564,7 @@ unsigned snes_get_memory_size(unsigned type)
 void snes_set_cartridge_basename(const char*)
 {}
 
-unsigned snes_serialize_size()
+EXPORT unsigned snes_serialize_size()
 {
    uint8_t *tmpbuf = new uint8_t[5000000];
    memstream_set_buffer(tmpbuf, 5000000);
@@ -566,7 +573,7 @@ unsigned snes_serialize_size()
    return memstream_get_last_size();
 }
 
-bool snes_serialize(uint8_t *data, unsigned size)
+EXPORT bool snes_serialize(uint8_t *data, unsigned size)
 { 
    memstream_set_buffer(data, size);
    if (S9xFreezeGame("foo") == FALSE)
@@ -575,7 +582,7 @@ bool snes_serialize(uint8_t *data, unsigned size)
    return true;
 }
 
-bool snes_unserialize(const uint8_t* data, unsigned size)
+EXPORT bool snes_unserialize(const uint8_t* data, unsigned size)
 { 
    memstream_set_buffer((uint8_t*)data, size);
    if (S9xUnfreezeGame("foo") == FALSE)

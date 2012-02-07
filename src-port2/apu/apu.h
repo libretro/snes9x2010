@@ -178,7 +178,7 @@
 #ifndef _APU_H_
 #define _APU_H_
 
-#include "snes9x.h"
+#include "../snes9x.h"
 #include "SNES_SPC.h"
 
 typedef void (*apu_callback) (void *);
