@@ -2749,6 +2749,11 @@ static void fx_sex (void)
 	CLRFLAGS;
 }
 
+#ifdef _XBOX
+
+/* If we don't do this, SuperFX games will be totally bugged */
+#pragma optimize("", off)
+
 /* 96 - asr - aritmetric shift right by one*/
 static void fx_asr (void)
 {
@@ -2762,6 +2767,10 @@ static void fx_asr (void)
 	TESTR14;
 	CLRFLAGS;
 }
+
+#pragma optimize("", on)
+
+#endif
 
 /* 96 (ALT1) - div2 - aritmetric shift right by one*/
 static void fx_div2 (void)
