@@ -73,17 +73,12 @@ PPU_SRCS		+= $(SNES9X_API_DIR)/tile.c \
 
 PPU_SRCS		+= $(UTILS_DIR)/zlib/adler32.c \
 			$(UTILS_DIR)/zlib/crc32.c \
-			$(UTILS_DIR)/zlib/deflate.c \
-			$(UTILS_DIR)/zlib/gzclose.c \
-			$(UTILS_DIR)/zlib/gzlib.c \
-			$(UTILS_DIR)/zlib/gzread.c \
-			$(UTILS_DIR)/zlib/gzwrite.c \
-			$(UTILS_DIR)/zlib/infback.c \
+			$(UTILS_DIR)/zlib/infblock.c \
+			$(UTILS_DIR)/zlib/infcodes.c \
 			$(UTILS_DIR)/zlib/inffast.c \
 			$(UTILS_DIR)/zlib/inflate.c \
 			$(UTILS_DIR)/zlib/inftrees.c \
-			$(UTILS_DIR)/zlib/trees.c \
-			$(UTILS_DIR)/zlib/uncompr.c \
+			$(UTILS_DIR)/zlib/infutil.c \
 			$(UTILS_DIR)/zlib/zutil.c \
 			$(UTILS_DIR)/zlib/contrib/minizip/ioapi.c \
 			$(UTILS_DIR)/zlib/contrib/minizip/unzip.c
