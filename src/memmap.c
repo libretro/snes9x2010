@@ -177,10 +177,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef UNZIP_SUPPORT
-#include "unzip/unzip.h"
-#endif
-
 #ifdef __linux
 #include <unistd.h>
 #endif
@@ -748,144 +744,6 @@ uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
 	return (size);
 }
 
-#ifdef UNZIP_SUPPORT
-
-static bool8 LoadZip (const char *zipname, int32 *TotalFileSize, int32 *headers, uint8 *buffer)
-{
-	char	filename[132], *ext;
-	int filesize, port;
-
-	*TotalFileSize = 0;
-	*headers = 0;
-
-	unzFile	file = unzOpen(zipname);
-	if (file == NULL)
-		return (FALSE);
-
-	/* find largest file in zip file (under MAX_ROM_SIZE) or a file with extension .1*/
-	filesize = 0;
-	port = unzGoToFirstFile(file);
-
-	unz_file_info	info;
-
-	while (port == UNZ_OK)
-	{
-		char	name[132];
-		unzGetCurrentFileInfo(file, &info, name, 128, NULL, 0, NULL, 0);
-
-		if (info.uncompressed_size > MAX_ROM_SIZE + 512)
-		{
-			port = unzGoToNextFile(file);
-			continue;
-		}
-
-		if ((int) info.uncompressed_size > filesize)
-		{
-			strcpy(filename, name);
-			filesize = info.uncompressed_size;
-		}
-
-		int	len = strlen(name);
-		if (len > 2 && name[len - 2] == '.' && name[len - 1] == '1')
-		{
-			strcpy(filename, name);
-			filesize = info.uncompressed_size;
-			break;
-		}
-
-		port = unzGoToNextFile(file);
-	}
-
-	if (!(port == UNZ_END_OF_LIST_OF_FILE || port == UNZ_OK) || filesize == 0)
-	{
-		return (FALSE);
-	}
-
-	/* find extension*/
-	char	tmp[2] = { 0, 0 };
-
-	ext = strrchr(filename, '.');
-
-	if (ext)
-		ext++;
-	else
-		ext = tmp;
-
-	uint8	*ptr = buffer;
-	bool8	more = FALSE;
-
-	unzLocateFile(file, filename, 1);
-	unzGetCurrentFileInfo(file, &info, filename, 128, NULL, 0, NULL, 0);
-
-	if (unzOpenCurrentFile(file) != UNZ_OK)
-	{
-		unzClose(file);
-		return (FALSE);
-	}
-
-	do
-	{
-		int FileSize, l, len;
-
-		FileSize = info.uncompressed_size;
-		l = unzReadCurrentFile(file, ptr, FileSize);
-
-		if (unzCloseCurrentFile(file) == UNZ_CRCERROR)
-		{
-			unzClose(file);
-			return (FALSE);
-		}
-
-		if (l <= 0 || l != FileSize)
-		{
-			unzClose(file);
-			return (FALSE);
-		}
-
-		FileSize = (int)HeaderRemove((uint32) FileSize, headers, ptr);
-		ptr += FileSize;
-		*TotalFileSize += FileSize;
-
-		if (ptr - Memory.ROM < MAX_ROM_SIZE + 512 && (isdigit(ext[0]) && ext[1] == 0 && ext[0] < '9'))
-		{
-			more = TRUE;
-			ext[0]++;
-		}
-		else
-		if (ptr - Memory.ROM < MAX_ROM_SIZE + 512)
-		{
-			if (ext == tmp)
-				len = strlen(filename);
-			else
-				len = ext - filename - 1;
-
-			if ((len == 7 || len == 8) && strncasecmp(filename, "sf", 2) == 0 &&
-				isdigit(filename[2]) && isdigit(filename[3]) && isdigit(filename[4]) &&
-				isdigit(filename[5]) && isalpha(filename[len - 1]))
-			{
-				more = TRUE;
-				filename[len - 1]++;
-			}
-		}
-		else
-			more = FALSE;
-
-		if (more)
-		{
-			if (unzLocateFile(file, filename, 1) != UNZ_OK ||
-				unzGetCurrentFileInfo(file, &info, filename, 128, NULL, 0, NULL, 0) != UNZ_OK ||
-				unzOpenCurrentFile(file) != UNZ_OK)
-				break;
-		}
-	} while (more);
-
-	unzClose(file);
-
-	return (TRUE);
-}
-
-#endif
-
 static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 {
 	/* <- ROM size without header */
@@ -897,8 +755,9 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	uint32	size;
 	char	fname[PATH_MAX + 1], drive[_MAX_DRIVE + 1], dir[PATH_MAX + 1], name[PATH_MAX + 1], exts[PATH_MAX + 1];
 	char	*ext;
-	int	len, nFormat;
+	int	len;
 	uint8	*ptr;
+	STREAM	fp;
 
 	totalSize = 0;
 
@@ -909,78 +768,49 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	_splitpath(filename, drive, dir, name, exts);
 	_makepath(fname, drive, dir, name, exts);
 
-	nFormat = FILE_DEFAULT;
-	if (strcasecmp(ext, "zip") == 0)
-		nFormat = FILE_ZIP;
+	fp = OPEN_STREAM(fname, "rb");
+	if (!fp)
+		return (0);
 
-	switch (nFormat)
+	strcpy(Memory.ROMFilename, fname);
+
+	len  = 0;
+	size = 0;
+	more = FALSE;
+	ptr = buffer;
+
+	do
 	{
-		case FILE_ZIP:
-			{
-#ifdef UNZIP_SUPPORT
-				if (!LoadZip(fname, &totalSize, &Memory.HeaderCount, buffer))
-				{
-					S9xMessage(S9X_ERROR, S9X_ROM_INFO, "Invalid Zip archive.");
-					return (0);
-				}
+		size = READ_STREAM(ptr, maxsize + 0x200 - (ptr - buffer), fp);
+		CLOSE_STREAM(fp);
 
-				strcpy(Memory.ROMFilename, fname);
-#else
-				S9xMessage(S9X_ERROR, S9X_ROM_INFO, "This binary was not created with Zip support.");
-				return (0);
-#endif
-				break;
+		size = HeaderRemove(size, &Memory.HeaderCount, ptr);
+		totalSize += size;
+		ptr += size;
+
+		/* check for multi file roms*/
+		if (ptr - buffer < maxsize + 0x200 &&
+				(isdigit(ext[0]) && ext[1] == 0 && ext[0] < '9'))
+		{
+			more = TRUE;
+			ext[0]++;
+			_makepath(fname, drive, dir, name, exts);
+		}
+		else
+			if (ptr - buffer < maxsize + 0x200 &&
+					(((len = strlen(name)) == 7 || len == 8) &&
+						strncasecmp(name, "sf", 2) == 0 &&
+						isdigit(name[2]) && isdigit(name[3]) && isdigit(name[4]) && isdigit(name[5]) &&
+						isalpha(name[len - 1])))
+			{
+				more = TRUE;
+				name[len - 1]++;
+				_makepath(fname, drive, dir, name, exts);
 			}
-		case FILE_DEFAULT:
-		default:
-			{
-				STREAM	fp = OPEN_STREAM(fname, "rb");
-				if (!fp)
-					return (0);
-
-				strcpy(Memory.ROMFilename, fname);
-
-				len  = 0;
-				size = 0;
+			else
 				more = FALSE;
-				ptr = buffer;
 
-				do
-				{
-					size = READ_STREAM(ptr, maxsize + 0x200 - (ptr - buffer), fp);
-					CLOSE_STREAM(fp);
-
-					size = HeaderRemove(size, &Memory.HeaderCount, ptr);
-					totalSize += size;
-					ptr += size;
-
-					/* check for multi file roms*/
-					if (ptr - buffer < maxsize + 0x200 &&
-							(isdigit(ext[0]) && ext[1] == 0 && ext[0] < '9'))
-					{
-						more = TRUE;
-						ext[0]++;
-						_makepath(fname, drive, dir, name, exts);
-					}
-					else
-						if (ptr - buffer < maxsize + 0x200 &&
-								(((len = strlen(name)) == 7 || len == 8) &&
-								 strncasecmp(name, "sf", 2) == 0 &&
-								 isdigit(name[2]) && isdigit(name[3]) && isdigit(name[4]) && isdigit(name[5]) &&
-								 isalpha(name[len - 1])))
-						{
-							more = TRUE;
-							name[len - 1]++;
-							_makepath(fname, drive, dir, name, exts);
-						}
-						else
-							more = FALSE;
-
-				}	while (more && (fp = OPEN_STREAM(fname, "rb")) != NULL);
-
-				break;
-			}
-	}
+	}	while (more && (fp = OPEN_STREAM(fname, "rb")) != NULL);
 
 	if (Memory.HeaderCount == 0)
 		S9xMessage(S9X_INFO, S9X_HEADERS_INFO, "No ROM file header found.");

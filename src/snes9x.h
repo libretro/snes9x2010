@@ -197,9 +197,6 @@ extern "C" {
 #define S9X_ACCURACY_LEVEL		3
 
 #ifdef CLUNKY_FILE_ABSTRACTION
-#ifdef ZLIB
-#include "unzip/zlib.h"
-#endif
 #define STREAM			FILE *
 #define READ_STREAM(p, l, s)	fread(p, 1, l, s)
 #define WRITE_STREAM(p, l, s)	fwrite(p, 1, l, s)

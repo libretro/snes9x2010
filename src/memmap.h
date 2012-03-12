@@ -208,9 +208,6 @@
 
 #define MAX_ROM_SIZE 0x800000
 
-#define FILE_ZIP 0
-#define FILE_DEFAULT 1
-
 #define NOPE 0
 #define YEAH 1
 #define BIGFIRST 2
