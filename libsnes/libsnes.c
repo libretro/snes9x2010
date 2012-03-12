@@ -64,7 +64,11 @@ static snes_environment_t environ_cb;
 static bool use_overscan;
 void snes_set_environment(snes_environment_t cb)
 {
+	bool dummy;
 	environ_cb = cb;
+	dummy = 0;
+	cb(SNES_ENVIRONMENT_SET_BATCH_LOAD, &dummy);
+	cb(SNES_ENVIRONMENT_SET_ROM_FORMATS, "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP");
 }
 
 static void S9xAudioCallback()
