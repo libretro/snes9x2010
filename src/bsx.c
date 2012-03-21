@@ -189,8 +189,6 @@
 
 extern uint8 OpenBus;
 
-/* #define BSX_DEBUG */
-
 #define BIOS_SIZE	0x100000
 #define FLASH_SIZE	0x200000
 #define PSRAM_SIZE	0x80000
@@ -528,12 +526,6 @@ static void BSX_Map_Dirty (void)
 
 static void BSX_Map (void)
 {
-#ifdef BSX_DEBUG
-	printf("BS: Remapping\n");
-	for (int i = 0; i < 32; i++)
-		printf("BS: MMC %02X: %d\n", i, BSX.MMC[i]);
-#endif
-
 	memcpy(BSX.prevMMC, BSX.MMC, sizeof(BSX.MMC));
 
 	/* Do a quick bank change */
@@ -1000,13 +992,6 @@ static bool8 BSX_LoadBIOS (void)
 			r = TRUE;
 	}
 
-#ifdef BSX_DEBUG
-	if (r)
-		printf("BS: BIOS found.\n");
-	else
-		printf("BS: BIOS not found!\n");
-#endif
-
 	return (r);
 #endif
 }
@@ -1081,12 +1066,6 @@ void S9xInitBSX (void)
 			FlashMode = (header[0x18] & 0xEF) == 0x20 ? FALSE : TRUE;
 			FlashSize = (header[0x19] & 0x20) ? PSRAM_SIZE : FLASH_SIZE;
 
-#ifdef BSX_DEBUG
-			for (int i = 0; i <= 0x1F; i++)
-				printf("BS: ROM Header %02X: %02X\n", i, header[i]);
-			printf("BS: FlashMode: %d, FlashSize: %x\n", FlashMode, FlashSize);
-#endif
-
 			BSX.bootup = Settings.BSXBootup;
 
 			if (!BSX_LoadBIOS())
@@ -1110,9 +1089,6 @@ void S9xInitBSX (void)
 		BSX.test2192[10] = BSX_RTC.seconds = tmr->tm_sec;
 		BSX.test2192[11] = BSX_RTC.minutes = tmr->tm_min;
 		BSX.test2192[12] = BSX_RTC.hours   = tmr->tm_hour;
-#ifdef BSX_DEBUG
-		printf("BS: Current Time: %02d:%02d:%02d\n",  BSX_RTC.hours, BSX_RTC.minutes, BSX_RTC.seconds);
-#endif
 		SNESGameFixes.SRAMInitialValue = 0x00;
 	}
 }
