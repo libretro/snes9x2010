@@ -16,12 +16,6 @@
 #define BLARGG_NONPORTABLE 1
 #endif
 
-/* Uncomment if automatic byte-order determination doesn't work */
-/* #define BLARGG_BIG_ENDIAN 1 */
-
-/* Uncomment if you get errors in the bool section of blargg_common.h */
-/* #define BLARGG_COMPILER_HAS_BOOL 1 */
-
 /* BLARGG_COMPILER_HAS_BOOL: If 0, provides bool support for old compiler. If 1, */
 /* compiler is assumed to support bool. If undefined, availability is determined. */
 #ifndef BLARGG_COMPILER_HAS_BOOL

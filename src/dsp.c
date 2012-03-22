@@ -3359,7 +3359,6 @@ static void DSP4_OP01 (void)
 		case 3: goto resume3; break;
 	}
 
-	/*//////////////////////////////////////////////////*/
 	/* process initial inputs*/
 
 	/* sort inputs*/
@@ -3394,7 +3393,6 @@ static void DSP4_OP01 (void)
 
 	do
 	{
-		/*//////////////////////////////////////////////////*/
 		/* process one iteration of projection */
 
 		/* perspective projection of world (x, y, scroll) points*/
@@ -3414,8 +3412,6 @@ static void DSP4_OP01 (void)
 		DSP4_WRITE_WORD(DSP4.view_x2);
 		DSP4_WRITE_WORD(DSP4.world_y >> 16);
 		DSP4_WRITE_WORD(DSP4.view_y2);
-
-		/*////////////////////////////////////////////////////*/
 
 		/* SR = 0x00*/
 
@@ -3441,8 +3437,6 @@ static void DSP4_OP01 (void)
 		/* SR = 0x80*/
 
 		DSP4_WRITE_WORD(DSP4.segments);
-
-		/*////////////////////////////////////////////////////*/
 
 		/* scan next command if no SR check needed*/
 		if (DSP4.segments)
@@ -3481,7 +3475,6 @@ static void DSP4_OP01 (void)
 			}
 		}
 
-		/*//////////////////////////////////////////////////*/
 		/* Post-update*/
 
 		/* update new viewer (x, y, scroll) to last raster line drawn*/
@@ -3501,7 +3494,6 @@ static void DSP4_OP01 (void)
 		/* update road turnoff position*/
 		DSP4.view_turnoff_x += DSP4.view_turnoff_dx;
 
-		/*//////////////////////////////////////////////////*/
 		/* command check*/
 
 		/* scan next command*/
@@ -3589,7 +3581,6 @@ static void DSP4_OP07 (void)
 		case 2: goto resume2; break;
 	}
 
-	/*//////////////////////////////////////////////////*/
 	/* sort inputs*/
 
 	DSP4.world_y           = DSP4_READ_DWORD();
@@ -3619,7 +3610,6 @@ static void DSP4_OP07 (void)
 
 	do
 	{
-		/*//////////////////////////////////////////////////*/
 		/* process one iteration of projection*/
 
 		/* add shaping*/
@@ -3636,8 +3626,6 @@ static void DSP4_OP07 (void)
 		DSP4_CLEAR_OUT();
 		DSP4_WRITE_WORD(DSP4.view_x2);
 		DSP4_WRITE_WORD(DSP4.view_y2);
-
-		/*////////////////////////////////////////////////////*/
 
 		/* SR = 0x00*/
 
@@ -3663,8 +3651,6 @@ static void DSP4_OP07 (void)
 		/* SR = 0x80*/
 
 		DSP4_WRITE_WORD(DSP4.segments);
-
-		/*////////////////////////////////////////////////////*/
 
 		/* scan next command if no SR check needed*/
 		if (DSP4.segments)
@@ -3703,7 +3689,6 @@ static void DSP4_OP07 (void)
 			}
 		}
 
-		/*///////////////////////////////////////////////////*/
 		/* Post-update*/
 
 		/* update new viewer (x, y, scroll) to last raster line drawn */
@@ -3712,7 +3697,6 @@ static void DSP4_OP07 (void)
 		DSP4.view_xofs1 = DSP4.view_xofs2;
 		DSP4.view_yofs1 = DSP4.view_yofs2;
 
-		/*//////////////////////////////////////////////////*/
 		/* command check*/
 
 		/* scan next command*/
@@ -3873,7 +3857,6 @@ static void DSP4_OP08 (void)
 	{
 		int16	polygon;
 
-		/*//////////////////////////////////////////////////*/
 		/* command check*/
 
 		/* scan next command*/
@@ -3905,13 +3888,11 @@ static void DSP4_OP08 (void)
 		envelope[1][0] = DSP4_READ_WORD();
 		envelope[1][1] = DSP4_READ_WORD();
 
-		/*//////////////////////////////////////////////////*/
 		/* projection begins*/
 
 		/* init*/
 		DSP4_CLEAR_OUT();
 
-		/*////////////////////////////////////////////*/
 		/* solid polygon renderer - 2 shapes*/
 
 		for (polygon = 0; polygon < 2; polygon++)
@@ -3954,8 +3935,6 @@ static void DSP4_OP08 (void)
 			/* normal parameters*/
 			poly = polygon;
 
-			/*///////////////////////////////////////////////////*/
-
 			/* scan next command if no SR check needed*/
 			if (DSP4.segments)
 			{
@@ -3968,7 +3947,6 @@ static void DSP4_OP08 (void)
 				if (envelope[polygon][1] == 0x3fff)
 					poly = 1;
 
-				/*/////////////////////////////////////////////*/
 				/* left side of polygon*/
 
 				/* perspective correction on additional shaping parameters*/
