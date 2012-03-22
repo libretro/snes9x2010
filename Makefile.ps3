@@ -42,7 +42,6 @@ STRIP                = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-strip
 C                    = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-gcc
 CC                   = $(CELL_HOST_PATH)/ppu/bin/ppu-lv2-g++
 
-UTILS_DIR		= ./utils
 SRC_DIR			= ./ps3
 SNES9X_API_DIR		= ./src
 CELL_FRAMEWORK2_DIR	= ./ps3/cellframework2
@@ -71,18 +70,6 @@ PPU_SRCS		+= $(SNES9X_API_DIR)/tile.c \
 			$(SNES9X_API_DIR)/spc7110.c
 
 
-PPU_SRCS		+= $(UTILS_DIR)/zlib/adler32.c \
-			$(UTILS_DIR)/zlib/crc32.c \
-			$(UTILS_DIR)/zlib/infblock.c \
-			$(UTILS_DIR)/zlib/infcodes.c \
-			$(UTILS_DIR)/zlib/inffast.c \
-			$(UTILS_DIR)/zlib/inflate.c \
-			$(UTILS_DIR)/zlib/inftrees.c \
-			$(UTILS_DIR)/zlib/infutil.c \
-			$(UTILS_DIR)/zlib/zutil.c \
-			$(UTILS_DIR)/zlib/contrib/minizip/ioapi.c \
-			$(UTILS_DIR)/zlib/contrib/minizip/unzip.c
-
 PPU_SRCS		+=  $(CELL_FRAMEWORK2_DIR)/audio/rsound.c \
 			$(CELL_FRAMEWORK2_DIR)/audio/librsound.c \
 			$(CELL_FRAMEWORK2_DIR)/audio/buffer.c \
@@ -108,9 +95,8 @@ else
 DEBUGFLAGS =
 endif
 
-ZLIB_DEFINES		= -DUSE_FILE32API -DUnix -DFASTEST
 DEFINES			=  -DBLARGG_BIG_ENDIAN=1 -DWORDS_BIGENDIAN -D__POWERPC__ -D__ppc__ -DCLUNKY_FILE_ABSTRACTION -DPSGL -DCORRECT_VRAM_READS -DRIGHTSHIFT_IS_SAR -DNDEBUG=1 -DSN_TARGET_PS3 -DHAVE_STDINT_H -DHAVE_INTTYPES_H -DUNZIP_SUPPORT -DINLINE=inline -DHAVE_CHEATS -DHAVE_GAMEAWARE
-PPU_CFLAGS		+= -I. -I./src/ -I$(SNES_API_DIR) -I$(UTILS_DIR)/zlib -DZLIB $(ZLIB_DEFINES) $(DEFINES) $(DEBUGFLAGS)
+PPU_CFLAGS		+= -I. -I./src/ -I$(SNES_API_DIR) $(DEFINES) $(DEBUGFLAGS)
 
 ifeq ($(CELL_BUILD_TOOLS),SNC)
 PARAMS = -Xbranchless=1 -Xfastmath=1 -Xassumecorrectsign=1 -Xassumecorrectalignment=1 -Xunroll=1 -Xautovecreg=1 -Xnotocrestore=2
