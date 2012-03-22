@@ -203,7 +203,6 @@ extern "C" {
 #define GETS_STREAM(p, l, s)	fgets(p, l, s)
 #define GETC_STREAM(s)		fgetc(s)
 #define OPEN_STREAM(f, m)	fopen(f, m)
-#define REOPEN_STREAM(f, m)	fdopen(f, m)
 #define FIND_STREAM(f)		ftell(f)
 #define REVERT_STREAM(f, o, s)	fseek(f, o, s)
 #define CLOSE_STREAM(s)		fclose(s)
@@ -217,11 +216,11 @@ extern "C" {
 #define GETS_STREAM(p, l, s)     memstream_gets(s, p, l)
 #define GETC_STREAM(s)           memstream_getc(s)
 #define OPEN_STREAM(f, m)        memstream_open()
-#define REOPEN_STREAM(f, m)      fdopen(f, m)
 #define FIND_STREAM(f)           memstream_pos(f)
 #define REVERT_STREAM(f, o, s)   memstream_seek(f, o, s)
 #define CLOSE_STREAM(s)          memstream_close(s)
 #endif
+#define REOPEN_STREAM(f, m)      fdopen(f, m)
 
 #define SNES_WIDTH		256
 #define SNES_HEIGHT		224

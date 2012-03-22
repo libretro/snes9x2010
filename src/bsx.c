@@ -962,9 +962,6 @@ uint8 * S9xGetBasePointerBSX (uint32 address)
 
 static bool8 BSX_LoadBIOS (void)
 {
-#ifdef CUSTOM_FILE_HANDLING
-	return CustomBSX_LoadBIOS();
-#else
 	FILE	*fp;
 	char	path[PATH_MAX + 1], name[PATH_MAX + 1];
 	bool8	r = FALSE;
@@ -993,7 +990,6 @@ static bool8 BSX_LoadBIOS (void)
 	}
 
 	return (r);
-#endif
 }
 
 static bool8 valid_normal_bank (unsigned char bankbyte)

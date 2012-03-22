@@ -855,11 +855,7 @@ again:
 	Memory.CalculatedSize = 0;
 	Memory.ExtendedFormat = NOPE;
 
-	#ifdef CUSTOM_FILE_HANDLING
-	totalFileSize = CustomFileLoader();
-	#else
 	totalFileSize = FileLoader(Memory.ROM, filename, MAX_ROM_SIZE);
-	#endif
 	if (!totalFileSize)
 		return FALSE;
 
@@ -1052,11 +1048,7 @@ again:
 	memset(&SNESGameFixes, 0, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
 
-#ifdef CUSTOM_FILE_HANDLING
-	S9xCustomLoadCheatFile();
-#else
 	S9xLoadCheatFile(S9xGetFilename(".cht", CHEAT_DIR));
-#endif
 
 	InitROM();
 

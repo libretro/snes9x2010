@@ -205,13 +205,6 @@ const char * S9xGetDirectory (uint32_t dirtype);
 const char * S9xGetFilename (const char * in, uint32_t dirtype);
 const char * S9xChooseFilename (bool8 a);
 
-#ifdef CUSTOM_FILE_HANDLING
-int CustomFileLoader(void);
-void S9xCustomLoadCheatFile(void);
-void CustomCheckForAnyPatch(bool8 header, int32 rom_size);
-bool8 CustomBSX_LoadBIOS(void);
-#endif
-
 #ifdef __cplusplus
 }
 #endif
