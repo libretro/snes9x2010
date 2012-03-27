@@ -39,6 +39,7 @@ static snes_video_refresh_t s9x_video_cb = NULL;
 static snes_audio_sample_t s9x_audio_cb = NULL;
 static snes_input_poll_t s9x_poller_cb = NULL;
 static snes_input_state_t s9x_input_state_cb = NULL;
+static snes_audio_sample_batch_t audio_batch_cb = NULL;
 
 void snes_set_video_refresh(snes_video_refresh_t cb)
 {
@@ -80,8 +81,13 @@ static void S9xAudioCallback()
    S9xFinalizeSamples();
    avail = S9xGetSampleCount();
    S9xMixSamples(audio_buf, avail);
-   for ( i = 0; i < avail; i+=2)
-      s9x_audio_cb((uint16_t)audio_buf[i], (uint16_t)audio_buf[i + 1]);
+   if (audio_batch_cb)
+	audio_batch_cb(audio_buf, avail >> 1);
+   else
+   {
+	   for ( i = 0; i < avail; i+=2)
+		   s9x_audio_cb((uint16_t)audio_buf[i], (uint16_t)audio_buf[i + 1]);
+   }
 }
 
 const char *snes_library_id()
@@ -483,6 +489,7 @@ EXPORT bool snes_load_cartridge_normal(const char * a, const uint8_t *rom_data, 
 		   timing.fps = 21281370.0 / 425568.0;
 
 	   environ_cb(SNES_ENVIRONMENT_SET_TIMING, &timing);
+	   environ_cb(SNES_ENVIRONMENT_GET_AUDIO_BATCH_CB, &audio_batch_cb);
    }
    
    return TRUE;
