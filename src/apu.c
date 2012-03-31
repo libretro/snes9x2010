@@ -3093,21 +3093,18 @@ static INLINE int32_t hermite (int32_t mu1, int32_t a, int32_t b, int32_t c, int
 {
 	int32_t mu2, mu3, m0, m1, a0, a1, a2, a3;
 
-	mu2 = (mu1 * mu1) >> 15;
-	mu3 = (mu2 * mu1) >> 15;
+	mu2 = ((mu1 * mu1) >> 15);
+	mu3 = ((mu2 * mu1) >> 15);
 
 	m0 = (c - a) << 14;
 	m1 = (d - b) << 14;
 
-	a0 = (mu3 << 1) - (3 * mu2) + 32768;
-	a1 = mu3 - (mu2 << 1) + mu1;
-	a2 = mu3 -     mu2;
-	a3 = 3 * mu2 - (mu3 << 1);
+	a0 = (((mu3 << 1) - (3 * mu2) + 32768) * b);
+	a1 = ((mu3 - (mu2 << 1) + mu1) * m0) >> 15;
+	a2 = ((mu3 -     mu2) * m1) >> 15;
+	a3 = ((3 * mu2 - (mu3 << 1)) * c);
 	
-	return ((a0 * b) +
-	((a1 * m0) >> 15) +
-	((a2 * m1) >> 15) +
-	(a3 * c)) >> 15;
+	return ((a0) + (a1) + (a2) + (a3)) >> 15;
 }
 
 static void resampler_clear(void)

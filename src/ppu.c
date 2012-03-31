@@ -196,6 +196,7 @@
 extern uint8	*HDMAMemPointers[8];
 
 extern struct SLineData			LineData[240];
+static uint8 dma_sa1_channels_chars[9][8];
 
 #ifdef REPORT_MODES
 static int counter = 0;
@@ -289,6 +290,33 @@ bool8 S9xGraphicsInit (void)
 			}
 		}
 	}
+
+	dma_sa1_channels_chars[2][0] = 0;
+	dma_sa1_channels_chars[2][1] = 1;
+	dma_sa1_channels_chars[2][2] = 0;
+	dma_sa1_channels_chars[2][3] = 1;
+	dma_sa1_channels_chars[2][4] = 0;
+	dma_sa1_channels_chars[2][5] = 1;
+	dma_sa1_channels_chars[2][6] = 0;
+	dma_sa1_channels_chars[2][7] = 1;
+
+	dma_sa1_channels_chars[4][0] = 0;
+	dma_sa1_channels_chars[4][1] = 1;
+	dma_sa1_channels_chars[4][2] = 16;
+	dma_sa1_channels_chars[4][3] = 17;
+	dma_sa1_channels_chars[4][4] = 0;
+	dma_sa1_channels_chars[4][5] = 1;
+	dma_sa1_channels_chars[4][6] = 16;
+	dma_sa1_channels_chars[4][7] = 17;
+
+	dma_sa1_channels_chars[8][0] = 0;
+	dma_sa1_channels_chars[8][1] = 1;
+	dma_sa1_channels_chars[8][2] = 16;
+	dma_sa1_channels_chars[8][3] = 17;
+	dma_sa1_channels_chars[8][4] = 32;
+	dma_sa1_channels_chars[8][5] = 33;
+	dma_sa1_channels_chars[8][6] = 48;
+	dma_sa1_channels_chars[8][7] = 49;
 
 	return (TRUE);
 }
@@ -3848,6 +3876,7 @@ static INLINE bool8 addCyclesInDMA (uint8 dma_channel)
 static uint8 dma_channels_to_be_used[8] = {0};
 static bool8 special_chips_active = FALSE;
 
+
 static void S9xDoDMA (void)
 {
 	uint8 Channel;
@@ -3982,8 +4011,7 @@ static void S9xDoDMA (void)
 			{
 				if (SA1.in_char_dma && d->BAddress == 0x18 && (d->ABank & 0xf0) == 0x40)
 				{
-					int32 num_chars, depth, bytes_per_char, bytes_per_line, char_line_bytes,
-					i, l, b;
+					int32 num_chars, depth, bytes_per_char, bytes_per_line, char_line_bytes, i, l, b;
 					uint32 addr, inc_sa1, char_count, j;
 					uint8 *buffer, *p, *base;
 
@@ -4012,99 +4040,35 @@ static void S9xDoDMA (void)
 					char_count = inc_sa1 / bytes_per_char;
 
 					in_sa1_dma = TRUE;
+					uint8 depth_comb = depth * depth;
 
-					switch (depth)
+					for ( i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
 					{
-						case 2:
-							for ( i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
+						uint8	*line = base + (num_chars - char_count) * depth;
+						for ( j = 0; j < char_count && p - buffer < count; j++, line += depth)
+						{
+							uint8	*q = line;
+							for ( l = 0; l < 8; l++, q += bytes_per_line)
 							{
-								uint8	*line = base + (num_chars - char_count) * 2;
-								for ( j = 0; j < char_count && p - buffer < count; j++, line += 2)
+								for ( b = 0; b < depth; b++)
 								{
-									uint8	*q = line;
-									for ( l = 0; l < 8; l++, q += bytes_per_line)
-									{
-										for ( b = 0; b < 2; b++)
-										{
-											uint8	r = *(q + b);
-											*(p + 0) = (*(p + 0) << 1) | (r & 1);
-											*(p + 1) = (*(p + 1) << 1) | ((r >> 1) & 1);
-											*(p + 0) = (*(p + 0) << 1) | ((r >> 2) & 1);
-											*(p + 1) = (*(p + 1) << 1) | ((r >> 3) & 1);
-											*(p + 0) = (*(p + 0) << 1) | ((r >> 4) & 1);
-											*(p + 1) = (*(p + 1) << 1) | ((r >> 5) & 1);
-											*(p + 0) = (*(p + 0) << 1) | ((r >> 6) & 1);
-											*(p + 1) = (*(p + 1) << 1) | ((r >> 7) & 1);
-										}
-
-										p += 2;
-									}
+									uint8	r = *(q + b);
+									*(p) =		(*(p + dma_sa1_channels_chars[depth][0]) << 1) | (r & 1);
+									*(p + 1) =	(*(p + dma_sa1_channels_chars[depth][1]) << 1) | ((r >> 1) & 1);
+									*(p) =		(*(p + dma_sa1_channels_chars[depth][2]) << 1) | ((r >> 2) & 1);
+									*(p + 1) =	(*(p + dma_sa1_channels_chars[depth][3]) << 1) | ((r >> 3) & 1);
+									*(p) =		(*(p + dma_sa1_channels_chars[depth][4]) << 1) | ((r >> 4) & 1);
+									*(p + 1) =	(*(p + dma_sa1_channels_chars[depth][5]) << 1) | ((r >> 5) & 1);
+									*(p) =		(*(p + dma_sa1_channels_chars[depth][6]) << 1) | ((r >> 6) & 1);
+									*(p + 1) =	(*(p + dma_sa1_channels_chars[depth][7]) << 1) | ((r >> 7) & 1);
 								}
+
+								p += 2;
 							}
 
-							break;
-
-						case 4:
-							for ( i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
-							{
-								uint8	*line = base + (num_chars - char_count) * 4;
-								for ( j = 0; j < char_count && p - buffer < count; j++, line += 4)
-								{
-									uint8	*q = line;
-									for ( l = 0; l < 8; l++, q += bytes_per_line)
-									{
-										for ( b = 0; b < 4; b++)
-										{
-											uint8	r = *(q + b);
-											*(p +  0) = (*(p +  0) << 1) | (r & 1);
-											*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
-											*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
-											*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
-											*(p +  0) = (*(p +  0) << 1) | ((r >> 4) & 1);
-											*(p +  1) = (*(p +  1) << 1) | ((r >> 5) & 1);
-											*(p + 16) = (*(p + 16) << 1) | ((r >> 6) & 1);
-											*(p + 17) = (*(p + 17) << 1) | ((r >> 7) & 1);
-										}
-
-										p += 2;
-									}
-
-									p += 32 - 16;
-								}
-							}
-
-							break;
-
-						case 8:
-							for ( i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
-							{
-								uint8	*line = base + (num_chars - char_count) * 8;
-								for ( j = 0; j < char_count && p - buffer < count; j++, line += 8)
-								{
-									uint8	*q = line;
-									for ( l = 0; l < 8; l++, q += bytes_per_line)
-									{
-										for ( b = 0; b < 8; b++)
-										{
-											uint8	r = *(q + b);
-											*(p +  0) = (*(p +  0) << 1) | (r & 1);
-											*(p +  1) = (*(p +  1) << 1) | ((r >> 1) & 1);
-											*(p + 16) = (*(p + 16) << 1) | ((r >> 2) & 1);
-											*(p + 17) = (*(p + 17) << 1) | ((r >> 3) & 1);
-											*(p + 32) = (*(p + 32) << 1) | ((r >> 4) & 1);
-											*(p + 33) = (*(p + 33) << 1) | ((r >> 5) & 1);
-											*(p + 48) = (*(p + 48) << 1) | ((r >> 6) & 1);
-											*(p + 49) = (*(p + 49) << 1) | ((r >> 7) & 1);
-										}
-
-										p += 2;
-									}
-
-									p += 64 - 16;
-								}
-							}
-
-							break;
+							if(depth != 2)
+								p += (depth_comb) - 16;
+						}
 					}
 				}
 			}
