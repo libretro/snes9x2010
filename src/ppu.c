@@ -4439,8 +4439,16 @@ static void S9xDoDMA (void)
 									b = 0;
 							}
 						}
-						else if (d->TransferMode == 3 || d->TransferMode == 7)
+						else if (d->TransferMode == 3 || d->TransferMode == 7 || d->TransferMode == 4)
 						{
+							uint32 startaddr = 0x2100;
+							uint32 endaddr = 0x2101;
+							if(d->TransferMode == 4)
+							{
+								startaddr++;
+								endaddr += 2;
+							}	
+
 							switch (b)
 							{
 								default:
@@ -4457,7 +4465,7 @@ static void S9xDoDMA (void)
 
 										case 1:
 										Work = *(base + p);
-										S9xSetPPU(Work, 0x2100 + d->BAddress);
+										S9xSetPPU(Work, (startaddr) + d->BAddress);
 										UPDATE_COUNTERS;
 										if (--count <= 0)
 										{
@@ -4467,7 +4475,7 @@ static void S9xDoDMA (void)
 
 										case 2:
 										Work = *(base + p);
-										S9xSetPPU(Work, 0x2101 + d->BAddress);
+										S9xSetPPU(Work, (startaddr+1) + d->BAddress);
 										UPDATE_COUNTERS;
 										if (--count <= 0)
 										{
@@ -4477,62 +4485,14 @@ static void S9xDoDMA (void)
 
 										case 3:
 										Work = *(base + p);
-										S9xSetPPU(Work, 0x2101 + d->BAddress);
+										S9xSetPPU(Work, endaddr + d->BAddress);
 										UPDATE_COUNTERS;
 										if (--count <= 0)
 										{
 											b = 0;
 											break;
 										}
-									} while (1);
-							}
-						}
-						else if (d->TransferMode == 4)
-						{
-							switch (b)
-							{
-								default:
-									do
-									{
-										Work = *(base + p);
-										S9xSetPPU(Work, 0x2100 + d->BAddress);
-										UPDATE_COUNTERS;
-										if (--count <= 0)
-										{
-											b = 1;
-											break;
-										}
-
-										case 1:
-										Work = *(base + p);
-										S9xSetPPU(Work, 0x2101 + d->BAddress);
-										UPDATE_COUNTERS;
-										if (--count <= 0)
-										{
-											b = 2;
-											break;
-										}
-
-										case 2:
-										Work = *(base + p);
-										S9xSetPPU(Work, 0x2102 + d->BAddress);
-										UPDATE_COUNTERS;
-										if (--count <= 0)
-										{
-											b = 3;
-											break;
-										}
-
-										case 3:
-										Work = *(base + p);
-										S9xSetPPU(Work, 0x2103 + d->BAddress);
-										UPDATE_COUNTERS;
-										if (--count <= 0)
-										{
-											b = 0;
-											break;
-										}
-									} while (1);
+									}while(1);
 							}
 						}
 				}
