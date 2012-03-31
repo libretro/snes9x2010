@@ -675,9 +675,9 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 			int VirtAlign;
 
 			Y2 = HiresInterlace ? Y * 2 + GFX.InterlaceFrame : Y;
-			VOffset = LineData[Y].BG[bg].VOffset + (HiresInterlace ? 1 : 0);
+			VOffset = LineData[Y].BG[bg].VOffset + HiresInterlace;
 			HOffset = LineData[Y].BG[bg].HOffset;
-			VirtAlign = ((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0);
+			VirtAlign = ((Y2 + VOffset) & 7) >> HiresInterlace;
 
 			for (Lines = 1; Lines < GFX.LinesPerTile - VirtAlign; Lines++)
 			{
@@ -912,15 +912,15 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 			uint16 *b1, *b2, *t;
 			int VirtAlign;
 
-			Y2 = HiresInterlace ? Y * 2 : Y;
-			VOffset = LineData[Y].BG[bg].VOffset + (HiresInterlace ? 1 : 0);
+			Y2 = Y << HiresInterlace;
+			VOffset = LineData[Y].BG[bg].VOffset + HiresInterlace;
 			HOffset = LineData[Y].BG[bg].HOffset;
 
 			Lines = PPU.Mosaic - MosaicStart;
 			if (Y + MosaicStart + Lines > GFX.EndY)
 				Lines = GFX.EndY - Y - MosaicStart + 1;
 
-			VirtAlign = (((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0)) << 3;
+			VirtAlign = (((Y2 + VOffset) & 7) >> HiresInterlace) << 3;
 
 			TilemapRow = (VOffset + Y2) >> OffsetShift;
 			BG.InterlaceLine = ((VOffset + Y2) & 1) << 3;
@@ -1179,11 +1179,9 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 						HOffset = LineHOffset;
 				}
 
-				if (HiresInterlace)
-					VOffset++;
+				VOffset += HiresInterlace;
 
-
-				VirtAlign = (((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0)) << 3;
+				VirtAlign = (((Y2 + VOffset) & 7) >> HiresInterlace) << 3;
 				TilemapRow = (VOffset + Y2) >> OffsetShift;
 				BG.InterlaceLine = ((VOffset + Y2) & 1) << 3;
 
@@ -1325,7 +1323,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 			uint16	*s, *s1, *s2;
 			bool8 left_edge;
 
-			Y2 = HiresInterlace ? Y * 2 : Y;
+			Y2 = Y << HiresInterlace;
 			VOff = LineData[Y].BG[2].VOffset - 1;
 			HOff = LineData[Y].BG[2].HOffset;
 
@@ -1418,7 +1416,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 					VOffset++;
 
 
-				VirtAlign = (((Y2 + VOffset) & 7) >> (HiresInterlace ? 1 : 0)) << 3;
+				VirtAlign = (((Y2 + VOffset) & 7) >> HiresInterlace) << 3;
 				TilemapRow = (VOffset + Y2) >> OffsetShift;
 				BG.InterlaceLine = ((VOffset + Y2) & 1) << 3;
 
@@ -2923,21 +2921,6 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 		if (CPU.CurrentDMAorHDMAChannel >= 0 && DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer)
 		{
 			/* S9xSetPPU() is called to write to DMA[].AAddress */
-			#if 0
-			if ((Address & 0xff00) == 0x2100)
-			{
-				/* Cannot access to Address Bus B ($2100-$21ff) via (H)DMA */
-				return;
-			}
-			else
-			{
-				/* 0x2000-0x3FFF is connected to Address Bus A
-				   SA1, SuperFX and SRTC are mapped here
-				   
-				   I don't bother for now... */
-				return;
-			}
-			#endif
 			return;
 		}
 		else
@@ -3573,16 +3556,7 @@ uint8 S9xGetPPU (uint16 Address)
 		if (CPU.CurrentDMAorHDMAChannel >= 0 && !DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer)
 		{
 			/* S9xGetPPU() is called to read from DMA[].AAddress */
-			#if 0
-			if ((Address & 0xff00) == 0x2100)
-				/* Cannot access to Address Bus B ($2100-$21FF) via (H)DMA */
-				return (OpenBus);
-			else
-				/* $2200-$3FFF are connected to Address Bus A*/
-				/* SA1, SuperFX and SRTC are mapped here*/
-				/* I don't bother for now...*/
-			#endif
-				return (OpenBus);
+			return (OpenBus);
 		}
 		else
 		{
@@ -3936,12 +3910,9 @@ static void S9xDoDMA (void)
 		}
 
 		/* Prepare for accessing $2118-2119 */
-		switch (d->BAddress)
+		if (d->BAddress == 0x18 || d->BAddress == 0x19)
 		{
-			case 0x18:
-			case 0x19:
-				FLUSH_REDRAW();
-				break;
+			FLUSH_REDRAW();
 		}
 
 		inc = d->AAddressFixed ? 0 : (!d->AAddressDecrement ? 1 : -1);
@@ -4255,104 +4226,62 @@ static void S9xDoDMA (void)
 							else
 								b = 0;
 						}
-						else
-							if (d->TransferMode == 3 || d->TransferMode == 7)
+						else if (d->TransferMode == 3 || d->TransferMode == 7 || d->TransferMode == 4)
+						{
+							uint32 startaddr = 0x2100;
+							uint32 endaddr = 0x2101;
+							if(d->TransferMode == 4)
 							{
-								switch (b)
-								{
-									default:
-										do
-										{
-											Work = S9xGetByte((d->ABank << 16) + p);
-											S9xSetPPU(Work, 0x2100 + d->BAddress);
-											UPDATE_COUNTERS;
-											if (--count <= 0)
-											{
-												b = 1;
-												break;
-											}
+								startaddr++;
+								endaddr += 2;
+							}	
 
-											case 1:
-											Work = S9xGetByte((d->ABank << 16) + p);
-											S9xSetPPU(Work, 0x2100 + d->BAddress);
-											UPDATE_COUNTERS;
-											if (--count <= 0)
-											{
-												b = 2;
-												break;
-											}
-
-											case 2:
-											Work = S9xGetByte((d->ABank << 16) + p);
-											S9xSetPPU(Work, 0x2101 + d->BAddress);
-											UPDATE_COUNTERS;
-											if (--count <= 0)
-											{
-												b = 3;
-												break;
-											}
-
-											case 3:
-											Work = S9xGetByte((d->ABank << 16) + p);
-											S9xSetPPU(Work, 0x2101 + d->BAddress);
-											UPDATE_COUNTERS;
-											if (--count <= 0)
-											{
-												b = 0;
-												break;
-											}
-										}while(1);
-								}
-							}
-							else
-								if (d->TransferMode == 4)
-								{
-									switch (b)
+							switch (b)
+							{
+								default:
+									do
 									{
-										default:
-											do
-											{
-												Work = S9xGetByte((d->ABank << 16) + p);
-												S9xSetPPU(Work, 0x2100 + d->BAddress);
-												UPDATE_COUNTERS;
-												if (--count <= 0)
-												{
-													b = 1;
-													break;
-												}
+										Work = S9xGetByte((d->ABank << 16) + p);
+										S9xSetPPU(Work, 0x2100 + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 1;
+											break;
+										}
 
-												case 1:
-												Work = S9xGetByte((d->ABank << 16) + p);
-												S9xSetPPU(Work, 0x2101 + d->BAddress);
-												UPDATE_COUNTERS;
-												if (--count <= 0)
-												{
-													b = 2;
-													break;
-												}
+										case 1:
+										Work = S9xGetByte((d->ABank << 16) + p);
+										S9xSetPPU(Work, (startaddr) + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 2;
+											break;
+										}
 
-												case 2:
-												Work = S9xGetByte((d->ABank << 16) + p);
-												S9xSetPPU(Work, 0x2102 + d->BAddress);
-												UPDATE_COUNTERS;
-												if (--count <= 0)
-												{
-													b = 3;
-													break;
-												}
+										case 2:
+										Work = S9xGetByte((d->ABank << 16) + p);
+										S9xSetPPU(Work, (startaddr+1) + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 3;
+											break;
+										}
 
-												case 3:
-												Work = S9xGetByte((d->ABank << 16) + p);
-												S9xSetPPU(Work, 0x2103 + d->BAddress);
-												UPDATE_COUNTERS;
-												if (--count <= 0)
-												{
-													b = 0;
-													break;
-												}
-											}while(1);
-									}
-								}
+										case 3:
+										Work = S9xGetByte((d->ABank << 16) + p);
+										S9xSetPPU(Work, endaddr + d->BAddress);
+										UPDATE_COUNTERS;
+										if (--count <= 0)
+										{
+											b = 0;
+											break;
+										}
+									}while(1);
+							}
+						}
 				}
 				else
 				{
