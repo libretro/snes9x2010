@@ -70,6 +70,7 @@ void snes_set_environment(snes_environment_t cb)
 	dummy = 0;
 	cb(SNES_ENVIRONMENT_SET_BATCH_LOAD, &dummy);
 	cb(SNES_ENVIRONMENT_SET_ROM_FORMATS, (void*)"smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP");
+	cb(SNES_ENVIRONMENT_SET_CORE_VERSION, (void*)"1.52.1");
 }
 
 static void S9xAudioCallback()
