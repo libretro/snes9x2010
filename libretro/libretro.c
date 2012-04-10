@@ -380,7 +380,7 @@ static void report_buttons (void)
 		      {
 			      s9xcommand_t cmd = keymap[MAKE_BUTTON(port + 1, i)];
 			      uint16 r = cmd.commandunion.button.joypad;
-			      bool pressed = input_cb(port == 1, RETRO_DEVICE_JOYPAD, 0, i);
+			      bool pressed = input_cb(port, RETRO_DEVICE_JOYPAD, 0, i);
 
 			      if (pressed)
 				      joypad[port] |= r;
@@ -395,7 +395,7 @@ static void report_buttons (void)
 			      {
 				      s9xcommand_t cmd = keymap[MAKE_BUTTON(j + 2, i)];
 				      uint16 r = cmd.commandunion.button.joypad;
-				      bool pressed = input_cb(port == 1, RETRO_DEVICE_JOYPAD_MULTITAP, j, i);
+				      bool pressed = input_cb(port, RETRO_DEVICE_JOYPAD_MULTITAP, j, i);
 
 				      if (pressed)
 					      joypad[j] |= r;
@@ -406,30 +406,30 @@ static void report_buttons (void)
 		      break;
 
 	      case RETRO_DEVICE_MOUSE:
-		      _x = input_cb(port == 1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
-		      _y = input_cb(port == 1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
+		      _x = input_cb(port, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
+		      _y = input_cb(port, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
 		      retro_mouse_state[port][0] += _x;
 		      retro_mouse_state[port][1] += _y;
 		      S9xReportPointer(BTN_POINTER + port, retro_mouse_state[port][0], retro_mouse_state[port][1]);
 		      for ( i = RETRO_DEVICE_ID_MOUSE_LEFT; i <= RETRO_DEVICE_ID_MOUSE_RIGHT; i++)
-			      S9xReportButton(MAKE_BUTTON(port + 1, i), input_cb(port == 1, RETRO_DEVICE_MOUSE, 0, i));
+			      S9xReportButton(MAKE_BUTTON(port + 1, i), input_cb(port, RETRO_DEVICE_MOUSE, 0, i));
 		      break;
 
 	      case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE:
-		      retro_scope_state[0] += input_cb(port == 1, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE, 0, RETRO_DEVICE_ID_LIGHTGUN_X);
-		      retro_scope_state[1] += input_cb(port == 1, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE, 0, RETRO_DEVICE_ID_LIGHTGUN_Y);
+		      retro_scope_state[0] += input_cb(port, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE, 0, RETRO_DEVICE_ID_LIGHTGUN_X);
+		      retro_scope_state[1] += input_cb(port, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE, 0, RETRO_DEVICE_ID_LIGHTGUN_Y);
 		      S9xReportPointer(BTN_POINTER, retro_scope_state[0], retro_scope_state[1]);
 		      for ( i = RETRO_DEVICE_ID_LIGHTGUN_TRIGGER; i <= RETRO_DEVICE_ID_LIGHTGUN_PAUSE; i++)
-			      S9xReportButton(MAKE_BUTTON(port + 1, i), input_cb(port == 1, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE, 0, i));
+			      S9xReportButton(MAKE_BUTTON(port + 1, i), input_cb(port, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE, 0, i));
 		      break;
 
 	      case RETRO_DEVICE_LIGHTGUN_JUSTIFIER:
 	      case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS:
-		      retro_justifier_state[0][0] += input_cb(port == 1, RETRO_DEVICE_LIGHTGUN_JUSTIFIER, 0, RETRO_DEVICE_ID_LIGHTGUN_X);
-		      retro_justifier_state[0][1] += input_cb(port == 1, RETRO_DEVICE_LIGHTGUN_JUSTIFIER, 0, RETRO_DEVICE_ID_LIGHTGUN_Y);
+		      retro_justifier_state[0][0] += input_cb(port, RETRO_DEVICE_LIGHTGUN_JUSTIFIER, 0, RETRO_DEVICE_ID_LIGHTGUN_X);
+		      retro_justifier_state[0][1] += input_cb(port, RETRO_DEVICE_LIGHTGUN_JUSTIFIER, 0, RETRO_DEVICE_ID_LIGHTGUN_Y);
 		      S9xReportPointer(BTN_POINTER, retro_justifier_state[0][0], retro_justifier_state[0][1]);
 		      for ( i = RETRO_DEVICE_ID_LIGHTGUN_TRIGGER; i <= RETRO_DEVICE_ID_LIGHTGUN_START; i++)
-			      S9xReportButton(MAKE_BUTTON(port + 1, i), input_cb(port == 1, RETRO_DEVICE_LIGHTGUN_JUSTIFIER, 0, i));
+			      S9xReportButton(MAKE_BUTTON(port + 1, i), input_cb(port, RETRO_DEVICE_LIGHTGUN_JUSTIFIER, 0, i));
 		      break;
 
 	      default:
