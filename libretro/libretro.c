@@ -45,6 +45,7 @@ static retro_video_refresh_t video_cb = NULL;
 static retro_input_poll_t poll_cb = NULL;
 static retro_input_state_t input_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
+static retro_environment_t environ_cb = NULL;
 
 EXPORT void * retro_get_memory_data(unsigned type)
 {
@@ -122,11 +123,12 @@ EXPORT void retro_set_input_state(retro_input_state_t cb)
    input_cb = cb;
 }
 
-static retro_environment_t environ_cb;
 static bool use_overscan;
 
 EXPORT void retro_set_environment(retro_environment_t cb)
-{ }
+{
+   environ_cb = cb;
+}
 
 EXPORT void retro_get_system_info(struct retro_system_info *info)
 {
