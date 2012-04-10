@@ -1733,7 +1733,7 @@ void map_WriteProtectROM (void)
 	MAP_WRAM(); \
 	map_WriteProtectROM();
 
-#ifdef __LIBSNES__
+#ifdef __LIBRETRO__
 
 static const char * KartContents (uint8 ROMType)
 {
@@ -2607,7 +2607,7 @@ void InitROM (void)
 				else
 					PPU.SFXSpeedupHack = FALSE;
 
-		#ifdef __LIBSNES__
+		#ifdef __LIBRETRO__
 		fprintf(stderr, "PPU.SFXSpeedupHack = %d\n", PPU.SFXSpeedupHack);
 		#endif
 
@@ -2750,7 +2750,7 @@ void InitROM (void)
 		else
 			PPU.RenderSub = TRUE;
 
-		#ifdef __LIBSNES__
+		#ifdef __LIBRETRO__
 		fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
 		#endif
 
@@ -2765,7 +2765,7 @@ void InitROM (void)
 		else
 			PPU.FullClipping = TRUE;
 
-		#ifdef __LIBSNES__
+		#ifdef __LIBRETRO__
 		fprintf(stderr, "PPU.FullClipping = %d\n", PPU.FullClipping);
 		#endif
 	}
@@ -3109,7 +3109,7 @@ void InitROM (void)
 	sprintf(Memory.ROMName, "%s", Safe(Memory.ROMName));
 	sprintf(Memory.ROMId, "%s", Safe(Memory.ROMId));
 
-	#ifndef __LIBSNES__
+	#ifndef __LIBRETRO__
 	sprintf(String, "\"%s\" [%s] ID:%s",
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
 		Memory.ROMId);

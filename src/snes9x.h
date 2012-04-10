@@ -207,8 +207,8 @@ extern "C" {
 #define REVERT_STREAM(f, o, s)	fseek(f, o, s)
 #define CLOSE_STREAM(s)		fclose(s)
 #else 
-#include "../libsnes/memstream.h"
- /* Create some sort of abstraction for files using memory only since libsnes API is memory oriented.
+#include "../libretro/memstream.h"
+ /* Create some sort of abstraction for files using memory only since libretro API is memory oriented.
     Very hacky, but at least allows us to avoid hacking up the whole source or go through the file system every time we want to do something ... :) */
 #define STREAM memstream_t *
 #define READ_STREAM(p, l, s)     memstream_read(s, p, l)

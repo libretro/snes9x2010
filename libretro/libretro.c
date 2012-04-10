@@ -10,9 +10,9 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#define LIBSNES_CORE 1
+#define LIBRETRO_CORE 1
 
-#if defined(_MSC_VER) && defined(LIBSNES_CORE)
+#if defined(_MSC_VER) && defined(LIBRETRO_CORE)
 #define EXPORT __declspec(dllexport)
 #else
 #define EXPORT

@@ -16,40 +16,40 @@ endif
 CC         = gcc
 
 ifeq ($(platform), unix)
-   TARGET := libsnes.so
+   TARGET := libretro.so
    fpic := -fPIC
-   SHARED := -shared -Wl,--version-script=libsnes/link.T
+   SHARED := -shared -Wl,--version-script=libretro/link.T
 else ifeq ($(platform), osx)
-   TARGET := libsnes.dylib
+   TARGET := libretro.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
 else ifeq ($(platform), ps3)
-   TARGET := libsnes.a
+   TARGET := libretro.a
    CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
    AR = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ar.exe
    CFLAGS += -DBLARGG_BIG_ENDIAN=1 -D__ppc__
 else ifeq ($(platform), sncps3)
-   TARGET := libsnes.a
+   TARGET := libretro.a
    CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
    AR = $(CELL_SDK)/host-win32/sn/bin/ps3snarl.exe
    CFLAGS += -DBLARGG_BIG_ENDIAN=1 -D__ppc__
 else ifeq ($(platform), xenon)
-   TARGET := libsnes.a
+   TARGET := libretro.a
    CC = xenon-gcc
    AR = xenon-ar
    CFLAGS += -D__LIBXENON__ -m32 -D__ppc__
 else ifeq ($(platform), wii)
-   TARGET := libsnes.a
+   TARGET := libretro.a
    CC = powerpc-eabi-gcc
    AR = powerpc-eabi-ar
    CFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float -DBLARGG_BIG_ENDIAN=1 -D__ppc__
 else
-   TARGET := snes.dll
+   TARGET := libretro.dll
    CC = gcc
    fpic := -fPIC
    LD_FLAGS := -fPIC
-   SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=libsnes/link.T
-   CFLAGS += -D__WIN32__ -D__WIN32_LIBSNES__
+   SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=libretro/link.T
+   CFLAGS += -D__WIN32__ -D__WIN32_LIBRETRO__
 endif
 
 ifeq ($(DEBUG), 1)
@@ -59,10 +59,10 @@ CFLAGS += -O3
 endif
 
 
-OBJECTS    = ./src/apu.o ./src/bsx.o ./src/c4emu.o ./src/cheats.o ./src/controls.o ./src/cpu.o ./src/cpuexec.o ./src/dsp.o ./src/fxemu.o ./src/globals.o ./src/memmap.o ./src/obc1.o ./src/ppu.o ./src/sa1.o ./src/sdd1.o ./src/seta.o ./src/snapshot.o ./src/spc7110.o ./src/srtc.o ./src/tile.o libsnes/libsnes.o libsnes/memstream.o
+OBJECTS    = ./src/apu.o ./src/bsx.o ./src/c4emu.o ./src/cheats.o ./src/controls.o ./src/cpu.o ./src/cpuexec.o ./src/dsp.o ./src/fxemu.o ./src/globals.o ./src/memmap.o ./src/obc1.o ./src/ppu.o ./src/sa1.o ./src/sdd1.o ./src/seta.o ./src/snapshot.o ./src/spc7110.o ./src/srtc.o ./src/tile.o libretro/libretro.o libretro/memstream.o
 
 INCLUDES   = -I. -I.. -I../apu/
-DEFINES    = -DHAVE_STRINGS_H -DHAVE_STDINT_H -DHAVE_INTTYPES_H -D__LIBSNES__ -DRIGHTSHIFT_IS_SAR -DINLINE=inline
+DEFINES    = -DHAVE_STRINGS_H -DHAVE_STDINT_H -DHAVE_INTTYPES_H -D__LIBRETRO__ -DRIGHTSHIFT_IS_SAR -DINLINE=inline
 
 ifeq ($(platform), sncps3)
 WARNINGS_DEFINES =
