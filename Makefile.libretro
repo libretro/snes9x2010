@@ -40,8 +40,8 @@ else ifeq ($(platform), xenon)
    CFLAGS += -D__LIBXENON__ -m32 -D__ppc__
 else ifeq ($(platform), wii)
    TARGET := libretro.a
-   CC = powerpc-eabi-gcc
-   AR = powerpc-eabi-ar
+   CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc
+   AR = $(DEVKITPPC)/bin/powerpc-eabi-ar
    CFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float -DBLARGG_BIG_ENDIAN=1 -D__ppc__
 else
    TARGET := libretro.dll

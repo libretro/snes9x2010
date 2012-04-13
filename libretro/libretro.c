@@ -70,7 +70,7 @@ EXPORT void * retro_get_memory_data(unsigned type)
    return data;
 }
 
-EXPORT unsigned retro_get_memory_size(unsigned type)
+EXPORT size_t retro_get_memory_size(unsigned type)
 {
    unsigned size;
 
@@ -450,7 +450,7 @@ EXPORT void retro_run (void)
 
 static char fullpath[1024];
 
-EXPORT unsigned retro_serialize_size (void)
+EXPORT size_t retro_serialize_size (void)
 {
    uint8_t *tmpbuf;
 
