@@ -630,13 +630,10 @@ static uint8 S9xDoHDMA (uint8 byte)
 			{
 				/* XXX: Hack for Uniracers, because we don't understand 
 				OAM Address Invalidation */
-				if (p->BAddress == 0x04)
+				if (p->BAddress == 0x04 && SNESGameFixes.Uniracers)
 				{
-					if (SNESGameFixes.Uniracers)
-					{
-						PPU.OAMAddr = 0x10c;
-						PPU.OAMFlip = 0;
-					}
+					PPU.OAMAddr = 0x10c;
+					PPU.OAMFlip = 0;
 				}
 
 
@@ -652,16 +649,14 @@ static uint8 S9xDoHDMA (uint8 byte)
 								(!(ShiftedIBank & 0x400000) && ((uint16) (Addr)) < 0x2000)); \
 							S9xSetPPU(S9xGetByte(ShiftedIBank + ((uint16) (Addr))), 0x2100 + p->BAddress + (RegOff));
 
+						DOBYTE(IAddr, 0);
+						CPU.Cycles += SLOW_ONE_CYCLE;
 						switch (p->TransferMode)
 						{
 							case 0:
-								DOBYTE(IAddr, 0);
-								CPU.Cycles += SLOW_ONE_CYCLE;
 								break;
 
 							case 5:
-								DOBYTE(IAddr + 0, 0);
-								CPU.Cycles += SLOW_ONE_CYCLE;
 								DOBYTE(IAddr + 1, 1);
 								CPU.Cycles += SLOW_ONE_CYCLE;
 								DOBYTE(IAddr + 2, 0);
@@ -671,24 +666,18 @@ static uint8 S9xDoHDMA (uint8 byte)
 								break;
 
 							case 1:
-								DOBYTE(IAddr + 0, 0);
-								CPU.Cycles += SLOW_ONE_CYCLE;
 								DOBYTE(IAddr + 1, 1);
 								CPU.Cycles += SLOW_ONE_CYCLE;
 								break;
 
 							case 2:
 							case 6:
-								DOBYTE(IAddr + 0, 0);
-								CPU.Cycles += SLOW_ONE_CYCLE;
 								DOBYTE(IAddr + 1, 0);
 								CPU.Cycles += SLOW_ONE_CYCLE;
 								break;
 
 							case 3:
 							case 7:
-								DOBYTE(IAddr + 0, 0);
-								CPU.Cycles += SLOW_ONE_CYCLE;
 								DOBYTE(IAddr + 1, 0);
 								CPU.Cycles += SLOW_ONE_CYCLE;
 								DOBYTE(IAddr + 2, 1);
@@ -698,8 +687,6 @@ static uint8 S9xDoHDMA (uint8 byte)
 								break;
 
 							case 4:
-								DOBYTE(IAddr + 0, 0);
-								CPU.Cycles += SLOW_ONE_CYCLE;
 								DOBYTE(IAddr + 1, 1);
 								CPU.Cycles += SLOW_ONE_CYCLE;
 								DOBYTE(IAddr + 2, 2);
@@ -891,12 +878,9 @@ void S9xDoHEventProcessing (void)
 			break;
 
 		case HC_HCOUNTER_MAX_EVENT:
-			if (Settings.SuperFX)
-			{
-				if (!SuperFX.oneLineDone && CHECK_EXEC_SUPERFX())
-					S9xSuperFXExec();
-				SuperFX.oneLineDone = FALSE;
-			}
+			if (Settings.SuperFX && !SuperFX.oneLineDone && CHECK_EXEC_SUPERFX())
+				S9xSuperFXExec();
+			SuperFX.oneLineDone = FALSE; // do this even without SFX
 
 			S9xAPUExecute();
 			CPU.Cycles -= Timings.H_Max;

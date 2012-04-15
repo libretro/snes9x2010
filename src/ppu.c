@@ -426,7 +426,8 @@ static void SetupOBJ (void)
 				else
 					GFX.OBJVisibleTiles[S] = GFX.OBJWidths[S] >> 3;
 
-				for (line = startline, Y_one = (uint8) (PPU.OBJ[S].VPos & 0xff); line < Height; Y_one++, line += inc)
+				Y_one = (uint8) (PPU.OBJ[S].VPos & 0xff);
+				for (line = startline; line < Height; Y_one++, line += inc)
 				{
 					if (Y_one >= SNES_HEIGHT_EXTENDED)
 						continue;
@@ -442,12 +443,12 @@ static void SetupOBJ (void)
 						GFX.OBJLines[Y_one].RTOFlags |= 0x80;
 
 					GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Sprite = S;
+					GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Line = line;
+
 					if (PPU.OBJ[S].VFlip)
 						/* Yes, Width not Height. It so happens that the*/
 						/* sprites with H=2*W flip as two WxW sprites.*/
-						GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Line = line ^ (GFX.OBJWidths[S] - 1);
-					else
-						GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Line = line;
+						GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Line ^= (GFX.OBJWidths[S] - 1);
 
 					LineOBJ[Y_one]++;
 				}
@@ -496,7 +497,8 @@ static void SetupOBJ (void)
 				else
 					GFX.OBJVisibleTiles[S] = GFX.OBJWidths[S] >> 3;
 
-				for (line = startline, Y_one = (uint8) (PPU.OBJ[S].VPos & 0xff); line < Height; Y_one++, line += inc)
+				Y_one = (uint8) (PPU.OBJ[S].VPos & 0xff);
+				for (line = startline; line < Height; Y_one++, line += inc)
 				{
 					if (Y_one >= SNES_HEIGHT_EXTENDED)
 						continue;
@@ -1733,22 +1735,21 @@ static INLINE void RenderScreen (bool8 sub)
 	uint8	BGActive;
 	int		D;
 
+	GFX.Clip = IPPU.Clip[sub];
+	BGActive = Memory.FillRAM[0x212c+sub];
+
 	if (!sub)
 	{
 		GFX.S = GFX.Screen;
 		if (GFX.DoInterlace && GFX.InterlaceFrame)
 			GFX.S += GFX.RealPPL;
 		GFX.DB = GFX.ZBuffer;
-		GFX.Clip = IPPU.Clip[0];
-		BGActive = Memory.FillRAM[0x212c];
 		D = 32;
 	}
 	else
 	{
 		GFX.S = GFX.SubScreen;
 		GFX.DB = GFX.SubZBuffer;
-		GFX.Clip = IPPU.Clip[1];
-		BGActive = Memory.FillRAM[0x212d];
 		D = (Memory.FillRAM[0x2130] & 2) << 4; /* 'do math' depth flag */
 	}
 
@@ -2458,7 +2459,7 @@ void S9xDrawCrosshair (const char *crosshair, uint8 fgcolor, uint8 bgcolor, int1
 
 static INLINE void S9xLatchCounters (void)
 {
-	int32 hc;
+	int32 hc = CPU.Cycles;
 	/* Latch h and v counters, like the gun */
 
 	PPU.HVBeamCounterLatched = 1;
@@ -2475,7 +2476,6 @@ static INLINE void S9xLatchCounters (void)
 	   1360 cycles long, instead of 1364 like all other scanlines.
 
 	   This makes the effective range of hscan_pos 0-339 at all times. */
-	hc = CPU.Cycles;
 
 	if (Timings.H_Max == Timings.H_Max_Master) /* 1364 */
 	{
@@ -2498,28 +2498,23 @@ static INLINE void S9xLatchCounters (void)
 
 static void S9xUpdateHVTimerPosition (void)
 {
-	if (PPU.HTimerEnabled)
+	if (PPU.HTimerEnabled && PPU.IRQHBeamPos != 0)
 	{
-		if (PPU.IRQHBeamPos != 0)
+		/* IRQ_read */
+		PPU.HTimerPosition = PPU.IRQHBeamPos * ONE_DOT_CYCLE;
+		if (Timings.H_Max == Timings.H_Max_Master)	/* 1364 */
 		{
-			/* IRQ_read */
-			PPU.HTimerPosition = PPU.IRQHBeamPos * ONE_DOT_CYCLE;
-			if (Timings.H_Max == Timings.H_Max_Master)	/* 1364 */
-			{
-				if (PPU.IRQHBeamPos > 322)
-					PPU.HTimerPosition += (ONE_DOT_CYCLE_DIV_2);
-				if (PPU.IRQHBeamPos > 326)
-					PPU.HTimerPosition += (ONE_DOT_CYCLE_DIV_2);
-			}
-
-			/* Add 14 to HTimerPosition*/
-			/* /IRQ - add 4 to HTimerPosition*/
-			/* after CPU executing - add 6 to HTimerPosition*/
-			/* Total = add 24*/
-			PPU.HTimerPosition += 24;
+			if (PPU.IRQHBeamPos > 322)
+				PPU.HTimerPosition += (ONE_DOT_CYCLE_DIV_2);
+			if (PPU.IRQHBeamPos > 326)
+				PPU.HTimerPosition += (ONE_DOT_CYCLE_DIV_2);
 		}
-		else
-			PPU.HTimerPosition = 20;
+
+		/* Add 14 to HTimerPosition*/
+		/* /IRQ - add 4 to HTimerPosition*/
+		/* after CPU executing - add 6 to HTimerPosition*/
+		/* Total = add 24*/
+		PPU.HTimerPosition += 24;
 	}
 	else
 		PPU.HTimerPosition = 20;
@@ -2854,14 +2849,11 @@ static void S9xSetSuperFX (uint8 byte, uint16 address)
 			if ((Memory.FillRAM[0x3030] ^ byte) & FLG_G)
 			{
 				Memory.FillRAM[0x3030] = byte;
-				if (byte & FLG_G)
+				if ((byte & FLG_G) && !SuperFX.oneLineDone)
 				{
-					if (!SuperFX.oneLineDone)
-					{
-						if(CHECK_EXEC_SUPERFX())
-							S9xSuperFXExec();
-						SuperFX.oneLineDone = TRUE;
-					}
+					if(CHECK_EXEC_SUPERFX())
+						S9xSuperFXExec();
+					SuperFX.oneLineDone = TRUE;
 				}
 				else
 				{
@@ -3462,16 +3454,13 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 						IPPU.PseudoHires = Byte & 8;
 					}
 
+					PPU.ScreenHeight = SNES_HEIGHT;
+
 					if (Byte & 0x04)
 					{
-						PPU.ScreenHeight = SNES_HEIGHT_EXTENDED;
-						if (IPPU.DoubleHeightPixels)
-							IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
-						else
-							IPPU.RenderedScreenHeight = PPU.ScreenHeight;
+						PPU.ScreenHeight += 15;
+                                                IPPU.RenderedScreenHeight = PPU.ScreenHeight << IPPU.DoubleHeightPixels;
 					}
-					else
-						PPU.ScreenHeight = SNES_HEIGHT;
 
 					if ((Memory.FillRAM[0x2133] ^ Byte) & 3)
 					{
@@ -3559,9 +3548,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 static uint8 S9xGetSuperFX (uint16 address)
 {
-	uint8 byte;
-
-	byte = Memory.FillRAM[address];
+	uint8 byte = Memory.FillRAM[address];
 
 	if (address == 0x3031)
 	{
@@ -3854,6 +3841,8 @@ static uint8	sdd1_decode_buffer[0x10000];
 
 static INLINE bool8 addCyclesInDMA (uint8 dma_channel)
 {
+	bool8 retval = TRUE;
+
 	/* Add 8 cycles per byte, sync APU, and do HC related events.*/
 	/* If HDMA was done in S9xDoHEventProcessing(), check if it used the same channel as DMA.*/
 	CPU.Cycles += SLOW_ONE_CYCLE;
@@ -3863,14 +3852,13 @@ static INLINE bool8 addCyclesInDMA (uint8 dma_channel)
 
 	if (CPU.HDMARanInDMA & (1 << dma_channel))
 	{
-		CPU.HDMARanInDMA = 0;
 		/* If HDMA triggers in the middle of DMA transfer and it uses the same channel,*/
 		/* it kills the DMA transfer immediately. $43x2 and $43x5 stop updating.*/
-		return (FALSE);
+		retval = FALSE;
 	}
 
 	CPU.HDMARanInDMA = 0;
-	return (TRUE);
+	return retval;
 }
 
 static uint8 dma_channels_to_be_used[8] = {0};
@@ -4180,15 +4168,14 @@ static void S9xDoDMA (void)
 									}
 							}
 
-							if (count == 1)
+							b = (count == 1);
+
+							if (b)
 							{
 								Work = S9xGetByte((d->ABank << 16) + p);
 								S9xSetPPU(Work, 0x2100 + d->BAddress);
 								UPDATE_COUNTERS;
-								b = 1;
 							}
-							else
-								b = 0;
 						}
 						else if (d->TransferMode == 3 || d->TransferMode == 7 || d->TransferMode == 4)
 						{
@@ -4361,15 +4348,14 @@ static void S9xDoDMA (void)
 										}
 								}
 
-								if (count == 1)
+								b = (count == 1);
+
+								if (b)
 								{
 									Work = *(base + p);
 									REGISTER_2118(Work);
 									UPDATE_COUNTERS;
-									b = 1;
 								}
-								else
-									b = 0;
 							}
 							else
 							{
@@ -4392,15 +4378,14 @@ static void S9xDoDMA (void)
 										}
 								}
 
-								if (count == 1)
+								b = (count == 1);
+
+								if (b)
 								{
 									Work = *(base + p);
 									S9xSetPPU(Work, 0x2100 + d->BAddress);
 									UPDATE_COUNTERS;
-									b = 1;
 								}
-								else
-									b = 0;
 							}
 						}
 						else if (d->TransferMode == 3 || d->TransferMode == 7 || d->TransferMode == 4)
