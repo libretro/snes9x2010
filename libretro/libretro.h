@@ -6,6 +6,9 @@
 
 #ifdef __cplusplus
 extern "C" {
+#elif defined(_MSC_VER)
+typedef unsigned char bool;
+typedef enum {false, true};
 #else
 #include <stdbool.h>
 #endif

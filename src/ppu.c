@@ -4001,7 +4001,7 @@ static void S9xDoDMA (void)
 				{
 					int32 num_chars, depth, bytes_per_char, bytes_per_line, char_line_bytes, i, l, b;
 					uint32 addr, inc_sa1, char_count, j;
-					uint8 *buffer, *p, *base;
+					uint8 *buffer, *p, *base, depth_comb;
 
 					/* Perform packed bitmap to PPU character format conversion on the data
 					   before transmitting it to V-RAM via-DMA. */
@@ -4028,7 +4028,7 @@ static void S9xDoDMA (void)
 					char_count = inc_sa1 / bytes_per_char;
 
 					in_sa1_dma = TRUE;
-					uint8 depth_comb = depth * depth;
+					depth_comb = depth * depth;
 
 					for ( i = 0; i < count; i += inc_sa1, base += char_line_bytes, inc_sa1 = char_line_bytes, char_count = num_chars)
 					{

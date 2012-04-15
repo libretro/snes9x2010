@@ -10,9 +10,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#define LIBRETRO_CORE 1
-
-#if defined(_MSC_VER) && defined(LIBRETRO_CORE)
+#if defined(_MSC_VER) && !defined(_XBOX)
 #define EXPORT __declspec(dllexport)
 #else
 #define EXPORT
@@ -36,10 +34,6 @@
 
 #define BTN_POINTER (RETRO_DEVICE_ID_JOYPAD_R + 1)
 #define BTN_POINTER2 (BTN_POINTER + 1)
-
-#ifdef _MSC_VER
-typedef unsigned char bool;
-#endif
 
 static retro_video_refresh_t video_cb = NULL;
 static retro_input_poll_t poll_cb = NULL;

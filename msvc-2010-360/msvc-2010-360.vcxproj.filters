@@ -9,11 +9,11 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Source Files\libsnes">
-      <UniqueIdentifier>{9795ff55-6474-4c04-9388-d155b37df672}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\libsnes">
       <UniqueIdentifier>{b3b15caa-4cc9-4911-b6a7-342c4e3fc675}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libretro">
+      <UniqueIdentifier>{52997b0a-13fa-4705-b052-e35ef298b8e9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -77,11 +77,11 @@
     <ClCompile Include="..\src\srtc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\libsnes\memstream.c">
-      <Filter>Source Files\libsnes</Filter>
+    <ClCompile Include="..\libretro\memstream.c">
+      <Filter>Source Files\libretro</Filter>
     </ClCompile>
-    <ClCompile Include="..\libsnes\libsnes.c">
-      <Filter>Source Files\libsnes</Filter>
+    <ClCompile Include="..\libretro\libretro.c">
+      <Filter>Source Files\libretro</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
