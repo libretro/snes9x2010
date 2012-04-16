@@ -177,10 +177,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef __linux
-#include <unistd.h>
-#endif
-
 #include "snes9x.h"
 #include "memmap.h"
 #include "getset.h"
@@ -1381,9 +1377,6 @@ bool8 SaveSRAM (const char *filename)
 		{
 			fwrite((char *) Multi.sramB, size, 1, file);
 			fclose(file);
-#if defined(__linux) && !defined(__LIBXENON__)
-			chown(name, getuid(), getgid());
-#endif
 		}
 
 		strcpy(Memory.ROMFilename, temp);
@@ -1400,9 +1393,6 @@ bool8 SaveSRAM (const char *filename)
 		{
 			fwrite((char *) Memory.SRAM, size, 1, file);
 			fclose(file);
-#if defined(__linux) && !defined(__LIBXENON__)
-			chown(sramName, getuid(), getgid());
-#endif
 
 			if (Settings.SRTC || Settings.SPC7110RTC)
 				SaveSRTC();
