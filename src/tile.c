@@ -445,13 +445,14 @@ static uint8 ConvertTile4h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 	uint32 *p, non_zero;
 
 	tp1     = &Memory.VRAM[TileAddr];
+	tp2	= tp1;
 	p       = (uint32 *) pCache;
 	non_zero = 0;
 
 	if (Tile == 0x3ff)
-		tp2 = tp1 - (0x3ff << 5);
+		tp2 -= (0x3ff << 5);
 	else
-		tp2 = tp1 + (1 << 5);
+		tp2 += (1 << 5);
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
@@ -1180,20 +1181,18 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	\
 	for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
 	{ \
-		int AA, BB, CC, DD, xx, yy, starty; \
+		int AA, BB, CC, DD, xx, yy; \
 		int32 HOffset, VOffset, CentreX, CentreY; \
-		uint8 Pix; \
+		uint8 Pix, starty; \
 		\
 		HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
 		VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
 		CentreX = ((int32) l->CentreX << 19) >> 19; \
 		CentreY = ((int32) l->CentreY << 19) >> 19; \
 		\
+		starty = Line + 1; \
 		if (PPU.Mode7VFlip) \
-			starty = 255 - (int) (Line + 1); \
-		else \
-			starty = Line + 1; \
-		\
+			starty ^= 0xff; \
 		yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
 		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
 		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
@@ -1301,9 +1300,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	\
 	for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic) \
 	{ \
-		int xx, yy, starty, AA, BB, CC, DD; \
+		int xx, yy, AA, BB, CC, DD; \
 		int32 HOffset, VOffset, CentreX, CentreY; \
-		uint8 Pix, ctr; \
+		uint8 Pix, ctr, starty; \
 		if (Line + VMosaic > GFX.EndY) \
 			VMosaic = GFX.EndY - Line + 1; \
 		\
@@ -1312,10 +1311,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		CentreX = ((int32) l->CentreX << 19) >> 19; \
 		CentreY = ((int32) l->CentreY << 19) >> 19; \
 		\
+		starty = Line + 1; \
 		if (PPU.Mode7VFlip) \
-			starty = 255 - (int) (Line + 1); \
-		else \
-			starty = Line + 1; \
+			starty ^= 0xff; \
 		\
 		yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
 		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \

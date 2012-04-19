@@ -400,16 +400,14 @@ static void SetupOBJ (void)
 
 		do
 		{
+			GFX.OBJWidths[S] = SmallWidth;
+			Height = SmallHeight;
+
 			int HPos;
 			if (PPU.OBJ[S].Size)
 			{
 				GFX.OBJWidths[S] = LargeWidth;
 				Height = LargeHeight;
-			}
-			else
-			{
-				GFX.OBJWidths[S] = SmallWidth;
-				Height = SmallHeight;
 			}
 
 			HPos = PPU.OBJ[S].HPos;
@@ -471,16 +469,13 @@ static void SetupOBJ (void)
 		for (S = 0; S < 128; S++)
 		{
 			int HPos;
+			GFX.OBJWidths[S] = SmallWidth;
+			Height = SmallHeight;
 
 			if (PPU.OBJ[S].Size)
 			{
 				GFX.OBJWidths[S] = LargeWidth;
 				Height = LargeHeight;
-			}
-			else
-			{
-				GFX.OBJWidths[S] = SmallWidth;
-				Height = SmallHeight;
 			}
 
 			HPos = PPU.OBJ[S].HPos;
@@ -503,12 +498,13 @@ static void SetupOBJ (void)
 					if (Y_one >= SNES_HEIGHT_EXTENDED)
 						continue;
 
+					OBJOnLine[Y_one][S] = line;
+
 					if (PPU.OBJ[S].VFlip)
 						/* Yes, Width not Height. It so happens that the*/
 						/* sprites with H=2*W flip as two WxW sprites.*/
-						OBJOnLine[Y_one][S] = (line ^ (GFX.OBJWidths[S] - 1)) | 0x80;
-					else
-						OBJOnLine[Y_one][S] = line | 0x80;
+						OBJOnLine[Y_one][S] ^= (GFX.OBJWidths[S] - 1);
+					OBJOnLine[Y_one][S] |= 0x80;
 				}
 			}
 		}
