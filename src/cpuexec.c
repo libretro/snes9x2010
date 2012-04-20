@@ -358,39 +358,6 @@ static void RenderLine (uint8 C)
 	IPPU.CurrentLine = C + 1;
 }
 
-static void S9xStartScreenRefresh (void)
-{
-	if (GFX.DoInterlace)
-		GFX.DoInterlace--;
-
-	IPPU.MaxBrightness = PPU.Brightness;
-
-	IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
-	IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
-	IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
-
-	GFX.RealPPL = GFX.Pitch >> 1;
-	IPPU.RenderedScreenWidth = SNES_WIDTH;
-	IPPU.RenderedScreenHeight = PPU.ScreenHeight;
-	IPPU.DoubleWidthPixels = FALSE;
-	IPPU.DoubleHeightPixels = FALSE;
-
-	if ((PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
-	{
-		IPPU.DoubleWidthPixels = TRUE;
-		IPPU.RenderedScreenWidth += SNES_WIDTH;
-	}
-
-	GFX.PPL = GFX.RealPPL;
-	if (IPPU.Interlace)
-	{
-		GFX.PPL += GFX.RealPPL;
-		IPPU.DoubleHeightPixels = TRUE;
-		IPPU.RenderedScreenHeight += PPU.ScreenHeight;
-		GFX.DoInterlace++;
-	}
-}
-
 static INLINE void S9xReschedule (void)
 {
 	uint8 next;
@@ -484,20 +451,17 @@ static INLINE bool8 HDMAReadLineCount (int d)
 	line = S9xGetByte((DMA[d].ABank << 16) + DMA[d].Address);
 	CPU.Cycles += SLOW_ONE_CYCLE;
 
+	DMA[d].LineCount = 128;
+
 	if (!line)
 	{
 		DMA[d].Repeat = FALSE;
-		DMA[d].LineCount = 128;
 
 		if (DMA[d].HDMAIndirectAddressing)
 		{
-			if (PPU.HDMA & (0xfe << d))
-			{
-				DMA[d].Address++;
-				CPU.Cycles += (SLOW_ONE_CYCLE << 1);
-			}
-			else
-				CPU.Cycles += SLOW_ONE_CYCLE;
+			bool cond_1 = PPU.HDMA & (0xfe << d);
+			DMA[d].Address += cond_1;
+			CPU.Cycles += (SLOW_ONE_CYCLE << cond_1);
 
 			DMA[d].IndirectAddress = S9xGetWord((DMA[d].ABank << 16) + DMA[d].Address, WRAP_NONE);
 			DMA[d].Address++;
@@ -510,10 +474,7 @@ static INLINE bool8 HDMAReadLineCount (int d)
 	}
 	else
 	if (line == 0x80)
-	{
 		DMA[d].Repeat = TRUE;
-		DMA[d].LineCount = 128;
-	}
 	else
 	{
 		DMA[d].Repeat = !(line & 0x80);
@@ -1008,7 +969,29 @@ void S9xDoHEventProcessing (void)
 				GFX.InterlaceFrame = !GFX.InterlaceFrame;
 
 				if (!GFX.DoInterlace || !GFX.InterlaceFrame)
-					S9xStartScreenRefresh();
+				{
+					/* S9x Start Screen Refresh */
+					bool cond_1;
+
+					GFX.DoInterlace -= (GFX.DoInterlace == TRUE);
+
+					IPPU.MaxBrightness = PPU.Brightness;
+
+					IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
+					IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
+					IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
+
+					cond_1 = (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires);
+
+					GFX.RealPPL = GFX.Pitch >> 1;
+					IPPU.RenderedScreenWidth = SNES_WIDTH << cond_1;
+					IPPU.RenderedScreenHeight = PPU.ScreenHeight << IPPU.Interlace;
+					IPPU.DoubleWidthPixels = cond_1;
+					IPPU.DoubleHeightPixels = IPPU.Interlace;
+
+					GFX.PPL = GFX.RealPPL << IPPU.Interlace;
+					GFX.DoInterlace += IPPU.Interlace;
+				}
 
 				PPU.MosaicStart = 0;
 				PPU.RecomputeClipWindows = TRUE;
