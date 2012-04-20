@@ -695,9 +695,12 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 
 		for ( Y = GFX.StartY; Y <= GFX.EndY; Y += Lines)
 		{
-			uint32 Y2, VOffset, HOffset, t1, t2, TilemapRow, Left, Right,
-			Offset, HPos, HTile, Width;
-			uint16	*b1, *b2, *t;
+			uint32 Y2, VOffset, HOffset, TilemapRow, Left, Right, Offset, HPos, HTile, Width;
+			uint32 t1 = 0;
+			uint32 t2 = 16;
+			uint16	*t;
+			uint16  *b1 = SC0;
+			uint16  *b2 = SC1;
 			int VirtAlign;
 
 			Y2 = HiresInterlace ? Y * 2 + GFX.InterlaceFrame : Y;
@@ -724,22 +727,11 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 				t1 = 16;
 				t2 = 0;
 			}
-			else
-			{
-				t1 = 0;
-				t2 = 16;
-			}
-
 
 			if (TilemapRow & 0x20)
 			{
 				b1 = SC2;
 				b2 = SC3;
-			}
-			else
-			{
-				b1 = SC0;
-				b2 = SC1;
 			}
 
 			b1 += (TilemapRow & 0x1f) << 5;
@@ -933,10 +925,14 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 
 		for ( Y = GFX.StartY - MosaicStart; Y <= GFX.EndY; Y += PPU.Mosaic)
 		{
-			uint32	t1, t2, Y2, VOffset, HOffset, TilemapRow,
+			uint32	Y2, VOffset, HOffset, TilemapRow,
 			Left, Right, Offset, HPos, HTile, Width;
-			uint16 *b1, *b2, *t;
+			uint16 *t;
 			int VirtAlign;
+			uint32 t1 = 0;
+			uint32 t2 = 16;
+			uint16 *b1 = SC0;
+			uint16 *b2=  SC1;
 
 			Y2 = Y << HiresInterlace;
 			VOffset = LineData[Y].BG[bg].VOffset + HiresInterlace;
@@ -956,21 +952,11 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 				t1 = 16;
 				t2 = 0;
 			}
-			else
-			{
-				t1 = 0;
-				t2 = 16;
-			}
 
 			if (TilemapRow & 0x20)
 			{
 				b1 = SC2;
 				b2 = SC3;
-			}
-			else
-			{
-				b1 = SC0;
-				b2 = SC1;
 			}
 
 			b1 += (TilemapRow & 0x1f) << 5;
@@ -1117,7 +1103,9 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 		{
 			uint32 Y2, VOff, HOff, HOffsetRow, VOffsetRow,
 			Left, Right, Offset, LineHOffset, Width;
-			uint16	*s, *s1, *s2;
+			uint16	*s;
+			uint16  *s1 = BPS0;
+			uint16  *s2 = BPS1;
 			int32 VOffsetOffset;
 			bool8 left_edge;
 
@@ -1132,11 +1120,6 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 			{
 				s1 = BPS2;
 				s2 = BPS3;
-			}
-			else
-			{
-				s1 = BPS0;
-				s2 = BPS1;
 			}
 
 			s1 += (HOffsetRow & 0x1f) << 5;
@@ -1153,9 +1136,13 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 
 			while (Left < Right)
 			{
-				uint32	VOffset, HOffset, t1, t2, HPos, HTile, l, w;
-				uint16 HCellOffset, VCellOffset, *t, *b1, *b2;
+				uint32	VOffset, HOffset, HPos, HTile, l, w;
+				uint16 HCellOffset, VCellOffset, *t;
 				int HOffTile, VirtAlign, TilemapRow;
+				uint32 t1 = 0;
+				uint32 t2 = 16;
+				uint16 *b1 = SC0;
+				uint16 *b2 = SC1;
 
 				if (left_edge)
 				{
@@ -1216,22 +1203,12 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 					t1 = 16;
 					t2 = 0;
 				}
-				else
-				{
-					t1 = 0;
-					t2 = 16;
-				}
 
 
 				if (TilemapRow & 0x20)
 				{
 					b1 = SC2;
 					b2 = SC3;
-				}
-				else
-				{
-					b1 = SC0;
-					b2 = SC1;
 				}
 
 				b1 += (TilemapRow & 0x1f) << 5;
@@ -3881,7 +3858,7 @@ static void S9xDoDMA (void)
 		/* Check invalid DMA first */
 		if ((d->ABank == 0x7E || d->ABank == 0x7F) && d->BAddress == 0x80 && !d->ReverseTransfer)
 		{
-			int32 c;
+			int32 c = d->TransferBytes;
 			/* Attempting a DMA from WRAM to $2180 will not work, WRAM will not be written.*/
 			/* Attempting a DMA from $2180 to WRAM will similarly not work,*/
 			/* the value written is (initially) the OpenBus value.*/
@@ -3892,7 +3869,6 @@ static void S9xDoDMA (void)
 			/* not being able to read and write itself at the same time*/
 			/* And no, PPU.WRAM should not be updated.*/
 
-			c = d->TransferBytes;
 			/* Writing $0000 to $43x5 actually results in a transfer of $10000 bytes, not 0. */
 			if (c == 0)
 				c = 0x10000;
@@ -4480,27 +4456,22 @@ static void S9xDoDMA (void)
 
 			do
 			{
+				if(reverse_dma_slow_path)
+					CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
+				Work = S9xGetPPU(0x2100 + d->BAddress);
+				S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
+				UPDATE_COUNTERS;
 				switch (d->TransferMode)
 				{
 					case 0:
 					case 2:
 					case 6:
-						if(reverse_dma_slow_path)
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-						Work = S9xGetPPU(0x2100 + d->BAddress);
-						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-						UPDATE_COUNTERS;
 						count--;
 
 						break;
 
 					case 1:
 					case 5:
-						if(reverse_dma_slow_path)
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-						Work = S9xGetPPU(0x2100 + d->BAddress);
-						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-						UPDATE_COUNTERS;
 						if (!--count)
 							break;
 
@@ -4515,11 +4486,6 @@ static void S9xDoDMA (void)
 
 					case 3:
 					case 7:
-						if(reverse_dma_slow_path)
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-						Work = S9xGetPPU(0x2100 + d->BAddress);
-						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-						UPDATE_COUNTERS;
 						if (!--count)
 							break;
 
@@ -4549,11 +4515,6 @@ static void S9xDoDMA (void)
 						break;
 
 					case 4:
-						if(reverse_dma_slow_path)
-							CPU.InWRAMDMAorHDMA = (d->AAddress < 0x2000);
-						Work = S9xGetPPU(0x2100 + d->BAddress);
-						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
-						UPDATE_COUNTERS;
 						if (!--count)
 							break;
 
@@ -4579,15 +4540,6 @@ static void S9xDoDMA (void)
 						S9xSetByte(Work, (d->ABank << 16) + d->AAddress);
 						UPDATE_COUNTERS;
 						count--;
-
-						break;
-
-					default:
-						while (count)
-						{
-							UPDATE_COUNTERS;
-							count--;
-						}
 
 						break;
 				}
