@@ -3743,7 +3743,6 @@ static void DSP4_OP08 (void)
 		case 2: goto resume2; break;
 	}
 
-	/*//////////////////////////////////////////////////*/
 	/* process initial inputs for two polygons*/
 
 	/* clip values*/

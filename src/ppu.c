@@ -1529,7 +1529,7 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 		BG.NameSelect = PPU.OBJNameSelect;
 		BG.EnableMath = 0;
 		BG.StartPalette = 128;
-		S9xSelectTileConverter_SFXDepth4();
+		S9xSelectTileConverter_Depth4();
 		S9xSelectTileRenderers_SFXSpeedup();
 		DrawOBJS(D + 4);
 	}
@@ -1544,7 +1544,7 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 			BG.EnableMath = 0; \
 			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_SFXDepth2(); \
+			S9xSelectTileConverter_Depth2(); \
 			DrawBackground(n, D + Zh, D + Zl); \
 		}
 
@@ -1555,7 +1555,7 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 			BG.EnableMath = 0; \
 			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_SFXDepth4(); \
+			S9xSelectTileConverter_Depth4(); \
 			if (offset) \
 			{ \
 				BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
@@ -1573,7 +1573,7 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 			BG.EnableMath = 0; \
 			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_SFXDepth4(); \
+			S9xSelectTileConverter_Depth4(); \
 			DrawBackground(n, D + Zh, D + Zl); \
 		}
 
@@ -1584,7 +1584,7 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 			BG.EnableMath = 0; \
 			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_SFXDepth4(); \
+			S9xSelectTileConverter_Depth4(); \
 			BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 		}
 
@@ -1624,7 +1624,7 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 		BG.NameSelect = PPU.OBJNameSelect;
 		BG.EnableMath = (Memory.FillRAM[0x2131] & 0x10);
 		BG.StartPalette = 128;
-		S9xSelectTileConverter_SFXDepth4();
+		S9xSelectTileConverter_Depth4();
 		S9xSelectTileRenderers_SFXSpeedup();
 		DrawOBJS(D + 4);
 	}
@@ -1638,7 +1638,7 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 			BG.StartPalette = pal; \
 			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
 			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_SFXDepth2(); \
+			S9xSelectTileConverter_Depth2(); \
 			DrawBackground(n, D + Zh, D + Zl); \
 		}
 
@@ -1648,7 +1648,7 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 			BG.StartPalette = pal; \
 			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
 			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_SFXDepth4(); \
+			S9xSelectTileConverter_Depth4(); \
 			if (offset) \
 			{ \
 				BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
@@ -1666,7 +1666,7 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 			BG.StartPalette = pal; \
 			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
 			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_SFXDepth4(); \
+			S9xSelectTileConverter_Depth4(); \
 			DrawBackground(n, D + Zh, D + Zl); \
 		}
 
@@ -1676,7 +1676,7 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 			BG.StartPalette = pal; \
 			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
 			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_SFXDepth4(); \
+			S9xSelectTileConverter_Depth4(); \
 			BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
 		}
@@ -1783,6 +1783,51 @@ static INLINE void RenderScreen (bool8 sub)
 				DrawBackground(n, D + Zh, D + Zl); \
 		}
 
+	#define DO_BG_HIRES0_OFFSET0_D2(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter_Depth2(); \
+			\
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
+			else \
+				DrawBackground(n, D + Zh, D + Zl); \
+		}
+
+	#define DO_BG_HIRES0_OFFSET0_D4(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter_Depth4(); \
+			\
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
+			else \
+				DrawBackground(n, D + Zh, D + Zl); \
+		}
+
+	#define DO_BG_HIRES0_OFFSET0_D8(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter_Depth8(); \
+			\
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
+			else \
+				DrawBackground(n, D + Zh, D + Zl); \
+		}
+
 	#define DO_BG_HIRES0_OFFSET1(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
 		if (BGActive & (1 << n)) \
 		{ \
@@ -1791,6 +1836,60 @@ static INLINE void RenderScreen (bool8 sub)
 			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter(depth, 0, sub, PPU.BGMosaic[n]); \
+			\
+			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+			\
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
+			else \
+			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
+		}
+
+	#define DO_BG_HIRES0_OFFSET1_D2(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter_Depth2(); \
+			\
+			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+			\
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
+			else \
+			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
+		}
+
+	#define DO_BG_HIRES0_OFFSET1_D4(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter_Depth4(); \
+			\
+			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+			\
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
+			else \
+			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
+		}
+
+	#define DO_BG_HIRES0_OFFSET1_D8(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter_Depth8(); \
 			\
 			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
 			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
@@ -1832,47 +1931,64 @@ static INLINE void RenderScreen (bool8 sub)
 				else \
 					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
 		}
+	#define DO_BG_HIRES1_OFFSET1(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
+		if (BGActive & (1 << n)) \
+		{ \
+			BG.StartPalette = pal; \
+			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.TileSizeH = 8; \
+			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter(depth, hires, sub, PPU.BGMosaic[n]); \
+			\
+				BG.OffsetSizeH = 8; \
+				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+				\
+				if (PPU.BGMosaic[n] && PPU.DisableMosaicHack) \
+					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
+				else \
+					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
+		}
 
 	switch (PPU.BGMode)
 	{
 		case 0:
-			DO_BG_HIRES0_OFFSET0(0,  0, 2, FALSE, FALSE, 15, 11, 0);
-			DO_BG_HIRES0_OFFSET0(1, 32, 2, FALSE, FALSE, 14, 10, 0);
-			DO_BG_HIRES0_OFFSET0(2, 64, 2, FALSE, FALSE,  7,  3, 0);
-			DO_BG_HIRES0_OFFSET0(3, 96, 2, FALSE, FALSE,  6,  2, 0);
+			DO_BG_HIRES0_OFFSET0_D2(0,  0, 2, FALSE, FALSE, 15, 11, 0);
+			DO_BG_HIRES0_OFFSET0_D2(1, 32, 2, FALSE, FALSE, 14, 10, 0);
+			DO_BG_HIRES0_OFFSET0_D2(2, 64, 2, FALSE, FALSE,  7,  3, 0);
+			DO_BG_HIRES0_OFFSET0_D2(3, 96, 2, FALSE, FALSE,  6,  2, 0);
 			#ifdef REPORT_MODES
 			fprintf(stderr, "MODE: #0\n");
 			#endif
 			break;
 
 		case 1:
-			DO_BG_HIRES0_OFFSET0(0,  0, 4, FALSE, FALSE, 15, 11, 0);
-			DO_BG_HIRES0_OFFSET0(1,  0, 4, FALSE, FALSE, 14, 10, 0);
-			DO_BG_HIRES0_OFFSET0(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			DO_BG_HIRES0_OFFSET0_D4(0,  0, 4, FALSE, FALSE, 15, 11, 0);
+			DO_BG_HIRES0_OFFSET0_D4(1,  0, 4, FALSE, FALSE, 14, 10, 0);
+			DO_BG_HIRES0_OFFSET0_D2(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
 			#ifdef REPORT_MODES
 			fprintf(stderr, "MODE: #1\n");
 			#endif
 			break;
 
 		case 2:
-			DO_BG_HIRES0_OFFSET1(0,  0, 4, FALSE, TRUE,  15,  7, 8);
-			DO_BG_HIRES0_OFFSET1(1,  0, 4, FALSE, TRUE,  11,  3, 8);
+			DO_BG_HIRES0_OFFSET1_D4(0,  0, 4, FALSE, TRUE,  15,  7, 8);
+			DO_BG_HIRES0_OFFSET1_D4(1,  0, 4, FALSE, TRUE,  11,  3, 8);
 			#ifdef REPORT_MODES
 			fprintf(stderr, "MODE: #2\n");
 			#endif
 			break;
 
 		case 3:
-			DO_BG_HIRES0_OFFSET0(0,  0, 8, FALSE, FALSE, 15,  7, 0);
-			DO_BG_HIRES0_OFFSET0(1,  0, 4, FALSE, FALSE, 11,  3, 0);
+			DO_BG_HIRES0_OFFSET0_D8(0,  0, 8, FALSE, FALSE, 15,  7, 0);
+			DO_BG_HIRES0_OFFSET0_D4(1,  0, 4, FALSE, FALSE, 11,  3, 0);
 			#ifdef REPORT_MODES
 			fprintf(stderr, "MODE: #3\n");
 			#endif
 			break;
 
 		case 4:
-			DO_BG_HIRES0_OFFSET1(0,  0, 8, FALSE, TRUE,  15,  7, 0);
-			DO_BG_HIRES0_OFFSET1(1,  0, 2, FALSE, TRUE,  11,  3, 0);
+			DO_BG_HIRES0_OFFSET1_D8(0,  0, 8, FALSE, TRUE,  15,  7, 0);
+			DO_BG_HIRES0_OFFSET1_D2(1,  0, 2, FALSE, TRUE,  11,  3, 0);
 			#ifdef REPORT_MODES
 			fprintf(stderr, "MODE: #4\n");
 			#endif

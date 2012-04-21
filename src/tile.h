@@ -182,7 +182,8 @@ void S9xInitTileRenderer (void);
 void S9xSelectTileRenderers (int, bool8, bool8);
 void S9xSelectTileRenderers_SFXSpeedup (void);
 void S9xSelectTileConverter (int, bool8, bool8, bool8);
-void S9xSelectTileConverter_SFXDepth4 (void);
-void S9xSelectTileConverter_SFXDepth2 (void);
+void S9xSelectTileConverter_Depth8 (void);
+void S9xSelectTileConverter_Depth4 (void);
+void S9xSelectTileConverter_Depth2 (void);
 
 #endif
