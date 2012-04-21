@@ -460,9 +460,7 @@ static void SetupOBJ (void)
 	}
 	else /* evil FirstSprite+Y case*/
 	{
-		int	j;
 		uint8	OBJOnLine[SNES_HEIGHT_EXTENDED][128];
-		memset(OBJOnLine, 0, sizeof(OBJOnLine));
 
 		/* First, find out which sprites are on which lines*/
 
@@ -513,6 +511,7 @@ static void SetupOBJ (void)
 		for (Y_two = 0; Y_two < SNES_HEIGHT_EXTENDED; Y_two++)
 		{
 			uint8 FirstSprite;
+			int	j;
 
 			GFX.OBJLines[Y_two].RTOFlags = Y_two ? GFX.OBJLines[Y_two - 1].RTOFlags : 0;
 			GFX.OBJLines[Y_two].Tiles = 34;
