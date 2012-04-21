@@ -459,7 +459,7 @@ static INLINE bool8 HDMAReadLineCount (int d)
 
 		if (DMA[d].HDMAIndirectAddressing)
 		{
-			bool cond_1 = PPU.HDMA & (0xfe << d);
+			bool8 cond_1 = PPU.HDMA & (0xfe << d);
 			DMA[d].Address += cond_1;
 			CPU.Cycles += (SLOW_ONE_CYCLE << cond_1);
 
@@ -971,7 +971,7 @@ void S9xDoHEventProcessing (void)
 				if (!GFX.DoInterlace || !GFX.InterlaceFrame)
 				{
 					/* S9x Start Screen Refresh */
-					bool cond_1;
+					bool8 cond_1;
 
 					GFX.DoInterlace -= (GFX.DoInterlace == TRUE);
 

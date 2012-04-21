@@ -400,10 +400,10 @@ static void SetupOBJ (void)
 
 		do
 		{
+			int HPos;
 			GFX.OBJWidths[S] = SmallWidth;
 			Height = SmallHeight;
 
-			int HPos;
 			if (PPU.OBJ[S].Size)
 			{
 				GFX.OBJWidths[S] = LargeWidth;

@@ -558,13 +558,14 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 void S9xSelectTileRenderers_SFXSpeedup (void)
 {
+	int i;
 	GFX.LinesPerTile = 8;
 
 	GFX.DrawTileNomath        = Renderers_DrawTile16Normal1x1[0];
 	GFX.DrawClippedTileNomath = Renderers_DrawClippedTile16Normal1x1[0];
 	GFX.DrawBackdropNomath    = Renderers_DrawBackdrop16Normal1x1[0];
 
-	int i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
+	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
 	if (Memory.FillRAM[0x2131] & 0x40)
 	{
 		i++;
