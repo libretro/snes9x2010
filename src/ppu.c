@@ -3519,19 +3519,6 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 	Memory.FillRAM[Address] = Byte;
 }
 
-static uint8 S9xGetSuperFX (uint16 address)
-{
-	uint8 byte = Memory.FillRAM[address];
-
-	if (address == 0x3031)
-	{
-		S9X_CLEAR_IRQ(GSU_IRQ_SOURCE);
-		Memory.FillRAM[0x3031] = byte & 0x7f;
-	}
-
-	return (byte);
-}
-
 uint8 S9xGetPPU (uint16 Address)
 {
 	/* MAP_PPU: $2000-$3FFF */
@@ -3795,7 +3782,15 @@ uint8 S9xGetPPU (uint16 Address)
 	else
 	{
 		if (Settings.SuperFX && Address >= 0x3000 && Address <= 0x32ff)
-			return (S9xGetSuperFX(Address));
+		{
+			uint8 byte = Memory.FillRAM[Address];
+			if (Address == 0x3031)
+			{
+				S9X_CLEAR_IRQ(GSU_IRQ_SOURCE);
+				Memory.FillRAM[0x3031] = byte & 0x7f;
+			}
+			return byte;
+		}
 		else
 			if (Settings.SA1     && Address >= 0x2200)
 				return (S9xGetSA1(Address));
@@ -4431,7 +4426,7 @@ static void S9xDoDMA (void)
 		}
 		else
 		{
-			int reverse_dma_slow_path;
+			int reverse_dma_slow_path = (d->BAddress > 0x80 - 4 && d->BAddress <= 0x83 && !(d->ABank & 0x40));
 
 			/* PPU -> CPU*/
 
@@ -4447,9 +4442,6 @@ static void S9xDoDMA (void)
 				CPU.CurrentDMAorHDMAChannel = -1; \
 				continue; \
 			}
-
-
-			reverse_dma_slow_path = (d->BAddress > 0x80 - 4 && d->BAddress <= 0x83 && !(d->ABank & 0x40));
 
 			if(!reverse_dma_slow_path)
 				CPU.InWRAMDMAorHDMA = (d->ABank == 0x7e || d->ABank == 0x7f);
@@ -4833,10 +4825,9 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 			case 0x420d: /* MEMSEL*/
 				if ((Byte & 1) != (Memory.FillRAM[0x420d] & 1))
 				{
+					CPU.FastROMSpeed = SLOW_ONE_CYCLE;
 					if (Byte & 1)
-						CPU.FastROMSpeed = ONE_CYCLE;
-					else
-						CPU.FastROMSpeed = SLOW_ONE_CYCLE;
+						CPU.FastROMSpeed -= 2;
 				}
 
 				break;
