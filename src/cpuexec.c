@@ -459,9 +459,13 @@ static INLINE bool8 HDMAReadLineCount (int d)
 
 		if (DMA[d].HDMAIndirectAddressing)
 		{
-			bool8 cond_1 = PPU.HDMA & (0xfe << d);
-			DMA[d].Address += cond_1;
-			CPU.Cycles += (SLOW_ONE_CYCLE << cond_1);
+			if (PPU.HDMA & (0xfe << d))
+			{
+				DMA[d].Address++;
+				CPU.Cycles += (SLOW_ONE_CYCLE << 1);
+			}
+			else
+				CPU.Cycles += SLOW_ONE_CYCLE;
 
 			DMA[d].IndirectAddress = S9xGetWord((DMA[d].ABank << 16) + DMA[d].Address, WRAP_NONE);
 			DMA[d].Address++;
