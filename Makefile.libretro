@@ -44,7 +44,7 @@ else ifeq ($(platform), wii)
    AR = $(DEVKITPPC)/bin/powerpc-eabi-ar
    CFLAGS += -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float -DBLARGG_BIG_ENDIAN=1 -D__ppc__
 else
-   TARGET := libretro.dll
+   TARGET := retro.dll
    CC = gcc
    fpic := -fPIC
    LD_FLAGS := -fPIC
