@@ -41,7 +41,7 @@ static retro_input_state_t input_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
 static retro_environment_t environ_cb = NULL;
 
-EXPORT void * retro_get_memory_data(unsigned type)
+EXPORT void *retro_get_memory_data(unsigned type)
 {
    uint8_t* data;
 
@@ -49,16 +49,19 @@ EXPORT void * retro_get_memory_data(unsigned type)
    {
       case RETRO_MEMORY_SAVE_RAM:
          data = Memory.SRAM;
-	 break;
+         break;
       case RETRO_MEMORY_RTC:
-	 data = RTCData.reg;
+         data = RTCData.reg;
          break;
       case RETRO_MEMORY_SYSTEM_RAM:
-	 data = Memory.RAM;
-	 break;
+         data = Memory.RAM;
+         break;
+      case RETRO_MEMORY_VIDEO_RAM:
+         data = Memory.VRAM;
+         break;
       default:
-	 data = NULL;
-	 break;
+         data = NULL;
+         break;
    }
 
    return data;
@@ -72,18 +75,21 @@ EXPORT size_t retro_get_memory_size(unsigned type)
    {
       case RETRO_MEMORY_SAVE_RAM:
          size = (unsigned) (Memory.SRAMSize ? (1 << (Memory.SRAMSize + 3)) * 128 : 0);
-	 if (size > 0x20000)
-		 size = 0x20000;
-	 break;
+         if (size > 0x20000)
+            size = 0x20000;
+         break;
       case RETRO_MEMORY_RTC:
-	 size = (Settings.SRTC || Settings.SPC7110RTC)?20:0;
-	 break;
+         size = (Settings.SRTC || Settings.SPC7110RTC)?20:0;
+         break;
       case RETRO_MEMORY_SYSTEM_RAM:
-	 size = 128 * 1024;
-	 break;
+         size = 128 * 1024;
+         break;
+      case RETRO_MEMORY_VIDEO_RAM:
+         size = 64 * 1024;
+         break;
       default:
-	 size = 0;
-	 break;
+         size = 0;
+         break;
    }
 
    return size;
@@ -100,7 +106,7 @@ EXPORT void retro_set_video_refresh(retro_video_refresh_t cb)
 }
 
 EXPORT void retro_set_audio_sample(retro_audio_sample_t cb)
-{ }
+{}
 
 EXPORT void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb)
 {
@@ -159,50 +165,50 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
          break;
       case RETRO_DEVICE_JOYPAD_MULTITAP:
          S9xSetController(port, CTL_MP5, 1, 2, 3, 4);
-	 retro_devices[port] = RETRO_DEVICE_JOYPAD_MULTITAP;
-	 break;
+         retro_devices[port] = RETRO_DEVICE_JOYPAD_MULTITAP;
+         break;
       case RETRO_DEVICE_MOUSE:
-	 S9xSetController(port, CTL_MOUSE, 0, 0, 0, 0);
-	 retro_devices[port] = RETRO_DEVICE_MOUSE;
+         S9xSetController(port, CTL_MOUSE, 0, 0, 0, 0);
+         retro_devices[port] = RETRO_DEVICE_MOUSE;
 
-	 /* mapping pointers here */
-	 S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"));
-	 S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"));
+         /* mapping pointers here */
+         S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"));
+         S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"));
 
-	 /* mapping extra buttons here */
-	 MAP_BUTTON(MAKE_BUTTON(1, RETRO_DEVICE_ID_JOYPAD_SELECT), "Mouse1 L");
-	 MAP_BUTTON(MAKE_BUTTON(1, RETRO_DEVICE_ID_JOYPAD_START), "Mouse1 R");
-	 MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_SELECT), "Mouse2 L");
-	 MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_START), "Mouse2 R");
-	 break;
+         /* mapping extra buttons here */
+         MAP_BUTTON(MAKE_BUTTON(1, RETRO_DEVICE_ID_JOYPAD_SELECT), "Mouse1 L");
+         MAP_BUTTON(MAKE_BUTTON(1, RETRO_DEVICE_ID_JOYPAD_START), "Mouse1 R");
+         MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_SELECT), "Mouse2 L");
+         MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_START), "Mouse2 R");
+         break;
       case RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE:
-	 S9xSetController(port, CTL_SUPERSCOPE, 0, 0, 0, 0);
-	 retro_devices[port] = RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE;
+         S9xSetController(port, CTL_SUPERSCOPE, 0, 0, 0, 0);
+         retro_devices[port] = RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE;
 
-	 /* mapping pointers here */
-	 S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"));
-	 S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"));
+         /* mapping pointers here */
+         S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"));
+         S9xMapPointer((BTN_POINTER2), S9xGetCommandT("Pointer Mouse2"));
 
-	 /* mapping extra buttons here */
-	 MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_SELECT), "Superscope Fire");
-	 MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_START), "Superscope Cursor");
-	 MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_UP), "Superscope ToggleTurbo");
-	 MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_DOWN), "Superscope Pause");
-	 break;
+         /* mapping extra buttons here */
+         MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_SELECT), "Superscope Fire");
+         MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_START), "Superscope Cursor");
+         MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_UP), "Superscope ToggleTurbo");
+         MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_DOWN), "Superscope Pause");
+         break;
       case RETRO_DEVICE_LIGHTGUN_JUSTIFIER:
-	 S9xSetController(port, CTL_JUSTIFIER, 0, 0, 0, 0);
-	 retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIER;
+         S9xSetController(port, CTL_JUSTIFIER, 0, 0, 0, 0);
+         retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIER;
 
-	 /* mapping extra buttons here */
-	 MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_SELECT), "Justifier1 Trigger");
-	 MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_START), "Justifier1 Start");
-	 break;
+         /* mapping extra buttons here */
+         MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_SELECT), "Justifier1 Trigger");
+         MAP_BUTTON(MAKE_BUTTON(2, RETRO_DEVICE_ID_JOYPAD_START), "Justifier1 Start");
+         break;
       case RETRO_DEVICE_LIGHTGUN_JUSTIFIERS:
-	 S9xSetController(port, CTL_JUSTIFIER, 1, 0, 0, 0);
-	 retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
-	 break;
+         S9xSetController(port, CTL_JUSTIFIER, 1, 0, 0, 0);
+         retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
+         break;
       default:
-	 fprintf(stderr, "[libsnes]: Invalid device!\n");
+         fprintf(stderr, "[libsnes]: Invalid device!\n");
    }
 }
 
@@ -472,10 +478,10 @@ EXPORT bool retro_unserialize(const void * data, size_t size)
 }
 
 void retro_cheat_reset(void)
-{ }
+{}
 
 void retro_cheat_set(unsigned unused, bool unused1, const char* unused2)
-{ }
+{}
 
 EXPORT bool retro_load_game(const struct retro_game_info *game)
 {
