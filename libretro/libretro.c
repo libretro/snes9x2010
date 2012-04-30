@@ -442,15 +442,13 @@ EXPORT void retro_run (void)
    report_buttons();
 }
 
-static char fullpath[1024];
-
 EXPORT size_t retro_serialize_size (void)
 {
    uint8_t *tmpbuf;
 
    tmpbuf = (uint8_t*)malloc(5000000);
    memstream_set_buffer(tmpbuf, 5000000);
-   S9xFreezeGame(fullpath);
+   S9xFreezeGame("");
    free(tmpbuf);
    return memstream_get_last_size();
 }
@@ -458,7 +456,7 @@ EXPORT size_t retro_serialize_size (void)
 EXPORT bool retro_serialize(void *data, size_t size)
 {
    memstream_set_buffer((uint8_t*)data, size);
-   if (S9xFreezeGame(fullpath) == FALSE)
+   if (S9xFreezeGame("") == FALSE)
       return FALSE;
 
    return TRUE;
@@ -467,7 +465,7 @@ EXPORT bool retro_serialize(void *data, size_t size)
 EXPORT bool retro_unserialize(const void * data, size_t size)
 {
    memstream_set_buffer((uint8_t*)data, size);
-   if (S9xUnfreezeGame(fullpath) == FALSE)
+   if (S9xUnfreezeGame("") == FALSE)
       return FALSE;
 
    return TRUE;
@@ -483,19 +481,16 @@ EXPORT bool retro_load_game(const struct retro_game_info *game)
 {
    int loaded;
 
-   strcpy(fullpath, game->path);
-
    /* Hack. S9x cannot do stuff from RAM. <_< */
    memstream_set_buffer((uint8_t*)game->data, game->size);
 
-   loaded = LoadROM(fullpath);
+   loaded = LoadROM("");
    if (!loaded)
    {
-      fprintf(stderr, "[libsnes]: Rom loading failed...\n");
+      fprintf(stderr, "[libretro]: Rom loading failed...\n");
       return FALSE;
    }
 
-   
    return TRUE;
 }
 

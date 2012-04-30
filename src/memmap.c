@@ -838,7 +838,7 @@ bool8 LoadROM (const char *filename)
 
 	retry_count = 0;
 
-	if (!filename || !*filename)
+	if (!filename)
 		return FALSE;
 
 	memset(Memory.ROM, 0, MAX_ROM_SIZE);
