@@ -13,20 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\libsnes">
-      <UniqueIdentifier>{4b615196-2410-41d7-91a2-b3ca51238738}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\libsnes">
+    <Filter Include="Source Files\libretro">
       <UniqueIdentifier>{00285f6a-c8e3-4b26-8a76-32f0f44b16a0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\libsnes\libsnes.c">
-      <Filter>Source Files\libsnes</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libsnes\memstream.c">
-      <Filter>Source Files\libsnes</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\tile.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -86,6 +77,12 @@
     </ClCompile>
     <ClCompile Include="..\src\srtc.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro\memstream.c">
+      <Filter>Source Files\libretro</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libretro\libretro.c">
+      <Filter>Source Files\libretro</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -197,11 +194,11 @@
     <ClInclude Include="src\srtc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="libsnes\memstream.h">
-      <Filter>Header Files\libsnes</Filter>
+    <ClInclude Include="libretro\memstream.h">
+      <Filter>Header Files\libretro</Filter>
     </ClInclude>
-    <ClInclude Include="libsnes\libsnes.h">
-      <Filter>Header Files\libsnes</Filter>
+    <ClInclude Include="libretro\libretro.h">
+      <Filter>Header Files\libretro</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

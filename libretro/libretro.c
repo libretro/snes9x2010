@@ -10,12 +10,6 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#if defined(_MSC_VER) && !defined(_XBOX)
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-
 #include "libretro.h"
 
 #include "../src/snes9x.h"
@@ -41,7 +35,7 @@ static retro_input_state_t input_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
 static retro_environment_t environ_cb = NULL;
 
-EXPORT void *retro_get_memory_data(unsigned type)
+void *retro_get_memory_data(unsigned type)
 {
    uint8_t* data;
 
@@ -67,7 +61,7 @@ EXPORT void *retro_get_memory_data(unsigned type)
    return data;
 }
 
-EXPORT size_t retro_get_memory_size(unsigned type)
+size_t retro_get_memory_size(unsigned type)
 {
    unsigned size;
 
@@ -95,42 +89,42 @@ EXPORT size_t retro_get_memory_size(unsigned type)
    return size;
 }
 
-EXPORT unsigned retro_api_version(void)
+unsigned retro_api_version(void)
 {
    return RETRO_API_VERSION;
 }
 
-EXPORT void retro_set_video_refresh(retro_video_refresh_t cb)
+void retro_set_video_refresh(retro_video_refresh_t cb)
 {
    video_cb = cb;
 }
 
-EXPORT void retro_set_audio_sample(retro_audio_sample_t cb)
+void retro_set_audio_sample(retro_audio_sample_t cb)
 {}
 
-EXPORT void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb)
+void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb)
 {
    audio_batch_cb = cb;
 }
 
-EXPORT void retro_set_input_poll(retro_input_poll_t cb)
+void retro_set_input_poll(retro_input_poll_t cb)
 {
    poll_cb = cb;
 }
 
-EXPORT void retro_set_input_state(retro_input_state_t cb)
+void retro_set_input_state(retro_input_state_t cb)
 {
    input_cb = cb;
 }
 
 static bool use_overscan;
 
-EXPORT void retro_set_environment(retro_environment_t cb)
+void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
 }
 
-EXPORT void retro_get_system_info(struct retro_system_info *info)
+void retro_get_system_info(struct retro_system_info *info)
 {
    info->need_fullpath = false;
    info->valid_extensions = "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP";
@@ -212,8 +206,6 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
    }
 }
 
-
-
 static void map_buttons (void)
 {
    MAP_BUTTON(MAKE_BUTTON(1, RETRO_DEVICE_ID_JOYPAD_A), "Joypad1 A");
@@ -282,7 +274,7 @@ static void map_buttons (void)
    MAP_BUTTON(MAKE_BUTTON(5, RETRO_DEVICE_ID_JOYPAD_DOWN), "Joypad5 Down");
 }
 
-EXPORT void retro_get_system_av_info(struct retro_system_av_info *info)
+void retro_get_system_av_info(struct retro_system_av_info *info)
 {
    info->geometry.base_width = 256;
    info->geometry.base_height = 239;
@@ -337,7 +329,7 @@ static void snes_init (void)
    map_buttons();
 }
 
-EXPORT void retro_init (void)
+void retro_init (void)
 {
    if (!environ_cb(RETRO_ENVIRONMENT_GET_OVERSCAN, &use_overscan))
 	   use_overscan = FALSE;
@@ -349,7 +341,7 @@ EXPORT void retro_init (void)
    S9x seems to use absolute values, but do convert these into relative values in the core. (Why?!)
    Hack around it. :) */
 
-EXPORT void retro_deinit(void)
+void retro_deinit(void)
 {
    S9xDeinitAPU();
    Deinit();
@@ -439,7 +431,7 @@ static void report_buttons (void)
    }
 }
 
-EXPORT void retro_run (void)
+void retro_run (void)
 {
    S9xMainLoop();
 
@@ -448,7 +440,7 @@ EXPORT void retro_run (void)
    report_buttons();
 }
 
-EXPORT size_t retro_serialize_size (void)
+size_t retro_serialize_size (void)
 {
    uint8_t *tmpbuf;
 
@@ -459,7 +451,7 @@ EXPORT size_t retro_serialize_size (void)
    return memstream_get_last_size();
 }
 
-EXPORT bool retro_serialize(void *data, size_t size)
+bool retro_serialize(void *data, size_t size)
 {
    memstream_set_buffer((uint8_t*)data, size);
    if (S9xFreezeGame("") == FALSE)
@@ -468,7 +460,7 @@ EXPORT bool retro_serialize(void *data, size_t size)
    return TRUE;
 }
 
-EXPORT bool retro_unserialize(const void * data, size_t size)
+bool retro_unserialize(const void * data, size_t size)
 {
    memstream_set_buffer((uint8_t*)data, size);
    if (S9xUnfreezeGame("") == FALSE)
@@ -483,7 +475,7 @@ void retro_cheat_reset(void)
 void retro_cheat_set(unsigned unused, bool unused1, const char* unused2)
 {}
 
-EXPORT bool retro_load_game(const struct retro_game_info *game)
+bool retro_load_game(const struct retro_game_info *game)
 {
    int loaded;
 
@@ -500,16 +492,16 @@ EXPORT bool retro_load_game(const struct retro_game_info *game)
    return TRUE;
 }
 
-EXPORT bool retro_load_game_special(
+bool retro_load_game_special(
   unsigned game_type,
   const struct retro_game_info *info, size_t num_info
 )
 { return false; }
 
-EXPORT void retro_unload_game (void)
+void retro_unload_game (void)
 { }
 
-EXPORT unsigned retro_get_region (void)
+unsigned retro_get_region (void)
 { 
    return Settings.PAL ? RETRO_REGION_PAL : RETRO_REGION_NTSC; 
 }
