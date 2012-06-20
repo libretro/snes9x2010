@@ -6,42 +6,42 @@ START_DIR=`pwd`
 # PROGRAM FUNCTIONS
 #******************
 
-function clean()
+clean()
 {
 	make -f Makefile.libretro clean
 }
 
-function clean_libxenon()
+clean_libxenon()
 {
 	make -f Makefile.libretro platform=xenon clean
 }
 
-function clean_ps3()
+clean_ps3()
 {
 	make -f Makefile.libretro platform=ps3 clean
 }
 
-function make_libretro()
+make_libretro()
 {
 	make -f Makefile.libretro
 }
 
-function make_libretro_ntsc()
+make_libretro_ntsc()
 {
 	make -f Makefile.libretro NTSC=1
 }
 
-function make_libretro_debug()
+make_libretro_debug()
 {
 	make -f Makefile.libretro DEBUG=1
 }
 
-function make_libretro_ps3()
+make_libretro_ps3()
 {
 	make -f Makefile.libretro platform=ps3
 }
 
-function make_libretro_libxenon()
+make_libretro_libxenon()
 {
 	make -f Makefile.libretro platform=xenon
 }
@@ -50,7 +50,7 @@ function make_libretro_libxenon()
 # DISPLAY FUNCTIONS
 #******************
 
-function title()
+title()
 {
 	echo ""
 	echo "***************************"
@@ -58,47 +58,47 @@ function title()
 	echo "***************************"
 }
 
-function display_clean()
+display_clean()
 {
 	echo "clean          Clean the object files"
 }
 
-function display_clean_libxenon()
+display_clean_libxenon()
 {
 	echo "clean_libxenon Clean the object files (for libxenon)"
 }
 
-function display_clean_ps3()
+display_clean_ps3()
 {
 	echo "clean_ps3      Clean the object files (for PS3)"
 }
 
-function display_make()
+display_make()
 {
 	echo "make           Compile libretro library"
 }
 
-function display_make_libxenon()
+display_make_libxenon()
 {
 	echo "make_libxenon  Compile libretro library (for libxenon)"
 }
 
-function display_make_ps3()
+display_make_ps3()
 {
 	echo "make_ps3       Compile libretro library (for PS3)"
 }
 
-function display_make_ntsc()
+display_make_ntsc()
 {
 	echo "make_ntsc      Compile libretro library (with NTSC filter)"
 }
 
-function display_make_debug()
+display_make_debug()
 {
 	echo "make_debug     Compile DEBUG libretro library "
 }
 
-function display_all_options()
+display_all_options()
 {
 	echo ""
 	display_clean
@@ -112,7 +112,7 @@ function display_all_options()
 	display_make_debug
 }
 
-function display_usage()
+display_usage()
 {
 	echo "Usage: compile_libretro.sh [options]"
 	echo "Options:"
