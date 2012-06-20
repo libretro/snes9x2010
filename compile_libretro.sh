@@ -1,5 +1,5 @@
 #!/bin/sh
-FORMAT=libsnes
+FORMAT=libretro
 START_DIR=`pwd`
 
 #******************
@@ -8,42 +8,42 @@ START_DIR=`pwd`
 
 function clean()
 {
-	make -f Makefile.libsnes clean
+	make -f Makefile.libretro clean
 }
 
 function clean_libxenon()
 {
-	make -f Makefile.libsnes platform=xenon clean
+	make -f Makefile.libretro platform=xenon clean
 }
 
 function clean_ps3()
 {
-	make -f Makefile.libsnes platform=ps3 clean
+	make -f Makefile.libretro platform=ps3 clean
 }
 
-function make_libsnes()
+function make_libretro()
 {
-	make -f Makefile.libsnes
+	make -f Makefile.libretro
 }
 
-function make_libsnes_ntsc()
+function make_libretro_ntsc()
 {
-	make -f Makefile.libsnes NTSC=1
+	make -f Makefile.libretro NTSC=1
 }
 
-function make_libsnes_debug()
+function make_libretro_debug()
 {
-	make -f Makefile.libsnes DEBUG=1
+	make -f Makefile.libretro DEBUG=1
 }
 
-function make_libsnes_ps3()
+function make_libretro_ps3()
 {
-	make -f Makefile.libsnes platform=ps3
+	make -f Makefile.libretro platform=ps3
 }
 
-function make_libsnes_libxenon()
+function make_libretro_libxenon()
 {
-	make -f Makefile.libsnes platform=xenon
+	make -f Makefile.libretro platform=xenon
 }
 
 #******************
@@ -75,27 +75,27 @@ function display_clean_ps3()
 
 function display_make()
 {
-	echo "make           Compile libsnes library"
+	echo "make           Compile libretro library"
 }
 
 function display_make_libxenon()
 {
-	echo "make_libxenon  Compile libsnes library (for libxenon)"
+	echo "make_libxenon  Compile libretro library (for libxenon)"
 }
 
 function display_make_ps3()
 {
-	echo "make_ps3       Compile libsnes library (for PS3)"
+	echo "make_ps3       Compile libretro library (for PS3)"
 }
 
 function display_make_ntsc()
 {
-	echo "make_ntsc      Compile libsnes library (with NTSC filter)"
+	echo "make_ntsc      Compile libretro library (with NTSC filter)"
 }
 
 function display_make_debug()
 {
-	echo "make_debug     Compile DEBUG libsnes library "
+	echo "make_debug     Compile DEBUG libretro library "
 }
 
 function display_all_options()
@@ -114,7 +114,7 @@ function display_all_options()
 
 function display_usage()
 {
-	echo "Usage: compile_libsnes.sh [options]"
+	echo "Usage: compile_libretro.sh [options]"
 	echo "Options:"
 	display_all_options
 }
@@ -163,7 +163,7 @@ else
 			echo "DOING:"
 			display_make
 			echo "*************************************"
-			make_libsnes
+			make_libretro
 		fi
 		if [ "$i" = "make_libxenon" ]; then
 			echo ""
@@ -171,7 +171,7 @@ else
 			echo "DOING:"
 			display_make_libxenon
 			echo "*************************************"
-			make_libsnes_libxenon
+			make_libretro_libxenon
 		fi
 		if [ "$i" = "make_ps3" ]; then
 			echo ""
@@ -179,7 +179,7 @@ else
 			echo "DOING:"
 			display_make_ps3
 			echo "*************************************"
-			make_libsnes_ps3
+			make_libretro_ps3
 		fi
 		if [ "$i" = "make_ntsc" ]; then
 			echo ""
@@ -187,7 +187,7 @@ else
 			echo "DOING:"
 			display_make_ntsc
 			echo "*************************************"
-			make_libsnes_ntsc
+			make_libretro_ntsc
 		fi
 		if [ "$i" = "make_debug" ]; then
 			echo ""
@@ -195,7 +195,7 @@ else
 			echo "DOING:"
 			display_make_debug
 			echo "*************************************"
-			make_libsnes_debug
+			make_libretro_debug
 		fi
 	done
 fi
