@@ -115,7 +115,7 @@
 				#define GET_LE32( addr )        (__builtin_lwbrx(addr, 0))
 				#define SET_LE16( addr, in )    (__builtin_sthbrx(in, addr, 0))
 				#define SET_LE32( addr, in )    (__builtin_stwbrx(in, addr, 0))
-			#elif defined (_XBOX)
+			#elif defined (_XBOX360)
 				#include <PPCIntrinsics.h>
 				#define GET_LE16( addr )        (__loadshortbytereverse(0, addr))
 				#define GET_LE32( addr )        (__loadwordbytereverse(0, addr))
