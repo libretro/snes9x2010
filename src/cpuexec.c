@@ -975,7 +975,7 @@ void S9xDoHEventProcessing (void)
 				if (!GFX.DoInterlace || !GFX.InterlaceFrame)
 				{
 					/* S9x Start Screen Refresh */
-					bool8 cond_1;
+					bool8 cond_1, cond_2;
 
 					GFX.DoInterlace -= (GFX.DoInterlace == TRUE);
 
@@ -985,16 +985,17 @@ void S9xDoHEventProcessing (void)
 					IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
 					IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
 
-					cond_1 = (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires);
+					cond_1 = (Settings.SupportHiRes && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires));
+					cond_2 = (Settings.SupportHiRes && IPPU.Interlace);
 
 					GFX.RealPPL = GFX.Pitch >> 1;
 					IPPU.RenderedScreenWidth = SNES_WIDTH << cond_1;
-					IPPU.RenderedScreenHeight = PPU.ScreenHeight << IPPU.Interlace;
+					IPPU.RenderedScreenHeight = PPU.ScreenHeight << cond_2;
 					IPPU.DoubleWidthPixels = cond_1;
-					IPPU.DoubleHeightPixels = IPPU.Interlace;
+					IPPU.DoubleHeightPixels = cond_2;
 
-					GFX.PPL = GFX.RealPPL << IPPU.Interlace;
-					GFX.DoInterlace += IPPU.Interlace;
+					GFX.PPL = GFX.RealPPL << cond_2;
+					GFX.DoInterlace += cond_2;
 				}
 
 				PPU.MosaicStart = 0;

@@ -2091,6 +2091,13 @@ void InitROM (void)
 	Settings.BS = FALSE;
 	SuperFX.nRomBanks = Memory.CalculatedSize >> 15;
 
+#if defined(_XBOX1)
+	/* These systems are too slow for hi-res rendering with SNES9x 1.52 */
+	Settings.SupportHiRes = false;
+#else
+	Settings.SupportHiRes = true;
+#endif
+
 	/* Parse ROM header and read ROM information */
 
 	Memory.CompanyId = -1;
