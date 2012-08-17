@@ -1748,7 +1748,13 @@ static const char * KartContents (uint8 ROMType)
 		strcpy(chip, "+OBC1");
 	else
 	if (Settings.SA1)
+   {
+#if defined(_XBOX1) || defined(GEKKO)
+         /* These systems are too slow for hi-res rendering with SNES9x 1.52 */
+         Settings.SupportHiRes = FALSE;
+#endif
 		strcpy(chip, "+SA-1");
+   }
 	else
 	if (Settings.SPC7110RTC)
 		strcpy(chip, "+SPC7110+RTC");
@@ -2090,13 +2096,8 @@ void InitROM (void)
 	Settings.SRTC = FALSE;
 	Settings.BS = FALSE;
 	SuperFX.nRomBanks = Memory.CalculatedSize >> 15;
-
-#if defined(_XBOX1)
-	/* These systems are too slow for hi-res rendering with SNES9x 1.52 */
-	Settings.SupportHiRes = false;
-#else
-	Settings.SupportHiRes = true;
-#endif
+   
+   Settings.SupportHiRes = TRUE;
 
 	/* Parse ROM header and read ROM information */
 
@@ -2591,7 +2592,13 @@ void InitROM (void)
 				MATCH_NN("SeikenDensetsu3") ||
 				MATCH_NA("SeikenDensetsu3Sample1") ||	/* Seiken Densetsu 3 */
 				MATCH_NA("ROMANCING SAGA3"))		/* Romancing Saga 3 */
+      {
+#if defined(_XBOX1) || defined(GEKKO)
+         /* These systems are too slow for hi-res rendering with SNES9x 1.52 */
+         Settings.SupportHiRes = FALSE;
+#endif
 			PPU.DisableMosaicHack = FALSE;
+      }
 		else
 			PPU.DisableMosaicHack = TRUE;
 
