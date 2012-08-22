@@ -112,6 +112,9 @@ endif
 %.o: %.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c -o $@ $<
 
+clean-objs:
+	rm -rf $(OBJECTS)
+
 clean:
 	rm -f $(OBJECTS) $(TARGET)
 
