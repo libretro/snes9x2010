@@ -1753,14 +1753,14 @@ static INLINE void RenderScreen (bool8 sub)
 				BG.OffsetSizeH = (!hires && PPU.BG[2].BGSize) ? 16 : 8; \
 				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 				\
-				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
 					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 				else \
 					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
 			} \
 			else \
 			{ \
-				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
 					DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 				else \
 					DrawBackground(n, D + Zh, D + Zl); \
@@ -1776,7 +1776,7 @@ static INLINE void RenderScreen (bool8 sub)
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter(depth, hires, sub, PPU.BGMosaic[n]); \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
 				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 			else \
 				DrawBackground(n, D + Zh, D + Zl); \
@@ -1791,7 +1791,7 @@ static INLINE void RenderScreen (bool8 sub)
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth2(); \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
 				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 			else \
 				DrawBackground(n, D + Zh, D + Zl); \
@@ -1806,7 +1806,7 @@ static INLINE void RenderScreen (bool8 sub)
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
 				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 			else \
 				DrawBackground(n, D + Zh, D + Zl); \
@@ -1821,7 +1821,7 @@ static INLINE void RenderScreen (bool8 sub)
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth8(); \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
 				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 			else \
 				DrawBackground(n, D + Zh, D + Zl); \
@@ -1839,7 +1839,7 @@ static INLINE void RenderScreen (bool8 sub)
 			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
 			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
 			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 			else \
 			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
@@ -1857,7 +1857,7 @@ static INLINE void RenderScreen (bool8 sub)
 			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
 			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
 			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 			else \
 			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
@@ -1875,7 +1875,7 @@ static INLINE void RenderScreen (bool8 sub)
 			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
 			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
 			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 			else \
 			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
@@ -1893,7 +1893,7 @@ static INLINE void RenderScreen (bool8 sub)
 			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
 			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1) && PPU.DisableMosaicHack) \
+			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
 			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 			else \
 			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
@@ -1907,7 +1907,7 @@ static INLINE void RenderScreen (bool8 sub)
 			BG.TileSizeH = 8; \
 			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter(depth, 1, sub, PPU.BGMosaic[n]); \
-				if (PPU.BGMosaic[n] && PPU.DisableMosaicHack) \
+				if (PPU.BGMosaic[n]) \
 					DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 				else \
 					DrawBackground(n, D + Zh, D + Zl); \
@@ -1925,7 +1925,7 @@ static INLINE void RenderScreen (bool8 sub)
 				BG.OffsetSizeH = 8; \
 				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 				\
-				if (PPU.BGMosaic[n] && PPU.DisableMosaicHack) \
+				if (PPU.BGMosaic[n]) \
 					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 				else \
 					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
@@ -1942,7 +1942,7 @@ static INLINE void RenderScreen (bool8 sub)
 				BG.OffsetSizeH = 8; \
 				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
 				\
-				if (PPU.BGMosaic[n] && PPU.DisableMosaicHack) \
+				if (PPU.BGMosaic[n]) \
 					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 				else \
 					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
@@ -3164,7 +3164,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 				break;
 
 			case MEM_PPU_MOSAIC: // MOSAIC
-				if (execute /*&& !PPU.MosaicHack*/)
+				if (execute && PPU.DisableMosaicHack)
 				{
 					if (IPPU.PreviousLine != IPPU.CurrentLine)
 						S9xUpdateScreen();

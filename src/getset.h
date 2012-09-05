@@ -230,28 +230,6 @@ extern uint8	OpenBus;
 			else \
 				S9xSetCPU(byte_tmp, addr_tmp);
 
-#define S9X_GET_CPU_PREAMBLE(retval, addr_tmp) \
-	if (addr_tmp < 0x4200) \
-	{ \
-		/*JOYSER0 - JOYSER1 */ \
-		if (addr_tmp == 0x4016 || addr_tmp == 0x4017) \
-		{ \
-			pad_read = TRUE; \
-			retval = S9xReadJOYSERn(addr_tmp); \
-		} \
-		else \
-			retval = OpenBus; \
-	} \
-	else if ((addr_tmp & 0xff80) == 0x4300) \
-	{ \
-		if (CPU.InDMAorHDMA) \
-			retval = OpenBus; \
-		else \
-			retval = S9xGetCPU(addr_tmp); \
-	} \
-	else \
-		retval = S9xGetCPU_Alt(addr_tmp);
-
 
 static inline int32 memory_speed (uint32 address)
 {
