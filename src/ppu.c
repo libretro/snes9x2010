@@ -2734,10 +2734,12 @@ void S9xFixColourBrightness (void)
 
 	for ( i = 0; i < 256; i++)
 	{
-		IPPU.Red[i]   = IPPU.XB[(PPU.CGDATA[i])       & 0x1f];
-		IPPU.Green[i] = IPPU.XB[(PPU.CGDATA[i] >>  5) & 0x1f];
-		IPPU.Blue[i]  = IPPU.XB[(PPU.CGDATA[i] >> 10) & 0x1f];
-		IPPU.ScreenColors[i] = BUILD_PIXEL(IPPU.Red[i], IPPU.Green[i], IPPU.Blue[i]);
+		IPPU.ScreenColors[i] = BUILD_PIXEL
+			(
+			 IPPU.XB[(PPU.CGDATA[i]) & 0x1f],
+			 IPPU.XB[(PPU.CGDATA[i] >>  5) & 0x1f],
+			 IPPU.XB[(PPU.CGDATA[i] >> 10) & 0x1f]
+			);
 	}
 }
 
@@ -2750,9 +2752,13 @@ static INLINE void REGISTER_2122 (uint8 Byte)
 			FLUSH_REDRAW();
 			PPU.CGDATA[PPU.CGADD] &= 0x00ff;
 			PPU.CGDATA[PPU.CGADD] |= (Byte & 0x7f) << 8;
-			IPPU.Blue[PPU.CGADD] = IPPU.XB[(Byte >> 2) & 0x1f];
-			IPPU.Green[PPU.CGADD] = IPPU.XB[(PPU.CGDATA[PPU.CGADD] >> 5) & 0x1f];
-			IPPU.ScreenColors[PPU.CGADD] = (uint16) BUILD_PIXEL(IPPU.Red[PPU.CGADD], IPPU.Green[PPU.CGADD], IPPU.Blue[PPU.CGADD]);
+
+			IPPU.ScreenColors[PPU.CGADD] = (uint16) BUILD_PIXEL
+				(
+				 IPPU.XB[(PPU.CGDATA[PPU.CGADD]) & 0x1f],
+				 IPPU.XB[(PPU.CGDATA[PPU.CGADD] >> 5) & 0x1f],
+				 IPPU.XB[(Byte >> 2) & 0x1f]
+				);
 		}
 
 		PPU.CGADD++;
@@ -2764,9 +2770,13 @@ static INLINE void REGISTER_2122 (uint8 Byte)
 			FLUSH_REDRAW();
 			PPU.CGDATA[PPU.CGADD] &= 0x7f00;
 			PPU.CGDATA[PPU.CGADD] |= Byte;
-			IPPU.Red[PPU.CGADD] = IPPU.XB[Byte & 0x1f];
-			IPPU.Green[PPU.CGADD] = IPPU.XB[(PPU.CGDATA[PPU.CGADD] >> 5) & 0x1f];
-			IPPU.ScreenColors[PPU.CGADD] = (uint16) BUILD_PIXEL(IPPU.Red[PPU.CGADD], IPPU.Green[PPU.CGADD], IPPU.Blue[PPU.CGADD]);
+
+			IPPU.ScreenColors[PPU.CGADD] = (uint16) BUILD_PIXEL
+				(
+				 IPPU.XB[Byte & 0x1f],
+				 IPPU.XB[(PPU.CGDATA[PPU.CGADD] >> 5) & 0x1f],
+				 IPPU.XB[(PPU.CGDATA[PPU.CGADD] >> 10) & 0x1f]
+				);
 		}
 	}
 
@@ -5205,10 +5215,7 @@ void S9xSoftResetPPU (void)
 
 	for ( c = 0; c < 256; c++)
 	{
-		IPPU.Red[c]   = (c & 7) << 2;
-		IPPU.Green[c] = ((c >> 3) & 7) << 2;
-		IPPU.Blue[c]  = ((c >> 6) & 2) << 3;
-		PPU.CGDATA[c] = IPPU.Red[c] | (IPPU.Green[c] << 5) | (IPPU.Blue[c] << 10);
+		PPU.CGDATA[c] = (c & 7) << 2 | ((((c >> 3) & 7) << 2) << 5) | ((((c >> 6) & 2) << 3) << 10);
 	}
 
 	for ( c = 0; c < 128; c++)
