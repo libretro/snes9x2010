@@ -217,6 +217,13 @@
 #define MAP_TYPE_ROM 1
 #define MAP_TYPE_RAM 2
 
+enum speedhacks
+{
+	SPEEDHACK_NONE		= 0,
+	SPEEDHACK_DKC1,
+	SPEEDHACK_SUPER_METROID,
+};
+
 typedef struct
 {
 	int32	HeaderCount;

@@ -273,6 +273,7 @@ void S9xMainLoop (void)
 		Registers.PCw++;
 		(*Opcodes[Op].S9xOpcode)();
 
+
 		if (Settings.SA1)
 			S9xSA1MainLoop();
 

@@ -381,6 +381,8 @@ struct SSettings
 	uint32	FrameTimePAL;
 	uint32	FrameTimeNTSC;
 
+	uint32  SpeedhackGameID;
+
 	uint32	SoundPlaybackRate;
 	uint32	SoundInputRate;
 
@@ -446,6 +448,7 @@ struct SSettings
 	bool8		CurrentROMisSuperScopeCompatible;
 	bool8		CurrentROMisJustifierCompatible;
 	bool8		SupportHiRes;
+	bool8		Transparency;
 };
 
 struct SSNESGameFixes

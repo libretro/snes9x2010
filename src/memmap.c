@@ -2593,10 +2593,6 @@ void InitROM (void)
 				MATCH_NA("SeikenDensetsu3Sample1") ||	/* Seiken Densetsu 3 */
 				MATCH_NA("ROMANCING SAGA3"))		/* Romancing Saga 3 */
       {
-#if defined(_XBOX1) || defined(GEKKO)
-         /* These systems are too slow for hi-res rendering with SNES9x 1.52 */
-         Settings.SupportHiRes = FALSE;
-#endif
 			PPU.DisableMosaicHack = FALSE;
       }
 		else
@@ -2606,21 +2602,19 @@ void InitROM (void)
 		if (
 				MATCH_NA("VORTEX") ||			/* Vortex */
 				MATCH_NA("Super Street Fighter21") ||	/* Super Street Fighter II */
+				//MATCH_NA("FINAL FANTASY 3") ||	/* Final Fantasy III (US)*/
 				MATCH_NA("STAR FOX 2"))			/* Star Fox 2 */
 					PPU.SFXSpeedupHack = TRUE;
 				else
 					PPU.SFXSpeedupHack = FALSE;
 
-		#ifdef __LIBRETRO__
-		fprintf(stderr, "PPU.SFXSpeedupHack = %d\n", PPU.SFXSpeedupHack);
-		#endif
 
 	/* FORCIBLY DISABLE HIGH-RES */
 	if (		
 			MATCH_NA("DONKEY KONG COUNTRY")		/* Donkey Kong Country */
 			|| MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
+			|| MATCH_ID("AD8")			/* Doom */
 #if defined(_XBOX1) || defined(GEKKO)
-			|| MATCH_ID("AD8")		/* Doom */
 			|| MATCH_NN("SeikenDensetsu3") 
 			|| MATCH_NA("SeikenDensetsu3Sample1")	/* Seiken Densetsu 3 */
 			|| MATCH_NA("ROMANCING SAGA3")		/* Romancing Saga 3 */
@@ -2833,6 +2827,7 @@ void InitROM (void)
 			|| MATCH_NA("SUPER TURRICAN 2")	/* Super Turrican 2*/
 			|| MATCH_NA("DUNGEON MASTER")	/* Dungeon Master*/
 			|| MATCH_NA("DOOM TROOPERS")	/* Doom Troopers*/
+			|| MATCH_NA("DOOM")		/* Doom */
 			|| MATCH_NA("XAK 1")		/* Xak 1*/
 			|| MATCH_NA("XARDION")		/* Xardion*/
 			)
@@ -2840,9 +2835,6 @@ void InitROM (void)
 		else
 			PPU.RenderSub = TRUE;
 
-		#ifdef __LIBRETRO__
-		fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
-		#endif
 
 		/* Clipping hack - gains around 5-7 extra fps - only use it 
 		   for specific games where nothing breaks with this hack on */
@@ -2855,10 +2847,26 @@ void InitROM (void)
 		else
 			PPU.FullClipping = TRUE;
 
-		#ifdef __LIBRETRO__
-		fprintf(stderr, "PPU.FullClipping = %d\n", PPU.FullClipping);
+		/* SPEED HACK PATHS */
+		if(
+				MATCH_NA("DONKEY KONG COUNTRY") /* Donkey Kong Country 1 */
+		)
+			Settings.SpeedhackGameID = SPEEDHACK_DKC1;
+		#if 0
+		else if(
+				MATCH_NA("Super Metroid") 	/* Super Metroid*/
+		)
+			Settings.SpeedhackGameID = SPEEDHACK_SUPER_METROID;
 		#endif
+		else
+			Settings.SpeedhackGameID = SPEEDHACK_NONE;
+
 	}
+	fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
+	fprintf(stderr, "PPU.FullClipping = %d\n", PPU.FullClipping);
+	fprintf(stderr, "Settings.Transparency = %d\n", Settings.Transparency);
+	fprintf(stderr, "Settings.SpeedhackGameID = %d\n", Settings.SpeedhackGameID);
+	fprintf(stderr, "PPU.SFXSpeedupHack = %d\n", PPU.SFXSpeedupHack);
 
 	if (Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
 	{

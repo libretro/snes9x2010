@@ -291,6 +291,8 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 static void snes_init (void)
 {
    memset(&Settings, 0, sizeof(Settings));
+   Settings.SpeedhackGameID = SPEEDHACK_NONE;
+   Settings.Transparency = TRUE;
    Settings.FrameTimePAL = 20000;
    Settings.FrameTimeNTSC = 16667;
    Settings.SoundPlaybackRate = 32000;
@@ -434,8 +436,8 @@ static void report_buttons (void)
 
 void retro_run (void)
 {
-   S9xMainLoop();
 
+   S9xMainLoop();
    poll_cb();
 
    report_buttons();
@@ -507,8 +509,36 @@ unsigned retro_get_region (void)
    return Settings.PAL ? RETRO_REGION_PAL : RETRO_REGION_NTSC; 
 }
 
+static void speedhacks_manager (void)
+{
+	switch(Settings.SpeedhackGameID)
+	{
+		case SPEEDHACK_DKC1:
+		{
+			uint8 level = Memory.RAM[0x003E]; /* current level - 7E003E */
+			//fprintf(stderr, "current_level: %d.\n", ram);
+			if(level == 49 || level == 217 || level == 66 || level == 67)
+				PPU.SFXSpeedupHack = TRUE;
+			else
+				PPU.SFXSpeedupHack = FALSE;
+			break;
+		}
+		#if 0
+		case SPEEDHACK_SUPER_METROID:
+		{
+			uint8 song = (Memory.RAM[0x07f3] | Memory.RAM[0x07f4] << 8);
+			fprintf(stderr, "current_song: %d.\n", song);
+		}
+		#endif
+		default:
+			break;
+	}
+}
+
 void S9xDeinitUpdate(int width, int height)
 {
+	if(Settings.SpeedhackGameID > SPEEDHACK_NONE)
+		speedhacks_manager();
 	/* Chrono Trigger mid-frame overscan hack - field to battle transition */
 	if (Settings.ChronoTriggerFrameHack & (height == 239))
 		height = 224;
