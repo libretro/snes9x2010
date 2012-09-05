@@ -3025,38 +3025,35 @@ static void S9xSetSuperFX (uint8 byte, uint16 address)
 
 void S9xSetPPU (uint8 Byte, uint16 Address)
 {
-	/* MAP_PPU: $2000-$3FFF */
+	// MAP_PPU: $2000-$3FFF
 
 	if (CPU.InDMAorHDMA)
 	{
 		if (CPU.CurrentDMAorHDMAChannel >= 0 && DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer)
-		{
-			/* S9xSetPPU() is called to write to DMA[].AAddress */
 			return;
-		}
 		else
 		{
-			/* S9xSetPPU() is called to read from $21xx
-			   Take care of DMA wrapping */
+			// S9xSetPPU() is called to read from $21xx
+			// Take care of DMA wrapping
 			if (Address > 0x21ff)
-				Address = 0x2100 + (Address & 0xff);
+				Address = MEM_PPU_INIDISP + (Address & 0xff);
 		}
 	}
 
-
-	if ((Address & 0xffc0) == 0x2140) /* APUIO0, APUIO1, APUIO2, APUIO3 */
-	{
-		/* write_port will run the APU until given clock before writing value */
+	if ((Address & 0xffc0) == MEM_PPU_APUIO0) // APUIO0, APUIO1, APUIO2, APUIO3
+		// write_port will run the APU until given clock before writing value
 		S9xAPUWritePort(Address & 3, Byte);
-	}
-	else if (Address <= 0x2183)
+	else
+	if (Address <= MEM_PPU_WMADDH)
 	{
+		bool execute = Byte != Memory.FillRAM[Address];
 		switch (Address)
 		{
-			case 0x2100: /* INIDISP */
-				if (Byte != Memory.FillRAM[0x2100])
+			case MEM_PPU_INIDISP: // INIDISP
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
 
 					if (PPU.Brightness != (Byte & 0xf))
 					{
@@ -3067,19 +3064,17 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 							IPPU.MaxBrightness = PPU.Brightness;
 					}
 
-					if ((Memory.FillRAM[0x2100] & 0x80) != (Byte & 0x80))
+					if ((Memory.FillRAM[MEM_PPU_INIDISP] & 0x80) != (Byte & 0x80))
 					{
 						PPU.ForcedBlanking = (Byte >> 7) & 1;
 					}
 				}
 
-				if ((Memory.FillRAM[0x2100] & 0x80) && CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE)
+				if ((Memory.FillRAM[MEM_PPU_INIDISP] & 0x80) && CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE)
 				{
-					uint8 tmp;
-
 					PPU.OAMAddr = PPU.SavedOAMAddr;
 
-					tmp = 0;
+					uint8 tmp = 0;
 					if (PPU.OAMPriorityRotation)
 						tmp = (PPU.OAMAddr & 0xfe) >> 1;
 					if ((PPU.OAMFlip & 1) || PPU.FirstSprite != tmp)
@@ -3093,10 +3088,12 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2101: /* OBSEL*/
-				if (Byte != Memory.FillRAM[0x2101])
+			case MEM_PPU_OBSEL: // OBSEL
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.OBJNameBase = (Byte & 3) << 14;
 					PPU.OBJNameSelect = ((Byte >> 3) & 3) << 13;
 					PPU.OBJSizeSelect = (Byte >> 5) & 7;
@@ -3105,8 +3102,8 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2102: /* OAMADDL*/
-				PPU.OAMAddr = ((Memory.FillRAM[0x2103] & 1) << 8) | Byte;
+			case MEM_PPU_OAMADDL: // OAMADDL
+				PPU.OAMAddr = ((Memory.FillRAM[MEM_PPU_OAMADDH] & 1) << 8) | Byte;
 				PPU.OAMFlip = 2;
 				PPU.OAMReadFlip = 0;
 				PPU.SavedOAMAddr = PPU.OAMAddr;
@@ -3118,8 +3115,8 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2103: /* OAMADDH*/
-				PPU.OAMAddr = ((Byte & 1) << 8) | Memory.FillRAM[0x2102];
+			case MEM_PPU_OAMADDH: // OAMADDH
+				PPU.OAMAddr = ((Byte & 1) << 8) | Memory.FillRAM[MEM_PPU_OAMADDL];
 				PPU.OAMPriorityRotation = (Byte & 0x80) ? 1 : 0;
 				if (PPU.OAMPriorityRotation)
 				{
@@ -3144,30 +3141,34 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2104: /* OAMDATA*/
+			case MEM_PPU_OAMDATA: // OAMDATA
 				REGISTER_2104(Byte);
 				break;
 
-			case 0x2105: /* BGMODE*/
-				if (Byte != Memory.FillRAM[0x2105])
+			case MEM_PPU_BGMODE: // BGMODE
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.BG[0].BGSize = (Byte >> 4) & 1;
 					PPU.BG[1].BGSize = (Byte >> 5) & 1;
 					PPU.BG[2].BGSize = (Byte >> 6) & 1;
 					PPU.BG[3].BGSize = (Byte >> 7) & 1;
 					PPU.BGMode = Byte & 7;
-					/* BJ: BG3Priority only takes effect if BGMode == 1 and the bit is set*/
+					// BJ: BG3Priority only takes effect if BGMode == 1 and the bit is set
 					PPU.BG3Priority = ((Byte & 0x0f) == 0x09);
-					IPPU.Interlace = Memory.FillRAM[0x2133] & 1;
+					IPPU.Interlace = Memory.FillRAM[MEM_PPU_SETINI] & 1;
 				}
 
 				break;
 
-			case 0x2106: /* MOSAIC*/
-				if (Byte != Memory.FillRAM[0x2106])
+			case MEM_PPU_MOSAIC: // MOSAIC
+				if (execute /*&& !PPU.MosaicHack*/)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.MosaicStart = CPU.V_Counter;
 					if (PPU.MosaicStart > PPU.ScreenHeight)
 						PPU.MosaicStart = 0;
@@ -3180,83 +3181,91 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2107: /* BG1SC*/
-			case 0x2108: /* BG2SC*/
-			case 0x2109: /* BG3SC*/
-			case 0x210a: /* BG4SC*/
-				if (Byte != Memory.FillRAM[Address])
+			case MEM_PPU_BG1SC: // BG1SC
+			case MEM_PPU_BG2SC: // BG2SC
+			case MEM_PPU_BG3SC: // BG3SC
+			case MEM_PPU_BG4SC: // BG4SC
+				if (execute)
 				{
-					FLUSH_REDRAW();
-					PPU.BG[Address-0x2107].SCSize = Byte & 3;
-					PPU.BG[Address-0x2107].SCBase = (Byte & 0x7c) << 8;
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
+					uint32 bg_mode = Address - MEM_PPU_BG1SC;
+
+					PPU.BG[bg_mode].SCSize = Byte & 3;
+					PPU.BG[bg_mode].SCBase = (Byte & 0x7c) << 8;
 				}
 
 				break;
-			case 0x210b: /* BG12NBA*/
-				if (Byte != Memory.FillRAM[0x210b])
+			case MEM_PPU_BG12NBA: // BG12NBA
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.BG[0].NameBase = (Byte & 7) << 12;
 					PPU.BG[1].NameBase = ((Byte >> 4) & 7) << 12;
 				}
 
 				break;
 
-			case 0x210c: /* BG34NBA*/
-				if (Byte != Memory.FillRAM[0x210c])
+			case MEM_PPU_BG34NBA: // BG34NBA
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.BG[2].NameBase = (Byte & 7) << 12;
 					PPU.BG[3].NameBase = ((Byte >> 4) & 7) << 12;
 				}
 
 				break;
 
-			case 0x210d: /* BG1HOFS, M7HOFS*/
+			case MEM_PPU_BG1HOFS: // BG1HOFS, M7HOFS
 				PPU.BG[0].HOffset = (Byte << 8) | (PPU.BGnxOFSbyte & ~7) | ((PPU.BG[0].HOffset >> 8) & 7);
 				PPU.M7HOFS = (Byte << 8) | PPU.M7byte;
 				PPU.BGnxOFSbyte = Byte;
 				PPU.M7byte = Byte;
 				break;
 
-			case 0x210e: /* BG1VOFS, M7VOFS*/
+			case 0x210e: // BG1VOFS, M7VOFS
 				PPU.BG[0].VOffset = (Byte << 8) | PPU.BGnxOFSbyte;
 				PPU.M7VOFS = (Byte << 8) | PPU.M7byte;
 				PPU.BGnxOFSbyte = Byte;
 				PPU.M7byte = Byte;
 				break;
 
-			case 0x210f: /* BG2HOFS*/
+			case 0x210f: // BG2HOFS
 				PPU.BG[1].HOffset = (Byte << 8) | (PPU.BGnxOFSbyte & ~7) | ((PPU.BG[1].HOffset >> 8) & 7);
 				PPU.BGnxOFSbyte = Byte;
 				break;
 
-			case 0x2110: /* BG2VOFS*/
+			case 0x2110: // BG2VOFS
 				PPU.BG[1].VOffset = (Byte << 8) | PPU.BGnxOFSbyte;
 				PPU.BGnxOFSbyte = Byte;
 				break;
 
-			case 0x2111: /* BG3HOFS*/
+			case 0x2111: // BG3HOFS
 				PPU.BG[2].HOffset = (Byte << 8) | (PPU.BGnxOFSbyte & ~7) | ((PPU.BG[2].HOffset >> 8) & 7);
 				PPU.BGnxOFSbyte = Byte;
 				break;
 
-			case 0x2112: /* BG3VOFS*/
+			case 0x2112: // BG3VOFS
 				PPU.BG[2].VOffset = (Byte << 8) | PPU.BGnxOFSbyte;
 				PPU.BGnxOFSbyte = Byte;
 				break;
 
-			case 0x2113: /* BG4HOFS*/
+			case 0x2113: // BG4HOFS
 				PPU.BG[3].HOffset = (Byte << 8) | (PPU.BGnxOFSbyte & ~7) | ((PPU.BG[3].HOffset >> 8) & 7);
 				PPU.BGnxOFSbyte = Byte;
 				break;
 
-			case 0x2114: /* BG4VOFS*/
+			case 0x2114: // BG4VOFS
 				PPU.BG[3].VOffset = (Byte << 8) | PPU.BGnxOFSbyte;
 				PPU.BGnxOFSbyte = Byte;
 				break;
 
-			case 0x2115: /* VMAIN*/
+			case 0x2115: // VMAIN
 				PPU.VMA.High = (Byte & 0x80) == 0 ? FALSE : TRUE;
 				switch (Byte & 3)
 				{
@@ -3280,7 +3289,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 					PPU.VMA.FullGraphicCount = 0;
 				break;
 
-			case 0x2116: /* VMADDL*/
+			case 0x2116: // VMADDL
 				PPU.VMA.Address &= 0xff00;
 				PPU.VMA.Address |= Byte;
 			#ifdef CORRECT_VRAM_READS
@@ -3298,7 +3307,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 			#endif
 				break;
 
-			case 0x2117: /* VMADDH*/
+			case 0x2117: // VMADDH
 				PPU.VMA.Address &= 0x00ff;
 				PPU.VMA.Address |= Byte << 8;
 			#ifdef CORRECT_VRAM_READS
@@ -3316,26 +3325,26 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 			#endif
 				break;
 
-			case 0x2118: /* VMDATAL*/
+			case 0x2118: // VMDATAL
 			#ifndef CORRECT_VRAM_READS
 				IPPU.FirstVRAMRead = TRUE;
 			#endif
-				if(CHECK_INBLANK)
-					REGISTER_2118(Byte);
+				REGISTER_2118(Byte);
 				break;
 
-			case 0x2119: /* VMDATAH*/
+			case 0x2119: // VMDATAH
 			#ifndef CORRECT_VRAM_READS
 				IPPU.FirstVRAMRead = TRUE;
 			#endif
-				if(CHECK_INBLANK)
-					REGISTER_2119(Byte);
+				REGISTER_2119(Byte);
 				break;
 
-			case 0x211a: /* M7SEL*/
-				if (Byte != Memory.FillRAM[0x211a])
+			case 0x211a: // M7SEL
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.Mode7Repeat = Byte >> 6;
 					if (PPU.Mode7Repeat == 1)
 						PPU.Mode7Repeat = 0;
@@ -3345,52 +3354,54 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x211b: /* M7A*/
+			case 0x211b: // M7A
 				PPU.MatrixA = PPU.M7byte | (Byte << 8);
 				PPU.Need16x8Mulitply = TRUE;
 				PPU.M7byte = Byte;
 				break;
 
-			case 0x211c: /* M7B*/
+			case 0x211c: // M7B
 				PPU.MatrixB = PPU.M7byte | (Byte << 8);
 				PPU.Need16x8Mulitply = TRUE;
 				PPU.M7byte = Byte;
 				break;
 
-			case 0x211d: /* M7C*/
+			case 0x211d: // M7C
 				PPU.MatrixC = PPU.M7byte | (Byte << 8);
 				PPU.M7byte = Byte;
 				break;
 
-			case 0x211e: /* M7D*/
+			case 0x211e: // M7D
 				PPU.MatrixD = PPU.M7byte | (Byte << 8);
 				PPU.M7byte = Byte;
 				break;
 
-			case 0x211f: /* M7X*/
+			case 0x211f: // M7X
 				PPU.CentreX = PPU.M7byte | (Byte << 8);
 				PPU.M7byte = Byte;
 				break;
 
-			case 0x2120: /* M7Y*/
+			case 0x2120: // M7Y
 				PPU.CentreY = PPU.M7byte | (Byte << 8);
 				PPU.M7byte = Byte;
 				break;
 
-			case 0x2121: /* CGADD*/
+			case 0x2121: // CGADD
 				PPU.CGFLIP = 0;
 				PPU.CGFLIPRead = 0;
 				PPU.CGADD = Byte;
 				break;
 
-			case 0x2122: /* CGDATA*/
+			case 0x2122: // CGDATA
 				REGISTER_2122(Byte);
 				break;
 
-			case 0x2123: /* W12SEL*/
-				if (Byte != Memory.FillRAM[0x2123])
+			case 0x2123: // W12SEL
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.ClipWindow1Enable[0] = !!(Byte & 0x02);
 					PPU.ClipWindow1Enable[1] = !!(Byte & 0x20);
 					PPU.ClipWindow2Enable[0] = !!(Byte & 0x08);
@@ -3404,10 +3415,12 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2124: /* W34SEL*/
-				if (Byte != Memory.FillRAM[0x2124])
+			case 0x2124: // W34SEL
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.ClipWindow1Enable[2] = !!(Byte & 0x02);
 					PPU.ClipWindow1Enable[3] = !!(Byte & 0x20);
 					PPU.ClipWindow2Enable[2] = !!(Byte & 0x08);
@@ -3421,10 +3434,12 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2125: /* WOBJSEL*/
-				if (Byte != Memory.FillRAM[0x2125])
+			case 0x2125: // WOBJSEL
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.ClipWindow1Enable[4] = !!(Byte & 0x02);
 					PPU.ClipWindow1Enable[5] = !!(Byte & 0x20);
 					PPU.ClipWindow2Enable[4] = !!(Byte & 0x08);
@@ -3438,50 +3453,60 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2126: /* WH0*/
-				if (Byte != Memory.FillRAM[0x2126])
+			case 0x2126: // WH0
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.Window1Left = Byte;
 					PPU.RecomputeClipWindows = TRUE;
 				}
 
 				break;
 
-			case 0x2127: /* WH1*/
-				if (Byte != Memory.FillRAM[0x2127])
+			case 0x2127: // WH1
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.Window1Right = Byte;
 					PPU.RecomputeClipWindows = TRUE;
 				}
 
 				break;
 
-			case 0x2128: /* WH2*/
-				if (Byte != Memory.FillRAM[0x2128])
+			case 0x2128: // WH2
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.Window2Left = Byte;
 					PPU.RecomputeClipWindows = TRUE;
 				}
 
 				break;
 
-			case 0x2129: /* WH3*/
-				if (Byte != Memory.FillRAM[0x2129])
+			case 0x2129: // WH3
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.Window2Right = Byte;
 					PPU.RecomputeClipWindows = TRUE;
 				}
 
 				break;
 
-			case 0x212a: /* WBGLOG*/
-				if (Byte != Memory.FillRAM[0x212a])
+			case 0x212a: // WBGLOG
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.ClipWindowOverlapLogic[0] = (Byte & 0x03);
 					PPU.ClipWindowOverlapLogic[1] = (Byte & 0x0c) >> 2;
 					PPU.ClipWindowOverlapLogic[2] = (Byte & 0x30) >> 4;
@@ -3491,10 +3516,12 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x212b: /* WOBJLOG*/
-				if (Byte != Memory.FillRAM[0x212b])
+			case 0x212b: // WOBJLOG
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.ClipWindowOverlapLogic[4] = (Byte & 0x03);
 					PPU.ClipWindowOverlapLogic[5] = (Byte & 0x0c) >> 2;
 					PPU.RecomputeClipWindows = TRUE;
@@ -3502,30 +3529,36 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x212c: /* TM*/
-			case 0x212d: /* TS*/
-			case 0x212e: /* TMW*/
-			case 0x212f: /* TSW*/
-			case 0x2130: /* CGWSEL*/
-				if (Byte != Memory.FillRAM[Address])
+			case MEM_PPU_TM: // TM - Main Screen Designation
+			case MEM_PPU_TS: // TS - Sub Screen Designation
+			case MEM_PPU_TMW: // TMW - Window Area Main Screen Disable
+			case MEM_PPU_TSW: // TSW - Window Area Sub Screen Disable
+			case MEM_PPU_CGWSEL: // CGWSEL
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					PPU.RecomputeClipWindows = TRUE;
 				}
 
 				break;
-			case 0x2131: /* CGADSUB*/
-				if (Byte != Memory.FillRAM[0x2131])
+
+			case MEM_PPU_CGADSUB: // CGADSUB
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
 				}
 
 				break;
 
-			case 0x2132: /* COLDATA*/
-				if (Byte != Memory.FillRAM[0x2132])
+			case 0x2132: // COLDATA
+				if (execute)
 				{
-					FLUSH_REDRAW();
+					if (IPPU.PreviousLine != IPPU.CurrentLine)
+						S9xUpdateScreen();
+
 					if (Byte & 0x80)
 						PPU.FixedColourBlue  = Byte & 0x1f;
 					if (Byte & 0x40)
@@ -3536,27 +3569,34 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2133: /* SETINI*/
-				if (Byte != Memory.FillRAM[0x2133])
+			case MEM_PPU_SETINI: // SETINI
+				if (Byte != Memory.FillRAM[MEM_PPU_SETINI])
 				{
-					if ((Memory.FillRAM[0x2133] ^ Byte) & 8)
+					if ((Memory.FillRAM[MEM_PPU_SETINI] ^ Byte) & 8)
 					{
-						FLUSH_REDRAW();
+						if (IPPU.PreviousLine != IPPU.CurrentLine)
+							S9xUpdateScreen();
+
 						IPPU.PseudoHires = Byte & 8;
 					}
 
-					PPU.ScreenHeight = SNES_HEIGHT;
-
 					if (Byte & 0x04)
 					{
-						PPU.ScreenHeight += 15;
-                                                IPPU.RenderedScreenHeight = PPU.ScreenHeight << IPPU.DoubleHeightPixels;
+						PPU.ScreenHeight = SNES_HEIGHT_EXTENDED;
+						if (IPPU.DoubleHeightPixels)
+							IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
+						else
+							IPPU.RenderedScreenHeight = PPU.ScreenHeight;
 					}
+					else
+						PPU.ScreenHeight = SNES_HEIGHT;
 
-					if ((Memory.FillRAM[0x2133] ^ Byte) & 3)
+					if ((Memory.FillRAM[MEM_PPU_SETINI] ^ Byte) & 3)
 					{
-						FLUSH_REDRAW();
-						if ((Memory.FillRAM[0x2133] ^ Byte) & 2)
+						if (IPPU.PreviousLine != IPPU.CurrentLine)
+							S9xUpdateScreen();
+
+						if ((Memory.FillRAM[MEM_PPU_SETINI] ^ Byte) & 2)
 							IPPU.OBJChanged = TRUE;
 						IPPU.Interlace = Byte & 1;
 						IPPU.InterlaceOBJ = Byte & 2;
@@ -3565,26 +3605,26 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2134: /* MPYL*/
-			case 0x2135: /* MPYM*/
-			case 0x2136: /* MPYH*/
-			case 0x2137: /* SLHV*/
-			case 0x2138: /* OAMDATAREAD*/
-			case 0x2139: /* VMDATALREAD*/
-			case 0x213a: /* VMDATAHREAD*/
-			case 0x213b: /* CGDATAREAD*/
-			case 0x213c: /* OPHCT*/
-			case 0x213d: /* OPVCT*/
-			case 0x213e: /* STAT77*/
-			case 0x213f: /* STAT78*/
+			case 0x2134: // MPYL
+			case 0x2135: // MPYM
+			case 0x2136: // MPYH
+			case 0x2137: // SLHV
+			case 0x2138: // OAMDATAREAD
+			case 0x2139: // VMDATALREAD
+			case 0x213a: // VMDATAHREAD
+			case 0x213b: // CGDATAREAD
+			case 0x213c: // OPHCT
+			case 0x213d: // OPVCT
+			case MEM_PPU_STAT77: // STAT77
+			case MEM_PPU_STAT78: // STAT78
 				return;
 
-			case 0x2180: /* WMDATA*/
+			case MEM_PPU_WMDATA: // WMDATA
 				if (!CPU.InWRAMDMAorHDMA)
 					REGISTER_2180(Byte);
 				break;
 
-			case 0x2181: /* WMADDL*/
+			case 0x2181: // WMADDL
 				if (!CPU.InWRAMDMAorHDMA)
 				{
 					PPU.WRAM &= 0x1ff00;
@@ -3593,7 +3633,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2182: /* WMADDM*/
+			case 0x2182: // WMADDM
 				if (!CPU.InWRAMDMAorHDMA)
 				{
 					PPU.WRAM &= 0x100ff;
@@ -3602,7 +3642,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				break;
 
-			case 0x2183: /* WMADDH*/
+			case MEM_PPU_WMADDH: // WMADDH
 				if (!CPU.InWRAMDMAorHDMA)
 				{
 					PPU.WRAM &= 0x0ffff;
@@ -3620,7 +3660,8 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 			S9xSetSuperFX(Byte, Address);
 			return;
 		}
-		else if (Settings.SA1     && Address >= 0x2200)
+		else
+		if (Settings.SA1     && Address >= 0x2200)
 		{
 			if (Address <= 0x23ff)
 				S9xSetSA1(Byte, Address);
@@ -3628,9 +3669,11 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 				Memory.FillRAM[Address] = Byte;
 			return;
 		}
-		else if (Settings.BS      && Address >= 0x2188 && Address <= 0x219f)
+		else
+		if (Settings.BS      && Address >= 0x2188 && Address <= 0x219f)
 			S9xSetBSXPPU(Byte, Address);
-		else if (Settings.SRTC    && Address == 0x2801)
+		else
+		if (Settings.SRTC    && Address == 0x2801)
 			S9xSetSRTC(Byte, Address);
 	}
 
@@ -4999,101 +5042,124 @@ static INLINE uint8 REGISTER_4212 (void)
 
 uint8 S9xGetCPU (uint16 Address)
 {
-	int d;
-
-	d = (Address >> 4) & 0x7;
-
-	switch (Address & 0xf)
+	if (Address < MEM_CPU_NMITIMEN)
 	{
-		case 0x0: /* 0x43x0: DMAPx*/
-			return ((DMA[d].ReverseTransfer        ? 0x80 : 0) |
-					(DMA[d].HDMAIndirectAddressing ? 0x40 : 0) |
-					(DMA[d].UnusedBit43x0          ? 0x20 : 0) |
-					(DMA[d].AAddressDecrement      ? 0x10 : 0) |
-					(DMA[d].AAddressFixed          ? 0x08 : 0) |
-					(DMA[d].TransferMode & 7));
+		switch (Address)
+		{
+			case MEM_CPU_JOYSER0: // JOYSER0
+			case MEM_CPU_JOYSER1: // JOYSER1
+				return (S9xReadJOYSERn(Address));
 
-		case 0x1: /* 0x43x1: BBADx*/
-			return (DMA[d].BAddress);
-
-		case 0x2: /* 0x43x2: A1TxL*/
-			return (DMA[d].AAddress & 0xff);
-
-		case 0x3: /* 0x43x3: A1TxH*/
-			return (DMA[d].AAddress >> 8);
-
-		case 0x4: /* 0x43x4: A1Bx*/
-			return (DMA[d].ABank);
-
-		case 0x5: /* 0x43x5: DASxL*/
-			return (DMA[d].DMACount_Or_HDMAIndirectAddress & 0xff);
-
-		case 0x6: /* 0x43x6: DASxH*/
-			return (DMA[d].DMACount_Or_HDMAIndirectAddress >> 8);
-
-		case 0x7: /* 0x43x7: DASBx*/
-			return (DMA[d].IndirectBank);
-
-		case 0x8: /* 0x43x8: A2AxL*/
-			return (DMA[d].Address & 0xff);
-
-		case 0x9: /* 0x43x9: A2AxH*/
-			return (DMA[d].Address >> 8);
-
-		case 0xa: /* 0x43xa: NLTRx*/
-			return (DMA[d].LineCount ^ (DMA[d].Repeat ? 0x00 : 0x80));
-
-		case 0xb: /* 0x43xb: ????x*/
-		case 0xf: /* 0x43xf: mirror of 0x43xb*/
-			return (DMA[d].UnknownByte);
-
-		default:
-			return (OpenBus);
+			default:
+				return (OpenBus);
+		}
 	}
-}
-
-uint8 S9xGetCPU_Alt(uint16 Address)
-{
-	uint8	byte;
-
-	switch (Address)
+	else
+	if ((Address & 0xff80) == MEM_DMA_DMAP0)
 	{
-		case 0x4210: /* RDNMI*/
-			byte = Memory.FillRAM[0x4210];
-			Memory.FillRAM[0x4210] = MAX_5A22_VERSION;
-			return ((byte & 0x80) | (OpenBus & 0x70) | MAX_5A22_VERSION);
-
-		case 0x4211: /* TIMEUP*/
-			byte = (CPU.IRQActive & PPU_IRQ_SOURCE) ? 0x80 : 0;
-			S9X_CLEAR_IRQ(PPU_IRQ_SOURCE);
-			return (byte | (OpenBus & 0x7f));
-		case 0x4212: /* HVBJOY*/
-			return (REGISTER_4212() | (OpenBus & 0x3e));
-		case 0x4213: /* RDIO*/
-			return (Memory.FillRAM[0x4213]);
-		case 0x4214: /* RDDIVL*/
-		case 0x4215: /* RDDIVH*/
-		case 0x4216: /* RDMPYL*/
-		case 0x4217: /* RDMPYH*/
-			return (Memory.FillRAM[Address]);
-		case 0x4218: /* JOY1L*/
-		case 0x4219: /* JOY1H*/
-		case 0x421a: /* JOY2L*/
-		case 0x421b: /* JOY2H*/
-		case 0x421c: /* JOY3L*/
-		case 0x421d: /* JOY3H*/
-		case 0x421e: /* JOY4L*/
-		case 0x421f: /* JOY4H*/
-			if (Memory.FillRAM[0x4200] & 1)
-				pad_read = TRUE;
-			return (Memory.FillRAM[Address]);
-
-		default:
-			if (Settings.SPC7110 && Address >= 0x4800)
-				return (S9xGetSPC7110(Address));
-			if (Settings.SDD1 && Address >= 0x4800 && Address <= 0x4807)
-				return (Memory.FillRAM[Address]);
+		if (CPU.InDMAorHDMA)
 			return (OpenBus);
+
+		int	d = (Address >> 4) & 0x7;
+
+		switch (Address & 0xf)
+		{
+			case 0x0: // 0x43x0: DMAPx
+				return ((DMA[d].ReverseTransfer        ? 0x80 : 0) |
+						(DMA[d].HDMAIndirectAddressing ? 0x40 : 0) |
+						(DMA[d].UnusedBit43x0          ? 0x20 : 0) |
+						(DMA[d].AAddressDecrement      ? 0x10 : 0) |
+						(DMA[d].AAddressFixed          ? 0x08 : 0) |
+						(DMA[d].TransferMode & 7));
+
+			case 0x1: // 0x43x1: BBADx
+				return (DMA[d].BAddress);
+
+			case 0x2: // 0x43x2: A1TxL
+				return (DMA[d].AAddress & 0xff);
+
+			case 0x3: // 0x43x3: A1TxH
+				return (DMA[d].AAddress >> 8);
+
+			case 0x4: // 0x43x4: A1Bx
+				return (DMA[d].ABank);
+
+			case 0x5: // 0x43x5: DASxL
+				return (DMA[d].DMACount_Or_HDMAIndirectAddress & 0xff);
+
+			case 0x6: // 0x43x6: DASxH
+				return (DMA[d].DMACount_Or_HDMAIndirectAddress >> 8);
+
+			case 0x7: // 0x43x7: DASBx
+				return (DMA[d].IndirectBank);
+
+			case 0x8: // 0x43x8: A2AxL
+				return (DMA[d].Address & 0xff);
+
+			case 0x9: // 0x43x9: A2AxH
+				return (DMA[d].Address >> 8);
+
+			case 0xa: // 0x43xa: NLTRx
+				return (DMA[d].LineCount ^ (DMA[d].Repeat ? 0x00 : 0x80));
+
+			case 0xb: // 0x43xb: ????x
+			case 0xf: // 0x43xf: mirror of 0x43xb
+				return (DMA[d].UnknownByte);
+
+			default:
+				return (OpenBus);
+		}
+	}
+	else
+	{
+		uint8	byte;
+
+		switch (Address)
+		{
+			case 0x4210: // RDNMI
+			#ifdef CPU_SHUTDOWN
+				CPU.WaitAddress = CPU.PBPCAtOpcodeStart;
+			#endif
+				byte = Memory.FillRAM[0x4210];
+				Memory.FillRAM[0x4210] = 2;
+				return ((byte & 0x80) | (OpenBus & 0x70) | 2);
+
+			case 0x4211: // TIMEUP
+				byte = (CPU.IRQActive & PPU_IRQ_SOURCE) ? 0x80 : 0;
+				S9X_CLEAR_IRQ(PPU_IRQ_SOURCE);
+				return (byte | (OpenBus & 0x7f));
+
+			case 0x4212: // HVBJOY
+			#ifdef CPU_SHUTDOWN
+				CPU.WaitAddress = CPU.PBPCAtOpcodeStart;
+			#endif
+				return (REGISTER_4212() | (OpenBus & 0x3e));
+
+			case 0x4213: // RDIO
+				return (Memory.FillRAM[0x4213]);
+
+			case 0x4214: // RDDIVL
+			case 0x4215: // RDDIVH
+			case 0x4216: // RDMPYL
+			case 0x4217: // RDMPYH
+				return (Memory.FillRAM[Address]);
+
+			case MEM_CPU_JOY1L: // JOY1L
+			case MEM_CPU_JOY1H: // JOY1H
+			case MEM_CPU_JOY2L: // JOY2L
+			case MEM_CPU_JOY2H: // JOY2H
+			case MEM_CPU_JOY3L: // JOY3L
+			case MEM_CPU_JOY3H: // JOY3H
+			case MEM_CPU_JOY4L: // JOY4L
+			case MEM_CPU_JOY4H: // JOY4H
+				return (Memory.FillRAM[Address]);
+			default:
+				if (Settings.SPC7110 && Address >= 0x4800)
+					return (S9xGetSPC7110(Address));
+				if (Settings.SDD1 && Address >= 0x4800 && Address <= 0x4807)
+					return (Memory.FillRAM[Address]);
+				return (OpenBus);
+		}
 	}
 }
 

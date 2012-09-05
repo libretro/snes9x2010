@@ -203,6 +203,69 @@
 #define SA1_DMA_IRQ_SOURCE	32
 #define SA1_IRQ_SOURCE		128
 
+/* PPU memory-mapped registers */
+
+#define MEM_PPU_INIDISP 0x2100
+#define MEM_PPU_OBSEL   0x2101
+#define MEM_PPU_OAMADDL 0x2102
+#define MEM_PPU_OAMADDH 0x2103
+#define MEM_PPU_OAMDATA 0x2104
+#define MEM_PPU_BGMODE  0x2105
+#define MEM_PPU_MOSAIC  0x2106
+#define MEM_PPU_BG1SC   0x2107
+#define MEM_PPU_BG2SC   0x2108
+#define MEM_PPU_BG3SC   0x2109
+#define MEM_PPU_BG4SC   0x210A
+#define MEM_PPU_BG12NBA 0x210B
+#define MEM_PPU_BG34NBA 0x210C
+#define MEM_PPU_BG1HOFS 0x210D
+
+#define MEM_PPU_TM	0x212C
+#define MEM_PPU_TS	0x212D
+#define MEM_PPU_TMW	0x212E
+#define MEM_PPU_TSW	0x212F
+
+#define MEM_PPU_CGWSEL	0x2130
+#define MEM_PPU_CGADSUB 0x2131
+#define MEM_PPU_SETINI  0x2133
+
+#define MEM_PPU_APUIO0	0x2140
+
+#define MEM_PPU_STAT77	0x213E
+#define MEM_PPU_STAT78	0x213F
+
+#define MEM_PPU_WMDATA	0x2180
+
+#define MEM_PPU_WMADDH	0x2183
+
+/* CPU memory-mapped registers */
+
+#define MEM_CPU_JOYSER0 0x4016
+#define MEM_CPU_JOYSER1 0x4017
+#define MEM_CPU_NMITIMEN 0x4200
+#define MEM_CPU_JOY1L	0x4218 // JOY1L
+#define MEM_CPU_JOY1H	0x4219 // JOY1H
+#define MEM_CPU_JOY2L	0x421A // JOY2L
+#define MEM_CPU_JOY2H	0x421B // JOY2H
+#define MEM_CPU_JOY3L	0x421C // JOY3L
+#define MEM_CPU_JOY3H	0x421D // JOY3H
+#define MEM_CPU_JOY4L	0x421E
+#define MEM_CPU_JOY4H	0x421F
+
+/* DMA memory-mapped registers */
+
+#define MEM_DMA_DMAP0	0x4300
+
+/* SA-1 memory-mapped registers */
+
+#define MEM_SA1_CIVL	0x2207
+#define MEM_SA1_CIVH	0x2208
+#define MEM_SA1_SCNT	0x2209
+#define MEM_SA1_SNVL	0x220C
+#define MEM_SA1_SNVH	0x220D
+#define MEM_SA1_SIVL	0x220E
+#define MEM_SA1_SIVH	0x220F
+
 struct ClipData
 {
 	uint8	Count;
