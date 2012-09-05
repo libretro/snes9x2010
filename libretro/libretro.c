@@ -509,6 +509,10 @@ unsigned retro_get_region (void)
 
 void S9xDeinitUpdate(int width, int height)
 {
+	/* Chrono Trigger mid-frame overscan hack - field to battle transition */
+	if (Settings.ChronoTriggerFrameHack & (height == 239))
+		height = 224;
+
 	if (height == 448 || height == 478)
 		GFX.Pitch = 1024;	/* Pitch 2048 -> 1024 */
 	else

@@ -318,12 +318,7 @@ static void S9xEndScreenRefresh (void)
 	S9xControlEOF();
 
 	if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
-	{
-		/* Chrono Trigger mid-frame overscan hack - field to battle transition */
-		if (Settings.ChronoTriggerFrameHack & (IPPU.RenderedScreenHeight == 239))
-			IPPU.RenderedScreenHeight = 224;
 		S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
-	}
 
 	S9xApplyCheats();
 }
