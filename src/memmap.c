@@ -2582,7 +2582,7 @@ void InitROM (void)
 			MATCH_NA ("A35"))				/* Mechwarrior 3050/Battle Tech 3050*/
 			Timings.APUAllowTimeOverflow = TRUE;
 
-		/* Mosaic renderer hack
+		/* SWAP MOSAIC HI-RES WITH HI-RES 
 
 		   We don't want Seiken Densetsu 3/Romancing Saga 3 unbearably 
 		   slow in hi-res mosaic mode - no difference with these games 
@@ -2615,6 +2615,20 @@ void InitROM (void)
 		fprintf(stderr, "PPU.SFXSpeedupHack = %d\n", PPU.SFXSpeedupHack);
 		#endif
 
+	/* FORCIBLY DISABLE HIGH-RES */
+	if (		
+			MATCH_NA("DONKEY KONG COUNTRY")		/* Donkey Kong Country */
+			|| MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
+#if defined(_XBOX1) || defined(GEKKO)
+			|| MATCH_ID("AD8")		/* Doom */
+			|| MATCH_NN("SeikenDensetsu3") 
+			|| MATCH_NA("SeikenDensetsu3Sample1")	/* Seiken Densetsu 3 */
+			|| MATCH_NA("ROMANCING SAGA3")		/* Romancing Saga 3 */
+		/* These systems are too slow for hi-res rendering with SNES9x 1.52 */
+#endif
+			)
+		Settings.SupportHiRes = FALSE;
+
 		/* Check if Chrono Trigger is loaded, if so, we need to set a variable to 
 		   true to get rid of an annoying mid-frame resolution switch to 256x239 
 		   which can cause an undesirable flicker/breakup of the screen for a 
@@ -2628,128 +2642,200 @@ void InitROM (void)
 		else
 			Settings.ChronoTriggerFrameHack = 0;
 
+		/* DON'T RENDER SUBSCREEN */
+
 		/* Don't render subscreen for games that don't switch to high-res mode 
-                   in-game or don't use hi-res at all - and yet still need to do stuff 
+		   in-game or don't use hi-res at all - and yet still need to do stuff 
 		   with the subscreen FPS improvement ranges from 7/10fps to 20/25fps 
 		   depending on the game ( +25/30fps in some occassions - benchmarked 
 		   on PC).
 
-		   TODO: This glitches with rewind enabled (SSNES), force-disable it
-		   when rewind is active */
+			TODO: This glitches with rewind enabled (RetroArch), force-disable it
+			when rewind is active */
 		if(
 				MATCH_NA("Super Metroid") 	/* Super Metroid*/
-				|| MATCH_ID("ATVE")		/* Tales of Phantasia (EN) (DeJap)*/
-				|| MATCH_NA("SECRET OF EVERMORE") 	/* Secret of Evermore*/
-				|| MATCH_ID("AKL")		/* Killer Instinct*/
-				|| MATCH_NA("FINAL FANTASY 6")	/* Final Fantasy VI (JP)*/
-				|| MATCH_NA("FINAL FANTASY 3")	/* Final Fantasy III (US)*/
-				|| MATCH_NA("ILLUSION OF GAIA USA") /* Illusion of Gaia (US)*/
-				|| MATCH_NA("GAIA GENSOUKI 1 JPN")	/* Gaia Gensouki (JPN)*/
-				|| MATCH_ID("AEJ") 		/* Earthworm Jim*/
-				|| MATCH_ID("YI")		/* Yoshi's Island*/
-				|| MATCH_NA("SUPER MARIOWORLD")	/* Super Mario World*/
-				|| MATCH_NA("THE LEGEND OF ZELDA")	/* Zelda 3*/
-				|| MATCH_NA("LA LEGENDE DE ZELDA")	/* Zelda 3 (FR)*/
-				|| MATCH_NA("ZELDANODENSETSU")		/* Zelda 3 (JPN)*/
-				|| MATCH_NA("SPARKSTER")		/* Sparkster*/
-				|| MATCH_NA("PLOK")		/* Plok!*/
-				|| MATCH_NA("GS MIKAMI")		/* GS Mikami - Joreishi wa Nice Body*/
-				|| MATCH_ID("AJOJ")		/* Jikkyou Oshaberi Parodius*/
-				|| MATCH_NA("RISE OF THE ROBOTS")	/* Rise Of The Robots*/
-				|| MATCH_NA("MORTAL KOMBAT II")	/* Mortal Kombat II*/
-				|| MATCH_NA("STAR FOX")		/* Star Fox (US/JP)*/
-				|| MATCH_NA("STAR WING")		/* Star Wing (EU)*/
-				|| MATCH_ID("3Z")		/* Demon's Crest*/
-				|| MATCH_NA("AXELAY")		/* Axelay*/
-				|| MATCH_NA("ZOMBIES")		/* Zombies (EU)*/
-				|| MATCH_NA("ZOMBIES ATE MY NEIGHB")	/* Zombies Ate My Neighbors*/
-				|| MATCH_NA("UNIRACERS")		/* Uniracers*/
-				|| MATCH_NA("UNIRALLY")		/* Unirally*/
-				|| MATCH_NA("CHRONO TRIGGER")	/* Chrono Trigger*/
-				|| MATCH_NA("JURASSIC PARK")	/* Jurassic Park*/
-				|| MATCH_NA("THE MAGICAL QUEST")	/* The Magical Quest*/
-				|| MATCH_NA("SOULBLAZER - 1 USA")	/* Soul Blazer (US)*/
-				|| MATCH_NA("SOULBLAZER - 1 ENG")	/* Soul Blazer (PAL)*/
-				|| MATCH_NA("SOULBLADER - 1")		/* Soul Blader*/
-				|| MATCH_NA("GOKUJYOU PARODIUS")		/* Gokujou Parodius*/
-				|| MATCH_ID("ABT")		/* Adventures of Batman and Robin*/
+				|| MATCH_NA("DONKEY KONG COUNTRY") /* Donkey Kong Country 1 */
+				|| MATCH_NA("AREA88")		/* Area 88 */
+				|| MATCH_NA("U.N.Squadron")	/* UN Squadron */
+				|| MATCH_NA("Perfect Eleven")	/* Perfect Eleven - ISS1 */
+				|| MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
+				|| MATCH_ID("AWJ")		/* ISS Deluxe / World Soccer 2 Fighting Eleven */
+				|| MATCH_NA("JIM POWER THE LOST DIO") /* Jim Power The Lost Dimension */
 				|| MATCH_ID("A3C")		/* Donkey Kong Country 3*/
-				|| MATCH_ID("5M")		/* Mario All-Stars + World*/
-				|| MATCH_NA("SUPER MARIO ALL_STARS") /* Super Mario All-Stars (EU/US)*/
-				|| MATCH_NA("SUPERMARIO COLLECTION") /* Super Mario Collection (JP)*/
-				|| MATCH_ID("4Q")		/* Super Punch-Out*/
-				|| MATCH_NA("HARVEST MOON")	/* Harvest Moon*/
-				|| MATCH_ID("ADZ")		/* Dracula X*/
-				|| MATCH_ID("A3M")		/* Mortal Kombat 3*/
-				|| MATCH_ID("AM4J")		/* Do-Re-Mi Fantasy - Milon no Dokidoki Daibouken*/
-				|| MATCH_NA("BT IN BATTLEMANIACS")	/* Battletoads in Battlemaniacs*/
-				|| MATCH_NA("SPACE MEGAFORCE")	/* Space Megaforce (US)*/
-				|| MATCH_NA("SUPER ALESTE")	/* Super Aleste (EU/JP)*/
-				|| MATCH_NA("VALKEN")		/* Assault Suits Valken (JP)*/
-				|| MATCH_NA("CYBERNATOR")	/* Cybernator (EU/US)*/
-				|| MATCH_NA("SUPER BOMBERMAN")	/* Super Bomberman 1*/
-				|| MATCH_NA("SUPER BOMBERMAN2")	/* Super Bomberman 2*/
-				|| MATCH_ID("AS6")		/* Super Bomberman 3*/
-				|| MATCH_ID("A4B")		/* Super Bomberman 4*/
-				|| MATCH_ID("AYL")		/* Tetris Attack*/
-				|| MATCH_NA("POCKY ROCKY")	/* Pocky & Rocky (US/EU)*/
-				|| MATCH_NA("KIKIKAIKAI")	/* Kiki Kaikai (JP)*/
-				|| MATCH_ID("ANI")		/* Lufia 2 / Estpolis Denki 2*/
-				|| MATCH_ID("AQT")		/* Terranigma*/
-				|| MATCH_NA("twinbee")		/* Twinbee Rainbow Bell Adventures*/
-				|| MATCH_ID("AO7")		/* Tactics Ogre*/
-				|| MATCH_NA("Ogre Battle USA")	/* Ogre Battle (US)*/
-				|| MATCH_ID("AQ3")		/* Dragon Quest 3*/
-				|| MATCH_NA("DRAGONQUEST5")	/* Dragon Quest 5*/
-				|| MATCH_ID("AQ6J")		/* Dragon Quest 6*/
-				|| MATCH_NA("DARIUS FORCE")	/* Darius Force*/
-				|| MATCH_ID("AGC")		/* Front Mission*/
-				|| MATCH_ID("AZGJ")		/* Front Mission Gun Hazard*/
-				|| MATCH_NA("GANBARE GOEMON")	/* Ganbare Goemon (JP)*/
-				|| MATCH_NA("GANBARE GOEMON 2")	/* Ganbare Goemon 2*/
-				|| MATCH_NA("mystical ninja")	/* Legend of Mystical Ninja (US/EU)*/
-				|| MATCH_NA("NOSFERATU")		/* Nosferatu*/
-				|| MATCH_NA("PAC ATTACK")	/* Pac Attack*/
-				|| MATCH_NA("PARODIUS")		/* Parodius 1*/
-				|| MATCH_NA("PRINCE OF PERSIA")	/* Prince of Persia*/
-				|| MATCH_NA("FINAL FANTASY 5")	/* Final Fantasy 5*/
-				|| MATCH_NA("OUT OF THIS WORLD") /* Out Of This World (US)*/
-				|| MATCH_NA("OUTER WORLD")	/* Outer World (JP)*/
-				|| MATCH_NA("ANOTHER WORLD")	/* Another World (EU)*/
-				|| MATCH_ID("ABZE")		/* Ballz 3D*/
-				|| MATCH_ID("AXSP")		/* Winter Gold*/
-				|| MATCH_ID("APJJ")		/* Wonder Project J*/
-				|| MATCH_NA("KRUSTYS SUPER FUNHOUSE")	/* Krustys Super Fun House*/
-				|| MATCH_NA("KRUSTYS SUPERFUNHOUSE")	/* Krustys Super Fun House*/
-				|| MATCH_NA("LEMMINGS")		/* Lemmings 1*/
-				|| MATCH_ID("A3Z")		/* Ultimate Mortal Kombat 3*/
-				|| MATCH_ID("ARFJ")		/* Star Ocean*/
-				|| MATCH_ID("AXBE")		/* Bahamut Lagoon*/
-				|| MATCH_ID("AC6J")		/* Cu-On-Pa*/
-				|| MATCH_ID("ASR")		/* Street Racer*/
-				|| MATCH_NA("SUPER WIDGET")	/* Super Widget*/
-				|| MATCH_NA("R-TYPE 3")		/* R-Type 3*/
-				|| MATCH_ID("ARW")		/* Super Mario RPG*/
-				|| MATCH_NA("SHVC FIREEMBLEM")	/* Fire Emblem - Monshou no Nazo*/
-				|| MATCH_ID("BFRJ")		/* Fire Emblem - Thracia 776*/
-				|| MATCH_ID("A32J")		/* Fire Emblem - Seisen no Keifu*/
-				|| MATCH_ID("AR9")		/* Primal Rage*/
-				|| MATCH_ID("APUE")		/* Prehistorik Man*/
-				|| MATCH_ID("ALSJ")		/* Lady Stalker*/
-				|| MATCH_NA("ROCKMAN&FORTE")	/* Rockman & Forte*/
-				|| MATCH_NA("SUPER SWIV")	/* Super SWIV*/
-				|| MATCH_NA("CONTRA3 THE ALIEN WARS")	/* Contra 3 The Alien Wars*/
-				|| MATCH_NA("EARTHWORM JIM 2")	/* Earthworm Jim 2*/
-				|| MATCH_NA("CHOHMAKAIMURA")	/* Chou Makai Mura*/
-				|| MATCH_NA("SUPER GHOULS'N GHOSTS")	/* Super Ghouls 'n Ghosts*/
-				|| MATCH_NA("X-KALIBER 2097")	/* X-Kaliber 2097*/
-				|| MATCH_NA("FINAL FIGHT 2")	/* Final Fight 2*/
-				|| MATCH_NA("SUPER TURRICAN 2")	/* Super Turrican 2*/
-				|| MATCH_NA("DUNGEON MASTER")	/* Dungeon Master*/
-				|| MATCH_NA("DOOM TROOPERS")	/* Doom Troopers*/
-				|| MATCH_NA("XAK 1")		/* Xak 1*/
-				|| MATCH_NA("XARDION")		/* Xardion*/
-				)
+				|| MATCH_NA("Secret of MANA") /* Secret of Mana */
+				|| MATCH_NA("Street Fighter2 Turbo1") /* Street Fighter II Turbo */
+				|| MATCH_NA("Super Street Fighter21") /* Super Street Fighter II (US) */
+				|| MATCH_ID("A2J")		/* Jurassic Park 2 */
+				|| MATCH_ID("AJL")		/* Justice League */
+				|| MATCH_NA("JOE AND MAC")	/* Joe and Mac */
+				|| MATCH_NA("JOE & MAC 2")	/* Joe & Mac 2 */
+				|| MATCH_ID("J3")		/* Joe & Mac 3 EU) */
+			|| MATCH_NA("JYUTEI SENKI")	/* Jyutei Senki */
+			|| MATCH_ID("CQ  ")		/* Stunt Race FX */
+#if defined(_XBOX1) || defined(GEKKO)
+			|| MATCH_ID("AD8")		/* Doom */
+			|| MATCH_ID("A3D")			/* Seiken Densetsu 3 */
+			|| MATCH_NA("SeikenDensetsu3Sample1")	/* Seiken Densetsu 3 */
+			|| MATCH_NA("ROMANCING SAGA3")		/* Romancing Saga 3 */
+#endif
+			|| MATCH_NA("T.M.H.T.4")	/* Teenage Mutant Hero Turtles 4 - Turtles In Time (E) */
+			|| MATCH_NA("T.M.N.T.")		/* Teenage Mutant Ninja Turtles 4 - Turtles In Time (J) */
+			|| MATCH_NA("T.M.N.T.4")	/* Teenage Mutant Ninja Turtles 4 - Turtles In Time (AU) */
+			|| MATCH_NA("T.M.N.T. 4")	/* Teenage Mutant Ninja Turtles 4 - Turtles In Time (US) */
+			|| MATCH_NA("T.M.N.T. MW")	/* Teenage Mutant Ninja Turtles - Mutant Warriors (J) */
+			|| MATCH_NA("T.M.H.T TF")	/* Teenage Mutant Hero Turtles - Tour Fighters (EU) */
+			|| MATCH_NA("T.M.N.T. TF")	/* Teenage Mutant Ninja Turtles - Tour Fighters (AU) */
+			|| MATCH_NA("T.M.N.T.5")	/* Teenage Mutant Ninja Turtles - Tour Fighters (U) */
+			|| MATCH_NA("SUPER CASTLEVANIA 4") /* Super Castlevania IV */
+			|| MATCH_NA("AKUMAJO DRACULA") /* Super Castlevania IV */
+			|| MATCH_ID("ATVE")		/* Tales of Phantasia (EN) (DeJap)*/
+			|| MATCH_NA("MEGAMAN X")		/* Mega Man X (US) */
+			|| MATCH_ID("A7R")		/* Rockman / Mega Man 7 */
+			|| MATCH_NA("F-ZERO")		/* Rockman / Mega Man 7 */
+			|| MATCH_NA("EQUINOX")		/* Equinox */
+			|| MATCH_NA("SUPER MARIO KART") /* Super Mario Kart */
+			|| MATCH_ID("AR3")		/* Mega Man X3 (JP/US) */
+			|| MATCH_NA("SECRET OF EVERMORE") 	/* Secret of Evermore*/
+			|| MATCH_ID("AKL")		/* Killer Instinct*/
+			|| MATCH_NA("NBA JAM")		/* NBA Jam */
+			|| MATCH_NA("PILOTWINGS")	/* Pilotwings */
+			|| MATCH_NA("FINAL FIGHT")	/* Final Fight */
+			|| MATCH_NA("FINAL FANTASY 6")	/* Final Fantasy VI (JP)*/
+			|| MATCH_NA("FINAL FANTASY 3")	/* Final Fantasy III (US)*/
+			|| MATCH_NA("ILLUSION OF GAIA USA") /* Illusion of Gaia (US)*/
+			|| MATCH_NA("GAIA GENSOUKI 1 JPN")	/* Gaia Gensouki (JPN)*/
+			|| MATCH_ID("AEJ") 		/* Earthworm Jim*/
+			|| MATCH_ID("YI")		/* Yoshi's Island*/
+			|| MATCH_ID("AFJ")		/* Kirby's Dreamland 3 */
+			|| MATCH_NA("SUPER MARIOWORLD")	/* Super Mario World*/
+			|| MATCH_NA("THE LEGEND OF ZELDA")	/* Zelda 3*/
+			|| MATCH_NA("LA LEGENDE DE ZELDA")	/* Zelda 3 (FR)*/
+			|| MATCH_NA("ZELDANODENSETSU")		/* Zelda 3 (JPN)*/
+			|| MATCH_NA("SPARKSTER")		/* Sparkster*/
+			|| MATCH_NA("SIMCITY")		/* Sim City */
+			|| MATCH_NA("T2 ARCADE")	/* T2 Arcade */
+			|| MATCH_NA("PLOK")		/* Plok!*/
+			|| MATCH_NA("ALADDIN")		/* Aladdin */
+			|| MATCH_NA("ActRaiser-2 JPN")	/* ActRaiser 2 (JPN) */
+			|| MATCH_NA("ActRaiser-2 USA")	/* ActRaiser 2 (US) */
+			|| MATCH_ID("A8")		/* ActRaiser 2 (EU) */
+			|| MATCH_ID("APT")		/* Pac In Time */
+			|| MATCH_ID("AXG")		/*NBA Hangtime */
+			|| MATCH_NA("THE CHAOS ENGINE")	/* Chaos Engine */
+			|| MATCH_ID("AWD")		/* Weaponlord */
+			|| MATCH_NA("TALES OF PHANTASIA")       /* Tales of Phantasia */
+			|| MATCH_NA("GS MIKAMI")		/* GS Mikami - Joreishi wa Nice Body*/
+			|| MATCH_ID("ATQ")		/* Theme Park */
+			|| MATCH_NA("TOTAL CARNAGE")	/* Total Carnage */
+			|| MATCH_ID("AJOJ")		/* Jikkyou Oshaberi Parodius*/
+			|| MATCH_NA("ROCK N' ROLL RACING") /* Rock 'n Roll Racing */
+			|| MATCH_NA("RISE OF THE ROBOTS")	/* Rise Of The Robots*/
+			|| MATCH_ID("A3T")		/* Top Gear 3000 */
+			|| MATCH_NA("MORTAL KOMBAT")	/* Mortal Kombat I*/
+			|| MATCH_NA("MORTAL KOMBAT II")	/* Mortal Kombat II*/
+			|| MATCH_NA("STAR FOX")		/* Star Fox (US/JP)*/
+			|| MATCH_ID("ST2")		/* Star Fox 2 */
+			|| MATCH_NA("STAR WING")		/* Star Wing (EU)*/
+			|| MATCH_NA("TINYTOON adventures") /* Buster Busts Loose */
+			|| MATCH_ID("3Z")		/* Demon's Crest*/
+			|| MATCH_NA("AXELAY")		/* Axelay*/
+			|| MATCH_NA("JAKI CRUSH")	/* Jaki Crush */
+			|| MATCH_NA("ZOMBIES")		/* Zombies (EU)*/
+			|| MATCH_NA("THE JUNGLE BOOK")	/* Jungle Book */
+			|| MATCH_NA("ZOMBIES ATE MY NEIGHB")	/* Zombies Ate My Neighbors*/
+			|| MATCH_NA("UNIRACERS")		/* Uniracers*/
+			|| MATCH_NA("UNIRALLY")		/* Unirally*/
+			|| MATCH_NA("CHRONO TRIGGER")	/* Chrono Trigger*/
+			|| MATCH_NA("JURASSIC PARK")	/* Jurassic Park*/
+			|| MATCH_NA("THE MAGICAL QUEST")	/* The Magical Quest*/
+			|| MATCH_NA("SOULBLAZER - 1 USA")	/* Soul Blazer (US)*/
+			|| MATCH_NA("SOULBLAZER - 1 ENG")	/* Soul Blazer (PAL)*/
+			|| MATCH_NA("SOULBLADER - 1")		/* Soul Blader*/
+			|| MATCH_NA("GOKUJYOU PARODIUS")		/* Gokujou Parodius*/
+			|| MATCH_ID("ABT")		/* Adventures of Batman and Robin*/
+			|| MATCH_ID("5M")		/* Mario All-Stars + World*/
+			|| MATCH_NA("SUPER MARIO ALL_STARS") /* Super Mario All-Stars (EU/US)*/
+			|| MATCH_NA("SUPERMARIO COLLECTION") /* Super Mario Collection (JP)*/
+			|| MATCH_ID("4Q")		/* Super Punch-Out*/
+			|| MATCH_NA("HARVEST MOON")	/* Harvest Moon*/
+			|| MATCH_ID("ADZ")		/* Dracula X*/
+			|| MATCH_ID("A3M")		/* Mortal Kombat 3*/
+			|| MATCH_ID("AM4J")		/* Do-Re-Mi Fantasy - Milon no Dokidoki Daibouken*/
+			|| MATCH_NA("BT IN BATTLEMANIACS")	/* Battletoads in Battlemaniacs*/
+			|| MATCH_NA("SPACE MEGAFORCE")	/* Space Megaforce (US)*/
+			|| MATCH_ID("ARX")		/* Mega Man X2 */
+			|| MATCH_NA("SUPER ALESTE")	/* Super Aleste (EU/JP)*/
+			|| MATCH_NA("VALKEN")		/* Assault Suits Valken (JP)*/
+			|| MATCH_NA("CYBERNATOR")	/* Cybernator (EU/US)*/
+			|| MATCH_NA("SUPER BOMBERMAN")	/* Super Bomberman 1*/
+			|| MATCH_NA("SUPER BOMBERMAN2")	/* Super Bomberman 2*/
+			|| MATCH_ID("AS6")		/* Super Bomberman 3*/
+			|| MATCH_ID("A4B")		/* Super Bomberman 4*/
+			|| MATCH_ID("AYL")		/* Tetris Attack*/
+			|| MATCH_NA("POCKY ROCKY")	/* Pocky & Rocky (US/EU)*/
+			|| MATCH_NA("KIKIKAIKAI")	/* Kiki Kaikai (JP)*/
+			|| MATCH_ID("ANI")		/* Lufia 2 / Estpolis Denki 2*/
+			|| MATCH_ID("AQT")		/* Terranigma*/
+			|| MATCH_NA("twinbee")		/* Twinbee Rainbow Bell Adventures*/
+			|| MATCH_ID("AO7")		/* Tactics Ogre*/
+			|| MATCH_NA("Ogre Battle USA")	/* Ogre Battle (US)*/
+			|| MATCH_ID("AQ3")		/* Dragon Quest 3*/
+			|| MATCH_NA("DRAGONQUEST5")	/* Dragon Quest 5*/
+			|| MATCH_ID("AQ6J")		/* Dragon Quest 6*/
+			|| MATCH_NA("DARIUS FORCE")	/* Darius Force*/
+			|| MATCH_ID("AGC")		/* Front Mission*/
+			|| MATCH_ID("AZGJ")		/* Front Mission Gun Hazard*/
+			|| MATCH_NA("GANBARE GOEMON")	/* Ganbare Goemon (JP)*/
+			|| MATCH_NA("GANBARE GOEMON 2")	/* Ganbare Goemon 2*/
+			|| MATCH_NA("mystical ninja")	/* Legend of Mystical Ninja (US/EU)*/
+			|| MATCH_NA("NOSFERATU")		/* Nosferatu*/
+			|| MATCH_NA("PAC ATTACK")	/* Pac Attack*/
+			|| MATCH_NA("PARODIUS")		/* Parodius 1*/
+			|| MATCH_NA("PRINCE OF PERSIA")	/* Prince of Persia*/
+			|| MATCH_NA("FINAL FANTASY 5")	/* Final Fantasy 5*/
+			|| MATCH_NA("OUT OF THIS WORLD") /* Out Of This World (US)*/
+			|| MATCH_NA("OUTER WORLD")	/* Outer World (JP)*/
+			|| MATCH_NA("ANOTHER WORLD")	/* Another World (EU)*/
+			|| MATCH_ID("ABZE")		/* Ballz 3D*/
+			|| MATCH_ID("AXSP")		/* Winter Gold*/
+			|| MATCH_ID("APJJ")		/* Wonder Project J*/
+			|| MATCH_NA("KRUSTYS SUPER FUNHOUSE")	/* Krustys Super Fun House*/
+			|| MATCH_NA("KRUSTYS SUPERFUNHOUSE")	/* Krustys Super Fun House*/
+			|| MATCH_NA("LEMMINGS")		/* Lemmings 1*/
+			|| MATCH_ID("A3Z")		/* Ultimate Mortal Kombat 3*/
+			|| MATCH_ID("ARFJ")		/* Star Ocean*/
+			|| MATCH_ID("AXBE")		/* Bahamut Lagoon*/
+			|| MATCH_ID("ARQ")		/* Realm */
+			|| MATCH_NA("S O S")		/* SOS */
+			|| MATCH_NA("SUPER DONKEY KONG") /* Super Donkey Kong */
+			|| MATCH_ID("AC6J")		/* Cu-On-Pa*/
+			|| MATCH_ID("ASR")		/* Street Racer*/
+			|| MATCH_NA("SUPER WIDGET")	/* Super Widget*/
+			|| MATCH_NA("WILD GUNS")	/* Wild Guns */
+			|| MATCH_NA("R-TYPE 3")		/* R-Type 3*/
+			|| MATCH_NA("THE NINJAWARRIORS") /* Ninja Warriors */
+			|| MATCH_ID("ARW")		/* Super Mario RPG*/
+			|| MATCH_NA("SHVC FIREEMBLEM")	/* Fire Emblem - Monshou no Nazo*/
+			|| MATCH_ID("BFRJ")		/* Fire Emblem - Thracia 776*/
+			|| MATCH_ID("A32J")		/* Fire Emblem - Seisen no Keifu*/
+			|| MATCH_ID("AR9")		/* Primal Rage*/
+			|| MATCH_ID("APUE")		/* Prehistorik Man*/
+			|| MATCH_ID("ALSJ")		/* Lady Stalker*/
+			|| MATCH_NA("ROCKMAN&FORTE")	/* Rockman & Forte*/
+			|| MATCH_NA("SUPER SWIV")	/* Super SWIV*/
+			|| MATCH_NA("CONTRA3 THE ALIEN WARS")	/* Contra 3 The Alien Wars*/
+			|| MATCH_NA("EARTHWORM JIM 2")	/* Earthworm Jim 2*/
+			|| MATCH_NA("CHOHMAKAIMURA")	/* Chou Makai Mura*/
+			|| MATCH_NA("SUPER GHOULS'N GHOSTS")	/* Super Ghouls 'n Ghosts*/
+			|| MATCH_NA("X-KALIBER 2097")	/* X-Kaliber 2097*/
+			|| MATCH_NA("PHALANX")		/* Phalanx */
+			|| MATCH_NA("FINAL FIGHT 2")	/* Final Fight 2*/
+			|| MATCH_NA("SUPER TURRICAN 2")	/* Super Turrican 2*/
+			|| MATCH_NA("DUNGEON MASTER")	/* Dungeon Master*/
+			|| MATCH_NA("DOOM TROOPERS")	/* Doom Troopers*/
+			|| MATCH_NA("XAK 1")		/* Xak 1*/
+			|| MATCH_NA("XARDION")		/* Xardion*/
+			)
 		  	PPU.RenderSub = FALSE;
 		else
 			PPU.RenderSub = TRUE;
