@@ -202,7 +202,7 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
          retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
          break;
       default:
-         fprintf(stderr, "[libsnes]: Invalid device!\n");
+         fprintf(stderr, "[libretro]: Invalid device!\n");
    }
 }
 
@@ -307,7 +307,7 @@ static void snes_init (void)
    {
       Deinit();
       S9xDeinitAPU();
-      fprintf(stderr, "[libsnes]: Failed to init Memory or APU.\n");
+      fprintf(stderr, "[libretro]: Failed to init Memory or APU.\n");
       exit(1);
    }
 
@@ -338,7 +338,7 @@ void retro_init (void)
    snes_init();
 }
 
-/* libsnes uses relative values for analogue devices. 
+/* libretro uses relative values for analogue devices. 
    S9x seems to use absolute values, but do convert these into relative values in the core. (Why?!)
    Hack around it. :) */
 
@@ -426,7 +426,7 @@ static void report_buttons (void)
 		      break;
 
 	      default:
-		      fprintf(stderr, "[libsnes]: Unknown device...\n");
+		      fprintf(stderr, "[libretro]: Unknown device...\n");
 
       }
    }
