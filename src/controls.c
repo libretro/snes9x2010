@@ -213,7 +213,7 @@ struct crosshair
 	uint8				fg, bg;
 };
 
-static struct
+struct
 {
 	uint8				delta_x, delta_y;
 	int16				old_x, old_y;

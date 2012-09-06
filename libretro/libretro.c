@@ -361,11 +361,33 @@ static int16_t retro_mouse_state[2][2] = {{0}, {0}};
 static int16_t retro_scope_state[2] = {0};
 static int16_t retro_justifier_state[2][2] = {{0}, {0}};
 extern uint16_t joypad[8];
-extern s9xcommand_t keymap[1024];
+
+uint16_t snes_lut[] = { 
+SNES_B_MASK,
+SNES_Y_MASK,
+SNES_SELECT_MASK,
+SNES_START_MASK,
+SNES_UP_MASK,
+SNES_DOWN_MASK,
+SNES_LEFT_MASK,
+SNES_RIGHT_MASK,
+SNES_A_MASK,
+SNES_X_MASK,
+SNES_TL_MASK,
+SNES_TR_MASK
+};
+
+#define TIMER_DELAY 10
+//#define DEBUG_CONTROLS 1
 
 static void report_buttons (void)
 {
    int i, j, _x, _y, port;
+#ifdef DEBUG_CONTROLS
+   bool pressed_r2, pressed_l2, pressed_l3, pressed_r3;
+   static unsigned timeout = TIMER_DELAY;
+#endif
+
    for ( port = 0; port <= 1; port++)
    {
       switch (retro_devices[port])
@@ -373,29 +395,57 @@ static void report_buttons (void)
 	      case RETRO_DEVICE_JOYPAD:
 		      for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
 		      {
-			      s9xcommand_t cmd = keymap[MAKE_BUTTON(port + 1, i)];
-			      uint16 r = cmd.commandunion.button.joypad;
 			      bool pressed = input_cb(port, RETRO_DEVICE_JOYPAD, 0, i);
+                              uint16_t button_press = snes_lut[i];
 
 			      if (pressed)
-				      joypad[port] |= r;
+				      joypad[port] |= button_press;
 			      else
-				      joypad[port] &= ~r;
+				      joypad[port] &= ~button_press;
 		      }
+#ifdef DEBUG_CONTROLS
+		      pressed_l2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
+		      if(pressed_l2 && timeout == 0)
+		      {
+			      Settings.SupportHiRes = !Settings.SupportHiRes;
+                              timeout = TIMER_DELAY;
+			      fprintf(stderr, "SupportHiRes: %d.\n", Settings.SupportHiRes);
+		      }
+		      pressed_r2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
+		      if(pressed_r2 && timeout == 0)
+		      {
+			      Settings.DisableGraphicWindows = !Settings.DisableGraphicWindows;
+                              timeout = TIMER_DELAY;
+			      fprintf(stderr, "DisableGraphicWindows: %d.\n", Settings.DisableGraphicWindows);
+		      }
+		      pressed_l3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3);
+		      if(pressed_l3 && timeout == 0)
+		      {
+			      PPU.RenderSubHack2 = !PPU.RenderSubHack2;
+                              timeout = TIMER_DELAY;
+			      fprintf(stderr, "RenderSubHack2: %d.\n", PPU.RenderSubHack2);
+		      }
+		      pressed_r3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
+		      if(pressed_r3 && timeout == 0)
+		      {
+			      PPU.RenderSubHack = !PPU.RenderSubHack;
+                              timeout = TIMER_DELAY;
+			      fprintf(stderr, "RenderSubHack: %d.\n", PPU.RenderSubHack);
+		      }
+#endif
 		      break;
 	      case RETRO_DEVICE_JOYPAD_MULTITAP:
 		      for ( j = 0; j < 4; j++)
 		      {
 			      for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
 			      {
-				      s9xcommand_t cmd = keymap[MAKE_BUTTON(j + 2, i)];
-				      uint16 r = cmd.commandunion.button.joypad;
 				      bool pressed = input_cb(port, RETRO_DEVICE_JOYPAD_MULTITAP, j, i);
+				      uint16_t button_press = snes_lut[i];
 
 				      if (pressed)
-					      joypad[j] |= r;
+					      joypad[j] |= button_press;
 				      else
-					      joypad[j] &= ~r;
+					      joypad[j] &= ~button_press;
 			      }
 		      }
 		      break;
@@ -432,6 +482,9 @@ static void report_buttons (void)
 
       }
    }
+#ifdef DEBUG_CONTROLS
+   if(timeout != 0)   timeout--;
+#endif
 }
 
 void retro_run (void)
