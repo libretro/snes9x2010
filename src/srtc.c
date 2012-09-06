@@ -474,7 +474,7 @@ void S9xSRTCPreSaveState (void)
 
 void S9xSRTCPostLoadState (int unused)
 {
-	rtc_mode  = srtcsnap.rtc_mode;
+	rtc_mode  = (RTC_Mode)srtcsnap.rtc_mode;
 	rtc_index = (signed)         srtcsnap.rtc_index;
 
 	srtcemu_update_time();

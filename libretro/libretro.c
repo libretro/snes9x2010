@@ -567,8 +567,8 @@ void _splitpath (const char * path, char * drive, char * dir, char * fname, char
 {
 	char *slash, *dot;
 
-	slash = strrchr(path, SLASH_CHAR);
-	dot   = strrchr(path, '.');
+	slash = strrchr((char*)path, SLASH_CHAR);
+	dot   = strrchr((char*)path, '.');
 
 	if (dot && slash && dot < slash)
 		dot = NULL;

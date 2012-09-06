@@ -1452,7 +1452,7 @@ static uint16 checksum_mirror_sum (uint8 *start, uint32 * length, uint32 mask)
 			part2 += part2;
 		}
 
-		length = mask + mask;
+		*length = mask + mask;
 	}
 
 	return (part1 + part2);
