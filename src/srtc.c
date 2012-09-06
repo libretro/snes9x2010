@@ -201,8 +201,17 @@ static INLINE unsigned min (unsigned a, unsigned b)
 	return ((a < b) ? a : b);
 }
 
-static enum RTC_Mode { RTCM_READY, RTCM_COMMAND, RTCM_READ, RTCM_WRITE } rtc_mode;
+static enum 
+{
+	RTCM_READY,
+	RTCM_COMMAND,
+	RTCM_READ,
+	RTCM_WRITE
+};
+
 static signed rtc_index;
+
+uint32 rtc_mode;
 
 static const unsigned months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
@@ -474,7 +483,7 @@ void S9xSRTCPreSaveState (void)
 
 void S9xSRTCPostLoadState (int unused)
 {
-	rtc_mode  = (RTC_Mode)srtcsnap.rtc_mode;
+	rtc_mode  = srtcsnap.rtc_mode;
 	rtc_index = (signed)         srtcsnap.rtc_index;
 
 	srtcemu_update_time();
