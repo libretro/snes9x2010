@@ -571,9 +571,10 @@ extern struct SGFX	GFX;
 	((C1) & (C2) & RGB_LOW_BITS_MASK)) | ALPHA_BITS_MASK)
 
 #define COLOR_ADD(C1, C2) \
-	GFX.X2 [((((C1) & RGB_REMOVE_LOW_BITS_MASK) + \
+	(GFX.X2[((((C1) & RGB_REMOVE_LOW_BITS_MASK) + \
 	((C2) & RGB_REMOVE_LOW_BITS_MASK)) >> 1) + \
-	((C1) & (C2) & RGB_LOW_BITS_MASK)]
+	((C1) & (C2) & RGB_LOW_BITS_MASK)] | \
+	(((C1) ^ (C2)) & RGB_LOW_BITS_MASK))
 
 #define COLOR_SUB1_2(C1, C2) \
 	GFX.ZERO[(((C1) | RGB_HI_BITS_MASKx2) - \
