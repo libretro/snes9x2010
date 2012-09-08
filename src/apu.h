@@ -342,6 +342,9 @@ typedef struct
 	short* out_end;
 	short* out_begin;
 	short extra [EXTRA_SIZE];
+
+	int rom_enabled;
+	uint8_t *rom, *hi_ram;
 } dsp_state_t;
 
 #if !SPC_NO_COPY_STATE_FUNCS

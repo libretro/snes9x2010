@@ -763,6 +763,17 @@ static void dsp_voice_V9_V6_V3( dsp_voice_t* const v )
 /* Calculate FIR point for left/right channel */
 #define CALC_FIR( i, ch )   ((ECHO_FIR( i + 1 ) [ch] * (int8_t) REG(FIR + i * 0x10)) >> 6)
 
+#define ECHO_READ(ch) \
+{ \
+	int s; \
+	if ( dsp_m.t_echo_ptr >= 0xffc0 && dsp_m.rom_enabled ) \
+		s = GET_LE16SA( &dsp_m.hi_ram [dsp_m.t_echo_ptr + ch * 2 - 0xffc0] ); \
+	else \
+		s = GET_LE16SA( ECHO_PTR( ch ) ); \
+	/* second copy simplifies wrap-around handling */ \
+	ECHO_FIR( 0 ) [ch] = ECHO_FIR( 8 ) [ch] = s >> 1; \
+}
+
 static INLINE void dsp_echo_22 (void)
 {
 	int l, r, s;
@@ -772,11 +783,7 @@ static INLINE void dsp_echo_22 (void)
 
 	dsp_m.t_echo_ptr = (dsp_m.t_esa * 0x100 + dsp_m.echo_offset) & 0xFFFF;
 
-	/* ECHO_READ (0) */
-	s = GET_LE16SA( ECHO_PTR(0) );
-	/* second copy simplifies wrap-around handling */ \
-	(dsp_m.echo_hist_pos [0]) [0] = (dsp_m.echo_hist_pos [8]) [0] = s >> 1;
-	/* EOF ECHO_READ (0) */
+	ECHO_READ(0);
 
 	l = (((dsp_m.echo_hist_pos [0 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6);
 	r = (((dsp_m.echo_hist_pos [0 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6);
@@ -795,11 +802,7 @@ static INLINE void dsp_echo_23 (void)
 	dsp_m.t_echo_in [0] += l;
 	dsp_m.t_echo_in [1] += r;
 
-	/* ECHO_READ (1) */
-	s = GET_LE16SA( ECHO_PTR( 1 ) ); \
-	/* second copy simplifies wrap-around handling */ \
-	(dsp_m.echo_hist_pos [0]) [1] = (dsp_m.echo_hist_pos [8]) [1] = s >> 1;
-	/* EOF ECHO_READ (1) */
+	ECHO_READ(1);
 }
 
 static INLINE void dsp_echo_24 (void)
@@ -887,7 +890,15 @@ static INLINE void dsp_echo_27 (void)
 
 #define ECHO_WRITE(ch) \
 	if ( !(dsp_m.t_echo_enabled & 0x20) ) \
+	{ \
 		SET_LE16A( ECHO_PTR( ch ), dsp_m.t_echo_out [ch] ); \
+		if ( dsp_m.t_echo_ptr >= 0xffc0 ) \
+		{ \
+			SET_LE16A( &dsp_m.hi_ram [dsp_m.t_echo_ptr + ch * 2 - 0xffc0], dsp_m.t_echo_out [ch] ); \
+			if ( dsp_m.rom_enabled ) \
+				SET_LE16A( ECHO_PTR( ch ), GET_LE16A( &dsp_m.rom [dsp_m.t_echo_ptr + ch * 2 - 0xffc0] ) ); \
+		} \
+	} \
 	dsp_m.t_echo_out [ch] = 0;
 
 static INLINE void dsp_echo_29 (void)
@@ -1386,7 +1397,7 @@ void spc_enable_rom( int enable )
 {
 	if ( m.rom_enabled != enable )
 	{
-		m.rom_enabled = enable;
+		m.rom_enabled = dsp_m.rom_enabled = enable;
 		if ( enable )
 			memcpy( m.hi_ram, &m.ram.ram[ROM_ADDR], sizeof m.hi_ram );
 		memcpy( &m.ram.ram[ROM_ADDR], (enable ? m.rom : m.hi_ram), ROM_SIZE );
@@ -2938,7 +2949,7 @@ static void spc_reset (void)
 
 	/*	RAM was just loaded from SPC, with $F0-$FF containing SMP registers
 		and timer counts. Copies these to proper registers. */
-	m.rom_enabled = 0;
+	m.rom_enabled = dsp_m.rom_enabled = 0;
 
 	/* Loads registers from unified 16-byte format */
 	memcpy( m.smp_regs[0], &m.ram.ram[0xF0], REG_COUNT );
@@ -3469,6 +3480,9 @@ bool8 S9xInitAPU (void)
 	}
 
 	allow_time_overflow = FALSE;
+
+	dsp_m.rom = m.rom;
+	dsp_m.hi_ram = m.hi_ram;
 
 	
 	memcpy( reg_times, reg_times_, sizeof reg_times );
