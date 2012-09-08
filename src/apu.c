@@ -776,7 +776,7 @@ static void dsp_voice_V9_V6_V3( dsp_voice_t* const v )
 
 static INLINE void dsp_echo_22 (void)
 {
-	int l, r, s;
+	int l, r;
 
 	if ( ++dsp_m.echo_hist_pos >= &dsp_m.echo_hist [ECHO_HIST_SIZE] )
 		dsp_m.echo_hist_pos = dsp_m.echo_hist;
@@ -794,7 +794,7 @@ static INLINE void dsp_echo_22 (void)
 
 static INLINE void dsp_echo_23 (void)
 {
-	int l, r, s;
+	int l, r;
 
 	l = (((dsp_m.echo_hist_pos [1 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
 	r = (((dsp_m.echo_hist_pos [1 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
@@ -3317,7 +3317,7 @@ void S9xFinalizeSamples (void)
 		sound_in_sync = TRUE;
 
 	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-	spc_set_output(landing_buffer, buffer_size >> 1);
+	spc_set_output(landing_buffer, buffer_size);
 }
 
 void S9xClearSamples (void)
