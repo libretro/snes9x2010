@@ -206,7 +206,11 @@
 #define MAP_NONE		18
 #define MAP_LAST		19
 
+#ifdef HW_DOL
+#define MAX_ROM_SIZE 0x600000
+#else
 #define MAX_ROM_SIZE 0x800000
+#endif
 
 #define NOPE 0
 #define YEAH 1
