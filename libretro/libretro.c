@@ -128,7 +128,7 @@ void retro_get_system_info(struct retro_system_info *info)
 {
    info->need_fullpath = false;
    info->valid_extensions = "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP";
-   info->library_version = "v1.52.1";
+   info->library_version = "v1.52.2";
    info->library_name = "SNES9x Next";
    info->block_extract = false;
 }
