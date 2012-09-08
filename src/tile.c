@@ -190,28 +190,23 @@
 #include "ppu.h"
 #include "tile.h"
 
+/* if a >= 0 return x else y*/
+#define ISEL16(a, x, y) ((x & (~(a >> 15))) + (y & (a >> 15)))
+
 static INLINE uint16 COLOR_SUB (uint16 C1, uint16 C2)
 {
-	uint16	mC1, mC2, v;
+	int16 color_r, color_b, color_g;
 	
-	v = ALPHA_BITS_MASK;
+	color_r = (((C1 & FIRST_COLOR_MASK) - (C2 & FIRST_COLOR_MASK)));
+	color_r = ISEL16(color_r, color_r, 0);
+	
+	color_g = ((C1 & SECOND_COLOR_MASK) - (C2 & SECOND_COLOR_MASK));
+	color_g = ISEL16(color_g, color_g, 0);
 
-	mC1 = C1 & FIRST_COLOR_MASK;
-	mC2 = C2 & FIRST_COLOR_MASK;
-	if (mC1 > mC2)
-		v += (mC1 - mC2);
+	color_b = ((C1 & THIRD_COLOR_MASK) - (C2 & THIRD_COLOR_MASK));
+	color_b = ISEL16(color_b, color_b, 0);
 
-	mC1 = C1 & SECOND_COLOR_MASK;
-	mC2 = C2 & SECOND_COLOR_MASK;
-	if (mC1 > mC2)
-		v += (mC1 - mC2);
-
-	mC1 = C1 & THIRD_COLOR_MASK;
-	mC2 = C2 & THIRD_COLOR_MASK;
-	if (mC1 > mC2)
-		v += (mC1 - mC2);
-
-	return (v);
+	return (ALPHA_BITS_MASK + color_r + color_g + color_b);
 }
 
 static uint16	DirectColourMaps[8][256];

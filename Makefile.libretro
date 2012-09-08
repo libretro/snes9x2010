@@ -89,7 +89,7 @@ ifeq ($(platform), sncps3)
 WARNINGS_DEFINES =
 CODE_DEFINES =
 else
-WARNINGS_DEFINES = -Wall -W -Wno-unused-parameter
+WARNINGS_DEFINES = -Wall -W -Wno-unused-parameter -Wno-sign-compare
 CODE_DEFINES = -fomit-frame-pointer -std=gnu99
 endif
 
