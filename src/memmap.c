@@ -2853,7 +2853,10 @@ void InitROM (void)
 				MATCH_NA("DONKEY KONG COUNTRY") /* Donkey Kong Country 1 */
 		)
 			Settings.SpeedhackGameID = SPEEDHACK_DKC1;
+
 		#if 0
+		if(MATCH_ID("AKL"))		/* Killer Instinct*/
+			Settings.SpeedhackGameID = SPEEDHACK_KILLER_INSTINCT;
 		else if(
 				MATCH_NA("Super Metroid") 	/* Super Metroid*/
 		)

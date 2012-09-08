@@ -577,6 +577,18 @@ static void speedhacks_manager (void)
 			break;
 		}
 		#if 0
+		case SPEEDHACK_KILLER_INSTINCT:
+		{
+			//fprintf(stderr, "character: %d\n", Memory.RAM[0x024E]);
+			//fprintf(stderr, "character #2: %d\n", Memory.RAM[0x0252]);
+			//fprintf(stderr, "stage: %d\n", Memory.RAM[0x12F0]);
+			uint8 level = Memory.RAM[0x12F0]; /* current level - 8012F0XX */
+			if(level == 8)
+				PPU.SFXSpeedupHack = FALSE;
+			else
+				PPU.SFXSpeedupHack = TRUE;
+			break;
+		}
 		case SPEEDHACK_SUPER_METROID:
 		{
 			uint8 song = (Memory.RAM[0x07f3] | Memory.RAM[0x07f4] << 8);
