@@ -556,6 +556,11 @@ void Deinit (void)
 		Memory.ROM = NULL;
 	}
 
+	if(Settings.SPC7110 || Settings.SPC7110RTC)
+	{
+		S9xFreeSPC7110();
+	}
+
 	for ( t = 0; t < 7; t++)
 	{
 		if (IPPU.TileCache[t])
@@ -844,9 +849,6 @@ bool8 LoadROM (const char *filename)
 	memset(Memory.ROM, 0, MAX_ROM_SIZE);
 	memset(&Multi, 0, sizeof(Multi));
 
-	if (Settings.SPC7110 || Settings.SPC7110RTC)
-		spc7110_decomp_start();
- 
 again:
 	Memory.CalculatedSize = 0;
 	Memory.ExtendedFormat = NOPE;

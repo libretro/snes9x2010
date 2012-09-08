@@ -267,6 +267,7 @@ extern struct SSPC7110Snapshot	s7snap;
 
 void S9xInitSPC7110 (void);
 void S9xResetSPC7110 (void);
+void S9xFreeSPC7110 (void);
 void S9xSPC7110PreSaveState (void);
 void S9xSPC7110PostLoadState (int);
 void S9xSetSPC7110 (uint8 Byte, uint16 Address);

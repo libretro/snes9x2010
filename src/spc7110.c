@@ -191,6 +191,7 @@
  * or in connection with the use or performance of this software.
  *****/
 
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -201,9 +202,10 @@
 #include "display.h"
 
 #include "spc7110emu.h"
+#include "spc7110dec.h"
 
 /*read() will spool chunks half the size of SPC7110_DECOMP_BUFFER_SIZE*/
-static uint8 decomp_buffer[SPC7110_DECOMP_BUFFER_SIZE];
+uint8* decomp_buffer;
 
 static unsigned decomp_mode;
 static unsigned decomp_offset;
@@ -838,6 +840,7 @@ void spc7110_decomp_reset (void)
 void spc7110_decomp_start (void)
 {
 	unsigned i;
+	decomp_buffer = (uint8_t*)malloc(SPC7110_DECOMP_BUFFER_SIZE);
 	spc7110_decomp_reset();
 
 	/*initialize reverse morton lookup tables*/
@@ -1667,6 +1670,7 @@ static uint8 s7_mmio_read(unsigned addr)
 
 void S9xInitSPC7110 (void)
 {
+	spc7110_decomp_start();
 	s7_power();
 	memset(RTCData.reg, 0, 20);
 }
@@ -1674,6 +1678,12 @@ void S9xInitSPC7110 (void)
 void S9xResetSPC7110 (void)
 {
 	s7_power();
+}
+
+void S9xFreeSPC7110 (void)
+{
+	if(decomp_buffer)
+		free(decomp_buffer);
 }
 
 static void SetSPC7110SRAMMap (uint8 newstate)
