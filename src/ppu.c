@@ -198,10 +198,6 @@ extern uint8	*HDMAMemPointers[8];
 extern struct SLineData			LineData[240];
 static uint8 dma_sa1_channels_chars[9][8];
 
-#ifdef REPORT_MODES
-static int counter = 0;
-#endif
-
 #define TILE_PLUS(t, x)	(((t) & 0xfc00) | ((t + x) & 0x3ff))
 
 bool8 S9xGraphicsInit (void)
@@ -1702,6 +1698,21 @@ static INLINE void RenderScreen_SFXSpeedupHack()
 	BG.EnableMath = (Memory.FillRAM[0x2131] & 0x20);
 }
 
+//#define REPORT_MODES 1
+
+#ifdef REPORT_MODES
+static uint8 prev_screen = 0;
+
+#define REPORT_SCREEN() \
+if(prev_screen != PPU.BGMode) \
+{ \
+	fprintf(stderr, "MODE: #%d.\n", PPU.BGMode); \
+	prev_screen = PPU.BGMode; \
+}
+#else
+#define REPORT_SCREEN()
+#endif
+
 static INLINE void RenderScreen (bool8 sub)
 {
 	uint8	BGActive;
@@ -1955,57 +1966,43 @@ static INLINE void RenderScreen (bool8 sub)
 			DO_BG_HIRES0_OFFSET0_D2(1, 32, 2, FALSE, FALSE, 14, 10, 0);
 			DO_BG_HIRES0_OFFSET0_D2(2, 64, 2, FALSE, FALSE,  7,  3, 0);
 			DO_BG_HIRES0_OFFSET0_D2(3, 96, 2, FALSE, FALSE,  6,  2, 0);
-			#ifdef REPORT_MODES
-			fprintf(stderr, "MODE: #0\n");
-			#endif
+			REPORT_SCREEN();
 			break;
 
 		case 1:
 			DO_BG_HIRES0_OFFSET0_D4(0,  0, 4, FALSE, FALSE, 15, 11, 0);
 			DO_BG_HIRES0_OFFSET0_D4(1,  0, 4, FALSE, FALSE, 14, 10, 0);
 			DO_BG_HIRES0_OFFSET0_D2(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
-			#ifdef REPORT_MODES
-			fprintf(stderr, "MODE: #1\n");
-			#endif
+			REPORT_SCREEN();
 			break;
 
 		case 2:
 			DO_BG_HIRES0_OFFSET1_D4(0,  0, 4, FALSE, TRUE,  15,  7, 8);
 			DO_BG_HIRES0_OFFSET1_D4(1,  0, 4, FALSE, TRUE,  11,  3, 8);
-			#ifdef REPORT_MODES
-			fprintf(stderr, "MODE: #2\n");
-			#endif
+			REPORT_SCREEN();
 			break;
 
 		case 3:
 			DO_BG_HIRES0_OFFSET0_D8(0,  0, 8, FALSE, FALSE, 15,  7, 0);
 			DO_BG_HIRES0_OFFSET0_D4(1,  0, 4, FALSE, FALSE, 11,  3, 0);
-			#ifdef REPORT_MODES
-			fprintf(stderr, "MODE: #3\n");
-			#endif
+			REPORT_SCREEN();
 			break;
 
 		case 4:
 			DO_BG_HIRES0_OFFSET1_D8(0,  0, 8, FALSE, TRUE,  15,  7, 0);
 			DO_BG_HIRES0_OFFSET1_D2(1,  0, 2, FALSE, TRUE,  11,  3, 0);
-			#ifdef REPORT_MODES
-			fprintf(stderr, "MODE: #4\n");
-			#endif
+			REPORT_SCREEN();
 			break;
 
 		case 5:
 			DO_BG_HIRES1_OFFSET0(0,  0, 4, TRUE,  FALSE, 15,  7, 0);
 			DO_BG_HIRES1_OFFSET0(1,  0, 2, TRUE,  FALSE, 11,  3, 0);
-			#ifdef REPORT_MODES
-			fprintf(stderr, "MODE: #5\n");
-			#endif
+			REPORT_SCREEN();
 			break;
 
 		case 6:
 			DO_BG_HIRES1_OFFSET1(0,  0, 4, TRUE,  TRUE,  15,  7, 8);
-			#ifdef REPORT_MODES
-			fprintf(stderr, "MODE: #6\n");
-			#endif
+			REPORT_SCREEN();
 			break;
 
 		case 7:
@@ -2020,9 +2017,7 @@ static INLINE void RenderScreen (bool8 sub)
 				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 2);
 				DrawBackgroundMode7(1, GFX.DrawMode7BG2Math, GFX.DrawMode7BG2Nomath, D);
 			}
-			#ifdef REPORT_MODES
-			fprintf(stderr, "MODE: #7\n");
-			#endif
+			REPORT_SCREEN();
 			break;
 	}
 
@@ -2438,9 +2433,6 @@ void S9xUpdateScreen (void)
 				RenderScreen(TRUE);
 				if(PPU.RenderSub)
 				{
-					#ifdef REPORT_MODES
-					fprintf(stderr, "Subscreen drawing: Frame #%d\n", counter++);
-					#endif
 					DRAW_BACKDROP_NO_MATH();
 				}
 			}

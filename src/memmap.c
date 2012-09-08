@@ -2604,8 +2604,6 @@ void InitROM (void)
 		if (
 				MATCH_NA("VORTEX") ||			/* Vortex */
 				MATCH_NA("Super Street Fighter21") ||	/* Super Street Fighter II */
-				//MATCH_NA("FINAL FANTASY 3") ||	/* Final Fantasy III (US)*/
-				MATCH_NA("THE LEGEND OF ZELDA") ||	/* Zelda 3*/
 				MATCH_NA("STAR FOX 2"))			/* Star Fox 2 */
 					PPU.SFXSpeedupHack = TRUE;
 				else
