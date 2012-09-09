@@ -312,11 +312,63 @@ static void S9xCheckMissingHTimerHalt(void)
 		CPU.IRQPending = 1;
 }
 
+static INLINE void speedhacks_manager (void)
+{
+	switch(Settings.SpeedhackGameID)
+	{
+		case SPEEDHACK_CT:
+			/* Chrono Trigger mid-frame overscan hack - field to battle transition */
+			if (IPPU.RenderedScreenHeight == 239)
+				IPPU.RenderedScreenHeight = 224;
+			break;
+		case SPEEDHACK_DKC1:
+		{
+			PPU.SFXSpeedupHack = FALSE;
+			uint8 level = Memory.RAM[0x003E]; /* current level - 7E003E */
+			//fprintf(stderr, "current_level: %d.\n", ram);
+			if(level == 49 || level == 217 || level == 66 || level == 67)
+				PPU.SFXSpeedupHack = TRUE;
+			break;
+		}
+		case SPEEDHACK_FF6:
+		{
+			PPU.FullClipping = FALSE;
+			uint8 menu_activated = Memory.RAM[0x0063]; /* menu on/off - 7E0063 */
+			if(menu_activated)
+				PPU.FullClipping = TRUE;
+			break;
+		}
+		#if 0
+		case SPEEDHACK_KILLER_INSTINCT:
+		{
+			PPU.SFXSpeedupHack = TRUE;
+			//fprintf(stderr, "character: %d\n", Memory.RAM[0x024E]);
+			//fprintf(stderr, "character #2: %d\n", Memory.RAM[0x0252]);
+			//fprintf(stderr, "stage: %d\n", Memory.RAM[0x12F0]);
+			uint8 level = Memory.RAM[0x12F0]; /* current level - 8012F0XX */
+			if(level == 8)
+				PPU.SFXSpeedupHack = FALSE;
+			break;
+		}
+		case SPEEDHACK_SUPER_METROID:
+		{
+			uint8 song = (Memory.RAM[0x07f3] | Memory.RAM[0x07f4] << 8);
+			fprintf(stderr, "current_song: %d.\n", song);
+		}
+		#endif
+		default:
+			break;
+	}
+}
+
 static void S9xEndScreenRefresh (void)
 {
 	FLUSH_REDRAW();
 
 	S9xControlEOF();
+
+	if(Settings.SpeedhackGameID > SPEEDHACK_NONE)
+		speedhacks_manager();
 
 	if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
 		S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);

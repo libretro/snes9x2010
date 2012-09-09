@@ -2624,18 +2624,6 @@ void InitROM (void)
 			)
 		Settings.SupportHiRes = FALSE;
 
-		/* Check if Chrono Trigger is loaded, if so, we need to set a variable to 
-		   true to get rid of an annoying mid-frame resolution switch to 256x239 
-		   which can cause an undesirable flicker/breakup of the screen for a 
-		   split second - this happens whenever the game switches from normal 
-		   mode to battle mode and vice versa */
-		if(	MATCH_NC("CHRONO TRIGGER") ||	/* Chrono Trigger */
-			MATCH_ID("ACT") ||
-			MATCH_ID("AC9J")		/* Chrono Trigger (Sample) */
-		  )
-			Settings.ChronoTriggerFrameHack = 1;
-		else
-			Settings.ChronoTriggerFrameHack = 0;
 
 		/* DON'T RENDER SUBSCREEN */
 
@@ -2836,6 +2824,7 @@ void InitROM (void)
 		else
 			PPU.RenderSub = TRUE;
 
+		Settings.SpeedhackGameID = SPEEDHACK_NONE;
 
 		/* Clipping hack - gains around 5-7 extra fps - only use it 
 		   for specific games where nothing breaks with this hack on */
@@ -2854,6 +2843,23 @@ void InitROM (void)
 		)
 			Settings.SpeedhackGameID = SPEEDHACK_DKC1;
 
+		if(
+			MATCH_NA("FINAL FANTASY 6")	/* Final Fantasy VI (JP) */
+			|| MATCH_NA("FINAL FANTASY 3")	/* Final Fantasy III (US) */
+		)
+			Settings.SpeedhackGameID = SPEEDHACK_FF6;
+
+		/* Check if Chrono Trigger is loaded, if so, we need to set a variable to 
+		   true to get rid of an annoying mid-frame resolution switch to 256x239 
+		   which can cause an undesirable flicker/breakup of the screen for a 
+		   split second - this happens whenever the game switches from normal 
+		   mode to battle mode and vice versa */
+		if(	MATCH_NC("CHRONO TRIGGER") ||	/* Chrono Trigger */
+			MATCH_ID("ACT") ||
+			MATCH_ID("AC9J")		/* Chrono Trigger (Sample) */
+		  )
+			Settings.SpeedhackGameID = SPEEDHACK_CT;
+
 		#if 0
 		if(MATCH_ID("AKL"))		/* Killer Instinct*/
 			Settings.SpeedhackGameID = SPEEDHACK_KILLER_INSTINCT;
@@ -2862,8 +2868,6 @@ void InitROM (void)
 		)
 			Settings.SpeedhackGameID = SPEEDHACK_SUPER_METROID;
 		#endif
-		else
-			Settings.SpeedhackGameID = SPEEDHACK_NONE;
 
 	}
 	fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);

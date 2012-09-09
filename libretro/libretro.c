@@ -562,56 +562,12 @@ unsigned retro_get_region (void)
    return Settings.PAL ? RETRO_REGION_PAL : RETRO_REGION_NTSC; 
 }
 
-static void speedhacks_manager (void)
-{
-	switch(Settings.SpeedhackGameID)
-	{
-		case SPEEDHACK_DKC1:
-		{
-			uint8 level = Memory.RAM[0x003E]; /* current level - 7E003E */
-			//fprintf(stderr, "current_level: %d.\n", ram);
-			if(level == 49 || level == 217 || level == 66 || level == 67)
-				PPU.SFXSpeedupHack = TRUE;
-			else
-				PPU.SFXSpeedupHack = FALSE;
-			break;
-		}
-		#if 0
-		case SPEEDHACK_KILLER_INSTINCT:
-		{
-			//fprintf(stderr, "character: %d\n", Memory.RAM[0x024E]);
-			//fprintf(stderr, "character #2: %d\n", Memory.RAM[0x0252]);
-			//fprintf(stderr, "stage: %d\n", Memory.RAM[0x12F0]);
-			uint8 level = Memory.RAM[0x12F0]; /* current level - 8012F0XX */
-			if(level == 8)
-				PPU.SFXSpeedupHack = FALSE;
-			else
-				PPU.SFXSpeedupHack = TRUE;
-			break;
-		}
-		case SPEEDHACK_SUPER_METROID:
-		{
-			uint8 song = (Memory.RAM[0x07f3] | Memory.RAM[0x07f4] << 8);
-			fprintf(stderr, "current_song: %d.\n", song);
-		}
-		#endif
-		default:
-			break;
-	}
-}
-
 void S9xDeinitUpdate(int width, int height)
 {
-	if(Settings.SpeedhackGameID > SPEEDHACK_NONE)
-		speedhacks_manager();
-	/* Chrono Trigger mid-frame overscan hack - field to battle transition */
-	if (Settings.ChronoTriggerFrameHack & (height == 239))
-		height = 224;
+	GFX.Pitch = 2048;		/* Pitch 1024 -> 2048 */
 
 	if (height == 448 || height == 478)
 		GFX.Pitch = 1024;	/* Pitch 2048 -> 1024 */
-	else
-		GFX.Pitch = 2048;	/* Pitch 1024 -> 2048 */
 
 	video_cb(GFX.Screen, width, height, GFX.Pitch);
 }

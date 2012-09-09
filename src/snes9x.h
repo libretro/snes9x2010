@@ -442,7 +442,6 @@ struct SSettings
 	#endif
 	uint32	AccessoryType;
 	int32		AccessoryAutoDetection;
-	bool8		ChronoTriggerFrameHack;
 	bool8		CurrentROMisMultitapCompatible;
 	bool8		CurrentROMisMouseCompatible;
 	bool8		CurrentROMisSuperScopeCompatible;
