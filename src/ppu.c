@@ -4724,6 +4724,20 @@ static void S9xDoDMA (void)
 
 void S9xSetCPU (uint8 Byte, uint16 Address)
 {
+	if (Address < MEM_CPU_NMITIMEN)
+	{
+		switch (Address)
+		{
+			case MEM_CPU_JOYSER0: // JOYSER0
+				S9xSetJoypadLatch(Byte & 1);
+				break;
+			case MEM_CPU_JOYSER1: // JOYSER1
+				return;
+			default:
+				break;
+		}
+	}
+	else
 	if ((Address & 0xff80) == 0x4300)
 	{
 		int d;

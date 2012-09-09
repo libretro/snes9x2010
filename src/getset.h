@@ -219,18 +219,6 @@ extern uint8	OpenBus;
 
 #endif
 
-#define S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp) \
-			if (addr_tmp < 0x4200) \
-			{ \
-				if(addr_tmp == 0x4016) /* JOYSER0 */ \
-					S9xSetJoypadLatch(byte_tmp & 1); \
-				if(addr_tmp != 0x4017) /* JOYSER1 */ \
-					Memory.FillRAM[addr_tmp] = byte_tmp; \
-			} \
-			else \
-				S9xSetCPU(byte_tmp, addr_tmp);
-
-
 static inline int32 memory_speed (uint32 address)
 {
 	if (address & 0x408000)
@@ -685,15 +673,9 @@ static INLINE void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 	{
 		case MAP_CPU:
 		{
-				uint16 addr_tmp = Address & 0xffff;
-				uint8 byte_tmp = (uint8)Word;
-				S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp);
+				S9xSetCPU((uint8) Word, Address & 0xffff);
 				addCyclesInMemoryAccess;
-				
-				addr_tmp = (Address + 1) & 0xffff;
-				byte_tmp = Word >> 8;
-				S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp);
-
+				S9xSetCPU(Word >> 8, (Address + 1) & 0xffff);
 				addCyclesInMemoryAccess;
 				return;
 		}
@@ -864,16 +846,9 @@ static INLINE void S9xSetWord_Write1(uint16 Word, uint32 Address, uint32 w)
 	{
 		case MAP_CPU:
 		{
-			uint16 addr_tmp = (Address + 1) & 0xffff;
-			uint8 byte_tmp = Word >> 8;
-			S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp);
-
+			S9xSetCPU(Word >> 8, (Address + 1) & 0xffff);
 			addCyclesInMemoryAccess;
-
-			addr_tmp = Address & 0xffff;
-			byte_tmp = (uint8)Word;
-			S9X_SET_CPU_PREAMBLE(addr_tmp, byte_tmp);
-
+			S9xSetCPU((uint8) Word, Address & 0xffff);
 			addCyclesInMemoryAccess;
 			return;
 		}
