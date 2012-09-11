@@ -314,6 +314,8 @@ static void S9xCheckMissingHTimerHalt(void)
 
 static INLINE void speedhacks_manager (void)
 {
+	uint8 var_mem;
+
 	switch(Settings.SpeedhackGameID)
 	{
 		case SPEEDHACK_CT:
@@ -324,17 +326,17 @@ static INLINE void speedhacks_manager (void)
 		case SPEEDHACK_DKC1:
 		{
 			PPU.SFXSpeedupHack = FALSE;
-			uint8 level = Memory.RAM[0x003E]; /* current level - 7E003E */
+			var_mem = Memory.RAM[0x003E]; /* current level - 7E003E */
 			//fprintf(stderr, "current_level: %d.\n", ram);
-			if(level == 49 || level == 217 || level == 66 || level == 67)
+			if(var_mem == 49 || var_mem == 217 || var_mem == 66 || var_mem == 67)
 				PPU.SFXSpeedupHack = TRUE;
 			break;
 		}
 		case SPEEDHACK_FF6:
 		{
 			PPU.FullClipping = FALSE;
-			uint8 menu_activated = Memory.RAM[0x0063]; /* menu on/off - 7E0063 */
-			if(menu_activated)
+			var_mem = Memory.RAM[0x0063]; /* menu on/off - 7E0063 */
+			if(var_mem)
 				PPU.FullClipping = TRUE;
 			break;
 		}

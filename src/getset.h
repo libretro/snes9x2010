@@ -219,7 +219,7 @@ extern uint8	OpenBus;
 
 #endif
 
-static inline int32 memory_speed (uint32 address)
+static INLINE int32 memory_speed (uint32 address)
 {
 	if (address & 0x408000)
 	{
@@ -347,6 +347,10 @@ static INLINE uint8 S9xGetByte (uint32 Address)
  
 static INLINE uint16 S9xGetWord (uint32 Address, uint32 w)
 {
+    uint8 *GetAddress;
+	int block;
+	uint16 word;
+	int32 speed;
 	uint32	mask = MEMMAP_MASK & (w == WRAP_PAGE ? 0xff : (w == WRAP_BANK ? 0xffff : 0xffffff));
 	if ((Address & mask) == mask)
 	{
@@ -372,10 +376,9 @@ static INLINE uint16 S9xGetWord (uint32 Address, uint32 w)
 		}
 	}
 
-	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
-	uint8	*GetAddress = Memory.Map[block];
-	int32	speed = memory_speed(Address);
-	uint16	word;
+	block = (Address & 0xffffff) >> MEMMAP_SHIFT;
+	GetAddress = Memory.Map[block];
+	speed = memory_speed(Address);
 
 	if (GetAddress >= (uint8 *) MAP_LAST)
 	{

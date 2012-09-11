@@ -3048,7 +3048,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 	else
 	if (Address <= MEM_PPU_WMADDH)
 	{
-		bool execute = Byte != Memory.FillRAM[Address];
+		bool8 execute = Byte != Memory.FillRAM[Address];
 		switch (Address)
 		{
 			case MEM_PPU_INIDISP: // INIDISP
@@ -3074,9 +3074,10 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				if ((Memory.FillRAM[MEM_PPU_INIDISP] & 0x80) && CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE)
 				{
+					uint8 tmp;
 					PPU.OAMAddr = PPU.SavedOAMAddr;
 
-					uint8 tmp = 0;
+					tmp = 0;
 					if (PPU.OAMPriorityRotation)
 						tmp = (PPU.OAMAddr & 0xfe) >> 1;
 					if ((PPU.OAMFlip & 1) || PPU.FirstSprite != tmp)
@@ -3189,10 +3190,11 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 			case MEM_PPU_BG4SC: // BG4SC
 				if (execute)
 				{
+					uint32 bg_mode;
 					if (IPPU.PreviousLine != IPPU.CurrentLine)
 						S9xUpdateScreen();
 
-					uint32 bg_mode = Address - MEM_PPU_BG1SC;
+					bg_mode = Address - MEM_PPU_BG1SC;
 
 					PPU.BG[bg_mode].SCSize = Byte & 3;
 					PPU.BG[bg_mode].SCBase = (Byte & 0x7c) << 8;
@@ -5073,10 +5075,12 @@ uint8 S9xGetCPU (uint16 Address)
 	else
 	if ((Address & 0xff80) == MEM_DMA_DMAP0)
 	{
+		int d;
+
 		if (CPU.InDMAorHDMA)
 			return (OpenBus);
 
-		int	d = (Address >> 4) & 0x7;
+		d = (Address >> 4) & 0x7;
 
 		switch (Address & 0xf)
 		{
