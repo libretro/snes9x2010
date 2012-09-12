@@ -489,11 +489,9 @@ static void report_buttons (void)
 
 void retro_run (void)
 {
-
-   S9xMainLoop();
    poll_cb();
-
    report_buttons();
+   S9xMainLoop();
 }
 
 size_t retro_serialize_size (void)
