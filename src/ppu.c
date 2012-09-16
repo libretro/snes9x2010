@@ -1793,17 +1793,6 @@ static INLINE void RenderScreen (bool8 sub)
 				DrawBackground(n, D + Zh, D + Zl); \
 		}
 
-	#define DO_BG_HIRES0_OFFSET0_D2_BG0(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
-		if (BGActive & (1 << n)) \
-		{ \
-			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_Depth2(); \
-			DrawBackground(n, D + Zh, D + Zl); \
-		}
-
 	#define DO_BG_HIRES0_OFFSET0_D2(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
 		if (BGActive & (1 << n)) \
 		{ \
@@ -1973,10 +1962,10 @@ static INLINE void RenderScreen (bool8 sub)
 	switch (PPU.BGMode)
 	{
 		case 0:
-			DO_BG_HIRES0_OFFSET0_D2_BG0(0,  0, 2, FALSE, FALSE, 15, 11, 0);
-			DO_BG_HIRES0_OFFSET0_D2_BG0(1, 32, 2, FALSE, FALSE, 14, 10, 0);
-			DO_BG_HIRES0_OFFSET0_D2_BG0(2, 64, 2, FALSE, FALSE,  7,  3, 0);
-			DO_BG_HIRES0_OFFSET0_D2_BG0(3, 96, 2, FALSE, FALSE,  6,  2, 0);
+			DO_BG_HIRES0_OFFSET0_D2(0,  0, 2, FALSE, FALSE, 15, 11, 0);
+			DO_BG_HIRES0_OFFSET0_D2(1, 32, 2, FALSE, FALSE, 14, 10, 0);
+			DO_BG_HIRES0_OFFSET0_D2(2, 64, 2, FALSE, FALSE,  7,  3, 0);
+			DO_BG_HIRES0_OFFSET0_D2(3, 96, 2, FALSE, FALSE,  6,  2, 0);
 			REPORT_SCREEN();
 			break;
 
