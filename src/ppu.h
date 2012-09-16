@@ -587,4 +587,6 @@ void S9xUpdateScreen (void);
 bool8 S9xGraphicsInit (void);
 void S9xGraphicsDeinit (void);
 
+extern bool8 coldata_update_screen;
+
 #endif

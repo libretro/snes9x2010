@@ -380,11 +380,13 @@ SNES_TR_MASK
 #define TIMER_DELAY 10
 //#define DEBUG_CONTROLS 1
 
+extern bool8 coldata_update_screen;
+
 static void report_buttons (void)
 {
    int i, j, _x, _y, port;
 #ifdef DEBUG_CONTROLS
-   bool pressed_r2, pressed_l2, pressed_l3, pressed_r3;
+   bool pressed_r2, pressed_l2;
    static unsigned timeout = TIMER_DELAY;
 #endif
 
@@ -407,30 +409,16 @@ static void report_buttons (void)
 		      pressed_l2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
 		      if(pressed_l2 && timeout == 0)
 		      {
-			      Settings.SupportHiRes = !Settings.SupportHiRes;
+			      coldata_update_screen = !coldata_update_screen;
                               timeout = TIMER_DELAY;
-			      fprintf(stderr, "SupportHiRes: %d.\n", Settings.SupportHiRes);
+			      fprintf(stderr, "coldata_update_screen: %d.\n", coldata_update_screen);
 		      }
 		      pressed_r2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
 		      if(pressed_r2 && timeout == 0)
 		      {
-			      Settings.DisableGraphicWindows = !Settings.DisableGraphicWindows;
+			      PPU.RenderSub = !PPU.RenderSub;
                               timeout = TIMER_DELAY;
-			      fprintf(stderr, "DisableGraphicWindows: %d.\n", Settings.DisableGraphicWindows);
-		      }
-		      pressed_l3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3);
-		      if(pressed_l3 && timeout == 0)
-		      {
-			      PPU.RenderSubHack2 = !PPU.RenderSubHack2;
-                              timeout = TIMER_DELAY;
-			      fprintf(stderr, "RenderSubHack2: %d.\n", PPU.RenderSubHack2);
-		      }
-		      pressed_r3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
-		      if(pressed_r3 && timeout == 0)
-		      {
-			      PPU.RenderSubHack = !PPU.RenderSubHack;
-                              timeout = TIMER_DELAY;
-			      fprintf(stderr, "RenderSubHack: %d.\n", PPU.RenderSubHack);
+			      fprintf(stderr, "RenderSub: %d.\n", PPU.RenderSub);
 		      }
 #endif
 		      break;

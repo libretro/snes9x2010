@@ -336,8 +336,12 @@ static INLINE void speedhacks_manager (void)
 		{
 			PPU.FullClipping = FALSE;
 			var_mem = Memory.RAM[0x0063]; /* menu on/off - 7E0063 */
+			uint8 var_mem2 = Memory.RAM[0x3A8F]; /* battle active - 3A8F */
+			uint8 var_mem3 = Memory.RAM[0x8991]; /* covers window toggle - 8991 */
 			if(var_mem)
-				PPU.FullClipping = TRUE;
+			   PPU.FullClipping = var_mem;
+			coldata_update_screen = (var_mem2 == 1 || var_mem) ? 1 : 0;
+			coldata_update_screen = (var_mem3 == 0) ? 1 : coldata_update_screen;
 			break;
 		}
 		#if 0

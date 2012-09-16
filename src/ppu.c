@@ -3025,6 +3025,8 @@ static void S9xSetSuperFX (uint8 byte, uint16 address)
 	Memory.RAM[PPU.WRAM++] = Byte; \
 	PPU.WRAM &= 0x1ffff;
 
+bool8 coldata_update_screen = TRUE;
+
 void S9xSetPPU (uint8 Byte, uint16 Address)
 {
 	// MAP_PPU: $2000-$3FFF
@@ -3560,7 +3562,7 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 			case 0x2132: // COLDATA
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
+					if ((IPPU.PreviousLine != IPPU.CurrentLine) & coldata_update_screen)
 						S9xUpdateScreen();
 
 					if (Byte & 0x80)
