@@ -2836,7 +2836,6 @@ void InitROM (void)
 				//|| MATCH_NA("JIM POWER THE LOST DIO") /* Jim Power The Lost Dimension */
 				//|| MATCH_ID("A3C")		/* Donkey Kong Country 3*/
 				//|| MATCH_NA("Secret of MANA") /* Secret of Mana */
-				|| MATCH_NA("Street Fighter2 Turbo1") /* Street Fighter II Turbo */
 				//|| MATCH_ID("A2J")		/* Jurassic Park 2 */
 				//|| MATCH_ID("AJL")		/* Justice League */
 				//|| MATCH_NA("JOE AND MAC")	/* Joe and Mac */
