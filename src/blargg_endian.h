@@ -56,7 +56,7 @@
 
 /* BLARGG_CPU_CISC: Defined if CPU has very few general-purpose registers (< 16) */
 #if defined (_M_IX86) || defined (_M_IA64) || defined (__i486__) || \
-		defined (__x86_64__) || defined (__ia64__) || defined (__i386__)
+		defined (__x86_64__) || defined (__ia64__) || defined (__i386__) || defined(ANDROID_X86)
 	#define BLARGG_CPU_X86 1
 	#define BLARGG_CPU_CISC 1
 #endif
@@ -79,7 +79,8 @@
 	#endif
 #else
 
-#if defined (LSB_FIRST) || defined (__LITTLE_ENDIAN__) || BLARGG_CPU_X86 || \
+#if defined (LSB_FIRST) || defined (__LITTLE_ENDIAN__) || BLARGG_CPU_X86 ||  \
+                defined(ANDROID_X86) || defined(ANDROID_MIPS) || \
 		(defined (LITTLE_ENDIAN) && LITTLE_ENDIAN+0 != 1234)
 	#define BLARGG_LITTLE_ENDIAN 1
 #endif
@@ -88,7 +89,7 @@
 	defined (__sparc__)     ||  BLARGG_CPU_POWERPC || \
 	(defined (BIG_ENDIAN) && BIG_ENDIAN+0 != 4321)
 	#define BLARGG_BIG_ENDIAN 1
-#elif !defined (__mips__)
+#elif !defined(__mips__) || !defined(ANDROID_MIPS)
 	/* No endian specified; assume little-endian, since it's most common */
 	#define BLARGG_LITTLE_ENDIAN 1
 #endif
