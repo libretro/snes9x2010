@@ -195,18 +195,21 @@
 
 static INLINE uint16 COLOR_SUB (uint16 C1, uint16 C2)
 {
-	int16 color_r, color_b, color_g;
-	
-	color_r = (((C1 & FIRST_COLOR_MASK) - (C2 & FIRST_COLOR_MASK)));
-	color_r = ISEL16(color_r, color_r, 0);
-	
-	color_g = ((C1 & SECOND_COLOR_MASK) - (C2 & SECOND_COLOR_MASK));
-	color_g = ISEL16(color_g, color_g, 0);
+	uint16	mC1, mC2, v = ALPHA_BITS_MASK;
 
-	color_b = ((C1 & THIRD_COLOR_MASK) - (C2 & THIRD_COLOR_MASK));
-	color_b = ISEL16(color_b, color_b, 0);
+	mC1 = C1 & FIRST_COLOR_MASK;
+	mC2 = C2 & FIRST_COLOR_MASK;
+	if (mC1 > mC2) v += (mC1 - mC2);
 
-	return (ALPHA_BITS_MASK + color_r + color_g + color_b);
+	mC1 = C1 & SECOND_COLOR_MASK;
+	mC2 = C2 & SECOND_COLOR_MASK;
+	if (mC1 > mC2) v += (mC1 - mC2);
+
+	mC1 = C1 & THIRD_COLOR_MASK;
+	mC2 = C2 & THIRD_COLOR_MASK;
+	if (mC1 > mC2) v += (mC1 - mC2);
+
+	return (v);
 }
 
 static uint16	DirectColourMaps[8][256];
@@ -214,12 +217,10 @@ static uint16 BlackColourMap[256] = {0};
 
 static void S9xBuildDirectColourMaps (void)
 {
-	uint32 p, c;
-
 	IPPU.XB = mul_brightness[PPU.Brightness];
 
-	for (p = 0; p < 8; p++)
-		for (c = 0; c < 256; c++)
+	for (uint32 p = 0; p < 8; p++)
+		for (uint32 c = 0; c < 256; c++)
 			DirectColourMaps[p][c] = BUILD_PIXEL(IPPU.XB[((c & 7) << 2) | ((p & 1) << 1)], IPPU.XB[((c & 0x38) >> 1) | (p & 2)], IPPU.XB[((c & 0xc0) >> 3) | (p & 4)]);
 
 	IPPU.DirectColourMapsNeedRebuild = FALSE;
