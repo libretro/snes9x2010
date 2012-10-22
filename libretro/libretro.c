@@ -337,6 +337,14 @@ void retro_init (void)
    if (!environ_cb(RETRO_ENVIRONMENT_GET_OVERSCAN, &use_overscan))
 	   use_overscan = FALSE;
 
+#ifdef FRONTEND_SUPPORTS_RGB565
+   unsigned rgb565 = RETRO_PIXEL_FORMAT_RGB565;
+   environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565);
+
+   if (rgb565)
+      fprintf(stderr, "Frontend supports RGB565 - will use that instead of XRGB1555.\n");
+#endif
+
    snes_init();
 }
 
