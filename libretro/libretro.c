@@ -338,10 +338,8 @@ void retro_init (void)
 	   use_overscan = FALSE;
 
 #ifdef FRONTEND_SUPPORTS_RGB565
-   unsigned rgb565 = RETRO_PIXEL_FORMAT_RGB565;
-   environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565);
-
-   if (rgb565)
+   enum retro_pixel_format rgb565 = RETRO_PIXEL_FORMAT_RGB565;
+   if(environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565))
       fprintf(stderr, "Frontend supports RGB565 - will use that instead of XRGB1555.\n");
 #endif
 
