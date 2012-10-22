@@ -294,9 +294,6 @@ struct InternalPPU
 	int	CurrentLine;
 	int	PreviousLine;
 	uint8	*XB;
-	uint32	Red[256];
-	uint32	Green[256];
-	uint32	Blue[256];
 	uint16	ScreenColors[256];
 	uint8	MaxBrightness;
 	int	RenderedScreenWidth;
