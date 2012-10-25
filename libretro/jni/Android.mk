@@ -8,6 +8,7 @@ LOCAL_MODULE    := retro
 
 ifeq ($(TARGET_ARCH),arm)
 LOCAL_CFLAGS += -DANDROID_ARM
+LOCAL_ARM_MODE := arm
 endif
 
 ifeq ($(TARGET_ARCH),x86)
