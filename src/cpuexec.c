@@ -314,7 +314,7 @@ static void S9xCheckMissingHTimerHalt(void)
 
 static INLINE void speedhacks_manager (void)
 {
-	uint8 var_mem;
+	uint8 var_mem, var_mem2, var_mem3;
 
 	switch(Settings.SpeedhackGameID)
 	{
@@ -338,8 +338,8 @@ static INLINE void speedhacks_manager (void)
 			coldata_update_screen = FALSE;
 
 			var_mem = Memory.RAM[0x0063]; /* menu on/off - 7E0063 */
-			uint8 var_mem2 = Memory.RAM[0x3A8F]; /* battle active - 3A8F */
-			uint8 var_mem3 = Memory.RAM[0x00BA]; /* covers window toggle - 8991 */
+			var_mem2 = Memory.RAM[0x3A8F]; /* battle active - 3A8F */
+			var_mem3 = Memory.RAM[0x00BA]; /* covers window toggle - 8991 */
 			if(var_mem)
 			   PPU.FullClipping = var_mem;
 

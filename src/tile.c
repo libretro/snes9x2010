@@ -217,10 +217,11 @@ static uint16 BlackColourMap[256] = {0};
 
 static void S9xBuildDirectColourMaps (void)
 {
+   uint32 p, c;
 	IPPU.XB = mul_brightness[PPU.Brightness];
 
-	for (uint32 p = 0; p < 8; p++)
-		for (uint32 c = 0; c < 256; c++)
+	for (p = 0; p < 8; p++)
+		for (c = 0; c < 256; c++)
 			DirectColourMaps[p][c] = BUILD_PIXEL(IPPU.XB[((c & 7) << 2) | ((p & 1) << 1)], IPPU.XB[((c & 0x38) >> 1) | (p & 2)], IPPU.XB[((c & 0xc0) >> 3) | (p & 4)]);
 
 	IPPU.DirectColourMapsNeedRebuild = FALSE;
