@@ -50,8 +50,8 @@ else ifeq ($(platform), psl1ght)
    CC = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
    AR = $(PS3DEV)/ppu/bin/ppu-ar$(EXE_EXT)
    CFLAGS += -DBLARGG_BIG_ENDIAN=1 -D__ppc__
-else ifeq ($(platform), psp)
-	TARGET := libretro_psp.a
+else ifeq ($(platform), psp1)
+	TARGET := libretro_psp1.a
 	CC = psp-gcc$(EXE_EXT)
 	AR = psp-ar$(EXE_EXT)
 	CFLAGS += -DPSP
@@ -116,7 +116,7 @@ else ifeq ($(platform), sncps3)
 	$(AR) rcs $@ $(OBJECTS)
 else ifeq ($(platform), psl1ght)
 	$(AR) rcs $@ $(OBJECTS)
-else ifeq ($(platform), psp)
+else ifeq ($(platform), psp1)
 	$(AR) rcs $@ $(OBJECTS)
 else ifeq ($(platform), xenon)
 	$(AR) rcs $@ $(OBJECTS)
