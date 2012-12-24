@@ -2614,7 +2614,7 @@ void InitROM (void)
 	/* FORCIBLY DISABLE HIGH-RES */
 	if (		
 			MATCH_NA("DONKEY KONG COUNTRY")		/* Donkey Kong Country */
-			|| MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
+			//|| MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
 			|| MATCH_ID("AD8")			/* Doom */
 #if defined(_XBOX1) || defined(GEKKO)
 			|| MATCH_NN("SeikenDensetsu3") 
@@ -2642,7 +2642,7 @@ void InitROM (void)
 				|| MATCH_NA("AREA88")		/* Area 88 */
 				|| MATCH_NA("U.N.Squadron")	/* UN Squadron */
 				|| MATCH_NA("Perfect Eleven")	/* Perfect Eleven - ISS1 */
-				|| MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
+				//|| MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
 				|| MATCH_ID("AWJ")		/* ISS Deluxe / World Soccer 2 Fighting Eleven */
 				|| MATCH_NA("JIM POWER THE LOST DIO") /* Jim Power The Lost Dimension */
 				|| MATCH_ID("A3C")		/* Donkey Kong Country 3*/
@@ -2831,7 +2831,7 @@ void InitROM (void)
 				//|| MATCH_NA("AREA88")		/* Area 88 */
 				//|| MATCH_NA("U.N.Squadron")	/* UN Squadron */
 				//|| MATCH_NA("Perfect Eleven")	/* Perfect Eleven - ISS1 */
-				MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
+				//MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
 				//|| MATCH_ID("AWJ")		/* ISS Deluxe / World Soccer 2 Fighting Eleven */
 				//|| MATCH_NA("JIM POWER THE LOST DIO") /* Jim Power The Lost Dimension */
 				//|| MATCH_ID("A3C")		/* Donkey Kong Country 3*/
@@ -2853,7 +2853,7 @@ void InitROM (void)
 			//|| MATCH_NA("T.M.N.T.")		/* Teenage Mutant Ninja Turtles 4 - Turtles In Time (J) */
 			//|| MATCH_NA("T.M.N.T.4")	/* Teenage Mutant Ninja Turtles 4 - Turtles In Time (AU) */
 			//|| MATCH_NA("T.M.N.T. 4")	/* Teenage Mutant Ninja Turtles 4 - Turtles In Time (US) */
-			|| MATCH_NA("T.M.N.T. MW")	/* Teenage Mutant Ninja Turtles - Mutant Warriors (J) */
+			MATCH_NA("T.M.N.T. MW")	/* Teenage Mutant Ninja Turtles - Mutant Warriors (J) */
 			|| MATCH_NA("T.M.H.T TF")	/* Teenage Mutant Hero Turtles - Tour Fighters (EU) */
 			|| MATCH_NA("T.M.N.T. TF")	/* Teenage Mutant Ninja Turtles - Tour Fighters (AU) */
 			|| MATCH_NA("T.M.N.T.5")	/* Teenage Mutant Ninja Turtles - Tour Fighters (U) */
