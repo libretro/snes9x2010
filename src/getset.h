@@ -659,6 +659,7 @@ static INLINE void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 		}
 		
 		S9xSetByte(Word >> 8, addr_tmp);
+        return;
 	}
 
 	block = (Address & 0xffffff) >> MEMMAP_SHIFT;
