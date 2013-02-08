@@ -393,7 +393,7 @@ static void report_buttons (void)
 {
    int i, j, _x, _y, port;
 #ifdef DEBUG_CONTROLS
-   bool pressed_r2, pressed_l2;
+   bool pressed_r2, pressed_l2, pressed_r3;
    static unsigned timeout = TIMER_DELAY;
 #endif
 
@@ -426,6 +426,13 @@ static void report_buttons (void)
 			      PPU.RenderSub = !PPU.RenderSub;
                               timeout = TIMER_DELAY;
 			      fprintf(stderr, "RenderSub: %d.\n", PPU.RenderSub);
+		      }
+		      pressed_r3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
+		      if(pressed_r3 && timeout == 0)
+		      {
+			      PPU.SFXSpeedupHack = !PPU.SFXSpeedupHack;
+               timeout = TIMER_DELAY;
+			      fprintf(stderr, "SFXSpeedupHack: %d.\n", PPU.SFXSpeedupHack);
 		      }
 #endif
 		      break;
