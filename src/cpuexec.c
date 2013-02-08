@@ -317,63 +317,65 @@ static INLINE void speedhacks_manager (void)
 	uint8 var_mem, var_mem2, var_mem3;
 
 	switch(Settings.SpeedhackGameID)
-	{
-		case SPEEDHACK_CT:
-			/* Chrono Trigger mid-frame overscan hack - field to battle transition */
-			if (IPPU.RenderedScreenHeight == 239)
-				IPPU.RenderedScreenHeight = 224;
-			break;
-		case SPEEDHACK_DKC1:
-		{
-			PPU.SFXSpeedupHack = FALSE;
-			var_mem = Memory.RAM[0x003E]; /* current level - 7E003E */
-			//fprintf(stderr, "current_level: %d.\n", ram);
-			if(var_mem == 49 || var_mem == 217 || var_mem == 66 || var_mem == 67)
-				PPU.SFXSpeedupHack = TRUE;
-			break;
-		}
-		case SPEEDHACK_FF6:
-		{
-			PPU.FullClipping = FALSE;
-			coldata_update_screen = FALSE;
+   {
+      case SPEEDHACK_CT:
+         /* Chrono Trigger mid-frame overscan hack - field to battle transition */
+         if (IPPU.RenderedScreenHeight == 239)
+            IPPU.RenderedScreenHeight = 224;
+         break;
+      case SPEEDHACK_DKC1:
+         PPU.SFXSpeedupHack = FALSE;
+         var_mem = Memory.RAM[0x003E]; /* current level - 7E003E */
+         //fprintf(stderr, "current_level: %d.\n", ram);
+         if(var_mem == 49 || var_mem == 217 || var_mem == 66 || var_mem == 67)
+            PPU.SFXSpeedupHack = TRUE;
+         break;
+      case SPEEDHACK_FF6:
+         PPU.FullClipping = FALSE;
+         coldata_update_screen = FALSE;
 
-			var_mem = Memory.RAM[0x0063]; /* menu on/off - 7E0063 */
-			var_mem2 = Memory.RAM[0x3A8F]; /* battle active - 3A8F */
-			var_mem3 = Memory.RAM[0x00BA]; /* covers window toggle - 8991 */
-			if(var_mem)
-			   PPU.FullClipping = var_mem;
+         var_mem = Memory.RAM[0x0063]; /* menu on/off - 7E0063 */
+         var_mem2 = Memory.RAM[0x3A8F]; /* battle active - 3A8F */
+         var_mem3 = Memory.RAM[0x00BA]; /* covers window toggle - 8991 */
+         if(var_mem)
+            PPU.FullClipping = var_mem;
 
-			/* check if window toggle is on */
-			if(var_mem3 == 1)
-			   coldata_update_screen = TRUE;
-			/* check if menu or battle screen is on */
-			if(var_mem2 == 1)
-			   coldata_update_screen = TRUE;
-			if(var_mem)
-			   coldata_update_screen = TRUE;
-			break;
-		}
-		#if 0
-		case SPEEDHACK_KILLER_INSTINCT:
-		{
-			PPU.SFXSpeedupHack = TRUE;
-			//fprintf(stderr, "character: %d\n", Memory.RAM[0x024E]);
-			//fprintf(stderr, "character #2: %d\n", Memory.RAM[0x0252]);
-			//fprintf(stderr, "stage: %d\n", Memory.RAM[0x12F0]);
-			uint8 level = Memory.RAM[0x12F0]; /* current level - 8012F0XX */
-			if(level == 8)
-				PPU.SFXSpeedupHack = FALSE;
-			break;
-		}
-		case SPEEDHACK_SUPER_METROID:
-		{
-			uint8 song = (Memory.RAM[0x07f3] | Memory.RAM[0x07f4] << 8);
-			fprintf(stderr, "current_song: %d.\n", song);
-		}
-		#endif
-		default:
-			break;
-	}
+         /* check if window toggle is on */
+         if(var_mem3 == 1)
+            coldata_update_screen = TRUE;
+         /* check if menu or battle screen is on */
+         if(var_mem2 == 1)
+            coldata_update_screen = TRUE;
+         if(var_mem)
+            coldata_update_screen = TRUE;
+         break;
+#if 0
+      case SPEEDHACK_KILLER_INSTINCT:
+         {
+            PPU.SFXSpeedupHack = TRUE;
+            //fprintf(stderr, "character: %d\n", Memory.RAM[0x024E]);
+            //fprintf(stderr, "character #2: %d\n", Memory.RAM[0x0252]);
+            //fprintf(stderr, "stage: %d\n", Memory.RAM[0x12F0]);
+            uint8 level = Memory.RAM[0x12F0]; /* current level - 8012F0XX */
+            if(level == 8)
+               PPU.SFXSpeedupHack = FALSE;
+            break;
+         }
+      case SPEEDHACK_SUPER_METROID:
+         {
+            uint8 song = (Memory.RAM[0x07f3] | Memory.RAM[0x07f4] << 8);
+            fprintf(stderr, "current_song: %d.\n", song);
+         }
+#endif
+      case SPEEDHACK_STAR_FOX_1:
+         if (PPU.BGMode == 1 || PPU.BGMode == 2)
+            PPU.SFXSpeedupHack = TRUE;
+         else
+            PPU.SFXSpeedupHack = FALSE;
+         break;
+      default:
+         break;
+   }
 }
 
 static void S9xEndScreenRefresh (void)
