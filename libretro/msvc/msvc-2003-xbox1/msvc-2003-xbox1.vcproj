@@ -35,7 +35,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libretro_xdk.lib"/>
+				OutputFile="$(OutDir)/snes9x_next_libretro_xdk.lib"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -70,7 +70,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libretro_xdk.lib"/>
+				OutputFile="$(OutDir)/snes9x_next_libretro_xdk.lib"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -106,7 +106,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libretro_xdk.lib"/>
+				OutputFile="$(OutDir)/snes9x_next_libretro_xdk.lib"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -143,7 +143,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libretro_xdk.lib"
+				OutputFile="$(OutDir)/snes9x_next_libretro_xdk.lib"
 				IgnoreAllDefaultLibraries="TRUE"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
@@ -182,7 +182,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)/libretro_xdk.lib"/>
+				OutputFile="$(OutDir)/snes9x_next_libretro_xdk.lib"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
