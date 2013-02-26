@@ -81,7 +81,7 @@
 
 #if defined (LSB_FIRST) || defined (__LITTLE_ENDIAN__) || BLARGG_CPU_X86 ||  \
                 defined(ANDROID_X86) || defined(ANDROID_MIPS) || \
-		(defined (LITTLE_ENDIAN) && LITTLE_ENDIAN+0 != 1234)
+   defined(__BLACKBERRY_QNX__) || (defined (LITTLE_ENDIAN) && LITTLE_ENDIAN+0 != 1234)
 	#define BLARGG_LITTLE_ENDIAN 1
 #endif
 
