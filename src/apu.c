@@ -1147,8 +1147,9 @@ static void dsp_reset (void)
 	};
 
 	/* Resets DSP and uses supplied values to initialize registers */
-	memcpy( dsp_m.regs, initial_regs, sizeof(dsp_m.regs));
-	memset( &dsp_m.regs [REGISTER_COUNT], 0, offsetof (dsp_state_t,ram) - REGISTER_COUNT );
+
+   for (i = 0; i < REGISTER_COUNT; i++)
+      dsp_m.regs[i] = initial_regs[i];
 	
 	/* Internal state */
 	for ( i = VOICE_COUNT; --i >= 0; )
@@ -2895,7 +2896,7 @@ static void spc_reset_common( int timer_counter_init )
 		m.smp_regs[1][R_T0OUT + i] = timer_counter_init;
 	
 	/* Run IPL ROM */
-	memset( &m.cpu_regs, 0, sizeof m.cpu_regs );
+	memset( &m.cpu_regs, 0, sizeof(m.cpu_regs));
 	m.cpu_regs.pc = ROM_ADDR;
 	
 	m.smp_regs[0][R_TEST   ] = 0x0A;
