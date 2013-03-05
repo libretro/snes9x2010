@@ -299,6 +299,9 @@ void _makepath (char * path, const char * a, const char * dir, const char * fnam
 #include <PPCIntrinsics.h>
 #define READ_WORD( s )        (__loadshortbytereverse(0, s))
 #define WRITE_WORD( s, d )    (__storeshortbytereverse(d, 0, s))
+#elif defined(GEKKO)
+#define READ_WORD( addr )        ({unsigned ppc_lhbrx_; asm( "lhbrx %0,0,%1" : "=r" (ppc_lhbrx_) : "r" (addr), "0" (ppc_lhbrx_) ); ppc_lhbrx_;})
+#define WRITE_WORD( addr, in )    ({asm( "sthbrx %0,0,%1" : : "r" (in), "r" (addr) );})
 #else
 #define READ_WORD(s)		(*(uint8 *) (s) | (*((uint8 *) (s) + 1) << 8))
 #define WRITE_WORD(s, d)	*(uint8 *) (s) = (uint8) (d), *((uint8 *) (s) + 1) = (uint8) ((d) >> 8)
