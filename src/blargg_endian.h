@@ -5,10 +5,7 @@
 #define BLARGG_ENDIAN
 
 /* Uncomment to enable platform-specific (and possibly non-portable) optimizations */
-/* FIXME: PS3 doesn't yet work with this, figure out a way - intrinsics instead of inline ASM? */
-#ifndef __CELLOS_LV2__
 #define BLARGG_NONPORTABLE 1
-#endif
 
 /* PS3 - if SNC compiler is used - enable platform-specific optimizations  */
 #ifdef __SNC__
