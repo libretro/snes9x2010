@@ -3686,6 +3686,10 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 	Memory.FillRAM[Address] = Byte;
 }
 
+#if 0
+#include "getppu-functable.h"
+#endif
+
 uint8 S9xGetPPU (uint16 Address)
 {
 	/* MAP_PPU: $2000-$3FFF */
@@ -3709,6 +3713,10 @@ uint8 S9xGetPPU (uint16 Address)
 		}
 	}
 
+#if 0
+   if (Address <= 0x2183)
+      return GetPPU[Address - 0x2100](Address);
+#else
 	if ((Address & 0xffc0) == 0x2140) /* APUIO0, APUIO1, APUIO2, APUIO3 */
 	{
 		/* will run the APU until given APU time before reading value */
@@ -3946,6 +3954,7 @@ uint8 S9xGetPPU (uint16 Address)
 				return (OpenBus);
 		}
 	}
+#endif
 	else
 	{
 		if (Settings.SuperFX && Address >= 0x3000 && Address <= 0x32ff)
