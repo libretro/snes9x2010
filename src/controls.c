@@ -1447,85 +1447,64 @@ const char * S9xGetCrosshair (int idx)
 
 void S9xControlEOF (void)
 {
-	PPU.GunVLatch = 1000; /* i.e., never latch */
-	PPU.GunHLatch = 0;
+   struct crosshair	*c;
+   int			i, n;
 
-	if(pad_read)
-	{
-		struct crosshair	*c;
-		int			i, n;
+   for ( n = 0; n < 2; n++)
+   {
+      switch (i = curcontrollers[n])
+      {
+         case MOUSE0:
+         case MOUSE1:
+            c = &mouse[i - MOUSE0].crosshair;
+            if(Settings.Crosshair)
+               S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, mouse[i - MOUSE0].cur_x, mouse[i - MOUSE0].cur_y);
+            break;
 
-		for ( n = 0; n < 2; n++)
-		{
-			switch (i = curcontrollers[n])
-			{
-				case MP5:
-				case JOYPAD0:
-				case JOYPAD1:
-				case JOYPAD2:
-				case JOYPAD3:
-				case JOYPAD4:
-				case JOYPAD5:
-				case JOYPAD6:
-				case JOYPAD7:
-					break;
-				case MOUSE0:
-				case MOUSE1:
-					c = &mouse[i - MOUSE0].crosshair;
-					if(Settings.Crosshair)
-						S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, mouse[i - MOUSE0].cur_x, mouse[i - MOUSE0].cur_y);
-					break;
+         case SUPERSCOPE:
+            if (n == 1 && !(superscope.phys_buttons & SUPERSCOPE_OFFSCREEN))
+            {
+               if (superscope.next_buttons & (SUPERSCOPE_FIRE | SUPERSCOPE_CURSOR))
+                  DoGunLatch(superscope.x, superscope.y);
 
-				case SUPERSCOPE:
-					if (n == 1 && !(superscope.phys_buttons & SUPERSCOPE_OFFSCREEN))
-					{
-						if (superscope.next_buttons & (SUPERSCOPE_FIRE | SUPERSCOPE_CURSOR))
-							DoGunLatch(superscope.x, superscope.y);
+               c = &superscope.crosshair;
+               if(Settings.Crosshair)
+                  S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, superscope.x, superscope.y);
+            }
 
-						c = &superscope.crosshair;
-						if(Settings.Crosshair)
-							S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, superscope.x, superscope.y);
-					}
+            break;
 
-					break;
+         case TWO_JUSTIFIERS:
+            if (n == 1 && !justifier.offscreen[1])
+            {
+               c = &justifier.crosshair[1];
+               if(Settings.Crosshair)
+                  S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[1], justifier.y[1]);
+            }
 
-				case TWO_JUSTIFIERS:
-					if (n == 1 && !justifier.offscreen[1])
-					{
-						c = &justifier.crosshair[1];
-						if(Settings.Crosshair)
-							S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[1], justifier.y[1]);
-					}
+            i = (justifier.buttons & JUSTIFIER_SELECT) ?  1 : 0;
+            goto do_justifier;
 
-					i = (justifier.buttons & JUSTIFIER_SELECT) ?  1 : 0;
-					goto do_justifier;
-
-				case ONE_JUSTIFIER:
-					i = (justifier.buttons & JUSTIFIER_SELECT) ? -1 : 0;
+         case ONE_JUSTIFIER:
+            i = (justifier.buttons & JUSTIFIER_SELECT) ? -1 : 0;
 
 do_justifier:
-					if (n == 1)
-					{
-						if (i >= 0 && !justifier.offscreen[i])
-							DoGunLatch(justifier.x[i], justifier.y[i]);
+            if (n == 1)
+            {
+               if (i >= 0 && !justifier.offscreen[i])
+                  DoGunLatch(justifier.x[i], justifier.y[i]);
 
-						if (!justifier.offscreen[0])
-						{
-							c = &justifier.crosshair[0];
-							if(Settings.Crosshair)
-								S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[0], justifier.y[0]);
-						}
-					}
+               if (!justifier.offscreen[0])
+               {
+                  c = &justifier.crosshair[0];
+                  if(Settings.Crosshair)
+                     S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[0], justifier.y[0]);
+               }
+            }
 
-					break;
-
-				default:
-					break;
-			}
-		}
-	}
-
-	pad_read      = FALSE;
+            break;
+      }
+   }
 }
 
 void S9xControlPreSaveState (struct SControlSnapshot *s)

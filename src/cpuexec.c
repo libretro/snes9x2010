@@ -382,7 +382,13 @@ static void S9xEndScreenRefresh (void)
 {
 	FLUSH_REDRAW();
 
-	S9xControlEOF();
+   PPU.GunVLatch = 1000; /* i.e., never latch */
+   PPU.GunHLatch = 0;
+
+   if (!Settings.NormalControls && pad_read)
+      S9xControlEOF();
+
+	pad_read      = FALSE;
 
 	if(Settings.SpeedhackGameID > SPEEDHACK_NONE)
 		speedhacks_manager();
