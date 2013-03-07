@@ -632,21 +632,6 @@ s9xcommand_t S9xGetCommandT (const char *name)
 	return (cmd);
 }
 
-static const char * maptypename (int t)
-{
-	switch (t)
-	{
-		case MAP_UNMAPPED:
-			return ("unmapped");
-		case MAP_BUTTON:
-			return ("button");
-		case MAP_POINTER:
-			return ("pointer");
-		default:
-			return ("unknown");
-	}
-}
-
 static void S9xUnmapID (uint32 id)
 {
 	if (mouse[0].ID     == id)
@@ -681,22 +666,9 @@ bool8 S9xMapButton (uint32 id, s9xcommand_t mapping)
 	return TRUE;
 }
 
-void S9xReportButton (uint32 id, bool8 pressed)
-{
-	if (maptype(keymap[id].type) != MAP_BUTTON)
-	{
-		fprintf(stderr, "ERROR: S9xReportButton called on %s ID 0x%08x\n", maptypename(maptype(keymap[id].type)), id);
-		return;
-	}
-
-	S9xApplyCommand(keymap[id], pressed, 0);
-}
-
 bool8 S9xMapPointer (uint32 id, s9xcommand_t mapping)
 {
-	int t;
-
-	t = maptype(mapping.type);
+	int t = maptype(mapping.type);
 
 	if (t != MAP_POINTER)
 		return FALSE;
@@ -747,37 +719,12 @@ bool8 S9xMapPointer (uint32 id, s9xcommand_t mapping)
 	return TRUE;
 }
 
-void S9xReportPointer (uint32 id, int16 x, int16 y)
-{
-	if (maptype(keymap[id].type) != MAP_POINTER)
-	{
-		fprintf(stderr, "ERROR: S9xReportPointer called on %s ID 0x%08x\n", maptypename(maptype(keymap[id].type)), id);
-		return;
-	}
-
-	S9xApplyCommand(keymap[id], x, y);
-}
-
 void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 {
-	int i;
-
-	i = 0;
+	int i = 0;
 
 	switch (cmd.type)
 	{
-		#ifdef GEKKO
-		case S9xButtonJoypad:
-			{
-				uint16 r = cmd.commandunion.button.joypad;
-
-				if (data1)
-					joypad[data2] |= r;
-				else
-					joypad[data2] &= ~r;
-			}
-			return;
-		#endif
 		case S9xButtonMouse:
 			if (cmd.commandunion.button.mouse.left )	i |= 0x40;
 			if (cmd.commandunion.button.mouse.right)	i |= 0x80;
@@ -874,9 +821,7 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 static void UpdatePolledMouse (int i)
 {
-	int16 j;
-
-	j = mouse[i - MOUSE0].cur_x - mouse[i - MOUSE0].old_x;
+	int16 j = mouse[i - MOUSE0].cur_x - mouse[i - MOUSE0].old_x;
 
 	if (j < -127)
 	{
@@ -926,15 +871,6 @@ static void UpdatePolledMouse (int i)
 		mouse[i - MOUSE0].old_y = mouse[i - MOUSE0].cur_y;
 	}
 }
-
-#define S9xSetJoypadLatch_Latch0() \
-	if (FLAG_LATCH) \
-	{ \
-		/* 1 written, 'plug in' new controllers now */ \
-		curcontrollers[0] = newcontrollers[0]; \
-		curcontrollers[1] = newcontrollers[1]; \
-	} \
-	FLAG_LATCH = 0;
 
 void S9xSetJoypadLatch (bool8 latch)
 {
@@ -1156,7 +1092,14 @@ void S9xDoAutoJoypad (void)
 	int	i, j, n;
 
 	S9xSetJoypadLatch(1);
-	S9xSetJoypadLatch_Latch0();
+
+	if (FLAG_LATCH)
+	{
+		/* 1 written, 'plug in' new controllers now */
+		curcontrollers[0] = newcontrollers[0];
+		curcontrollers[1] = newcontrollers[1];
+	}
+	FLAG_LATCH = 0;
 
 	for ( n = 0; n < 2; n++)
 	{

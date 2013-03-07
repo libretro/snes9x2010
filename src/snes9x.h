@@ -446,6 +446,7 @@ struct SSettings
 	bool8		CurrentROMisMouseCompatible;
 	bool8		CurrentROMisSuperScopeCompatible;
 	bool8		CurrentROMisJustifierCompatible;
+   bool8    NormalControls;
 	bool8		SupportHiRes;
 	bool8		Transparency;
 };
