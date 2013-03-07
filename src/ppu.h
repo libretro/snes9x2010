@@ -295,7 +295,6 @@ struct InternalPPU
 	int	PreviousLine;
 	uint8	*XB;
 	uint16	ScreenColors[256];
-	uint8	MaxBrightness;
 	int	RenderedScreenWidth;
 	int	RenderedScreenHeight;
 };

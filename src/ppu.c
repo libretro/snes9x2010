@@ -3064,8 +3064,6 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 						IPPU.DirectColourMapsNeedRebuild = TRUE;
 						PPU.Brightness = Byte & 0xf;
 						S9xFixColourBrightness();
-						if (PPU.Brightness > IPPU.MaxBrightness)
-							IPPU.MaxBrightness = PPU.Brightness;
 					}
 
 					if ((Memory.FillRAM[MEM_PPU_INIDISP] & 0x80) != (Byte & 0x80))
@@ -5360,7 +5358,6 @@ void S9xSoftResetPPU (void)
 	IPPU.XB = NULL;
 	for ( c = 0; c < 256; c++)
 		IPPU.ScreenColors[c] = c;
-	IPPU.MaxBrightness = 0;
 	IPPU.RenderedScreenWidth = SNES_WIDTH;
 	IPPU.RenderedScreenHeight = SNES_HEIGHT;
 

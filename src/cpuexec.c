@@ -993,7 +993,6 @@ void S9xDoHEventProcessing (void)
 				S9xEndScreenRefresh();
 				PPU.HDMA = 0;
 				/* Bits 7 and 6 of $4212 are computed when read in S9xGetPPU. */
-				IPPU.MaxBrightness = PPU.Brightness;
 				PPU.ForcedBlanking = (Memory.FillRAM[0x2100] >> 7) & 1;
 
 				if (!PPU.ForcedBlanking)
@@ -1043,8 +1042,6 @@ void S9xDoHEventProcessing (void)
 					bool8 cond_1, cond_2;
 
 					GFX.DoInterlace -= (GFX.DoInterlace == TRUE);
-
-					IPPU.MaxBrightness = PPU.Brightness;
 
 					IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
 					IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
