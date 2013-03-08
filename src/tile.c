@@ -213,6 +213,7 @@ static INLINE uint16 COLOR_SUB (uint16 C1, uint16 C2)
 }
 
 static uint16	DirectColourMaps[8][256];
+static uint16 BlackColourMap[256] = {0};
 
 static void S9xBuildDirectColourMaps (void)
 {
@@ -835,7 +836,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 	} \
 	else \
 		GFX.RealScreenColors = &IPPU.ScreenColors[((Tile >> BG.PaletteShift) & BG.PaletteMask) + BG.StartPalette]; \
-	GFX.ScreenColors = GFX.ClipColors ? 0 : GFX.RealScreenColors
+	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors
 
 #define NOMATH(Op, Main, Sub, SD) \
 	(Main)
@@ -972,12 +973,18 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 		bp = pCache + BPSTART; \
 		for (l = LineCount; l > 0; l--, bp += 8 * PITCH, Offset += GFX.PPL) \
 		{ \
-         unsigned i = StartPixel; \
 			w = Width; \
-         do { \
-            DRAW_PIXEL(i, Pix = bp[i]); \
-            i++; \
-         } while(--w > 0); \
+			switch (StartPixel) \
+			{ \
+				case 0: DRAW_PIXEL(0, Pix = bp[0]); if (!--w) break; \
+				case 1: DRAW_PIXEL(1, Pix = bp[1]); if (!--w) break; \
+				case 2: DRAW_PIXEL(2, Pix = bp[2]); if (!--w) break; \
+				case 3: DRAW_PIXEL(3, Pix = bp[3]); if (!--w) break; \
+				case 4: DRAW_PIXEL(4, Pix = bp[4]); if (!--w) break; \
+				case 5: DRAW_PIXEL(5, Pix = bp[5]); if (!--w) break; \
+				case 6: DRAW_PIXEL(6, Pix = bp[6]); if (!--w) break; \
+				case 7: DRAW_PIXEL(7, Pix = bp[7]); break; \
+			} \
 		} \
 	} \
 	else \
@@ -1006,12 +1013,18 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 		bp = pCache + 56 - BPSTART; \
 		for (l = LineCount; l > 0; l--, bp -= 8 * PITCH, Offset += GFX.PPL) \
 		{ \
-         unsigned i = StartPixel; \
 			w = Width; \
-         do { \
-            DRAW_PIXEL(i, Pix = bp[i]); \
-            i++; \
-         } while(--w > 0); \
+			switch (StartPixel) \
+			{ \
+				case 0: DRAW_PIXEL(0, Pix = bp[0]); if (!--w) break; \
+				case 1: DRAW_PIXEL(1, Pix = bp[1]); if (!--w) break; \
+				case 2: DRAW_PIXEL(2, Pix = bp[2]); if (!--w) break; \
+				case 3: DRAW_PIXEL(3, Pix = bp[3]); if (!--w) break; \
+				case 4: DRAW_PIXEL(4, Pix = bp[4]); if (!--w) break; \
+				case 5: DRAW_PIXEL(5, Pix = bp[5]); if (!--w) break; \
+				case 6: DRAW_PIXEL(6, Pix = bp[6]); if (!--w) break; \
+				case 7: DRAW_PIXEL(7, Pix = bp[7]); break; \
+			} \
 		} \
 	} \
 	else \
@@ -1110,7 +1123,7 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 	uint32	l, x; \
 	\
 	GFX.RealScreenColors = IPPU.ScreenColors; \
-	GFX.ScreenColors = GFX.ClipColors ? 0 : GFX.RealScreenColors; \
+	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
 	\
 	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL) \
 	{ \
@@ -1168,7 +1181,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	else \
 		GFX.RealScreenColors = IPPU.ScreenColors; \
 	\
-	GFX.ScreenColors = GFX.ClipColors ? 0 : GFX.RealScreenColors; \
+	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
 	Offset = GFX.StartY * GFX.PPL; \
 	l = &LineMatrixData[GFX.StartY]; \
 	\
@@ -1263,7 +1276,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	else \
 		GFX.RealScreenColors = IPPU.ScreenColors; \
 	\
-	GFX.ScreenColors = GFX.ClipColors ? 0 : GFX.RealScreenColors; \
+	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
 	\
 	\
 	StartY = GFX.StartY; \
