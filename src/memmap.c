@@ -1752,10 +1752,6 @@ static const char * KartContents (uint8 ROMType)
 	else
 	if (Settings.SA1)
    {
-#if defined(_XBOX1) || defined(GEKKO)
-         /* These systems are too slow for hi-res rendering with SNES9x 1.52 */
-         Settings.SupportHiRes = FALSE;
-#endif
 		strcpy(chip, "+SA-1");
    }
 	else
