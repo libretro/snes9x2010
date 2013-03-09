@@ -744,39 +744,31 @@ static uint8 S9xDoHDMA (uint8 byte)
 							/* HDMA SLOW PATH */
 							uint32	Addr = ShiftedIBank + IAddr;
 
+                     S9xSetPPU(S9xGetByte(Addr), 0x2100 + p->BAddress);
+                     CPU.Cycles += SLOW_ONE_CYCLE;
+
 							switch (p->TransferMode)
 							{
 								case 0:
-									S9xSetPPU(S9xGetByte(Addr), 0x2100 + p->BAddress);
-									CPU.Cycles += SLOW_ONE_CYCLE;
 									break;
-
 								case 5:
-									S9xSetPPU(S9xGetByte(Addr + 0), 0x2100 + p->BAddress);
-									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(S9xGetByte(Addr + 1), 0x2101 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									Addr += 2;
+									S9xSetPPU(S9xGetByte(Addr), 0x2100 + p->BAddress);
+									CPU.Cycles += SLOW_ONE_CYCLE;
 									/* fall through */
 								case 1:
-									S9xSetPPU(S9xGetByte(Addr + 0), 0x2100 + p->BAddress);
-									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(S9xGetByte(Addr + 1), 0x2101 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									break;
-
 								case 2:
 								case 6:
-									S9xSetPPU(S9xGetByte(Addr + 0), 0x2100 + p->BAddress);
-									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(S9xGetByte(Addr + 1), 0x2100 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									break;
-
 								case 3:
 								case 7:
-									S9xSetPPU(S9xGetByte(Addr + 0), 0x2100 + p->BAddress);
-									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(S9xGetByte(Addr + 1), 0x2100 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(S9xGetByte(Addr + 2), 0x2101 + p->BAddress);
@@ -784,10 +776,7 @@ static uint8 S9xDoHDMA (uint8 byte)
 									S9xSetPPU(S9xGetByte(Addr + 3), 0x2101 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									break;
-
 								case 4:
-									S9xSetPPU(S9xGetByte(Addr + 0), 0x2100 + p->BAddress);
-									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(S9xGetByte(Addr + 1), 0x2101 + p->BAddress);
 									CPU.Cycles += SLOW_ONE_CYCLE;
 									S9xSetPPU(S9xGetByte(Addr + 2), 0x2102 + p->BAddress);
