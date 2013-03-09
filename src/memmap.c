@@ -2614,12 +2614,6 @@ void InitROM (void)
 			MATCH_NA("DONKEY KONG COUNTRY")		/* Donkey Kong Country */
 			//|| MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
 			|| MATCH_ID("AD8")			/* Doom */
-#if defined(_XBOX1) || defined(GEKKO)
-			|| MATCH_NN("SeikenDensetsu3") 
-			|| MATCH_NA("SeikenDensetsu3Sample1")	/* Seiken Densetsu 3 */
-			|| MATCH_NA("ROMANCING SAGA3")		/* Romancing Saga 3 */
-		/* These systems are too slow for hi-res rendering with SNES9x 1.52 */
-#endif
 			)
 		Settings.SupportHiRes = FALSE;
 
@@ -2656,9 +2650,6 @@ void InitROM (void)
 			|| MATCH_ID("CQ  ")		/* Stunt Race FX */
 #if defined(_XBOX1) || defined(GEKKO)
 			|| MATCH_ID("AD8")		/* Doom */
-			|| MATCH_ID("A3D")			/* Seiken Densetsu 3 */
-			|| MATCH_NA("SeikenDensetsu3Sample1")	/* Seiken Densetsu 3 */
-			|| MATCH_NA("ROMANCING SAGA3")		/* Romancing Saga 3 */
 #endif
 			|| MATCH_NA("T.M.H.T.4")	/* Teenage Mutant Hero Turtles 4 - Turtles In Time (E) */
 			|| MATCH_NA("T.M.N.T.")		/* Teenage Mutant Ninja Turtles 4 - Turtles In Time (J) */
