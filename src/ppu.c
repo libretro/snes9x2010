@@ -3027,22 +3027,14 @@ static void S9xSetSuperFX (uint8 byte, uint16 address)
 
 bool8 coldata_update_screen = TRUE;
 
-void S9xSetPPU (uint8 Byte, uint16 Address)
+void S9xSetPPU_Normal (uint8 Byte, uint16 Address)
 {
 	// MAP_PPU: $2000-$3FFF
 
-	if (CPU.InDMAorHDMA)
-	{
-		if (CPU.CurrentDMAorHDMAChannel >= 0 && DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer)
-			return;
-		else
-		{
-			// S9xSetPPU() is called to read from $21xx
-			// Take care of DMA wrapping
-			if (Address > 0x21ff)
-				Address = MEM_PPU_INIDISP + (Address & 0xff);
-		}
-	}
+   // S9xSetPPU() is called to read from $21xx
+   // Take care of DMA wrapping
+	if (CPU.InDMAorHDMA && Address > 0x21ff)
+      Address = MEM_PPU_INIDISP + (Address & 0xff);
 
 	if ((Address & 0xffc0) == MEM_PPU_APUIO0) // APUIO0, APUIO1, APUIO2, APUIO3
 		// write_port will run the APU until given clock before writing value
@@ -3688,28 +3680,14 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 #include "getppu-functable.h"
 #endif
 
-uint8 S9xGetPPU (uint16 Address)
+uint8 S9xGetPPU_Normal (uint16 Address)
 {
 	/* MAP_PPU: $2000-$3FFF */
 
-	if (Address < 0x2100)
-		return (OpenBus);
-
-	if (CPU.InDMAorHDMA)
-	{
-		if (CPU.CurrentDMAorHDMAChannel >= 0 && !DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer)
-		{
-			/* S9xGetPPU() is called to read from DMA[].AAddress */
-			return (OpenBus);
-		}
-		else
-		{
-			/* S9xGetPPU() is called to write to $21xx
-			   Take care of DMA wrapping */
-			if (Address > 0x21ff)
-				Address = 0x2100 + (Address & 0xff);
-		}
-	}
+   /* S9xGetPPU() is called to write to $21xx
+      Take care of DMA wrapping */
+   if (CPU.InDMAorHDMA && (Address > 0x21ff))
+      Address = 0x2100 + (Address & 0xff);
 
 #if 0
    if (Address <= 0x2183)
