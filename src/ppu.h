@@ -177,7 +177,6 @@
 #ifndef _PPU_H_
 #define _PPU_H_
 
-#include "dma.h"
 #include "memmap.h"
 
 #define FIRST_VISIBLE_LINE	1
@@ -435,19 +434,10 @@ struct SPPU
 extern struct SPPU		PPU;
 extern struct InternalPPU	IPPU;
 
-#define S9xSetPPU(Byte, Address) \
-{ \
-	if (CPU.InDMAorHDMA && CPU.CurrentDMAorHDMAChannel >= 0 && DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer) {} \
-else { S9xSetPPU_Normal(Byte, Address); } \
-}
-
-#define S9xGetPPU(Address) (((Address < 0x2100) || (CPU.InDMAorHDMA && (CPU.CurrentDMAorHDMAChannel >= 0 && !DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer))) ? OpenBus : S9xGetPPU_Normal(Address))
-
-
 void S9xResetPPU (void);
 void S9xSoftResetPPU (void);
-void S9xSetPPU_Normal (uint8 Byte, uint16 Address);
-uint8 S9xGetPPU_Normal (uint16 Address);
+void S9xSetPPU (uint8 Byte, uint16 Address);
+uint8 S9xGetPPU (uint16 Address);
 void S9xSetCPU (uint8 Byte, uint16 Address);
 uint8 S9xGetCPU (uint16 Address);
 void S9xFixColourBrightness (void);
