@@ -101,6 +101,9 @@ DEFINES    = -DHAVE_STRINGS_H -DHAVE_STDINT_H -DHAVE_INTTYPES_H -D__LIBRETRO__ -
 ifeq ($(platform), sncps3)
 WARNINGS_DEFINES =
 CODE_DEFINES =
+else ifeq ($(platform), ios)
+WARNINGS_DEFINES =
+CODE_DEFINES =
 else
 WARNINGS_DEFINES = -Wall -W -Wno-unused-parameter -Wno-sign-compare -Wno-uninitialized
 CODE_DEFINES = -fomit-frame-pointer -std=gnu99
