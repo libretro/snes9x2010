@@ -42,6 +42,13 @@ else ifeq ($(platform), ios)
 
    CC = clang -arch armv7 -isysroot $(IOSSDK)
    CFLAGS += -DIOS
+else ifeq ($(platform), bb)
+   TARGET := snes9x_next_libretro.so
+   fpic := -fPIC
+   SHARED := -shared -Wl,--version-script=libretro/link.T
+
+   CC = $(QNX_HOST)/usr/bin/qcc
+   CFLAGS += -D__BLACKBERRY_QNX__
 else ifeq ($(platform), ps3)
    TARGET := snes9x_next_libretro_ps3.a
    CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
@@ -106,7 +113,10 @@ WARNINGS_DEFINES =
 CODE_DEFINES =
 else
 WARNINGS_DEFINES = -Wall -W -Wno-unused-parameter -Wno-sign-compare -Wno-uninitialized
-CODE_DEFINES = -fomit-frame-pointer -std=gnu99
+CODE_DEFINES = -fomit-frame-pointer
+ifneq ($(platform), bb)
+CODE_DEFINES += -std=gnu99
+endif
 endif
 
 COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) -DNDEBUG=1 $(fpic)
