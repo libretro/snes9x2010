@@ -449,6 +449,7 @@ struct SSettings
    bool8    NormalControls;
 	bool8		SupportHiRes;
 	bool8		Transparency;
+   float    SuperFXSpeedPerLine;
 };
 
 struct SSNESGameFixes

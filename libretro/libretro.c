@@ -124,6 +124,13 @@ static bool use_overscan;
 void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
+
+   static const struct retro_variable vars[] = {
+      { "snes9x_opt0", "SuperFX Overclock; disabled|40MHz|60MHz|80MHz|100MHz" },
+      { NULL, NULL },
+   };
+
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 }
 
 void retro_get_system_info(struct retro_system_info *info)
@@ -337,6 +344,9 @@ static void snes_init (void)
 
    S9xUnmapAllControls();
    map_buttons();
+
+   /* Initialize SuperFX CPU to normal speed by default */
+   Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
 }
 
 void retro_init (void)
@@ -499,11 +509,55 @@ static void report_buttons (void)
 #endif
 }
 
+static void check_variables(void)
+{
+   bool reset_sfx = false;
+   struct retro_variable var = {0};
+   var.key = "snes9x_opt0";
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var))
+   {
+      fprintf(stderr, "value: %s\n", var.value);
+      if (strcmp(var.value, "disabled") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
+         reset_sfx = true;
+      }
+      else if (strcmp(var.value, "40MHz") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 40.5e6;
+         reset_sfx = true;
+      }
+      else if (strcmp(var.value, "60MHz") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 60.5e6;
+         reset_sfx = true;
+      }
+      else if (strcmp(var.value, "80MHz") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 80.5e6;
+         reset_sfx = true;
+      }
+      else if (strcmp(var.value, "100MHz") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 100.5e6;
+         reset_sfx = true;
+      }
+   }
+
+   if (reset_sfx)
+      S9xResetSuperFX();
+}
+
 void retro_run (void)
 {
    poll_cb();
    report_buttons();
    S9xMainLoop();
+
+   bool updated = false;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      check_variables();
 }
 
 size_t retro_serialize_size (void)
@@ -554,6 +608,8 @@ bool retro_load_game(const struct retro_game_info *game)
       fprintf(stderr, "[libretro]: Rom loading failed...\n");
       return FALSE;
    }
+
+   check_variables();
 
    return TRUE;
 }
