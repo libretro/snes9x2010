@@ -196,17 +196,6 @@ extern "C" {
 
 #define S9X_ACCURACY_LEVEL		3
 
-#ifdef CLUNKY_FILE_ABSTRACTION
-#define STREAM			FILE *
-#define READ_STREAM(p, l, s)	fread(p, 1, l, s)
-#define WRITE_STREAM(p, l, s)	fwrite(p, 1, l, s)
-#define GETS_STREAM(p, l, s)	fgets(p, l, s)
-#define GETC_STREAM(s)		fgetc(s)
-#define OPEN_STREAM(f, m)	fopen(f, m)
-#define FIND_STREAM(f)		ftell(f)
-#define REVERT_STREAM(f, o, s)	fseek(f, o, s)
-#define CLOSE_STREAM(s)		fclose(s)
-#else 
 #include "../libretro/memstream.h"
  /* Create some sort of abstraction for files using memory only since libretro API is memory oriented.
     Very hacky, but at least allows us to avoid hacking up the whole source or go through the file system every time we want to do something ... :) */
@@ -219,8 +208,6 @@ extern "C" {
 #define FIND_STREAM(f)           memstream_pos(f)
 #define REVERT_STREAM(f, o, s)   memstream_seek(f, o, s)
 #define CLOSE_STREAM(s)          memstream_close(s)
-#endif
-#define REOPEN_STREAM(f, m)      fdopen(f, m)
 
 #define SNES_WIDTH		256
 #define SNES_HEIGHT		224
