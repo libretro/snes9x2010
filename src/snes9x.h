@@ -353,17 +353,10 @@ struct SSettings
 	bool8	ForceInterleaved2;
 	bool8	ForceInterleaveGD24;
 	bool8	ForceNotInterleaved;
-	#ifdef __CELLOS_LV2__
-	uint32	ForcePAL;
-	uint32	ForceNTSC;
-	uint32	ApplyCheats;
-	uint32	NoPatch;
-	#else
 	bool8	ForcePAL;
 	bool8	ForceNTSC;
 	bool8	ApplyCheats;
 	bool8	NoPatch;
-	#endif
 	bool8	PAL;
 	uint32	FrameTimePAL;
 	uint32	FrameTimeNTSC;
@@ -385,48 +378,6 @@ struct SSettings
 	uint32	Throttled;
 	int32_t	Crosshair;
 
-	#ifdef __CELLOS_LV2__
-	uint32_t	Orientation;
-	uint32_t	PS3KeepAspect;
-	uint32_t	PS3Smooth;
-	uint32_t	PS3Smooth2;
-	uint32_t	SRAMWriteProtect;
-	uint32_t	PS3OverscanEnabled;
-	uint32_t	SoundMode;
-	uint32_t	PS3CurrentResolution;
-	uint32_t	PS3PALTemporalMode60Hz;
-	uint32_t	PS3FontSize;
-	uint32_t	ScreenshotsEnabled;
-	uint32_t	OddScreenHeightJumpFix;
-	uint32_t	TripleBuffering;
-	uint32_t	CurrentSaveStateSlot;
-	uint32_t	CurrentCheatPosition;
-	uint32_t	ScaleEnabled;
-	uint32_t	ScaleFactor;
-	uint32_t	ResetBeforeRecordingMovie;
-	uint32_t	ApplyShaderPresetOnStartup;
-	uint32_t	ViewportX;
-	uint32_t	ViewportY;
-	uint32_t	ViewportWidth;
-	uint32_t	ViewportHeight;
-	char		PS3PathSaveStates[PATH_MAX];
-	char		PS3PathSRAM[PATH_MAX];
-	char		PS3PathScreenshots[PATH_MAX];
-	char		PS3PathCheats[PATH_MAX];
-	char		PS3CurrentShader[PATH_MAX];
-	char		PS3CurrentShader2[PATH_MAX];
-	char		PS3CurrentBorder[PATH_MAX];
-	char		PS3CurrentInputPresetTitle[PATH_MAX];
-	char		PS3PathROMDirectory[PATH_MAX];
-	char		RSoundServerIPAddress[PATH_MAX];
-	char		GameAwareShaderPath[PATH_MAX];
-	char		ShaderPresetPath[PATH_MAX];
-	char		ShaderPresetTitle[PATH_MAX];
-	bool8		SaveCustomControlScheme;
-	int32_t		PS3OverscanAmount;
-	int32_t		ControlScheme;
-	bool8		MuteSound;
-	#endif
 	uint32	AccessoryType;
 	int32		AccessoryAutoDetection;
 	bool8		CurrentROMisMultitapCompatible;
