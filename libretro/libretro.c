@@ -123,12 +123,12 @@ static bool use_overscan;
 
 void retro_set_environment(retro_environment_t cb)
 {
-   environ_cb = cb;
-
    static const struct retro_variable vars[] = {
       { "snes9x_opt0", "SuperFX Overclock; disabled|40MHz|60MHz|80MHz|100MHz" },
       { NULL, NULL },
    };
+
+   environ_cb = cb;
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 }
@@ -551,11 +551,11 @@ static void check_variables(void)
 
 void retro_run (void)
 {
+   bool updated = false;
    poll_cb();
    report_buttons();
    S9xMainLoop();
 
-   bool updated = false;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables();
 }
