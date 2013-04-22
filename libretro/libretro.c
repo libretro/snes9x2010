@@ -16,6 +16,7 @@
 #include "../src/memmap.h"
 #include "../src/cpuexec.h"
 #include "../src/srtc.h"
+#include "../src/fxemu.h"
 #include "../src/apu.h"
 #include "../src/ppu.h"
 #include "../src/snapshot.h"
