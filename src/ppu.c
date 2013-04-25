@@ -457,6 +457,8 @@ static void SetupOBJ (void)
 	else /* evil FirstSprite+Y case*/
 	{
 		uint8	OBJOnLine[SNES_HEIGHT_EXTENDED][128];
+      bool8 AnyOBJOnLine[SNES_HEIGHT_EXTENDED];
+      memset(AnyOBJOnLine, FALSE, sizeof(AnyOBJOnLine));
 
 		/* First, find out which sprites are on which lines*/
 
@@ -492,7 +494,11 @@ static void SetupOBJ (void)
 					if (Y_one >= SNES_HEIGHT_EXTENDED)
 						continue;
 
-					OBJOnLine[Y_one][S] = line;
+               if (!AnyOBJOnLine[Y_one])
+               {
+                  memset(OBJOnLine[Y_one], 0, sizeof(OBJOnLine[Y_one]));
+                  AnyOBJOnLine[Y_one] = TRUE;
+               }
 
 					if (PPU.OBJ[S].VFlip)
 						/* Yes, Width not Height. It so happens that the*/
@@ -516,25 +522,28 @@ static void SetupOBJ (void)
 			S = FirstSprite;
 			j = 0;
 
-			do
-			{
-				if (OBJOnLine[Y_two][S])
-				{
-					if (j >= 32)
-					{
-						GFX.OBJLines[Y_two].RTOFlags |= 0x40;
-						break;
-					}
+         if (AnyOBJOnLine[Y_two])
+         {
+            do
+            {
+               if (OBJOnLine[Y_two][S])
+               {
+                  if (j >= 32)
+                  {
+                     GFX.OBJLines[Y_two].RTOFlags |= 0x40;
+                     break;
+                  }
 
-					GFX.OBJLines[Y_two].Tiles -= GFX.OBJVisibleTiles[S];
-					if (GFX.OBJLines[Y_two].Tiles < 0)
-						GFX.OBJLines[Y_two].RTOFlags |= 0x80;
-					GFX.OBJLines[Y_two].OBJ[j].Sprite = S;
-					GFX.OBJLines[Y_two].OBJ[j++].Line = OBJOnLine[Y_two][S] & ~0x80;
-				}
+                  GFX.OBJLines[Y_two].Tiles -= GFX.OBJVisibleTiles[S];
+                  if (GFX.OBJLines[Y_two].Tiles < 0)
+                     GFX.OBJLines[Y_two].RTOFlags |= 0x80;
+                  GFX.OBJLines[Y_two].OBJ[j].Sprite = S;
+                  GFX.OBJLines[Y_two].OBJ[j++].Line = OBJOnLine[Y_two][S] & ~0x80;
+               }
 
-				S = (S + 1) & 0x7f;
-			} while (S != FirstSprite);
+               S = (S + 1) & 0x7f;
+            } while (S != FirstSprite);
+         }
 
 			if (j < 32)
 				GFX.OBJLines[Y_two].OBJ[j].Sprite = -1;
