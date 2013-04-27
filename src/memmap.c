@@ -2096,8 +2096,6 @@ void InitROM (void)
 	Settings.BS = FALSE;
 	SuperFX.nRomBanks = Memory.CalculatedSize >> 15;
    
-   Settings.SupportHiRes = TRUE;
-
 	/* Parse ROM header and read ROM information */
 
 	Memory.CompanyId = -1;
