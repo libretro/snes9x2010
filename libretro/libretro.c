@@ -137,7 +137,7 @@ void retro_set_environment(retro_environment_t cb)
 void retro_get_system_info(struct retro_system_info *info)
 {
    info->need_fullpath = false;
-   info->valid_extensions = "smc|fig|sfc|gd3|gd7|dx2|bsx|swc|zip|SMC|FIG|SFC|BSX|GD3|GD7|DX2|SWC|ZIP";
+   info->valid_extensions = "smc|fig|sfc|gd3|gd7|dx2|bsx|swc";
    info->library_version = "v1.52.4";
    info->library_name = "SNES9x Next";
    info->block_extract = false;
