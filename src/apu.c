@@ -3604,7 +3604,7 @@ static void to_apu_from_state (uint8 **buf, void *var, size_t size)
 
 // work around optimization bug in android GCC
 // similar to this: http://jeffq.com/blog/over-aggressive-gcc-optimization-can-cause-sigbus-crash-when-using-memcpy-with-the-android-ndk/
-#ifdef ANDROID
+#if defined(ANDROID) || defined(__QNX__)
 void __attribute__((optimize(0))) S9xAPUSaveState (uint8 *block)
 #else
 void S9xAPUSaveState (uint8 *block)
