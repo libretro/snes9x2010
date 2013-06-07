@@ -2096,6 +2096,8 @@ void InitROM (void)
 	Settings.BS = FALSE;
 	SuperFX.nRomBanks = Memory.CalculatedSize >> 15;
    
+   Settings.SupportHiRes = TRUE;
+
 	/* Parse ROM header and read ROM information */
 
 	Memory.CompanyId = -1;
@@ -2605,6 +2607,15 @@ void InitROM (void)
 					PPU.SFXSpeedupHack = TRUE;
 				else
 					PPU.SFXSpeedupHack = FALSE;
+
+
+	/* FORCIBLY DISABLE HIGH-RES */
+	if (		
+			MATCH_NA("DONKEY KONG COUNTRY")		/* Donkey Kong Country */
+			//|| MATCH_ID("ADNE")			/* Donkey Kong Country 2 (US) */
+			|| MATCH_ID("AD8")			/* Doom */
+			)
+		Settings.SupportHiRes = FALSE;
 
 
 		/* DON'T RENDER SUBSCREEN */

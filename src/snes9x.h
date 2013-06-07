@@ -219,8 +219,8 @@ extern "C" {
 /* MAX_SNES_HEIGHT = SNES_HEIGHT_EXTENDED * 2 */
 #define MAX_SNES_HEIGHT		478
 
-#define IMAGE_WIDTH		MAX_SNES_WIDTH
-#define IMAGE_HEIGHT		MAX_SNES_HEIGHT
+#define IMAGE_WIDTH		(Settings.SupportHiRes ? MAX_SNES_WIDTH : SNES_WIDTH)
+#define IMAGE_HEIGHT		(Settings.SupportHiRes ? MAX_SNES_HEIGHT : SNES_HEIGHT)
 
 #define	NTSC_MASTER_CLOCK	21477272.0
 #define	PAL_MASTER_CLOCK	21281370.0
@@ -385,6 +385,7 @@ struct SSettings
 	bool8		CurrentROMisSuperScopeCompatible;
 	bool8		CurrentROMisJustifierCompatible;
    bool8    NormalControls;
+	bool8		SupportHiRes;
 	bool8		Transparency;
    float    SuperFXSpeedPerLine;
 };
