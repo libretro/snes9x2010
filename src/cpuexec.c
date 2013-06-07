@@ -1053,8 +1053,8 @@ void S9xDoHEventProcessing (void)
 					IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
 					IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
 
-					cond_1 = (Settings.SupportHiRes && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires));
-					cond_2 = (Settings.SupportHiRes && IPPU.Interlace);
+					cond_1 = PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires;
+					cond_2 = IPPU.Interlace;
 
 					GFX.RealPPL = GFX.Pitch >> 1;
 					IPPU.RenderedScreenWidth = SNES_WIDTH << cond_1;
