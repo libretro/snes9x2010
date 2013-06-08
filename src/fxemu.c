@@ -1165,62 +1165,53 @@ static void fx_color (void)
 
 static void fx_computeScreenPointers (void)
 {
-	int i;
-	uint8 *pvScreenBase;
-	int32 condition, mask, result;
-	uint32 vmode, screenheight, incrementvalue;
+   int i;
+   uint8 *pvScreenBase;
+   int32 condition, mask, result;
+   uint32 vmode, screenheight, incrementvalue;
 
-	if (GSU.vMode != GSU.vPrevMode || GSU.vPrevScreenHeight != GSU.vScreenHeight || GSU.vSCBRDirty)
-	{
-		GSU.vSCBRDirty = FALSE;
+   GSU.vSCBRDirty = FALSE;
 
-		/* Make a list of pointers to the start of each screen column*/
-		pvScreenBase = GSU.pvScreenBase;
-		vmode = GSU.vMode;
-		condition = vmode - 2;
-		mask = (condition | -condition) >> 31;
-		result = (vmode & mask) | (3 & ~mask);
-		screenheight = GSU.vScreenHeight;
-		incrementvalue = screenheight+screenheight;
-		vmode = result;
-		vmode++;
-		switch (screenheight)
-		{
-			case 128:
-			case 160:
-			case 192:
-				{
-					uint32 vmode_mul = 0;
-					for( i = 0; i < 32; i++)
-					{
-						GSU.x[i] = incrementvalue * i * vmode;
-						GSU.apvScreen[i] = pvScreenBase + (vmode_mul * vmode);
-						vmode_mul += 16;
-					}
-					break;
-				}
-			case 256:
-				{
-					uint32 mul_8192 = vmode << 13;
-					uint32 mul_4096 = vmode << 12;
-					uint32 apv_multiply = 0;
-					uint32 gsu_x_multiply = 0;
-					for( i = 0; i < 16; i++)
-					{
-						GSU.apvScreen[i] = GSU.apvScreen[i+16] = pvScreenBase + (apv_multiply * vmode);
-						GSU.x[i] = GSU.x[i+16] = (gsu_x_multiply * vmode);
-						GSU.apvScreen[i+16] += mul_8192;
-						GSU.x[i+16] += mul_4096;
-						apv_multiply += 256;
-						gsu_x_multiply += 16;
-					}
-				}
-				break;
-		}
+   /* Make a list of pointers to the start of each screen column*/
+   pvScreenBase = GSU.pvScreenBase;
+   vmode = GSU.vMode;
+   condition = vmode - 2;
+   mask = (condition | -condition) >> 31;
+   result = (vmode & mask) | (3 & ~mask);
+   screenheight = GSU.vScreenHeight;
+   incrementvalue = screenheight+screenheight;
+   vmode = result;
+   vmode++;
 
-		GSU.vPrevMode = GSU.vMode;
-		GSU.vPrevScreenHeight = GSU.vScreenHeight;
-	}
+   if (screenheight == 256)
+   {
+      uint32 mul_8192 = vmode << 13;
+      uint32 mul_4096 = vmode << 12;
+      uint32 apv_multiply = 0;
+      uint32 gsu_x_multiply = 0;
+      for( i = 0; i < 16; i++)
+      {
+         GSU.apvScreen[i] = GSU.apvScreen[i+16] = pvScreenBase + (apv_multiply * vmode);
+         GSU.x[i] = GSU.x[i+16] = (gsu_x_multiply * vmode);
+         GSU.apvScreen[i+16] += mul_8192;
+         GSU.x[i+16] += mul_4096;
+         apv_multiply += 256;
+         gsu_x_multiply += 16;
+      }
+   }
+   else
+   {
+      uint32 vmode_mul = 0;
+      for( i = 0; i < 32; i++)
+      {
+         GSU.x[i] = incrementvalue * i * vmode;
+         GSU.apvScreen[i] = pvScreenBase + (vmode_mul * vmode);
+         vmode_mul += 16;
+      }
+   }
+
+   GSU.vPrevMode = GSU.vMode;
+   GSU.vPrevScreenHeight = GSU.vScreenHeight;
 }
 
 /* 4e (ALT1) - cmode - set plot option register*/
@@ -1233,7 +1224,8 @@ static void fx_cmode (void)
 	else
 		GSU.vScreenHeight = GSU.vScreenRealHeight;
 
-	fx_computeScreenPointers();
+	if (GSU.vMode != GSU.vPrevMode || GSU.vPrevScreenHeight != GSU.vScreenHeight || GSU.vSCBRDirty)
+      fx_computeScreenPointers();
 	CLRFLAGS;
 	R15++;
 }
@@ -4476,9 +4468,9 @@ static void fx_readRegisterSpace (void)
 	GSU.vMode = p[GSU_SCMR] & 0x03;
 
 	if (n == 3)
-		GSU.vScreenSize = (256 / 8) * (256 / 8) * 32;
+		GSU.vScreenSize = 32768;
 	else
-		GSU.vScreenSize = (GSU.vScreenHeight / 8) * (256 / 8) * avMult[GSU.vMode];
+		GSU.vScreenSize = (GSU.vScreenHeight / 8) * 32 * avMult[GSU.vMode];
 
 	if (GSU.vPlotOptionReg & 0x10) /* OBJ Mode (for drawing into sprites)*/
 		GSU.vScreenHeight = 256;
@@ -4491,7 +4483,8 @@ static void fx_readRegisterSpace (void)
 	fx_OpcodeTable[0x24c] = fx_PlotTable[GSU.vMode];
 	fx_OpcodeTable[0x34c] = fx_PlotTable[GSU.vMode + 5];
 
-	fx_computeScreenPointers();
+	if (GSU.vMode != GSU.vPrevMode || GSU.vPrevScreenHeight != GSU.vScreenHeight || GSU.vSCBRDirty)
+      fx_computeScreenPointers();
 }
 
 static void FxReset (struct FxInfo_s *psFxInfo)
@@ -4577,9 +4570,6 @@ void S9xResetSuperFX (void)
 static bool8 fx_checkStartAddress (void)
 {
 	bool8 condition1, condition2, condition3, condition4;
-	/* Check if we start inside the cache*/
-	if (GSU.bCacheActive && R15 >= GSU.vCacheBaseReg && R15 < (GSU.vCacheBaseReg + 512))
-		return (TRUE);
 
 	/* Check if we're in RAM and the RAN flag is not set*/
 	condition1 = GSU.vPrgBankReg >= 0x60 && GSU.vPrgBankReg <= 0x6f;
@@ -4648,9 +4638,14 @@ void S9xSuperFXExec (void)
 
 	/* Read registers and initialize GSU session*/
 	fx_readRegisterSpace();
-
+   
+	/* Check if we start inside the cache*/
+	if (GSU.bCacheActive && R15 >= GSU.vCacheBaseReg && R15 < (GSU.vCacheBaseReg + 512))
+      address_valid = true;
+   else
 	/* Check if the start address is valid*/
-	address_valid = fx_checkStartAddress();
+      address_valid = fx_checkStartAddress();
+
 	if (address_valid)
 	{
 		/* Execute GSU session*/
