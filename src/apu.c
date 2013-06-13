@@ -3621,7 +3621,11 @@ void S9xAPUSaveState (uint8 *block)
 	SET_LE32(ptr, spc_remainder);
 }
 
+#if defined(__QNX__)
+void __attribute__((optimize(0))) S9xAPULoadState (uint8 *block)
+#else
 void S9xAPULoadState (uint8 *block)
+#endif
 {
 	uint8 *ptr;
 
