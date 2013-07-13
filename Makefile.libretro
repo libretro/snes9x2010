@@ -96,6 +96,7 @@ else ifeq ($(platform), wii)
 else ifneq (,$(findstring armv,$(platform)))
    TARGET := $(TARGET_NAME)_libretro.so
    SHARED := -shared -Wl,--no-undefined
+   fpic := -fPIC
 ifneq (,$(findstring cortexa8,$(platform)))
    CFLAGS += -marm -mcpu=cortex-a8
    ASFLAGS += -mcpu=cortex-a8
@@ -108,7 +109,6 @@ ifneq (,$(findstring neon,$(platform)))
    CFLAGS += -mfpu=neon
    ASFLAGS += -mfpu=neon
    HAVE_NEON = 1
-   BUILTIN_GPU = neon
 endif
 ifneq (,$(findstring softfloat,$(platform)))
    CFLAGS += -mfloat-abi=softfp
