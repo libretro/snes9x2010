@@ -516,7 +516,7 @@ static void check_variables(void)
    struct retro_variable var = {0};
    var.key = "snes9x_opt0";
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var))
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       fprintf(stderr, "value: %s\n", var.value);
       if (strcmp(var.value, "disabled") == 0)
@@ -604,9 +604,9 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
    bool8 sram;
    uint8 bytes[3];//used only by GoldFinger, ignored for now 
    
-   if (S9xGameGenieToRaw(code, address, val)!=NULL &&
-       S9xProActionReplayToRaw(code, address, val)!=NULL &&
-       S9xGoldFingerToRaw(code, address, sram, val, bytes)!=NULL)
+   if (S9xGameGenieToRaw(code, &address, &val)!=NULL &&
+       S9xProActionReplayToRaw(code, &address, &val)!=NULL &&
+       S9xGoldFingerToRaw(code, &address, &sram, &val, bytes)!=NULL)
    { // bad code, ignore
       return;
    }
