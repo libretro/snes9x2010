@@ -164,11 +164,11 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         S9xSetController(port, CTL_JOYPAD, 0, 0, 0, 0);
+         S9xSetController(port, CTL_JOYPAD, port, 0, 0, 0);
          retro_devices[port] = RETRO_DEVICE_JOYPAD;
          break;
       case RETRO_DEVICE_JOYPAD_MULTITAP:
-         S9xSetController(port, CTL_MP5, 1, 2, 3, 4);
+         S9xSetController(port, CTL_MP5, port+0, port+2, port+4, port+6);
          retro_devices[port] = RETRO_DEVICE_JOYPAD_MULTITAP;
          break;
       case RETRO_DEVICE_MOUSE:
@@ -463,9 +463,9 @@ static void report_buttons (void)
 				      uint16_t button_press = snes_lut[i];
 
 				      if (pressed)
-					      joypad[j] |= button_press;
+					      joypad[j*2+port] |= button_press;
 				      else
-					      joypad[j] &= ~button_press;
+					      joypad[j*2+port] &= ~button_press;
 			      }
 		      }
 		      break;
