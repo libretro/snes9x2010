@@ -292,7 +292,7 @@ static void map_buttons (void)
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
    info->geometry.base_width = 256;
-   info->geometry.base_height = 239;
+   info->geometry.base_height = use_overscan ? 239 : 224;
    info->geometry.max_width = 512;
    info->geometry.max_height = 512;
    info->geometry.aspect_ratio = 4.0 / 3.0;
@@ -331,7 +331,7 @@ static void snes_init (void)
    S9xInitSound(16, 0);
    S9xSetSamplesAvailableCallback(S9xAudioCallback);
 
-   GFX.Pitch = use_overscan ? 1024 : 2048;
+   GFX.Pitch = use_overscan ? 1024 : 2048; // FIXME: What is this supposed to do? Overscan has nothing to do with anything like this. If this is the Wii performance hack, it should be done differently.
    GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
    S9xGraphicsInit();
 
@@ -663,7 +663,25 @@ void S9xDeinitUpdate(int width, int height)
 	if (height == 448 || height == 478)
 		GFX.Pitch = 1024;	/* Pitch 2048 -> 1024 */
 
-	video_cb(GFX.Screen, width, height, GFX.Pitch);
+   // TODO: Reverse case.
+   if (!use_overscan)
+   {
+      const uint16_t *frame = (const uint16_t*)GFX.Screen;
+      if (height == 239)
+      {
+         frame += 7 * 1024;
+         height = 224;
+      }
+      else if (height == 478)
+      {
+         frame += 15 * 512;
+         height = 448;
+      }
+
+      video_cb(frame, width, height, GFX.Pitch);
+   }
+   else
+      video_cb(GFX.Screen, width, height, GFX.Pitch);
 }
 
 /* Dummy functions that should probably be implemented correctly later. */
