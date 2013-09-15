@@ -1,6 +1,10 @@
 DEBUG=0
 FRONTEND_SUPPORTS_RGB565=1
 
+ifneq ($(EMSCRIPTEN),)
+   platform = emscripten
+endif
+
 ifeq ($(platform),)
 platform = unix
 ifeq ($(shell uname -a),)
@@ -25,7 +29,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
    system_platform = win
 endif
 
-CC         = gcc
+#CC         = gcc
 TARGET_NAME := snes9x_next
 
 ifeq ($(platform), unix)
@@ -119,6 +123,8 @@ else ifneq (,$(findstring hardfloat,$(platform)))
    ASFLAGS += -mfloat-abi=hard
 endif
    CFLAGS += -DARM
+else ifeq ($(platform), emscripten)
+   TARGET := $(TARGET_NAME)_libretro_emscripten.bc
 else
    TARGET := $(TARGET_NAME)_libretro.dll
    CC = gcc
@@ -128,6 +134,8 @@ endif
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -O0 -g
+else ifeq ($(platform), emscripten)
+CFLAGS += -O2
 else
 CFLAGS += -O3
 endif
