@@ -4641,7 +4641,7 @@ void S9xSuperFXExec (void)
    
 	/* Check if we start inside the cache*/
 	if (GSU.bCacheActive && R15 >= GSU.vCacheBaseReg && R15 < (GSU.vCacheBaseReg + 512))
-      address_valid = true;
+      address_valid = TRUE;
    else
 	/* Check if the start address is valid*/
       address_valid = fx_checkStartAddress();
