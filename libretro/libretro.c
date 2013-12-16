@@ -361,7 +361,8 @@ void retro_init (void)
 	   use_overscan = FALSE;
 
    environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log);
-   log_cb = log.log;
+   if (log.log)
+      log_cb = log.log;
 
 #ifdef FRONTEND_SUPPORTS_RGB565
    rgb565 = RETRO_PIXEL_FORMAT_RGB565;
