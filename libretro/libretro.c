@@ -30,6 +30,7 @@
 #define BTN_POINTER (RETRO_DEVICE_ID_JOYPAD_R + 1)
 #define BTN_POINTER2 (BTN_POINTER + 1)
 
+static retro_log_printf_t log_cb = NULL;
 static retro_video_refresh_t video_cb = NULL;
 static retro_input_poll_t poll_cb = NULL;
 static retro_input_state_t input_cb = NULL;
@@ -212,7 +213,7 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
          retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
          break;
       default:
-         fprintf(stderr, "[libretro]: Invalid device!\n");
+         log_cb(RETRO_LOG_ERROR, "Invalid device!\n");
    }
 
    if (((retro_devices[0] == RETRO_DEVICE_JOYPAD) && retro_devices[1] == RETRO_DEVICE_JOYPAD) ||
@@ -324,7 +325,7 @@ static void snes_init (void)
    {
       Deinit();
       S9xDeinitAPU();
-      fprintf(stderr, "[libretro]: Failed to init Memory or APU.\n");
+      log_cb(RETRO_LOG_ERROR, "Failed to init Memory or APU.\n");
       exit(1);
    }
 
@@ -352,14 +353,18 @@ static void snes_init (void)
 
 void retro_init (void)
 {
+   struct retro_log_callback log;
    enum retro_pixel_format rgb565;
    if (!environ_cb(RETRO_ENVIRONMENT_GET_OVERSCAN, &use_overscan))
 	   use_overscan = FALSE;
 
+   environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log);
+   log_cb = log.log;
+
 #ifdef FRONTEND_SUPPORTS_RGB565
    rgb565 = RETRO_PIXEL_FORMAT_RGB565;
    if(environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565))
-      fprintf(stderr, "Frontend supports RGB565 - will use that instead of XRGB1555.\n");
+      log_cb(RETRO_LOG_INFO, "Frontend supports RGB565 - will use that instead of XRGB1555.\n");
 #endif
 
    snes_init();
@@ -438,21 +443,21 @@ static void report_buttons (void)
 		      {
 			      coldata_update_screen = !coldata_update_screen;
                               timeout = TIMER_DELAY;
-			      fprintf(stderr, "coldata_update_screen: %d.\n", coldata_update_screen);
+			      log_cb(RETRO_LOG_INFO, "coldata_update_screen: %d.\n", coldata_update_screen);
 		      }
 		      pressed_r2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
 		      if(pressed_r2 && timeout == 0)
 		      {
 			      PPU.RenderSub = !PPU.RenderSub;
                               timeout = TIMER_DELAY;
-			      fprintf(stderr, "RenderSub: %d.\n", PPU.RenderSub);
+			      log_cb(RETRO_LOG_INFO, "RenderSub: %d.\n", PPU.RenderSub);
 		      }
 		      pressed_r3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
 		      if(pressed_r3 && timeout == 0)
 		      {
 			      PPU.SFXSpeedupHack = !PPU.SFXSpeedupHack;
                timeout = TIMER_DELAY;
-			      fprintf(stderr, "SFXSpeedupHack: %d.\n", PPU.SFXSpeedupHack);
+			      log_cb(RETRO_LOG_INFO, "SFXSpeedupHack: %d.\n", PPU.SFXSpeedupHack);
 		      }
 #endif
 		      break;
@@ -503,7 +508,7 @@ static void report_buttons (void)
 		      break;
 
 	      default:
-		      fprintf(stderr, "[libretro]: Unknown device...\n");
+		      log_cb(RETRO_LOG_ERROR, "Unknown device.\n");
 
       }
    }
@@ -520,7 +525,6 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      fprintf(stderr, "value: %s\n", var.value);
       if (strcmp(var.value, "disabled") == 0)
       {
          Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
@@ -635,7 +639,7 @@ bool retro_load_game(const struct retro_game_info *game)
    loaded = LoadROM("");
    if (!loaded)
    {
-      fprintf(stderr, "[libretro]: Rom loading failed...\n");
+      log_cb(RETRO_LOG_ERROR, "ROM loading failed...\n");
       return FALSE;
    }
 
@@ -693,7 +697,7 @@ const char* S9xChooseFilename(bool8 a) { return NULL; }
 
 void S9xMessage(int a, int b, const char* msg)
 {
-   fprintf(stderr, "%s\n", msg);
+   log_cb(RETRO_LOG_INFO, "%s\n", msg);
 }
 
 /* S9x weirdness. */
