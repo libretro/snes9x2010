@@ -213,7 +213,8 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
          retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
          break;
       default:
-         log_cb(RETRO_LOG_ERROR, "Invalid device!\n");
+         if (log_cb)
+            log_cb(RETRO_LOG_ERROR, "Invalid device!\n");
    }
 
    if (((retro_devices[0] == RETRO_DEVICE_JOYPAD) && retro_devices[1] == RETRO_DEVICE_JOYPAD) ||
@@ -325,7 +326,8 @@ static void snes_init (void)
    {
       Deinit();
       S9xDeinitAPU();
-      log_cb(RETRO_LOG_ERROR, "Failed to init Memory or APU.\n");
+      if (log_cb)
+         log_cb(RETRO_LOG_ERROR, "Failed to init Memory or APU.\n");
       exit(1);
    }
 
@@ -363,8 +365,8 @@ void retro_init (void)
 
 #ifdef FRONTEND_SUPPORTS_RGB565
    rgb565 = RETRO_PIXEL_FORMAT_RGB565;
-   if(environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565))
-      log_cb(RETRO_LOG_INFO, "Frontend supports RGB565 - will use that instead of XRGB1555.\n");
+   if(environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565) && log_cb)
+         log_cb(RETRO_LOG_INFO, "Frontend supports RGB565 - will use that instead of XRGB1555.\n");
 #endif
 
    snes_init();
@@ -442,22 +444,25 @@ static void report_buttons (void)
 		      if(pressed_l2 && timeout == 0)
 		      {
 			      coldata_update_screen = !coldata_update_screen;
-                              timeout = TIMER_DELAY;
-			      log_cb(RETRO_LOG_INFO, "coldata_update_screen: %d.\n", coldata_update_screen);
+               timeout = TIMER_DELAY;
+               if (log_cb)
+                  log_cb(RETRO_LOG_INFO, "coldata_update_screen: %d.\n", coldata_update_screen);
 		      }
 		      pressed_r2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
 		      if(pressed_r2 && timeout == 0)
 		      {
 			      PPU.RenderSub = !PPU.RenderSub;
-                              timeout = TIMER_DELAY;
-			      log_cb(RETRO_LOG_INFO, "RenderSub: %d.\n", PPU.RenderSub);
+               timeout = TIMER_DELAY;
+               if (log_cb)
+                  log_cb(RETRO_LOG_INFO, "RenderSub: %d.\n", PPU.RenderSub);
 		      }
 		      pressed_r3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
 		      if(pressed_r3 && timeout == 0)
 		      {
 			      PPU.SFXSpeedupHack = !PPU.SFXSpeedupHack;
                timeout = TIMER_DELAY;
-			      log_cb(RETRO_LOG_INFO, "SFXSpeedupHack: %d.\n", PPU.SFXSpeedupHack);
+               if (log_cb)
+                  log_cb(RETRO_LOG_INFO, "SFXSpeedupHack: %d.\n", PPU.SFXSpeedupHack);
 		      }
 #endif
 		      break;
@@ -508,7 +513,8 @@ static void report_buttons (void)
 		      break;
 
 	      default:
-		      log_cb(RETRO_LOG_ERROR, "Unknown device.\n");
+            if (log_cb)
+               log_cb(RETRO_LOG_ERROR, "Unknown device.\n");
 
       }
    }
@@ -639,7 +645,8 @@ bool retro_load_game(const struct retro_game_info *game)
    loaded = LoadROM("");
    if (!loaded)
    {
-      log_cb(RETRO_LOG_ERROR, "ROM loading failed...\n");
+      if (log_cb)
+         log_cb(RETRO_LOG_ERROR, "ROM loading failed...\n");
       return FALSE;
    }
 
@@ -697,7 +704,8 @@ const char* S9xChooseFilename(bool8 a) { return NULL; }
 
 void S9xMessage(int a, int b, const char* msg)
 {
-   log_cb(RETRO_LOG_INFO, "%s\n", msg);
+   if (log_cb)
+      log_cb(RETRO_LOG_INFO, "%s\n", msg);
 }
 
 /* S9x weirdness. */
