@@ -528,8 +528,9 @@ static void report_buttons (void)
 static void check_variables(void)
 {
    bool reset_sfx = false;
-   struct retro_variable var = {0};
+   struct retro_variable var;
    var.key = "snes9x_opt0";
+   var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
