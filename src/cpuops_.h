@@ -1752,12 +1752,12 @@ static void OpC8Slow (void)
 
 	if (CheckIndex())
 	{
-		Registers.YL--;
+		Registers.YL++;
 		SetZN8(Registers.YL);
 	}
 	else
 	{
-		Registers.Y.W--;
+		Registers.Y.W++;
 		SetZN16(Registers.Y.W);
 	}
 }
