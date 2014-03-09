@@ -334,12 +334,13 @@ static void snes_init (void)
    S9xInitSound(16, 0);
    S9xSetSamplesAvailableCallback(S9xAudioCallback);
 
-   GFX.Pitch = MAX_SNES_WIDTH * sizeof(uint16);
+   GFX.Pitch = use_overscan ? 1024 : 2048; // FIXME: What is this supposed to do? Overscan has nothing to do with anything like this. If this is the Wii performance hack, it should be done differently.
+
 #if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L)
    /* request 128-bit alignment here if possible */
-   posix_memalign((void**)&GFX.Screen, 16, GFX.Pitch * MAX_SNES_HEIGHT);
+   posix_memalign((void**)&GFX.Screen, 16, GFX.Pitch * 512 * sizeof(uint16));
 #else
-   GFX.Screen = (uint16*) calloc(1, GFX.Pitch * MAX_SNES_HEIGHT);
+   GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
 #endif
 
    S9xGraphicsInit();
@@ -685,7 +686,25 @@ void S9xDeinitUpdate(int width, int height)
 	if (height == 448 || height == 478)
 		GFX.Pitch = 1024;	/* Pitch 2048 -> 1024 */
 
-   video_cb(GFX.Screen, width, height, GFX.Pitch);
+   // TODO: Reverse case.
+   if (!use_overscan)
+   {
+      const uint16_t *frame = (const uint16_t*)GFX.Screen;
+      if (height == 239)
+      {
+         frame += 7 * 1024;
+         height = 224;
+      }
+      else if (height == 478)
+      {
+         frame += 15 * 512;
+         height = 448;
+      }
+
+      video_cb(frame, width, height, GFX.Pitch);
+   }
+   else
+      video_cb(GFX.Screen, width, height, GFX.Pitch);
 }
 
 /* Dummy functions that should probably be implemented correctly later. */
