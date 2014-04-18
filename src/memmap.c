@@ -2679,7 +2679,6 @@ void InitROM (void)
 			|| MATCH_NA("GAIA GENSOUKI 1 JPN")	/* Gaia Gensouki (JPN)*/
 			|| MATCH_ID("AEJ") 		/* Earthworm Jim*/
 			|| MATCH_ID("YI")		/* Yoshi's Island*/
-			|| MATCH_ID("AFJ")		/* Kirby's Dreamland 3 */
 			|| MATCH_NA("SUPER MARIOWORLD")	/* Super Mario World*/
 			|| MATCH_NA("THE LEGEND OF ZELDA")	/* Zelda 3*/
 			|| MATCH_NA("LA LEGENDE DE ZELDA")	/* Zelda 3 (FR)*/
