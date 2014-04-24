@@ -58,8 +58,15 @@ else ifeq ($(platform), ios)
    fpic := -fPIC
    SHARED := -dynamiclib
 
-   CC = clang -arch armv7 -isysroot $(IOSSDK) -miphoneos-version-min=5.0
-   CFLAGS += -DIOS -miphoneos-version-min=5.0
+
+   CC = clang -arch armv7 -isysroot $(IOSSDK)
+   CFLAGS += -DIOS 
+OSXVER = `sw_vers -productVersion | cut -c 1-4`
+ifneq ($(OSXVER),10.9)
+   echo "OSX version is not Mavericks, applying -miphoneos-version-min=5.0"
+   CC += -miphoneos-version-min=5.0
+   CFLAGS += -miphoneos-version-min=5.0
+endif
 else ifeq ($(platform), qnx)
    TARGET := $(TARGET_NAME)_libretro_qnx.so
    fpic := -fPIC
