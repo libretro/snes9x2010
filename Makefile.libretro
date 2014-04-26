@@ -49,8 +49,10 @@ else ifeq ($(platform), osx)
    fpic := -fPIC
 ifeq ($(arch),ppc)
    CFLAGS += -DBLARGG_BIG_ENDIAN=1 -D__ppc__
-else
-   fpic += -mmacosx-version-min=10.6
+endif
+OSXVER = `sw_vers -productVersion | cut -c 4`
+ifneq ($(OSXVER),9)
+   fpic += -mmacosx-version-min=10.5
 endif
    SHARED := -dynamiclib
 else ifeq ($(platform), ios)
@@ -61,9 +63,8 @@ else ifeq ($(platform), ios)
 
    CC = clang -arch armv7 -isysroot $(IOSSDK)
    CFLAGS += -DIOS 
-OSXVER = `sw_vers -productVersion | cut -c 1-4`
-ifneq ($(OSXVER),10.9)
-   echo "OSX version is not Mavericks, applying -miphoneos-version-min=5.0"
+OSXVER = `sw_vers -productVersion | cut -c 4`
+ifneq ($(OSXVER),9)
    CC += -miphoneos-version-min=5.0
    CFLAGS += -miphoneos-version-min=5.0
 endif
