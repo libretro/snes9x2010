@@ -138,6 +138,7 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_controller_description port_1[] = {
       { "SNES Joypad", RETRO_DEVICE_JOYPAD },
       { "SNES Mouse", RETRO_DEVICE_MOUSE },
+      { "RetroPad", RETRO_DEVICE_JOYPAD },
    };
 
    static const struct retro_controller_description port_2[] = {
@@ -147,11 +148,12 @@ void retro_set_environment(retro_environment_t cb)
       { "SuperScope", RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE },
       { "Justifier", RETRO_DEVICE_LIGHTGUN_JUSTIFIER },
       { "Justifiers", RETRO_DEVICE_LIGHTGUN_JUSTIFIERS },
+      { "RetroPad", RETRO_DEVICE_JOYPAD },
    };
 
    static const struct retro_controller_info ports[] = {
-      { port_1, 2 },
-      { port_2, 6 },
+      { port_1, 3 },
+      { port_2, 7 },
       { 0 },
    };
 
@@ -191,16 +193,17 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         S9xSetController(port, CTL_JOYPAD, port, 0, 0, 0);
          retro_devices[port] = RETRO_DEVICE_JOYPAD;
+         S9xSetController(port, CTL_JOYPAD, port, 0, 0, 0);
          break;
       case RETRO_DEVICE_JOYPAD_MULTITAP:
-         S9xSetController(port, CTL_MP5, port+0, port+2, port+4, port+6);
          retro_devices[port] = RETRO_DEVICE_JOYPAD_MULTITAP;
+         S9xSetController(port, CTL_MP5, port+0, port+2, port+4, port+6);
          break;
       case RETRO_DEVICE_MOUSE:
-         S9xSetController(port, CTL_MOUSE, 0, 0, 0, 0);
          retro_devices[port] = RETRO_DEVICE_MOUSE;
+
+         S9xSetController(port, CTL_MOUSE, 0, 0, 0, 0);
 
          /* mapping pointers here */
          S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"));
@@ -371,13 +374,8 @@ static void snes_init (void)
 
    S9xGraphicsInit();
 
-   /* controller port 1 */
-   S9xSetController(0, CTL_JOYPAD, 0, 0, 0, 0);
-   retro_devices[0] = RETRO_DEVICE_JOYPAD;
-
-   /* controller port 2 */
-   S9xSetController(1, CTL_JOYPAD, 1, 0, 0, 0);
-   retro_devices[1] = RETRO_DEVICE_JOYPAD;
+   retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
+   retro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD);
 
    S9xUnmapAllControls();
    map_buttons();
