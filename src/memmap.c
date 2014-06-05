@@ -2349,54 +2349,45 @@ void InitROM (void)
 	{
 		if (Settings.BS)
 			/* Do nothing */;
-		else
-			if (Settings.SETA && Settings.SETA != ST_018)
-				Map_SetaDSPLoROMMap();
+		else if (Settings.SETA && Settings.SETA != ST_018)
+			Map_SetaDSPLoROMMap();
+		else if (Settings.SuperFX)
+			Map_SuperFXLoROMMap();
+		else if (Settings.SA1)
+			Map_SA1LoROMMap();
+		else if (Settings.SDD1)
+			Map_SDD1LoROMMap();
+		else if (Memory.ExtendedFormat != NOPE)
+		{
+			MAP_JUMBOLOROMMAP();
+		}
+		else if (strncmp(Memory.ROMName, "WANDERERS FROM YS", 17) == 0)
+			Map_NoMAD1LoROMMap();
+		else if (strncmp(Memory.ROMName, "SOUND NOVEL-TCOOL", 17) == 0 ||
+				strncmp(Memory.ROMName, "DERBY STALLION 96", 17) == 0)
+			Map_ROM24MBSLoROMMap();
+		else if (strncmp(Memory.ROMName, "THOROUGHBRED BREEDER3", 21) == 0 ||
+				strncmp(Memory.ROMName, "RPG-TCOOL 2", 11) == 0)
+		{
+			MAP_SRAM512KLOROMMAP();
+		}
+		else if (strncmp(Memory.ROMName, "ADD-ON BASE CASSETE", 19) == 0)
+		{
+			if (Multi.cartType == 4)
+			{
+				Memory.SRAMSize = Multi.sramSizeA;
+				Map_SufamiTurboLoROMMap();
+			}
 			else
-				if (Settings.SuperFX)
-					Map_SuperFXLoROMMap();
-				else
-					if (Settings.SA1)
-						Map_SA1LoROMMap();
-					else
-						if (Settings.SDD1)
-							Map_SDD1LoROMMap();
-						else
-							if (Memory.ExtendedFormat != NOPE)
-							{
-								MAP_JUMBOLOROMMAP();
-							}
-							else
-								if (strncmp(Memory.ROMName, "WANDERERS FROM YS", 17) == 0)
-									Map_NoMAD1LoROMMap();
-								else
-									if (strncmp(Memory.ROMName, "SOUND NOVEL-TCOOL", 17) == 0 ||
-											strncmp(Memory.ROMName, "DERBY STALLION 96", 17) == 0)
-										Map_ROM24MBSLoROMMap();
-									else
-										if (strncmp(Memory.ROMName, "THOROUGHBRED BREEDER3", 21) == 0 ||
-												strncmp(Memory.ROMName, "RPG-TCOOL 2", 11) == 0)
-										{
-											MAP_SRAM512KLOROMMAP();
-										}
-										else
-											if (strncmp(Memory.ROMName, "ADD-ON BASE CASSETE", 19) == 0)
-											{
-												if (Multi.cartType == 4)
-												{
-													Memory.SRAMSize = Multi.sramSizeA;
-													Map_SufamiTurboLoROMMap();
-												}
-												else
-												{
-													Memory.SRAMSize = 5;
-													Map_SufamiTurboPseudoLoROMMap();
-												}
-											}
-											else
-											{
-												MAP_LOROMMAP();
-											}
+			{
+				Memory.SRAMSize = 5;
+				Map_SufamiTurboPseudoLoROMMap();
+			}
+		}
+		else
+		{
+			MAP_LOROMMAP();
+		}
 	}
 
 	/* from NSRT */
