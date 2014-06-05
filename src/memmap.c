@@ -190,6 +190,11 @@
 #include "display.h"
 #include "spc7110dec.h"
 
+#ifdef __LIBRETRO__
+#include "libretro.h"
+void S9xAppendMapping(struct retro_memory_descriptor * desc);
+#endif
+
 #ifndef max
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #endif
@@ -2319,6 +2324,9 @@ void InitROM (void)
 	MAP_INITIALIZE();
 	Memory.CalculatedChecksum = 0;
 
+	/* SRAM size */
+	Memory.SRAMMask = Memory.SRAMSize ? ((1 << (Memory.SRAMSize + 3)) * 128) - 1 : 0;
+
 	if (Memory.HiROM)
 	{
 		if (Settings.BS)
@@ -2464,9 +2472,6 @@ void InitROM (void)
 			p--;
 		*p = 0;
 	}
-
-	/* SRAM size */
-	Memory.SRAMMask = Memory.SRAMSize ? ((1 << (Memory.SRAMSize + 3)) * 128) - 1 : 0;
 
 	/* checksum */
 	if (!isChecksumOK || ((uint32) Memory.CalculatedSize > (uint32) (((1 << (Memory.ROMSize - 7)) * 128) * 1024)))
