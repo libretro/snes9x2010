@@ -190,17 +190,15 @@
 #include "display.h"
 #include "spc7110dec.h"
 
-#ifdef __LIBRETRO__
 #include "../libretro/libretro.h"
 void S9xAppendMapping(struct retro_memory_descriptor * desc);
+
 #define MAP_LIBRETRO_RAW(flags, ptr, offset, start, select, disconnect, len) \
 	do { \
 		struct retro_memory_descriptor desc={flags, ptr, offset, start, select, disconnect, len, NULL}; \
 		S9xAppendMapping(&desc); \
 	} while(0)
-#else
-#define MAP_LIBRETRO_RAW(flags, ptr, offset, start, select, disconnect, len) ;
-#endif
+
 #define MAP_LIBRETRO(flags, ptr, offset, disconnect, len, bank_s,bank_e,addr_s,addr_e) \
 	MAP_LIBRETRO_RAW(flags, ptr, offset, \
 		(bank_s<<16 | addr_s), ((bank_s<<16 | addr_s) ^ (bank_e<<16 | addr_e) ^ 0xFFFFFF), \
