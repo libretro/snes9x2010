@@ -62,6 +62,9 @@ void *retro_get_memory_data(unsigned type)
       case RETRO_MEMORY_VIDEO_RAM:
          data = Memory.VRAM;
          break;
+      //case RETRO_MEMORY_ROM:
+      //   data = Memory.ROM;
+      //   break;
       default:
          data = NULL;
          break;
@@ -90,6 +93,9 @@ size_t retro_get_memory_size(unsigned type)
       case RETRO_MEMORY_VIDEO_RAM:
          size = 64 * 1024;
          break;
+      //case RETRO_MEMORY_ROM:
+      //   data = Memory.CalculatedSize;
+      //   break;
       default:
          size = 0;
          break;
@@ -671,8 +677,19 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
    S9xApplyCheats();
 } 
 
-bool retro_load_game(const struct retro_game_info *game)
+#define MAX_MAPS 32
+static struct retro_memory_descriptor memorydesc[MAX_MAPS];
+static unsigned memorydesc_c;
+void S9xAppendMapping(struct retro_memory_descriptor * desc)
 {
+	//do it backwards - snes9x defines the last one to win, while we define the first one to win
+	memcpy(&memorydesc[MAX_MAPS - (++memorydesc_c)], desc, sizeof(struct retro_memory_descriptor));
+}
+
+bool retro_load_game(const struct retro_game_info *game)
+{ 
+   memorydesc_c = 0;
+
    int loaded;
 
    /* Hack. S9x cannot do stuff from RAM. <_< */
@@ -687,6 +704,9 @@ bool retro_load_game(const struct retro_game_info *game)
    }
 
    check_variables();
+
+   struct retro_memory_map map={ memorydesc+MAX_MAPS-memorydesc_c, memorydesc_c };
+   environ_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &map);
 
    return TRUE;
 }
