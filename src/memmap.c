@@ -191,9 +191,20 @@
 #include "spc7110dec.h"
 
 #ifdef __LIBRETRO__
-#include "libretro.h"
+#include "../libretro/libretro.h"
 void S9xAppendMapping(struct retro_memory_descriptor * desc);
+#define MAP_LIBRETRO_RAW(flags, ptr, offset, start, select, disconnect, len) \
+	do { \
+		struct retro_memory_descriptor desc={flags, ptr, offset, start, select, disconnect, len, NULL}; \
+		S9xAppendMapping(&desc); \
+	} while(0)
+#else
+#define MAP_LIBRETRO_RAW(flags, ptr, offset, start, select, disconnect, len) ;
 #endif
+#define MAP_LIBRETRO(flags, ptr, offset, disconnect, len, bank_s,bank_e,addr_s,addr_e) \
+	MAP_LIBRETRO_RAW(flags, ptr, offset, \
+		(bank_s<<16 | addr_s), ((bank_s<<16 | addr_s) ^ (bank_e<<16 | addr_e) ^ 0xFFFFFF), \
+		disconnect, len)
 
 #ifndef max
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -1490,7 +1501,7 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 #define MATCH_NC(str) (strncasecmp(Memory.ROMName, str, strlen(str)) == 0)
 #define MATCH_ID(str) (strncmp(Memory.ROMId, str, strlen(str)) == 0)
 
-#define MAP_HIROM(bank_s, bank_e, addr_s, addr_e, size) \
+#define MAP_HIROM(bank_s, bank_e, addr_s, addr_e, size, auto_export_map) \
 { \
 	uint32 i, c; \
 	for ( c = bank_s; c <= bank_e; c++) \
@@ -1504,9 +1515,14 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 			Memory.BlockIsRAM[p] = FALSE; \
 		} \
 	} \
+	if (auto_export_map) \
+	{ \
+		MAP_LIBRETRO(RETRO_MEMDESC_CONST, Memory.ROM, map_mirror(size, addr_s), 0, \
+			size - map_mirror(size, addr_s), bank_s,bank_e,addr_s,addr_e); \
+	} \
 }
 
-#define MAP_INDEX(bank_s, bank_e, addr_s, addr_e, index, type) \
+#define MAP_INDEX(bank_s, bank_e, addr_s, addr_e, index, type, auto_export_map) \
 { \
 	uint32 i, c; \
 	for ( c = bank_s; c <= bank_e; c++) \
@@ -1519,9 +1535,18 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 			Memory.BlockIsRAM[p] = ((type == MAP_TYPE_I_O) || (type == MAP_TYPE_ROM)) ? FALSE : TRUE; \
 		} \
 	} \
+	if (auto_export_map) \
+	{ \
+		if (type==MAP_LOROM_SRAM || type==MAP_SA1RAM) \
+			MAP_LIBRETRO(0, Memory.SRAM, 0, 0x8000, Memory.SRAMMask+1, bank_s,bank_e,addr_s,addr_e); \
+		if (type==MAP_LOROM_SRAM_B) \
+			MAP_LIBRETRO(0, Multi.sramB, 0, 0x8000, Multi.sramMaskB+1, bank_s,bank_e,addr_s,addr_e); \
+		if (type==MAP_HIROM_SRAM || type==MAP_RONLY_SRAM) \
+			MAP_LIBRETRO(0, Memory.SRAM, 0, 0xE000, Memory.SRAMMask+1, bank_s,bank_e,addr_s,addr_e); \
+	} \
 }
 
-#define MAP_SPACE(bank_s, bank_e, addr_s, addr_e, data) \
+#define MAP_SPACE(bank_s, bank_e, addr_s, addr_e, data, auto_export_map) \
 { \
 	uint32 i,x; \
 	for ( x = bank_s; x <= bank_e; x++) \
@@ -1534,9 +1559,13 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 			Memory.BlockIsRAM[p] = TRUE; \
 		} \
 	} \
+	if (auto_export_map) \
+	{ \
+		MAP_LIBRETRO(0, data, 0, 0xFF0000, 0, bank_s,bank_e,addr_s,addr_e); \
+	} \
 }
 
-#define MAP_LOROM_OFFSET(bank_s, bank_e, addr_s, addr_e, size, offset) \
+#define MAP_LOROM_OFFSET(bank_s, bank_e, addr_s, addr_e, size, offset, auto_export_map) \
 { \
 	uint32 i, c; \
 	for ( c = bank_s; c <= bank_e; c++) \
@@ -1550,9 +1579,13 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 			Memory.BlockIsRAM[p] = FALSE; \
 		} \
 	} \
+	if (auto_export_map) \
+	{ \
+		MAP_LIBRETRO(RETRO_MEMDESC_CONST, Memory.ROM, offset, 0x8000, size, bank_s,bank_e,addr_s,addr_e); \
+	} \
 }
 
-#define MAP_HIROM_OFFSET(bank_s, bank_e, addr_s, addr_e, size, offset) \
+#define MAP_HIROM_OFFSET(bank_s, bank_e, addr_s, addr_e, size, offset, auto_export_map) \
 { \
 	uint32 i, c; \
 	for ( c = bank_s; c <= bank_e; c++) \
@@ -1566,25 +1599,29 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 			Memory.BlockIsRAM[p] = FALSE; \
 		} \
 	} \
+	if (auto_export_map) \
+	{ \
+		MAP_LIBRETRO(RETRO_MEMDESC_CONST, Memory.ROM, map_mirror(size, offset + addr_s), 0, size, bank_s,bank_e,addr_s,addr_e); \
+	} \
 }
 
 #define MAP_LOROMSRAM() \
-	MAP_INDEX(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM); \
-	MAP_INDEX(0xf0, 0xff, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+	MAP_INDEX(0xf0, 0xff, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true); \
+	MAP_INDEX(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true); 
 
 #define MAP_WRAM() \
 	/* will overwrite others */ \
-	MAP_SPACE(0x7e, 0x7e, 0x0000, 0xffff, Memory.RAM); \
-	MAP_SPACE(0x7f, 0x7f, 0x0000, 0xffff, Memory.RAM + 0x10000);
+	MAP_SPACE(0x7f, 0x7f, 0x0000, 0xffff, Memory.RAM + 0x10000, true); \
+	MAP_SPACE(0x7e, 0x7e, 0x0000, 0xffff, Memory.RAM, true);
 
 #define MAP_SYSTEM() \
 	/* will be overwritten */ \
-	MAP_SPACE(0x00, 0x3f, 0x0000, 0x1fff, Memory.RAM); \
-	MAP_INDEX(0x00, 0x3f, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O); \
-	MAP_INDEX(0x00, 0x3f, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O); \
-	MAP_SPACE(0x80, 0xbf, 0x0000, 0x1fff, Memory.RAM); \
-	MAP_INDEX(0x80, 0xbf, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O); \
-	MAP_INDEX(0x80, 0xbf, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O);
+	MAP_SPACE(0x00, 0x3f, 0x0000, 0x1fff, Memory.RAM, true); \
+	MAP_INDEX(0x00, 0x3f, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O, true); \
+	MAP_INDEX(0x00, 0x3f, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O, true); \
+	MAP_SPACE(0x80, 0xbf, 0x0000, 0x1fff, Memory.RAM, true); \
+	MAP_INDEX(0x80, 0xbf, 0x2000, 0x3fff, MAP_PPU, MAP_TYPE_I_O, true); \
+	MAP_INDEX(0x80, 0xbf, 0x4000, 0x5fff, MAP_CPU, MAP_TYPE_I_O, true);
 
 void map_WriteProtectROM (void)
 {
@@ -1602,15 +1639,15 @@ void map_WriteProtectROM (void)
 	/* XXX: Which game uses this? */ \
 	printf("Map_JumboLoROMMap\n"); \
 	MAP_SYSTEM(); \
-	MAP_LOROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000); \
-	MAP_LOROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000); \
-	MAP_LOROM_OFFSET(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0); \
-	MAP_LOROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0x200000); \
+	MAP_LOROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000, true); \
+	MAP_LOROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000, true); \
+	MAP_LOROM_OFFSET(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0, true); \
+	MAP_LOROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0x200000, true); \
 	MAP_LOROMSRAM(); \
 	MAP_WRAM(); \
 	map_WriteProtectROM();
 
-#define MAP_LOROM(bank_s, bank_e, addr_s, addr_e, size) \
+#define MAP_LOROM(bank_s, bank_e, addr_s, addr_e, size, auto_export_map) \
 { \
 	uint32 i, c; \
 	for ( c = bank_s; c <= bank_e; c++) \
@@ -1624,19 +1661,23 @@ void map_WriteProtectROM (void)
 			Memory.BlockIsRAM[p] = FALSE; \
 		} \
 	} \
+	if (auto_export_map) \
+	{ \
+		MAP_LIBRETRO(RETRO_MEMDESC_CONST, Memory.ROM, 0, 0x8000, size, bank_s,bank_e,addr_s,addr_e); \
+	} \
 }
 
 #define MAP_SRAM512KLOROMMAP() \
 	printf("Map_SRAM512KLoROMMap\n"); \
 	MAP_SYSTEM(); \
-	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize); \
-	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize); \
-	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize); \
-	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize); \
-	MAP_SPACE(0x70, 0x70, 0x0000, 0xffff, Memory.SRAM); \
-	MAP_SPACE(0x71, 0x71, 0x0000, 0xffff, Memory.SRAM + 0x8000); \
-	MAP_SPACE(0x72, 0x72, 0x0000, 0xffff, Memory.SRAM + 0x10000); \
-	MAP_SPACE(0x73, 0x73, 0x0000, 0xffff, Memory.SRAM + 0x18000); \
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true); \
+	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, true); \
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize, true); \
+	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, true); \
+	MAP_SPACE(0x73, 0x73, 0x0000, 0xffff, Memory.SRAM + 0x18000, true); \
+	MAP_SPACE(0x72, 0x72, 0x0000, 0xffff, Memory.SRAM + 0x10000, true); \
+	MAP_SPACE(0x71, 0x71, 0x0000, 0xffff, Memory.SRAM + 0x8000, true); \
+	MAP_SPACE(0x70, 0x70, 0x0000, 0xffff, Memory.SRAM, true); \
 	MAP_WRAM(); \
 	map_WriteProtectROM();
 
@@ -1644,53 +1685,53 @@ void map_WriteProtectROM (void)
 	switch (DSP0.maptype) \
 	{ \
 		case M_DSP1_LOROM_S: \
-			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O, true); \
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O, true); \
 			break; \
 		case M_DSP1_LOROM_L: \
-			MAP_INDEX(0x60, 0x6f, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xe0, 0xef, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0x60, 0x6f, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O, true); \
+			MAP_INDEX(0xe0, 0xef, 0x0000, 0x7fff, MAP_DSP, MAP_TYPE_I_O, true); \
 			break; \
 		case M_DSP1_HIROM: \
-			MAP_INDEX(0x00, 0x1f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0x80, 0x9f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0x00, 0x1f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O, true); \
+			MAP_INDEX(0x80, 0x9f, 0x6000, 0x7fff, MAP_DSP, MAP_TYPE_I_O, true); \
 			break; \
 		case M_DSP2_LOROM: \
-			MAP_INDEX(0x20, 0x3f, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0x20, 0x3f, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xa0, 0xbf, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0x20, 0x3f, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O, true); \
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O, true); \
+			MAP_INDEX(0xa0, 0xbf, 0x6000, 0x6fff, MAP_DSP, MAP_TYPE_I_O, true); \
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xbfff, MAP_DSP, MAP_TYPE_I_O, true); \
 			break; \
 		case M_DSP3_LOROM: \
-			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0x20, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O, true); \
+			MAP_INDEX(0xa0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O, true); \
 			break; \
 		case M_DSP4_LOROM: \
-			MAP_INDEX(0x30, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
-			MAP_INDEX(0xb0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O); \
+			MAP_INDEX(0x30, 0x3f, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O, true); \
+			MAP_INDEX(0xb0, 0xbf, 0x8000, 0xffff, MAP_DSP, MAP_TYPE_I_O, true); \
 			break; \
 	}
 
 #define MAP_C4_() \
-	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O); \
-	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O);
+	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O, true); \
+	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_C4, MAP_TYPE_I_O, true);
 
 #define MAP_OBC1() \
-	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O); \
-	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O);
+	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O, true); \
+	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_OBC_RAM, MAP_TYPE_I_O, true);
 
 #define MAP_SETARISC() \
-	MAP_INDEX(0x00, 0x3f, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O); \
-	MAP_INDEX(0x80, 0xbf, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O);
+	MAP_INDEX(0x00, 0x3f, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O, true); \
+	MAP_INDEX(0x80, 0xbf, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O, true);
 
 #define MAP_LOROMMAP() \
 	printf("Map_LoROMMap\n"); \
 	MAP_SYSTEM(); \
 	\
-	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize); \
-	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize); \
-	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize); \
-	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize); \
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true); \
+	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, true); \
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize, true); \
+	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, true); \
 	if (Settings.DSP) \
 	{ \
 		MAP_DSP_(); \
@@ -1712,16 +1753,16 @@ void map_WriteProtectROM (void)
 	map_WriteProtectROM();
 
 #define MAP_HIROMSRAM() \
-	MAP_INDEX(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM); \
-	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
+	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true); \
+	MAP_INDEX(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true);
 
 #define MAP_HIROMMAP() \
 	printf("Map_HiROMMap\n"); \
 	MAP_SYSTEM(); \
-	MAP_HIROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize); \
-	MAP_HIROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize); \
-	MAP_HIROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize); \
-	MAP_HIROM(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize); \
+	MAP_HIROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true); \
+	MAP_HIROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, true); \
+	MAP_HIROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize, true); \
+	MAP_HIROM(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, true); \
 	\
 	if (Settings.DSP) \
 	{ \
@@ -1798,13 +1839,13 @@ static void Map_NoMAD1LoROMMap (void)
 	printf("Map_NoMAD1LoROMMap\n");
 	MAP_SYSTEM();
 
-	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize);
-	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize);
-	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize);
-	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true);
+	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, true);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize, true);
+	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, true);
 
-	MAP_INDEX(0x70, 0x7f, 0x0000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
-	MAP_INDEX(0xf0, 0xff, 0x0000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+	MAP_INDEX(0x70, 0x7f, 0x0000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true);
+	MAP_INDEX(0xf0, 0xff, 0x0000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true);
 
 	MAP_WRAM();
 
@@ -1817,10 +1858,10 @@ static void Map_ROM24MBSLoROMMap (void)
 	printf("Map_ROM24MBSLoROMMap\n");
 	MAP_SYSTEM();
 
-	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x100000, 0);
-	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, 0x100000, 0x100000);
-	MAP_LOROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, 0x100000, 0x200000);
-	MAP_LOROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, 0x100000, 0x100000);
+	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x100000, 0, true);
+	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, 0x100000, 0x100000, true);
+	MAP_LOROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, 0x100000, 0x200000, true);
+	MAP_LOROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, 0x100000, 0x100000, true);
 
 	MAP_LOROMSRAM();
 	MAP_WRAM();
@@ -1833,23 +1874,23 @@ static void Map_SufamiTurboLoROMMap (void)
 	printf("Map_SufamiTurboLoROMMap\n");
 	MAP_SYSTEM();
 
-	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0);
-	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	MAP_LOROM_OFFSET(0x40, 0x5f, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
-	MAP_LOROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, 0x40000, 0);
-	MAP_LOROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	MAP_LOROM_OFFSET(0xc0, 0xdf, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
+	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0, true);
+	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA, true);
+	MAP_LOROM_OFFSET(0x40, 0x5f, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB, true);
+	MAP_LOROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, 0x40000, 0, true);
+	MAP_LOROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA, true);
+	MAP_LOROM_OFFSET(0xc0, 0xdf, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB, true);
 
 	if (Multi.sramSizeA)
 	{
-		MAP_INDEX(0x60, 0x63, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
-		MAP_INDEX(0xe0, 0xe3, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+		MAP_INDEX(0xe0, 0xe3, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true);
+		MAP_INDEX(0x60, 0x63, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true);
 	}
 
 	if (Multi.sramSizeB)
 	{
-		MAP_INDEX(0x70, 0x73, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM);
-		MAP_INDEX(0xf0, 0xf3, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM);
+		MAP_INDEX(0xf0, 0xf3, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM, true);
+		MAP_INDEX(0x70, 0x73, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM, true);
 	}
 
 	MAP_WRAM();
@@ -1863,18 +1904,18 @@ static void Map_SufamiTurboPseudoLoROMMap (void)
 	printf("Map_SufamiTurboPseudoLoROMMap\n");
 	MAP_SYSTEM();
 
-	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0);
-	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, 0x100000, 0x100000);
-	MAP_LOROM_OFFSET(0x40, 0x5f, 0x8000, 0xffff, 0x100000, 0x200000);
-	MAP_LOROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, 0x40000, 0);
-	MAP_LOROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, 0x100000, 0x100000);
-	MAP_LOROM_OFFSET(0xc0, 0xdf, 0x8000, 0xffff, 0x100000, 0x200000);
+	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0, true);
+	MAP_LOROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, 0x100000, 0x100000, true);
+	MAP_LOROM_OFFSET(0x40, 0x5f, 0x8000, 0xffff, 0x100000, 0x200000, true);
+	MAP_LOROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, 0x40000, 0, true);
+	MAP_LOROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, 0x100000, 0x100000, true);
+	MAP_LOROM_OFFSET(0xc0, 0xdf, 0x8000, 0xffff, 0x100000, 0x200000, true);
 
 	/* I don't care :P */
-	MAP_SPACE(0x60, 0x63, 0x8000, 0xffff, Memory.SRAM - 0x8000);
-	MAP_SPACE(0xe0, 0xe3, 0x8000, 0xffff, Memory.SRAM - 0x8000);
-	MAP_SPACE(0x70, 0x73, 0x8000, 0xffff, Memory.SRAM + 0x4000 - 0x8000);
-	MAP_SPACE(0xf0, 0xf3, 0x8000, 0xffff, Memory.SRAM + 0x4000 - 0x8000);
+	MAP_SPACE(0x60, 0x63, 0x8000, 0xffff, Memory.SRAM - 0x8000, true);
+	MAP_SPACE(0xe0, 0xe3, 0x8000, 0xffff, Memory.SRAM - 0x8000, true);
+	MAP_SPACE(0x70, 0x73, 0x8000, 0xffff, Memory.SRAM + 0x4000 - 0x8000, false);
+	MAP_SPACE(0xf0, 0xf3, 0x8000, 0xffff, Memory.SRAM + 0x4000 - 0x8000, false);
 
 	MAP_WRAM();
 
@@ -1895,16 +1936,16 @@ static void Map_SuperFXLoROMMap (void)
 		memmove(&Memory.ROM[0x208000 + c * 0x10000], &Memory.ROM[c * 0x8000], 0x8000);
 	}
 
-	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize);
-	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize, true);
 
-	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, 0);
-	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, 0);
+	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, 0, true);
+	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, 0, true);
 
-	MAP_SPACE(0x00, 0x3f, 0x6000, 0x7fff, Memory.SRAM - 0x6000);
-	MAP_SPACE(0x80, 0xbf, 0x6000, 0x7fff, Memory.SRAM - 0x6000);
-	MAP_SPACE(0x70, 0x70, 0x0000, 0xffff, Memory.SRAM);
-	MAP_SPACE(0x71, 0x71, 0x0000, 0xffff, Memory.SRAM + 0x10000);
+	MAP_SPACE(0x00, 0x3f, 0x6000, 0x7fff, Memory.SRAM - 0x6000, true);
+	MAP_SPACE(0x80, 0xbf, 0x6000, 0x7fff, Memory.SRAM - 0x6000, true);
+	MAP_SPACE(0x71, 0x71, 0x0000, 0xffff, Memory.SRAM + 0x10000, true);
+	MAP_SPACE(0x70, 0x70, 0x0000, 0xffff, Memory.SRAM, true);
 
 	MAP_WRAM();
 
@@ -1916,16 +1957,16 @@ static void Map_SetaDSPLoROMMap (void)
 	printf("Map_SetaDSPLoROMMap\n");
 	MAP_SYSTEM();
 
-	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize);
-	MAP_LOROM(0x40, 0x7f, 0x8000, 0xffff, Memory.CalculatedSize);
-	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize);
-	MAP_LOROM(0xc0, 0xff, 0x8000, 0xffff, Memory.CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true);
+	MAP_LOROM(0x40, 0x7f, 0x8000, 0xffff, Memory.CalculatedSize, true);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize, true);
+	MAP_LOROM(0xc0, 0xff, 0x8000, 0xffff, Memory.CalculatedSize, true);
 
 	/* where does the SETA chip access, anyway? */
 	/* please confirm this? */
-	MAP_INDEX(0x68, 0x6f, 0x0000, 0x7fff, MAP_SETA_DSP, MAP_TYPE_RAM);
+	MAP_INDEX(0x68, 0x6f, 0x0000, 0x7fff, MAP_SETA_DSP, MAP_TYPE_RAM, true);
 	/* and this! */
-	MAP_INDEX(0x60, 0x67, 0x0000, 0x3fff, MAP_SETA_DSP, MAP_TYPE_I_O);
+	MAP_INDEX(0x60, 0x67, 0x0000, 0x3fff, MAP_SETA_DSP, MAP_TYPE_I_O, true);
 	/* ST-0010: */
 	/* MAP_INDEX(0x68, 0x6f, 0x0000, 0x0fff, MAP_SETA_DSP, ?); */
 	
@@ -1940,13 +1981,13 @@ static void Map_SDD1LoROMMap (void)
 	printf("Map_SDD1LoROMMap\n");
 	MAP_SYSTEM();
 
-	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize);
-	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize, true);
 
-	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, 0);
-	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, 0); /* will be overwritten dynamically*/
+	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, 0, true);
+	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, 0, true); /* will be overwritten dynamically*/
 
-	MAP_INDEX(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM);
+	MAP_INDEX(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true);
 
 	MAP_WRAM();
 
@@ -1959,20 +2000,22 @@ static void Map_SA1LoROMMap (void)
 	printf("Map_SA1LoROMMap\n");
 	MAP_SYSTEM();
 
-	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize);
-	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize);
+	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true);
+	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize, true);
 
-	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, 0);
+	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, 0, true);
 
-	MAP_SPACE(0x00, 0x3f, 0x3000, 0x3fff, Memory.FillRAM);
-	MAP_SPACE(0x80, 0xbf, 0x3000, 0x3fff, Memory.FillRAM);
-	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_BWRAM, MAP_TYPE_I_O);
-	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_BWRAM, MAP_TYPE_I_O);
+	MAP_SPACE(0x00, 0x3f, 0x3000, 0x3fff, Memory.FillRAM, true);
+	MAP_SPACE(0x80, 0xbf, 0x3000, 0x3fff, Memory.FillRAM, true);
+	MAP_INDEX(0x00, 0x3f, 0x6000, 0x7fff, MAP_BWRAM, MAP_TYPE_I_O, true);
+	MAP_INDEX(0x80, 0xbf, 0x6000, 0x7fff, MAP_BWRAM, MAP_TYPE_I_O, true);
 
 	for ( c = 0x40; c < 0x80; c++)
 	{
-		MAP_SPACE(c, c, 0x0000, 0xffff, Memory.SRAM + (c & 1) * 0x10000);
+		MAP_SPACE(c, c, 0x0000, 0xffff, Memory.SRAM + (c & 1) * 0x10000, false);
 	}
+
+	MAP_LIBRETRO_RAW(0, Memory.SRAM, 0, 0x400000, 0xC00000, 0xFE0000, 0x20000);
 
 	MAP_WRAM();
 
@@ -2003,10 +2046,10 @@ static void Map_ExtendedHiROMMap (void)
 	printf("Map_ExtendedHiROMMap\n");
 	MAP_SYSTEM();
 
-	MAP_HIROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000);
-	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000);
-	MAP_HIROM_OFFSET(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0);
-	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0);
+	MAP_HIROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000, true);
+	MAP_HIROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000, true);
+	MAP_HIROM_OFFSET(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0, true);
+	MAP_HIROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0, true);
 
 	MAP_HIROMSRAM();
 	MAP_WRAM();
@@ -2019,14 +2062,14 @@ static void Map_SameGameHiROMMap (void)
 	printf("Map_SameGameHiROMMap\n");
 	MAP_SYSTEM();
 
-	MAP_HIROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	MAP_HIROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
-	MAP_HIROM_OFFSET(0x40, 0x5f, 0x0000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	MAP_HIROM_OFFSET(0x60, 0x7f, 0x0000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
-	MAP_HIROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	MAP_HIROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
-	MAP_HIROM_OFFSET(0xc0, 0xdf, 0x0000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA);
-	MAP_HIROM_OFFSET(0xe0, 0xff, 0x0000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB);
+	MAP_HIROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA, true);
+	MAP_HIROM_OFFSET(0x20, 0x3f, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB, true);
+	MAP_HIROM_OFFSET(0x40, 0x5f, 0x0000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA, true);
+	MAP_HIROM_OFFSET(0x60, 0x7f, 0x0000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB, true);
+	MAP_HIROM_OFFSET(0x80, 0x9f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA, true);
+	MAP_HIROM_OFFSET(0xa0, 0xbf, 0x8000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB, true);
+	MAP_HIROM_OFFSET(0xc0, 0xdf, 0x0000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA, true);
+	MAP_HIROM_OFFSET(0xe0, 0xff, 0x0000, 0xffff, Multi.cartSizeB, Multi.cartOffsetB, true);
 
 	MAP_HIROMSRAM();
 	MAP_WRAM();
@@ -2039,13 +2082,13 @@ static void Map_SPC7110HiROMMap (void)
 	printf("Map_SPC7110HiROMMap\n");
 	MAP_SYSTEM();
 
-	MAP_INDEX(0x00, 0x00, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
-	MAP_HIROM(0x00, 0x0f, 0x8000, 0xffff, Memory.CalculatedSize);	
-	MAP_INDEX(0x30, 0x30, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM);
-	MAP_INDEX(0x50, 0x50, 0x0000, 0xffff, MAP_SPC7110_DRAM, MAP_TYPE_ROM);
-	MAP_HIROM(0x80, 0x8f, 0x8000, 0xffff, Memory.CalculatedSize);
-	MAP_HIROM_OFFSET(0xc0, 0xcf, 0x0000, 0xffff, Memory.CalculatedSize, 0);
-	MAP_INDEX(0xd0, 0xff, 0x0000, 0xffff, MAP_SPC7110_ROM,  MAP_TYPE_ROM);
+	MAP_INDEX(0x00, 0x00, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true);
+	MAP_HIROM(0x00, 0x0f, 0x8000, 0xffff, Memory.CalculatedSize, true);	
+	MAP_INDEX(0x30, 0x30, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true);
+	MAP_INDEX(0x50, 0x50, 0x0000, 0xffff, MAP_SPC7110_DRAM, MAP_TYPE_ROM, true);
+	MAP_HIROM(0x80, 0x8f, 0x8000, 0xffff, Memory.CalculatedSize, true);
+	MAP_HIROM_OFFSET(0xc0, 0xcf, 0x0000, 0xffff, Memory.CalculatedSize, 0, true);
+	MAP_INDEX(0xd0, 0xff, 0x0000, 0xffff, MAP_SPC7110_ROM,  MAP_TYPE_ROM, true);
 
 	MAP_WRAM();
 
