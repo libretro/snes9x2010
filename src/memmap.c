@@ -191,7 +191,7 @@
 #include "spc7110dec.h"
 
 #include "../libretro/libretro.h"
-void S9xAppendMapping(struct retro_memory_descriptor * desc);
+void S9xAppendMapping(struct retro_memory_descriptor *desc);
 
 #define MAP_LIBRETRO_RAW(flags, ptr, offset, start, select, disconnect, len) \
 	do { \
@@ -1604,13 +1604,13 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 }
 
 #define MAP_LOROMSRAM() \
-	MAP_INDEX(0xf0, 0xff, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true); \
-	MAP_INDEX(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true); 
+	MAP_INDEX(0x70, 0x7f, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true); \
+	MAP_INDEX(0xf0, 0xff, 0x0000, 0x7fff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true);
 
 #define MAP_WRAM() \
 	/* will overwrite others */ \
-	MAP_SPACE(0x7f, 0x7f, 0x0000, 0xffff, Memory.RAM + 0x10000, true); \
-	MAP_SPACE(0x7e, 0x7e, 0x0000, 0xffff, Memory.RAM, true);
+	MAP_SPACE(0x7e, 0x7e, 0x0000, 0xffff, Memory.RAM, true); \
+	MAP_SPACE(0x7f, 0x7f, 0x0000, 0xffff, Memory.RAM + 0x10000, true);
 
 #define MAP_SYSTEM() \
 	/* will be overwritten */ \
@@ -1672,10 +1672,10 @@ void map_WriteProtectROM (void)
 	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, true); \
 	MAP_LOROM(0x80, 0xbf, 0x8000, 0xffff, Memory.CalculatedSize, true); \
 	MAP_LOROM(0xc0, 0xff, 0x0000, 0xffff, Memory.CalculatedSize, true); \
-	MAP_SPACE(0x73, 0x73, 0x0000, 0xffff, Memory.SRAM + 0x18000, true); \
-	MAP_SPACE(0x72, 0x72, 0x0000, 0xffff, Memory.SRAM + 0x10000, true); \
-	MAP_SPACE(0x71, 0x71, 0x0000, 0xffff, Memory.SRAM + 0x8000, true); \
 	MAP_SPACE(0x70, 0x70, 0x0000, 0xffff, Memory.SRAM, true); \
+	MAP_SPACE(0x71, 0x71, 0x0000, 0xffff, Memory.SRAM + 0x8000, true); \
+	MAP_SPACE(0x72, 0x72, 0x0000, 0xffff, Memory.SRAM + 0x10000, true); \
+	MAP_SPACE(0x73, 0x73, 0x0000, 0xffff, Memory.SRAM + 0x18000, true); \
 	MAP_WRAM(); \
 	map_WriteProtectROM();
 
@@ -1751,8 +1751,8 @@ void map_WriteProtectROM (void)
 	map_WriteProtectROM();
 
 #define MAP_HIROMSRAM() \
-	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true); \
-	MAP_INDEX(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true);
+	MAP_INDEX(0x20, 0x3f, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true); \
+	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true);
 
 #define MAP_HIROMMAP() \
 	printf("Map_HiROMMap\n"); \
@@ -1881,14 +1881,14 @@ static void Map_SufamiTurboLoROMMap (void)
 
 	if (Multi.sramSizeA)
 	{
-		MAP_INDEX(0xe0, 0xe3, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true);
 		MAP_INDEX(0x60, 0x63, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true);
+		MAP_INDEX(0xe0, 0xe3, 0x8000, 0xffff, MAP_LOROM_SRAM, MAP_TYPE_RAM, true);
 	}
 
 	if (Multi.sramSizeB)
 	{
-		MAP_INDEX(0xf0, 0xf3, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM, true);
 		MAP_INDEX(0x70, 0x73, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM, true);
+		MAP_INDEX(0xf0, 0xf3, 0x8000, 0xffff, MAP_LOROM_SRAM_B, MAP_TYPE_RAM, true);
 	}
 
 	MAP_WRAM();
@@ -1912,8 +1912,8 @@ static void Map_SufamiTurboPseudoLoROMMap (void)
 	/* I don't care :P */
 	MAP_SPACE(0x60, 0x63, 0x8000, 0xffff, Memory.SRAM - 0x8000, true);
 	MAP_SPACE(0xe0, 0xe3, 0x8000, 0xffff, Memory.SRAM - 0x8000, true);
-	MAP_SPACE(0x70, 0x73, 0x8000, 0xffff, Memory.SRAM + 0x4000 - 0x8000, false);
-	MAP_SPACE(0xf0, 0xf3, 0x8000, 0xffff, Memory.SRAM + 0x4000 - 0x8000, false);
+	MAP_SPACE(0x70, 0x73, 0x8000, 0xffff, Memory.SRAM + 0x4000 - 0x8000, false);//these two seem to duplicate the above ones in
+	MAP_SPACE(0xf0, 0xf3, 0x8000, 0xffff, Memory.SRAM + 0x4000 - 0x8000, false);//way that makes the duplicates hard to find.
 
 	MAP_WRAM();
 
@@ -1942,8 +1942,8 @@ static void Map_SuperFXLoROMMap (void)
 
 	MAP_SPACE(0x00, 0x3f, 0x6000, 0x7fff, Memory.SRAM - 0x6000, true);
 	MAP_SPACE(0x80, 0xbf, 0x6000, 0x7fff, Memory.SRAM - 0x6000, true);
-	MAP_SPACE(0x71, 0x71, 0x0000, 0xffff, Memory.SRAM + 0x10000, true);
 	MAP_SPACE(0x70, 0x70, 0x0000, 0xffff, Memory.SRAM, true);
+	MAP_SPACE(0x71, 0x71, 0x0000, 0xffff, Memory.SRAM + 0x10000, true);
 
 	MAP_WRAM();
 
