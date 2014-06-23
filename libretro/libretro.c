@@ -390,6 +390,12 @@ static void snes_init (void)
    Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
 }
 
+static void check_system_specs(void)
+{
+   unsigned level = 7;
+   environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
+}
+
 void retro_init (void)
 {
    struct retro_log_callback log;
@@ -409,6 +415,7 @@ void retro_init (void)
 #endif
 
    snes_init();
+   check_system_specs();
 }
 
 /* libretro uses relative values for analogue devices. 
