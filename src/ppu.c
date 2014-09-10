@@ -2049,12 +2049,9 @@ static INLINE uint8 CalcWindowMask (int i, uint8 W1, uint8 W2)
 	{
 		if (!PPU.ClipWindow2Enable[i])
 			return (0);
-		else
-		{
-			if (!PPU.ClipWindow2Inside[i])
-				return (~W2);
-			return (W2);
-		}
+		else if (!PPU.ClipWindow2Inside[i])
+         return (~W2);
+      return (W2);
 	}
 	else
 	{
@@ -5089,13 +5086,9 @@ uint8 S9xGetCPU (uint16 Address)
 			case MEM_CPU_JOYSER0: // JOYSER0
 			case MEM_CPU_JOYSER1: // JOYSER1
 				return (S9xReadJOYSERn(Address));
-
-			default:
-				return (OpenBus);
 		}
 	}
-	else
-	if ((Address & 0xff80) == MEM_DMA_DMAP0)
+	else if ((Address & 0xff80) == MEM_DMA_DMAP0)
 	{
 		int d;
 
@@ -5147,9 +5140,6 @@ uint8 S9xGetCPU (uint16 Address)
 			case 0xb: // 0x43xb: ????x
 			case 0xf: // 0x43xf: mirror of 0x43xb
 				return (DMA[d].UnknownByte);
-
-			default:
-				return (OpenBus);
 		}
 	}
 	else
@@ -5200,9 +5190,11 @@ uint8 S9xGetCPU (uint16 Address)
 					return (S9xGetSPC7110(Address));
 				if (Settings.SDD1 && Address >= 0x4800 && Address <= 0x4807)
 					return (Memory.FillRAM[Address]);
-				return (OpenBus);
+            break;
 		}
 	}
+
+   return (OpenBus);
 }
 
 void S9xResetPPU (void)
