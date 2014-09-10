@@ -260,16 +260,14 @@ static INLINE uint8 S9xGetByte (uint32 Address)
 	{
 		case MAP_CPU:
 			byte = S9xGetCPU(Address & 0xffff);
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_PPU:
 			if (CPU.InDMAorHDMA && (Address & 0xff00) == 0x2100)
 				return (OpenBus);
 
 			byte = S9xGetPPU(Address & 0xffff);
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_LOROM_SRAM:
 		case MAP_SA1RAM:
@@ -278,71 +276,61 @@ static INLINE uint8 S9xGetByte (uint32 Address)
 			// bank >> 1 | offset : SRAM address, unbound
 			// unbound & SRAMMask : SRAM offset
 			byte = *(Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask));
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_LOROM_SRAM_B:
 			byte = *(Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB));
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_HIROM_SRAM:
 		case MAP_RONLY_SRAM:
 			byte = *(Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask));
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_BWRAM:
 			byte = *(Memory.BWRAM + ((Address & 0x7fff) - 0x6000));
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_DSP:
 			byte = S9xGetDSP(Address & 0xffff);
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_SPC7110_ROM:
 			byte = S9xGetSPC7110Byte(Address);
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_SPC7110_DRAM:
 			byte = S9xGetSPC7110(0x4800);
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_C4:
 			byte = S9xGetC4(Address & 0xffff);
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_OBC_RAM:
 			byte = S9xGetOBC1(Address & 0xffff);
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_SETA_DSP:
 			byte = S9xGetSetaDSP(Address);
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_SETA_RISC:
 			byte = S9xGetST018(Address);
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_BSX:
 			byte = S9xGetBSX(Address);
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 
 		case MAP_NONE:
 		default:
 			byte = OpenBus;
-			addCyclesInMemoryAccess;
-			return (byte);
+         break;
 	}
+
+   addCyclesInMemoryAccess;
+   return (byte);
 }
  
 static INLINE uint16 S9xGetWord (uint32 Address, uint32 w)
@@ -547,83 +535,71 @@ static INLINE void S9xSetByte (uint8 Byte, uint32 Address)
 	{
 		case MAP_CPU:
 			S9xSetCPU(Byte, Address & 0xffff);
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_PPU:
 			if (CPU.InDMAorHDMA && (Address & 0xff00) == 0x2100)
 				return;
 
 			S9xSetPPU(Byte, Address & 0xffff);
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_LOROM_SRAM:
 			if (Memory.SRAMMask)
 				*(Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask)) = Byte;
 
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_LOROM_SRAM_B:
 			if (Multi.sramMaskB)
 				*(Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB)) = Byte;
 
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_HIROM_SRAM:
 			if (Memory.SRAMMask)
 				*(Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask)) = Byte;
 
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_BWRAM:
 			*(Memory.BWRAM + ((Address & 0x7fff) - 0x6000)) = Byte;
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_SA1RAM:
 			*(Memory.SRAM + (Address & 0xffff)) = Byte;
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_DSP:
 			S9xSetDSP(Byte, Address & 0xffff);
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_C4:
 			S9xSetC4(Byte, Address & 0xffff);
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_OBC_RAM:
 			S9xSetOBC1(Byte, Address & 0xffff);
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_SETA_DSP:
 			S9xSetSetaDSP(Byte, Address);
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_SETA_RISC:
 			S9xSetST018(Byte, Address);
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_BSX:
 			S9xSetBSX(Byte, Address);
-			addCyclesInMemoryAccess;
-			return;
+         break;
 
 		case MAP_NONE:
 		default:
-			addCyclesInMemoryAccess;
-			return;
+         break;
 	}
+
+   addCyclesInMemoryAccess;
 }
 
 static INLINE void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
