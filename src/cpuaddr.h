@@ -511,17 +511,15 @@ static INLINE uint32 DirectIndexedXE0 (unsigned a)			/* d,X */
 
 static INLINE uint32 DirectIndexedXE1 (unsigned a)			/* d,X */
 {
-	if (Registers.DL)
-		return (DirectIndexedXE0(a));
-	else
-	{
-		pair	addr;
-		addr.W = Direct(a);
-		addr.B.l += Registers.XL;
-		AddCycles(ONE_CYCLE);
+   pair	addr;
+   if (Registers.DL)
+      return (DirectIndexedXE0(a));
 
-		return (addr.W);
-	}
+   addr.W = Direct(a);
+   addr.B.l += Registers.XL;
+   AddCycles(ONE_CYCLE);
+
+   return (addr.W);
 }
 
 static INLINE uint32 DirectIndexedYSlow (unsigned a)			/* d,Y */
@@ -548,17 +546,15 @@ static INLINE uint32 DirectIndexedYE0 (unsigned a)			/* d,Y */
 
 static INLINE uint32 DirectIndexedYE1 (unsigned a)			/* d,Y */
 {
+   pair	addr;
 	if (Registers.DL)
 		return (DirectIndexedYE0(a));
-	else
-	{
-		pair	addr;
-		addr.W = Direct(a);
-		addr.B.l += Registers.YL;
-		AddCycles(ONE_CYCLE);
 
-		return (addr.W);
-	}
+   addr.W = Direct(a);
+   addr.B.l += Registers.YL;
+   AddCycles(ONE_CYCLE);
+
+   return (addr.W);
 }
 
 static INLINE uint32 DirectIndexedIndirectSlow (unsigned a)		/* (d,X) */

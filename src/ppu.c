@@ -277,9 +277,8 @@ bool8 S9xGraphicsInit (void)
 
 			for ( b = 0; b <= MAX_BLUE; b++)
 			{
-				uint32 b2;
+				uint32 b2 = b;
 
-				b2 = b;
 				if (b2 & 0x10)
 					b2 &= ~0x10;
 				else
@@ -5067,7 +5066,8 @@ static INLINE uint8 REGISTER_4212 (void)
 
 	byte = 0;
 
-	if ((CPU.V_Counter >= PPU.ScreenHeight + FIRST_VISIBLE_LINE) && (CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE + 3))
+	if ((CPU.V_Counter >= PPU.ScreenHeight + FIRST_VISIBLE_LINE)
+         && (CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE + 3))
 		byte = 1;
 	if ((CPU.Cycles < Timings.HBlankEnd) || (CPU.Cycles >= Timings.HBlankStart))
 		byte |= 0x40;

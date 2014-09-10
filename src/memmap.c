@@ -614,8 +614,7 @@ static bool8 is_SufamiTurbo_BIOS (uint8 *data, uint32 size)
 	if (size == 0x40000 && strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0
 	&& strncmp((char * ) (data + 0x10), "SFC-ADX BACKUP", 14) == 0)
 		return TRUE;
-	else
-		return FALSE;
+   return FALSE;
 }
 
 static bool8 is_SufamiTurbo_Cart (uint8 *data, uint32 size)
@@ -623,24 +622,21 @@ static bool8 is_SufamiTurbo_Cart (uint8 *data, uint32 size)
 	if (size >= 0x80000 && size <= 0x100000 && strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0
 	&& strncmp((char * ) (data + 0x10), "SFC-ADX BACKUP", 14) != 0)
 		return TRUE;
-	else
-		return FALSE;
+   return FALSE;
 }
 
 static bool8 is_SameGame_BIOS (uint8 *data, uint32 size)
 {
 	if (size == 0x100000 && strncmp((char *) (data + 0xffc0), "Same Game Tsume Game", 20) == 0)
 		return (TRUE);
-	else
-		return (FALSE);
+   return (FALSE);
 }
 
 static bool8 is_SameGame_Add_On (uint8 *data, uint32 size)
 {
 	if (size == 0x80000)
 		return (TRUE);
-	else
-		return (FALSE);
+   return (FALSE);
 }
 
 static int ScoreHiROM (uint32 calculated_size, uint8 * rom,  bool8 skip_header, int32 romoff)
@@ -1352,11 +1348,9 @@ bool8 LoadSRAM (const char *filename)
 				S9xMessage(S9X_INFO, S9X_ROM_INFO, "The SRAM file wasn't found: BS-X.srm was read instead.");
 				return (TRUE);
 			}
-			else
-			{
-				S9xMessage(S9X_INFO, S9X_ROM_INFO, "The SRAM file wasn't found, BS-X.srm wasn't found either.");
-				return (FALSE);
-			}
+
+         S9xMessage(S9X_INFO, S9X_ROM_INFO, "The SRAM file wasn't found, BS-X.srm wasn't found either.");
+         return (FALSE);
 		}
 
 		return (FALSE);
@@ -1490,8 +1484,7 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 
 	if (size <= (pos & mask))
 		return (map_mirror(size, pos - mask));
-	else
-		return (mask + map_mirror(size - mask, pos - mask));
+   return (mask + map_mirror(size - mask, pos - mask));
 }
 
 #define MATCH_NA(str) (strcmp(Memory.ROMName, str) == 0)
