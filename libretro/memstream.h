@@ -6,7 +6,7 @@
 
 typedef struct memstream memstream_t;
 
-memstream_t *memstream_open();
+memstream_t *memstream_open(void);
 void memstream_close(memstream_t * stream);
 
 size_t memstream_read(memstream_t * stream, void *data, size_t bytes);
@@ -17,6 +17,6 @@ size_t memstream_pos(memstream_t * stream);
 int memstream_seek(memstream_t * stream, int offset, int whence);
 
 void memstream_set_buffer(uint8_t *buffer, size_t size);
-size_t memstream_get_last_size();
+size_t memstream_get_last_size(void);
 
 #endif
