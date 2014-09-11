@@ -921,7 +921,7 @@ void S9xSetSA1 (uint8 byte, uint32 address)
 
 			if ((Memory.FillRAM[0x2230] & 0xb0) == 0xa0) /* Char conversion 2 DMA enabled*/
 			{
-				memmove(&Memory.ROM[MAX_ROM_SIZE - 0x10000] + SA1.in_char_dma * 16, &Memory.FillRAM[0x2240], 16);
+				memcpy(&Memory.ROM[MAX_ROM_SIZE - 0x10000] + SA1.in_char_dma * 16, &Memory.FillRAM[0x2240], 16);
 				SA1.in_char_dma = (SA1.in_char_dma + 1) & 7;
 				if ((SA1.in_char_dma & 3) == 0)
 					S9xSA1CharConv2();

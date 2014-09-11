@@ -451,7 +451,7 @@ bool8 S9xLoadCheatFile (const char *filename)
 		Cheat.c[Cheat.num_cheats].address = data[2] | (data[3] << 8) |  (data[4] << 16);
 		Cheat.c[Cheat.num_cheats].saved_byte = data[5];
 		Cheat.c[Cheat.num_cheats].saved = (data[0] & 8) != 0;
-		memmove(Cheat.c[Cheat.num_cheats].name, &data[8], 20);
+		memcpy(Cheat.c[Cheat.num_cheats].name, &data[8], 20);
 		Cheat.c[Cheat.num_cheats++].name[20] = 0;
 	}
 
@@ -498,7 +498,7 @@ bool8 S9xSaveCheatFile (const char *filename)
 		data[4] = (uint8) (Cheat.c[i].address >> 16);
 		data[5] = Cheat.c[i].saved_byte;
 
-		memmove(&data[8], Cheat.c[i].name, 19);
+      memcpy(&data[8], Cheat.c[i].name, 19);
 
 		if (fwrite(data, 28, 1, fs) != 1)
 		{

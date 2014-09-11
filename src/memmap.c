@@ -285,9 +285,9 @@ static void S9xDeinterleaveType1 (int size, uint8 *base)
 			{
 				if (blocks[j] == i)
 				{
-					memmove(tmp, &base[blocks[j] * 0x8000], 0x8000);
+					memcpy(tmp, &base[blocks[j] * 0x8000], 0x8000);
 					memmove(&base[blocks[j] * 0x8000], &base[blocks[i] * 0x8000], 0x8000);
-					memmove(&base[blocks[i] * 0x8000], tmp, 0x8000);
+					memcpy(&base[blocks[i] * 0x8000], tmp, 0x8000);
 					b = blocks[j];
 					blocks[j] = blocks[i];
 					blocks[i] = b;
@@ -326,9 +326,9 @@ static void S9xDeinterleaveType2 (int size, uint8 *base)
 			{
 				if (blocks[j] == i)
 				{
-					memmove(tmp, &base[blocks[j] * 0x10000], 0x10000);
+					memcpy(tmp, &base[blocks[j] * 0x10000], 0x10000);
 					memmove(&base[blocks[j] * 0x10000], &base[blocks[i] * 0x10000], 0x10000);
-					memmove(&base[blocks[i] * 0x10000], tmp, 0x10000);
+					memcpy(&base[blocks[i] * 0x10000], tmp, 0x10000);
 					b = blocks[j];
 					blocks[j] = blocks[i];
 					blocks[i] = b;
@@ -351,10 +351,10 @@ static void S9xDeinterleaveGD24 (int size, uint8 *base)
 	tmp = (uint8 *) malloc(0x80000);
 	if (tmp)
 	{
-		memmove(tmp, &base[0x180000], 0x80000);
-		memmove(&base[0x180000], &base[0x200000], 0x80000);
-		memmove(&base[0x200000], &base[0x280000], 0x80000);
-		memmove(&base[0x280000], tmp, 0x80000);
+		memcpy(tmp, &base[0x180000], 0x80000);
+		memcpy(&base[0x180000], &base[0x200000], 0x80000);
+		memcpy(&base[0x200000], &base[0x280000], 0x80000);
+		memcpy(&base[0x280000], tmp, 0x80000);
 
 		free(tmp);
 
@@ -1047,9 +1047,9 @@ again:
 		if (tmp)
 		{
 			S9xMessage(S9X_INFO, S9X_ROM_INTERLEAVED_INFO, "Fixing swapped ExHiROM...");
-			memmove(tmp, Memory.ROM, Memory.CalculatedSize - 0x400000);
+			memcpy(tmp, Memory.ROM, Memory.CalculatedSize - 0x400000);
 			memmove(Memory.ROM, Memory.ROM + Memory.CalculatedSize - 0x400000, 0x400000);
-			memmove(Memory.ROM + 0x400000, tmp, Memory.CalculatedSize - 0x400000);
+			memcpy(Memory.ROM + 0x400000, tmp, Memory.CalculatedSize - 0x400000);
 			free(tmp);
 		}
 	}
@@ -1617,7 +1617,7 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 void map_WriteProtectROM (void)
 {
 	int c;
-	memmove((void *) Memory.WriteMap, (void *)Memory.Map, sizeof(Memory.Map));
+	memcpy((void *) Memory.WriteMap, (void *)Memory.Map, sizeof(Memory.Map));
 
 	for ( c = 0; c < 0x1000; c++)
 	{
@@ -1923,8 +1923,8 @@ static void Map_SuperFXLoROMMap (void)
 	   block is repeated twice in each 64K block. */
 	for ( c = 0; c < 64; c++)
 	{
-		memmove(&Memory.ROM[0x200000 + c * 0x10000], &Memory.ROM[c * 0x8000], 0x8000);
-		memmove(&Memory.ROM[0x208000 + c * 0x10000], &Memory.ROM[c * 0x8000], 0x8000);
+		memcpy(&Memory.ROM[0x200000 + c * 0x10000], &Memory.ROM[c * 0x8000], 0x8000);
+		memcpy(&Memory.ROM[0x208000 + c * 0x10000], &Memory.ROM[c * 0x8000], 0x8000);
 	}
 
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true);
@@ -2013,8 +2013,8 @@ static void Map_SA1LoROMMap (void)
 	map_WriteProtectROM();
 
 	/* Now copy the map and correct it for the SA1 CPU. */
-	memmove((void *) SA1.Map, (void *) Memory.Map, sizeof(Memory.Map));
-	memmove((void *) SA1.WriteMap, (void *) Memory.WriteMap, sizeof(Memory.WriteMap));
+	memcpy((void *) SA1.Map, (void *) Memory.Map, sizeof(Memory.Map));
+	memcpy((void *) SA1.WriteMap, (void *) Memory.WriteMap, sizeof(Memory.WriteMap));
 
 	/* SA-1 Banks 00->3f and 80->bf */
 	for ( c = 0x000; c < 0x400; c += 0x10)
@@ -2181,7 +2181,7 @@ void InitROM (void)
 	Memory.ROMChecksum           = RomHeader[0x2E] + (RomHeader[0x2F] << 8);
 	Memory.ROMComplementChecksum = RomHeader[0x2C] + (RomHeader[0x2D] << 8);
 
-	memmove(Memory.ROMId, &RomHeader[0x02], 4);
+	memcpy(Memory.ROMId, &RomHeader[0x02], 4);
 
 	if (RomHeader[0x2A] != 0x33)
 		Memory.CompanyId = ((RomHeader[0x2A] >> 4) & 0x0F) * 36 + (RomHeader[0x2A] & 0x0F);

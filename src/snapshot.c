@@ -1216,7 +1216,7 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 
 			case uint8_ARRAY_V:
 			case uint8_INDIR_ARRAY_V:
-				memmove(ptr, addr, fields[i].size);
+				memcpy(ptr, addr, fields[i].size);
 				ptr += fields[i].size;
 
 				break;
@@ -1578,7 +1578,7 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 			case uint8_ARRAY_V:
 			case uint8_INDIR_ARRAY_V:
 				if (fields[i].offset >= 0)
-					memmove(addr, ptr, fields[i].size);
+					memcpy(addr, ptr, fields[i].size);
 				ptr += fields[i].size;
 
 				break;
