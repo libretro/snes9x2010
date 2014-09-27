@@ -517,13 +517,18 @@ static void report_buttons (void)
 		      {
 			      for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
 			      {
-				      bool pressed = input_cb(port, RETRO_DEVICE_JOYPAD_MULTITAP, j, i);
-				      uint16_t button_press = snes_lut[i];
+					bool pressed;
+					if (Settings.CurrentROMisMultitapCompatible==TRUE)
+						pressed = input_cb(port+j, RETRO_DEVICE_JOYPAD, 0, i);
+					else
+						pressed = input_cb(port, RETRO_DEVICE_JOYPAD, 0, i);
+						
+				      	uint16_t button_press = snes_lut[i];
 
-				      if (pressed)
-					      joypad[j*2+port] |= button_press;
-				      else
-					      joypad[j*2+port] &= ~button_press;
+				      	if (pressed)
+						joypad[j*2+port] |= button_press;
+				      	else
+						joypad[j*2+port] &= ~button_press;
 			      }
 		      }
 		      break;
