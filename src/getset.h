@@ -953,9 +953,7 @@ static INLINE void S9xSetPCBase (uint32 Address)
 
 static INLINE uint8 * S9xGetBasePointer (uint32 Address)
 {
-	uint8 *GetAddress;
-
-	GetAddress = Memory.Map[(Address & 0xffffff) >> MEMMAP_SHIFT];
+	uint8 *GetAddress = Memory.Map[(Address & 0xffffff) >> MEMMAP_SHIFT];
 
 	if (GetAddress >= (uint8 *) MAP_LAST)
 		return (GetAddress);
