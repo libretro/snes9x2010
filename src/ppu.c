@@ -2945,12 +2945,14 @@ static INLINE void REGISTER_2104 (uint8 Byte)
 
 static void S9xSetSuperFX (uint8 byte, uint16 address)
 {
+   uint8 old_fill_ram = Memory.FillRAM[address];
+   Memory.FillRAM[address] = byte;
+
 	switch (address)
 	{
 		case 0x3030:
-			if ((Memory.FillRAM[0x3030] ^ byte) & FLG_G)
+			if ((old_fill_ram ^ byte) & FLG_G)
 			{
-				Memory.FillRAM[0x3030] = byte;
 				if ((byte & FLG_G) && !SuperFX.oneLineDone)
 				{
 					if(CHECK_EXEC_SUPERFX())
@@ -2965,48 +2967,33 @@ static void S9xSetSuperFX (uint8 byte, uint16 address)
 					GSU.bCacheActive = FALSE;
 				}
 			}
-			else
-				Memory.FillRAM[0x3030] = byte;
 
 			break;
 
 		case 0x3031:
 		case 0x3033:
-			Memory.FillRAM[address] = byte;
+		case 0x303f:
+		case 0x3039:
+		case 0x303a:
+		case 0x303b:
+		case 0x3037:
 			break;
 		case 0x3034:
 		case 0x3036:
-			Memory.FillRAM[address] = byte & 0x7f;
-			break;
-		case 0x3037:
-			Memory.FillRAM[0x3037] = byte;
+			Memory.FillRAM[address] &= 0x7f;
 			break;
 		case 0x3038:
-			Memory.FillRAM[0x3038] = byte;
 			/* SCBR write seen. We need to update our cached screen pointers */
 			GSU.vSCBRDirty = TRUE;
 			break;
-
-		case 0x3039:
-		case 0x303a:
-			Memory.FillRAM[address] = byte;
-			break;
-		case 0x303b:
-			break;
-
 		case 0x303c:
-			Memory.FillRAM[0x303c] = byte;
 			/* Update BankReg and Bank pointer */
 			GSU.vRamBankReg = (uint32) byte & (FX_RAM_BANKS - 1);
 			GSU.pvRamBank = GSU.apvRamBank[byte & 0x3];
 			break;
 
-		case 0x303f:
-			Memory.FillRAM[0x303f] = byte;
-			break;
 
 		case 0x301f:
-			Memory.FillRAM[0x301f] = byte;
 			Memory.FillRAM[0x3000 + GSU_SFR] |= FLG_G;
 			if (!SuperFX.oneLineDone)
 			{
@@ -3018,7 +3005,6 @@ static void S9xSetSuperFX (uint8 byte, uint16 address)
 			break;
 
 		default:
-			Memory.FillRAM[address] = byte;
 			if (address >= 0x3100)
 			{
 				/* Write access to the cache*/
