@@ -210,7 +210,7 @@ static INLINE unsigned min (unsigned a, unsigned b)
 
 static signed srtc_index;
 
-uint32 rtc_mode;
+extern uint32 rtc_mode;
 
 static const unsigned srtc_months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 

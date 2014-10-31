@@ -20,10 +20,7 @@
     <ClCompile Include="..\..\libretro.c">
       <Filter>Source Files\libretro</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\tile.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\apu.c">
+    <ClCompile Include="..\..\..\src\snes9x_griffin.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\bsx.c">
@@ -72,12 +69,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\snapshot.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\spc7110.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\srtc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

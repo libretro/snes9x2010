@@ -199,9 +199,6 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath="..\..\..\src\apu.c">
-			</File>
-			<File
 				RelativePath="..\..\..\src\bsx.c">
 			</File>
 			<File
@@ -250,13 +247,7 @@
 				RelativePath="..\..\..\src\snapshot.c">
 			</File>
 			<File
-				RelativePath="..\..\..\src\spc7110.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\srtc.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\tile.c">
+				RelativePath="..\..\..\src\snes9x_griffin.c">
 			</File>
 			<Filter
 				Name="libretro"
