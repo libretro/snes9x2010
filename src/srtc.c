@@ -208,11 +208,11 @@ static INLINE unsigned min (unsigned a, unsigned b)
 #define RTCM_READ	(2)
 #define RTCM_WRITE	(3)
 
-static signed rtc_index;
+static signed srtc_index;
 
 uint32 rtc_mode;
 
-static const unsigned months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+static const unsigned srtc_months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 static void srtcemu_update_time (void)
 {
@@ -268,7 +268,7 @@ static void srtcemu_update_time (void)
 
 			day++;
 			weekday = (weekday + 1) % 7;
-			days = months[month % 12];
+			days = srtc_months[month % 12];
 			if(days == 28)
 			{
 				bool8 leapyear = FALSE;
@@ -348,7 +348,7 @@ static unsigned srtcemu_weekday(unsigned year, unsigned month, unsigned day)
 
 	while(m < month)
 	{
-		days = months[m - 1];
+		days = srtc_months[m - 1];
 		if(days == 28)
 		{
 			bool8 leapyear = FALSE;
@@ -373,7 +373,7 @@ void S9xInitSRTC (void)
 {
 	spc7110_decomp_start();
 	rtc_mode = RTCM_READ;
-	rtc_index = -1;
+	srtc_index = -1;
 	srtcemu_update_time();
 	memset(RTCData.reg, 0, 20);
 }
@@ -381,7 +381,7 @@ void S9xInitSRTC (void)
 void S9xResetSRTC (void)
 {
 	rtc_mode = RTCM_READ;
-	rtc_index = -1;
+	srtc_index = -1;
 	srtcemu_update_time();
 }
 
@@ -397,7 +397,7 @@ void S9xSetSRTC (uint8 data, uint16 address)
 		if(data == 0x0d)
 		{
 			rtc_mode = RTCM_READ;
-			rtc_index = -1;
+			srtc_index = -1;
 			return;
 		}
 
@@ -411,11 +411,11 @@ void S9xSetSRTC (uint8 data, uint16 address)
 
 		if(rtc_mode == RTCM_WRITE)
 		{
-			if(rtc_index >= 0 && rtc_index < 12)
+			if(srtc_index >= 0 && srtc_index < 12)
 			{
-				MEMORY_CARTRTC_WRITE(rtc_index++, data);
+				MEMORY_CARTRTC_WRITE(srtc_index++, data);
 
-				if(rtc_index == 12)
+				if(srtc_index == 12)
 				{
 					unsigned day, month, year;
 					/*day of week is automatically calculated and written*/
@@ -424,7 +424,7 @@ void S9xSetSRTC (uint8 data, uint16 address)
 					year  = MEMORY_CARTRTC_READ( 9) + MEMORY_CARTRTC_READ(10) * 10 + MEMORY_CARTRTC_READ(11) * 100;
 					year += 1000;
 
-					MEMORY_CARTRTC_WRITE(rtc_index++, srtcemu_weekday(year, month, day));
+					MEMORY_CARTRTC_WRITE(srtc_index++, srtcemu_weekday(year, month, day));
 				}
 			}
 		}
@@ -433,12 +433,12 @@ void S9xSetSRTC (uint8 data, uint16 address)
 			if(data == 0)
 			{
 				rtc_mode = RTCM_WRITE;
-				rtc_index = 0;
+				srtc_index = 0;
 			}
 			else if(data == 4)
 			{
 				rtc_mode = RTCM_READY;
-				rtc_index = -1;
+				srtc_index = -1;
 				for( i = 0; i < 13; i++)
 					MEMORY_CARTRTC_WRITE(i, 0);
 			}
@@ -457,19 +457,19 @@ uint8 S9xGetSRTC (uint16 address)
 		if(rtc_mode != RTCM_READ)
 			return 0x00;
 
-		if(rtc_index < 0)
+		if(srtc_index < 0)
 		{
 			srtcemu_update_time();
-			rtc_index++;
+			srtc_index++;
 			return 0x0f;
 		}
-		else if(rtc_index > 12)
+		else if(srtc_index > 12)
 		{
-			rtc_index = -1;
+			srtc_index = -1;
 			return 0x0f;
 		}
 		else
-			return MEMORY_CARTRTC_READ(rtc_index++);
+			return MEMORY_CARTRTC_READ(srtc_index++);
 	}
 
 	return OpenBus;
@@ -478,13 +478,13 @@ uint8 S9xGetSRTC (uint16 address)
 void S9xSRTCPreSaveState (void)
 {
 	srtcsnap.rtc_mode  = (int32) rtc_mode;
-	srtcsnap.rtc_index = (int32) rtc_index;
+	srtcsnap.rtc_index = (int32) srtc_index;
 }
 
 void S9xSRTCPostLoadState (int unused)
 {
 	rtc_mode  = srtcsnap.rtc_mode;
-	rtc_index = (signed)         srtcsnap.rtc_index;
+	srtc_index = (signed)         srtcsnap.rtc_index;
 
 	srtcemu_update_time();
 }
