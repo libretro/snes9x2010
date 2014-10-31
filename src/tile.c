@@ -190,9 +190,6 @@
 #include "ppu.h"
 #include "tile.h"
 
-/* if a >= 0 return x else y*/
-#define ISEL16(a, x, y) ((x & (~(a >> 15))) + (y & (a >> 15)))
-
 static INLINE uint16 COLOR_SUB (uint16 C1, uint16 C2)
 {
 	uint16	mC1, mC2, v = ALPHA_BITS_MASK;
