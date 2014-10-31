@@ -825,14 +825,13 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 	(BG.Buffered[TileNumber] == BLANK_TILE)
 
 #define SELECT_PALETTE() \
+   GFX.RealScreenColors = &IPPU.ScreenColors[((Tile >> BG.PaletteShift) & BG.PaletteMask) + BG.StartPalette]; \
 	if (BG.DirectColourMode) \
 	{ \
 		if (IPPU.DirectColourMapsNeedRebuild) \
 			S9xBuildDirectColourMaps(); \
 		GFX.RealScreenColors = DirectColourMaps[(Tile >> 10) & 7]; \
 	} \
-	else \
-		GFX.RealScreenColors = &IPPU.ScreenColors[((Tile >> BG.PaletteShift) & BG.PaletteMask) + BG.StartPalette]; \
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors
 
 #define NOMATH(Op, Main, Sub, SD) \
@@ -1132,15 +1131,13 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	uint8	*VRAM1; \
 	int aa, cc, startx; \
 	VRAM1 = Memory.VRAM + 1; \
-	\
+   GFX.RealScreenColors = IPPU.ScreenColors; \
 	if (DCMODE) \
 	{ \
 		if (IPPU.DirectColourMapsNeedRebuild) \
 			S9xBuildDirectColourMaps(); \
 		GFX.RealScreenColors = DirectColourMaps[0]; \
 	} \
-	else \
-		GFX.RealScreenColors = IPPU.ScreenColors; \
 	\
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
 	Offset = GFX.StartY * GFX.PPL; \
@@ -1227,15 +1224,13 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	int	aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart; \
 	uint8 *VRAM1; \
 	VRAM1 = Memory.VRAM + 1; \
-	\
+   GFX.RealScreenColors = IPPU.ScreenColors; \
 	if (DCMODE) \
 	{ \
 		if (IPPU.DirectColourMapsNeedRebuild) \
 			S9xBuildDirectColourMaps(); \
 		GFX.RealScreenColors = DirectColourMaps[0]; \
 	} \
-	else \
-		GFX.RealScreenColors = IPPU.ScreenColors; \
 	\
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
 	\
