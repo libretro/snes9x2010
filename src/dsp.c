@@ -3296,7 +3296,7 @@ uint8 DSP3GetByte (uint16 address)
 #define SEX78(a)	(((int32) ((int16) (a))) << 8)
 
 /* 1.15.0 -> 1.15.16 */
-#define SEX16(a)	(((int32) ((int16) (a))) << 16)
+#define DSP_SEX16(a)	(((int32) ((int16) (a))) << 16)
 
 static int16 DSP4_READ_WORD (void)
 {
@@ -3451,8 +3451,8 @@ static void DSP4_OP01 (void)
 			py_dy = (DSP4.view_yofs2 - DSP4.view_yofs1) * DSP4_Inverse(DSP4.segments) << 1;
 
 			/* starting step values*/
-			x_scroll = SEX16(DSP4.poly_cx[0][0] + DSP4.view_xofs1);
-			y_scroll = SEX16(-DSP4.viewport_bottom + DSP4.view_yofs1 + DSP4.view_yofsenv + DSP4.poly_cx[1][0] - DSP4.world_yofs);
+			x_scroll = DSP_SEX16(DSP4.poly_cx[0][0] + DSP4.view_xofs1);
+			y_scroll = DSP_SEX16(-DSP4.viewport_bottom + DSP4.view_yofs1 + DSP4.view_yofsenv + DSP4.poly_cx[1][0] - DSP4.world_yofs);
 
 			/* SR = 0x80*/
 
@@ -3665,8 +3665,8 @@ static void DSP4_OP07 (void)
 			py_dy = (DSP4.view_yofs2 - DSP4.view_yofs1) * DSP4_Inverse(DSP4.segments) << 1;
 
 			/* starting step values*/
-			x_scroll = SEX16(DSP4.poly_cx[0][0] + DSP4.view_xofs1);
-			y_scroll = SEX16(-DSP4.viewport_bottom + DSP4.view_yofs1 + DSP4.view_yofsenv + DSP4.poly_cx[1][0] - DSP4.world_yofs);
+			x_scroll = DSP_SEX16(DSP4.poly_cx[0][0] + DSP4.view_xofs1);
+			y_scroll = DSP_SEX16(-DSP4.viewport_bottom + DSP4.view_yofs1 + DSP4.view_yofsenv + DSP4.poly_cx[1][0] - DSP4.world_yofs);
 
 			/* SR = 0x80*/
 
@@ -3978,8 +3978,8 @@ static void DSP4_OP08 (void)
 
 				/* update each point on the line*/
 
-				w_left  = SEX16(DSP4.poly_cx[polygon][0] - DSP4.poly_start[poly] + env[0][0]);
-				w_right = SEX16(DSP4.poly_cx[polygon][1] - DSP4.poly_start[poly] + env[1][0]);
+				w_left  = DSP_SEX16(DSP4.poly_cx[polygon][0] - DSP4.poly_start[poly] + env[0][0]);
+				w_right = DSP_SEX16(DSP4.poly_cx[polygon][1] - DSP4.poly_start[poly] + env[1][0]);
 
 				/* update distance drawn into world*/
 				DSP4.poly_plane[polygon] = DSP4.distance;
@@ -4469,8 +4469,8 @@ static void DSP4_OP0D (void)
 			py_dy = (DSP4.view_yofs2 - DSP4.view_yofs1) * DSP4_Inverse(DSP4.segments) << 1;
 
 			/* starting step values*/
-			x_scroll = SEX16(DSP4.poly_cx[0][0] + DSP4.view_xofs1);
-			y_scroll = SEX16(-DSP4.viewport_bottom + DSP4.view_yofs1 + DSP4.view_yofsenv + DSP4.poly_cx[1][0] - DSP4.world_yofs);
+			x_scroll = DSP_SEX16(DSP4.poly_cx[0][0] + DSP4.view_xofs1);
+			y_scroll = DSP_SEX16(-DSP4.viewport_bottom + DSP4.view_yofs1 + DSP4.view_yofsenv + DSP4.poly_cx[1][0] - DSP4.world_yofs);
 
 			/* SR = 0x80*/
 
@@ -4690,8 +4690,8 @@ static void DSP4_OP0F (void)
 			py_dy = (DSP4.view_yofs2 - DSP4.view_yofs1) * DSP4_Inverse(DSP4.segments) << 1;
 
 			/* starting step values*/
-			x_scroll = SEX16(DSP4.poly_cx[0][0] + DSP4.view_xofs1);
-			y_scroll = SEX16(-DSP4.viewport_bottom + DSP4.view_yofs1 + DSP4.view_yofsenv + DSP4.poly_cx[1][0] - DSP4.world_yofs);
+			x_scroll = DSP_SEX16(DSP4.poly_cx[0][0] + DSP4.view_xofs1);
+			y_scroll = DSP_SEX16(-DSP4.viewport_bottom + DSP4.view_yofs1 + DSP4.view_yofsenv + DSP4.poly_cx[1][0] - DSP4.world_yofs);
 
 			/* SR = 0x80*/
 
@@ -4924,8 +4924,8 @@ static void DSP4_OP10 (void)
 			py_dy = (DSP4.view_yofs2 - DSP4.view_yofs1) * DSP4_Inverse(DSP4.segments) << 1;
 
 			/* starting step values*/
-			x_scroll = SEX16(DSP4.poly_cx[0][0] + DSP4.view_xofs1);
-			y_scroll = SEX16(-DSP4.viewport_bottom + DSP4.view_yofs1 + DSP4.view_yofsenv + DSP4.poly_cx[1][0] - DSP4.world_yofs);
+			x_scroll = DSP_SEX16(DSP4.poly_cx[0][0] + DSP4.view_xofs1);
+			y_scroll = DSP_SEX16(-DSP4.viewport_bottom + DSP4.view_yofs1 + DSP4.view_yofsenv + DSP4.poly_cx[1][0] - DSP4.world_yofs);
 
 			/* SR = 0x80*/
 

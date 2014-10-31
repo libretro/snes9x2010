@@ -434,7 +434,7 @@ extern struct FxRegs_s	GSU;
 
 /* Sign extend from 8/16 bit to 32 bit */
 #define SEX8(a)			((int32)  ((int8)   (a)))
-#define SEX16(a)		((int32)  ((int16)  (a)))
+#define FX_SEX16(a)		((int32)  ((int16)  (a)))
 
 /* Unsign extend from 8/16 bit to 32 bit */
 #define USEX8(a)		((uint32) ((uint8)  (a)))

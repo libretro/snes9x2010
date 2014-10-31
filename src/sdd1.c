@@ -245,7 +245,7 @@ static struct
 	uint8 code_size;
 	uint8 MPS_next;
 	uint8 LPS_next;
-} evolution_table[] = {
+} sdd1_evolution_table[] = {
     /*  0 */ { 0,25,25},
     /*  1 */ { 0, 2, 1},
     /*  2 */ { 0, 3, 1},
@@ -339,11 +339,11 @@ static INLINE uint8 GolombGetBit(int code_size)
 static INLINE uint8 ProbGetBit(uint8 context)
 {
 	uint8 state=context_states[context];
-	uint8 bit=GolombGetBit(evolution_table[state].code_size);
+	uint8 bit=GolombGetBit(sdd1_evolution_table[state].code_size);
 
 	if(bit&1)
 	{
-		context_states[context]=evolution_table[state].LPS_next;
+		context_states[context] = sdd1_evolution_table[state].LPS_next;
 		if(state < 2)
 		{
 			context_MPS[context]^=1;
@@ -353,7 +353,7 @@ static INLINE uint8 ProbGetBit(uint8 context)
 			return context_MPS[context]^1; /* we know bit is 1, so use a constant */
 	}
 	else if(bit)
-		context_states[context]=evolution_table[state].MPS_next;	/* zero here, zero there, no difference so drop through. */
+		context_states[context] = sdd1_evolution_table[state].MPS_next;	/* zero here, zero there, no difference so drop through. */
 	return context_MPS[context]; /* we know bit is 0, so don't bother xoring */
 }
 

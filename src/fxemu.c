@@ -1338,7 +1338,7 @@ static void fx_add_r15 (void)
 
 /* 50-5f (ALT1) - adc rn - add with carry, register + register*/
 #define FX_ADC(reg) \
-	int32	s = SUSEX16(SREG) + SUSEX16(GSU.avReg[reg]) + SEX16(GSU.vCarry); \
+	int32	s = SUSEX16(SREG) + SUSEX16(GSU.avReg[reg]) + FX_SEX16(GSU.vCarry); \
 	GSU.vCarry = s >= 0x10000; \
 	GSU.vOverflow = ~(SREG ^ GSU.avReg[reg]) & (GSU.avReg[reg] ^ s) & 0x8000; \
 	GSU.vSign = s; \
@@ -2751,7 +2751,7 @@ static void fx_asr (void)
 {
 	uint32	v;
 	GSU.vCarry = SREG & 1;
-	v = (uint32) (SEX16(SREG) >> 1);
+	v = (uint32) (FX_SEX16(SREG) >> 1);
 	R15++;
 	DREG = v;
 	GSU.vSign = v;
@@ -2770,7 +2770,7 @@ static void fx_div2 (void)
 	uint32	v;
 	int32 s;
 
-	s = SEX16(SREG);
+	s = FX_SEX16(SREG);
 
 	GSU.vCarry = s & 1;
 	if (s == -1)
@@ -2891,7 +2891,7 @@ static void fx_fmult (void)
 {
 	uint32	v, c;
 
-	c = (uint32) (SEX16(SREG) * SEX16(R6));
+	c = (uint32) (FX_SEX16(SREG) * FX_SEX16(R6));
 	v = c >> 16;
 	R15++;
 	DREG = v;
@@ -2907,7 +2907,7 @@ static void fx_lmult (void)
 {
 	uint32	v, c;
 
-	c = (uint32) (SEX16(SREG) * SEX16(R6));
+	c = (uint32) (FX_SEX16(SREG) * FX_SEX16(R6));
 	R4 = c;
 	v = c >> 16;
 	R15++;

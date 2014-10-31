@@ -199,66 +199,11 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath="..\..\..\src\bsx.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\c4emu.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\cheats.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\controls.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\cpu.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\cpuexec.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\dsp.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\fxemu.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\globals.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\memmap.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\obc1.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\ppu.c">
-			</File>
-			<File
 				RelativePath="..\..\..\src\sa1.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\sdd1.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\seta.c">
-			</File>
-			<File
-				RelativePath="..\..\..\src\snapshot.c">
 			</File>
 			<File
 				RelativePath="..\..\..\src\snes9x_griffin.c">
 			</File>
-			<Filter
-				Name="libretro"
-				Filter="">
-				<File
-					RelativePath="..\..\libretro.c">
-				</File>
-				<File
-					RelativePath="..\..\memstream.c">
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"

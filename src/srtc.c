@@ -193,16 +193,6 @@
 #define MEMORY_CARTRTC_READ(a)		RTCData.reg[(a)]
 #define MEMORY_CARTRTC_WRITE(a, b)	{ RTCData.reg[(a)] = (b); }
 
-static INLINE unsigned max (unsigned a, unsigned b)
-{
-	return ((a > b) ? a : b);
-}
-
-static INLINE unsigned min (unsigned a, unsigned b)
-{
-	return ((a < b) ? a : b);
-}
-
 #define RTCM_READY	(0)
 #define RTCM_COMMAND	(1)
 #define RTCM_READ	(2)

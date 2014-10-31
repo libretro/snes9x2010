@@ -1708,23 +1708,23 @@ static int spc_cpu_read( int addr, int time )
 }
 
 #define READ_TIMER( time, addr, out )	CPU_READ_TIMER( rel_time, time, (addr), out )
-#define READ( time, addr )		spc_cpu_read((addr), rel_time + time )
-#define WRITE( time, addr, data )	spc_cpu_write((data), (addr), rel_time + time )
+#define SPC_CPU_READ( time, addr )		spc_cpu_read((addr), rel_time + time )
+#define SPC_CPU_WRITE( time, addr, data )	spc_cpu_write((data), (addr), rel_time + time )
 
 static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
 {
 	unsigned addr, t;
 
 	addr = GET_LE16( pc );
-	t = READ( 0, addr & 0x1FFF ) >> (addr >> 13);
+	t = SPC_CPU_READ( 0, addr & 0x1FFF ) >> (addr >> 13);
 	return t << 8 & 0x100;
 }
 
 #define DP_ADDR( addr )                     (dp + (addr))
 
 #define READ_DP_TIMER(  time, addr, out )   CPU_READ_TIMER( rel_time, time, DP_ADDR( addr ), out )
-#define READ_DP(  time, addr )              READ ( time, DP_ADDR( addr ) )
-#define WRITE_DP( time, addr, data )        WRITE( time, DP_ADDR( addr ), data )
+#define READ_DP(  time, addr )              SPC_CPU_READ( time, DP_ADDR( addr ) )
+#define WRITE_DP( time, addr, data )        SPC_CPU_WRITE( time, DP_ADDR( addr ), data )
 
 #define READ_PROG16( addr )                 GET_LE16( ram + (addr) )
 
@@ -1942,7 +1942,7 @@ loop:
 				  /* 1. 8-bit Data Transmission Commands. Group I */
 
 				  ADDR_MODES_NO_DP( 0xE8 ) /* MOV A,addr */
-					  a = nz = READ( 0, data );
+					  a = nz = SPC_CPU_READ( 0, data );
 				  goto inc_pc_loop;
 
 			case 0xBF:
@@ -1951,7 +1951,7 @@ loop:
 					  int temp;
 					  temp = x + dp;
 					  x = (uint8_t) (x + 1);
-					  a = nz = READ( -1, temp );
+					  a = nz = SPC_CPU_READ( -1, temp );
 					  goto loop;
 				  }
 
@@ -1969,7 +1969,7 @@ loop:
 			case 0xE9: /* MOV X,abs */
 				  data = GET_LE16( pc );
 				  ++pc;
-				  data = READ( 0, data );
+				  data = SPC_CPU_READ( 0, data );
 			case 0xCD: /* MOV X,imm */
 				  x  = data;
 				  nz = data;
@@ -1989,7 +1989,7 @@ loop:
 					  temp = GET_LE16( pc );
 					  pc += 2;
 					  READ_TIMER( 0, temp, y = nz );
-					  /* y = nz = READ( 0, temp ); */
+					  /* y = nz = SPC_CPU_READ( 0, temp ); */
 					  goto loop;
 				  }
 
@@ -2001,7 +2001,7 @@ loop:
 				  /* 2. 8-BIT DATA TRANSMISSION COMMANDS, GROUP 2 */
 
 				  ADDR_MODES_NO_DP( 0xC8 ) /* MOV addr,A */
-					  WRITE( 0, data, a );
+					  SPC_CPU_WRITE( 0, data, a );
 				  goto inc_pc_loop;
 
 				  {
@@ -2012,7 +2012,7 @@ loop:
 					  case 0xC9: /* MOV abs,X */
 					  temp = x;
 mov_abs_temp:
-					  WRITE( 0, GET_LE16( pc ), temp );
+					  SPC_CPU_WRITE( 0, GET_LE16( pc ), temp );
 					  pc += 2;
 					  goto loop;
 				  }
@@ -2020,13 +2020,13 @@ mov_abs_temp:
 			case 0xD9: /* MOV dp+Y,X */
 				  data = (uint8_t) (data + y);
 			case 0xD8: /* MOV dp,X */
-				  WRITE( 0, data + dp, x );
+				  SPC_CPU_WRITE( 0, data + dp, x );
 				  goto inc_pc_loop;
 
 			case 0xDB: /* MOV dp+X,Y */
 				  data = (uint8_t) (data + x);
 			case 0xCB: /* MOV dp,Y */
-				  WRITE( 0, data + dp, y );
+				  SPC_CPU_WRITE( 0, data + dp, y );
 				  goto inc_pc_loop;
 
 				  /* 3. 8-BIT DATA TRANSMISSION COMMANDS, GROUP 3. */
@@ -2070,7 +2070,7 @@ mov_abs_temp:
 
 #define LOGICAL_OP( op, func )\
 				  ADDR_MODES( op ) /* addr */\
-				  data = READ( 0, data );\
+				  data = SPC_CPU_READ( 0, data );\
 			case op: /* imm */\
 					  nz = a func##= data;\
 				  goto inc_pc_loop;\
@@ -2087,8 +2087,8 @@ mov_abs_temp:
 								 addr = READ_PC( addr2 ) + dp;\
 							 }\
 					  addr_##op:\
-					  nz = data func READ( -1, addr );\
-					  WRITE( 0, addr, nz );\
+					  nz = data func SPC_CPU_READ( -1, addr );\
+					  SPC_CPU_WRITE( 0, addr, nz );\
 					  goto loop;\
 				  }
 
@@ -2101,7 +2101,7 @@ mov_abs_temp:
 				  /* 4. 8-BIT ARITHMETIC OPERATION COMMANDS */
 
 				  ADDR_MODES( 0x68 ) /* CMP addr */
-					  data = READ( 0, data );
+					  data = SPC_CPU_READ( 0, data );
 			case 0x68: /* CMP imm */
 				  nz = a - data;
 				  c = ~nz;
@@ -2130,7 +2130,7 @@ mov_abs_temp:
 				  data = GET_LE16( pc );
 				  pc++;
 cmp_x_addr:
-				  data = READ( 0, data );
+				  data = SPC_CPU_READ( 0, data );
 			case 0xC8: /* CMP X,imm */
 				  nz = x - data;
 				  c = ~nz;
@@ -2144,7 +2144,7 @@ cmp_x_addr:
 				  data = GET_LE16( pc );
 				  pc++;
 cmp_y_addr:
-				  data = READ( 0, data );
+				  data = SPC_CPU_READ( 0, data );
 			case 0xAD: /* CMP Y,imm */
 				  nz = y - data;
 				  c = ~nz;
@@ -2166,14 +2166,14 @@ cmp_y_addr:
 					  case 0x98: /* ADC dp,imm */
 					  addr = READ_PC( ++pc ) + dp;
 adc_addr:
-					  nz = READ( -1, addr );
+					  nz = SPC_CPU_READ( -1, addr );
 					  goto adc_data;
 
 					  /* catch ADC and SBC together, then decode later based on operand */
 #undef CASE
 #define CASE( n ) case n: case (n) + 0x20:
 					  ADDR_MODES( 0x88 ) /* ADC/SBC addr */
-						  data = READ( 0, data );
+						  data = SPC_CPU_READ( 0, data );
 					  case 0xA8: /* SBC imm */
 					  case 0x88: /* ADC imm */
 					  addr = -1; /* A */
@@ -2196,7 +2196,7 @@ adc_data: {
 			  a = (uint8_t) nz;
 			  goto inc_pc_loop;
 		  }
-		  WRITE( 0, addr, /*(uint8_t)*/ nz );
+		  SPC_CPU_WRITE( 0, addr, /*(uint8_t)*/ nz );
 		  goto inc_pc_loop;
 	  }
 
@@ -2230,8 +2230,8 @@ adc_data: {
 				   pc++;
 inc_abs:
 				   nz = (opcode >> 4 & 2) - 1;
-				   nz += READ( -1, data );
-				   WRITE( 0, data, /*(uint8_t)*/ nz );
+				   nz += SPC_CPU_READ( -1, data );
+				   SPC_CPU_WRITE( 0, data, /*(uint8_t)*/ nz );
 				   goto inc_pc_loop;
 
 				   /* 7. SHIFT, ROTATION COMMANDS */
@@ -2275,8 +2275,8 @@ inc_abs:
 				  pc++;
 rol_mem:
 				  nz = c >> 8 & 1;
-				  nz |= (c = READ( -1, data ) << 1);
-				  WRITE( 0, data, /*(uint8_t)*/ nz );
+				  nz |= (c = SPC_CPU_READ( -1, data ) << 1);
+				  SPC_CPU_WRITE( 0, data, /*(uint8_t)*/ nz );
 				  goto inc_pc_loop;
 
 			case 0x4B: /* LSR dp */
@@ -2296,10 +2296,10 @@ rol_mem:
 				  data = GET_LE16( pc );
 				  pc++;
 ror_mem: {
-		 int temp = READ( -1, data );
+		 int temp = SPC_CPU_READ( -1, data );
 		 nz = (c >> 1 & 0x80) | (temp >> 1);
 		 c = temp << 8;
-		 WRITE( 0, data, nz );
+		 SPC_CPU_WRITE( 0, data, nz );
 		 goto inc_pc_loop;
 	 }
 
@@ -2328,16 +2328,16 @@ ror_mem: {
 					  int temp;
 					  /* low byte */
 					  data += dp;
-					  temp = READ( -3, data );
+					  temp = SPC_CPU_READ( -3, data );
 					  temp += (opcode >> 4 & 2) - 1; /* +1 for INCW, -1 for DECW */
 					  nz = ((temp >> 1) | temp) & 0x7F;
-					  WRITE( -2, data, /*(uint8_t)*/ temp );
+					  SPC_CPU_WRITE( -2, data, /*(uint8_t)*/ temp );
 
 					  /* high byte */
 					  data = (uint8_t) (data + 1) + dp;
-					  temp = (uint8_t) ((temp >> 8) + READ( -1, data ));
+					  temp = (uint8_t) ((temp >> 8) + SPC_CPU_READ( -1, data ));
 					  nz |= temp;
-					  WRITE( 0, data, temp );
+					  SPC_CPU_WRITE( 0, data, temp );
 
 					  goto inc_pc_loop;
 				  }
@@ -2648,7 +2648,7 @@ set_psw:
 					   if ( opcode & 0x10 )
 						   bit = 0;
 					   data += dp;
-					   WRITE( 0, data, (READ( -1, data ) & mask) | bit );
+					   SPC_CPU_WRITE( 0, data, (SPC_CPU_READ( -1, data ) & mask) | bit );
 					   goto inc_pc_loop;
 				   }
 
@@ -2657,12 +2657,12 @@ set_psw:
 				   data = GET_LE16( pc );
 				   pc += 2;
 				   {
-					   unsigned temp = READ( -2, data );
+					   unsigned temp = SPC_CPU_READ( -2, data );
 					   nz = (uint8_t) (a - temp);
 					   temp &= ~a;
 					   if ( opcode == 0x0E )
 						   temp |= a;
-					   WRITE( 0, data, temp );
+					   SPC_CPU_WRITE( 0, data, temp );
 				   }
 				   goto loop;
 
@@ -2695,9 +2695,9 @@ set_psw:
 				   data = GET_LE16( pc );
 				   pc += 2;
 				   {
-					   unsigned temp = READ( -1, data & 0x1FFF );
+					   unsigned temp = SPC_CPU_READ( -1, data & 0x1FFF );
 					   temp ^= 1 << (data >> 13);
-					   WRITE( 0, data & 0x1FFF, temp );
+					   SPC_CPU_WRITE( 0, data & 0x1FFF, temp );
 				   }
 				   goto loop;
 
@@ -2706,10 +2706,10 @@ set_psw:
 				   pc += 2;
 				   {
 					   unsigned temp, bit;
-					   temp = READ( -2, data & 0x1FFF );
+					   temp = SPC_CPU_READ( -2, data & 0x1FFF );
 					   bit = data >> 13;
 					   temp = (temp & ~(1 << bit)) | ((c >> 8 & 1) << bit);
-					   WRITE( 0, data & 0x1FFF, temp + NO_READ_BEFORE_WRITE  );
+					   SPC_CPU_WRITE( 0, data & 0x1FFF, temp + NO_READ_BEFORE_WRITE  );
 				   }
 				   goto loop;
 

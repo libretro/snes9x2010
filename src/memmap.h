@@ -1,7 +1,6 @@
 /***********************************************************************************
   Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
-
-  (c) Copyright 1996 - 2002  Gary Henderson (gary.henderson@ntlworld.com),
+(c) Copyright 1996 - 2002  Gary Henderson (gary.henderson@ntlworld.com),
                              Jerremy Koot (jkoot@snes9x.com)
 
   (c) Copyright 2002 - 2004  Matthew Kendora
@@ -314,5 +313,13 @@ extern struct SMulti	Multi;
 #define WRAP_PAGE 0xFF
 #define WRAP_BANK 0xFFFF
 #define WRAP_NONE 0xFFFFFF
+
+#ifndef max
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef min
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#endif
 
 #endif

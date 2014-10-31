@@ -193,14 +193,6 @@ extern uint8 OpenBus;
 #define FLASH_SIZE	0x200000
 #define PSRAM_SIZE	0x80000
 
-#define Map		Memory.Map
-#define BlockIsRAM	Memory.BlockIsRAM
-#define BlockIsROM	Memory.BlockIsROM
-#define RAM		Memory.RAM
-#define SRAM		Memory.SRAM
-#define PSRAM		Memory.BSRAM
-#define BIOSROM		Memory.BIOSROM
-
 #define BSXPPUBASE	0x2180
 
 struct SBSX_RTC
@@ -249,17 +241,17 @@ static void BSX_Map_SNES (void)
 	/* Banks 00->3F and 80->BF */
 	for (c = 0; c < 0x400; c += 16)
 	{
-		Map[c + 0] = Map[c + 0x800] = RAM;
-		Map[c + 1] = Map[c + 0x801] = RAM;
-		BlockIsRAM[c + 0] = BlockIsRAM[c + 0x800] = TRUE;
-		BlockIsRAM[c + 1] = BlockIsRAM[c + 0x801] = TRUE;
+		Memory.Map[c + 0] = Memory.Map[c + 0x800] = Memory.RAM;
+		Memory.Map[c + 1] = Memory.Map[c + 0x801] = Memory.RAM;
+		Memory.BlockIsRAM[c + 0] = Memory.BlockIsRAM[c + 0x800] = TRUE;
+		Memory.BlockIsRAM[c + 1] = Memory.BlockIsRAM[c + 0x801] = TRUE;
 
-		Map[c + 2] = Map[c + 0x802] = (uint8 *) MAP_PPU;
-		Map[c + 3] = Map[c + 0x803] = (uint8 *) MAP_PPU;
-		Map[c + 4] = Map[c + 0x804] = (uint8 *) MAP_CPU;
-		Map[c + 5] = Map[c + 0x805] = (uint8 *) MAP_CPU;
-		Map[c + 6] = Map[c + 0x806] = (uint8 *) MAP_NONE;
-		Map[c + 7] = Map[c + 0x807] = (uint8 *) MAP_NONE;
+		Memory.Map[c + 2] = Memory.Map[c + 0x802] = (uint8 *) MAP_PPU;
+		Memory.Map[c + 3] = Memory.Map[c + 0x803] = (uint8 *) MAP_PPU;
+		Memory.Map[c + 4] = Memory.Map[c + 0x804] = (uint8 *) MAP_CPU;
+		Memory.Map[c + 5] = Memory.Map[c + 0x805] = (uint8 *) MAP_CPU;
+		Memory.Map[c + 6] = Memory.Map[c + 0x806] = (uint8 *) MAP_NONE;
+		Memory.Map[c + 7] = Memory.Map[c + 0x807] = (uint8 *) MAP_NONE;
 	}
 }
 
@@ -274,9 +266,9 @@ static void BSX_Map_LoROM (void)
 	{
 		for (i = c + 8; i < c + 16; i++)
 		{
-			Map[i] = Map[i + 0x800] = &MapROM[(c << 11) % FlashSize] - 0x8000;
-			BlockIsRAM[i] = BlockIsRAM[i + 0x800] = BSX.write_enable;
-			BlockIsROM[i] = BlockIsROM[i + 0x800] = !BSX.write_enable;
+			Memory.Map[i] = Memory.Map[i + 0x800] = &MapROM[(c << 11) % FlashSize] - 0x8000;
+			Memory.BlockIsRAM[i] = Memory.BlockIsRAM[i + 0x800] = BSX.write_enable;
+			Memory.BlockIsROM[i] = Memory.BlockIsROM[i + 0x800] = !BSX.write_enable;
 		}
 	}
 
@@ -284,15 +276,15 @@ static void BSX_Map_LoROM (void)
 	for (c = 0; c < 0x400; c += 16)
 	{
 		for (i = c; i < c + 8; i++)
-			Map[i + 0x400] = Map[i + 0xC00] = &MapROM[(c << 11) % FlashSize];
+			Memory.Map[i + 0x400] = Memory.Map[i + 0xC00] = &MapROM[(c << 11) % FlashSize];
 
 		for (i = c + 8; i < c + 16; i++)
-			Map[i + 0x400] = Map[i + 0xC00] = &MapROM[(c << 11) % FlashSize] - 0x8000;
+			Memory.Map[i + 0x400] = Memory.Map[i + 0xC00] = &MapROM[(c << 11) % FlashSize] - 0x8000;
 
 		for (i = c; i < c + 16; i++)
 		{
-			BlockIsRAM[i + 0x400] = BlockIsRAM[i + 0xC00] = BSX.write_enable;
-			BlockIsROM[i + 0x400] = BlockIsROM[i + 0xC00] = !BSX.write_enable;
+			Memory.BlockIsRAM[i + 0x400] = Memory.BlockIsRAM[i + 0xC00] = BSX.write_enable;
+			Memory.BlockIsROM[i + 0x400] = Memory.BlockIsROM[i + 0xC00] = !BSX.write_enable;
 		}
 	}
 }
@@ -308,9 +300,9 @@ static void BSX_Map_HiROM (void)
 	{
 		for (i = c + 8; i < c + 16; i++)
 		{
-			Map[i] = Map[i + 0x800] = &MapROM[(c << 12) % FlashSize];
-			BlockIsRAM[i] = BlockIsRAM[i + 0x800] = BSX.write_enable;
-			BlockIsROM[i] = BlockIsROM[i + 0x800] = !BSX.write_enable;
+			Memory.Map[i] = Memory.Map[i + 0x800] = &MapROM[(c << 12) % FlashSize];
+			Memory.BlockIsRAM[i] = Memory.BlockIsRAM[i + 0x800] = BSX.write_enable;
+			Memory.BlockIsROM[i] = Memory.BlockIsROM[i + 0x800] = !BSX.write_enable;
 		}
 	}
 
@@ -319,9 +311,9 @@ static void BSX_Map_HiROM (void)
 	{
 		for (i = c; i < c + 16; i++)
 		{
-			Map[i + 0x400] = Map[i + 0xC00] = &MapROM[(c << 12) % FlashSize];
-			BlockIsRAM[i + 0x400] = BlockIsRAM[i + 0xC00] = BSX.write_enable;
-			BlockIsROM[i + 0x400] = BlockIsROM[i + 0xC00] = !BSX.write_enable;
+			Memory.Map[i + 0x400] = Memory.Map[i + 0xC00] = &MapROM[(c << 12) % FlashSize];
+			Memory.BlockIsRAM[i + 0x400] = Memory.BlockIsRAM[i + 0xC00] = BSX.write_enable;
+			Memory.BlockIsROM[i + 0x400] = Memory.BlockIsROM[i + 0xC00] = !BSX.write_enable;
 		}
 	}
 }
@@ -333,8 +325,8 @@ static void BSX_Map_MMC (void)
 	/* Banks 01->0E:5000-5FFF */
 	for (c = 0x010; c < 0x0F0; c += 16)
 	{
-		Map[c + 5] = (uint8 *) MAP_BSX;
-		BlockIsRAM[c + 5] = BlockIsROM[c + 5] = FALSE;
+		Memory.Map[c + 5] = (uint8 *) MAP_BSX;
+		Memory.BlockIsRAM[c + 5] = Memory.BlockIsROM[c + 5] = FALSE;
 	}
 }
 
@@ -347,9 +339,9 @@ static void BSX_Map_FlashIO (void)
 		/* Bank C0:0000, 2AAA, 5555, FF00-FF1F */
 		for (c = 0; c < 16; c++)
 		{
-			Map[c + 0xC00] = (uint8 *) MAP_BSX;
-			BlockIsRAM[c + 0xC00] = TRUE;
-			BlockIsROM[c + 0xC00] = FALSE;
+			Memory.Map[c + 0xC00] = (uint8 *) MAP_BSX;
+			Memory.BlockIsRAM[c + 0xC00] = TRUE;
+			Memory.BlockIsROM[c + 0xC00] = FALSE;
 		}
 	}
 }
@@ -361,9 +353,9 @@ static void BSX_Map_SRAM (void)
 	/* Banks 10->17:5000-5FFF */
 	for (c = 0x100; c < 0x180; c += 16)
 	{
-		Map[c + 5] = (uint8 *) SRAM + ((c & 0x70) << 8) - 0x5000;
-		BlockIsRAM[c + 5] = TRUE;
-		BlockIsROM[c + 5] = FALSE;
+		Memory.Map[c + 5] = (uint8 *) Memory.SRAM + ((c & 0x70) << 8) - 0x5000;
+		Memory.BlockIsRAM[c + 5] = TRUE;
+		Memory.BlockIsROM[c + 5] = FALSE;
 	}
 }
 
@@ -379,9 +371,9 @@ static void map_psram_mirror_sub (uint32 bank)
 		{
 			for (i = c; i < c + 16; i++)
 			{
-				Map[i + bank] = &PSRAM[(c << 12) % PSRAM_SIZE];
-				BlockIsRAM[i + bank] = TRUE;
-				BlockIsROM[i + bank] = FALSE;
+				Memory.Map[i + bank] = &Memory.BSRAM[(c << 12) % PSRAM_SIZE];
+				Memory.BlockIsRAM[i + bank] = TRUE;
+				Memory.BlockIsROM[i + bank] = FALSE;
 			}
 		}
 	}
@@ -390,15 +382,15 @@ static void map_psram_mirror_sub (uint32 bank)
 		for (c = 0; c < 0x100; c += 16)
 		{
 			for (i = c; i < c + 8; i++)
-				Map[i + bank] = &PSRAM[(c << 11) % PSRAM_SIZE];
+				Memory.Map[i + bank] = &Memory.BSRAM[(c << 11) % PSRAM_SIZE];
 
 			for (i = c + 8; i < c + 16; i++)
-				Map[i + bank] = &PSRAM[(c << 11) % PSRAM_SIZE] - 0x8000;
+				Memory.Map[i + bank] = &Memory.BSRAM[(c << 11) % PSRAM_SIZE] - 0x8000;
 
 			for (i = c; i < c + 16; i++)
 			{
-				BlockIsRAM[i + bank] = TRUE;
-				BlockIsROM[i + bank] = FALSE;
+				Memory.BlockIsRAM[i + bank] = TRUE;
+				Memory.BlockIsROM[i + bank] = FALSE;
 			}
 		}
 	}
@@ -412,20 +404,20 @@ static void BSX_Map_PSRAM (void)
 	/* FIXME: could be toggled by $03 */
 	for (c = 0; c < 0x80; c++)
 	{
-		Map[c + 0x700] = &PSRAM[((c & 0x70) << 12) % PSRAM_SIZE];
-		BlockIsRAM[c + 0x700] = TRUE;
-		BlockIsROM[c + 0x700] = FALSE;
+		Memory.Map[c + 0x700] = &Memory.BSRAM[((c & 0x70) << 12) % PSRAM_SIZE];
+		Memory.BlockIsRAM[c + 0x700] = TRUE;
+		Memory.BlockIsROM[c + 0x700] = FALSE;
 	}
 
 	/* Banks 20->3F:6000-7FFF mirrors 70->77:6000-7FFF */
 	for (c = 0x200; c < 0x400; c += 16)
 	{
-		Map[c + 6] = &PSRAM[((c & 0x70) << 12) % PSRAM_SIZE];
-		Map[c + 7] = &PSRAM[((c & 0x70) << 12) % PSRAM_SIZE];
-		BlockIsRAM[c + 6] = TRUE;
-		BlockIsRAM[c + 7] = TRUE;
-		BlockIsROM[c + 6] = FALSE;
-		BlockIsROM[c + 7] = FALSE;
+		Memory.Map[c + 6] = &Memory.BSRAM[((c & 0x70) << 12) % PSRAM_SIZE];
+		Memory.Map[c + 7] = &Memory.BSRAM[((c & 0x70) << 12) % PSRAM_SIZE];
+		Memory.BlockIsRAM[c + 6] = TRUE;
+		Memory.BlockIsRAM[c + 7] = TRUE;
+		Memory.BlockIsROM[c + 6] = FALSE;
+		Memory.BlockIsROM[c + 7] = FALSE;
 	}
 
 	if (!BSX.MMC[0x05])
@@ -453,9 +445,9 @@ static void BSX_Map_BIOS (void)
 		{
 			for (i = c + 8; i < c + 16; i++)
 			{
-				Map[i] = &BIOSROM[(c << 11) % BIOS_SIZE] - 0x8000;
-				BlockIsRAM[i] = FALSE;
-				BlockIsROM[i] = TRUE;
+				Memory.Map[i] = &Memory.BIOSROM[(c << 11) % BIOS_SIZE] - 0x8000;
+				Memory.BlockIsRAM[i] = FALSE;
+				Memory.BlockIsROM[i] = TRUE;
 			}
 		}
 	}
@@ -467,9 +459,9 @@ static void BSX_Map_BIOS (void)
 		{
 			for (i = c + 8; i < c + 16; i++)
 			{
-				Map[i + 0x800] = &BIOSROM[(c << 11) % BIOS_SIZE] - 0x8000;
-				BlockIsRAM[i + 0x800] = FALSE;
-				BlockIsROM[i + 0x800] = TRUE;
+				Memory.Map[i + 0x800] = &Memory.BIOSROM[(c << 11) % BIOS_SIZE] - 0x8000;
+				Memory.BlockIsRAM[i + 0x800] = FALSE;
+				Memory.BlockIsROM[i + 0x800] = TRUE;
 			}
 		}
 	}
@@ -482,12 +474,12 @@ static void BSX_Map_RAM (void)
 	/* Banks 7E->7F */
 	for (c = 0; c < 16; c++)
 	{
-		Map[c + 0x7E0] = RAM;
-		Map[c + 0x7F0] = RAM + 0x10000;
-		BlockIsRAM[c + 0x7E0] = TRUE;
-		BlockIsRAM[c + 0x7F0] = TRUE;
-		BlockIsROM[c + 0x7E0] = FALSE;
-		BlockIsROM[c + 0x7F0] = FALSE;
+		Memory.Map[c + 0x7E0] = Memory.RAM;
+		Memory.Map[c + 0x7F0] = Memory.RAM + 0x10000;
+		Memory.BlockIsRAM[c + 0x7E0] = TRUE;
+		Memory.BlockIsRAM[c + 0x7F0] = TRUE;
+		Memory.BlockIsROM[c + 0x7E0] = FALSE;
+		Memory.BlockIsROM[c + 0x7F0] = FALSE;
 	}
 }
 
@@ -504,9 +496,9 @@ static void BSX_Map_Dirty (void)
 		{
 			for (i = c + 8; i < c + 16; i++)
 			{
-				Map[i] = Map[i + 0x800] = &MapROM[(c << 12) % FlashSize];
-				BlockIsRAM[i] = BlockIsRAM[i + 0x800] = BSX.write_enable;
-				BlockIsROM[i] = BlockIsROM[i + 0x800] = !BSX.write_enable;
+				Memory.Map[i] = Memory.Map[i + 0x800] = &MapROM[(c << 12) % FlashSize];
+				Memory.BlockIsRAM[i] = Memory.BlockIsRAM[i + 0x800] = BSX.write_enable;
+				Memory.BlockIsROM[i] = Memory.BlockIsROM[i + 0x800] = !BSX.write_enable;
 			}
 		}
 	}
@@ -516,9 +508,9 @@ static void BSX_Map_Dirty (void)
 		{
 			for (i = c + 8; i < c + 16; i++)
 			{
-				Map[i] = Map[i + 0x800] = &MapROM[(c << 11) % FlashSize] - 0x8000;
-				BlockIsRAM[i] = BlockIsRAM[i + 0x800] = BSX.write_enable;
-				BlockIsROM[i] = BlockIsROM[i + 0x800] = !BSX.write_enable;
+				Memory.Map[i] = Memory.Map[i + 0x800] = &MapROM[(c << 11) % FlashSize] - 0x8000;
+				Memory.BlockIsRAM[i] = Memory.BlockIsRAM[i + 0x800] = BSX.write_enable;
+				Memory.BlockIsROM[i] = Memory.BlockIsROM[i + 0x800] = !BSX.write_enable;
 			}
 		}
 	}
@@ -542,7 +534,7 @@ static void BSX_Map (void)
 
 	if (BSX.MMC[0x01])
 	{
-		MapROM = PSRAM;
+		MapROM = Memory.BSRAM;
 		FlashSize = PSRAM_SIZE;
 	}
 	else
@@ -983,7 +975,7 @@ static bool8 BSX_LoadBIOS (void)
 	{
 		size_t	size;
 
-		size = fread((void *) BIOSROM, 1, BIOS_SIZE, fp);
+		size = fread((void *) Memory.BIOSROM, 1, BIOS_SIZE, fp);
 		fclose(fp);
 		if (size == BIOS_SIZE)
 			r = TRUE;
@@ -1035,7 +1027,7 @@ void S9xInitBSX (void)
 		Memory.LoROM = TRUE;
 		Memory.HiROM = FALSE;
 
-		memcpy(BIOSROM, Memory.ROM, BIOS_SIZE);
+		memcpy(Memory.BIOSROM, Memory.ROM, BIOS_SIZE);
 
 		FlashMode = FALSE;
 		FlashSize = FLASH_SIZE;
@@ -1067,7 +1059,7 @@ void S9xInitBSX (void)
 			if (!BSX_LoadBIOS())
 			{
 				BSX.bootup = FALSE;
-				memset(BIOSROM, 0, BIOS_SIZE);
+				memset(Memory.BIOSROM, 0, BIOS_SIZE);
 			}
 		}
 	}
@@ -1120,7 +1112,7 @@ void S9xResetBSX (void)
 		/* per BIOS: run from psram or flash card */
 		if (FlashSize == PSRAM_SIZE)
 		{
-			memcpy(PSRAM, FlashROM, PSRAM_SIZE);
+			memcpy(Memory.BSRAM, FlashROM, PSRAM_SIZE);
 
 			BSX.MMC[0x01] = 0x80;
 			BSX.MMC[0x03] = 0x80;

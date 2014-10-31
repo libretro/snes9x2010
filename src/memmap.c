@@ -204,13 +204,6 @@ void S9xAppendMapping(struct retro_memory_descriptor *desc);
 		(bank_s<<16 | addr_s), ((bank_s<<16 | addr_s) ^ (bank_e<<16 | addr_e) ^ 0xFFFFFF), \
 		disconnect, len)
 
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b))
-#endif
 
 static const uint32	crc32Table[256] =
 {
