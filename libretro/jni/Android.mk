@@ -1,8 +1,8 @@
+HAVE_GRIFFIN := 1
+
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
-
-APP_DIR := ../../src
 
 LOCAL_MODULE    := retro
 
@@ -19,7 +19,11 @@ ifeq ($(TARGET_ARCH),mips)
 LOCAL_CFLAGS += -DANDROID_MIPS -D__mips__ -D__MIPSEL__
 endif
 
-LOCAL_SRC_FILES    += $(APP_DIR)/snes9x_griffin.c  $(APP_DIR)/sa1.c
-LOCAL_CFLAGS += -O3 -std=gnu99 -ffast-math -funroll-loops -DINLINE=inline -DRIGHTSHIFT_IS_SAR -D__LIBRETRO__ -DFRONTEND_SUPPORTS_RGB565
+CORE_DIR := ../..
+
+include $(CORE_DIR)/Makefile.common
+
+LOCAL_SRC_FILES    += $(SOURCES_C)
+LOCAL_CFLAGS += -O3 -std=gnu99 -ffast-math -funroll-loops -DINLINE=inline -DRIGHTSHIFT_IS_SAR -D__LIBRETRO__ -DFRONTEND_SUPPORTS_RGB565 $(INCFLAGS)
 
 include $(BUILD_SHARED_LIBRARY)
