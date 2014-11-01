@@ -18,4 +18,4 @@
 #include "srtc.c"
 #include "tile.c"
 #include "../libretro/libretro.c"
-#include "../libretro/memstream.c"
+#include "../libretro/memory_stream.c"

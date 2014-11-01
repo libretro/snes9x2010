@@ -196,9 +196,14 @@ extern "C" {
 
 #define S9X_ACCURACY_LEVEL		3
 
-#include "../libretro/memstream.h"
- /* Create some sort of abstraction for files using memory only since libretro API is memory oriented.
-    Very hacky, but at least allows us to avoid hacking up the whole source or go through the file system every time we want to do something ... :) */
+#include "../libretro/memory_stream.h"
+ /* Create some sort of abstraction for files 
+  * using memory only since libretro API is memory oriented.
+  *
+  * Very hacky, but at least allows us to avoid hacking up 
+  * the whole source or go through the file system every time 
+  * we want to do something. */
+
 #define STREAM memstream_t *
 #define READ_STREAM(p, l, s)     memstream_read(s, p, l)
 #define WRITE_STREAM(p, l, s)    memstream_write(s, p, l)
