@@ -3053,8 +3053,8 @@ void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 ***********************************************************************************/
 
 #define APU_DEFAULT_INPUT_RATE		32000
-#define APU_MINIMUM_SAMPLE_COUNT	512
-#define APU_MINIMUM_SAMPLE_BLOCK	128
+#define APU_MINIMUM_SAMPLE_COUNT	(512*8)
+#define APU_MINIMUM_SAMPLE_BLOCK	(128*8)
 #define APU_NUMERATOR_NTSC		15664
 #define APU_DENOMINATOR_NTSC		328125
 #define APU_NUMERATOR_PAL		34176
