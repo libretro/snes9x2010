@@ -200,7 +200,7 @@
 
 static signed srtc_index;
 
-extern uint32 rtc_mode;
+static uint32 srtc_mode;
 
 static const unsigned srtc_months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
@@ -362,7 +362,7 @@ static unsigned srtcemu_weekday(unsigned year, unsigned month, unsigned day)
 void S9xInitSRTC (void)
 {
 	spc7110_decomp_start();
-	rtc_mode = RTCM_READ;
+	srtc_mode = RTCM_READ;
 	srtc_index = -1;
 	srtcemu_update_time();
 	memset(RTCData.reg, 0, 20);
@@ -370,7 +370,7 @@ void S9xInitSRTC (void)
 
 void S9xResetSRTC (void)
 {
-	rtc_mode = RTCM_READ;
+	srtc_mode = RTCM_READ;
 	srtc_index = -1;
 	srtcemu_update_time();
 }
@@ -386,20 +386,20 @@ void S9xSetSRTC (uint8 data, uint16 address)
 
 		if(data == 0x0d)
 		{
-			rtc_mode = RTCM_READ;
+			srtc_mode = RTCM_READ;
 			srtc_index = -1;
 			return;
 		}
 
 		if(data == 0x0e) {
-			rtc_mode = RTCM_COMMAND;
+			srtc_mode = RTCM_COMMAND;
 			return;
 		}
 
 		if(data == 0x0f)
 			return;  /*unknown behavior*/
 
-		if(rtc_mode == RTCM_WRITE)
+		if(srtc_mode == RTCM_WRITE)
 		{
 			if(srtc_index >= 0 && srtc_index < 12)
 			{
@@ -418,22 +418,22 @@ void S9xSetSRTC (uint8 data, uint16 address)
 				}
 			}
 		}
-		else if(rtc_mode == RTCM_COMMAND)
+		else if(srtc_mode == RTCM_COMMAND)
 		{
 			if(data == 0)
 			{
-				rtc_mode = RTCM_WRITE;
+				srtc_mode = RTCM_WRITE;
 				srtc_index = 0;
 			}
 			else if(data == 4)
 			{
-				rtc_mode = RTCM_READY;
+				srtc_mode = RTCM_READY;
 				srtc_index = -1;
 				for( i = 0; i < 13; i++)
 					MEMORY_CARTRTC_WRITE(i, 0);
 			}
 			else
-				rtc_mode = RTCM_READY;	/*unknown behavior*/
+				srtc_mode = RTCM_READY;	/*unknown behavior*/
 		}
 	}
 }
@@ -444,7 +444,7 @@ uint8 S9xGetSRTC (uint16 address)
 
 	if(address == 0x2800)
 	{
-		if(rtc_mode != RTCM_READ)
+		if(srtc_mode != RTCM_READ)
 			return 0x00;
 
 		if(srtc_index < 0)
@@ -467,13 +467,13 @@ uint8 S9xGetSRTC (uint16 address)
 
 void S9xSRTCPreSaveState (void)
 {
-	srtcsnap.rtc_mode  = (int32) rtc_mode;
+	srtcsnap.rtc_mode  = (int32) srtc_mode;
 	srtcsnap.rtc_index = (int32) srtc_index;
 }
 
 void S9xSRTCPostLoadState (int unused)
 {
-	rtc_mode  = srtcsnap.rtc_mode;
+	srtc_mode  = srtcsnap.rtc_mode;
 	srtc_index = (signed)         srtcsnap.rtc_index;
 
 	srtcemu_update_time();

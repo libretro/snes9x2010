@@ -300,7 +300,7 @@ uint8 r4842; /*RTC status*/
 
 #define  RTCM_LINEAR 0x03
 #define RTCM_INDEXED 0x0c
-static uint32 rtc_mode;
+static uint32 spc7110_rtc_mode;
 static uint32 rtc_state;
 unsigned rtc_index;
 
@@ -1322,7 +1322,7 @@ static void s7_mmio_write(unsigned addr, uint8 data)
 							     {
 								     r4842 = 0x80;
 								     rtc_state = RTCS_INDEXSELECT;
-								     rtc_mode  = data;
+								     spc7110_rtc_mode  = data;
 								     rtc_index = 0;
 							     }
 						     }
@@ -1331,7 +1331,7 @@ static void s7_mmio_write(unsigned addr, uint8 data)
 						     {
 							     r4842 = 0x80;
 							     rtc_index = data & 15;
-							     if(rtc_mode == RTCM_LINEAR)
+							     if(spc7110_rtc_mode == RTCM_LINEAR)
 								     rtc_state = RTCS_WRITE;
 						     }
 						     break;
@@ -1454,7 +1454,7 @@ static void s7_power (void)
 	if(Settings.SPC7110RTC)
 	{
 		rtc_state = RTCS_INACTIVE;
-		rtc_mode  = RTCM_LINEAR;
+		spc7110_rtc_mode  = RTCM_LINEAR;
 		rtc_index = 0;
 	}
 }
@@ -1839,7 +1839,7 @@ void S9xSPC7110PreSaveState (void)
 	s7snap.r4842 = r4842;
 
 	s7snap.rtc_state = (int32)  rtc_state;
-	s7snap.rtc_mode  = (int32)  rtc_mode;
+	s7snap.rtc_mode  = (int32)  spc7110_rtc_mode;
 	s7snap.rtc_index = (uint32) rtc_index;
 
 	s7snap.decomp_mode   = (uint32) decomp_mode;
@@ -1921,7 +1921,7 @@ void S9xSPC7110PostLoadState (int version)
 	r4842 = s7snap.r4842;
 
 	rtc_state = s7snap.rtc_state;
-	rtc_mode  = s7snap.rtc_mode;
+	spc7110_rtc_mode  = s7snap.rtc_mode;
 	rtc_index = (unsigned)           s7snap.rtc_index;
 
 	decomp_mode   = (unsigned) s7snap.decomp_mode;
