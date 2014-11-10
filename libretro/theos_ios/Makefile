@@ -2,10 +2,12 @@ DEPLOYMENT_IOSVERSION = 5.0
 TARGET = iphone:latest:$(DEPLOYMENT_IOSVERSION)
 ARCHS = armv7 armv7s
 TARGET_IPHONEOS_DEPLOYMENT_VERSION=$(DEPLOYMENT_IOSVERSION)
+THEOS_BUILD_DIR := objs
 include $(THEOS)/makefiles/common.mk
 
 LIBRARY_NAME = snes9x_next_libretro_ios
 CORE_DIR := ../..
+HAVE_GRIFFIN = 1
 
 include ../../Makefile.common
 
