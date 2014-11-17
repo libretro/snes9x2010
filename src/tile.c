@@ -305,21 +305,19 @@ void S9xInitTileRenderer (void)
 
 static uint8 ConvertTile2 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
-	uint32 *p, non_zero;
-	uint8 line, *tp;
+	uint8 line;
 
-	tp = &Memory.VRAM[TileAddr];
+	uint8 *tp = &Memory.VRAM[TileAddr];
 
-	p       = (uint32 *) pCache;
-	non_zero = 0;
+	uint32 *p       = (uint32 *) pCache;
+	uint32 non_zero = 0;
 
 	for (line = 8; line != 0; line--, tp += 2)
 	{
-		uint32 p1, p2;
 		uint8 pix;
 
-		p1 = 0;
-		p2 = 0;
+		uint32 p1 = 0;
+		uint32 p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -333,20 +331,18 @@ static uint8 ConvertTile2 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 
 static uint8 ConvertTile4 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
-	uint8 line, *tp;
-	uint32 *p, non_zero;
+	uint8 line;
 
-	tp      = &Memory.VRAM[TileAddr];
-	p       = (uint32 *) pCache;
-	non_zero = 0;
+	uint8 *tp      = (uint8*)&Memory.VRAM[TileAddr];
+	uint32 *p       = (uint32 *) pCache;
+	uint32 non_zero = 0;
 
 	for (line = 8; line != 0; line--, tp += 2)
 	{
-		uint32 p1, p2;
 		uint8 pix;
 
-		p1 = 0;
-		p2 = 0;
+		uint32 p1 = 0;
+		uint32 p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -362,20 +358,18 @@ static uint8 ConvertTile4 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 
 static uint8 ConvertTile8 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 {
-	uint8 *tp, line;
-	uint32 *p, non_zero;
+	uint8 line;
 
-	tp      = &Memory.VRAM[TileAddr];
-	p       = (uint32 *) pCache;
-	non_zero = 0;
+	uint8 *tp      = (uint8*)&Memory.VRAM[TileAddr];
+	uint32 *p       = (uint32 *) pCache;
+	uint32 non_zero = 0;
 
 	for (line = 8; line != 0; line--, tp += 2)
 	{
-		uint32 p1, p2;
 		uint8	pix;
 
-		p1 = 0;
-		p2 = 0;
+		uint32 p1 = 0;
+		uint32 p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -403,25 +397,22 @@ static uint8 ConvertTile8 (uint8 *pCache, uint32 TileAddr, uint32 unused)
 
 static uint8 ConvertTile2h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 {
-	uint8 *tp1, *tp2, line;
-	uint32 *p, non_zero;
+	uint8 line;
 
-	tp1     = &Memory.VRAM[TileAddr];
-	p       = (uint32 *) pCache;
-	non_zero = 0;
+	uint8 *tp1     = (uint8*)&Memory.VRAM[TileAddr];
+	uint32 *p       = (uint32 *) pCache;
+	uint32 non_zero = 0;
+   uint8 *tp2 = tp1 + (1 << 4);
 
 	if (Tile == 0x3ff)
 		tp2 = tp1 - (0x3ff << 4);
-	else
-		tp2 = tp1 + (1 << 4);
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
-		uint32 p1, p2;
 		uint8 pix;
 
-		p1 = 0;
-		p2 = 0;
+		uint32 p1 = 0;
+		uint32 p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -435,13 +426,12 @@ static uint8 ConvertTile2h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 static uint8 ConvertTile4h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 {
-	uint8 *tp1, *tp2, line;
-	uint32 *p, non_zero;
+	uint8 line;
 
-	tp1     = &Memory.VRAM[TileAddr];
-	tp2	= tp1;
-	p       = (uint32 *) pCache;
-	non_zero = 0;
+	uint8 *tp1      = (uint8*)&Memory.VRAM[TileAddr];
+	uint8 *tp2	    = (uint8*)tp1;
+	uint32 *p       = (uint32 *) pCache;
+	uint32 non_zero = 0;
 
 	if (Tile == 0x3ff)
 		tp2 -= (0x3ff << 5);
@@ -450,11 +440,10 @@ static uint8 ConvertTile4h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
-		uint32 p1, p2;
 		uint8	pix;
 
-		p1 = 0;
-		p2 = 0;
+		uint32 p1 = 0;
+		uint32 p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -478,25 +467,22 @@ static uint8 ConvertTile4h_odd (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 static uint8 ConvertTile2h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 {
-	uint8 *tp1, *tp2, line;
-	uint32 *p, non_zero;
+	uint8 line;
 
-	tp1 = &Memory.VRAM[TileAddr];
-	p       = (uint32 *) pCache;
-	non_zero = 0;
+	uint8 *tp1 = (uint8*)&Memory.VRAM[TileAddr];
+	uint32 *p       = (uint32 *) pCache;
+	uint32 non_zero = 0;
+   uint8 *tp2 = tp1 + (1 << 4);
 
 	if (Tile == 0x3ff)
 		tp2 = tp1 - (0x3ff << 4);
-	else
-		tp2 = tp1 + (1 << 4);
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
-		uint32 p1, p2;
 		uint8	pix;
 
-		p1 = 0;
-		p2 = 0;
+		uint32 p1 = 0;
+		uint32 p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
@@ -510,25 +496,22 @@ static uint8 ConvertTile2h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 {
-	uint8 *tp1, *tp2, line;
-	uint32 *p, non_zero;
+	uint8 line;
 
-	tp1     = &Memory.VRAM[TileAddr];
-	p       = (uint32 *) pCache;
-	non_zero = 0;
+	uint8  *tp1     = (uint8*)&Memory.VRAM[TileAddr];
+	uint32 *p       = (uint32 *) pCache;
+	uint32 non_zero = 0;
+   uint8  *tp2     = tp1 + (1 << 5);
 
 	if (Tile == 0x3ff)
 		tp2 = tp1 - (0x3ff << 5);
-	else
-		tp2 = tp1 + (1 << 5);
 
 	for (line = 8; line != 0; line--, tp1 += 2, tp2 += 2)
 	{
-		uint32 p1, p2;
 		uint8	pix;
 
-		p1 = 0;
-		p2 = 0;
+		uint32 p1 = 0;
+		uint32 p2 = 0;
 
 		DOBIT( 0, 0);
 		DOBIT( 1, 1);
