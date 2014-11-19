@@ -711,8 +711,6 @@ static INLINE void dsp_voice_V5( dsp_voice_t* v )
 
 static INLINE void dsp_echo_22 (void)
 {
-	int l, r;
-
 	if ( ++dsp_m.echo_hist_pos >= &dsp_m.echo_hist [ECHO_HIST_SIZE] )
 		dsp_m.echo_hist_pos = dsp_m.echo_hist;
 
@@ -720,32 +718,18 @@ static INLINE void dsp_echo_22 (void)
 
 	ECHO_READ(0);
 
-	l = (((dsp_m.echo_hist_pos [0 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6);
-	r = (((dsp_m.echo_hist_pos [0 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6);
-
-	dsp_m.t_echo_in [0] = l;
-	dsp_m.t_echo_in [1] = r;
+	dsp_m.t_echo_in [0] = (int)((((dsp_m.echo_hist_pos [0 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6));
+	dsp_m.t_echo_in [1] = (int)((((dsp_m.echo_hist_pos [0 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 0 * 0x10]) >> 6));
 }
 
-static INLINE void dsp_echo_23 (void)
-{
-	int l = (((dsp_m.echo_hist_pos [1 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
-	int r = (((dsp_m.echo_hist_pos [1 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6);
+#define dsp_echo_23() \
+	dsp_m.t_echo_in [0] += (int)((((dsp_m.echo_hist_pos [1 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6)); \
+	dsp_m.t_echo_in [1] += (int)((((dsp_m.echo_hist_pos [1 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 1 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [2 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 2 * 0x10]) >> 6)); \
+	ECHO_READ(1)
 
-	dsp_m.t_echo_in [0] += l;
-	dsp_m.t_echo_in [1] += r;
-
-	ECHO_READ(1);
-}
-
-static INLINE void dsp_echo_24 (void)
-{
-	int l = (((dsp_m.echo_hist_pos [3 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6);
-	int r = (((dsp_m.echo_hist_pos [3 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6);
-
-	dsp_m.t_echo_in [0] += l;
-	dsp_m.t_echo_in [1] += r;
-}
+#define dsp_echo_24() \
+	dsp_m.t_echo_in [0] += (int)(((((dsp_m.echo_hist_pos [3 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6))); \
+	dsp_m.t_echo_in [1] += (int)(((((dsp_m.echo_hist_pos [3 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 3 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [4 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 4 * 0x10]) >> 6) + (((dsp_m.echo_hist_pos [5 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 5 * 0x10]) >> 6)))
 
 static INLINE void dsp_echo_25 (void)
 {
@@ -1289,9 +1273,7 @@ static void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 	/* Voices */
 	for ( i = 0; i < VOICE_COUNT; i++ )
 	{
-		dsp_voice_t* v;
-		
-		v = &dsp_m.voices [i];
+		dsp_voice_t *v = (dsp_voice_t*)&dsp_m.voices [i];
 		
 		/* BRR buffer */
 		for ( j = 0; j < BRR_BUF_SIZE; j++ )
@@ -1418,27 +1400,28 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 static Timer* spc_run_timer_( Timer* t, int time )
 {
-	int elapsed;
+   int remain, divider, over, n;
+   int elapsed = TIMER_DIV( t, time - t->next_time ) + 1;
 
-	elapsed = TIMER_DIV( t, time - t->next_time ) + 1;
-	t->next_time += TIMER_MUL( t, elapsed );
-	
-	if ( t->enabled )
-	{
-		int remain, divider, over, n;
+   t->next_time += TIMER_MUL( t, elapsed );
 
-		remain = IF_0_THEN_256( t->period - t->divider );
-		divider = t->divider + elapsed;
-		over = elapsed - remain;
-		if ( over >= 0 )
-		{
-			n = over / t->period;
-			t->counter = (t->counter + 1 + n) & 0x0F;
-			divider = over - n * t->period;
-		}
-		t->divider = (uint8_t) divider;
-	}
-	return t;
+   if (!t->enabled )
+      return t;
+
+   remain  = IF_0_THEN_256( t->period - t->divider );
+   divider = t->divider + elapsed;
+   over    = elapsed - remain;
+
+   if ( over >= 0 )
+   {
+      n = over / t->period;
+      t->counter = (t->counter + 1 + n) & 0x0F;
+      divider = over - n * t->period;
+   }
+
+   t->divider = (uint8_t) divider;
+
+   return t;
 }
 
 /* ROM */
@@ -1517,93 +1500,90 @@ static INLINE void spc_dsp_write( int data, int time )
 static void spc_cpu_write_smp_reg_( int data, int time, int addr )
 {
 	switch ( addr )
-	{
-		case R_T0TARGET:
-		case R_T1TARGET:
-		case R_T2TARGET:
-			{
-				int period;
-				Timer *t;
+   {
+      case R_T0TARGET:
+      case R_T1TARGET:
+      case R_T2TARGET:
+         {
+            Timer *t = (Timer*)&m.timers [addr - R_T0TARGET];
+            int period = IF_0_THEN_256( data );
 
-				t = &m.timers [addr - R_T0TARGET];
-				period = IF_0_THEN_256( data );
+            if ( t->period != period )
+            {
+               if ( time >= t->next_time )
+                  t = spc_run_timer_( t, time );
+               t->period = period;
+            }
+            break;
+         }
+      case R_T0OUT:
+      case R_T1OUT:
+      case R_T2OUT:
+         /* dprintf( "SPC wrote to counter %d\n", (int) addr - R_T0OUT ); */
 
-				if ( t->period != period )
-				{
-					if ( time >= t->next_time )
-						t = spc_run_timer_( t, time );
-					t->period = period;
-				}
-				break;
-			}
-		case R_T0OUT:
-		case R_T1OUT:
-		case R_T2OUT:
-				 /* dprintf( "SPC wrote to counter %d\n", (int) addr - R_T0OUT ); */
+         if ( data < NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO)
+         {
+            if ( (time - 1) >= m.timers[addr - R_T0OUT].next_time )
+               spc_run_timer_( &m.timers [addr - R_T0OUT], time - 1 )->counter = 0;
+            else
+               m.timers[addr - R_T0OUT].counter = 0;
+         }
+         break;
 
-				 if ( data < NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO)
-				 {
-					 if ( (time - 1) >= m.timers[addr - R_T0OUT].next_time )
-						 spc_run_timer_( &m.timers [addr - R_T0OUT], time - 1 )->counter = 0;
-					else
-						m.timers[addr - R_T0OUT].counter = 0;
-				 }
-				 break;
+         /* Registers that act like RAM */
+      case 0x8:
+      case 0x9:
+         m.smp_regs[1][addr] = (uint8_t) data;
+         break;
 
-				 /* Registers that act like RAM */
-		case 0x8:
-		case 0x9:
-				 m.smp_regs[1][addr] = (uint8_t) data;
-				 break;
-
-		case R_TEST:
+      case R_TEST:
 #if 0
-				 if ( (uint8_t) data != 0x0A )
-					 dprintf( "SPC wrote to test register\n" );
+         if ( (uint8_t) data != 0x0A )
+            dprintf( "SPC wrote to test register\n" );
 #endif
-				 break;
+         break;
 
-		case R_CONTROL:
-				 {
-				 	int i;
-					 /* port clears */
-					 if ( data & 0x10 )
-					 {
-						 m.smp_regs[1][R_CPUIO0] = 0;
-						 m.smp_regs[1][R_CPUIO1] = 0;
-					 }
-					 if ( data & 0x20 )
-					 {
-						 m.smp_regs[1][R_CPUIO2] = 0;
-						 m.smp_regs[1][R_CPUIO3] = 0;
-					 }
+      case R_CONTROL:
+         {
+            int i;
+            /* port clears */
+            if ( data & 0x10 )
+            {
+               m.smp_regs[1][R_CPUIO0] = 0;
+               m.smp_regs[1][R_CPUIO1] = 0;
+            }
+            if ( data & 0x20 )
+            {
+               m.smp_regs[1][R_CPUIO2] = 0;
+               m.smp_regs[1][R_CPUIO3] = 0;
+            }
 
-					 /* timers */
-					 {
-						 for ( i = 0; i < TIMER_COUNT; i++ )
-						 {
-							 Timer* t = &m.timers [i];
-							 int enabled = data >> i & 1;
-							 if ( t->enabled != enabled )
-							 {
-								 if ( time >= t->next_time )
-									 t = spc_run_timer_( t, time );
-								 t->enabled = enabled;
-								 if ( enabled )
-								 {
-									 t->divider = 0;
-									 t->counter = 0;
-								 }
-							 }
-						 }
-					 }
-					 spc_enable_rom( data & 0x80 );
-				 }
-				 break;
-	}
+            /* timers */
+            {
+               for ( i = 0; i < TIMER_COUNT; i++ )
+               {
+                  Timer* t = (Timer*)&m.timers [i];
+                  int enabled = data >> i & 1;
+                  if ( t->enabled != enabled )
+                  {
+                     if ( time >= t->next_time )
+                        t = spc_run_timer_( t, time );
+                     t->enabled = enabled;
+                     if ( enabled )
+                     {
+                        t->divider = 0;
+                        t->counter = 0;
+                     }
+                  }
+               }
+            }
+            spc_enable_rom( data & 0x80 );
+         }
+         break;
+   }
 }
 
-static int const bits_in_int = CHAR_BIT * sizeof (int);
+#define BITS_IN_INT (CHAR_BIT * sizeof(int))
 
 static void spc_cpu_write( int data, int addr, int time )
 {
@@ -1622,7 +1602,7 @@ static void spc_cpu_write( int data, int addr, int time )
 			   if ( reg != 2 && reg != 4 && reg != 5 && reg != 6 && reg != 7 )
 			   TODO: this is a bit on the fragile side */
 
-			if ( ((~0x2F00 << (bits_in_int - 16)) << reg) < 0 ) /* 36% */
+			if ( ((~0x2F00 << (BITS_IN_INT - 16)) << reg) < 0 ) /* 36% */
 			{
 				if ( reg == R_DSPDATA ) /* 99% */
 				{
@@ -1660,11 +1640,8 @@ static void spc_cpu_write( int data, int addr, int time )
 
 static int spc_cpu_read( int addr, int time )
 {
-	int result, reg;
-
-	/* RAM */
-	result = m.ram.ram[addr];
-	reg = addr - 0xF0;
+	int result = m.ram.ram[addr];
+	int reg = addr - 0xF0;
 
 	if ( reg >= 0 ) /* 40% */
 	{
@@ -1718,28 +1695,27 @@ static int spc_cpu_read( int addr, int time )
 
 /* Timers are by far the most common thing read from dp */
 
-#define CPU_READ_TIMER( time, offset, addr_, out )\
-{\
-	int adj_time, dp_addr, ti; \
-	adj_time = time + offset;\
-	dp_addr = addr_;\
-	ti = dp_addr - (R_T0OUT + 0xF0);\
-	if ( (unsigned) ti < TIMER_COUNT )\
-	{\
-		Timer* t = &m.timers [ti];\
-		if ( adj_time >= t->next_time )\
-		t = spc_run_timer_( t, adj_time );\
-		out = t->counter;\
-		t->counter = 0;\
-	}\
-	else\
-	{\
+#define CPU_READ_TIMER( time, offset, addr_, out ) \
+{ \
+	int adj_time = time + offset; \
+	int dp_addr = addr_; \
+	int ti = dp_addr - (R_T0OUT + 0xF0); \
+	if ( (unsigned) ti < TIMER_COUNT ) \
+	{ \
+		Timer* t = &m.timers [ti]; \
+		if ( adj_time >= t->next_time ) \
+		t = spc_run_timer_( t, adj_time ); \
+		out = t->counter; \
+		t->counter = 0; \
+	} \
+	else \
+	{ \
 		int i, reg; \
-		out = ram [dp_addr];\
-		i = dp_addr - 0xF0;\
-		if ( (unsigned) i < 0x10 )\
+		out = ram [dp_addr]; \
+		i = dp_addr - 0xF0; \
+		if ( (unsigned) i < 0x10 ) \
 		{ \
-			reg = i;  \
+			reg = i; \
 			out = m.smp_regs[1][reg]; \
 			reg -= R_DSPADDR; \
 			/* DSP addr and data */ \
@@ -1753,7 +1729,7 @@ static int spc_cpu_read( int addr, int time )
 				} \
 			} \
 		} \
-	}\
+	} \
 }
 
 #define READ_TIMER( time, addr, out )	CPU_READ_TIMER( rel_time, time, (addr), out )
@@ -1904,7 +1880,7 @@ loop:
 
 						  /* Registers other than $F2 and $F4-$F7 */
 						  /* if ( i != 2 && i != 4 && i != 5 && i != 6 && i != 7 ) */
-						  if ( ((~0x2F00 << (bits_in_int - 16)) << i) < 0 ) /* 12% */
+						  if ( ((~0x2F00 << (BITS_IN_INT - 16)) << i) < 0 ) /* 12% */
 						  {
 							  if ( i == R_DSPDATA ) /* 99% */
 							  {
