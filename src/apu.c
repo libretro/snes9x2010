@@ -415,61 +415,64 @@ static INLINE void dsp_run_envelope( dsp_voice_t* v )
 
 static INLINE void dsp_decode_brr( dsp_voice_t* v )
 {
-	int nybbles, *pos, *end, header;
+	int *end;
 
 	/* Arrange the four input nybbles in 0xABCD order for easy decoding */
-	nybbles = dsp_m.t_brr_byte * 0x100 + dsp_m.ram [(v->brr_addr + v->brr_offset + 1) & 0xFFFF];
+	int nybbles = dsp_m.t_brr_byte * 0x100 + dsp_m.ram [(v->brr_addr + v->brr_offset + 1) & 0xFFFF];
 	
-	header = dsp_m.t_brr_header;
+	int header = dsp_m.t_brr_header;
+   int filter = header & 0x0C;
+   int shift  = header >> 4;             /* Shift sample based on header */
 	
 	/* Write to next four samples in circular buffer */
-	pos = &v->buf [v->buf_pos];
+	int *pos = &v->buf [v->buf_pos];
 
 	if ( (v->buf_pos += 4) >= BRR_BUF_SIZE )
 		v->buf_pos = 0;
 	
 	/* Decode four samples */
-	for ( end = pos + 4; pos < end; pos++, nybbles <<= 4 )
+	for ( end = pos + 4; pos < end; pos++)
 	{
-		int filter, p1, p2, s, shift;
-		/* Extract nybble and sign-extend */
-		s = (int16_t) nybbles >> 12;
-		
-		/* Shift sample based on header */
-		shift = header >> 4;
+		int s     = (int16_t) nybbles >> 12; /* Extract nybble and sign-extend */
+      int p1    = pos [BRR_BUF_SIZE - 1];
+      int p2    = pos [BRR_BUF_SIZE - 2] >> 1;
+
 		s = (s << shift) >> 1;
-		if ( shift >= 0xD ) /* handle invalid range */
+		if (shift >= 0xD) /* handle invalid range */
 			s = (s >> 25) << 11; /* same as: s = (s < 0 ? -0x800 : 0) */
 		
-		/* Apply IIR filter (8 is the most commonly used) */
-		filter = header & 0x0C;
-		p1 = pos [BRR_BUF_SIZE - 1];
-		p2 = pos [BRR_BUF_SIZE - 2] >> 1;
-		if ( filter >= 8 )
-		{
-			s += p1;
-			s -= p2;
-			if ( filter == 8 ) /* s += p1 * 0.953125 - p2 * 0.46875 */
-			{
-				s += p2 >> 4;
-				s += (p1 * -3) >> 6;
-			}
-			else /* s += p1 * 0.8984375 - p2 * 0.40625 */
-			{
-				s += (p1 * -13) >> 7;
-				s += (p2 * 3) >> 4;
-			}
-		}
-		else if ( filter ) /* s += p1 * 0.46875 */
-		{
-			s += p1 >> 1;
-			s += (-p1) >> 5;
-		}
+      if (filter)
+      {
+         /* Apply IIR filter (8 is the most commonly used) */
+
+         if ( filter >= 8 )
+         {
+            s += p1;
+            s -= p2;
+            if ( filter == 8 ) /* s += p1 * 0.953125 - p2 * 0.46875 */
+            {
+               s += p2 >> 4;
+               s += (p1 * -3) >> 6;
+            }
+            else /* s += p1 * 0.8984375 - p2 * 0.40625 */
+            {
+               s += (p1 * -13) >> 7;
+               s += (p2 * 3) >> 4;
+            }
+         }
+         else /* s += p1 * 0.46875 */
+         {
+            s += p1 >> 1;
+            s += (-p1) >> 5;
+         }
+      }
 		
 		/* Adjust and write sample */
 		CLAMP16( s );
 		s = (int16_t) (s * 2);
 		pos [BRR_BUF_SIZE] = pos [0] = s; /* second copy simplifies wrap-around */
+
+      nybbles <<= 4;
 	}
 }
 
