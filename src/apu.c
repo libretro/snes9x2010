@@ -346,7 +346,7 @@ static unsigned const counter_offsets [32] =
 
 /* Envelope */
 
-static INLINE void dsp_run_envelope( dsp_voice_t* const v )
+static INLINE void dsp_run_envelope( dsp_voice_t* v )
 {
 	int env, rate, env_data;
 
@@ -515,13 +515,13 @@ static INLINE void dsp_misc_30 (void)
 
 /* Voices */
 
-static INLINE void dsp_voice_V1( dsp_voice_t* const v )
+static INLINE void dsp_voice_V1( dsp_voice_t* v )
 {
 	dsp_m.t_dir_addr = dsp_m.t_dir * 0x100 + dsp_m.t_srcn * 4;
 	dsp_m.t_srcn = v->regs[V_SRCN];
 }
 
-static INLINE void dsp_voice_V2( dsp_voice_t* const v )
+static INLINE void dsp_voice_V2( dsp_voice_t* v )
 {
 	uint8_t *entry;
 
@@ -537,18 +537,18 @@ static INLINE void dsp_voice_V2( dsp_voice_t* const v )
 	dsp_m.t_pitch = v->regs [V_PITCHL];
 }
 
-static INLINE void dsp_voice_V3a( dsp_voice_t* const v )
+static INLINE void dsp_voice_V3a( dsp_voice_t* v )
 {
 	dsp_m.t_pitch += (v->regs [V_PITCHH] & 0x3F) << 8;
 }
 
-static INLINE void dsp_voice_V3b( dsp_voice_t* const v )
+static INLINE void dsp_voice_V3b( dsp_voice_t* v )
 {
 	dsp_m.t_brr_byte = dsp_m.ram [(v->brr_addr + v->brr_offset) & 0xffff];
 	dsp_m.t_brr_header = dsp_m.ram [v->brr_addr];
 }
 
-static void dsp_voice_V3c( dsp_voice_t* const v )
+static void dsp_voice_V3c( dsp_voice_t* v )
 {
 	int output;
 
@@ -647,7 +647,7 @@ static INLINE void dsp_voice_output( dsp_voice_t const* v, int ch )
 	}
 }
 
-static INLINE void dsp_voice_V4( dsp_voice_t* const v )
+static INLINE void dsp_voice_V4( dsp_voice_t* v )
 {
 	/* Decode BRR */
 	dsp_m.t_looped = 0;
@@ -679,7 +679,7 @@ static INLINE void dsp_voice_V4( dsp_voice_t* const v )
 	dsp_voice_output( v, 0 );
 }
 
-static INLINE void dsp_voice_V5( dsp_voice_t* const v )
+static INLINE void dsp_voice_V5( dsp_voice_t* v )
 {
 	int endx_buf;
 	/* Output right */
@@ -694,13 +694,13 @@ static INLINE void dsp_voice_V5( dsp_voice_t* const v )
 	dsp_m.endx_buf = (uint8_t) endx_buf;
 }
 
-static INLINE void dsp_voice_V6( dsp_voice_t* const v )
+static INLINE void dsp_voice_V6( dsp_voice_t* v )
 {
 	(void) v; /* avoid compiler warning about unused v */
 	dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
 }
 
-static INLINE void dsp_voice_V7( dsp_voice_t* const v )
+static INLINE void dsp_voice_V7( dsp_voice_t* v )
 {
 	/* Update ENDX */
 	dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
@@ -708,20 +708,20 @@ static INLINE void dsp_voice_V7( dsp_voice_t* const v )
 	dsp_m.envx_buf = v->t_envx_out;
 }
 
-static INLINE void dsp_voice_V8( dsp_voice_t* const v )
+static INLINE void dsp_voice_V8( dsp_voice_t* v )
 {
 	/* Update OUTX */
 	v->regs [V_OUTX] = dsp_m.outx_buf;
 }
 
-static INLINE void dsp_voice_V9( dsp_voice_t* const v )
+static INLINE void dsp_voice_V9( dsp_voice_t* v )
 {
 	v->regs [V_ENVX] = dsp_m.envx_buf;
 }
 
 /* Most voices do all these in one clock, so make a handy composite */
 
-static INLINE void dsp_voice_V3( dsp_voice_t* const v )
+static INLINE void dsp_voice_V3( dsp_voice_t* v )
 {
 	dsp_voice_V3a( v );
 	dsp_voice_V3b( v );
@@ -731,7 +731,7 @@ static INLINE void dsp_voice_V3( dsp_voice_t* const v )
 /* Common combinations of voice steps on different voices. This greatly reduces
    code size and allows everything to be inlined in these functions. */
 
-static void dsp_voice_V7_V4_V1( dsp_voice_t* const v )
+static void dsp_voice_V7_V4_V1( dsp_voice_t* v )
 {
    dsp_voice_t *v0 = (dsp_voice_t*)v;
    dsp_voice_t *v1 = (dsp_voice_t*)(v+1);
@@ -741,7 +741,7 @@ static void dsp_voice_V7_V4_V1( dsp_voice_t* const v )
 	dsp_voice_V4(v1);
 }
 
-static void dsp_voice_V8_V5_V2( dsp_voice_t* const v )
+static void dsp_voice_V8_V5_V2( dsp_voice_t* v )
 {
    dsp_voice_t *v0 = (dsp_voice_t*)v;
    dsp_voice_t *v1 = (dsp_voice_t*)(v+1);
@@ -751,7 +751,7 @@ static void dsp_voice_V8_V5_V2( dsp_voice_t* const v )
 	dsp_voice_V2(v2);
 }
 
-static void dsp_voice_V9_V6_V3( dsp_voice_t* const v )
+static void dsp_voice_V9_V6_V3( dsp_voice_t* v )
 {
    dsp_voice_t *v0 = (dsp_voice_t*)v;
    dsp_voice_t *v1 = (dsp_voice_t*)(v+1);
@@ -946,6 +946,7 @@ V(V9_V6_V3,2) -> V(V9,2) V(V6,3) V(V3,4) */
 
 static void dsp_run( int clocks_remain )
 {
+   dsp_voice_t *v0, *v1, *v2;
 	int phase;
 
 	phase = dsp_m.phase;
@@ -957,121 +958,158 @@ loop:
 		if ( 0 && !--clocks_remain )
 			break;
 		case 0:
-		dsp_voice_V5( &dsp_m.voices [0] );
-		dsp_voice_V2( &dsp_m.voices [1] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[0];
+      v1 = (dsp_voice_t*)&dsp_m.voices[1];
+		dsp_voice_V5(v0);
+		dsp_voice_V2(v1);
 		if ( 1 && !--clocks_remain )
 			break;
 		case 1:
-		dsp_voice_V6( &dsp_m.voices [0] );
-		dsp_voice_V3( &dsp_m.voices [1] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[0];
+      v1 = (dsp_voice_t*)&dsp_m.voices[1];
+		dsp_voice_V6(v0);
+		dsp_voice_V3(v1);
 		if ( 2 && !--clocks_remain )
 			break;
 		case 2:
-		dsp_voice_V7_V4_V1( &dsp_m.voices [0] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[0];
+		dsp_voice_V7_V4_V1(v0);
 		if ( 3 && !--clocks_remain )
 			break;
 		case 3:
-		dsp_voice_V8_V5_V2( &dsp_m.voices [0] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[0];
+		dsp_voice_V8_V5_V2(v0);
 		if ( 4 && !--clocks_remain )
 			break;
 		case 4:
-		dsp_voice_V9_V6_V3( &dsp_m.voices [0] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[0];
+		dsp_voice_V9_V6_V3(v0);
 		if ( 5 && !--clocks_remain )
 			break;
 		case 5:
-		dsp_voice_V7_V4_V1( &dsp_m.voices [1] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[1];
+		dsp_voice_V7_V4_V1(v0);
 		if ( 6 && !--clocks_remain )
 			break;
 		case 6:
-		dsp_voice_V8_V5_V2( &dsp_m.voices [1] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[1];
+		dsp_voice_V8_V5_V2(v0);
 		if ( 7 && !--clocks_remain )
 			break;
 		case 7:
-		dsp_voice_V9_V6_V3( &dsp_m.voices [1] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[1];
+		dsp_voice_V9_V6_V3(v0);
 		if ( 8 && !--clocks_remain )
 			break;
 		case 8:
-		dsp_voice_V7_V4_V1( &dsp_m.voices [2] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[2];
+		dsp_voice_V7_V4_V1(v0);
 		if ( 9 && !--clocks_remain )
 			break;
 		case 9:
-		dsp_voice_V8_V5_V2( &dsp_m.voices [2] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[2];
+		dsp_voice_V8_V5_V2(v0);
 		if ( 10 && !--clocks_remain )
 			break;
 		case 10:
-		dsp_voice_V9_V6_V3( &dsp_m.voices [2] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[2];
+		dsp_voice_V9_V6_V3(v0);
 		if ( 11 && !--clocks_remain )
 			break;
 		case 11:
-		dsp_voice_V7_V4_V1( &dsp_m.voices [3] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[3];
+		dsp_voice_V7_V4_V1(v0);
 		if ( 12 && !--clocks_remain )
 			break;
 		case 12:
-		dsp_voice_V8_V5_V2( &dsp_m.voices [3] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[3];
+		dsp_voice_V8_V5_V2(v0);
 		if ( 13 && !--clocks_remain )
 			break;
 		case 13:
-		dsp_voice_V9_V6_V3( &dsp_m.voices [3] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[3];
+		dsp_voice_V9_V6_V3(v0);
 		if ( 14 && !--clocks_remain )
 			break;
 		case 14:
-		dsp_voice_V7_V4_V1( &dsp_m.voices [4] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[4];
+		dsp_voice_V7_V4_V1(v0);
 		if ( 15 && !--clocks_remain )
 			break;
 		case 15:
-		dsp_voice_V8_V5_V2( &dsp_m.voices [4] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[4];
+		dsp_voice_V8_V5_V2(v0);
 		if ( 16 && !--clocks_remain )
 			break;
 		case 16:
-		dsp_voice_V9_V6_V3( &dsp_m.voices [4] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[4];
+		dsp_voice_V9_V6_V3(v0);
 		if ( 17 && !--clocks_remain )
 			break;
 		case 17:
-		dsp_voice_V1( &dsp_m.voices [0] );
-		dsp_voice_V7( &dsp_m.voices [5] );
-		dsp_voice_V4( &dsp_m.voices [6] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[0];
+      v1 = (dsp_voice_t*)&dsp_m.voices[5];
+      v2 = (dsp_voice_t*)&dsp_m.voices[6];
+		dsp_voice_V1(v0);
+		dsp_voice_V7(v1);
+		dsp_voice_V4(v2);
 		if ( 18 && !--clocks_remain )
 			break;
 		case 18:
-		dsp_voice_V8_V5_V2( &dsp_m.voices [5] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[5];
+		dsp_voice_V8_V5_V2(v0);
 		if ( 19 && !--clocks_remain )
 			break;
 		case 19:
-		dsp_voice_V9_V6_V3( &dsp_m.voices [5] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[5];
+		dsp_voice_V9_V6_V3(v0);
 		if ( 20 && !--clocks_remain )
 			break;
 		case 20:
-		dsp_voice_V1( &dsp_m.voices [1] );
-		dsp_voice_V7( &dsp_m.voices [6] );
-		dsp_voice_V4( &dsp_m.voices [7] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[1];
+      v1 = (dsp_voice_t*)&dsp_m.voices[6];
+      v2 = (dsp_voice_t*)&dsp_m.voices[7];
+		dsp_voice_V1(v0);
+		dsp_voice_V7(v1);
+		dsp_voice_V4(v2);
 		if ( 21 && !--clocks_remain )
 			break;
 		case 21:
-		dsp_voice_V8( &dsp_m.voices [6] );
-		dsp_voice_V5( &dsp_m.voices [7] );
-		dsp_voice_V2( &dsp_m.voices [0] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[6];
+      v1 = (dsp_voice_t*)&dsp_m.voices[7];
+      v2 = (dsp_voice_t*)&dsp_m.voices[0];
+		dsp_voice_V8(v0);
+		dsp_voice_V5(v1);
+		dsp_voice_V2(v2);
 		if ( 22 && !--clocks_remain )
 			break;
 		case 22:
-		dsp_voice_V3a( &dsp_m.voices [0] );
-		dsp_voice_V9( &dsp_m.voices [6] );
-		dsp_voice_V6( &dsp_m.voices [7] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[0];
+      v1 = (dsp_voice_t*)&dsp_m.voices[6];
+      v2 = (dsp_voice_t*)&dsp_m.voices[7];
+		dsp_voice_V3a(v0);
+		dsp_voice_V9(v1);
+		dsp_voice_V6(v2);
 		dsp_echo_22();
 		if ( 23 && !--clocks_remain )
 			break;
 		case 23:
-		dsp_voice_V7( &dsp_m.voices [7] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[7];
+		dsp_voice_V7(v0);
 		dsp_echo_23();
 		if ( 24 && !--clocks_remain )
 			break;
 		case 24:
-		dsp_voice_V8( &dsp_m.voices [7] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[7];
+		dsp_voice_V8(v0);
 		dsp_echo_24();
 		if ( 25 && !--clocks_remain )
 			break;
 		case 25:
-		dsp_voice_V3b( &dsp_m.voices [0] );
-		dsp_voice_V9( &dsp_m.voices [7] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[0];
+      v1 = (dsp_voice_t*)&dsp_m.voices[7];
+		dsp_voice_V3b(v0);
+		dsp_voice_V9(v1);
 		dsp_echo_25();
 		if ( 26 && !--clocks_remain )
 			break;
@@ -1095,14 +1133,17 @@ loop:
 		if ( 30 && !--clocks_remain )
 			break;
 		case 30:
+      v0 = (dsp_voice_t*)&dsp_m.voices[0];
 		dsp_misc_30();
-		dsp_voice_V3c( &dsp_m.voices [0] );
+		dsp_voice_V3c(v0);
 		ECHO_WRITE(1);
 		if ( 31 && !--clocks_remain )
 			break;
 		case 31:
-		dsp_voice_V4( &dsp_m.voices [0] );
-		dsp_voice_V1( &dsp_m.voices [2] );
+      v0 = (dsp_voice_t*)&dsp_m.voices[0];
+      v1 = (dsp_voice_t*)&dsp_m.voices[2];
+		dsp_voice_V4(v0);
+		dsp_voice_V1(v1);
 
 		if ( --clocks_remain )
 			goto loop;
