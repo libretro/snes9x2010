@@ -692,21 +692,16 @@ static INLINE void dsp_voice_V5( dsp_voice_t* v )
 /* Current echo buffer pointer for left/right channel */
 #define ECHO_PTR( ch )      (&dsp_m.ram [dsp_m.t_echo_ptr + ch * 2])
 
-/* Sample in echo history buffer, where 0 is the oldest */
-#define ECHO_FIR( i )       (dsp_m.echo_hist_pos [i])
-
 /* Calculate FIR point for left/right channel */
-#define CALC_FIR( i, ch )   ((ECHO_FIR( i + 1 ) [ch] * (int8_t) REG(FIR + i * 0x10)) >> 6)
+#define CALC_FIR( i, ch )   ((dsp_m.echo_hist_pos[i + 1][ch] * (int8_t) REG(FIR + i * 0x10)) >> 6)
 
 #define ECHO_READ(ch) \
 { \
-	int s; \
+   uint8_t *ptr = &dsp_m.ram [dsp_m.t_echo_ptr + ch * 2]; \
 	if ( dsp_m.t_echo_ptr >= 0xffc0 && dsp_m.rom_enabled ) \
-		s = GET_LE16SA( &dsp_m.hi_ram [dsp_m.t_echo_ptr + ch * 2 - 0xffc0] ); \
-	else \
-		s = GET_LE16SA( ECHO_PTR( ch ) ); \
+		ptr = (uint8_t*)&dsp_m.hi_ram [dsp_m.t_echo_ptr + ch * 2 - 0xffc0]; \
 	/* second copy simplifies wrap-around handling */ \
-	ECHO_FIR( 0 ) [ch] = ECHO_FIR( 8 ) [ch] = s >> 1; \
+	dsp_m.echo_hist_pos[0][ch] = dsp_m.echo_hist_pos[8][ch] = (GET_LE16SA(ptr)) >> 1; \
 }
 
 static INLINE void dsp_echo_22 (void)
@@ -2001,8 +1996,7 @@ loop:
 
 			case 0xEC:
 				  { /* MOV Y,abs */
-					  int temp;
-					  temp = GET_LE16( pc );
+					  int temp = GET_LE16( pc );
 					  pc += 2;
 					  READ_TIMER( 0, temp, y = nz );
 					  /* y = nz = SPC_CPU_READ( 0, temp ); */
