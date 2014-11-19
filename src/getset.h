@@ -343,6 +343,7 @@ static INLINE uint16 S9xGetWord (uint32 Address, uint32 w)
 	if ((Address & mask) == mask)
 	{
 		PC_t	a;
+      uint32 addr_tmp = Address + 1;
 
 		OpenBus = S9xGetByte(Address);
 
@@ -351,17 +352,15 @@ static INLINE uint16 S9xGetWord (uint32 Address, uint32 w)
 			case WRAP_PAGE:
 				a.xPBPC = Address;
 				a.B.xPCl++;
-				return (OpenBus | (S9xGetByte(a.xPBPC) << 8));
-
+            addr_tmp = a.xPBPC;
+            break;
 			case WRAP_BANK:
 				a.xPBPC = Address;
 				a.W.xPC++;
-				return (OpenBus | (S9xGetByte(a.xPBPC) << 8));
-
-			case WRAP_NONE:
-			default:
-				return (OpenBus | (S9xGetByte(Address + 1) << 8));
+            addr_tmp = a.xPBPC;
+            break;
 		}
+      return (OpenBus | (S9xGetByte(addr_tmp) << 8));
 	}
 
 	block = (Address & 0xffffff) >> MEMMAP_SHIFT;
@@ -589,28 +588,23 @@ static INLINE void S9xSetWord_Write0(uint16 Word, uint32 Address, uint32 w)
 	if ((Address & (MEMMAP_MASK & w)) == (MEMMAP_MASK & w))
 	{
 		PC_t	a;
-		uint32 addr_tmp;
+		uint32 addr_tmp = Address + 1;
 
 		S9xSetByte((uint8) Word, Address);
-		addr_tmp = 0;
 
 		switch (w)
-		{
-			case WRAP_PAGE:
-				a.xPBPC = Address;
-				a.B.xPCl++;
-				addr_tmp = a.xPBPC;
-				break;
-			case WRAP_BANK:
-				a.xPBPC = Address;
-				a.W.xPC++;
-				addr_tmp = a.xPBPC;
-				break;
-			case WRAP_NONE:
-			default:
-				addr_tmp = Address + 1;
-				break;
-		}
+      {
+         case WRAP_PAGE:
+            a.xPBPC = Address;
+            a.B.xPCl++;
+            addr_tmp = a.xPBPC;
+            break;
+         case WRAP_BANK:
+            a.xPBPC = Address;
+            a.W.xPC++;
+            addr_tmp = a.xPBPC;
+            break;
+      }
 		
 		S9xSetByte(Word >> 8, addr_tmp);
         return;
@@ -740,27 +734,21 @@ static INLINE void S9xSetWord_Write1(uint16 Word, uint32 Address, uint32 w)
 	if ((Address & (MEMMAP_MASK & w)) == (MEMMAP_MASK & w))
 	{
 		PC_t	a;
-		uint32_t addr_tmp;
-
-		addr_tmp = 0;
+		uint32_t addr_tmp = Address + 1;
 
 		switch (w)
-		{
-			case WRAP_PAGE:
-				a.xPBPC = Address;
-				a.B.xPCl++;
-				addr_tmp = a.xPBPC;
-				break;
-			case WRAP_BANK:
-				a.xPBPC = Address;
-				a.W.xPC++;
-				addr_tmp =a.xPBPC;
-				break;
-			case WRAP_NONE:
-			default:
-				addr_tmp = Address + 1;
-				break;
-		}
+      {
+         case WRAP_PAGE:
+            a.xPBPC = Address;
+            a.B.xPCl++;
+            addr_tmp = a.xPBPC;
+            break;
+         case WRAP_BANK:
+            a.xPBPC = Address;
+            a.W.xPC++;
+            addr_tmp =a.xPBPC;
+            break;
+      }
 		S9xSetByte(Word >> 8, addr_tmp);
 		S9xSetByte((uint8) Word, Address);
 
