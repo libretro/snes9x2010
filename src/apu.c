@@ -512,15 +512,14 @@ static INLINE void dsp_misc_30 (void)
 	dsp_m.t_dir_addr = dsp_m.t_dir * 0x100 + dsp_m.t_srcn * 4; \
 	dsp_m.t_srcn = v->regs[V_SRCN]
 
-static INLINE void dsp_voice_V2( dsp_voice_t* v )
-{
-	uint8_t *entry = (uint8_t*)&dsp_m.ram [dsp_m.t_dir_addr];
-	if ( !v->kon_delay )
-		entry += 2;
-
-	dsp_m.t_brr_next_addr = GET_LE16( entry );
-	dsp_m.t_adsr0 = v->regs [V_ADSR0];
-	dsp_m.t_pitch = v->regs [V_PITCHL];
+#define dsp_voice_V2(v) \
+{ \
+	uint8_t *entry = (uint8_t*)&dsp_m.ram [dsp_m.t_dir_addr]; \
+	if ( !v->kon_delay ) \
+		entry += 2; \
+	dsp_m.t_brr_next_addr = GET_LE16(entry); \
+	dsp_m.t_adsr0 = v->regs [V_ADSR0]; \
+	dsp_m.t_pitch = v->regs [V_PITCHL]; \
 }
 
 #define dsp_voice_V3a(v) (dsp_m.t_pitch += (v->regs [V_PITCHH] & 0x3F) << 8)
@@ -658,19 +657,17 @@ static INLINE void dsp_voice_V4( dsp_voice_t* v )
 	dsp_voice_output( v, 0 );
 }
 
-static INLINE void dsp_voice_V5( dsp_voice_t* v )
-{
-	int endx_buf;
-	/* Output right */
-	dsp_voice_output( v, 1 );
-
-	/* ENDX, OUTX, and ENVX won't update if you wrote to them 1-2 clocks earlier */
-	endx_buf = dsp_m.regs[R_ENDX] | dsp_m.t_looped;
-
-	/* Clear bit in ENDX if KON just began */
-	if ( v->kon_delay == 5 )
-		endx_buf &= ~v->vbit;
-	dsp_m.endx_buf = (uint8_t) endx_buf;
+#define dsp_voice_V5(v) \
+{ \
+	int endx_buf; \
+	/* Output right */ \
+	dsp_voice_output( v, 1 ); \
+	/* ENDX, OUTX, and ENVX won't update if you wrote to them 1-2 clocks earlier */ \
+	endx_buf = dsp_m.regs[R_ENDX] | dsp_m.t_looped; \
+	/* Clear bit in ENDX if KON just began */ \
+	if ( v->kon_delay == 5 ) \
+		endx_buf &= ~v->vbit; \
+	dsp_m.endx_buf = (uint8_t) endx_buf; \
 }
 
 #define dsp_voice_V6(v) (dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8))
