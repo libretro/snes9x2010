@@ -210,11 +210,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 /* if ( io < -32768 ) io = -32768; */
 /* if ( io >  32767 ) io =  32767; */
-#define CLAMP16( io )\
-{\
-	if ( (int16_t) io != io )\
-		io = (io >> 31) ^ 0x7FFF;\
-}
+#define CLAMP16( io ) if ( (int16_t) io != io ) io = ((io >> 31) ^ 0x7FFF)
 
 /* Access global DSP register */
 #define REG(n)      dsp_m.regs [R_##n]
@@ -734,10 +730,8 @@ static INLINE void dsp_echo_25 (void)
 	l += (int16_t) (((dsp_m.echo_hist_pos [7 + 1]) [0] * (int8_t) dsp_m.regs [R_FIR + 7 * 0x10]) >> 6);
 	r += (int16_t) (((dsp_m.echo_hist_pos [7 + 1]) [1] * (int8_t) dsp_m.regs [R_FIR + 7 * 0x10]) >> 6);
 
-	if ( (int16_t) l != l )
-		l = (l >> 31) ^ 0x7FFF;
-	if ( (int16_t) r != r )
-		r = (r >> 31) ^ 0x7FFF;
+   CLAMP16(l);
+   CLAMP16(r);
 
 	dsp_m.t_echo_in [0] = l & ~1;
 	dsp_m.t_echo_in [1] = r & ~1;
@@ -758,8 +752,8 @@ static INLINE void dsp_echo_26 (void)
 	l = dsp_m.t_echo_out [0] + (int16_t) ((dsp_m.t_echo_in [0] * (int8_t) dsp_m.regs [R_EFB]) >> 7);
 	r = dsp_m.t_echo_out [1] + (int16_t) ((dsp_m.t_echo_in [1] * (int8_t) dsp_m.regs [R_EFB]) >> 7);
 
-	if ( (int16_t) l != l ) l = (l >> 31) ^ 0x7FFF;
-	if ( (int16_t) r != r ) r = (r >> 31) ^ 0x7FFF;
+   CLAMP16(l);
+   CLAMP16(r);
 
 	dsp_m.t_echo_out [0] = l & ~1;
 	dsp_m.t_echo_out [1] = r & ~1;
