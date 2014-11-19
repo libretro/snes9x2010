@@ -1760,12 +1760,10 @@ static int spc_cpu_read( int addr, int time )
 #define SPC_CPU_READ( time, addr )		spc_cpu_read((addr), rel_time + time )
 #define SPC_CPU_WRITE( time, addr, data )	spc_cpu_write((data), (addr), rel_time + time )
 
-static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
-{
-   unsigned addr = GET_LE16( pc );
-   unsigned t = SPC_CPU_READ( 0, addr & 0x1FFF ) >> (addr >> 13);
-   return t << 8 & 0x100;
-}
+#define spc_CPU_mem_bit(pc, rel_time, result) \
+   addr = GET_LE16( pc ); \
+   t = spc_cpu_read((addr & 0x1FFF), (rel_time)) >> (addr >> 13); \
+   result = ((t << 8) & 0x100)
 
 #define DP_ADDR( addr )                     (dp + (addr))
 
@@ -1786,8 +1784,6 @@ static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
 #define PUSH( v )       (void) (*--sp = (uint8_t) (v))
 #define POP( out )      (void) ((out) = *sp++)
 
-#define MEM_BIT( rel ) spc_CPU_mem_bit( pc, rel_time + rel )
-
 #define GET_PSW( out )\
 {\
 	out = psw & ~(N80 | P20 | Z02 | C01);\
@@ -1807,6 +1803,8 @@ static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
 
 static uint8_t* spc_run_until_( int end_time )
 {
+   unsigned addr, t;
+   unsigned tmp_spc_cpu_mem_bit;
 	int dp, nz, c, psw, a, x, y;
 	uint8_t *ram, *pc, *sp;
 	int rel_time = m.spc_time - end_time;
@@ -2292,8 +2290,7 @@ inc_abs:
 				  c = 0;
 			case 0x3C:
 				  {/* ROL A */
-					  int temp;
-					  temp = c >> 8 & 1;
+					  int temp = c >> 8 & 1;
 					  c = a << 1;
 					  nz = c | temp;
 					  a = (uint8_t) nz;
@@ -2709,27 +2706,32 @@ set_psw:
 				   goto loop;
 
 			case 0x4A: /* AND1 C,mem.bit */
-				   c &= spc_CPU_mem_bit( pc, rel_time + 0 );
+               spc_CPU_mem_bit(pc, rel_time, tmp_spc_cpu_mem_bit);
+				   c &= tmp_spc_cpu_mem_bit;
 				   pc += 2;
 				   goto loop;
 
 			case 0x6A: /* AND1 C,/mem.bit */
-				   c &= ~spc_CPU_mem_bit( pc, rel_time + 0 );
+               spc_CPU_mem_bit(pc, rel_time, tmp_spc_cpu_mem_bit);
+				   c &= ~tmp_spc_cpu_mem_bit;
 				   pc += 2;
 				   goto loop;
 
 			case 0x0A: /* OR1 C,mem.bit */
-				   c |= spc_CPU_mem_bit( pc, rel_time - 1 );
+               spc_CPU_mem_bit(pc, rel_time - 1, tmp_spc_cpu_mem_bit);
+				   c |= tmp_spc_cpu_mem_bit;
 				   pc += 2;
 				   goto loop;
 
 			case 0x2A: /* OR1 C,/mem.bit */
-				   c |= ~spc_CPU_mem_bit( pc, rel_time - 1 );
+               spc_CPU_mem_bit(pc, rel_time - 1, tmp_spc_cpu_mem_bit);
+				   c |= ~tmp_spc_cpu_mem_bit;
 				   pc += 2;
 				   goto loop;
 
 			case 0x8A: /* EOR1 C,mem.bit */
-				   c ^= spc_CPU_mem_bit( pc, rel_time - 1 );
+               spc_CPU_mem_bit(pc, rel_time - 1, tmp_spc_cpu_mem_bit);
+				   c ^= tmp_spc_cpu_mem_bit;
 				   pc += 2;
 				   goto loop;
 
@@ -2756,7 +2758,8 @@ set_psw:
 				   goto loop;
 
 			case 0xAA: /* MOV1 C,mem.bit */
-				   c = spc_CPU_mem_bit( pc, rel_time + 0 );
+               spc_CPU_mem_bit(pc, rel_time, tmp_spc_cpu_mem_bit);
+				   c = tmp_spc_cpu_mem_bit;
 				   pc += 2;
 				   goto loop;
 
