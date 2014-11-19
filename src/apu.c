@@ -615,10 +615,8 @@ static void dsp_voice_V3c( dsp_voice_t* v )
 
 static INLINE void dsp_voice_output( dsp_voice_t const* v, int ch )
 {
-	int amp;
-
 	/* Apply left/right volume */
-	amp = (dsp_m.t_output * (int8_t) VREG(v->regs,VOLL + ch)) >> 7;
+	int amp = (dsp_m.t_output * (int8_t) VREG(v->regs,VOLL + ch)) >> 7;
 
 	/* Add to output total */
 	dsp_m.t_main_out [ch] += amp;
@@ -865,18 +863,10 @@ V(V9_V6_V3,2) -> V(V9,2) V(V6,3) V(V3,4) */
 /* Runs DSP for specified number of clocks (~1024000 per second). Every 32 clocks
    a pair of samples is be generated. */
 
-static short v_offset [32] =
-{
-   0,   0,   0,   0,   1,   1,   1,   1,   2,   2,   2,   3,   3,   3,   4,   4,
-   4,   0,   5,   5,   1,   6,   0,   7,   7,   0,   0,   0,   0,   0,   0,   0,
-};
-
 static void dsp_run( int clocks_remain )
 {
    dsp_voice_t *v0, *v1, *v2;
-	int phase;
-
-	phase = dsp_m.phase;
+	int phase = dsp_m.phase;
 	dsp_m.phase = (phase + clocks_remain) & 31;
 
 	switch ( phase )
@@ -1772,11 +1762,9 @@ static int spc_cpu_read( int addr, int time )
 
 static unsigned spc_CPU_mem_bit( uint8_t const* pc, int rel_time )
 {
-	unsigned addr, t;
-
-	addr = GET_LE16( pc );
-	t = SPC_CPU_READ( 0, addr & 0x1FFF ) >> (addr >> 13);
-	return t << 8 & 0x100;
+   unsigned addr = GET_LE16( pc );
+   unsigned t = SPC_CPU_READ( 0, addr & 0x1FFF ) >> (addr >> 13);
+   return t << 8 & 0x100;
 }
 
 #define DP_ADDR( addr )                     (dp + (addr))
@@ -1847,9 +1835,8 @@ inc_pc_loop:
 	pc++;
 loop:
 	{
-		unsigned opcode, data;
-
-		opcode = *pc;
+		unsigned data;
+		unsigned opcode = *pc;
 
 		if (allow_time_overflow && rel_time >= 0 )
 			goto stop;
@@ -1882,8 +1869,7 @@ loop:
 
 			case 0x3F:
 					{ /* CALL */
-						int old_addr;
-						old_addr = GET_PC() + 2;
+						int old_addr = GET_PC() + 2;
 						SET_PC( GET_LE16( pc ) );
 						PUSH16( old_addr );
 						goto loop;
@@ -1907,8 +1893,8 @@ loop:
 				  /* fall through */
 			case 0x8F:
 				  { /* MOV dp,#imm */
-					  int i, temp;
-					  temp = READ_PC( pc + 1 );
+					  int i;
+					  int temp = READ_PC( pc + 1 );
 					  pc += 2;
 
 					  i = dp + temp;
@@ -1938,14 +1924,12 @@ loop:
 			case 0xC4: /* MOV dp,a */
 				  ++pc;
 				  {
-					  int i;
-					  i = dp + data;
+					  int i = dp + data;
 					  ram [i] = (uint8_t) a;
 					  i -= 0xF0;
 					  if ( (unsigned) i < 0x10 ) /* 39% */
 					  {
-						  unsigned sel;
-						  sel = i - 2;
+						  unsigned sel = i - 2;
 						  m.smp_regs[0][i] = (uint8_t) a;
 
 						  if ( sel == 1 ) /* 51% $F3 */
@@ -2007,8 +1991,7 @@ loop:
 			case 0xBF:
 				  {
 					  /* MOV A,(X)+ */
-					  int temp;
-					  temp = x + dp;
+					  int temp = x + dp;
 					  x = (uint8_t) (x + 1);
 					  a = nz = SPC_CPU_READ( -1, temp );
 					  goto loop;
@@ -2297,12 +2280,13 @@ inc_abs:
 
 			case 0x5C: /* LSR A */
 				   c = 0;
-			case 0x7C:{ /* ROR A */
-					  nz = (c >> 1 & 0x80) | (a >> 1);
-					  c = a << 8;
-					  a = nz;
-					  goto loop;
-				  }
+			case 0x7C: /* ROR A */
+               {
+                  nz = (c >> 1 & 0x80) | (a >> 1);
+                  c = a << 8;
+                  a = nz;
+                  goto loop;
+               }
 
 			case 0x1C: /* ASL A */
 				  c = 0;
@@ -2404,9 +2388,9 @@ ror_mem: {
 			case 0x7A: /* ADDW YA,dp */
 			case 0x9A:
 				  {/* SUBW YA,dp */
-					  int lo, hi, result, flags;
-					  lo = READ_DP( -2, data );
-					  hi = READ_DP( 0, (uint8_t) (data + 1) );
+					  int result, flags;
+					  int lo = READ_DP( -2, data );
+					  int hi = READ_DP( 0, (uint8_t) (data + 1) );
 
 					  if ( opcode == 0x9A ) /* SUBW */
 					  {
@@ -2700,16 +2684,15 @@ set_psw:
 			case 0xB2:
 			case 0xD2:
 			case 0xF2:
-				   {
-					   int bit, mask;
-					   bit = 1 << (opcode >> 5);
-					   mask = ~bit;
-					   if ( opcode & 0x10 )
-						   bit = 0;
-					   data += dp;
-					   SPC_CPU_WRITE( 0, data, (SPC_CPU_READ( -1, data ) & mask) | bit );
-					   goto inc_pc_loop;
-				   }
+               {
+                  int bit = 1 << (opcode >> 5);
+                  int mask = ~bit;
+                  if ( opcode & 0x10 )
+                     bit = 0;
+                  data += dp;
+                  SPC_CPU_WRITE( 0, data, (SPC_CPU_READ( -1, data ) & mask) | bit );
+                  goto inc_pc_loop;
+               }
 
 			case 0x0E: /* TSET1 abs */
 			case 0x4E: /* TCLR1 abs */
@@ -2726,27 +2709,27 @@ set_psw:
 				   goto loop;
 
 			case 0x4A: /* AND1 C,mem.bit */
-				   c &= MEM_BIT( 0 );
+				   c &= spc_CPU_mem_bit( pc, rel_time + 0 );
 				   pc += 2;
 				   goto loop;
 
 			case 0x6A: /* AND1 C,/mem.bit */
-				   c &= ~MEM_BIT( 0 );
+				   c &= ~spc_CPU_mem_bit( pc, rel_time + 0 );
 				   pc += 2;
 				   goto loop;
 
 			case 0x0A: /* OR1 C,mem.bit */
-				   c |= MEM_BIT( -1 );
+				   c |= spc_CPU_mem_bit( pc, rel_time - 1 );
 				   pc += 2;
 				   goto loop;
 
 			case 0x2A: /* OR1 C,/mem.bit */
-				   c |= ~MEM_BIT( -1 );
+				   c |= ~spc_CPU_mem_bit( pc, rel_time - 1 );
 				   pc += 2;
 				   goto loop;
 
 			case 0x8A: /* EOR1 C,mem.bit */
-				   c ^= MEM_BIT( -1 );
+				   c ^= spc_CPU_mem_bit( pc, rel_time - 1 );
 				   pc += 2;
 				   goto loop;
 
@@ -2773,7 +2756,7 @@ set_psw:
 				   goto loop;
 
 			case 0xAA: /* MOV1 C,mem.bit */
-				   c = MEM_BIT( 0 );
+				   c = spc_CPU_mem_bit( pc, rel_time + 0 );
 				   pc += 2;
 				   goto loop;
 
