@@ -295,13 +295,17 @@ static INLINE int dsp_interpolate( dsp_voice_t *v )
 
 /* Counters */
 
-/* 30720 =  2048 * 5 * 3 */
-#define SIMPLE_COUNTER_RANGE 30720
+/* Number of samples per counter event.
+ * All rates are evently divisible by counter range 
+ * (0x7800, 30720, or 2048 * 5 * 3).
+ *
+ * Note that counter_rates[0] is a special case,
+ * which never triggers. */
+#define COUNTER_RANGE 30720
 
 static unsigned const counter_rates [32] =
 {
-   SIMPLE_COUNTER_RANGE + 1, /* never fires */
-          2048, 1536,
+      COUNTER_RANGE + 1, 2048, 1536,
 	1280, 1024,  768,
 	 640,  512,  384,
 	 320,  256,  192,
@@ -314,6 +318,12 @@ static unsigned const counter_rates [32] =
 	         2,
 	         1
 };
+
+/* Counter offset from zero.
+ *
+ * Counters do not appear to be aligned at zero
+ * for all rates.
+ */
 
 static unsigned const counter_offsets [32] =
 {
@@ -330,10 +340,6 @@ static unsigned const counter_offsets [32] =
 	     0,
 	     0
 };
-
-#define RUN_COUNTERS() \
-	if ( --dsp_m.counter < 0 ) \
-		dsp_m.counter = SIMPLE_COUNTER_RANGE - 1;
 
 #define READ_COUNTER(rate) (((unsigned) dsp_m.counter + counter_offsets [rate]) % counter_rates [rate])
 
@@ -499,7 +505,8 @@ static INLINE void dsp_misc_30 (void)
 		dsp_m.t_koff = dsp_m.regs[R_KOFF]; 
 	}
 	
-	RUN_COUNTERS();
+	if ( --dsp_m.counter < 0 )
+		dsp_m.counter = COUNTER_RANGE - 1;
 	
 	/* Noise */
 	if ( !READ_COUNTER( dsp_m.regs[R_FLG] & 0x1F ) )
