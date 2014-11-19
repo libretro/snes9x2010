@@ -733,23 +733,32 @@ static INLINE void dsp_voice_V3( dsp_voice_t* const v )
 
 static void dsp_voice_V7_V4_V1( dsp_voice_t* const v )
 {
-	dsp_voice_V7(v);
-	dsp_voice_V1(v+3);
-	dsp_voice_V4(v+1);
+   dsp_voice_t *v0 = (dsp_voice_t*)v;
+   dsp_voice_t *v1 = (dsp_voice_t*)(v+1);
+   dsp_voice_t *v2 = (dsp_voice_t*)(v+3);
+	dsp_voice_V7(v0);
+	dsp_voice_V1(v2);
+	dsp_voice_V4(v1);
 }
 
 static void dsp_voice_V8_V5_V2( dsp_voice_t* const v )
 {
-	dsp_voice_V8(v);
-	dsp_voice_V5(v+1);
-	dsp_voice_V2(v+2);
+   dsp_voice_t *v0 = (dsp_voice_t*)v;
+   dsp_voice_t *v1 = (dsp_voice_t*)(v+1);
+   dsp_voice_t *v2 = (dsp_voice_t*)(v+2);
+	dsp_voice_V8(v0);
+	dsp_voice_V5(v1);
+	dsp_voice_V2(v2);
 }
 
 static void dsp_voice_V9_V6_V3( dsp_voice_t* const v )
 {
-	dsp_voice_V9(v);
-	dsp_voice_V6(v+1);
-	dsp_voice_V3(v+2);
+   dsp_voice_t *v0 = (dsp_voice_t*)v;
+   dsp_voice_t *v1 = (dsp_voice_t*)(v+1);
+   dsp_voice_t *v2 = (dsp_voice_t*)(v+2);
+	dsp_voice_V9(v0);
+	dsp_voice_V6(v1);
+	dsp_voice_V3(v2);
 }
 
 /* Echo */
