@@ -431,7 +431,7 @@ static INLINE void dsp_decode_brr( dsp_voice_t* v )
    int shift  = header >> 4;             /* Shift sample based on header */
 	
 	/* Write to next four samples in circular buffer */
-	int *pos = &v->buf [v->buf_pos];
+	int *pos = (int*)&v->buf [v->buf_pos];
 
 	if ( (v->buf_pos += 4) >= BRR_BUF_SIZE )
 		v->buf_pos = 0;
@@ -849,283 +849,284 @@ static void dsp_run( int clocks_remain )
 	int phase = dsp_m.phase;
 	dsp_m.phase = (phase + clocks_remain) & 31;
 
-	switch ( phase )
+   for (; clocks_remain > 0;)
    {
-loop:
-      if ( 0 && !--clocks_remain )
-         break;
-      case 0:
-      v0 = (dsp_voice_t*)&dsp_m.voices[0];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      dsp_voice_V5(v0);
-      dsp_voice_V2(v1);
-      if ( 1 && !--clocks_remain )
-         break;
-      case 1:
-      v0 = (dsp_voice_t*)&dsp_m.voices[0];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      dsp_voice_V6(v0);
-      dsp_voice_V3a(v1);
-      dsp_voice_V3b(v1);
-      dsp_voice_V3c(v1);
-      if ( 2 && !--clocks_remain )
-         break;
-      case 2:
-      v0 = (dsp_voice_t*)&dsp_m.voices[0];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 3);
-      dsp_voice_V7(v0);
-      dsp_voice_V1(v2);
-      dsp_voice_V4(v1);
-      if ( 3 && !--clocks_remain )
-         break;
-      case 3:
-      v0 = (dsp_voice_t*)&dsp_m.voices[0];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V8(v0);
-      dsp_voice_V5(v1);
-      dsp_voice_V2(v2);
-      if ( 4 && !--clocks_remain )
-         break;
-      case 4:
-      v0 = (dsp_voice_t*)&dsp_m.voices[0];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V9(v0);
-      dsp_voice_V6(v1);
-      dsp_voice_V3a(v2);
-      dsp_voice_V3b(v2);
-      dsp_voice_V3c(v2);
-      if ( 5 && !--clocks_remain )
-         break;
-      case 5:
-      v0 = (dsp_voice_t*)&dsp_m.voices[1];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 3);
-      dsp_voice_V7(v0);
-      dsp_voice_V1(v2);
-      dsp_voice_V4(v1);
-      if ( 6 && !--clocks_remain )
-         break;
-      case 6:
-      v0 = (dsp_voice_t*)&dsp_m.voices[1];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V8(v0);
-      dsp_voice_V5(v1);
-      dsp_voice_V2(v2);
-      if ( 7 && !--clocks_remain )
-         break;
-      case 7:
-      v0 = (dsp_voice_t*)&dsp_m.voices[1];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V9(v0);
-      dsp_voice_V6(v1);
-      dsp_voice_V3a(v2);
-      dsp_voice_V3b(v2);
-      dsp_voice_V3c(v2);
-      if ( 8 && !--clocks_remain )
-         break;
-      case 8:
-      v0 = (dsp_voice_t*)&dsp_m.voices[2];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 3);
-      dsp_voice_V7(v0);
-      dsp_voice_V1(v2);
-      dsp_voice_V4(v1);
-      if ( 9 && !--clocks_remain )
-         break;
-      case 9:
-      v0 = (dsp_voice_t*)&dsp_m.voices[2];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V8(v0);
-      dsp_voice_V5(v1);
-      dsp_voice_V2(v2);
-      if ( 10 && !--clocks_remain )
-         break;
-      case 10:
-      v0 = (dsp_voice_t*)&dsp_m.voices[2];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V9(v0);
-      dsp_voice_V6(v1);
-      dsp_voice_V3a(v2);
-      dsp_voice_V3b(v2);
-      dsp_voice_V3c(v2);
-      if ( 11 && !--clocks_remain )
-         break;
-      case 11:
-      v0 = (dsp_voice_t*)&dsp_m.voices[3];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 3);
-      dsp_voice_V7(v0);
-      dsp_voice_V1(v2);
-      dsp_voice_V4(v1);
-      if ( 12 && !--clocks_remain )
-         break;
-      case 12:
-      v0 = (dsp_voice_t*)&dsp_m.voices[3];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V8(v0);
-      dsp_voice_V5(v1);
-      dsp_voice_V2(v2);
-      if ( 13 && !--clocks_remain )
-         break;
-      case 13:
-      v0 = (dsp_voice_t*)&dsp_m.voices[3];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V9(v0);
-      dsp_voice_V6(v1);
-      dsp_voice_V3a(v2);
-      dsp_voice_V3b(v2);
-      dsp_voice_V3c(v2);
-      if ( 14 && !--clocks_remain )
-         break;
-      case 14:
-      v0 = (dsp_voice_t*)&dsp_m.voices[4];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 3);
-      dsp_voice_V7(v0);
-      dsp_voice_V1(v2);
-      dsp_voice_V4(v1);
-      if ( 15 && !--clocks_remain )
-         break;
-      case 15:
-      v0 = (dsp_voice_t*)&dsp_m.voices[4];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V8(v0);
-      dsp_voice_V5(v1);
-      dsp_voice_V2(v2);
-      if ( 16 && !--clocks_remain )
-         break;
-      case 16:
-      v0 = (dsp_voice_t*)&dsp_m.voices[4];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V9(v0);
-      dsp_voice_V6(v1);
-      dsp_voice_V3a(v2);
-      dsp_voice_V3b(v2);
-      dsp_voice_V3c(v2);
-      if ( 17 && !--clocks_remain )
-         break;
-      case 17:
-      v0 = (dsp_voice_t*)&dsp_m.voices[0];
-      v1 = (dsp_voice_t*)(v0 + 5);
-      v2 = (dsp_voice_t*)(v0 + 6);
-      dsp_voice_V1(v0);
-      dsp_voice_V7(v1);
-      dsp_voice_V4(v2);
-      if ( 18 && !--clocks_remain )
-         break;
-      case 18:
-      v0 = (dsp_voice_t*)&dsp_m.voices[5];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V8(v0);
-      dsp_voice_V5(v1);
-      dsp_voice_V2(v2);
-      if ( 19 && !--clocks_remain )
-         break;
-      case 19:
-      v0 = (dsp_voice_t*)&dsp_m.voices[5];
-      v1 = (dsp_voice_t*)(v0 + 1);
-      v2 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V9(v0);
-      dsp_voice_V6(v1);
-      dsp_voice_V3a(v2);
-      dsp_voice_V3b(v2);
-      dsp_voice_V3c(v2);
-      if ( 20 && !--clocks_remain )
-         break;
-      case 20:
-      v0 = (dsp_voice_t*)&dsp_m.voices[1];
-      v1 = (dsp_voice_t*)(v0 + 5);
-      v2 = (dsp_voice_t*)(v0 + 6);
-      dsp_voice_V1(v0);
-      dsp_voice_V7(v1);
-      dsp_voice_V4(v2);
-      if ( 21 && !--clocks_remain )
-         break;
-      case 21:
-      v2 = (dsp_voice_t*)&dsp_m.voices[0];
-      v0 = (dsp_voice_t*)(v2 + 6);
-      v1 = (dsp_voice_t*)(v2 + 7);
-      dsp_voice_V8(v0);
-      dsp_voice_V5(v1);
-      dsp_voice_V2(v2);
-      if ( 22 && !--clocks_remain )
-         break;
-      case 22:
-      v0 = (dsp_voice_t*)&dsp_m.voices[0];
-      v1 = (dsp_voice_t*)(v0 + 6);
-      v2 = (dsp_voice_t*)(v0 + 7);
-      dsp_voice_V3a(v0);
-      dsp_voice_V9(v1);
-      dsp_voice_V6(v2);
-      dsp_echo_22();
-      if ( 23 && !--clocks_remain )
-         break;
-      case 23:
-      v0 = (dsp_voice_t*)&dsp_m.voices[7];
-      dsp_voice_V7(v0);
-      dsp_echo_23();
-      if ( 24 && !--clocks_remain )
-         break;
-      case 24:
-      v0 = (dsp_voice_t*)&dsp_m.voices[7];
-      dsp_voice_V8(v0);
-      dsp_echo_24();
-      if ( 25 && !--clocks_remain )
-         break;
-      case 25:
-      v0 = (dsp_voice_t*)&dsp_m.voices[0];
-      v1 = (dsp_voice_t*)(v0 + 6);
-      dsp_voice_V3b(v0);
-      dsp_voice_V9(v1);
-      dsp_echo_25();
-      if ( 26 && !--clocks_remain )
-         break;
-      case 26:
-      dsp_echo_26();
-      if ( 27 && !--clocks_remain )
-         break;
-      case 27:
-      MISC_27();
-      dsp_echo_27();
-      if ( 28 && !--clocks_remain )
-         break;
-      case 28:
-      MISC_28();
-      ECHO_28();
-      if ( 29 && !--clocks_remain )
-         break;
-      case 29:
-      MISC_29();
-      dsp_echo_29();
-      if ( 30 && !--clocks_remain )
-         break;
-      case 30:
-      v0 = (dsp_voice_t*)&dsp_m.voices[0];
-      dsp_misc_30();
-      dsp_voice_V3c(v0);
-      ECHO_WRITE(1);
-      if ( 31 && !--clocks_remain )
-         break;
-      case 31:
-      v0 = (dsp_voice_t*)&dsp_m.voices[0];
-      v1 = (dsp_voice_t*)(v0 + 2);
-      dsp_voice_V4(v0);
-      dsp_voice_V1(v1);
+      switch ( phase )
+      {
+         if ( 0 && !--clocks_remain )
+            break;
+         case 0:
+         v0 = (dsp_voice_t*)&dsp_m.voices[0];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         dsp_voice_V5(v0);
+         dsp_voice_V2(v1);
+         if ( 1 && !--clocks_remain )
+            break;
+         case 1:
+         v0 = (dsp_voice_t*)&dsp_m.voices[0];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         dsp_voice_V6(v0);
+         dsp_voice_V3a(v1);
+         dsp_voice_V3b(v1);
+         dsp_voice_V3c(v1);
+         if ( 2 && !--clocks_remain )
+            break;
+         case 2:
+         v0 = (dsp_voice_t*)&dsp_m.voices[0];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 3);
+         dsp_voice_V7(v0);
+         dsp_voice_V1(v2);
+         dsp_voice_V4(v1);
+         if ( 3 && !--clocks_remain )
+            break;
+         case 3:
+         v0 = (dsp_voice_t*)&dsp_m.voices[0];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V8(v0);
+         dsp_voice_V5(v1);
+         dsp_voice_V2(v2);
+         if ( 4 && !--clocks_remain )
+            break;
+         case 4:
+         v0 = (dsp_voice_t*)&dsp_m.voices[0];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V9(v0);
+         dsp_voice_V6(v1);
+         dsp_voice_V3a(v2);
+         dsp_voice_V3b(v2);
+         dsp_voice_V3c(v2);
+         if ( 5 && !--clocks_remain )
+            break;
+         case 5:
+         v0 = (dsp_voice_t*)&dsp_m.voices[1];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 3);
+         dsp_voice_V7(v0);
+         dsp_voice_V1(v2);
+         dsp_voice_V4(v1);
+         if ( 6 && !--clocks_remain )
+            break;
+         case 6:
+         v0 = (dsp_voice_t*)&dsp_m.voices[1];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V8(v0);
+         dsp_voice_V5(v1);
+         dsp_voice_V2(v2);
+         if ( 7 && !--clocks_remain )
+            break;
+         case 7:
+         v0 = (dsp_voice_t*)&dsp_m.voices[1];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V9(v0);
+         dsp_voice_V6(v1);
+         dsp_voice_V3a(v2);
+         dsp_voice_V3b(v2);
+         dsp_voice_V3c(v2);
+         if ( 8 && !--clocks_remain )
+            break;
+         case 8:
+         v0 = (dsp_voice_t*)&dsp_m.voices[2];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 3);
+         dsp_voice_V7(v0);
+         dsp_voice_V1(v2);
+         dsp_voice_V4(v1);
+         if ( 9 && !--clocks_remain )
+            break;
+         case 9:
+         v0 = (dsp_voice_t*)&dsp_m.voices[2];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V8(v0);
+         dsp_voice_V5(v1);
+         dsp_voice_V2(v2);
+         if ( 10 && !--clocks_remain )
+            break;
+         case 10:
+         v0 = (dsp_voice_t*)&dsp_m.voices[2];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V9(v0);
+         dsp_voice_V6(v1);
+         dsp_voice_V3a(v2);
+         dsp_voice_V3b(v2);
+         dsp_voice_V3c(v2);
+         if ( 11 && !--clocks_remain )
+            break;
+         case 11:
+         v0 = (dsp_voice_t*)&dsp_m.voices[3];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 3);
+         dsp_voice_V7(v0);
+         dsp_voice_V1(v2);
+         dsp_voice_V4(v1);
+         if ( 12 && !--clocks_remain )
+            break;
+         case 12:
+         v0 = (dsp_voice_t*)&dsp_m.voices[3];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V8(v0);
+         dsp_voice_V5(v1);
+         dsp_voice_V2(v2);
+         if ( 13 && !--clocks_remain )
+            break;
+         case 13:
+         v0 = (dsp_voice_t*)&dsp_m.voices[3];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V9(v0);
+         dsp_voice_V6(v1);
+         dsp_voice_V3a(v2);
+         dsp_voice_V3b(v2);
+         dsp_voice_V3c(v2);
+         if ( 14 && !--clocks_remain )
+            break;
+         case 14:
+         v0 = (dsp_voice_t*)&dsp_m.voices[4];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 3);
+         dsp_voice_V7(v0);
+         dsp_voice_V1(v2);
+         dsp_voice_V4(v1);
+         if ( 15 && !--clocks_remain )
+            break;
+         case 15:
+         v0 = (dsp_voice_t*)&dsp_m.voices[4];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V8(v0);
+         dsp_voice_V5(v1);
+         dsp_voice_V2(v2);
+         if ( 16 && !--clocks_remain )
+            break;
+         case 16:
+         v0 = (dsp_voice_t*)&dsp_m.voices[4];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V9(v0);
+         dsp_voice_V6(v1);
+         dsp_voice_V3a(v2);
+         dsp_voice_V3b(v2);
+         dsp_voice_V3c(v2);
+         if ( 17 && !--clocks_remain )
+            break;
+         case 17:
+         v0 = (dsp_voice_t*)&dsp_m.voices[0];
+         v1 = (dsp_voice_t*)(v0 + 5);
+         v2 = (dsp_voice_t*)(v0 + 6);
+         dsp_voice_V1(v0);
+         dsp_voice_V7(v1);
+         dsp_voice_V4(v2);
+         if ( 18 && !--clocks_remain )
+            break;
+         case 18:
+         v0 = (dsp_voice_t*)&dsp_m.voices[5];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V8(v0);
+         dsp_voice_V5(v1);
+         dsp_voice_V2(v2);
+         if ( 19 && !--clocks_remain )
+            break;
+         case 19:
+         v0 = (dsp_voice_t*)&dsp_m.voices[5];
+         v1 = (dsp_voice_t*)(v0 + 1);
+         v2 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V9(v0);
+         dsp_voice_V6(v1);
+         dsp_voice_V3a(v2);
+         dsp_voice_V3b(v2);
+         dsp_voice_V3c(v2);
+         if ( 20 && !--clocks_remain )
+            break;
+         case 20:
+         v0 = (dsp_voice_t*)&dsp_m.voices[1];
+         v1 = (dsp_voice_t*)(v0 + 5);
+         v2 = (dsp_voice_t*)(v0 + 6);
+         dsp_voice_V1(v0);
+         dsp_voice_V7(v1);
+         dsp_voice_V4(v2);
+         if ( 21 && !--clocks_remain )
+            break;
+         case 21:
+         v2 = (dsp_voice_t*)&dsp_m.voices[0];
+         v0 = (dsp_voice_t*)(v2 + 6);
+         v1 = (dsp_voice_t*)(v2 + 7);
+         dsp_voice_V8(v0);
+         dsp_voice_V5(v1);
+         dsp_voice_V2(v2);
+         if ( 22 && !--clocks_remain )
+            break;
+         case 22:
+         v0 = (dsp_voice_t*)&dsp_m.voices[0];
+         v1 = (dsp_voice_t*)(v0 + 6);
+         v2 = (dsp_voice_t*)(v0 + 7);
+         dsp_voice_V3a(v0);
+         dsp_voice_V9(v1);
+         dsp_voice_V6(v2);
+         dsp_echo_22();
+         if ( 23 && !--clocks_remain )
+            break;
+         case 23:
+         v0 = (dsp_voice_t*)&dsp_m.voices[7];
+         dsp_voice_V7(v0);
+         dsp_echo_23();
+         if ( 24 && !--clocks_remain )
+            break;
+         case 24:
+         v0 = (dsp_voice_t*)&dsp_m.voices[7];
+         dsp_voice_V8(v0);
+         dsp_echo_24();
+         if ( 25 && !--clocks_remain )
+            break;
+         case 25:
+         v0 = (dsp_voice_t*)&dsp_m.voices[0];
+         v1 = (dsp_voice_t*)(v0 + 6);
+         dsp_voice_V3b(v0);
+         dsp_voice_V9(v1);
+         dsp_echo_25();
+         if ( 26 && !--clocks_remain )
+            break;
+         case 26:
+         dsp_echo_26();
+         if ( 27 && !--clocks_remain )
+            break;
+         case 27:
+         MISC_27();
+         dsp_echo_27();
+         if ( 28 && !--clocks_remain )
+            break;
+         case 28:
+         MISC_28();
+         ECHO_28();
+         if ( 29 && !--clocks_remain )
+            break;
+         case 29:
+         MISC_29();
+         dsp_echo_29();
+         if ( 30 && !--clocks_remain )
+            break;
+         case 30:
+         v0 = (dsp_voice_t*)&dsp_m.voices[0];
+         dsp_misc_30();
+         dsp_voice_V3c(v0);
+         ECHO_WRITE(1);
+         if ( 31 && !--clocks_remain )
+            break;
+         case 31:
+         v0 = (dsp_voice_t*)&dsp_m.voices[0];
+         v1 = (dsp_voice_t*)(v0 + 2);
+         dsp_voice_V4(v0);
+         dsp_voice_V1(v1);
 
-      if ( --clocks_remain )
-         goto loop;
+         --clocks_remain;
+      }
    }
 }
 
