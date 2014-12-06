@@ -1582,7 +1582,7 @@ static void spc_cpu_write_smp_reg_( int data, int time, int addr )
 
 #define BITS_IN_INT (CHAR_BIT * sizeof(int))
 
-static void spc_cpu_write( int data, int addr, int time )
+static void spc_cpu_write( int data, uint16_t addr, int time )
 {
 	int reg;
 	/* RAM */
@@ -1617,17 +1617,9 @@ static void spc_cpu_write( int data, int addr, int time )
 			reg -= ROM_ADDR - 0xF0;
 			if ( reg >= 0 ) /* 1% in IPL ROM area or address wrapped around */
 			{
-				if ( reg < ROM_SIZE )
-				{
-					m.hi_ram [reg] = (uint8_t) data;
-					if ( m.rom_enabled )
-						m.ram.ram[reg + ROM_ADDR] = m.rom [reg]; /* restore overwritten ROM */
-				}
-				else
-				{
-					*(&(m.ram.ram[0]) + reg + ROM_ADDR) = CPU_PAD_FILL; /* restore overwritten padding */
-					spc_cpu_write( data, addr & 0xFFFF, time );
-				}
+				m.hi_ram [reg] = (uint8_t) data;
+				if ( m.rom_enabled )
+					m.ram.ram[reg + ROM_ADDR] = m.rom [reg]; /* restore overwritten ROM */
 			}
 		}
 	}
@@ -1635,7 +1627,7 @@ static void spc_cpu_write( int data, int addr, int time )
 
 /* CPU read */
 
-static int spc_cpu_read( int addr, int time )
+static int spc_cpu_read( uint16_t addr, int time )
 {
 	int result = m.ram.ram[addr];
 	int reg = addr - 0xF0;
@@ -1657,7 +1649,7 @@ static int spc_cpu_read( int addr, int time )
 				t->counter = 0;
 			}
 			/* Other registers */
-			else if ( reg < 0 ) /* 10% */
+			else /* 10% */
 			{
 				int reg_tmp;
 
@@ -1676,8 +1668,6 @@ static int spc_cpu_read( int addr, int time )
 					}
 				}
 			}
-			else /* 1% */
-				result = spc_cpu_read( addr & 0xFFFF, time );
 		}
 	}
 	
