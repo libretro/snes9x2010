@@ -198,6 +198,10 @@ void S9xMainLoop (void)
 		register uint8	Op;
 		register struct	SOpcodes *Opcodes;
 
+		/* Speedhack - skip idle loop. */
+		/* Uncomment ONLY if you're going to run clean Super Mario World (U) ROMs. */
+		/* if (Registers.PBPC == 0x00806B && CPU.Cycles < CPU.NextEvent) CPU.Cycles = CPU.NextEvent; */
+
 		if (CPU.Flags)
 		{
 			if (CPU.Flags & NMI_FLAG)
