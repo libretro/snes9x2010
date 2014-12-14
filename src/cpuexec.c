@@ -190,6 +190,8 @@
 extern struct SLineData		LineData[240];
 extern struct SLineMatrixData	LineMatrixData[240];
 extern uint8	*HDMAMemPointers[8];
+static uint32 idle_loop_target_pc;
+static bool idle_loop_elimination_enable;
 
 void S9xMainLoop (void)
 {
@@ -198,9 +200,10 @@ void S9xMainLoop (void)
 		register uint8	Op;
 		register struct	SOpcodes *Opcodes;
 
-		/* Speedhack - skip idle loop. */
-		/* Uncomment ONLY if you're going to run clean Super Mario World (U) ROMs. */
-		/* if (Registers.PBPC == 0x00806B && CPU.Cycles < CPU.NextEvent) CPU.Cycles = CPU.NextEvent; */
+		/* Speedhack - skip idle loop if exists. */
+		if (idle_loop_elimination_enable &&
+            (Registers.PBPC == idle_loop_target_pc) && (CPU.Cycles < CPU.NextEvent))
+         CPU.Cycles = CPU.NextEvent;
 
 		if (CPU.Flags)
 		{
@@ -319,6 +322,9 @@ static void S9xCheckMissingHTimerHalt(void)
 static INLINE void speedhacks_manager (void)
 {
 	uint8 var_mem, var_mem2, var_mem3;
+   
+   idle_loop_target_pc = 0x00;
+   idle_loop_elimination_enable = false;
 
 	switch(Settings.SpeedhackGameID)
    {
@@ -376,6 +382,10 @@ static INLINE void speedhacks_manager (void)
             PPU.SFXSpeedupHack = TRUE;
          else
             PPU.SFXSpeedupHack = FALSE;
+         break;
+      case SPEEDHACK_SUPER_MARIO_WORLD:
+         idle_loop_target_pc = 0x00806B;
+         idle_loop_elimination_enable = true;
          break;
       default:
          break;

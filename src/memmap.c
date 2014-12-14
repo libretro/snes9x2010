@@ -3071,6 +3071,9 @@ void InitROM (void)
 			Settings.SpeedhackGameID = SPEEDHACK_SUPER_METROID;
 		#endif
 
+		if( MATCH_NA("SUPER MARIOWORLD"))	/* Super Mario World*/
+         Settings.SpeedhackGameID = SPEEDHACK_SUPER_MARIO_WORLD;
+
 	}
 	fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
 	fprintf(stderr, "PPU.FullClipping = %d\n", PPU.FullClipping);
