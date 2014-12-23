@@ -191,7 +191,7 @@ extern struct SLineData		LineData[240];
 extern struct SLineMatrixData	LineMatrixData[240];
 extern uint8	*HDMAMemPointers[8];
 static uint32 idle_loop_target_pc;
-static bool idle_loop_elimination_enable;
+static bool8 idle_loop_elimination_enable;
 
 void S9xMainLoop (void)
 {
@@ -324,7 +324,7 @@ static INLINE void speedhacks_manager (void)
 	uint8 var_mem, var_mem2, var_mem3;
    
    idle_loop_target_pc = 0x00;
-   idle_loop_elimination_enable = false;
+   idle_loop_elimination_enable = FALSE;
 
 	switch(Settings.SpeedhackGameID)
    {
@@ -385,7 +385,7 @@ static INLINE void speedhacks_manager (void)
          break;
       case SPEEDHACK_SUPER_MARIO_WORLD:
          idle_loop_target_pc = 0x00806B;
-         idle_loop_elimination_enable = true;
+         idle_loop_elimination_enable = TRUE;
          break;
       default:
          break;

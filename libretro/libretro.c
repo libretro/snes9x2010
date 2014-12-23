@@ -518,12 +518,14 @@ static void report_buttons (void)
 			      for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
 			      {
 					bool pressed;
+					uint16 button_press;
+
 					if (Settings.CurrentROMisMultitapCompatible==TRUE)
 						pressed = input_cb(port+j, RETRO_DEVICE_JOYPAD, 0, i);
 					else
 						pressed = input_cb(port, RETRO_DEVICE_JOYPAD, 0, i);
 						
-				      	uint16_t button_press = snes_lut[i];
+				    button_press = snes_lut[i];
 
 				      	if (pressed)
 						joypad[j*2+port] |= button_press;
@@ -691,16 +693,24 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
 static struct retro_memory_descriptor memorydesc[MAX_MAPS];
 static unsigned memorydesc_c;
 
-static bool merge_mapping()
+static bool merge_mapping(void)
 {
-	if (memorydesc_c==1) return false;//can't merge the only one
-	struct retro_memory_descriptor * a=&memorydesc[MAX_MAPS - (memorydesc_c-1)];
-	struct retro_memory_descriptor * b=&memorydesc[MAX_MAPS - memorydesc_c];
+    struct retro_memory_descriptor *a, *b;
+	uint32 len;
+
+	if (memorydesc_c==1)
+		return false;//can't merge the only one
+	a= &memorydesc[MAX_MAPS - (memorydesc_c-1)];
+	b= &memorydesc[MAX_MAPS - memorydesc_c];
 //printf("test %x/%x\n",a->start,b->start);
-	if (a->flags != b->flags) return false;
-	if (a->disconnect != b->disconnect) return false;
-	if (a->len != b->len) return false;
-	if (a->addrspace || b->addrspace) return false;//we don't use these
+	if (a->flags != b->flags)
+		return false;
+	if (a->disconnect != b->disconnect)
+		return false;
+	if (a->len != b->len)
+		return false;
+	if (a->addrspace || b->addrspace)
+		return false;//we don't use these
 	if (((char*)a->ptr)+a->offset==((char*)b->ptr)+b->offset && a->select==b->select)
 	{
 //printf("merge/mirror\n");
@@ -708,8 +718,9 @@ static bool merge_mapping()
 		memorydesc_c--;
 		return true;
 	}
-	uint32 len=a->len;
-	if (!len) len=(0x1000000 - a->select);
+	len = a->len;
+	if (!len)
+		len=(0x1000000 - a->select);
 	if (len && ((len-1) & (len | a->disconnect))==0 && ((char*)a->ptr)+a->offset+len == ((char*)b->ptr)+b->offset)
 	{
 //printf("merge/consec\n");
@@ -805,10 +816,13 @@ static void init_descriptors(void)
 
 bool retro_load_game(const struct retro_game_info *game)
 { 
+   int loaded;
+   struct retro_memory_map map;
+
    init_descriptors();
    memorydesc_c = 0;
-
-   int loaded;
+   map.descriptors    = memorydesc + MAX_MAPS - memorydesc_c;
+   map.num_descriptors = memorydesc_c;
 
    /* Hack. S9x cannot do stuff from RAM. <_< */
    memstream_set_buffer((uint8_t*)game->data, game->size);
@@ -823,7 +837,7 @@ bool retro_load_game(const struct retro_game_info *game)
 
    check_variables();
 
-   struct retro_memory_map map={ memorydesc+MAX_MAPS-memorydesc_c, memorydesc_c };
+
    environ_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &map);
 
    return TRUE;
