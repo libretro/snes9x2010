@@ -95,11 +95,6 @@ include $(THEOS)/makefiles/common.mk
 LIBRARY_NAME = snes9x_next_libretro_ios
 HAVE_GRIFFIN = 1
 
-
-COMMON_FLAGS = -DIOS -DARM -D__LIBRETRO__ -DHAVE_STRINGS_H -DHAVE_STDINT_H -DRIGHTSHIFT_IS_SAR -DINLINE=inline -DFRONTEND_SUPPORTS_RGB565 $(INCFLAGS) -I$(THEOS_INCLUDE_PATH) -Wno-error
-
-$(LIBRARY_NAME)_CFLAGS += $(COMMON_FLAGS)
-
 else ifeq ($(platform), qnx)
 # QNX
 	TARGET := $(TARGET_NAME)_libretro_qnx.so
@@ -243,6 +238,8 @@ ifeq ($(FRONTEND_SUPPORTS_RGB565), 1)
 endif
 
 ifeq ($(platform), theos_ios)
+COMMON_FLAGS := -DIOS -DARM $(COMMON_DEFINES) $(INCFLAGS) -I$(THEOS_INCLUDE_PATH) -Wno-error
+$(LIBRARY_NAME)_CFLAGS += $(COMMON_FLAGS)
 ${LIBRARY_NAME}_FILES = $(SOURCES_CXX) $(SOURCES_C)
 include $(THEOS_MAKE_PATH)/library.mk
 else
