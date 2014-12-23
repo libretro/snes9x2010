@@ -92,7 +92,7 @@ TARGET_IPHONEOS_DEPLOYMENT_VERSION=$(DEPLOYMENT_IOSVERSION)
 THEOS_BUILD_DIR := objs
 include $(THEOS)/makefiles/common.mk
 
-LIBRARY_NAME = snes9x_next_libretro_ios
+LIBRARY_NAME = $(TARGET_NAME)_libretro_ios
 HAVE_GRIFFIN = 1
 
 else ifeq ($(platform), qnx)
