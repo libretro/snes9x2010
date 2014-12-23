@@ -65,8 +65,8 @@ else ifeq ($(platform), osx)
 	endif
 	SHARED := -dynamiclib
 
-# iOS
 else ifeq ($(platform), ios)
+	# iOS
 	TARGET := $(TARGET_NAME)_libretro_ios.dylib
 	fpic := -fPIC
 	SHARED := -dynamiclib
@@ -85,6 +85,7 @@ else ifeq ($(platform), ios)
 	endif
 
 else ifeq ($(platform), theos_ios)
+	# Theos iOS
 DEPLOYMENT_IOSVERSION = 5.0
 TARGET = iphone:latest:$(DEPLOYMENT_IOSVERSION)
 ARCHS = armv7 armv7s
@@ -205,9 +206,9 @@ endif
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
 else ifeq ($(platform), emscripten)
-	CFLAGS += -O2
+	CFLAGS += -O2 -DNDEBUG
 else
-	CFLAGS += -O3
+	CFLAGS += -O3 -DNDEBUG
 endif
 
 CORE_DIR := .
@@ -229,7 +230,7 @@ else
 	CODE_DEFINES = -fomit-frame-pointer
 endif
 
-COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) -DNDEBUG=1 $(fpic)
+COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) $(fpic)
 
 CFLAGS += $(DEFINES) $(COMMON_DEFINES)
 
