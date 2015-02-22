@@ -7,19 +7,16 @@ ifneq ($(EMSCRIPTEN),)
 endif
 
 ifeq ($(platform),)
-	platform = unix
 ifeq ($(shell uname -a),)
-		platform = win
+	platform = win
 else ifneq ($(findstring MINGW,$(shell uname -a)),)
-		platform = win
+	platform = win
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
-		platform = osx
-		arch = intel
-ifeq ($(shell uname -p),powerpc)
-		arch = ppc
-endif
+	platform = osx
 else ifneq ($(findstring win,$(shell uname -a)),)
-		platform = win
+	platform = win
+else
+	platform = unix
 endif
 endif
 
@@ -30,9 +27,10 @@ ifeq ($(shell uname -a),)
 	system_platform = win
 else ifneq ($(findstring Darwin,$(shell uname -a)),)
 	system_platform = osx
-	arch = intel
 ifeq ($(shell uname -p),powerpc)
-		arch = ppc
+	arch = ppc
+else
+	arch = intel
 endif
 else ifneq ($(findstring MINGW,$(shell uname -a)),)
 	system_platform = win
