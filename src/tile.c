@@ -239,24 +239,24 @@ void S9xInitTileRenderer (void)
 
 		b = 0;
 
-	#ifdef LSB_FIRST
+	#ifdef MSB_FIRST
 		if (i & 8)
-			b |= 1;
-		if (i & 4)
-			b |= 1 << 8;
-		if (i & 2)
-			b |= 1 << 16;
-		if (i & 1)
 			b |= 1 << 24;
+		if (i & 4)
+			b |= 1 << 16;
+		if (i & 2)
+			b |= 1 << 8;
+		if (i & 1)
+			b |= 1;
 	#else
 		if (i & 8)
-			b |= 1 << 24;
-		if (i & 4)
-			b |= 1 << 16;
-		if (i & 2)
-			b |= 1 << 8;
-		if (i & 1)
 			b |= 1;
+		if (i & 4)
+			b |= 1 << 8;
+		if (i & 2)
+			b |= 1 << 16;
+		if (i & 1)
+			b |= 1 << 24;
 	#endif
 
 		for (bitshift = 0; bitshift < 8; bitshift++)

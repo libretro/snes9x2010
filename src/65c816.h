@@ -221,22 +221,27 @@
 
 typedef union
 {
-#ifdef LSB_FIRST
-	struct { uint8	l, h; } B;
+   struct
+   {
+#ifdef MSB_FIRST
+	uint8	h;
+   uint8 l;
 #else
-	struct { uint8	h, l; } B;
+	uint8	l;
+   uint8 h;
 #endif
+   } B;
 	uint16	W;
 }	pair;
 
 typedef union
 {
-#ifdef LSB_FIRST
-	struct { uint8	xPCl, xPCh, xPB, z; } B;
-	struct { uint16	xPC, d; } W;
-#else
+#ifdef MSB_FIRST
 	struct { uint8	z, xPB, xPCh, xPCl; } B;
 	struct { uint16	d, xPC; } W;
+#else
+	struct { uint8	xPCl, xPCh, xPB, z; } B;
+	struct { uint16	xPC, d; } W;
 #endif
     uint32	xPBPC;
 }	PC_t;
