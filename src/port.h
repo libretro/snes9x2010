@@ -281,7 +281,9 @@ void _makepath (char * path, const char * a, const char * dir, const char * fnam
 #define FAST_LSB_WORD_ACCESS
 #endif
 #else
+#ifndef MSB_FIRST
 #define MSB_FIRST
+#endif
 #endif
 
 #ifdef _MSC_VER
