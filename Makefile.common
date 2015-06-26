@@ -1,28 +1,28 @@
-INCFLAGS   := -I$(CORE_DIR)/libretro -I$(CORE_DIR)/src
+INCFLAGS   := -I$(LIBRETRO_DIR) -I$(CORE_DIR)
 
 ifeq ($(HAVE_GRIFFIN), 1)
-SOURCES_C := $(CORE_DIR)/src/snes9x_griffin.c $(CORE_DIR)/src/sa1.c
+SOURCES_C := $(CORE_DIR)/snes9x_griffin.c $(CORE_DIR)/sa1.c
 else
-SOURCES_C := $(CORE_DIR)/src/apu.c \
-	$(CORE_DIR)/src/bsx.c \
-	$(CORE_DIR)/src/c4emu.c \
-	$(CORE_DIR)/src/cheats.c \
-	$(CORE_DIR)/src/controls.c \
-	$(CORE_DIR)/src/cpu.c \
-	$(CORE_DIR)/src/cpuexec.c \
-	$(CORE_DIR)/src/dsp.c \
-	$(CORE_DIR)/src/fxemu.c \
-	$(CORE_DIR)/src/globals.c \
-	$(CORE_DIR)/src/memmap.c \
-	$(CORE_DIR)/src/obc1.c \
-	$(CORE_DIR)/src/ppu.c \
-	$(CORE_DIR)/src/sa1.c \
-	$(CORE_DIR)/src/sdd1.c \
-	$(CORE_DIR)/src/seta.c \
-	$(CORE_DIR)/src/snapshot.c \
-	$(CORE_DIR)/src/spc7110.c \
-	$(CORE_DIR)/src/srtc.c \
-	$(CORE_DIR)/src/tile.c \
-	$(CORE_DIR)/libretro/libretro.c \
-	$(CORE_DIR)/libretro/memory_stream.c
+SOURCES_C := $(CORE_DIR)/apu.c \
+	$(CORE_DIR)/bsx.c \
+	$(CORE_DIR)/c4emu.c \
+	$(CORE_DIR)/cheats.c \
+	$(CORE_DIR)/controls.c \
+	$(CORE_DIR)/cpu.c \
+	$(CORE_DIR)/cpuexec.c \
+	$(CORE_DIR)/dsp.c \
+	$(CORE_DIR)/fxemu.c \
+	$(CORE_DIR)/globals.c \
+	$(CORE_DIR)/memmap.c \
+	$(CORE_DIR)/obc1.c \
+	$(CORE_DIR)/ppu.c \
+	$(CORE_DIR)/sa1.c \
+	$(CORE_DIR)/sdd1.c \
+	$(CORE_DIR)/seta.c \
+	$(CORE_DIR)/snapshot.c \
+	$(CORE_DIR)/spc7110.c \
+	$(CORE_DIR)/srtc.c \
+	$(CORE_DIR)/tile.c \
+	$(LIBRETRO_DIR)/libretro.c \
+	$(LIBRETRO_DIR)/memory_stream.c
 endif

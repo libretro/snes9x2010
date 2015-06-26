@@ -81,7 +81,7 @@ ifeq ($(IOSSDK),)
 endif
 
 	CC = clang -arch armv7 -isysroot $(IOSSDK)
-	CFLAGS += -DIOS 
+	CFLAGS += -DIOS
 	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
 	OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
 ifeq ($(OSX_LT_MAVERICKS),"YES")
@@ -216,7 +216,8 @@ else
 	CFLAGS += -O3 -DNDEBUG
 endif
 
-CORE_DIR := .
+CORE_DIR := src
+LIBRETRO_DIR := libretro
 
 include Makefile.common
 
