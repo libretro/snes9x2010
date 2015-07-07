@@ -81,7 +81,7 @@ ifeq ($(IOSSDK),)
 endif
 
 	CC = clang -arch armv7 -isysroot $(IOSSDK)
-	CFLAGS += -DIOS 
+	CFLAGS += -DIOS
 	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
 	OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
 ifeq ($(OSX_LT_MAVERICKS),"YES")
@@ -210,8 +210,6 @@ endif
 
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
-else ifeq ($(platform), emscripten)
-	CFLAGS += -O2 -DNDEBUG
 else
 	CFLAGS += -O3 -DNDEBUG
 endif
