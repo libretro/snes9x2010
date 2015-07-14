@@ -853,8 +853,10 @@ static void dsp_run( int clocks_remain )
    {
       switch ( phase )
       {
+#if 0
          if ( 0 && !--clocks_remain )
             break;
+#endif
          case 0:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
          v1 = (dsp_voice_t*)(v0 + 1);

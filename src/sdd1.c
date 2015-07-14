@@ -410,21 +410,21 @@ void SDD1_decompress(uint8 *out, uint8 *in, int len)
 	{
 		case 0:
 			while(1)
-			{
-				for(byte1=byte2=0, bit=0x80; bit; bit>>=1)
-				{
-					if(GetBit(0))
-						byte1 |= bit;
-					if(GetBit(1))
-						byte2 |= bit;
-				}
-				*(out++)=byte1;
-				if(!--len)
-					return;
-				*(out++)=byte2;
-				if(!--len)
-					return;
-			}
+         {
+            for(byte1=byte2=0, bit=0x80; bit; bit>>=1)
+            {
+               if(GetBit(0))
+                  byte1 |= bit;
+               if(GetBit(1))
+                  byte2 |= bit;
+            }
+            *(out++)=byte1;
+            if(!--len)
+               break;
+            *(out++)=byte2;
+            if(!--len)
+               break;
+         }
 			break;
 		case 1:
 			i=plane=0;
@@ -439,32 +439,32 @@ void SDD1_decompress(uint8 *out, uint8 *in, int len)
 				}
 				*(out++)=byte1;
 				if(!--len)
-					return;
+               break;
 				*(out++)=byte2;
 				if(!--len)
-					return;
+               break;
 				if(!(i+=32)) plane = (plane+2)&7;
 			}
 			break;
 		case 2:
 			i=plane=0;
 			while(1)
-			{
-				for(byte1 = byte2 = 0, bit = 0x80; bit; bit >>= 1)
-				{
-					if(GetBit(plane))
-						byte1 |= bit;
-					if(GetBit(plane+1))
-						byte2 |= bit;
-				}
-				*(out++)=byte1;
-				if(!--len)
-					return;
-				*(out++)=byte2;
-				if(!--len)
-					return;
-				if(!(i+=32)) plane ^= 2;
-			}
+         {
+            for(byte1 = byte2 = 0, bit = 0x80; bit; bit >>= 1)
+            {
+               if(GetBit(plane))
+                  byte1 |= bit;
+               if(GetBit(plane+1))
+                  byte2 |= bit;
+            }
+            *(out++)=byte1;
+            if(!--len)
+               break;
+            *(out++)=byte2;
+            if(!--len)
+               break;
+            if(!(i+=32)) plane ^= 2;
+         }
 			break;
 		case 3:
 			do

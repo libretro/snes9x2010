@@ -3353,11 +3353,14 @@ static void DSP4_OP01 (void)
 
 	/* op flow control */
 	switch (DSP4.Logic)
-	{
-		case 1: goto resume1; break;
-		case 2: goto resume2; break;
-		case 3: goto resume3; break;
-	}
+   {
+      case 1:
+         goto resume1;;
+      case 2:
+         goto resume2;
+      case 3:
+         goto resume3;
+   }
 
 	/* process initial inputs*/
 
@@ -3577,8 +3580,10 @@ static void DSP4_OP07 (void)
 	/* op flow control*/
 	switch (DSP4.Logic)
 	{
-		case 1: goto resume1; break;
-		case 2: goto resume2; break;
+		case 1:
+         goto resume1;
+		case 2:
+         goto resume2;
 	}
 
 	/* sort inputs*/
@@ -3739,8 +3744,10 @@ static void DSP4_OP08 (void)
 	/* op flow control*/
 	switch (DSP4.Logic)
 	{
-		case 1: goto resume1; break;
-		case 2: goto resume2; break;
+		case 1:
+         goto resume1;
+		case 2:
+         goto resume2;
 	}
 
 	/* process initial inputs for two polygons*/
@@ -4117,12 +4124,18 @@ static void DSP4_OP09 (void)
 	/* op flow control*/
 	switch (DSP4.Logic)
 	{
-		case 1: goto resume1; break;
-		case 2: goto resume2; break;
-		case 3: goto resume3; break;
-		case 4: goto resume4; break;
-		case 5: goto resume5; break;
-		case 6: goto resume6; break;
+		case 1:
+         goto resume1;
+		case 2:
+         goto resume2;
+		case 3:
+         goto resume3;
+		case 4:
+         goto resume4;
+		case 5:
+         goto resume5;
+		case 6:
+         goto resume6;
 	}
 
 	/* process initial inputs*/
@@ -4373,8 +4386,10 @@ static void DSP4_OP0D (void)
 	/* op flow control*/
 	switch (DSP4.Logic)
 	{
-		case 1: goto resume1; break;
-		case 2: goto resume2; break;
+		case 1:
+         goto resume1;
+		case 2:
+         goto resume2;
 	}
 
 	/* process initial inputs*/
@@ -4556,10 +4571,14 @@ static void DSP4_OP0F (void)
 	/* op flow control*/
 	switch (DSP4.Logic)
 	{
-		case 1: goto resume1; break;
-		case 2: goto resume2; break;
-		case 3: goto resume3; break;
-		case 4: goto resume4; break;
+		case 1:
+         goto resume1;
+		case 2:
+         goto resume2;
+		case 3:
+         goto resume3;
+		case 4:
+         goto resume4;
 	}
 
 	/* process initial inputs*/
@@ -4796,9 +4815,12 @@ static void DSP4_OP10 (void)
 	/* op flow control*/
 	switch (DSP4.Logic)
 	{
-		case 1: goto resume1; break;
-		case 2: goto resume2; break;
-		case 3: goto resume3; break;
+		case 1:
+         goto resume1;
+		case 2:
+         goto resume2;
+		case 3:
+         goto resume3;
 	}
 
 	/* sort inputs*/
