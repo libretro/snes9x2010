@@ -1471,7 +1471,7 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 	if (pos < size)
 		return (pos);
 
-	mask = 1 << 31;
+	mask = UINT32_C(1) << 31;
 	while (!(pos & mask))
 		mask >>= 1;
 
