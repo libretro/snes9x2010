@@ -276,7 +276,6 @@ void _makepath (char * path, const char * a, const char * dir, const char * fnam
 #endif
 
 #if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || defined(__x86_64__) || defined(__alpha__) || defined(__MIPSEL__) || defined(_M_IX86) || defined(_M_X64) || defined(_XBOX1) || (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) || defined(ANDROID)) || defined(PSP) || defined(__BLACKBERRY_QNX__) || defined(IOS) || defined(ARM)
-#define LSB_FIRST
 #ifndef EMSCRIPTEN
 #define FAST_LSB_WORD_ACCESS
 #endif

@@ -65,49 +65,8 @@
 	#define BLARGG_CPU_RISC 1
 #endif
 
-/* BLARGG_BIG_ENDIAN, BLARGG_LITTLE_ENDIAN: Determined automatically, otherwise only */
-/* one may be #defined to 1. Only needed if something actually depends on byte order. */
-#if !defined (BLARGG_BIG_ENDIAN) && !defined (BLARGG_LITTLE_ENDIAN)
-#ifdef __GLIBC__
-	/* GCC handles this for us */
-	#include <endian.h>
-	#if __BYTE_ORDER == __LITTLE_ENDIAN
-		#define BLARGG_LITTLE_ENDIAN 1
-	#elif __BYTE_ORDER == __BIG_ENDIAN
-		#define BLARGG_BIG_ENDIAN 1
-	#endif
-#else
-
-#if defined (LSB_FIRST) || defined (__LITTLE_ENDIAN__) || BLARGG_CPU_X86 ||  \
-                defined(ANDROID_X86) || defined(ANDROID_MIPS) || \
-   defined(__BLACKBERRY_QNX__) || (defined (LITTLE_ENDIAN) && LITTLE_ENDIAN+0 != 1234)
-	#define BLARGG_LITTLE_ENDIAN 1
-#endif
-
-#if defined (MSB_FIRST)     || defined (__BIG_ENDIAN__) || defined (WORDS_BIGENDIAN) || \
-	defined (__sparc__)     ||  BLARGG_CPU_POWERPC || \
-	(defined (BIG_ENDIAN) && BIG_ENDIAN+0 != 4321)
-	#define BLARGG_BIG_ENDIAN 1
-#elif !defined(__mips__) || !defined(ANDROID_MIPS)
-	/* No endian specified; assume little-endian, since it's most common */
-	#define BLARGG_LITTLE_ENDIAN 1
-#endif
-#endif
-#endif
-
-#if BLARGG_LITTLE_ENDIAN && BLARGG_BIG_ENDIAN
-	#undef BLARGG_LITTLE_ENDIAN
-	#undef BLARGG_BIG_ENDIAN
-#endif
-
 #if BLARGG_NONPORTABLE
-	/* Optimized implementation if byte order is known */
-	#if BLARGG_LITTLE_ENDIAN
-		#define GET_LE16( addr )        (*(uint16_t*) (addr))
-		#define GET_LE32( addr )        (*(uint32_t*) (addr))
-		#define SET_LE16( addr, data )  (void) (*(uint16_t*) (addr) = (data))
-		#define SET_LE32( addr, data )  (void) (*(uint32_t*) (addr) = (data))
-	#elif BLARGG_BIG_ENDIAN
+#ifdef MSB_FIRST
 		#if BLARGG_CPU_POWERPC
 			/* PowerPC has special byte-reversed instructions */
 			#if defined (__SNC__)
@@ -133,33 +92,39 @@
 				#define SET_LE32( addr, in )    ({asm( "stwbrx %0,0,%1" : : "r" (in), "r" (addr) );})
 			#endif
 		#endif
-	#endif
+#else
+	/* Optimized implementation if byte order is known */
+		#define GET_LE16( addr )        (*(uint16_t*) (addr))
+		#define GET_LE32( addr )        (*(uint32_t*) (addr))
+		#define SET_LE16( addr, data )  (void) (*(uint16_t*) (addr) = (data))
+		#define SET_LE32( addr, data )  (void) (*(uint32_t*) (addr) = (data))
+#endif
 #else
 static INLINE unsigned get_le16( void const* p )
 {
-	return (unsigned) ((unsigned char const*) p) [1] << 8 | (unsigned) ((unsigned char const*) p) [0];
+   return (unsigned) ((unsigned char const*) p) [1] << 8 | (unsigned) ((unsigned char const*) p) [0];
 }
 
 static INLINE blargg_ulong get_le32( void const* p )
 {
-	return (blargg_ulong) ((unsigned char const*) p) [3] << 24 |
-		(blargg_ulong) ((unsigned char const*) p) [2] << 16 |
-		(blargg_ulong) ((unsigned char const*) p) [1] << 8 |
-		(blargg_ulong) ((unsigned char const*) p) [0];
+   return (blargg_ulong) ((unsigned char const*) p) [3] << 24 |
+      (blargg_ulong) ((unsigned char const*) p) [2] << 16 |
+      (blargg_ulong) ((unsigned char const*) p) [1] << 8 |
+      (blargg_ulong) ((unsigned char const*) p) [0];
 }
 
 static INLINE void set_le16( void* p, unsigned n )
 {
-	((unsigned char*) p) [1] = (unsigned char) (n >> 8);
-	((unsigned char*) p) [0] = (unsigned char) n;
+   ((unsigned char*) p) [1] = (unsigned char) (n >> 8);
+   ((unsigned char*) p) [0] = (unsigned char) n;
 }
 
 static INLINE void set_le32( void* p, blargg_ulong n )
 {
-	((unsigned char*) p) [0] = (unsigned char) n;
-	((unsigned char*) p) [1] = (unsigned char) (n >> 8);
-	((unsigned char*) p) [2] = (unsigned char) (n >> 16);
-	((unsigned char*) p) [3] = (unsigned char) (n >> 24);
+   ((unsigned char*) p) [0] = (unsigned char) n;
+   ((unsigned char*) p) [1] = (unsigned char) (n >> 8);
+   ((unsigned char*) p) [2] = (unsigned char) (n >> 16);
+   ((unsigned char*) p) [3] = (unsigned char) (n >> 24);
 }
 #endif
 
