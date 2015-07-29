@@ -1,5 +1,5 @@
 DEBUG=0
-HAVE_GRIFFIN=1
+HAVE_GRIFFIN=0
 FRONTEND_SUPPORTS_RGB565=1
 
 ifneq ($(EMSCRIPTEN),)
@@ -210,8 +210,6 @@ endif
 
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
-else ifeq ($(platform), emscripten)
-	CFLAGS += -O2 -DNDEBUG
 else
 	CFLAGS += -O3 -DNDEBUG
 endif
