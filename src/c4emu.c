@@ -180,6 +180,12 @@
 #include "snes9x.h"
 #include "memmap.h"
 
+#ifdef ANDROID
+#ifndef RIGHTSHIFT_IS_SAR
+#define RIGHTSHIFT_IS_SAR
+#endif
+#endif
+
 #ifdef RIGHTSHIFT_IS_SAR
 #define SAR(b, n)	((b) >> (n))
 #else
