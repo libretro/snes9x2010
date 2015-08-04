@@ -21,7 +21,7 @@ endif
 
 CORE_DIR := ../..
 
-include $(CORE_DIR)/Makefile.common
+include $(CORE_DIR)/build/Makefile.common
 
 LOCAL_SRC_FILES    += $(SOURCES_C)
 LOCAL_CFLAGS += -O3 -std=gnu99 -ffast-math -funroll-loops -DINLINE=inline -DRIGHTSHIFT_IS_SAR -D__LIBRETRO__ -DFRONTEND_SUPPORTS_RGB565 $(INCFLAGS)
