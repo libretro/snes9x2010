@@ -191,7 +191,7 @@
 #define RIGHTSHIFT_int32_IS_SAR
 #endif
 
-#ifdef FRONTEND_SUPPORTS_RGB565
+#ifdef __LIBRETRO__
 #define PIXEL_FORMAT RGB565
 #else
 #define PIXEL_FORMAT RGB555
