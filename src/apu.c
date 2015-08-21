@@ -1089,7 +1089,7 @@ static void dsp_run( int clocks_remain )
             break;
          case 25:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
-         v1 = (dsp_voice_t*)(v0 + 6);
+         v1 = (dsp_voice_t*)(v0 + 7);
          dsp_voice_V3b(v0);
          dsp_voice_V9(v1);
          dsp_echo_25();
