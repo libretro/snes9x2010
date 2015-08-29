@@ -38,10 +38,6 @@ else ifeq ($(platform),windows_x86_64)
 include $(BUILD_DIR)/Makefile.windows_x86_64
 else
 
-ifneq ($(EMSCRIPTEN),)
-	platform = emscripten
-endif
-
 ifeq ($(platform),)
 ifeq ($(shell uname -a),)
 	platform = win
