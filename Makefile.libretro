@@ -72,7 +72,7 @@ endif
 TARGET_NAME	:= snes9x_next
 LIBM		= -lm
 
-# Unix
+# UNIX
 ifeq ($(platform), unix)
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
@@ -81,8 +81,8 @@ ifneq ($(findstring Haiku,$(shell uname -a)),)
 		LIBM :=
 endif
 
+# Linux (portable library)
 else ifeq ($(platform), linux-portable)
-# Linux (portable library, statically linked against musl)
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC -nostdlib
 	SHARED := -shared -Wl,--version-script=libretro/link.T
@@ -100,27 +100,24 @@ endif
         fpic += -mmacosx-version-min=10.1
 	SHARED := -dynamiclib
 
+# iOS
 else ifeq ($(platform), ios)
-	# iOS
 	TARGET := $(TARGET_NAME)_libretro_ios.dylib
 	fpic := -fPIC
 	SHARED := -dynamiclib
 
-ifeq ($(IOSSDK),)
-		IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
-endif
-
-	CC = clang -arch armv7 -isysroot $(IOSSDK)
+	CC = ios-clang-wrapper
+	LD = armv7-apple-darwin11-ld
 	CFLAGS += -DIOS
 	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
 	OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
 ifeq ($(OSX_LT_MAVERICKS),"YES")
-		CC += -miphoneos-version-min=5.0
-		CFLAGS += -miphoneos-version-min=5.0
 endif
+CC += -miphoneos-version-min=5.0
+CFLAGS += -miphoneos-version-min=5.0
 
+# Theos iOS
 else ifeq ($(platform), theos_ios)
-	# Theos iOS
 DEPLOYMENT_IOSVERSION = 5.0
 TARGET = iphone:latest:$(DEPLOYMENT_IOSVERSION)
 ARCHS = armv7 armv7s
@@ -131,8 +128,8 @@ include $(THEOS)/makefiles/common.mk
 LIBRARY_NAME = $(TARGET_NAME)_libretro_ios
 HAVE_GRIFFIN = 1
 
-else ifeq ($(platform), qnx)
 # QNX
+else ifeq ($(platform), qnx)
 	TARGET := $(TARGET_NAME)_libretro_qnx.so
 	fpic := -fPIC
 	SHARED := -shared -Wl,--version-script=libretro/link.T
@@ -149,7 +146,7 @@ else ifeq ($(platform), ps3)
 	CFLAGS += -D__ppc__ -DMSB_FIRST
 	STATIC_LINKING = 1
 
-# sncps3
+# PS3 (SNC)
 else ifeq ($(platform), sncps3)
 	TARGET := $(TARGET_NAME)_libretro_ps3.a
 	CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
@@ -245,7 +242,7 @@ else ifneq (,$(findstring hardfloat,$(platform)))
 endif
 	CFLAGS += -DARM
 
-# emscripten
+# Emscripten
 else ifeq ($(platform), emscripten)
 	TARGET := $(TARGET_NAME)_libretro_emscripten.bc
 

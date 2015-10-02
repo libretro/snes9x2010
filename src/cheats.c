@@ -435,77 +435,12 @@ void S9xApplyCheats (void)
 
 bool8 S9xLoadCheatFile (const char *filename)
 {
-	FILE	*fs;
-	uint8	data[28];
-
 	Cheat.num_cheats = 0;
-
-	fs = fopen(filename, "rb");
-	if (!fs)
-		return (FALSE);
-
-	while (fread((void *) data, 1, 28, fs) == 28 && Cheat.num_cheats < MAX_CHEATS)
-	{
-		Cheat.c[Cheat.num_cheats].enabled = (data[0] & 4) == 0;
-		Cheat.c[Cheat.num_cheats].byte = data[1];
-		Cheat.c[Cheat.num_cheats].address = data[2] | (data[3] << 8) |  (data[4] << 16);
-		Cheat.c[Cheat.num_cheats].saved_byte = data[5];
-		Cheat.c[Cheat.num_cheats].saved = (data[0] & 8) != 0;
-		memcpy(Cheat.c[Cheat.num_cheats].name, &data[8], 20);
-		Cheat.c[Cheat.num_cheats++].name[20] = 0;
-	}
-
-	fclose(fs);
 
 	return (TRUE);
 }
 
 bool8 S9xSaveCheatFile (const char *filename)
 {
-	uint32 i;
-	FILE	*fs;
-	uint8 data[28];
-
-	if (Cheat.num_cheats == 0)
-	{
-		remove(filename);
-		return (TRUE);
-	}
-
-	fs = fopen(filename, "wb");
-	if (!fs)
-		return (FALSE);
-
-	for ( i = 0; i < Cheat.num_cheats; i++)
-	{
-		memset(data, 0, 28);
-
-		if (i == 0)
-		{
-			data[6] = 254;
-			data[7] = 252;
-		}
-
-		if (!Cheat.c[i].enabled)
-			data[0] |= 4;
-
-		if (Cheat.c[i].saved)
-			data[0] |= 8;
-
-		data[1] = Cheat.c[i].byte;
-		data[2] = (uint8) (Cheat.c[i].address);
-		data[3] = (uint8) (Cheat.c[i].address >> 8);
-		data[4] = (uint8) (Cheat.c[i].address >> 16);
-		data[5] = Cheat.c[i].saved_byte;
-
-      memcpy(&data[8], Cheat.c[i].name, 19);
-
-		if (fwrite(data, 28, 1, fs) != 1)
-		{
-			fclose(fs);
-			return (FALSE);
-		}
-	}
-
-	return (fclose(fs) == 0);
+   return (TRUE);
 }
