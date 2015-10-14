@@ -101,20 +101,23 @@ endif
 	SHARED := -dynamiclib
 
 # iOS
-else ifeq ($(platform), ios)
+else ifneq (,$(findstring ios,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro_ios.dylib
 	fpic := -fPIC
 	SHARED := -dynamiclib
 
-	CC = ios-clang-wrapper
+	CC = cc -arch armv7 -marm
 	LD = armv7-apple-darwin11-ld
 	CFLAGS += -DIOS
 	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
 	OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
-ifeq ($(OSX_LT_MAVERICKS),"YES")
-endif
-CC += -miphoneos-version-min=5.0
+ifeq ($(platform),ios9)
+CC     += -miphoneos-version-min=8.0
+CFLAGS += -miphoneos-version-min=8.0
+else
+CC     += -miphoneos-version-min=5.0
 CFLAGS += -miphoneos-version-min=5.0
+endif
 
 # Theos iOS
 else ifeq ($(platform), theos_ios)
