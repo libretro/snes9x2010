@@ -106,7 +106,11 @@ else ifneq (,$(findstring ios,$(platform)))
 	fpic := -fPIC
 	SHARED := -dynamiclib
 
-	CC = cc -arch armv7 -marm
+ifeq ($(IOSSDK),)
+   IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+endif
+
+   CC = cc -arch armv7 -isysroot $(IOSSDK)
 	LD = armv7-apple-darwin11-ld
 	CFLAGS += -DIOS
 	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
