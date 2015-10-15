@@ -113,8 +113,6 @@ endif
    CC = cc -arch armv7 -isysroot $(IOSSDK)
 	LD = armv7-apple-darwin11-ld
 	CFLAGS += -DIOS
-	OSXVER = `sw_vers -productVersion | cut -d. -f 2`
-	OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
 ifeq ($(platform),ios9)
 CC     += -miphoneos-version-min=8.0
 CFLAGS += -miphoneos-version-min=8.0
