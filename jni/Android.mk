@@ -19,7 +19,7 @@ ifeq ($(TARGET_ARCH),mips)
 LOCAL_CFLAGS += -DANDROID_MIPS -D__mips__ -D__MIPSEL__
 endif
 
-CORE_DIR := ../..
+CORE_DIR := ..
 
 include $(CORE_DIR)/build/Makefile.common
 
