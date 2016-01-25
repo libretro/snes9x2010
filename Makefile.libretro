@@ -156,6 +156,7 @@ else ifeq ($(platform), qnx)
 
 # PS3
 else ifeq ($(platform), ps3)
+	EXT=a
 	TARGET := $(TARGET_NAME)_libretro_ps3.$(EXT)
 	CC = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-gcc.exe
 	AR = $(CELL_SDK)/host-win32/ppu/bin/ppu-lv2-ar.exe
@@ -164,6 +165,7 @@ else ifeq ($(platform), ps3)
 
 # PS3 (SNC)
 else ifeq ($(platform), sncps3)
+	EXT=a
 	TARGET := $(TARGET_NAME)_libretro_ps3.$(EXT)
 	CC = $(CELL_SDK)/host-win32/sn/bin/ps3ppusnc.exe
 	AR = $(CELL_SDK)/host-win32/sn/bin/ps3snarl.exe
@@ -172,6 +174,7 @@ else ifeq ($(platform), sncps3)
 
 # Lightweight PS3 Homebrew SDK
 else ifeq ($(platform), psl1ght)
+	EXT=a
 	TARGET := $(TARGET_NAME)_libretro_psl1ght.$(EXT)
 	CC = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
 	AR = $(PS3DEV)/ppu/bin/ppu-ar$(EXE_EXT)
@@ -180,6 +183,7 @@ else ifeq ($(platform), psl1ght)
 
 # PSP
 else ifeq ($(platform), psp1)
+	EXT=a
 	TARGET := $(TARGET_NAME)_libretro_psp1.$(EXT)
 	CC = psp-gcc$(EXE_EXT)
 	AR = psp-ar$(EXE_EXT)
@@ -188,6 +192,7 @@ else ifeq ($(platform), psp1)
 
 # Vita
 else ifeq ($(platform), vita)
+	EXT=a
 	TARGET := $(TARGET_NAME)_libretro_vita.$(EXT)
 	CC = arm-vita-eabi-gcc$(EXE_EXT)
 	AR = arm-vita-eabi-ar$(EXE_EXT)
@@ -196,6 +201,7 @@ else ifeq ($(platform), vita)
 
 # CTR (3DS)
 else ifeq ($(platform), ctr)
+	EXT=a
 	TARGET := $(TARGET_NAME)_libretro_ctr.$(EXT)
 	CC = $(DEVKITARM)/bin/arm-none-eabi-gcc$(EXE_EXT)
 	AR = $(DEVKITARM)/bin/arm-none-eabi-ar$(EXE_EXT)
@@ -208,6 +214,7 @@ else ifeq ($(platform), ctr)
 
 # Xbox 360
 else ifeq ($(platform), xenon)
+	EXT=a
 	TARGET := $(TARGET_NAME)_libretro_xenon360.$(EXT)
 	CC = xenon-gcc$(EXE_EXT)
 	AR = xenon-ar$(EXE_EXT)
@@ -216,6 +223,7 @@ else ifeq ($(platform), xenon)
 
 # Nintendo Game Cube
 else ifeq ($(platform), ngc)
+	EXT=a
 	TARGET := $(TARGET_NAME)_libretro_ngc.$(EXT)
 	CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 	AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
@@ -224,6 +232,7 @@ else ifeq ($(platform), ngc)
 
 # Nintendo Wii
 else ifeq ($(platform), wii)
+	EXT=a
 	TARGET := $(TARGET_NAME)_libretro_wii.$(EXT)
 	CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 	AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
