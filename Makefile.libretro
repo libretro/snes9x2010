@@ -75,12 +75,16 @@ LIBM		= -lm
 
 ifeq ($(STATIC_LINKING),1)
 EXT=a
+
+ifeq ($(platform), unix)
+PLAT=_unix
+endif
 endif
 
 # UNIX
 ifeq ($(platform), unix)
 	EXT    ?= so
-	TARGET := $(TARGET_NAME)_libretro.$(EXT)
+   TARGET := $(TARGET_NAME)_libretro$(PLAT).$(EXT)
 	fpic := -fPIC
 	SHARED := -shared -Wl,--version-script=libretro/link.T
 ifneq ($(findstring Haiku,$(shell uname -a)),)
