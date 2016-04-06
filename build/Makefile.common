@@ -23,6 +23,10 @@ SOURCES_C := $(CORE_DIR)/src/apu.c \
 	$(CORE_DIR)/src/spc7110.c \
 	$(CORE_DIR)/src/srtc.c \
 	$(CORE_DIR)/src/tile.c \
-	$(CORE_DIR)/libretro/libretro.c \
-	$(CORE_DIR)/libretro/memory_stream.c
+	$(CORE_DIR)/libretro/libretro.c
+
+ifneq ($(STATIC_LINKING),1)
+SOURCES_C += $(CORE_DIR)/libretro/memory_stream.c
+endif
+
 endif
