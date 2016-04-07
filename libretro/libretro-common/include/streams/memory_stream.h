@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2014 The RetroArch team
+/* Copyright  (C) 2010-2015 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (memory_stream.h).
@@ -23,26 +23,30 @@
 #ifndef _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
 #define _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
 
-#include <stddef.h>
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct memstream memstream_t;
 
-memstream_t *memstream_open(void);
+memstream_t *memstream_open(unsigned writing);
 
-void memstream_close(memstream_t * stream);
+void memstream_close(memstream_t *stream);
 
-size_t memstream_read(memstream_t * stream, void *data, size_t bytes);
+size_t memstream_read(memstream_t *stream, void *data, size_t bytes);
 
-size_t memstream_write(memstream_t * stream, const void *data, size_t bytes);
+size_t memstream_write(memstream_t *stream, const void *data, size_t bytes);
 
-int memstream_getc(memstream_t * stream);
+int memstream_getc(memstream_t *stream);
 
-char *memstream_gets(memstream_t * stream, char *buffer, size_t len);
+void memstream_putc(memstream_t *stream, int c);
 
-size_t memstream_pos(memstream_t * stream);
+char *memstream_gets(memstream_t *stream, char *buffer, size_t len);
 
-int memstream_seek(memstream_t * stream, int offset, int whence);
+size_t memstream_pos(memstream_t *stream);
+
+void memstream_rewind(memstream_t *stream);
+
+int memstream_seek(memstream_t *stream, int offset, int whence);
 
 void memstream_set_buffer(uint8_t *buffer, size_t size);
 

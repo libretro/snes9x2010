@@ -27,7 +27,7 @@ SOURCES_C := $(CORE_DIR)/src/apu.c \
 
 ifeq ($(STATIC_LINKING),1)
 else
-SOURCES_C += $(CORE_DIR)/libretro/memory_stream.c
+SOURCES_C += $(CORE_DIR)/libretro/libretro-common/streams/memory_stream.c
 endif
 
 endif
