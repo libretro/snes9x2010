@@ -18,4 +18,6 @@
 #include "srtc.c"
 #include "tile.c"
 #include "../libretro/libretro.c"
+#ifndef STATIC_LINKING
 #include "../libretro/memory_stream.c"
+#endif
