@@ -269,7 +269,7 @@ else ifneq (,$(findstring armv,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.$(EXT)
 	SHARED := -shared -Wl,--no-undefined
 	fpic := -fPIC
-	CC = gcc
+	CC   ?= gcc
 ifneq (,$(findstring cortexa8,$(platform)))
 		CFLAGS += -marm -mcpu=cortex-a8
 		ASFLAGS += -mcpu=cortex-a8
