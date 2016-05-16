@@ -1,5 +1,3 @@
-HAVE_GRIFFIN := 1
-
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -8,7 +6,23 @@ LOCAL_MODULE    := retro
 
 ifeq ($(TARGET_ARCH),arm)
 LOCAL_CFLAGS += -DANDROID_ARM
+#LOCAL_ARM_MODE := arm
+
+#enable/disable optimization
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+V7PLUSOPTIMIZATION ?= 1
+endif
+
+#armv7+ optimizations
+ifeq ($(V7PLUSOPTIMIZATION),1)
+#we dont need LOCAL_ARM_MODE := arm because armv7a has thumb2 that has varible length instructions
+LOCAL_ARM_MODE := thumb
+LOCAL_ARM_NEON := true
+else
 LOCAL_ARM_MODE := arm
+endif
+
+
 endif
 
 ifeq ($(TARGET_ARCH),x86)
