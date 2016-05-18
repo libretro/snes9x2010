@@ -6,23 +6,27 @@ LOCAL_MODULE    := retro
 
 ifeq ($(TARGET_ARCH),arm)
 LOCAL_CFLAGS += -DANDROID_ARM
-#LOCAL_ARM_MODE := arm
+
+#arm speedups
+#default to thumb because its smaller and more can fit in the cpu cache
+LOCAL_ARM_MODE := thumb
+#switch to arm or thumb instruction set per function based on speed(dont restrict to only arm or thumb use both)
+LOCAL_CFLAGS += -mthumb-interwork
 
 #enable/disable optimization
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
-V7PLUSOPTIMIZATION ?= 1
+   LOCAL_CFLAGS += -munaligned-access
+   V7NEONOPTIMIZATION ?= 0
+else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+#neon is a requirement for armv8 so just enable it
+   LOCAL_CFLAGS += -munaligned-access
+   LOCAL_ARM_NEON := true
 endif
 
 #armv7+ optimizations
-ifeq ($(V7PLUSOPTIMIZATION),1)
-#we dont need LOCAL_ARM_MODE := arm because armv7a has thumb2 that has varible length instructions
-LOCAL_ARM_MODE := thumb
-LOCAL_ARM_NEON := true
-else
-LOCAL_ARM_MODE := arm
+ifeq ($(V7NEONOPTIMIZATION),1)
+   LOCAL_ARM_NEON := true
 endif
-
-
 endif
 
 ifeq ($(TARGET_ARCH),x86)
