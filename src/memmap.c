@@ -3145,6 +3145,7 @@ void InitROM (void)
 				MATCH_ID("AS6") ||				/* Super Bomberman 3*/
 				MATCH_ID("A4BJ") || 				/* Super Bomberman 4*/
 				MATCH_ID("A5SJ") ||				/* Super Bomberman 5*/
+				MATCH_ID("AK8J") ||				/* Super Bomberman 5 - Caravan Event Ban*/
 				MATCH_ID("APBJ") ||				/* Super Bomberman Panic Bomber W*/
 				MATCH_ID("AF5J") ||				/* Super Fire Pro Wrestling X*/
 				MATCH_ID("AP4J") ||				/* Super Fire Pro Wrestling Special*/
