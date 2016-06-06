@@ -474,8 +474,6 @@ void retro_deinit(void)
 void retro_reset (void)
 {
    S9xSoftReset();
-   
-   check_variables();
 }
 
 static int16_t retro_mouse_state[2][2] = {{0}, {0}};
@@ -623,6 +621,9 @@ void retro_run (void)
    poll_cb();
    report_buttons();
    S9xMainLoop();
+   
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+   check_variables();
 }
 
 size_t retro_serialize_size (void)
