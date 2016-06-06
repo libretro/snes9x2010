@@ -44,6 +44,47 @@ static retro_environment_t environ_cb = NULL;
 
 extern s9xcommand_t			keymap[1024];
 
+
+static void check_variables(void)
+{
+   bool reset_sfx = false;
+   struct retro_variable var;
+   var.key = "snes9x_next_overclock";
+   var.value = NULL;
+   
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "disabled") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
+         reset_sfx = true;
+      }
+      else if (strcmp(var.value, "40MHz") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 40.5e6;
+         reset_sfx = true;
+      }
+      else if (strcmp(var.value, "60MHz") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 60.5e6;
+         reset_sfx = true;
+      }
+      else if (strcmp(var.value, "80MHz") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 80.5e6;
+         reset_sfx = true;
+      }
+      else if (strcmp(var.value, "100MHz") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 100.5e6;
+         reset_sfx = true;
+      }
+   }
+   
+   if (reset_sfx)
+   S9xResetSuperFX();
+}
+
 void *retro_get_memory_data(unsigned type)
 {
    uint8_t* data;
@@ -433,6 +474,8 @@ void retro_deinit(void)
 void retro_reset (void)
 {
    S9xSoftReset();
+   
+   check_variables();
 }
 
 static int16_t retro_mouse_state[2][2] = {{0}, {0}};
@@ -574,55 +617,12 @@ static void report_buttons (void)
 #endif
 }
 
-static void check_variables(void)
-{
-   bool reset_sfx = false;
-   struct retro_variable var;
-   var.key = "snes9x_next_overclock";
-   var.value = NULL;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      if (strcmp(var.value, "disabled") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
-         reset_sfx = true;
-      }
-      else if (strcmp(var.value, "40MHz") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 40.5e6;
-         reset_sfx = true;
-      }
-      else if (strcmp(var.value, "60MHz") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 60.5e6;
-         reset_sfx = true;
-      }
-      else if (strcmp(var.value, "80MHz") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 80.5e6;
-         reset_sfx = true;
-      }
-      else if (strcmp(var.value, "100MHz") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 100.5e6;
-         reset_sfx = true;
-      }
-   }
-
-   if (reset_sfx)
-      S9xResetSuperFX();
-}
-
 void retro_run (void)
 {
    bool updated = false;
    poll_cb();
    report_buttons();
    S9xMainLoop();
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
-      check_variables();
 }
 
 size_t retro_serialize_size (void)
