@@ -1,6 +1,7 @@
 DEBUG=0
 HAVE_GRIFFIN=0
 STATIC_LINKING=0
+PREF_OPTIMIZATION=O3
 
 CORE_DIR := .
 BUILD_DIR = build
@@ -253,6 +254,7 @@ else ifeq ($(platform), ngc)
 	AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
 	CFLAGS += -DGEKKO -DHW_DOL -mrvl -mcpu=750 -meabi -mhard-float -D__ppc__ -DMSB_FIRST
 	STATIC_LINKING=1
+	PREF_OPTIMIZATION=O2
 
 # Nintendo Wii
 else ifeq ($(platform), wii)
@@ -262,6 +264,7 @@ else ifeq ($(platform), wii)
 	AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
 	CFLAGS += -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -D__ppc__ -DMSB_FIRST
 	STATIC_LINKING=1
+	PREF_OPTIMIZATION=O2
 
 # ARM
 else ifneq (,$(findstring armv,$(platform)))
@@ -326,7 +329,7 @@ endif
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
 else
-	CFLAGS += -O3 -DNDEBUG
+	CFLAGS += -$(PREF_OPTIMIZATION) -DNDEBUG
 endif
 
 
