@@ -193,14 +193,18 @@ extern uint8	*HDMAMemPointers[8];
 static uint32 idle_loop_target_pc;
 static bool8 idle_loop_elimination_enable;
 
+#ifdef LAGFIX
 bool8 finishedFrame = false;
+#endif
 
 void S9xMainLoop (void)
 {
 	do
 	{
+#ifdef LAGFIX
 	do
 	{
+#endif
 		register uint8	Op;
 		register struct	SOpcodes *Opcodes;
 
@@ -293,19 +297,24 @@ void S9xMainLoop (void)
 			S9xDoHEventProcessing();
 	#endif
 	
+#ifdef LAGFIX
 	if (finishedFrame)
         	break;
+#endif
                 
 	}while(1);
 
+#ifdef LAGFIX
 	if (!finishedFrame)
         {
+#endif
 	S9xPackStatus();
 
 	if (CPU.Flags & SCAN_KEYS_FLAG)
 	{
 		CPU.Flags &= ~SCAN_KEYS_FLAG;
 	}
+#ifdef LAGFIX
         }
         else
         {
@@ -313,6 +322,7 @@ void S9xMainLoop (void)
             break;
         }
     }while(!finishedFrame);
+#endif
 }
 
 
@@ -1029,8 +1039,10 @@ void S9xDoHEventProcessing (void)
 			{
 				S9xEndScreenRefresh();
 				
+#ifdef LAGFIX
 				if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0)) /* MIBR */
 					finishedFrame = true;
+#endif
 					
 				PPU.HDMA = 0;
 				/* Bits 7 and 6 of $4212 are computed when read in S9xGetPPU. */

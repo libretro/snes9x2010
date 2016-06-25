@@ -2,6 +2,7 @@ DEBUG=0
 HAVE_GRIFFIN=0
 STATIC_LINKING=0
 PREF_OPTIMIZATION=O3
+LAGFIX=1
 
 CORE_DIR := .
 BUILD_DIR = build
@@ -52,6 +53,10 @@ else ifneq ($(findstring win,$(shell uname -a)),)
 else
 	platform = unix
 endif
+endif
+
+ifeq ($(LAGFIX),1)
+	CFLAGS += -DLAGFIX
 endif
 
 # system platform
