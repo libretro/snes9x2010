@@ -193,8 +193,12 @@ extern uint8	*HDMAMemPointers[8];
 static uint32 idle_loop_target_pc;
 static bool8 idle_loop_elimination_enable;
 
+bool8 finishedFrame = false;
+
 void S9xMainLoop (void)
 {
+	do
+	{
 	do
 	{
 		register uint8	Op;
@@ -288,14 +292,27 @@ void S9xMainLoop (void)
 		while (CPU.Cycles >= CPU.NextEvent)
 			S9xDoHEventProcessing();
 	#endif
+	
+	if (finishedFrame)
+        	break;
+                
 	}while(1);
 
+	if (!finishedFrame)
+        {
 	S9xPackStatus();
 
 	if (CPU.Flags & SCAN_KEYS_FLAG)
 	{
 		CPU.Flags &= ~SCAN_KEYS_FLAG;
 	}
+        }
+        else
+        {
+            finishedFrame = false;
+            break;
+        }
+    }while(!finishedFrame);
 }
 
 
@@ -1011,6 +1028,10 @@ void S9xDoHEventProcessing (void)
 			if (CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE) /* VBlank starts from V=225(240). */
 			{
 				S9xEndScreenRefresh();
+				
+				if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0)) /* MIBR */
+					finishedFrame = true;
+					
 				PPU.HDMA = 0;
 				/* Bits 7 and 6 of $4212 are computed when read in S9xGetPPU. */
 				PPU.ForcedBlanking = (Memory.FillRAM[0x2100] >> 7) & 1;
