@@ -435,7 +435,12 @@ static void S9xEndScreenRefresh (void)
 		speedhacks_manager();
 
 	if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
+    {
 		S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
+#ifdef LAGFIX
+		finishedFrame = true;
+#endif
+    }
 
 	S9xApplyCheats();
 }
@@ -1038,11 +1043,6 @@ void S9xDoHEventProcessing (void)
 			if (CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE) /* VBlank starts from V=225(240). */
 			{
 				S9xEndScreenRefresh();
-				
-#ifdef LAGFIX
-				if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0)) /* MIBR */
-					finishedFrame = true;
-#endif
 					
 				PPU.HDMA = 0;
 				/* Bits 7 and 6 of $4212 are computed when read in S9xGetPPU. */
