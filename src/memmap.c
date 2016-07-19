@@ -1756,8 +1756,6 @@ void map_WriteProtectROM (void)
 	MAP_WRAM(); \
 	map_WriteProtectROM();
 
-#ifdef __LIBRETRO__
-
 static const char * KartContents (uint8 ROMType)
 {
 	static char			str[64];
@@ -1815,8 +1813,6 @@ static const char * KartContents (uint8 ROMType)
 
 	return (str);
 }
-
-#endif
 
 static void Map_NoMAD1LoROMMap (void)
 {
@@ -3423,15 +3419,9 @@ void InitROM (void)
 	sprintf(Memory.ROMName, "%s", Safe(Memory.ROMName));
 	sprintf(Memory.ROMId, "%s", Safe(Memory.ROMId));
 
-	#ifndef __LIBRETRO__
-	sprintf(String, "\"%s\" [%s] ID:%s",
-		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
-		Memory.ROMId);
-	#else
 	sprintf(String, "\"%s\" [%s] %s, %s, %s, %s, SRAM:%s, ID:%s, CRC32:%08X",
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
 		(Memory.HiROM ? ((Memory.ExtendedFormat != NOPE) ? "ExHiROM": "HiROM") : "LoROM"), Size(), KartContents(Memory.ROMType), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), Memory.ROMId, Memory.ROMCRC32);
-	#endif
 	S9xMessage(S9X_INFO, S9X_ROM_INFO, String);
 
 	Settings.ForceLoROM = FALSE;
