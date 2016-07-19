@@ -832,8 +832,17 @@ bool retro_load_game(const struct retro_game_info *game)
    loaded = LoadROM("");
    if (!loaded)
    {
+      struct retro_message msg; 
+      char msg_local[256];
+
+      snprintf(msg_local,
+            sizeof(msg_local), "ROM loading failed...");
       if (log_cb)
          log_cb(RETRO_LOG_ERROR, "ROM loading failed...\n");
+      msg.msg    = msg_local;
+      msg.frames = 360;
+      if (environ_cb)
+         environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, (void*)&msg);
       return FALSE;
    }
 
