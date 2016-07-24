@@ -187,6 +187,14 @@
 #include "snapshot.h"
 #include "display.h"
 
+/* The Wii version sometimes has issues with memcpy fnt when optimized, 
+   so we remove optimzations from save/load state fnts using this macro */
+#ifdef GEKKO
+#define NO_OPTIMIZE __attribute__((optimize("O0")))
+#else
+#define NO_OPTIMIZE
+#endif
+
 /***********************************************************************************
 	SPC DSP
 ***********************************************************************************/
@@ -1256,7 +1264,7 @@ static void spc_copier_extra(spc_state_copy_t * copier)
 
 /* Saves/loads exact emulator state */
 
-static void dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
+static void NO_OPTIMIZE dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 {
 	int i, j;
 
@@ -2991,7 +2999,7 @@ static void spc_soft_reset (void)
 }
 
 #if !SPC_NO_COPY_STATE_FUNCS
-void spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
+void NO_OPTIMIZE spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 {
 	int i;
 	spc_state_copy_t copier;
@@ -3599,13 +3607,13 @@ void S9xSoftResetAPU (void)
 	resampler_clear();
 }
 
-static void from_apu_to_state (uint8 **buf, void *var, size_t size)
+static void NO_OPTIMIZE from_apu_to_state (uint8 **buf, void *var, size_t size)
 {
 	memcpy(*buf, var, size);
 	*buf += size;
 }
 
-static void to_apu_from_state (uint8 **buf, void *var, size_t size)
+static void NO_OPTIMIZE to_apu_from_state (uint8 **buf, void *var, size_t size)
 {
 	memcpy(var, *buf, size);
 	*buf += size;
