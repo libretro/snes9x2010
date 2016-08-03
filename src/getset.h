@@ -186,67 +186,23 @@
 #include "obc1.h"
 #include "seta.h"
 #include "bsx.h"
+#include "port.h"
 
 extern uint8	OpenBus;
 
-#if (S9X_ACCURACY_LEVEL >= 2)
+uint8 S9xGetByteFromRegister(uint8 *GetAddress, uint32 Address);
 
-#define addCyclesInMemoryAccess \
-	if (!CPU.InDMAorHDMA) \
-	{ \
-		CPU.Cycles += speed; \
-		while (CPU.Cycles >= CPU.NextEvent) \
-			S9xDoHEventProcessing(); \
-	}
-
-#define addCyclesInMemoryAccess_x2 \
-	if (!CPU.InDMAorHDMA) \
-	{ \
-		CPU.Cycles += speed << 1; \
-		while (CPU.Cycles >= CPU.NextEvent) \
-			S9xDoHEventProcessing(); \
-	}
-
-#else
-
-#define addCyclesInMemoryAccess \
-	if (!CPU.InDMAorHDMA) \
-		CPU.Cycles += speed;
-
-#define addCyclesInMemoryAccess_x2 \
-	if (!CPU.InDMAorHDMA) \
-		CPU.Cycles += speed << 1;
-
-#endif
-
-static INLINE int32 memory_speed (uint32 address)
-{
-	if (address & 0x408000)
-	{
-		if (address & 0x800000)
-			return (CPU.FastROMSpeed);
-
-		return (SLOW_ONE_CYCLE);
-	}
-
-	if ((address + 0x6000) & 0x4000)
-		return (SLOW_ONE_CYCLE);
-
-	if ((address - 0x4000) & 0x7e00)
-		return (ONE_CYCLE);
-
-	return (TWO_CYCLES);
-}
+int32 memory_speed (uint32 address);
 
 static INLINE uint8 S9xGetByte (uint32 Address)
 {
-	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
+   int		block    = (Address & 0xffffff) >> MEMMAP_SHIFT;
 	uint8	*GetAddress = Memory.Map[block];
-	int32	speed = memory_speed(Address);
-	uint8	byte;
+   int32    speed    = memory_speed(Address);
 
 	if (GetAddress >= (uint8 *) MAP_LAST)
 	{
+      uint8 byte;
 	#ifdef CPU_SHUTDOWN
 		if (Memory.BlockIsRAM[block])
 			CPU.WaitAddress = CPU.PBPCAtOpcodeStart;
@@ -256,81 +212,7 @@ static INLINE uint8 S9xGetByte (uint32 Address)
 		return (byte);
 	}
 
-	switch ((intptr_t) GetAddress)
-	{
-		case MAP_CPU:
-			byte = S9xGetCPU(Address & 0xffff);
-         break;
-
-		case MAP_PPU:
-			if (CPU.InDMAorHDMA && (Address & 0xff00) == 0x2100)
-				return (OpenBus);
-
-			byte = S9xGetPPU(Address & 0xffff);
-         break;
-
-		case MAP_LOROM_SRAM:
-		case MAP_SA1RAM:
-			// Address & 0x7fff   : offset into bank
-			// Address & 0xff0000 : bank
-			// bank >> 1 | offset : SRAM address, unbound
-			// unbound & SRAMMask : SRAM offset
-			byte = *(Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask));
-         break;
-
-		case MAP_LOROM_SRAM_B:
-			byte = *(Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB));
-         break;
-
-		case MAP_HIROM_SRAM:
-		case MAP_RONLY_SRAM:
-			byte = *(Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask));
-         break;
-
-		case MAP_BWRAM:
-			byte = *(Memory.BWRAM + ((Address & 0x7fff) - 0x6000));
-         break;
-
-		case MAP_DSP:
-			byte = S9xGetDSP(Address & 0xffff);
-         break;
-
-		case MAP_SPC7110_ROM:
-			byte = S9xGetSPC7110Byte(Address);
-         break;
-
-		case MAP_SPC7110_DRAM:
-			byte = S9xGetSPC7110(0x4800);
-         break;
-
-		case MAP_C4:
-			byte = S9xGetC4(Address & 0xffff);
-         break;
-
-		case MAP_OBC_RAM:
-			byte = S9xGetOBC1(Address & 0xffff);
-         break;
-
-		case MAP_SETA_DSP:
-			byte = S9xGetSetaDSP(Address);
-         break;
-
-		case MAP_SETA_RISC:
-			byte = S9xGetST018(Address);
-         break;
-
-		case MAP_BSX:
-			byte = S9xGetBSX(Address);
-         break;
-
-		case MAP_NONE:
-		default:
-			byte = OpenBus;
-         break;
-	}
-
-   addCyclesInMemoryAccess;
-   return (byte);
+   return S9xGetByteFromRegister(GetAddress, Address);
 }
  
 static INLINE uint16 S9xGetWord (uint32 Address, uint32 w)

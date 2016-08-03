@@ -17,6 +17,7 @@
 #include "spc7110.c"
 #include "srtc.c"
 #include "tile.c"
+#include "hwregisters.c"
 #include "../libretro/libretro.c"
 #ifndef STATIC_LINKING
 #include "../libretro/libretro-common/streams/memory_stream.c"

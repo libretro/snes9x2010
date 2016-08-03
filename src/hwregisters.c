@@ -174,184 +174,116 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
+#include "port.h"
+#include "snes9x.h"
+#include "cpuexec.h"
+#include "dsp.h"
+#include "sa1.h"
+#include "spc7110.h"
+#include "c4.h"
+#include "obc1.h"
+#include "seta.h"
+#include "bsx.h"
 
-#ifndef _PORT_H_
-#define _PORT_H_
+extern uint8	OpenBus;
 
-#include <stdio.h>
-#ifndef _MSC_VER
-#include <stdbool.h>
-#endif
-#include <limits.h>
-#include <sys/types.h>
+int32 memory_speed (uint32 address)
+{
+	if (address & 0x408000)
+	{
+		if (address & 0x800000)
+			return (CPU.FastROMSpeed);
 
-#ifdef __WIN32__
-#define RIGHTSHIFT_int8_IS_SAR
-#define RIGHTSHIFT_int16_IS_SAR
-#define RIGHTSHIFT_int32_IS_SAR
-#endif
-
-#ifdef __LIBRETRO__
-#define PIXEL_FORMAT RGB565
-#else
-#define PIXEL_FORMAT RGB555
-#endif
-
-typedef unsigned char		bool8;
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-typedef int8_t			int8;
-typedef uint8_t			uint8;
-typedef int16_t			int16;
-typedef uint16_t		uint16;
-typedef int32_t			int32;
-typedef uint32_t		uint32;
-typedef int64_t			int64;
-typedef uint64_t		uint64;
-#else	/* HAVE_STDINT_H */
-#ifdef __WIN32__
-#ifdef __BORLANDC__
-#include <systypes.h>
-#else
-typedef signed char		int8;
-typedef unsigned char		uint8;
-typedef signed short		int16;
-typedef unsigned short		uint16;
-#ifndef WSAAP
-/* winsock2.h typedefs int32 as well */
-typedef signed int		int32;
-#endif
-typedef unsigned int		uint32;
-#endif
-typedef unsigned char		uint8_t;
-typedef signed __int64		int64;
-typedef unsigned __int64	uint64;
-typedef int			socklen_t;
-#else	/* __WIN32__ */
-typedef signed char		int8;
-typedef unsigned char		uint8;
-typedef signed short		int16;
-typedef unsigned short		uint16;
-typedef signed int		int32;
-typedef unsigned int		uint32;
-#ifdef __GNUC__
-/* long long is not part of ISO C++  */
-__extension__
-#endif
-typedef long long		int64;
-typedef unsigned long long	uint64;
-#endif	/*  __WIN32__ */
-#endif	/* HAVE_STDINT_H */
-
-#ifndef TRUE
-#define TRUE	1
-#endif
-#ifndef FALSE
-#define FALSE	0
-#endif
-
-#ifndef PATH_MAX
-#define PATH_MAX	1024
-#endif
-
-#ifndef _MAX_DRIVE
-#define _MAX_DRIVE	1
-#endif
-
-#ifndef _MAX_PATH
-#define _MAX_PATH	PATH_MAX
-#endif
-
-#ifndef _MSC_VER
-void _splitpath (const char * path, char * drive, char * dir, char * fname, char * ext);
-void _makepath (char * path, const char * a, const char * dir, const char * fname, const char * ext);
-#endif
-
-#ifdef __DJGPP
-#define SLASH_STR	"\\"
-#define SLASH_CHAR	'\\'
-#else
-#define SLASH_STR	"/"
-#define SLASH_CHAR	'/'
-#endif
-
-#if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || defined(__x86_64__) || defined(__alpha__) || defined(__MIPSEL__) || defined(_M_IX86) || defined(_M_X64) || defined(_XBOX1) || (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) || defined(ANDROID)) || defined(PSP) || defined(__BLACKBERRY_QNX__) || defined(IOS) || defined(ARM)
-#ifndef EMSCRIPTEN
-#define FAST_LSB_WORD_ACCESS
-#endif
-#else
-#ifndef MSB_FIRST
-#define MSB_FIRST
-#endif
-#endif
-
-#ifdef _MSC_VER
-#define snprintf _snprintf
-#define strcasecmp _stricmp
-#define strncasecmp _strnicmp
-#endif
-
-#if defined(FAST_LSB_WORD_ACCESS)
-#define READ_WORD(s)		(*(uint16 *) (s))
-#define WRITE_WORD(s, d)	*(uint16 *) (s) = (d)
-#elif __SNC__
-#include <ppu_intrinsics.h>
-#define READ_WORD(s)		(__builtin_lhbrx(s, 0))
-#define WRITE_WORD(s, d)	(__builtin_sthbrx(d, s, 0))
-#elif _XBOX360
-#include <PPCIntrinsics.h>
-#define READ_WORD( s )        (__loadshortbytereverse(0, s))
-#define WRITE_WORD( s, d )    (__storeshortbytereverse(d, 0, s))
-#elif defined(GEKKO) || defined(__PPC__) || defined(__powerpc__)
-#define READ_WORD( addr )        ({unsigned ppc_lhbrx_; asm( "lhbrx %0,0,%1" : "=r" (ppc_lhbrx_) : "r" (addr), "0" (ppc_lhbrx_) ); ppc_lhbrx_;})
-#define WRITE_WORD( addr, in )    ({asm( "sthbrx %0,0,%1" : : "r" (in), "r" (addr) );})
-#else
-#define READ_WORD(s)		(*(uint8 *) (s) | (*((uint8 *) (s) + 1) << 8))
-#define WRITE_WORD(s, d)	*(uint8 *) (s) = (uint8) (d), *((uint8 *) (s) + 1) = (uint8) ((d) >> 8)
-#endif
-
-#if defined(FAST_LSB_WORD_ACCESS)
-#define READ_3WORD(s)		(*(uint32 *) (s) & 0x00ffffff)
-#define READ_DWORD(s)		(*(uint32 *) (s))
-#define WRITE_3WORD(s, d)	*(uint16 *) (s) = (uint16) (d), *((uint8 *) (s) + 2) = (uint8) ((d) >> 16)
-#else
-#define READ_3WORD(s)		(*(uint8 *) (s) | (*((uint8 *) (s) + 1) << 8) | (*((uint8 *) (s) + 2) << 16))
-#define READ_DWORD(s)		(*(uint8 *) (s) | (*((uint8 *) (s) + 1) << 8) | (*((uint8 *) (s) + 2) << 16) | (*((uint8 *) (s) + 3) << 24))
-#define WRITE_3WORD(s, d)	*(uint8 *) (s) = (uint8) (d), *((uint8 *) (s) + 1) = (uint8) ((d) >> 8), *((uint8 *) (s) + 2) = (uint8) ((d) >> 16)
-#endif
-
-#include "pixform.h"
-
-#if (S9X_ACCURACY_LEVEL >= 2)
-
-#define addCyclesInMemoryAccess \
-	if (!CPU.InDMAorHDMA) \
-	{ \
-		CPU.Cycles += speed; \
-		while (CPU.Cycles >= CPU.NextEvent) \
-			S9xDoHEventProcessing(); \
+		return (SLOW_ONE_CYCLE);
 	}
 
-#define addCyclesInMemoryAccess_x2 \
-	if (!CPU.InDMAorHDMA) \
-	{ \
-		CPU.Cycles += speed << 1; \
-		while (CPU.Cycles >= CPU.NextEvent) \
-			S9xDoHEventProcessing(); \
-	}
+	if ((address + 0x6000) & 0x4000)
+		return (SLOW_ONE_CYCLE);
 
-#else
+	if ((address - 0x4000) & 0x7e00)
+		return (ONE_CYCLE);
 
-#define addCyclesInMemoryAccess \
-	if (!CPU.InDMAorHDMA) \
-		CPU.Cycles += speed;
+	return (TWO_CYCLES);
+}
 
-#define addCyclesInMemoryAccess_x2 \
-	if (!CPU.InDMAorHDMA) \
-		CPU.Cycles += speed << 1;
+uint8 S9xGetByteFromRegister(uint8 *GetAddress, uint32 Address)
+{
+   uint8	byte;
+   int32    speed    = memory_speed(Address);
 
-#endif
+   switch ((intptr_t) GetAddress)
+   {
+      case MAP_CPU:
+         byte = S9xGetCPU(Address & 0xffff);
+         break;
 
-int32 memory_speed (uint32 address);
+      case MAP_PPU:
+         if (CPU.InDMAorHDMA && (Address & 0xff00) == 0x2100)
+            return (OpenBus);
 
-#endif
+         byte = S9xGetPPU(Address & 0xffff);
+         break;
+
+      case MAP_LOROM_SRAM:
+      case MAP_SA1RAM:
+         // Address & 0x7fff   : offset into bank
+         // Address & 0xff0000 : bank
+         // bank >> 1 | offset : SRAM address, unbound
+         // unbound & SRAMMask : SRAM offset
+         byte = *(Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask));
+         break;
+
+      case MAP_LOROM_SRAM_B:
+         byte = *(Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB));
+         break;
+
+      case MAP_HIROM_SRAM:
+      case MAP_RONLY_SRAM:
+         byte = *(Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask));
+         break;
+
+      case MAP_BWRAM:
+         byte = *(Memory.BWRAM + ((Address & 0x7fff) - 0x6000));
+         break;
+
+      case MAP_DSP:
+         byte = S9xGetDSP(Address & 0xffff);
+         break;
+
+      case MAP_SPC7110_ROM:
+         byte = S9xGetSPC7110Byte(Address);
+         break;
+
+      case MAP_SPC7110_DRAM:
+         byte = S9xGetSPC7110(0x4800);
+         break;
+
+      case MAP_C4:
+         byte = S9xGetC4(Address & 0xffff);
+         break;
+
+      case MAP_OBC_RAM:
+         byte = S9xGetOBC1(Address & 0xffff);
+         break;
+
+      case MAP_SETA_DSP:
+         byte = S9xGetSetaDSP(Address);
+         break;
+
+      case MAP_SETA_RISC:
+         byte = S9xGetST018(Address);
+         break;
+
+      case MAP_BSX:
+         byte = S9xGetBSX(Address);
+         break;
+
+      case MAP_NONE:
+      default:
+         byte = OpenBus;
+         break;
+   }
+
+   addCyclesInMemoryAccess;
+   return (byte);
+}
