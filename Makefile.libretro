@@ -76,7 +76,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
 endif
 
 #CC         = gcc
-TARGET_NAME	:= snes9x_next
+TARGET_NAME	:= snes9x2010
 LIBM		= -lm
 
 ifeq ($(STATIC_LINKING),1)
