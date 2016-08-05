@@ -1,4 +1,4 @@
-TARGET_NAME ?= snes9x_next
+TARGET_NAME ?= snes9x2010
 
 ifeq ($(STATIC_LINKING), 1)
   TARGET = $(TARGET_NAME)_libretro_$(platform).a

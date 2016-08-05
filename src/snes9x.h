@@ -179,7 +179,7 @@
 #define _SNES9X_H_
 
 #ifndef VERSION
-#define VERSION	"Next"
+#define VERSION	"2010"
 #endif
 
 #ifdef __cplusplus

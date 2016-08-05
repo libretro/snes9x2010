@@ -1,9 +1,9 @@
-Package: com.libretro.snes9x_next
-Name: snes9x_next
+Package: com.libretro.snes9x2010
+Name: snes9x2010
 Depends: 
 Version: 0.0.1
 Architecture: iphoneos-arm
-Description: Libretro iOS core of SNES9x Next
+Description: Libretro iOS core of Snes9x 2010
 Maintainer: libretro
 Author: libretro
 Section: System
