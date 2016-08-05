@@ -283,7 +283,6 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB);
 bool8 LoadSufamiTurbo (const char *cartA, const char *cartB);
 bool8 LoadSameGame (const char *cartA, const char *cartB);
 bool8 LoadSRAM (const char *filename);
-bool8 SaveSRAM (const char *filename);
 
 void	InitROM (void);
 

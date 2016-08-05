@@ -1254,20 +1254,6 @@ static bool8 LoadSRTC (void)
 	return (TRUE);
 }
 
-static bool8 SaveSRTC (void)
-{
-	FILE *fp;
-
-	fp = fopen(S9xGetFilename(".rtc", SRAM_DIR), "wb");
-	if (!fp)
-		return (FALSE);
-
-	fwrite(RTCData.reg, 1, 20, fp);
-	fclose(fp);
-
-	return (TRUE);
-}
-
 bool8 LoadSRAM (const char *filename)
 {
 	FILE	*file;
@@ -1350,62 +1336,6 @@ bool8 LoadSRAM (const char *filename)
 	}
 
 	return (TRUE);
-}
-
-bool8 SaveSRAM (const char *filename)
-{
-	FILE	*file;
-	int	size;
-	char	sramName[PATH_MAX + 1];
-
-	if (Settings.SuperFX && Memory.ROMType < 0x15) /* doesn't have SRAM */
-		return (TRUE);
-
-	if (Settings.SA1 && Memory.ROMType == 0x34)    /* doesn't have SRAM */
-		return (TRUE);
-
-	strcpy(sramName, filename);
-
-	if (Multi.cartType && Multi.sramSizeB)
-	{
-		char	name[PATH_MAX + 1], temp[PATH_MAX + 1];
-
-		strcpy(temp, Memory.ROMFilename);
-		strcpy(Memory.ROMFilename, Multi.fileNameB);
-		strcpy(name, S9xGetFilename(".srm", SRAM_DIR));
-
-		size = (1 << (Multi.sramSizeB + 3)) * 128;
-
-		file = fopen(name, "wb");
-		if (file)
-		{
-			fwrite((char *) Multi.sramB, size, 1, file);
-			fclose(file);
-		}
-
-		strcpy(Memory.ROMFilename, temp);
-	}
-
-	size = Memory.SRAMSize ? (1 << (Memory.SRAMSize + 3)) * 128 : 0;
-	if (size > 0x20000)
-		size = 0x20000;
-
-	if (size)
-	{
-		file = fopen(sramName, "wb");
-		if (file)
-		{
-			fwrite((char *) Memory.SRAM, size, 1, file);
-			fclose(file);
-
-			if (Settings.SRTC || Settings.SPC7110RTC)
-				SaveSRTC();
-
-			return (TRUE);
-		}
-	}
-
-	return (FALSE);
 }
 
 #define MAP_INITIALIZE() \
