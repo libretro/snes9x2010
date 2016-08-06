@@ -1081,12 +1081,11 @@ static FreezeData	SnapBSX[] =
 	ARRAY_ENTRY(6, test2192, 32, uint8_ARRAY_V)
 };
 
-static bool8 S9xOpenSnapshotFile(const char* filepath, const char * file_mode, STREAM *file)
+static bool8 S9xOpenSnapshotFile(const char * file_mode, STREAM *file)
 {
-	if((*file = OPEN_STREAM(filepath, file_mode)) != 0)
+	if((*file = OPEN_STREAM("", file_mode)) != 0)
 		return (TRUE);
-	else
-		return (FALSE);
+   return (FALSE);
 }
 
 static void FreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
@@ -1352,11 +1351,9 @@ void S9xFreezeToStream (STREAM stream)
 
 bool8 S9xFreezeGame (const char *filename)
 {
-	STREAM	stream;
+	STREAM	stream = NULL;
 
-	stream = NULL;
-
-	if (S9xOpenSnapshotFile(filename, "wb", &stream))
+	if (S9xOpenSnapshotFile("wb", &stream))
 	{
 		S9xFreezeToStream(stream);
 		CLOSE_STREAM(stream);
@@ -1369,14 +1366,9 @@ bool8 S9xFreezeGame (const char *filename)
 
 bool8 S9xUnfreezeGame (const char * filename)
 {
-	STREAM	stream;
-	char	drive[_MAX_DRIVE + 1], dir[PATH_MAX + 1], def[PATH_MAX + 1], ext[PATH_MAX + 1];
+	STREAM stream = NULL;
 
-	stream = NULL;
-
-	_splitpath(filename, drive, dir, def, ext);
-
-	if (S9xOpenSnapshotFile(filename, "rb", &stream))
+	if (S9xOpenSnapshotFile("rb", &stream))
 	{
 		int result = S9xUnfreezeFromStream(stream);
 		CLOSE_STREAM(stream);
@@ -1394,24 +1386,20 @@ bool8 S9xUnfreezeGame (const char * filename)
 
 static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
 {
-	char	buffer[20], *junk;
-	int	len, rem;
-	size_t	l;
-	long	rewind;
-
-	rewind = FIND_STREAM(stream);
-	len = 0;
-	rem = 0;
-	l = READ_STREAM(buffer, 11, stream);
+	char	buffer[20];
+   int      len = 0;
+   int      rem = 0;
+	long	rewind = FIND_STREAM(stream);
+	size_t     l = READ_STREAM(buffer, 11, stream);
 	buffer[l] = 0;
 
 	if (l != 11 || strncmp(buffer, name, 3) != 0 || buffer[3] != ':')
-	{
-	err:
-		/*fprintf(stdout, "absent: %s(%d); next: '%.11s'\n", name, size, buffer);*/
-		REVERT_STREAM(stream, FIND_STREAM(stream) - l, 0);
-		return (WRONG_FORMAT);
-	}
+   {
+err:
+      /*fprintf(stdout, "absent: %s(%d); next: '%.11s'\n", name, size, buffer);*/
+      REVERT_STREAM(stream, FIND_STREAM(stream) - l, 0);
+      return (WRONG_FORMAT);
+   }
 
 	if (buffer[4] == '-')
 	{
@@ -1442,7 +1430,7 @@ static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int siz
 
 	if (rem)
 	{
-		junk = (char*)malloc(rem);
+		char *junk = (char*)malloc(rem);
 		len = READ_STREAM(junk, rem, stream);
 		free(junk);
 		if (len != rem)
@@ -1474,9 +1462,8 @@ static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, in
 
 static int UnfreezeStructCopy (STREAM stream, const char *name, uint8 **block, FreezeData *fields, int num_fields, int version)
 {
-	int i, len;
-
-	len = 0;
+	int i;
+	int len = 0;
 
 	for ( i = 0; i < num_fields; i++)
 	{
