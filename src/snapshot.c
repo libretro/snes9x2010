@@ -1620,19 +1620,37 @@ int S9xUnfreezeFromStream (STREAM stream)
 {
 	struct SDMASnapshot	dma_snap;
 	struct SControlSnapshot	ctl_snap;
-	int		result = SUCCESS;
-	int		version, len;
+	int		version;
 	char		buffer[PATH_MAX + 1];
 	uint8		hdma_byte;
-	uint8		*local_cpu, *local_registers, *local_ppu, *local_dma,
-			*local_vram, *local_ram, *local_sram, *local_fillram,
-			*local_apu_sound, *local_control_data, *local_timing_data,
-			*local_superfx, *local_sa1, *local_sa1_registers, *local_dsp1,
-			*local_dsp2, *local_dsp4, *local_cx4_data, *local_st010,
-			*local_obc1, *local_obc1_data, *local_spc7110, *local_srtc,
-			*local_rtc_data, *local_bsx_data;
+	int		result            = SUCCESS;
+	uint8 *local_cpu           = NULL;
+	uint8 *local_registers     = NULL;
+	uint8 *local_ppu           = NULL;
+	uint8 *local_dma           = NULL;
+	uint8 *local_vram          = NULL;
+	uint8 *local_ram           = NULL;
+	uint8 *local_sram          = NULL;
+	uint8 *local_fillram       = NULL;
+	uint8 *local_apu_sound     = NULL;
+	uint8 *local_control_data  = NULL;
+	uint8 *local_timing_data   = NULL;
+	uint8 *local_superfx       = NULL;
+	uint8 *local_sa1           = NULL;
+	uint8 *local_sa1_registers = NULL;
+	uint8 *local_dsp1          = NULL;
+	uint8 *local_dsp2          = NULL;
+	uint8 *local_dsp4          = NULL;
+	uint8 *local_cx4_data      = NULL;
+	uint8 *local_st010         = NULL;
+	uint8 *local_obc1          = NULL;
+	uint8 *local_obc1_data     = NULL;
+	uint8 *local_spc7110       = NULL;
+	uint8 *local_srtc          = NULL;
+	uint8 *local_rtc_data      = NULL;
+	uint8 *local_bsx_data      = NULL;
+	int len = strlen(SNAPSHOT_MAGIC) + 1 + 4 + 1;
 
-	len = strlen(SNAPSHOT_MAGIC) + 1 + 4 + 1;
 	if (READ_STREAM(buffer, len, stream) != len)
 		return (WRONG_FORMAT);
 
@@ -1647,31 +1665,6 @@ int S9xUnfreezeFromStream (STREAM stream)
 	if (result != SUCCESS)
 		return (result);
 
-	local_cpu           = NULL;
-	local_registers     = NULL;
-	local_ppu           = NULL;
-	local_dma           = NULL;
-	local_vram          = NULL;
-	local_ram           = NULL;
-	local_sram          = NULL;
-	local_fillram       = NULL;
-	local_apu_sound     = NULL;
-	local_control_data  = NULL;
-	local_timing_data   = NULL;
-	local_superfx       = NULL;
-	local_sa1           = NULL;
-	local_sa1_registers = NULL;
-	local_dsp1          = NULL;
-	local_dsp2          = NULL;
-	local_dsp4          = NULL;
-	local_cx4_data      = NULL;
-	local_st010         = NULL;
-	local_obc1          = NULL;
-	local_obc1_data     = NULL;
-	local_spc7110       = NULL;
-	local_srtc          = NULL;
-	local_rtc_data      = NULL;
-	local_bsx_data      = NULL;
 
 	do
 	{
