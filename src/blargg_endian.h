@@ -15,29 +15,7 @@
 #define BLARGG_NONPORTABLE 1
 #endif
 
-/* BLARGG_COMPILER_HAS_BOOL: If 0, provides bool support for old compiler. If 1, */
-/* compiler is assumed to support bool. If undefined, availability is determined. */
-#ifndef BLARGG_COMPILER_HAS_BOOL
-	#if defined (__MWERKS__)
-		#if !__option(bool)
-			#define BLARGG_COMPILER_HAS_BOOL 0
-		#endif
-	#elif defined (_MSC_VER)
-		#if _MSC_VER < 1100
-			#define BLARGG_COMPILER_HAS_BOOL 0
-		#endif
-	#elif defined (__GNUC__)
-		/* supports bool */
-	#elif __cplusplus < 199711
-		#define BLARGG_COMPILER_HAS_BOOL 0
-	#endif
-#endif
-
-#if defined (BLARGG_COMPILER_HAS_BOOL) && !BLARGG_COMPILER_HAS_BOOL
-	typedef int bool;
-	const bool true  = 1;
-	const bool false = 0;
-#endif
+#include <boolean.h>
 
 #if UINT_MAX < 0xFFFFFFFF || ULONG_MAX == 0xFFFFFFFF
 	typedef unsigned long blargg_ulong;
@@ -45,13 +23,7 @@
 	typedef unsigned blargg_ulong;
 #endif
 
-/* HAVE_STDINT_H: If defined, use <stdint.h> for int8_t etc. */
-#if defined (HAVE_STDINT_H)
-	#include <stdint.h>
-/* HAVE_INTTYPES_H: If defined, use <stdint.h> for int8_t etc. */
-#elif defined (HAVE_INTTYPES_H)
-	#include <inttypes.h>
-#endif
+#include <stdint.h>
 
 /* BLARGG_CPU_CISC: Defined if CPU has very few general-purpose registers (< 16) */
 #if defined (_M_IX86) || defined (_M_IA64) || defined (__i486__) || \
