@@ -214,8 +214,6 @@ void S9xEnableCheat (uint32);
 void S9xDisableCheat (uint32);
 void S9xAddCheat (bool8, bool8, uint32, uint8);
 void S9xInitCheatData (void);
-bool8 S9xLoadCheatFile (const char *);
-bool8 S9xSaveCheatFile (const char *);
 bool8 S9xCheatEnabled (uint32);
 const char * S9xGetCheatName(uint8 cheat_no);
 

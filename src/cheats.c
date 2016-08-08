@@ -432,15 +432,3 @@ void S9xApplyCheats (void)
 				S9xApplyCheat(i);
 	}
 }
-
-bool8 S9xLoadCheatFile (const char *filename)
-{
-	Cheat.num_cheats = 0;
-
-	return (TRUE);
-}
-
-bool8 S9xSaveCheatFile (const char *filename)
-{
-   return (TRUE);
-}
