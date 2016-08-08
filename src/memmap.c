@@ -1050,8 +1050,6 @@ again:
 	memset(&SNESGameFixes, 0, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
 
-	S9xLoadCheatFile(S9xGetFilename(".cht", CHEAT_DIR));
-
 	InitROM();
 
 	S9xInitCheatData();
@@ -1122,8 +1120,6 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB)
 
 	memset(&SNESGameFixes, 0, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
-
-	S9xLoadCheatFile(S9xGetFilename(".cht", CHEAT_DIR));
 
 	InitROM();
 

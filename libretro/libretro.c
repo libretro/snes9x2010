@@ -900,9 +900,7 @@ void S9xDeinitUpdate(int width, int height)
 }
 
 /* Dummy functions that should probably be implemented correctly later. */
-const char* S9xGetFilename(const char* in, uint32_t dirtype) { return in; }
 const char* S9xGetDirectory(uint32_t dirtype) { return NULL; }
-const char* S9xChooseFilename(bool8 a) { return NULL; }
 
 void S9xMessage(int a, int b, const char* msg)
 {
