@@ -191,11 +191,7 @@
 #define RIGHTSHIFT_int32_IS_SAR
 #endif
 
-#ifdef __LIBRETRO__
 #define PIXEL_FORMAT RGB565
-#else
-#define PIXEL_FORMAT RGB555
-#endif
 
 typedef unsigned char		bool8;
 #ifdef HAVE_STDINT_H
