@@ -622,12 +622,12 @@ static void report_buttons (void)
 void retro_run (void)
 {
    bool updated = false;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+   check_variables();
+   
    poll_cb();
    report_buttons();
    S9xMainLoop();
-   
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
-   check_variables();
 }
 
 size_t retro_serialize_size (void)
