@@ -312,7 +312,7 @@ endif
 # Emscripten
 else ifeq ($(platform), emscripten)
 	EXT    ?= bc
-	TARGET := $(TARGET_NAME)_libretro_$(emscripten).$(EXT)
+	TARGET := $(TARGET_NAME)_libretro_emscripten.$(EXT)
 	STATIC_LINKING=1
 
 # GCW0
