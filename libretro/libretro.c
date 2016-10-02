@@ -873,11 +873,12 @@ unsigned retro_get_region (void)
 
 void S9xDeinitUpdate(int width, int height)
 {
-	GFX.Pitch = 2048;		/* Pitch 1024 -> 2048 */
-
-	if (height == 448 || height == 478)
+   if (height == 448 || height == 478){
 		GFX.Pitch = 1024;	/* Pitch 2048 -> 1024 */
+   }
+   else GFX.Pitch = 2048;		/* Pitch 1024 -> 2048 */
 
+   
    // TODO: Reverse case.
    if (!use_overscan)
    {
