@@ -1187,9 +1187,7 @@ static void dsp_reset (void)
 	};
 
 	/* Resets DSP and uses supplied values to initialize registers */
-
-   for (i = 0; i < REGISTER_COUNT; i++)
-      dsp_m.regs[i] = initial_regs[i];
+   memcpy(dsp_m.regs,initial_regs,REGISTER_COUNT);
 	
 	/* Internal state */
 	for ( i = VOICE_COUNT; --i >= 0; )
