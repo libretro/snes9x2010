@@ -584,8 +584,19 @@ static void snes_init (void)
          log_cb(RETRO_LOG_ERROR, "Failed to init Memory or APU.\n");
       exit(1);
    }
+   
+   //this cant be exactliy one frame because then
+   //there is a race condition between audio out and
+   //generating new audio and if the device isnt infintely fast
+   //audio out will win(however slightly depending on device speed)causing popping on some devices
+   //1000(ms in second) / 60(frames in second) = 16.6666(6->infinite)
+   
+   //this needs to be applied to all snes9x cores
+   
+   //not sure if 20ms is best but its much better than 16!(Feel free to mess around with it)
+   //S9xInitSound(16, 0);
+   S9xInitSound(20, 0);
 
-   S9xInitSound(16, 0);
    S9xSetSamplesAvailableCallback(S9xAudioCallback);
 
    GFX.Pitch = use_overscan ? 1024 : 2048; // FIXME: What is this supposed to do? Overscan has nothing to do with anything like this. If this is the Wii performance hack, it should be done differently.
