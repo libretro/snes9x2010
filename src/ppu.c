@@ -357,19 +357,19 @@ static void SetupOBJ (void)
 	int	Height, Y_two, SmallWidth, SmallHeight, LargeWidth, LargeHeight, inc, startline;
 	uint8	S, Y_one, line;
 
-	/* default */
-	SmallWidth	= objsize_array[4][0];
-	SmallHeight	= objsize_array[4][1];
-	LargeWidth	= objsize_array[4][2];
-	LargeHeight	= objsize_array[4][3];
-
 	if(PPU.OBJSizeSelect < 8)
 	{
 		SmallWidth	= objsize_array[PPU.OBJSizeSelect][0];
 		SmallHeight	= objsize_array[PPU.OBJSizeSelect][1];
 		LargeWidth	= objsize_array[PPU.OBJSizeSelect][2];
 		LargeHeight	= objsize_array[PPU.OBJSizeSelect][3];
-	}
+   }else{
+      /* default */
+      SmallWidth	= objsize_array[4][0];
+      SmallHeight	= objsize_array[4][1];
+      LargeWidth	= objsize_array[4][2];
+      LargeHeight	= objsize_array[4][3];
+   }
 
 	inc = IPPU.InterlaceOBJ ? 2 : 1;
 	startline = (IPPU.InterlaceOBJ && GFX.InterlaceFrame) ? 1 : 0;
@@ -941,7 +941,7 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 			uint32 t1 = 0;
 			uint32 t2 = 16;
 			uint16 *b1 = SC0;
-			uint16 *b2=  SC1;
+			uint16 *b2 = SC1;
 
 			Y2 = Y << HiresInterlace;
 			VOffset = LineData[Y].BG[bg].VOffset + HiresInterlace;
