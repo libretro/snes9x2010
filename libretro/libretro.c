@@ -401,7 +401,7 @@ static void S9xAudioCallback()
 {
    size_t avail;
    /* Just pick a big buffer. We won't use it all. */
-   static int16_t audio_buf[0x10000];
+   static int16_t audio_buf[0x20000];
 
    S9xFinalizeSamples();
    avail = S9xGetSampleCount();
@@ -585,21 +585,14 @@ static void snes_init (void)
       exit(1);
    }
    
-   //this cant be exactliy one frame because then
-   //there is a race condition between audio out and
-   //generating new audio and if the device isnt infintely fast
-   //audio out will win(however slightly depending on device speed)causing popping on some devices
-   //1000(ms in second) / 60(frames in second) = 16.6666(6->infinite)
+   //very slow devices will still pop
    
    //this needs to be applied to all snes9x cores
    
-   //not sure if 20ms is best but its much better than 16!(Feel free to mess around with it)
-   
-   //increaseing the buffer size should not cause extra lag
+   //increasing the buffer size does not cause extra lag(tested with 1000ms buffer)
    //bool8 S9xInitSound (int buffer_ms, int lag_ms)
-   
-   //S9xInitSound(16, 0);
-   S9xInitSound(16 * 4, 0);
+
+   S9xInitSound(1000, 0);//just give it a 1 second buffer
 
    S9xSetSamplesAvailableCallback(S9xAudioCallback);
 
