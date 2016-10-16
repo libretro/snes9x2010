@@ -594,8 +594,12 @@ static void snes_init (void)
    //this needs to be applied to all snes9x cores
    
    //not sure if 20ms is best but its much better than 16!(Feel free to mess around with it)
+   
+   //increaseing the buffer size should not cause extra lag
+   //bool8 S9xInitSound (int buffer_ms, int lag_ms)
+   
    //S9xInitSound(16, 0);
-   S9xInitSound(20, 0);
+   S9xInitSound(16 * 4, 0);
 
    S9xSetSamplesAvailableCallback(S9xAudioCallback);
 
