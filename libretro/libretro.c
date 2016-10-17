@@ -232,7 +232,7 @@ static void check_variables(void)
    
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (strcmp(var.value, "disabled") == 0)
+      if (strcmp(var.value, "Disabled(10MHz)") == 0)
       {
          Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
          reset_sfx = true;
@@ -255,6 +255,16 @@ static void check_variables(void)
       else if (strcmp(var.value, "100MHz") == 0)
       {
          Settings.SuperFXSpeedPerLine = 0.417 * 100.5e6;
+         reset_sfx = true;
+      }
+      else if (strcmp(var.value, "Underclock(5MHz)") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 5.5e6;
+         reset_sfx = true;
+      }
+      else if (strcmp(var.value, "Underclock(8MHz)") == 0)
+      {
+         Settings.SuperFXSpeedPerLine = 0.417 * 8.5e6;
          reset_sfx = true;
       }
    }
@@ -356,7 +366,7 @@ static bool use_overscan;
 void retro_set_environment(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
-      { "snes9x_next_overclock", "SuperFX Overclock; disabled|40MHz|60MHz|80MHz|100MHz" },
+      { "snes9x_next_overclock", "SuperFX Overclock; Disabled(10MHz)|40MHz|60MHz|80MHz|100MHz|Underclock(5MHz)|Underclock(8MHz)" },
       { NULL, NULL },
    };
 

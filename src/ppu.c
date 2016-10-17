@@ -469,19 +469,20 @@ static void SetupOBJ (void)
 
 		for (S = 0; S < 128; S++)
 		{
-			int HPos;
-			GFX.OBJWidths[S] = SmallWidth;
-			Height = SmallHeight;
+         int HPos = PPU.OBJ[S].HPos;
+         if (HPos == -256)
+            HPos = 256;
 
 			if (PPU.OBJ[S].Size)
 			{
 				GFX.OBJWidths[S] = LargeWidth;
 				Height = LargeHeight;
 			}
-
-			HPos = PPU.OBJ[S].HPos;
-			if (HPos == -256)
-				HPos = 256;
+         else
+         {
+            GFX.OBJWidths[S] = SmallWidth;
+            Height = SmallHeight;
+         }
 
 			if (HPos > -GFX.OBJWidths[S] && HPos <= 256)
 			{
@@ -1523,14 +1524,12 @@ static INLINE void DrawBackgroundMode7 (int bg, void (*DrawMath) (uint32, uint32
 
 static INLINE void RenderScreen_SFXSpeedupHack()
 {
-	uint8	BGActive;
-	int		D;
+	uint8	BGActive = Memory.FillRAM[0x212d];
+	int	D = (Memory.FillRAM[0x2130] & 2) << 4; /* 'do math' depth flag */
 
 	GFX.S = GFX.SubScreen;
 	GFX.DB = GFX.SubZBuffer;
 	GFX.Clip = IPPU.Clip[1];
-	BGActive = Memory.FillRAM[0x212d];
-	D = (Memory.FillRAM[0x2130] & 2) << 4; /* 'do math' depth flag */
 
 	if (BGActive & 0x10)
 	{
@@ -1729,11 +1728,10 @@ if(prev_screen != PPU.BGMode) \
 
 static INLINE void RenderScreen (bool8 sub)
 {
-	uint8	BGActive;
+	uint8	BGActive = Memory.FillRAM[0x212c+sub];
 	int		D;
 
 	GFX.Clip = IPPU.Clip[sub];
-	BGActive = Memory.FillRAM[0x212c+sub];
 
 	if (!sub)
 	{
