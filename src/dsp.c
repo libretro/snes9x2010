@@ -2974,7 +2974,7 @@ static void DSP3_OP1E_C (void)
 	DSP3.op1e_max_radius = (uint8) ((DSP3.DR & 0xff00) >> 8);
 
 	if (DSP3.op1e_min_radius == 0)
-		DSP3.op1e_min_radius++;
+		DSP3.op1e_min_radius = 1;
 
 	if (DSP3.op1e_max_path_radius >= DSP3.op1e_min_radius)
 		DSP3.op1e_min_radius = DSP3.op1e_max_path_radius + 1;
