@@ -195,12 +195,7 @@
 
 #define PIXEL_FORMAT RGB565
 
-#ifdef __bool_true_false_are_defined
-typedef bool               bool8;
-#else
 typedef unsigned char		bool8;
-#endif
-
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
