@@ -3492,8 +3492,7 @@ bool8 S9xInitAPU (void)
 	/* unpack cycle table */
 	for ( i = 0; i < 128; i++ )
 	{
-		int n;
-		n = cycle_table [i];
+		int n = cycle_table [i];
 		m.cycle_table [i * 2 + 0] = n >> 4;
 		m.cycle_table [i * 2 + 1] = n & 0x0F;
 	}
