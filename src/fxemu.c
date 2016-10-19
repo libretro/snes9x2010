@@ -177,6 +177,7 @@
  ***********************************************************************************/
 
 #include <string.h>
+#include <setjmp.h>
 #include "snes9x.h"
 #include "memmap.h"
 #include "getset.h"
@@ -186,6 +187,7 @@
 /* Set this define if you wish the plot instruction to check for y-pos limits (I don't think it's nessecary)*/
 /* #define CHECK_LIMITS*/
 
+jmp_buf beforesfx;//speedhack
 
 /*
  Codes used:
@@ -212,6 +214,7 @@ static void fx_stop (void)
 	GSU.vPipe = 1;
 	CLRFLAGS;
 	R15++;
+   longjmp(beforesfx,1);//speedhack
 }
 
 /* 01 - nop - no operation*/
@@ -229,10 +232,8 @@ static void fx_cache (void)
 	if (GSU.vCacheBaseReg != c || !GSU.bCacheActive)
 	{
 		GSU.vCacheFlags = 0;
-		GSU.bCacheActive = FALSE;
 		GSU.vCacheBaseReg = c;
 		GSU.bCacheActive = TRUE;
-
 	}
 
 	CLRFLAGS;
@@ -4621,23 +4622,42 @@ void S9xSuperFXExec (void)
 	{
 		/* Execute GSU session*/
 		CF(IRQ);
+      
+      //setjmp,longjmp is better since no "isRunning" check needs to be performed every opcode
+      int location = setjmp(beforesfx);//speedhack
 
+      if(location == 1){//if above just returned
+         /* Store GSU registers*/
+         fx_writeRegisterSpace();
+         /* EOF EMULATE FX CHIP*/
+         
+         GSUStatus = Memory.FillRAM[0x3000 + GSU_SFR] | (Memory.FillRAM[0x3000 + GSU_SFR + 1] << 8);
+         if ((GSUStatus & (FLG_G | FLG_IRQ)) == FLG_IRQ)
+         {
+            S9X_SET_IRQ(GSU_IRQ_SOURCE);
+         }
+         return;
+      }
+      
 		/* GSU executions functions*/
 		GSU.vCounter = nInstructions;
 		READR14;
-		while (TF(G) && (GSU.vCounter-- > 0))
+      while (GSU.vCounter-- > 0)
 		{
 			/* Execute instruction from the pipe, and fetch next byte to the pipe*/
 			uint32	vOpcode = (uint32) PIPE;
 			FETCHPIPE;
 			(*fx_OpcodeTable[(GSU.vStatusReg & 0x300) | vOpcode])();
 		}
+      longjmp(beforesfx,1);//speedhack
 	}
 	else
 	{
 		CF(G);
 	}
 
+//if address is invalid sfx does not run,meaning varibles stay the same and this is not needed
+#if 0
 	/* Store GSU registers*/
 	fx_writeRegisterSpace();
 	/* EOF EMULATE FX CHIP*/
@@ -4647,6 +4667,7 @@ void S9xSuperFXExec (void)
 	{
 		S9X_SET_IRQ(GSU_IRQ_SOURCE);
 	}
+#endif
 }
 
 
