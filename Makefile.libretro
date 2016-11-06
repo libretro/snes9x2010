@@ -1,5 +1,5 @@
 DEBUG=0
-GIT_VERSION := "Git ($(shell git describe --abbrev=4 --dirty --always --tags))"
+GIT_VERSION := " ($(shell git describe --abbrev=4 --dirty --always --tags))"
 HAVE_GRIFFIN=0
 STATIC_LINKING=0
 STATIC_LINKING_LINK=0

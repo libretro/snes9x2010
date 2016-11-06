@@ -213,6 +213,8 @@
 #define RETRO_DEVICE_LIGHTGUN_JUSTIFIER    RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 1)
 #define RETRO_DEVICE_LIGHTGUN_JUSTIFIERS   RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 2)
 
+#define CORE_VERSION "1.52.4"
+
 static retro_log_printf_t log_cb = NULL;
 static retro_video_refresh_t video_cb = NULL;
 static retro_input_poll_t poll_cb = NULL;
@@ -403,9 +405,9 @@ void retro_get_system_info(struct retro_system_info *info)
    info->need_fullpath    = false;
    info->valid_extensions = "smc|fig|sfc|gd3|gd7|dx2|bsx|swc";
 #ifdef GIT_VERSION
-   info->library_version = GIT_VERSION;
+   info->library_version = CORE_VERSION GIT_VERSION;
 #else
-   info->library_version  = "v1.52.4";
+   info->library_version  = CORE_VERSION;
 #endif
    info->library_name     = "Snes9x 2010";
    info->block_extract    = false;
