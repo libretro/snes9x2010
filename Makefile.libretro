@@ -281,6 +281,16 @@ else ifeq ($(platform), wii)
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
 
+# Nintendo WiiU
+else ifeq ($(platform), wiiu)
+	EXT=a
+	TARGET := $(TARGET_NAME)_libretro_wiiu.$(EXT)
+	CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
+	AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
+	CFLAGS += -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float -D__ppc__ -DMSB_FIRST
+	STATIC_LINKING=1
+	STATIC_LINKING_LINK=1
+
 # ARM
 else ifneq (,$(findstring armv,$(platform)))
 	EXT    ?= so
