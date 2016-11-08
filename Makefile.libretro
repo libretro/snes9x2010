@@ -1,9 +1,14 @@
 DEBUG=0
-GIT_VERSION := " ($(shell git describe --abbrev=4 --dirty --always --tags))"
+GIT_VERSION := " $(shell git describe --dirty --always --tags)"
 HAVE_GRIFFIN=0
 STATIC_LINKING=0
 STATIC_LINKING_LINK=0
 LAGFIX=1
+
+ifeq (,$(findstring (),$(GIT_VERSION)))
+	GIT_VERSION = ""
+endif
+
 
 CORE_DIR := .
 BUILD_DIR = build
