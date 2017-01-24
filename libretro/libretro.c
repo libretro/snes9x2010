@@ -1022,6 +1022,9 @@ bool retro_load_game(const struct retro_game_info *game)
 { 
    int loaded;
    struct retro_memory_map map;
+   
+   if (!game)
+      return false;
 
    init_descriptors();
    memorydesc_c = 0;
