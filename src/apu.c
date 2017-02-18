@@ -1591,11 +1591,9 @@ static void spc_cpu_write_smp_reg_( int data, int time, int addr )
    }
 }
 
-#define BITS_IN_INT (CHAR_BIT * sizeof(int))
-
-static void spc_cpu_write( int data, uint16_t addr, int time )
+static void spc_cpu_write( int32_t data, uint16_t addr, int32_t time )
 {
-	int reg;
+	int32_t reg;
 	/* RAM */
 	m.ram.ram[addr] = (uint8_t) data;
 	reg = addr - 0xF0;
@@ -1610,7 +1608,7 @@ static void spc_cpu_write( int data, uint16_t addr, int time )
 			   if ( reg != 2 && reg != 4 && reg != 5 && reg != 6 && reg != 7 )
 			   TODO: this is a bit on the fragile side */
 
-			if ( ((~0x2F00 << (BITS_IN_INT - 16)) << reg) < 0 ) /* 36% */
+         if ( ((~0x2F00 << 16) << reg) < 0 ) /* 36% */
 			{
 				if ( reg == R_DSPDATA ) /* 99% */
 				{
@@ -1638,20 +1636,20 @@ static void spc_cpu_write( int data, uint16_t addr, int time )
 
 /* CPU read */
 
-static int spc_cpu_read( uint16_t addr, int time )
+static int spc_cpu_read( uint16_t addr, int32_t time )
 {
-	int result = m.ram.ram[addr];
-	int reg = addr - 0xF0;
+	int32_t result = m.ram.ram[addr];
+	int32_t reg = addr - 0xF0;
 
 	if ( reg >= 0 ) /* 40% */
 	{
 		reg -= 0x10;
-		if ( (unsigned) reg >= 0xFF00 ) /* 21% */
+		if ( (uint32_t) reg >= 0xFF00 ) /* 21% */
 		{
 			reg += 0x10 - R_T0OUT;
 			
 			/* Timers */
-			if ( (unsigned) reg < TIMER_COUNT ) /* 90% */
+			if ( (uint32_t) reg < TIMER_COUNT ) /* 90% */
 			{
 				Timer* t = &m.timers [reg];
 				if ( time >= t->next_time )
@@ -1662,16 +1660,14 @@ static int spc_cpu_read( uint16_t addr, int time )
 			/* Other registers */
 			else /* 10% */
 			{
-				int reg_tmp;
-
-				reg_tmp = reg + R_T0OUT;
+				int32_t reg_tmp = reg + R_T0OUT;
 				result = m.smp_regs[1][reg_tmp];
 				reg_tmp -= R_DSPADDR;
 				/* DSP addr and data */
-				if ( (unsigned) reg_tmp <= 1 ) /* 4% 0xF2 and 0xF3 */
+				if ( (uint32_t) reg_tmp <= 1 ) /* 4% 0xF2 and 0xF3 */
 				{
 					result = m.smp_regs[0][R_DSPADDR];
-					if ( (unsigned) reg_tmp == 1 )
+					if ( (uint32_t) reg_tmp == 1 )
 					{
 						RUN_DSP( time, reg_times [m.smp_regs[0][R_DSPADDR] & 0x7F] );
 
@@ -1865,20 +1861,19 @@ loop:
 				  /* fall through */
 			case 0x8F:
 				  { /* MOV dp,#imm */
-					  int i;
-					  int temp = READ_PC( pc + 1 );
+					  int32_t i;
+					  int32_t temp = READ_PC( pc + 1 );
 					  pc += 2;
 
 					  i = dp + temp;
 					  ram [i] = (uint8_t) data;
 					  i -= 0xF0;
-					  if ( (unsigned) i < 0x10 ) /* 76% */
+					  if ( (uint32_t) i < 0x10 ) /* 76% */
 					  {
 						  m.smp_regs[0][i] = (uint8_t) data;
 
 						  /* Registers other than $F2 and $F4-$F7 */
-						  /* if ( i != 2 && i != 4 && i != 5 && i != 6 && i != 7 ) */
-						  if ( ((~0x2F00 << (BITS_IN_INT - 16)) << i) < 0 ) /* 12% */
+                    if ( ((~0x2F00 << 16) << i) < 0 ) /* 12% */
 						  {
 							  if ( i == R_DSPDATA ) /* 99% */
 							  {
