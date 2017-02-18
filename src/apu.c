@@ -1234,7 +1234,7 @@ static void spc_copier_copy(spc_state_copy_t * copier, void* state, size_t size 
 	copier->func(copier->buf, state, size );
 }
 
-static int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size )
+static int spc_copier_copy_int(spc_state_copy_t * copier, int32_t state, int32_t size )
 {
 	uint8_t s [2];
 	SET_LE16( s, state );
@@ -1244,16 +1244,16 @@ static int spc_copier_copy_int(spc_state_copy_t * copier, int state, int size )
 
 static void spc_copier_extra(spc_state_copy_t * copier)
 {
-	int n = 0;
+	int32_t n = 0;
 	n = (uint8_t) spc_copier_copy_int(copier, n, sizeof (uint8_t) );
 
 	if ( n > 0 )
 	{
-		char temp [64];
+		int8_t temp [64];
 		memset( temp, 0, sizeof(temp));
 		do
 		{
-			int size_n = sizeof(temp);
+			int32_t size_n = sizeof(temp);
 			if ( size_n > n )
 				size_n = n;
 			n -= size_n;
@@ -1267,7 +1267,7 @@ static void spc_copier_extra(spc_state_copy_t * copier)
 
 static void NO_OPTIMIZE dsp_copy_state( unsigned char** io, dsp_copy_func_t copy )
 {
-	int i, j;
+	int32_t i, j;
 
 	spc_state_copy_t copier;
 	copier.func = copy;
