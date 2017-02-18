@@ -543,7 +543,9 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 			case 0x03:
 			{
 			#ifdef FAST_LSB_WORD_ACCESS
-				ST010_Scale(*(int16 *) &Memory.SRAM[0x0004], *(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int32 *) Memory.SRAM[0x0010], (int32 *) Memory.SRAM[0x0014]);
+				ST010_Scale(*(int16_t*)&Memory.SRAM[0x0004], *(int16_t*)&Memory.SRAM[0x0000],
+                        *(int16_t*)&Memory.SRAM[0x0002],  (int32_t*)&Memory.SRAM[0x0010],
+                         (int32_t*)&Memory.SRAM[0x0014]);
 			#else
 				int32	x1, y1;
 
@@ -572,7 +574,8 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 			case 0x06:
 			{
 			#ifdef FAST_LSB_WORD_ACCESS
-				ST010_Multiply(*(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int32 *) Memory.SRAM[0x0010]);
+				ST010_Multiply(*(int16_t *)&Memory.SRAM[0x0000], *(int16_t *) &Memory.SRAM[0x0002],
+                  (int32_t *)&Memory.SRAM[0x0010]);
 			#else
 				int32	Product;
 
@@ -648,7 +651,9 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 			case 0x08:
 			{
 			#ifdef FAST_LSB_WORD_ACCESS
-				ST010_Rotate(*(int16 *) &Memory.SRAM[0x0004], *(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int16 *) Memory.SRAM[0x0010], (int16 *) Memory.SRAM[0x0012]);
+				ST010_Rotate(*(int16_t*)&Memory.SRAM[0x0004], *(int16_t*)&Memory.SRAM[0x0000],
+                         *(int16_t*)&Memory.SRAM[0x0002],  (int16_t*)&Memory.SRAM[0x0010],
+                          (int16_t*)&Memory.SRAM[0x0012]);
 			#else
 				int16	x1, y1;
 
@@ -677,7 +682,9 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				Memory.SRAM[0x0007] = Memory.SRAM[0x0003];
 
 			#ifdef FAST_LSB_WORD_ACCESS
-				ST010_OP01(*(int16 *) &Memory.SRAM[0x0000], *(int16 *) &Memory.SRAM[0x0002], (int16 *)Memory.SRAM[0x0000], (int16 *) Memory.SRAM[0x0002], (int16 *) Memory.SRAM[0x0004], (int16 *) Memory.SRAM[0x0010]);
+				ST010_OP01(*(int16_t*)&Memory.SRAM[0x0000], *(int16_t*)&Memory.SRAM[0x0002],
+                        (int16_t*)&Memory.SRAM[0x0000],  (int16_t*)&Memory.SRAM[0x0002],
+                        (int16_t*)&Memory.SRAM[0x0004],  (int16_t*)&Memory.SRAM[0x0010]);
 			#else
 				ST010_OP01(ST010_WORD(0x0000), ST010_WORD(0x0002), &x1, &y1, &Quadrant, &Theta);
 

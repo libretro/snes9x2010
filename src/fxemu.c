@@ -4523,16 +4523,18 @@ static void FxReset (struct FxInfo_s *psFxInfo)
 
 void S9xResetSuperFX (void)
 {
-	float frames_per_second;
+   float frames_per_second;
 
-	/* FIXME: Snes9x can't execute CPU and SuperFX at a time. Don't ask me what is 0.417 :P*/
-	if (Settings.PAL)frames_per_second = 50.0f;
-   else frames_per_second = 60.0f;
+   /* FIXME: Snes9x can't execute CPU and SuperFX at a time. Don't ask me what is 0.417 :P*/
+   if (Settings.PAL)
+      frames_per_second = 50.0f;
+   else
+      frames_per_second = 60.0f;
 
-	SuperFX.speedPerLine = (uint32) (Settings.SuperFXSpeedPerLine * ((1.0f / frames_per_second) / ((float) (Timings.V_Max))));
-	SuperFX.oneLineDone = FALSE;
-	SuperFX.vFlags = 0;
-	FxReset(&SuperFX);
+   SuperFX.speedPerLine = (uint32) (Settings.SuperFXSpeedPerLine * ((1.0f / frames_per_second) / ((float) (Timings.V_Max))));
+   SuperFX.oneLineDone = FALSE;
+   SuperFX.vFlags = 0;
+   FxReset(&SuperFX);
 }
 
 static bool8 fx_checkStartAddress (void)
