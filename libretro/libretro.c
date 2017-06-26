@@ -190,6 +190,7 @@
 
 #include "libretro.h"
 
+#include "../src/boolean.h"
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
 #include "../src/cpuexec.h"
@@ -643,6 +644,7 @@ void retro_init (void)
 {
    struct retro_log_callback log;
    enum retro_pixel_format rgb565;
+   bool achievements             = true;
    if (!environ_cb(RETRO_ENVIRONMENT_GET_OVERSCAN, &use_overscan))
 	   use_overscan = FALSE;
 
@@ -652,7 +654,6 @@ void retro_init (void)
       log_cb = NULL;
 
    // State that the core supports achievements.
-   bool achievements = true;
    environ_cb(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, &achievements);
 
    rgb565 = RETRO_PIXEL_FORMAT_RGB565;
