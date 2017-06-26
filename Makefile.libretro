@@ -7,6 +7,7 @@ LAGFIX=1
 
 CORE_DIR := .
 BUILD_DIR = build
+OBJOUT = -o 
 
 ifeq ($(platform),android_arm64-v8a)
 include $(BUILD_DIR)/Makefile.android_arm64-v8a
@@ -38,6 +39,10 @@ else ifeq ($(platform),wii_ppc)
 include $(BUILD_DIR)/Makefile.wii_ppc
 else ifeq ($(platform),windows_x86)
 include $(BUILD_DIR)/Makefile.windows_x86
+else ifeq ($(platform),windows_msvc2010_x86)
+include $(BUILD_DIR)/Makefile.windows_msvc2010_x86
+else ifeq ($(platform),windows_msvc2010_x64)
+include $(BUILD_DIR)/Makefile.windows_msvc2010_x64
 else ifeq ($(platform),windows_x86_64)
 include $(BUILD_DIR)/Makefile.windows_x86_64
 else
@@ -350,6 +355,9 @@ else ifeq ($(platform), gcw0)
 	CFLAGS += $(PTHREAD_FLAGS) -DHAVE_MKDIR
 	CFLAGS += -ffast-math -march=mips32 -mtune=mips32r2 -mhard-float
 
+else ifeq ($(platform), msvc)
+	OBJOUT = -Fo
+
 # Windows
 else
 	EXT    ?= dll
@@ -409,11 +417,11 @@ $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING_LINK),1)
 	$(AR) rcs $@ $(OBJECTS)
 else
-	$(CC) $(fpic) $(SHARED) $(INCFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBM)
+	$(CC) $(fpic) $(SHARED) $(INCFLAGS) $(LDFLAGS) $(OBJOUT)$@ $(OBJECTS) $(LIBM)
 endif
 
 %.o: %.c
-	$(CC) $(INCFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 clean-objs:
 	rm -rf $(OBJECTS)
