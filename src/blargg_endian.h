@@ -15,7 +15,7 @@
 #define BLARGG_NONPORTABLE 1
 #endif
 
-#include <boolean.h>
+#include "boolean.h"
 
 #if UINT_MAX < 0xFFFFFFFF || ULONG_MAX == 0xFFFFFFFF
 	typedef unsigned long blargg_ulong;
