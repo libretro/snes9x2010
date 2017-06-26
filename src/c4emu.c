@@ -183,7 +183,9 @@
 #include "memmap.h"
 
 #ifdef RIGHTSHIFT_IS_SAR
+#ifndef SAR
 #define SAR(b, n)	((b) >> (n))
+#endif
 #else
 
 static INLINE int8 SAR (const int8 b, const int n)
