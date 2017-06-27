@@ -43,6 +43,8 @@ else ifeq ($(platform),windows_msvc2010_x86)
 include $(BUILD_DIR)/Makefile.windows_msvc2010_x86
 else ifeq ($(platform),windows_msvc2010_x64)
 include $(BUILD_DIR)/Makefile.windows_msvc2010_x64
+else ifeq ($(platform),windows_msvc2015_x64)
+include $(BUILD_DIR)/Makefile.windows_msvc2015_x64
 else ifeq ($(platform),windows_x86_64)
 include $(BUILD_DIR)/Makefile.windows_x86_64
 else
