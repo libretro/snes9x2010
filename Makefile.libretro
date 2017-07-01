@@ -63,10 +63,6 @@ else
 endif
 endif
 
-ifeq ($(LAGFIX),1)
-	CFLAGS += -DLAGFIX
-endif
-
 # system platform
 system_platform = unix
 ifeq ($(shell uname -a),)
@@ -381,12 +377,11 @@ else
 	CFLAGS += -O3 -DNDEBUG -DGIT_VERSION=\"$(GIT_VERSION)\"
 endif
 
-
 include $(BUILD_DIR)/Makefile.common
 
 OBJECTS := $(SOURCES_C:.c=.o)
 
-DEFINES = -DHAVE_STRINGS_H -DHAVE_INTTYPES_H -D__LIBRETRO__ -DRIGHTSHIFT_IS_SAR -DINLINE=inline
+DEFINES = $(COREDEFINES) 
 
 ifeq ($(STATIC_LINKING),1)
 DEFINES += -DSTATIC_LINKING
