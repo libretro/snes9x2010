@@ -185,6 +185,7 @@
 #include "apu.h"
 #include "fxinst.h"
 #include "fxemu.h"
+#include "boolean.h"
 #include "controls.h"
 #include "cheats.h"
 #include "snapshot.h"
