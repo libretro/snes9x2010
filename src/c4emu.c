@@ -1058,7 +1058,8 @@ static void S9XSetC4Square(void)
 {
    int64 b = (int64) READ_3WORD(Memory.C4RAM + 0x1f80);
    int64 c = b << 40;
-   int64	a = SAR(c, 40); /* TODO/FIXME - Compiler stack overflow with MSVC 2005 happens here */
+   int64 a = SAR(c, 30);
+   a = SAR(c, 10);
    a *= a;
    WRITE_3WORD(Memory.C4RAM + 0x1f83, a);
    WRITE_3WORD(Memory.C4RAM + 0x1f86, (a >> 24));
