@@ -1054,6 +1054,16 @@ static void C4Op1F (void)
 	}
 }
 
+static void S9XSetC4Square(void)
+{
+   int64 b = (int64) READ_3WORD(Memory.C4RAM + 0x1f80);
+   int64 c = b << 40;
+   int64	a = SAR(c, 40); /* TODO/FIXME - Compiler stack overflow with MSVC 2005 happens here */
+   a *= a;
+   WRITE_3WORD(Memory.C4RAM + 0x1f83, a);
+   WRITE_3WORD(Memory.C4RAM + 0x1f86, (a >> 24));
+}
+
 void S9xSetC4 (uint8 byte, uint16 Address)
 {
 	Memory.C4RAM[Address - 0x6000] = byte;
@@ -1228,13 +1238,8 @@ void S9xSetC4 (uint8 byte, uint16 Address)
 				}
 
 				case 0x54: /* Square */
-				{
-					int64	a = SAR((int64) READ_3WORD(Memory.C4RAM + 0x1f80) << 40, 40);
-					a *= a;
-					WRITE_3WORD(Memory.C4RAM + 0x1f83, a);
-					WRITE_3WORD(Memory.C4RAM + 0x1f86, (a >> 24));
-					break;
-				}
+            S9XSetC4Square();
+            break;
 
 				case 0x5c: /* Immediate Reg */
 				{
