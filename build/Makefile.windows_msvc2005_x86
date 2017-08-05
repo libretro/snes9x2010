@@ -40,7 +40,7 @@ LIB := $(shell IFS=$$'\n'; cygpath -w "$(VS80COMNTOOLS)../../VC/lib")
 WindowsSdkDir := $(INETSDK)
 
 export INCLUDE := $(INCLUDE);$(WindowsSdkDir)/Include;libretro/msvc/msvc-2005
-export LIB := $(LIB);$(WindowsSdkDir)
+export LIB := $(LIB);$(WindowsSdkDir);$(INETSDK)/Lib
 
 ############
 # Extensions
