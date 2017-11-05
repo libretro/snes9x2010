@@ -3328,14 +3328,16 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 			#ifndef CORRECT_VRAM_READS
 				IPPU.FirstVRAMRead = TRUE;
 			#endif
-				REGISTER_2118(Byte);
+				if (CHECK_INBLANK)
+					REGISTER_2118(Byte);
 				break;
 
 			case 0x2119: // VMDATAH
 			#ifndef CORRECT_VRAM_READS
 				IPPU.FirstVRAMRead = TRUE;
 			#endif
-				REGISTER_2119(Byte);
+				if (CHECK_INBLANK)
+					REGISTER_2119(Byte);
 				break;
 
 			case 0x211a: // M7SEL
@@ -4467,7 +4469,8 @@ static void S9xDoDMA (void)
 										while (count > 1)
 										{
 											Work = *(base + p);
-											REGISTER_2118(Work);
+											if (CHECK_INBLANK)
+												REGISTER_2118(Work);
 											UPDATE_COUNTERS;
 											count--;
 
@@ -4485,7 +4488,8 @@ static void S9xDoDMA (void)
 								if (b)
 								{
 									Work = *(base + p);
-									REGISTER_2118(Work);
+									if (CHECK_INBLANK)
+										REGISTER_2118(Work);
 									UPDATE_COUNTERS;
 								}
 							}
