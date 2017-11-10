@@ -432,6 +432,8 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
 {
    int port = in_port;
 
+   if (port >= 2) return;
+
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -445,7 +447,7 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
       case RETRO_DEVICE_MOUSE:
          retro_devices[port] = RETRO_DEVICE_MOUSE;
 
-         S9xSetController(port, CTL_MOUSE, 0, 0, 0, 0);
+         S9xSetController(port, CTL_MOUSE, port, 0, 0, 0);
 
          /* mapping pointers here */
          S9xMapPointer((BTN_POINTER), S9xGetCommandT("Pointer Mouse1+Superscope+Justifier1"));
