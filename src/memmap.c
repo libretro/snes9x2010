@@ -2448,11 +2448,12 @@ void InitROM (void)
 
 		/* Speedup hack for Star Fox 2/Vortex */
 		if (
-				MATCH_NA("VORTEX") ||			/* Vortex */
-				MATCH_NA("Super Street Fighter21") ||	/* Super Street Fighter II */
-            MATCH_NA("STAR FOX") ||		/* Star Fox (US/JP)*/
-            MATCH_NA("STAR WING") ||		/* Star Wing (EU)*/
-				MATCH_NA("STAR FOX 2"))			/* Star Fox 2 */
+            MATCH_NA("VORTEX") ||			/* Vortex */
+            MATCH_NA("Super Street Fighter21") ||	/* Super Street Fighter II */
+            MATCH_NA("STAR FOX") ||			/* Star Fox (US/JP)*/
+            MATCH_NA("STAR WING") ||			/* Star Wing (EU)*/
+            MATCH_NA("STAR FOX 2") ||			/* Star Fox 2 (Beta) */
+            MATCH_NA("STARFOX2"))			/* Star Fox 2 (SNES Classic) */
 					PPU.SFXSpeedupHack = TRUE;
 				else
 					PPU.SFXSpeedupHack = FALSE;
