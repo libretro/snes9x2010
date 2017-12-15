@@ -188,7 +188,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#include "libretro.h"
+#include <libretro.h>
 
 #include "../src/boolean.h"
 #include "../src/snes9x.h"

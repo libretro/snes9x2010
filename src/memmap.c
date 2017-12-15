@@ -192,7 +192,8 @@
 #include "display.h"
 #include "spc7110dec.h"
 
-#include "../libretro/libretro.h"
+#include <libretro.h>
+
 void S9xAppendMapping(struct retro_memory_descriptor *desc);
 
 #define MAP_LIBRETRO_RAW(flags, ptr, offset, start, select, disconnect, len) \

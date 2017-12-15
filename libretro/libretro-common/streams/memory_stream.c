@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2016 The RetroArch team
+/* Copyright  (C) 2010-2017 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (memory_stream.c).
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../include/streams/memory_stream.h"
+#include <streams/memory_stream.h>
 
 static uint8_t* g_buffer     = NULL;
 static size_t g_size         = 0;
@@ -41,7 +41,7 @@ struct memstream
 
 static void memstream_update_pos(memstream_t *stream)
 {
-   if (stream->ptr > stream->max_ptr)
+   if (stream && stream->ptr > stream->max_ptr)
       stream->max_ptr = stream->ptr;
 }
 
@@ -98,7 +98,7 @@ size_t memstream_read(memstream_t *stream, void *data, size_t bytes)
 
    if (!stream)
       return 0;
-   
+
    avail = stream->size - stream->ptr;
    if (bytes > avail)
       bytes = avail;
@@ -115,7 +115,7 @@ size_t memstream_write(memstream_t *stream, const void *data, size_t bytes)
 
    if (!stream)
       return 0;
-   
+
    avail = stream->size - stream->ptr;
    if (bytes > avail)
       bytes = avail;
