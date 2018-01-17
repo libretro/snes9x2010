@@ -617,9 +617,11 @@ static void snes_init (void)
 
    GFX.Pitch = use_overscan ? 1024 : 2048; // FIXME: What is this supposed to do? Overscan has nothing to do with anything like this. If this is the Wii performance hack, it should be done differently.
 
-#if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO)
+#if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS)
    /* request 128-bit alignment here if possible */
    posix_memalign((void**)&GFX.Screen, 16, GFX.Pitch * 512 * sizeof(uint16));
+#elif defined(_3DS)
+   GFX.Screen = (uint16*) memalign(16, GFX.Pitch * 512 * sizeof(uint16));
 #else
    GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
 #endif
