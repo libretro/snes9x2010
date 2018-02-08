@@ -271,7 +271,18 @@ static void check_variables(void)
          reset_sfx = true;
       }
    }
-   
+
+   var.key = "snes9x_next_overclock_cycles";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      {
+        if (strcmp(var.value, "enabled") == 0)
+          overclock_cycles = true;
+        else
+          overclock_cycles = false;
+      }
+
    if (reset_sfx)
    S9xResetSuperFX();
 }
@@ -365,11 +376,13 @@ void retro_set_input_state(retro_input_state_t cb)
 }
 
 static bool use_overscan;
+bool overclock_cycles = false;
 
 void retro_set_environment(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
       { "snes9x_next_overclock", "SuperFX Overclock; Disabled(10MHz)|40MHz|60MHz|80MHz|100MHz|Underclock(5MHz)|Underclock(8MHz)" },
+      { "snes9x_next_overclock_cycles", "CPU Overclock (Hack, Unsafe); disabled|enabled" },
       { NULL, NULL },
    };
 

@@ -233,9 +233,9 @@ extern "C" {
 #define SNES_MAX_PAL_VCOUNTER	312
 #define SNES_HCOUNTER_MAX	341
 
-#define ONE_CYCLE		6
-#define SLOW_ONE_CYCLE		8
-#define TWO_CYCLES		12
+#define ONE_CYCLE		(overclock_cycles ? 4 : 6)
+#define SLOW_ONE_CYCLE		(overclock_cycles ? 4 : 8)
+#define TWO_CYCLES		(overclock_cycles ? 6 : 12)
 #define	ONE_DOT_CYCLE		4
 #define ONE_DOT_CYCLE_DIV_2	2
 
@@ -274,6 +274,8 @@ extern "C" {
 #define NMI_FLAG			128	/* CPU */
 #define IRQ_FLAG			2048	/* CPU */
 #define HALTED_FLAG			4096	/* APU */
+
+extern bool overclock_cycles;
 
 struct SCPUState
 {
