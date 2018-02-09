@@ -224,7 +224,8 @@ static retro_audio_sample_batch_t audio_batch_cb = NULL;
 static retro_environment_t environ_cb = NULL;
 
 extern s9xcommand_t			keymap[1024];
-
+bool overclock_cycles = false;
+bool reduce_sprite_flicker = false;
 
 static void check_variables(void)
 {
@@ -281,6 +282,17 @@ static void check_variables(void)
           overclock_cycles = true;
         else
           overclock_cycles = false;
+      }
+
+   var.key = "snes9x_next_reduce_sprite_flicker";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      {
+        if (strcmp(var.value, "enabled") == 0)
+          reduce_sprite_flicker = true;
+        else
+          reduce_sprite_flicker = false;
       }
 
    if (reset_sfx)
@@ -376,13 +388,13 @@ void retro_set_input_state(retro_input_state_t cb)
 }
 
 static bool use_overscan;
-bool overclock_cycles = false;
 
 void retro_set_environment(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
       { "snes9x_next_overclock", "SuperFX Overclock; Disabled(10MHz)|40MHz|60MHz|80MHz|100MHz|Underclock(5MHz)|Underclock(8MHz)" },
       { "snes9x_next_overclock_cycles", "CPU Overclock (Hack, Unsafe); disabled|enabled" },
+      { "snes9x_next_reduce_sprite_flicker", "Reduce Flickering (Hack, Unsafe); disabled|enabled" },
       { NULL, NULL },
    };
 

@@ -200,6 +200,8 @@ extern uint8	*HDMAMemPointers[8];
 extern struct SLineData			LineData[240];
 static uint8 dma_sa1_channels_chars[9][8];
 
+extern bool reduce_sprite_flicker;
+
 #define TILE_PLUS(t, x)	(((t) & 0xfc00) | ((t + x) & 0x3ff))
 
 bool8 S9xGraphicsInit (void)
@@ -391,7 +393,7 @@ static void SetupOBJ (void)
 		for ( i = 0; i < SNES_HEIGHT_EXTENDED; i++)
 		{
 			GFX.OBJLines[i].RTOFlags = 0;
-			GFX.OBJLines[i].Tiles = 34;
+			GFX.OBJLines[i].Tiles = (reduce_sprite_flicker ? 60 : 34);
 			for ( j = 0; j < 32; j++)
 				GFX.OBJLines[i].OBJ[j].Sprite = -1;
 		}
@@ -522,7 +524,7 @@ static void SetupOBJ (void)
 			int	j;
 
 			GFX.OBJLines[Y_two].RTOFlags = Y_two ? GFX.OBJLines[Y_two - 1].RTOFlags : 0;
-			GFX.OBJLines[Y_two].Tiles = 34;
+			GFX.OBJLines[Y_two].Tiles = (reduce_sprite_flicker ? 60 : 34);
 
 			FirstSprite = (PPU.FirstSprite + Y_two) & 0x7f;
 			S = FirstSprite;
