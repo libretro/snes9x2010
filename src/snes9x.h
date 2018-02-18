@@ -198,7 +198,9 @@ extern "C" {
 
 #define S9X_ACCURACY_LEVEL		3
 
-#include "../libretro/libretro-common/include/streams/memory_stream.h"
+#include <boolean.h>
+#include <streams/memory_stream.h>
+
  /* Create some sort of abstraction for files 
   * using memory only since libretro API is memory oriented.
   *

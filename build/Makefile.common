@@ -1,5 +1,10 @@
-INCFLAGS   := -I$(CORE_DIR)/libretro -I$(CORE_DIR)/src -I$(CORE_DIR)/libretro/libretro-common/include
+LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro/libretro-common
+INCFLAGS   := -I$(CORE_DIR)/libretro -I$(CORE_DIR)/src -I$(LIBRETRO_COMM_DIR)/include
 COREDEFINES = -DHAVE_STRINGS_H -DHAVE_INTTYPES_H -D__LIBRETRO__ -DRIGHTSHIFT_IS_SAR 
+
+ifneq (,$(findstring msvc2003,$(platform)))
+INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
+endif
 
 ifneq (,$(findstring msvc,$(platform)))
 COREDEFINES += -DINLINE=_inline
@@ -39,7 +44,7 @@ SOURCES_C := $(CORE_DIR)/src/apu.c \
 
 ifeq ($(STATIC_LINKING),1)
 else
-SOURCES_C += $(CORE_DIR)/libretro/libretro-common/streams/memory_stream.c
+SOURCES_C += $(LIBRETRO_COMM_DIR)/streams/memory_stream.c
 endif
 
 endif

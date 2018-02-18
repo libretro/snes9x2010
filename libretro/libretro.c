@@ -452,7 +452,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->block_extract    = false;
 }
 
-static void S9xAudioCallback()
+static void S9xAudioCallback(void)
 {
    size_t avail;
    /* Just pick a big buffer. We won't use it all. */

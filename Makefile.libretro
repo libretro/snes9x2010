@@ -67,6 +67,15 @@ else
 endif
 endif
 
+SPACE :=
+SPACE := $(SPACE) $(SPACE)
+BACKSLASH :=
+BACKSLASH := \$(BACKSLASH)
+filter_out1 = $(filter-out $(firstword $1),$1)
+filter_out2 = $(call filter_out1,$(call filter_out1,$1))
+unixpath = $(subst \,/,$1)
+unixcygpath = /$(subst :,,$(call unixpath,$1))
+
 # system platform
 system_platform = unix
 ifeq ($(shell uname -a),)
@@ -359,7 +368,7 @@ else ifeq ($(platform), gcw0)
 	AR = /opt/gcw0-toolchain/usr/bin/mipsel-linux-ar
 	SHARED := -shared -Wl,--version-script=libretro/link.T
 	fpic := -fPIC
-	CFLAGS += $(PTHREAD_FLAGS) -DHAVE_MKDIR
+	CFLAGS += $(PTHREAD_FLAGS)
 	CFLAGS += -ffast-math -march=mips32 -mtune=mips32r2 -mhard-float
 
 else ifeq ($(platform), msvc)
@@ -372,6 +381,23 @@ else ifeq ($(platform), switch)
         include $(LIBTRANSISTOR_HOME)/libtransistor.mk
         STATIC_LINKING=1
         STATIC_LINKING_LINK=1
+
+# Windows MSVC 2003 Xbox 1
+else ifeq ($(platform), xbox1_msvc2003)
+TARGET := $(TARGET_NAME)_libretro_xdk1.lib
+CC  = CL.exe
+CXX  = CL.exe
+LD   = lib.exe
+
+export INCLUDE := $(XDK)\xbox\include
+export LIB := $(XDK)\xbox\lib
+PATH := $(call unixcygpath,$(XDK)/xbox/bin/vc71):$(PATH)
+
+PSS_STYLE :=2
+CFLAGS   += -D_XBOX -D_XBOX1
+CXXFLAGS += -D_XBOX -D_XBOX1
+STATIC_LINKING=1
+STATIC_LINKING_LINK=1
 
 
 # Windows
@@ -392,7 +418,7 @@ endif
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g
 else
-	CFLAGS += -O3 -DNDEBUG -DGIT_VERSION=\"$(GIT_VERSION)\"
+	CFLAGS += -O2 -DNDEBUG -DGIT_VERSION=\"$(GIT_VERSION)\"
 endif
 
 include $(BUILD_DIR)/Makefile.common
@@ -411,6 +437,9 @@ ifeq ($(platform), sncps3)
 else ifeq ($(platform), ios)
 	WARNINGS_DEFINES =
 	CODE_DEFINES =
+else ifneq (,$(findstring msvc,$(platform)))
+	WARNING_DEFINES =
+	CODE_DEFINES =
 else
 	WARNINGS_DEFINES = -Wall -W -Wno-unused-parameter -Wno-sign-compare -Wno-uninitialized
 	CODE_DEFINES = -fomit-frame-pointer
@@ -419,6 +448,21 @@ endif
 COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) $(fpic)
 
 CFLAGS += $(DEFINES) $(COMMON_DEFINES)
+
+ifneq (,$(findstring msvc,$(platform)))
+	OBJOUT = -Fo
+	LINKOUT = -out:
+ifeq ($(STATIC_LINKING),1)
+	LD ?= lib.exe
+	STATIC_LINKING=0
+else
+	LD = link.exe
+endif
+else
+	OBJOUT   = -o
+	LINKOUT  = -o 
+	LD = $(CC)
+endif
 
 ifeq ($(platform), theos_ios)
 COMMON_FLAGS := -DIOS -DARM $(COMMON_DEFINES) $(INCFLAGS) -I$(THEOS_INCLUDE_PATH) -Wno-error
@@ -430,7 +474,11 @@ all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING_LINK),1)
+ifneq (,$(findstring msvc,$(platform)))
+	$(LD) $(LINKOUT)$@ $(OBJECTS)
+else
 	$(AR) rcs $@ $(OBJECTS)
+endif
 else
 	$(CC) $(fpic) $(SHARED) $(INCFLAGS) $(LDFLAGS) $(OBJOUT)$@ $(OBJECTS) $(LIBM)
 endif
