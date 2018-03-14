@@ -3622,9 +3622,7 @@ void __attribute__((optimize(0))) S9xAPUSaveState (uint8 *block)
 void S9xAPUSaveState (uint8 *block)
 #endif
 {
-	uint8 *ptr;
-
-	ptr = block;
+	uint8 *ptr = block;
 
 	spc_copy_state(&ptr, from_apu_to_state);
 
@@ -3639,9 +3637,7 @@ void __attribute__((optimize(0))) S9xAPULoadState (uint8 *block)
 void S9xAPULoadState (uint8 *block)
 #endif
 {
-	uint8 *ptr;
-
-	ptr = block;
+	uint8 *ptr = block;
 
 	S9xResetAPU();
 
