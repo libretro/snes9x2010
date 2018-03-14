@@ -873,6 +873,10 @@ void retro_run (void)
    poll_cb();
    report_buttons();
    S9xMainLoop();
+   
+   //Force emptying the audio buffer at the end of the frame
+   S9xAudioCallback();
+
 }
 
 size_t retro_serialize_size (void)

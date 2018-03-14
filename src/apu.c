@@ -3108,7 +3108,6 @@ static int    r_left[4], r_right[4];
 #define SPACE_EMPTY() (rb_buffer_size - rb_size)
 #define SPACE_FILLED() (rb_size)
 #define MAX_WRITE() (SPACE_EMPTY() >> 1)
-#define AVAIL() (((((uint32_t) rb_size) << 14) - r_frac) / r_step * 2)
 
 #define RESAMPLER_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
@@ -3151,6 +3150,39 @@ static void resampler_time_ratio(double ratio)
 
 static void resampler_read(short *data, int num_samples)
 {
+	if (r_step == 65536)
+	{
+		//direct copy if we are not resampling
+		if (num_samples > rb_size)
+		{
+			num_samples = rb_size / sizeof(short);
+		}
+		
+		int bytesRemaining = rb_buffer_size - rb_start;
+		while (num_samples > 0)
+		{
+			int bytesToConsume = num_samples * sizeof(short);
+			if (bytesToConsume >= bytesRemaining)
+			{
+				bytesToConsume = bytesRemaining;
+			}
+			if (rb_start >= rb_buffer_size)
+			{
+				rb_start = 0;
+			}
+			memcpy(data, &rb_buffer[rb_start], bytesToConsume);
+			data += bytesToConsume / sizeof(short);
+			rb_start += bytesToConsume;
+			rb_size -= bytesToConsume;
+			num_samples -= bytesToConsume / sizeof(short);
+			if (rb_start >= rb_buffer_size)
+			{
+				rb_start = 0;
+			}
+		}
+		return;
+	}
+
 	int i_position, o_position, consumed;
 	short *internal_buffer;
 
@@ -3263,7 +3295,7 @@ static INLINE void resampler_resize (int num_samples)
 
 bool8 S9xMixSamples (short *buffer, unsigned sample_count)
 {
-	if (AVAIL() >= (sample_count + lag))
+	if (S9xGetSampleCount() >= (sample_count + lag))
 	{
 		resampler_read(buffer, sample_count);
 		if (lag == lag_master)
@@ -3283,7 +3315,11 @@ bool8 S9xMixSamples (short *buffer, unsigned sample_count)
 
 int S9xGetSampleCount (void)
 {
-	return AVAIL();
+	if (r_step == 65536)
+	{
+		return rb_size / sizeof(short);
+	}
+	return (((((uint32_t)rb_size) << 14) - r_frac) / r_step * 2);
 }
 
 /* Sets destination for output samples */
@@ -3629,6 +3665,10 @@ void S9xAPUSaveState (uint8 *block)
 	SET_LE32(ptr, reference_time);
 	ptr += sizeof(int32);
 	SET_LE32(ptr, spc_remainder);
+	ptr += sizeof(int32);
+
+	//zero out the rest of the save state block
+	memset(ptr, 0, SPC_SAVE_STATE_BLOCK_SIZE - (ptr - block));
 }
 
 #if defined(ANDROID) || defined(__QNX__)
@@ -3646,4 +3686,5 @@ void S9xAPULoadState (uint8 *block)
 	reference_time = GET_LE32(ptr);
 	ptr += sizeof(int32);
 	spc_remainder = GET_LE32(ptr);
+	ptr += sizeof(int32);
 }
