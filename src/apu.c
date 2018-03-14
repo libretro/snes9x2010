@@ -3150,6 +3150,9 @@ static void resampler_time_ratio(double ratio)
 
 static void resampler_read(short *data, int num_samples)
 {
+	int i_position, o_position, consumed;
+	short *internal_buffer;
+
 	if (r_step == 65536)
 	{
 		//direct copy if we are not resampling
@@ -3158,53 +3161,44 @@ static void resampler_read(short *data, int num_samples)
 		{
 			int bytesToConsume = num_samples * sizeof(short);
 			if (bytesToConsume >= bytesUntilBufferEnd)
-			{
 				bytesToConsume = bytesUntilBufferEnd;
-			}
 			if (rb_start >= rb_buffer_size)
-			{
 				rb_start = 0;
-			}
 			memcpy(data, &rb_buffer[rb_start], bytesToConsume);
 			data += bytesToConsume / sizeof(short);
 			rb_start += bytesToConsume;
 			rb_size -= bytesToConsume;
 			num_samples -= bytesToConsume / sizeof(short);
 			if (rb_start >= rb_buffer_size)
-			{
 				rb_start = 0;
-			}
 		}
 		return;
 	}
 
-	int i_position, o_position, consumed;
-	short *internal_buffer;
 
-	i_position = rb_start >> 1;
+	i_position      = rb_start >> 1;
 	internal_buffer = (short *)rb_buffer;
-	o_position = 0;
-	consumed = 0;
+	o_position      = 0;
+	consumed        = 0;
 
 	while (o_position < num_samples && consumed < rb_buffer_size)
 	{
-		int s_left, s_right, max_samples;
-		int hermite_val;
-
-		s_left = internal_buffer[i_position];
-		s_right = internal_buffer[i_position + 1];
-		max_samples = rb_buffer_size >> 1;
+		int s_left      = internal_buffer[i_position];
+		int s_right     = internal_buffer[i_position + 1];
+		int max_samples = rb_buffer_size >> 1;
 
 		while (r_frac <= 65536 && o_position < num_samples)
 		{
-			hermite_val	= hermite(r_frac >> 1, r_left [0], r_left [1], r_left [2], r_left [3]);
+			int hermite_val	   = hermite(r_frac >> 1,
+               r_left [0], r_left [1], r_left [2], r_left [3]);
 			data[o_position]     = SHORT_CLAMP (hermite_val);
-			hermite_val = hermite(r_frac >> 1, r_right[0], r_right[1], r_right[2], r_right[3]);
+			hermite_val          = hermite(r_frac >> 1,
+               r_right[0], r_right[1], r_right[2], r_right[3]);
 			data[o_position + 1] = SHORT_CLAMP (hermite_val);
 
-			o_position += 2;
+			o_position          += 2;
 
-			r_frac += r_step;
+			r_frac              += r_step;
 		}
 
 		if (r_frac > 65536)
