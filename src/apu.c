@@ -3153,18 +3153,13 @@ static void resampler_read(short *data, int num_samples)
 	if (r_step == 65536)
 	{
 		//direct copy if we are not resampling
-		if (num_samples > rb_size)
-		{
-			num_samples = rb_size / sizeof(short);
-		}
-		
-		int bytesRemaining = rb_buffer_size - rb_start;
+		int bytesUntilBufferEnd = rb_buffer_size - rb_start;
 		while (num_samples > 0)
 		{
 			int bytesToConsume = num_samples * sizeof(short);
-			if (bytesToConsume >= bytesRemaining)
+			if (bytesToConsume >= bytesUntilBufferEnd)
 			{
-				bytesToConsume = bytesRemaining;
+				bytesToConsume = bytesUntilBufferEnd;
 			}
 			if (rb_start >= rb_buffer_size)
 			{
