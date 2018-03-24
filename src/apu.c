@@ -3284,19 +3284,22 @@ static INLINE void resampler_resize (int num_samples)
 
 bool8 S9xMixSamples (short *buffer, unsigned sample_count)
 {
-	if (S9xGetSampleCount() >= (sample_count + lag))
+	if (!Settings.Mute)
 	{
-		resampler_read(buffer, sample_count);
-		if (lag == lag_master)
-			lag = 0;
-	}
-	else
-	{
-		memset(buffer, 0, sample_count << 1);
-		if (lag == 0)
-			lag = lag_master;
+		if (S9xGetSampleCount() >= (sample_count + lag))
+		{
+			resampler_read(buffer, sample_count);
+			if (lag == lag_master)
+				lag = 0;
+		}
+		else
+		{
+			memset(buffer, 0, sample_count << 1);
+			if (lag == 0)
+				lag = lag_master;
 
-		return (FALSE);
+			return (FALSE);
+		}
 	}
 
 	return (TRUE);
@@ -3344,15 +3347,17 @@ static void spc_set_output( short* out, int size )
 void S9xFinalizeSamples (void)
 {
 	bool8 ret;
+	if (!Settings.Mute)
+	{
+		ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
+		sound_in_sync = FALSE;
 
-	ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
-	sound_in_sync = FALSE;
+		/* We weren't able to process the entire buffer. Potential overrun. */
+		if (!ret && Settings.SoundSync)
+			return;
+	}
 
-	/* We weren't able to process the entire buffer. Potential overrun. */
-	if (!ret && Settings.SoundSync)
-		return;
-
-	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED()))
+	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED() || Settings.Mute))
 		sound_in_sync = TRUE;
 
 	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
@@ -3437,6 +3442,11 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	UpdatePlaybackRate();
 
 	return TRUE;
+}
+
+void S9xSetSoundMute(bool8 mute)
+{
+	Settings.Mute = mute;
 }
 
 /* Must be called once before using */

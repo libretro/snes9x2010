@@ -424,58 +424,77 @@ static INLINE void speedhacks_manager (void)
 
 static void S9xEndScreenRefresh (void)
 {
-	FLUSH_REDRAW();
+	if (IPPU.RenderThisFrame)
+	{
+		FLUSH_REDRAW();
 
-   PPU.GunVLatch = 1000; /* i.e., never latch */
-   PPU.GunHLatch = 0;
-
-   if (!Settings.NormalControls && pad_read)
-      S9xControlEOF();
-
-	pad_read      = FALSE;
-
-	if(Settings.SpeedhackGameID > SPEEDHACK_NONE)
-		speedhacks_manager();
-
-	if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
-    {
-		S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
+		if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
+		{
+			S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
+#ifdef LAGFIX
+			finishedFrame = true;
+#endif
+		}
+	}
+	else
+	{
 #ifdef LAGFIX
 		finishedFrame = true;
 #endif
-    }
+	}
+	PPU.GunVLatch = 1000; /* i.e., never latch */
+	PPU.GunHLatch = 0;
+
+	if (!Settings.NormalControls && pad_read)
+		S9xControlEOF();
+
+	pad_read = FALSE;
+
+	if (Settings.SpeedhackGameID > SPEEDHACK_NONE)
+		speedhacks_manager();
 
 	S9xApplyCheats();
 }
 
 static void RenderLine (uint8 C)
 {
-	LineData[C].BG[0].VOffset = PPU.BG[0].VOffset + 1;
-	LineData[C].BG[0].HOffset = PPU.BG[0].HOffset;
-	LineData[C].BG[1].VOffset = PPU.BG[1].VOffset + 1;
-	LineData[C].BG[1].HOffset = PPU.BG[1].HOffset;
-
-	if (PPU.BGMode == 7)
+	if (IPPU.RenderThisFrame)
 	{
-		struct SLineMatrixData *p = &LineMatrixData[C];
-		p->MatrixA = PPU.MatrixA;
-		p->MatrixB = PPU.MatrixB;
-		p->MatrixC = PPU.MatrixC;
-		p->MatrixD = PPU.MatrixD;
-		p->CentreX = PPU.CentreX;
-		p->CentreY = PPU.CentreY;
-		p->M7HOFS  = PPU.M7HOFS;
-		p->M7VOFS  = PPU.M7VOFS;
+		LineData[C].BG[0].VOffset = PPU.BG[0].VOffset + 1;
+		LineData[C].BG[0].HOffset = PPU.BG[0].HOffset;
+		LineData[C].BG[1].VOffset = PPU.BG[1].VOffset + 1;
+		LineData[C].BG[1].HOffset = PPU.BG[1].HOffset;
+
+		if (PPU.BGMode == 7)
+		{
+			struct SLineMatrixData *p = &LineMatrixData[C];
+			p->MatrixA = PPU.MatrixA;
+			p->MatrixB = PPU.MatrixB;
+			p->MatrixC = PPU.MatrixC;
+			p->MatrixD = PPU.MatrixD;
+			p->CentreX = PPU.CentreX;
+			p->CentreY = PPU.CentreY;
+			p->M7HOFS  = PPU.M7HOFS;
+			p->M7VOFS  = PPU.M7VOFS;
+		}
+		else
+		{
+			LineData[C].BG[2].VOffset = PPU.BG[2].VOffset + 1;
+			LineData[C].BG[2].HOffset = PPU.BG[2].HOffset;
+			LineData[C].BG[3].VOffset = PPU.BG[3].VOffset + 1;
+			LineData[C].BG[3].HOffset = PPU.BG[3].HOffset;
+		}
+
+		IPPU.CurrentLine = C + 1;
 	}
 	else
 	{
-		LineData[C].BG[2].VOffset = PPU.BG[2].VOffset + 1;
-		LineData[C].BG[2].HOffset = PPU.BG[2].HOffset;
-		LineData[C].BG[3].VOffset = PPU.BG[3].VOffset + 1;
-		LineData[C].BG[3].HOffset = PPU.BG[3].HOffset;
+		// if we're not rendering this frame, we still need to update this
+		// XXX: Check ForceBlank? Or anything else?
+		if (IPPU.OBJChanged)
+			SetupOBJ();
+		PPU.RangeTimeOver |= GFX.OBJLines[C].RTOFlags;
 	}
-
-	IPPU.CurrentLine = C + 1;
 }
 
 static INLINE void S9xReschedule (void)
@@ -1090,38 +1109,41 @@ void S9xDoHEventProcessing (void)
 			/* V = 1 */
 			if (CPU.V_Counter == FIRST_VISIBLE_LINE)
 			{
-				GFX.InterlaceFrame = !GFX.InterlaceFrame;
-
-				if (!GFX.DoInterlace || !GFX.InterlaceFrame)
+				if (IPPU.RenderThisFrame)
 				{
-					/* S9x Start Screen Refresh */
-					bool8 cond_1, cond_2;
+					GFX.InterlaceFrame = !GFX.InterlaceFrame;
 
-					GFX.DoInterlace -= (GFX.DoInterlace == TRUE);
+					if (!GFX.DoInterlace || !GFX.InterlaceFrame)
+					{
+						/* S9x Start Screen Refresh */
+						bool8 cond_1, cond_2;
 
-					IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
-					IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
-					IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
+						GFX.DoInterlace -= (GFX.DoInterlace == TRUE);
 
-					cond_1 = (Settings.SupportHiRes && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires));
-					cond_2 = (Settings.SupportHiRes && IPPU.Interlace);
+						IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
+						IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
+						IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
 
-					GFX.RealPPL = GFX.Pitch >> 1;
-					IPPU.RenderedScreenWidth = SNES_WIDTH << cond_1;
-					IPPU.RenderedScreenHeight = PPU.ScreenHeight << cond_2;
-					IPPU.DoubleWidthPixels = cond_1;
-					IPPU.DoubleHeightPixels = cond_2;
+						cond_1 = (Settings.SupportHiRes && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires));
+						cond_2 = (Settings.SupportHiRes && IPPU.Interlace);
 
-					GFX.PPL = GFX.RealPPL << cond_2;
-					GFX.DoInterlace += cond_2;
+						GFX.RealPPL = GFX.Pitch >> 1;
+						IPPU.RenderedScreenWidth = SNES_WIDTH << cond_1;
+						IPPU.RenderedScreenHeight = PPU.ScreenHeight << cond_2;
+						IPPU.DoubleWidthPixels = cond_1;
+						IPPU.DoubleHeightPixels = cond_2;
+
+						GFX.PPL = GFX.RealPPL << cond_2;
+						GFX.DoInterlace += cond_2;
+					}
+
+					PPU.MosaicStart = 0;
+					PPU.RecomputeClipWindows = TRUE;
+					IPPU.PreviousLine = IPPU.CurrentLine = 0;
+
+					memset(GFX.ZBuffer, 0, GFX.ScreenSize);
+					memset(GFX.SubZBuffer, 0, GFX.ScreenSize);
 				}
-
-				PPU.MosaicStart = 0;
-				PPU.RecomputeClipWindows = TRUE;
-				IPPU.PreviousLine = IPPU.CurrentLine = 0;
-
-				memset(GFX.ZBuffer, 0, GFX.ScreenSize);
-				memset(GFX.SubZBuffer, 0, GFX.ScreenSize);
 			}
 
 			CPU.NextEvent = -1;

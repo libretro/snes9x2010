@@ -967,6 +967,8 @@ enum retro_mod
                                             * core supports VFS before it starts handing out paths.
                                             * It is recomended to do so in retro_set_environment */
 
+#define RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE (47 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
 /* Opaque file handle
  * Introduced in VFS API v1 */
 struct retro_vfs_file_handle;

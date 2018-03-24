@@ -374,6 +374,7 @@ struct SSettings
 
 	uint32	SoundPlaybackRate;
 	uint32	SoundInputRate;
+	bool8	Mute;
 
 	bool8	Multi;
 	char	CartAName[PATH_MAX + 1];
