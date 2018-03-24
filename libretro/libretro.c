@@ -699,7 +699,7 @@ void retro_init (void)
    environ_cb(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, &achievements);
 
    rgb565 = RETRO_PIXEL_FORMAT_RGB565;
-   if(environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565) && log_cb)
+   if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565) && log_cb)
          log_cb(RETRO_LOG_INFO, "Frontend supports RGB565 - will use that instead of XRGB1555.\n");
 
    snes_init();
@@ -775,7 +775,7 @@ static void report_buttons (void)
 		      }
 #ifdef DEBUG_CONTROLS
 		      pressed_l2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
-		      if(pressed_l2 && timeout == 0)
+		      if (pressed_l2 && timeout == 0)
 		      {
 			      coldata_update_screen = !coldata_update_screen;
                timeout = TIMER_DELAY;
@@ -783,7 +783,7 @@ static void report_buttons (void)
                   log_cb(RETRO_LOG_INFO, "coldata_update_screen: %d.\n", coldata_update_screen);
 		      }
 		      pressed_r2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
-		      if(pressed_r2 && timeout == 0)
+		      if (pressed_r2 && timeout == 0)
 		      {
 			      PPU.RenderSub = !PPU.RenderSub;
                timeout = TIMER_DELAY;
@@ -791,7 +791,7 @@ static void report_buttons (void)
                   log_cb(RETRO_LOG_INFO, "RenderSub: %d.\n", PPU.RenderSub);
 		      }
 		      pressed_r3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
-		      if(pressed_r3 && timeout == 0)
+		      if (pressed_r3 && timeout == 0)
 		      {
 			      PPU.SFXSpeedupHack = !PPU.SFXSpeedupHack;
                timeout = TIMER_DELAY;
@@ -860,21 +860,27 @@ static void report_buttons (void)
       }
    }
 #ifdef DEBUG_CONTROLS
-   if(timeout != 0)   timeout--;
+   if (timeout != 0)
+      timeout--;
 #endif
 }
 
 void retro_run (void)
 {
-   bool updated = false;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
-   check_variables();
+   int result        = -1;
+   bool audioEnabled = false;
+   bool videoEnabled = false;
+   bool okay         = false;
+   bool updated      = false;
 
-   int result = -1;
-   bool okay = environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result);
-   if (!okay) result |= 3;
-   bool audioEnabled = 0 != (result & 2);
-   bool videoEnabled = 0 != (result & 1);
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      check_variables();
+
+   okay = environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result);
+   if (!okay)
+      result |= 3;
+   audioEnabled = (result & 2) != 0;
+   videoEnabled = (result & 1) != 0;
 
    IPPU.RenderThisFrame = videoEnabled;
    S9xSetSoundMute(!audioEnabled);
@@ -882,10 +888,9 @@ void retro_run (void)
    poll_cb();
    report_buttons();
    S9xMainLoop();
-   
+
    //Force emptying the audio buffer at the end of the frame
    S9xAudioCallback();
-
 }
 
 size_t retro_serialize_size (void)
