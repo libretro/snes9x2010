@@ -299,6 +299,7 @@ struct InternalPPU
 	uint16	ScreenColors[256];
 	int	RenderedScreenWidth;
 	int	RenderedScreenHeight;
+	bool8 RenderThisFrame;
 };
 
 struct SOBJ

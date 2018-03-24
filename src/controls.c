@@ -1460,7 +1460,8 @@ void S9xControlEOF (void)
          case MOUSE1:
             c = &mouse[i - MOUSE0].crosshair;
             if(Settings.Crosshair)
-               S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, mouse[i - MOUSE0].cur_x, mouse[i - MOUSE0].cur_y);
+               if (IPPU.RenderThisFrame)
+                  S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, mouse[i - MOUSE0].cur_x, mouse[i - MOUSE0].cur_y);
             break;
 
          case SUPERSCOPE:
@@ -1471,7 +1472,8 @@ void S9xControlEOF (void)
 
                c = &superscope.crosshair;
                if(Settings.Crosshair)
-                  S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, superscope.x, superscope.y);
+                  if (IPPU.RenderThisFrame)
+                     S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, superscope.x, superscope.y);
             }
 
             break;
@@ -1481,7 +1483,8 @@ void S9xControlEOF (void)
             {
                c = &justifier.crosshair[1];
                if(Settings.Crosshair)
-                  S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[1], justifier.y[1]);
+                  if (IPPU.RenderThisFrame)
+                     S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[1], justifier.y[1]);
             }
 
             i = (justifier.buttons & JUSTIFIER_SELECT) ?  1 : 0;
@@ -1500,7 +1503,8 @@ do_justifier:
                {
                   c = &justifier.crosshair[0];
                   if(Settings.Crosshair)
-                     S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[0], justifier.y[0]);
+                     if (IPPU.RenderThisFrame)
+                        S9xDrawCrosshair(S9xGetCrosshair(c->img), c->fg, c->bg, justifier.x[0], justifier.y[0]);
                }
             }
 

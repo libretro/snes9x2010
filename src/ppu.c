@@ -354,7 +354,7 @@ static int objsize_array[8][4] = {
 	{16,	32,	32,	32}, /*7*/
 };
 
-static void SetupOBJ (void)
+void SetupOBJ (void)
 {
 	int	Height, Y_two, SmallWidth, SmallHeight, LargeWidth, LargeHeight, inc, startline;
 	uint8	S, Y_one, line;
@@ -4065,7 +4065,10 @@ static void S9xDoDMA (void)
 		/* Prepare for accessing $2118-2119 */
 		if (d->BAddress == 0x18 || d->BAddress == 0x19)
 		{
-			FLUSH_REDRAW();
+			if (IPPU.RenderThisFrame)
+			{
+				FLUSH_REDRAW();
+			}
 		}
 
 		inc = d->AAddressFixed ? 0 : (!d->AAddressDecrement ? 1 : -1);
@@ -5353,6 +5356,7 @@ void S9xSoftResetPPU (void)
 		IPPU.ScreenColors[c] = c;
 	IPPU.RenderedScreenWidth = SNES_WIDTH;
 	IPPU.RenderedScreenHeight = SNES_HEIGHT;
+	IPPU.RenderThisFrame = TRUE;
 
 	S9xFixColourBrightness();
 

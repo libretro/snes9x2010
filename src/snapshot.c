@@ -1870,6 +1870,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 		CPU.HDMARanInDMA = 0;
 
 		S9xFixColourBrightness();
+		IPPU.RenderThisFrame = TRUE;
 		IPPU.OBJChanged = TRUE;
 
 		hdma_byte = Memory.FillRAM[0x420c];
