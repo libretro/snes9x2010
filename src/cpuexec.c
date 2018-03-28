@@ -188,6 +188,7 @@
 #include "boolean.h"
 #include "controls.h"
 #include "cheats.h"
+#include "ppu.h"
 #include "snapshot.h"
 
 extern struct SLineData		LineData[240];
