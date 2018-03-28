@@ -486,5 +486,6 @@ void S9xFinalizeSamples (void);
 void S9xClearSamples (void);
 bool8 S9xMixSamples (short * buffer, unsigned sample_count);
 void S9xSetSamplesAvailableCallback (apu_callback);
+void S9xSetSoundMute(bool8 mute);
 
 #endif
