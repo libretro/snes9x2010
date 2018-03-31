@@ -5197,6 +5197,21 @@ void S9xResetPPU (void)
 	PPU.M7byte = 0;
 }
 
+void S9xResetPPUFast (void)
+{
+	PPU.RecomputeClipWindows = TRUE;
+	IPPU.OBJChanged = TRUE;
+	IPPU.DirectColourMapsNeedRebuild = TRUE;
+	IPPU.RenderThisFrame = TRUE;
+	memset(IPPU.TileCached[TILE_2BIT], 0, MAX_2BIT_TILES);
+	memset(IPPU.TileCached[TILE_4BIT], 0, MAX_4BIT_TILES);
+	memset(IPPU.TileCached[TILE_8BIT], 0, MAX_8BIT_TILES);
+	memset(IPPU.TileCached[TILE_2BIT_EVEN], 0, MAX_2BIT_TILES);
+	memset(IPPU.TileCached[TILE_2BIT_ODD], 0,  MAX_2BIT_TILES);
+	memset(IPPU.TileCached[TILE_4BIT_EVEN], 0, MAX_4BIT_TILES);
+	memset(IPPU.TileCached[TILE_4BIT_ODD], 0,  MAX_4BIT_TILES);
+}
+
 void S9xSoftResetPPU (void)
 {
 	int c;

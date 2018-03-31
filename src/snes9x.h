@@ -398,6 +398,8 @@ struct SSettings
 	bool8		SupportHiRes;
 	bool8		Transparency;
    float    SuperFXSpeedPerLine;
+   bool8	FastSavestates;
+   bool8	HardDisableAudio;
 };
 
 struct SSNESGameFixes

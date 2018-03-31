@@ -877,13 +877,21 @@ void retro_run (void)
       check_variables();
 
    okay = environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result);
-   if (!okay)
-      result |= 3;
-   audioEnabled = (result & 2) != 0;
-   videoEnabled = (result & 1) != 0;
-
-   IPPU.RenderThisFrame = videoEnabled;
-   S9xSetSoundMute(!audioEnabled);
+   if (okay)
+   {
+      bool audioEnabled = 0 != (result & 2);
+      bool videoEnabled = 0 != (result & 1);
+	  bool hardDisableAudio = 0 != (result & 8);
+	  IPPU.RenderThisFrame = videoEnabled;
+	  S9xSetSoundMute(!audioEnabled || hardDisableAudio);
+	  Settings.HardDisableAudio = hardDisableAudio;
+   }
+   else
+   {
+      IPPU.RenderThisFrame = true;
+      S9xSetSoundMute(false);
+	  Settings.HardDisableAudio = false;
+   }
 
    poll_cb();
    report_buttons();
@@ -906,6 +914,13 @@ size_t retro_serialize_size (void)
 
 bool retro_serialize(void *data, size_t size)
 {
+   int result = -1;
+   bool okay = false;
+   okay = environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result);
+   if (okay)
+   {
+      Settings.FastSavestates = 0 != (result & 4);
+   }
    memstream_set_buffer((uint8_t*)data, size);
    if (S9xFreezeGame("") == FALSE)
       return FALSE;
@@ -915,6 +930,13 @@ bool retro_serialize(void *data, size_t size)
 
 bool retro_unserialize(const void * data, size_t size)
 {
+   int result = -1;
+   bool okay = false;
+   okay = environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result);
+   if (okay)
+   {
+      Settings.FastSavestates = 0 != (result & 4);
+   }
    memstream_set_buffer((uint8_t*)data, size);
    if (S9xUnfreezeGame("") == FALSE)
       return FALSE;
