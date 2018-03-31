@@ -1384,9 +1384,50 @@ bool8 S9xUnfreezeGame (const char * filename)
 	return (FALSE);
 }
 
+static bool CheckBlockName(STREAM stream, const char *name, int *len)
+{
+	char	buffer[16];
+	*len = 0;
+	long	rewind = FIND_STREAM(stream);
 
+	size_t	l = READ_STREAM(buffer, 11, stream);
+	buffer[l] = 0;
+	REVERT_STREAM(stream, FIND_STREAM(stream) - l, 0);
 
+	if (buffer[4] == '-')
+	{
+		*len = (((unsigned char)buffer[6]) << 24)
+			| (((unsigned char)buffer[7]) << 16)
+			| (((unsigned char)buffer[8]) << 8)
+			| (((unsigned char)buffer[9]) << 0);
+	}
+	else
+		*len = atoi(buffer + 4);
 
+	if (l != 11 || strncmp(buffer, name, 3) != 0 || buffer[3] != ':')
+	{
+		return false;
+	}
+
+	if (*len <= 0)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+static void SkipBlockWithName(STREAM stream, const char *name)
+{
+	int len;
+	bool matchesName = CheckBlockName(stream, name, &len);
+	if (matchesName)
+	{
+		long rewind = FIND_STREAM(stream);
+		rewind += len + 11;
+		REVERT_STREAM(stream, rewind, 0);
+	}
+}
 
 static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
 {
@@ -1424,7 +1465,8 @@ err:
 		len = size;
 	}
 
-	memset(block, 0, size);
+	if (!Settings.FastSavestates)
+		memset(block, 0, size);
 
 	if (READ_STREAM(block, len, stream) != len)
 	{
@@ -1450,6 +1492,13 @@ err:
 static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, int size)
 {
 	int	result;
+
+	/* check block name first to avoid memory allocation */
+	int blockLength;
+	if (!CheckBlockName(stream, name, &blockLength))
+	{
+		return 0;
+	}
 
 	*block = (uint8*)malloc(size);
 
@@ -1622,6 +1671,8 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 
 int S9xUnfreezeFromStream (STREAM stream)
 {
+	const bool8 fast = Settings.FastSavestates;
+
 	struct SDMASnapshot	dma_snap;
 	struct SControlSnapshot	ctl_snap;
 	int		version;
@@ -1688,19 +1739,31 @@ int S9xUnfreezeFromStream (STREAM stream)
 		if (result != SUCCESS)
 			break;
 
-		result = UnfreezeBlockCopy (stream, "VRA", &local_vram, 0x10000);
+		if (fast)
+			result = UnfreezeBlock(stream, "VRA", Memory.VRAM, 0x10000);
+		else
+			result = UnfreezeBlockCopy(stream, "VRA", &local_vram, 0x10000);
 		if (result != SUCCESS)
 			break;
 
-		result = UnfreezeBlockCopy (stream, "RAM", &local_ram, 0x20000);
+		if (fast)
+			result = UnfreezeBlock(stream, "RAM", Memory.RAM, 0x20000);
+		else
+			result = UnfreezeBlockCopy(stream, "RAM", &local_ram, 0x20000);
 		if (result != SUCCESS)
 			break;
 
+		if (fast)
+			result = UnfreezeBlock(stream, "SRA", Memory.SRAM, 0x20000);
+		else
 		result = UnfreezeBlockCopy (stream, "SRA", &local_sram, 0x20000);
 		if (result != SUCCESS)
 			break;
 
-		result = UnfreezeBlockCopy (stream, "FIL", &local_fillram, 0x8000);
+		if (fast)
+			result = UnfreezeBlock(stream, "FIL", Memory.FillRAM, 0x8000);
+		else
+			result = UnfreezeBlockCopy(stream, "FIL", &local_fillram, 0x8000);
 		if (result != SUCCESS)
 			break;
 
@@ -1740,9 +1803,19 @@ int S9xUnfreezeFromStream (STREAM stream)
 		if (result != SUCCESS && Settings.DSP == 4)
 			break;
 
-		result = UnfreezeBlockCopy (stream, "CX4", &local_cx4_data, 8192);
-		if (result != SUCCESS && Settings.C4)
+		if (Settings.C4)
+		{
+			if (fast)
+				result = UnfreezeBlock(stream, "CX4", Memory.C4RAM, 8192);
+			else
+				result = UnfreezeBlockCopy(stream, "CX4", &local_cx4_data, 8192);
+			if (result != SUCCESS)
 			break;
+		}
+		else
+		{
+			SkipBlockWithName(stream, "CX4");
+		}
 
 		result = UnfreezeStructCopy(stream, "ST0", &local_st010, SnapST010, COUNT(SnapST010), version);
 		if (result != SUCCESS && Settings.SETA == ST_010)
@@ -1752,9 +1825,19 @@ int S9xUnfreezeFromStream (STREAM stream)
 		if (result != SUCCESS && Settings.OBC1)
 			break;
 
-		result = UnfreezeBlockCopy (stream, "OBM", &local_obc1_data, 8192);
-		if (result != SUCCESS && Settings.OBC1)
+		if (Settings.OBC1)
+		{
+			if (fast)
+				result = UnfreezeBlock(stream, "OBM", Memory.OBC1RAM, 8192);
+			else
+				result = UnfreezeBlockCopy(stream, "OBM", &local_obc1_data, 8192);
+			if (result != SUCCESS)
 			break;
+		}
+		else
+		{
+			SkipBlockWithName(stream, "OBM");
+		}
 
 		result = UnfreezeStructCopy(stream, "S71", &local_spc7110, SnapSPC7110Snap, COUNT(SnapSPC7110Snap), version);
 		if (result != SUCCESS && Settings.SPC7110)
@@ -1780,7 +1863,15 @@ int S9xUnfreezeFromStream (STREAM stream)
 		uint32 old_flags     = CPU.Flags;
 		uint32 sa1_old_flags = SA1.Flags;
 
-		S9xReset();
+		if (fast)
+		{
+			S9xResetPPUFast();
+		}
+		else
+		{
+			/* Don't call this if you bypassed the "local_" buffers and modified the "Memory." buffers directly. */
+			S9xReset();
+		}
 
 		UnfreezeStructFromCopy(&CPU, SnapCPU, COUNT(SnapCPU), local_cpu, version);
 
@@ -1790,13 +1881,17 @@ int S9xUnfreezeFromStream (STREAM stream)
 
 		UnfreezeStructFromCopy(&dma_snap, SnapDMA, COUNT(SnapDMA), local_dma, version);
 
-		memcpy(Memory.VRAM, local_vram, 0x10000);
+		if (local_vram)
+			memcpy(Memory.VRAM, local_vram, 0x10000);
 
-		memcpy(Memory.RAM, local_ram, 0x20000);
+		if (local_ram)
+			memcpy(Memory.RAM, local_ram, 0x20000);
 
-		memcpy(Memory.SRAM, local_sram, 0x20000);
+		if (local_sram)
+			memcpy(Memory.SRAM, local_sram, 0x20000);
 
-		memcpy(Memory.FillRAM, local_fillram, 0x8000);
+		if (local_fillram)
+			memcpy(Memory.FillRAM, local_fillram, 0x8000);
 
 		S9xAPULoadState(local_apu_sound);
 
