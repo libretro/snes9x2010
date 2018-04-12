@@ -1386,12 +1386,15 @@ bool8 S9xUnfreezeGame (const char * filename)
 
 static bool CheckBlockName(STREAM stream, const char *name, int *len)
 {
+   long rewind;
+   size_t l;
 	char	buffer[16];
-	*len = 0;
-	long	rewind = FIND_STREAM(stream);
 
-	size_t	l = READ_STREAM(buffer, 11, stream);
+	*len      = 0;
+	rewind    = FIND_STREAM(stream);
+	l         = READ_STREAM(buffer, 11, stream);
 	buffer[l] = 0;
+
 	REVERT_STREAM(stream, FIND_STREAM(stream) - l, 0);
 
 	if (buffer[4] == '-')
