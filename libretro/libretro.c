@@ -868,8 +868,6 @@ static void report_buttons (void)
 void retro_run (void)
 {
    int result        = -1;
-   bool audioEnabled = false;
-   bool videoEnabled = false;
    bool okay         = false;
    bool updated      = false;
 
@@ -881,10 +879,10 @@ void retro_run (void)
    {
       bool audioEnabled = 0 != (result & 2);
       bool videoEnabled = 0 != (result & 1);
-	  bool hardDisableAudio = 0 != (result & 8);
-	  IPPU.RenderThisFrame = videoEnabled;
-	  S9xSetSoundMute(!audioEnabled || hardDisableAudio);
-	  Settings.HardDisableAudio = hardDisableAudio;
+      bool hardDisableAudio = 0 != (result & 8);
+      IPPU.RenderThisFrame = videoEnabled;
+      S9xSetSoundMute(!audioEnabled || hardDisableAudio);
+      Settings.HardDisableAudio = hardDisableAudio;
    }
    else
    {
