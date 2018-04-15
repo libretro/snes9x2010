@@ -901,10 +901,8 @@ void retro_run (void)
 
 size_t retro_serialize_size (void)
 {
-   uint8_t *tmpbuf;
-
-   tmpbuf = (uint8_t*)malloc(5000000);
-   memstream_set_buffer(tmpbuf, 5000000);
+   uint8_t *tmpbuf = (uint8_t*)malloc(5000000);
+   memstream_set_buffer(tmpbuf, (uint64_t)5000000);
    S9xFreezeGame("");
    free(tmpbuf);
    return memstream_get_last_size();
@@ -919,7 +917,7 @@ bool retro_serialize(void *data, size_t size)
    {
       Settings.FastSavestates = 0 != (result & 4);
    }
-   memstream_set_buffer((uint8_t*)data, size);
+   memstream_set_buffer((uint8_t*)data, (uint64_t)size);
    if (S9xFreezeGame("") == FALSE)
       return FALSE;
 
@@ -932,10 +930,8 @@ bool retro_unserialize(const void * data, size_t size)
    bool okay = false;
    okay = environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result);
    if (okay)
-   {
       Settings.FastSavestates = 0 != (result & 4);
-   }
-   memstream_set_buffer((uint8_t*)data, size);
+   memstream_set_buffer((uint8_t*)data, (uint64_t)size);
    if (S9xUnfreezeGame("") == FALSE)
       return FALSE;
 
@@ -1110,7 +1106,7 @@ bool retro_load_game(const struct retro_game_info *game)
    map.num_descriptors = memorydesc_c;
 
    /* Hack. S9x cannot do stuff from RAM. <_< */
-   memstream_set_buffer((uint8_t*)game->data, game->size);
+   memstream_set_buffer((uint8_t*)game->data, (uint64_t)game->size);
 
    loaded = LoadROM("");
    if (!loaded)

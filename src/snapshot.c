@@ -1386,14 +1386,15 @@ bool8 S9xUnfreezeGame (const char * filename)
 
 static bool CheckBlockName(STREAM stream, const char *name, int *len)
 {
-   long rewind;
-   size_t l;
 	char	buffer[16];
+	uint64_t rewind = FIND_STREAM(stream);
+	uint64_t l      = READ_STREAM(buffer, (uint64_t)11, stream);
 
-	*len      = 0;
-	rewind    = FIND_STREAM(stream);
-	l         = READ_STREAM(buffer, 11, stream);
-	buffer[l] = 0;
+	buffer[l]       = 0;
+
+	*len            = 0;
+
+   (void)rewind;
 
 	REVERT_STREAM(stream, FIND_STREAM(stream) - l, 0);
 
@@ -1408,14 +1409,10 @@ static bool CheckBlockName(STREAM stream, const char *name, int *len)
 		*len = atoi(buffer + 4);
 
 	if (l != 11 || strncmp(buffer, name, 3) != 0 || buffer[3] != ':')
-	{
 		return false;
-	}
 
 	if (*len <= 0)
-	{
 		return false;
-	}
 
 	return true;
 }
@@ -1426,8 +1423,8 @@ static void SkipBlockWithName(STREAM stream, const char *name)
 	bool matchesName = CheckBlockName(stream, name, &len);
 	if (matchesName)
 	{
-		long rewind = FIND_STREAM(stream);
-		rewind += len + 11;
+		uint64_t rewind  = FIND_STREAM(stream);
+		rewind          += len + 11;
 		REVERT_STREAM(stream, rewind, 0);
 	}
 }
@@ -1435,11 +1432,12 @@ static void SkipBlockWithName(STREAM stream, const char *name)
 static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
 {
 	char	buffer[20];
-   int      len = 0;
-   int      rem = 0;
-	long	rewind = FIND_STREAM(stream);
-	size_t     l = READ_STREAM(buffer, 11, stream);
-	buffer[l] = 0;
+   uint64_t len    = 0;
+   uint64_t rem    = 0;
+	uint64_t	rewind = FIND_STREAM(stream);
+	uint64_t   l    = READ_STREAM(buffer, 11, stream);
+
+	buffer[l]       = 0;
 
 	if (l != 11 || strncmp(buffer, name, 3) != 0 || buffer[3] != ':')
    {
@@ -1457,7 +1455,7 @@ err:
 			| (((unsigned char) buffer[9]) << 0);
 	}
 	else
-		len = atoi(buffer + 4);
+		len = (uint64_t)atoi(buffer + 4);
 
 	if (len <= 0)
 		goto err;
@@ -1479,7 +1477,7 @@ err:
 
 	if (rem)
 	{
-		char *junk = (char*)malloc(rem);
+		char *junk = (char*)malloc((size_t)rem);
 		len = READ_STREAM(junk, rem, stream);
 		free(junk);
 		if (len != rem)
@@ -1707,7 +1705,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 	uint8 *local_srtc          = NULL;
 	uint8 *local_rtc_data      = NULL;
 	uint8 *local_bsx_data      = NULL;
-	int len = strlen(SNAPSHOT_MAGIC) + 1 + 4 + 1;
+	uint64_t len               = (uint64_t)strlen(SNAPSHOT_MAGIC) + 1 + 4 + 1;
 
 	if (READ_STREAM(buffer, len, stream) != len)
 		return (WRONG_FORMAT);
