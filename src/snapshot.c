@@ -1110,7 +1110,7 @@ static void FreezeBlock (STREAM stream, const char *name, uint8 *block, int size
 	buffer[11] = 0;
 
 	WRITE_STREAM(buffer, 11, stream);
-	WRITE_STREAM(block, size, stream);
+	WRITE_STREAM(block, (uint64_t)size, stream);
 }
 
 static int FreezeSize (int size, int type)
@@ -1262,10 +1262,10 @@ void S9xFreezeToStream (STREAM stream)
         S9xPackStatus();
 
 	sprintf(buffer, "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
-	WRITE_STREAM(buffer, strlen(buffer), stream);
+	WRITE_STREAM(buffer, (uint64_t)strlen(buffer), stream);
 
 	sprintf(buffer, "NAM:%06d:%s%c", (int) strlen(Memory.ROMFilename) + 1, Memory.ROMFilename, 0);
-	WRITE_STREAM(buffer, strlen(buffer) + 1, stream);
+	WRITE_STREAM(buffer, (uint64_t)strlen(buffer) + 1, stream);
 
 	FreezeStruct(stream, "CPU", &CPU, SnapCPU, COUNT(SnapCPU));
 
