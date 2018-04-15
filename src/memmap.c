@@ -789,7 +789,7 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 
 	do
 	{
-		size = READ_STREAM(ptr, maxsize + 0x200 - (ptr - buffer), fp);
+		size = READ_STREAM(ptr, (uint64_t)(maxsize + 0x200 - (ptr - buffer)), fp);
 		CLOSE_STREAM(fp);
 
 		size = HeaderRemove(size, &Memory.HeaderCount, ptr);
