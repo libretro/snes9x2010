@@ -759,17 +759,13 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	/* ** Memory.ROMFilename */
 
 	bool8	more;
-	int32	totalSize;
-	uint32	size;
+	uint64_t	size;
 	char	fname[PATH_MAX + 1], drive[_MAX_DRIVE + 1], dir[PATH_MAX + 1], name[PATH_MAX + 1], exts[PATH_MAX + 1];
-	char	*ext;
 	int	len;
 	uint8	*ptr;
 	STREAM	fp;
-
-	totalSize = 0;
-
-	ext = &exts[0];
+	int32 totalSize = 0;
+	char *ext = &exts[0];
 
 	Memory.HeaderCount = 0;
 
