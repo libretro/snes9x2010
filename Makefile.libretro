@@ -356,8 +356,7 @@ endif
 
 # Emscripten
 else ifeq ($(platform), emscripten)
-	EXT    ?= bc
-	TARGET := $(TARGET_NAME)_libretro_emscripten.$(EXT)
+	TARGET := $(TARGET_NAME)_libretro_emscripten.bc
 	STATIC_LINKING=1
 
 # GCW0
@@ -459,7 +458,7 @@ else
 	LD = link.exe
 endif
 else
-	OBJOUT   = -o
+	OBJOUT   = -o 
 	LINKOUT  = -o 
 	LD = $(CC)
 endif
@@ -473,7 +472,9 @@ else
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-ifeq ($(STATIC_LINKING_LINK),1)
+ifeq ($(platform), emscripten)
+	$(CC) $(CFLAGS) $(OBJOUT)$@ $^
+else ifeq ($(STATIC_LINKING_LINK),1)
 ifneq (,$(findstring msvc,$(platform)))
 	$(LD) $(LINKOUT)$@ $(OBJECTS)
 else
