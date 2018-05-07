@@ -874,13 +874,13 @@ static void fx_plot_2bit (void)
 		return;
 #endif
 
+	if (!(GSU.vPlotOptionReg & 0x01) && !(COLR & 0xf))
+		return;
+
 	if (GSU.vPlotOptionReg & 0x02)
 		c = (x ^ y) & 1 ? (uint8) (GSU.vColorReg >> 4) : (uint8) GSU.vColorReg;
 	else
 		c = (uint8) GSU.vColorReg;
-
-	if (!(GSU.vPlotOptionReg & 0x01) && !(c & 0xf))
-		return;
 
 	a = GSU.apvScreen[y >> 3] + GSU.x[x >> 3] + ((y & 7) << 1);
 	v = 128 >> (x & 7);
@@ -936,13 +936,13 @@ static void fx_plot_4bit (void)
 		return;
 #endif
 
+	if (!(GSU.vPlotOptionReg & 0x01) && !(COLR & 0xf))
+		return;
+
 	if (GSU.vPlotOptionReg & 0x02)
 		c = (x ^ y) & 1 ? (uint8) (GSU.vColorReg >> 4) : (uint8) GSU.vColorReg;
 	else
 		c = (uint8) GSU.vColorReg;
-
-	if (!(GSU.vPlotOptionReg & 0x01) && !(c & 0xf))
-		return;
 
 	a = GSU.apvScreen[y >> 3] + GSU.x[x >> 3] + ((y & 7) << 1);
 	v = 128 >> (x & 7);
@@ -4623,7 +4623,6 @@ void S9xSuperFXExec (void)
       
 		/* GSU executions functions*/
 		GSU.vCounter = nInstructions;
-		READR14;
       while (TF(G) && GSU.vCounter-- > 0)
 		{
 			/* Execute instruction from the pipe, and fetch next byte to the pipe*/
