@@ -292,6 +292,16 @@ else ifeq ($(platform), xenon)
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
 
+# Nintendo Classics (Hakchi)
+else ifeq ($(platform), nintendoc)
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic := -fPIC
+	SHARED := -shared -Wl,--version-script=libretro/link.T -Wl,--no-undefined
+	CFLAGS += -DARM
+	CFLAGS += -marm -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -funsafe-math-optimizations
+	CFLAGS += -fomit-frame-pointer -ffast-math
+	HAVE_NEON = 1
+
 # Nintendo Game Cube
 else ifeq ($(platform), ngc)
 	EXT=a
@@ -484,6 +494,15 @@ else
 	$(CC) $(fpic) $(SHARED) $(INCFLAGS) $(LDFLAGS) $(OBJOUT)$@ $(OBJECTS) $(LIBM)
 endif
 
+ifeq ($(platform),nintendoc)
+	@echo "** BUILDING HAKCHI HMOD PACKAGE **"
+	mkdir -p hakchi/etc/libretro/core/ hakchi/etc/libretro/info/ hakchi/etc/preinit.d/
+	rm -f hakchi/etc/libretro/info/*
+	cp $(TARGET_NAME)_libretro.so hakchi/etc/libretro/core/
+	cd hakchi/etc/libretro/info/; wget https://buildbot.libretro.com/assets/frontend/info/$(TARGET_NAME)_libretro.info
+	cd hakchi/; tar -czvf "CORE_$(TARGET_NAME).hmod" *
+endif
+
 %.o: %.c
 	$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
 
@@ -491,7 +510,7 @@ clean-objs:
 	rm -rf $(OBJECTS)
 
 clean:
-	rm -f $(OBJECTS) $(TARGET)
+	rm -f $(OBJECTS) $(TARGET) hakchi/CORE_$(TARGET_NAME).hmod
 
 .PHONY: clean
 endif
