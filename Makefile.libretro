@@ -385,11 +385,10 @@ else ifeq ($(platform), msvc)
 
 # Nintendo Switch (libtransistor)
 else ifeq ($(platform), switch)
-	EXT=a
-        TARGET := $(TARGET_NAME)_libretro_$(platform).$(EXT)
-        include $(LIBTRANSISTOR_HOME)/libtransistor.mk
-        STATIC_LINKING=1
-        STATIC_LINKING_LINK=1
+	EXT=so
+	TARGET := $(TARGET_NAME)_libretro_$(platform).$(EXT)
+	include $(LIBTRANSISTOR_HOME)/libtransistor.mk
+	LDFLAGS = $(LD_SHARED_LIBRARY_FLAGS) -ltransistor.lib.nro $(LIBTRANSISTOR_LIB_LDFLAGS) -E
 
 # Windows MSVC 2003 Xbox 1
 else ifeq ($(platform), xbox1_msvc2003)
@@ -467,9 +466,11 @@ ifeq ($(STATIC_LINKING),1)
 else
 	LD = link.exe
 endif
+else ifeq ($(platform), switch)
+# libtransistor.mk sets LD for us
 else
 	OBJOUT   = -o 
-	LINKOUT  = -o 
+	LINKOUT  = -o
 	LD = $(CC)
 endif
 
@@ -491,7 +492,8 @@ else
 	$(AR) rcs $@ $(OBJECTS)
 endif
 else
-	$(CC) $(fpic) $(SHARED) $(INCFLAGS) $(LDFLAGS) $(OBJOUT)$@ $(OBJECTS) $(LIBM)
+	echo ld $(LD)
+	$(LD) $(fpic) $(SHARED) $(LDFLAGS) $(OBJOUT)$@ $(OBJECTS) $(LIBM)
 endif
 
 ifeq ($(platform),nintendoc)
