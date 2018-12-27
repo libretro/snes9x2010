@@ -40,7 +40,7 @@ BIN := $(shell IFS=$$'\n'; cygpath "$(VS71COMNTOOLS)../../Vc7/bin")
 
 WindowsSdkDir := $(INETSDK)
 
-export INCLUDE := $(INCLUDE);$(WindowsSdkDir)/Include;libretro/msvc/msvc-2005
+export INCLUDE := $(INCLUDE);$(WindowsSdkDir)/Include
 export LIB := $(LIB);$(WindowsSdkDir);$(INETSDK)/Lib
 
 ############
