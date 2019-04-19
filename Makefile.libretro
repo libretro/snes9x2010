@@ -541,7 +541,6 @@ endif
 else
 	$(CC) $(fpic) $(SHARED) $(INCFLAGS) $(LDFLAGS) $(OBJOUT)$@ $(OBJECTS) $(LIBM)
 endif
-	@echo "** BUILD SUCCESSFUL! GG NO RE **"
 	
 %.o: %.c
 	$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
