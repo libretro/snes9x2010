@@ -228,6 +228,8 @@ bool overclock_cycles = false;
 bool reduce_sprite_flicker = false;
 int one_c, slow_one_c, two_c;
 
+static bool libretro_supports_bitmasks = false;
+
 static void check_variables(void)
 {
    bool reset_sfx = false;
@@ -702,6 +704,9 @@ void retro_init (void)
    if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565) && log_cb)
          log_cb(RETRO_LOG_INFO, "Frontend supports RGB565 - will use that instead of XRGB1555.\n");
 
+   if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
+      libretro_supports_bitmasks = true;
+
    snes_init();
    check_system_specs();
 }
@@ -718,6 +723,8 @@ void retro_deinit(void)
    S9xUnmapAllControls();
    
    free(GFX.Screen);
+   
+   libretro_supports_bitmasks = false;
 }
 
 void retro_reset (void)
@@ -763,18 +770,50 @@ static void report_buttons (void)
       switch (retro_devices[port])
       {
 	      case RETRO_DEVICE_JOYPAD:
-		      for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
-		      {
-			      bool pressed = input_cb(port, RETRO_DEVICE_JOYPAD, 0, i);
-                              uint16_t button_press = snes_lut[i];
+            if (libretro_supports_bitmasks)
+            {
+               int16_t ret = input_cb(port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+               for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
+               {
+                  bool pressed          = ret & (1 << i);
+                  uint16_t button_press = snes_lut[i];
 
-			      if (pressed)
-				      joypad[port] |= button_press;
-			      else
-				      joypad[port] &= ~button_press;
-		      }
+                  if (pressed)
+                     joypad[port] |= button_press;
+                  else
+                     joypad[port] &= ~button_press;
+               }
 #ifdef DEBUG_CONTROLS
-		      pressed_l2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
+               if (port == 0)
+               {
+                  pressed_l2 = ret & (1 << RETRO_DEVICE_ID_JOYPAD_L2);
+                  pressed_r2 = ret & (1 << RETRO_DEVICE_ID_JOYPAD_R2);
+                  pressed_r3 = ret & (1 << RETRO_DEVICE_ID_JOYPAD_R3);
+               }
+#endif
+            }
+            else
+            {
+               for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
+               {
+                  bool pressed = input_cb(port, RETRO_DEVICE_JOYPAD, 0, i);
+                  uint16_t button_press = snes_lut[i];
+
+                  if (pressed)
+                     joypad[port] |= button_press;
+                  else
+                     joypad[port] &= ~button_press;
+               }
+#ifdef DEBUG_CONTROLS
+               if (port == 0)
+               {
+                  pressed_l2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
+                  pressed_r2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
+                  pressed_r3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
+               }
+#endif
+            }
+#ifdef DEBUG_CONTROLS
 		      if (pressed_l2 && timeout == 0)
 		      {
 			      coldata_update_screen = !coldata_update_screen;
@@ -782,7 +821,6 @@ static void report_buttons (void)
                if (log_cb)
                   log_cb(RETRO_LOG_INFO, "coldata_update_screen: %d.\n", coldata_update_screen);
 		      }
-		      pressed_r2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
 		      if (pressed_r2 && timeout == 0)
 		      {
 			      PPU.RenderSub = !PPU.RenderSub;
@@ -790,7 +828,6 @@ static void report_buttons (void)
                if (log_cb)
                   log_cb(RETRO_LOG_INFO, "RenderSub: %d.\n", PPU.RenderSub);
 		      }
-		      pressed_r3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
 		      if (pressed_r3 && timeout == 0)
 		      {
 			      PPU.SFXSpeedupHack = !PPU.SFXSpeedupHack;
@@ -804,22 +841,22 @@ static void report_buttons (void)
 		      for ( j = 0; j < 4; j++)
 		      {
 			      for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
-			      {
-					bool pressed;
-					uint16 button_press;
+               {
+                  bool pressed;
+                  uint16 button_press;
 
-					if (Settings.CurrentROMisMultitapCompatible==TRUE)
-						pressed = input_cb(port+j, RETRO_DEVICE_JOYPAD, 0, i);
-					else
-						pressed = input_cb(port, RETRO_DEVICE_JOYPAD, 0, i);
-						
-				    button_press = snes_lut[i];
+                  if (Settings.CurrentROMisMultitapCompatible==TRUE)
+                     pressed = input_cb(port+j, RETRO_DEVICE_JOYPAD, 0, i);
+                  else
+                     pressed = input_cb(port, RETRO_DEVICE_JOYPAD, 0, i);
 
-				      	if (pressed)
-						joypad[j*2+port] |= button_press;
-				      	else
-						joypad[j*2+port] &= ~button_press;
-			      }
+                  button_press = snes_lut[i];
+
+                  if (pressed)
+                     joypad[j*2+port] |= button_press;
+                  else
+                     joypad[j*2+port] &= ~button_press;
+               }
 		      }
 		      break;
 

@@ -529,7 +529,6 @@ else
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	@echo "** BUILDING $(TARGET) FOR PLATFORM $(platform) **"
 ifeq ($(platform), emscripten)
 	$(CC) $(CFLAGS) $(OBJOUT)$@ $^
 else ifeq ($(STATIC_LINKING_LINK),1)
