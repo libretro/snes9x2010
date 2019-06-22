@@ -767,22 +767,13 @@ static void report_buttons (void)
 
    for ( port = 0; port <= 1; port++)
    {
+      int16_t ret = 0;
       switch (retro_devices[port])
       {
 	      case RETRO_DEVICE_JOYPAD:
             if (libretro_supports_bitmasks)
             {
-               int16_t ret = input_cb(port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
-               for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
-               {
-                  bool pressed          = ret & (1 << i);
-                  uint16_t button_press = snes_lut[i];
-
-                  if (pressed)
-                     joypad[port] |= button_press;
-                  else
-                     joypad[port] &= ~button_press;
-               }
+               ret = input_cb(port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
 #ifdef DEBUG_CONTROLS
                if (port == 0)
                {
@@ -794,16 +785,10 @@ static void report_buttons (void)
             }
             else
             {
+               ret = 0;
                for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
-               {
-                  bool pressed = input_cb(port, RETRO_DEVICE_JOYPAD, 0, i);
-                  uint16_t button_press = snes_lut[i];
-
-                  if (pressed)
-                     joypad[port] |= button_press;
-                  else
-                     joypad[port] &= ~button_press;
-               }
+                  if (input_cb(port, RETRO_DEVICE_JOYPAD, 0, i))
+                     ret |= (1 << i);
 #ifdef DEBUG_CONTROLS
                if (port == 0)
                {
@@ -813,6 +798,18 @@ static void report_buttons (void)
                }
 #endif
             }
+
+            for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
+            {
+               bool pressed          = ret & (1 << i);
+               uint16_t button_press = snes_lut[i];
+
+               if (pressed)
+                  joypad[port] |= button_press;
+               else
+                  joypad[port] &= ~button_press;
+            }
+
 #ifdef DEBUG_CONTROLS
 		      if (pressed_l2 && timeout == 0)
 		      {
