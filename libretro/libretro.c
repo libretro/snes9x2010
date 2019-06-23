@@ -738,18 +738,18 @@ static int16_t retro_justifier_state[2][2] = {{0}, {0}};
 extern uint16_t joypad[8];
 
 uint16_t snes_lut[] = { 
-SNES_B_MASK,
-SNES_Y_MASK,
-SNES_SELECT_MASK,
-SNES_START_MASK,
-SNES_UP_MASK,
-SNES_DOWN_MASK,
-SNES_LEFT_MASK,
-SNES_RIGHT_MASK,
-SNES_A_MASK,
-SNES_X_MASK,
-SNES_TL_MASK,
-SNES_TR_MASK
+   SNES_B_MASK,
+   SNES_Y_MASK,
+   SNES_SELECT_MASK,
+   SNES_START_MASK,
+   SNES_UP_MASK,
+   SNES_DOWN_MASK,
+   SNES_LEFT_MASK,
+   SNES_RIGHT_MASK,
+   SNES_A_MASK,
+   SNES_X_MASK,
+   SNES_TL_MASK,
+   SNES_TR_MASK
 };
 
 #define TIMER_DELAY 10
@@ -765,7 +765,7 @@ static void report_buttons (void)
    static unsigned timeout = TIMER_DELAY;
 #endif
 
-   for ( port = 0; port <= 1; port++)
+   for (port = 0; port <= 1; port++)
    {
       int16_t ret = 0;
       switch (retro_devices[port])
@@ -786,7 +786,7 @@ static void report_buttons (void)
             else
             {
                ret = 0;
-               for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
+               for (i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
                   if (input_cb(port, RETRO_DEVICE_JOYPAD, 0, i))
                      ret |= (1 << i);
 #ifdef DEBUG_CONTROLS
@@ -799,7 +799,7 @@ static void report_buttons (void)
 #endif
             }
 
-            for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
+            for (i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
             {
                bool pressed          = ret & (1 << i);
                uint16_t button_press = snes_lut[i];
@@ -835,19 +835,22 @@ static void report_buttons (void)
 #endif
 		      break;
 	      case RETRO_DEVICE_JOYPAD_MULTITAP:
-		      for ( j = 0; j < 4; j++)
+		      for (j = 0; j < 4; j++)
 		      {
-			      for ( i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
+               unsigned new_port = Settings.CurrentROMisMultitapCompatible ? (port + j) : (port);
+               if (libretro_supports_bitmasks)
+                  ret = input_cb(new_port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+               else
                {
-                  bool pressed;
-                  uint16 button_press;
+                  for (i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
+                     if (input_cb(new_port, RETRO_DEVICE_JOYPAD, 0, i))
+                        ret |= (1 << i);
+               }
 
-                  if (Settings.CurrentROMisMultitapCompatible==TRUE)
-                     pressed = input_cb(port+j, RETRO_DEVICE_JOYPAD, 0, i);
-                  else
-                     pressed = input_cb(port, RETRO_DEVICE_JOYPAD, 0, i);
-
-                  button_press = snes_lut[i];
+			      for (i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
+               {
+                  bool pressed        = ret & (1 << i);
+                  uint16 button_press = snes_lut[i];
 
                   if (pressed)
                      joypad[j*2+port] |= button_press;
@@ -864,7 +867,7 @@ static void report_buttons (void)
 		      retro_mouse_state[port][1] += _y;
             S9xApplyCommand(keymap[BTN_POINTER + port], retro_mouse_state[port][0], retro_mouse_state[port][1]);
 
-		      for ( i = RETRO_DEVICE_ID_MOUSE_LEFT; i <= RETRO_DEVICE_ID_MOUSE_RIGHT; i++)
+		      for (i = RETRO_DEVICE_ID_MOUSE_LEFT; i <= RETRO_DEVICE_ID_MOUSE_RIGHT; i++)
                S9xApplyCommand(keymap[MAKE_BUTTON(port + 1, i)], input_cb(port, RETRO_DEVICE_MOUSE, 0, i), 0);
 		      break;
 
@@ -873,7 +876,7 @@ static void report_buttons (void)
 		      retro_scope_state[1] += input_cb(port, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE, 0, RETRO_DEVICE_ID_LIGHTGUN_Y);
             S9xApplyCommand(keymap[BTN_POINTER], retro_scope_state[0], retro_scope_state[1]);
 
-		      for ( i = RETRO_DEVICE_ID_LIGHTGUN_TRIGGER; i <= RETRO_DEVICE_ID_LIGHTGUN_PAUSE; i++)
+		      for (i = RETRO_DEVICE_ID_LIGHTGUN_TRIGGER; i <= RETRO_DEVICE_ID_LIGHTGUN_PAUSE; i++)
                S9xApplyCommand(keymap[MAKE_BUTTON(port + 1, i)], input_cb(port, RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE, 0, i), 0);
 		      break;
 
@@ -883,7 +886,7 @@ static void report_buttons (void)
 		      retro_justifier_state[0][1] += input_cb(port, RETRO_DEVICE_LIGHTGUN_JUSTIFIER, 0, RETRO_DEVICE_ID_LIGHTGUN_Y);
             S9xApplyCommand(keymap[BTN_POINTER], retro_justifier_state[0][0], retro_justifier_state[0][1]);
 
-		      for ( i = RETRO_DEVICE_ID_LIGHTGUN_TRIGGER; i <= RETRO_DEVICE_ID_LIGHTGUN_START; i++)
+		      for (i = RETRO_DEVICE_ID_LIGHTGUN_TRIGGER; i <= RETRO_DEVICE_ID_LIGHTGUN_START; i++)
                S9xApplyCommand(keymap[MAKE_BUTTON(port + 1, i)], input_cb(port, RETRO_DEVICE_LIGHTGUN_JUSTIFIER, 0, i), 0);
 		      break;
 
