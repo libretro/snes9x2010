@@ -190,6 +190,8 @@
 
 #include <libretro.h>
 
+#include "libretro_core_options.h"
+
 #include "../src/boolean.h"
 #include "../src/snes9x.h"
 #include "../src/memmap.h"
@@ -406,13 +408,6 @@ static bool use_overscan;
 
 void retro_set_environment(retro_environment_t cb)
 {
-   static const struct retro_variable vars[] = {
-      { "snes9x_next_overclock", "SuperFX Overclock; Disabled(10MHz)|40MHz|60MHz|80MHz|100MHz|Underclock(5MHz)|Underclock(8MHz)" },
-      { "snes9x_next_overclock_cycles", "Reduce Slowdown (Hack, Unsafe); disabled|compatible|max" },
-      { "snes9x_next_reduce_sprite_flicker", "Reduce Flickering (Hack, Unsafe); disabled|enabled" },
-      { NULL, NULL },
-   };
-
    static const struct retro_controller_description port_1[] = {
       { "SNES Joypad", RETRO_DEVICE_JOYPAD },
       { "SNES Mouse", RETRO_DEVICE_MOUSE },
@@ -437,7 +432,7 @@ void retro_set_environment(retro_environment_t cb)
 
    environ_cb = cb;
 
-   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+   libretro_set_core_options(environ_cb);
    environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 }
 
