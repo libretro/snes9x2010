@@ -7,7 +7,7 @@ LAGFIX=1
 
 CORE_DIR := .
 BUILD_DIR = build
-OBJOUT = -o 
+OBJOUT = -o
 
 ifeq ($(platform),android_arm64-v8a)
 include $(BUILD_DIR)/Makefile.android_arm64-v8a
@@ -297,13 +297,23 @@ else ifeq ($(platform), rpi3)
         CFLAGS += -marm -mcpu=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard -funsafe-math-optimizations
         CFLAGS += -fomit-frame-pointer -ffast-math
         HAVE_NEON = 1
-        
+
+# Raspberry Pi 4
+else ifeq ($(platform), rpi4)
+        TARGET := $(TARGET_NAME)_libretro.so
+        fpic := -fPIC
+        SHARED := -shared -Wl,--version-script=libretro/link.T -Wl,--no-undefined
+        CFLAGS += -DARM
+        CFLAGS += -marm -mcpu=cortex-a72 -mfpu=neon-fp-armv8 -mfloat-abi=hard -funsafe-math-optimizations
+        CFLAGS += -fomit-frame-pointer -ffast-math
+        HAVE_NEON = 1
+
 # Classic Platforms ####################
 # Platform affix = classic_<ISA>_<µARCH>
 # Help at https://modmyclassic.com/comp
 
-# (armv7 a7, hard point, neon based) ### 
-# NESC, SNESC, C64 mini 
+# (armv7 a7, hard point, neon based) ###
+# NESC, SNESC, C64 mini
 else ifeq ($(platform), classic_armv7_a7)
 	TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
@@ -343,7 +353,7 @@ else ifeq ($(platform), xenon)
 	CFLAGS += -D__LIBXENON__ -m32 -D__ppc__
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
-	
+
 # Nintendo Game Cube
 else ifeq ($(platform), ngc)
 	EXT=a
@@ -526,8 +536,8 @@ else
 	LD = link.exe
 endif
 else
-	OBJOUT   = -o 
-	LINKOUT  = -o 
+	OBJOUT   = -o
+	LINKOUT  = -o
 	LD = $(CC)
 endif
 
@@ -551,7 +561,7 @@ endif
 else
 	$(CC) $(fpic) $(SHARED) $(INCFLAGS) $(LDFLAGS) $(OBJOUT)$@ $(OBJECTS) $(LIBM)
 endif
-	
+
 %.o: %.c
 	$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
 
