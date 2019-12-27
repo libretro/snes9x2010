@@ -554,12 +554,12 @@ ifeq ($(platform), emscripten)
 	$(CC) $(CFLAGS) $(OBJOUT)$@ $^
 else ifeq ($(STATIC_LINKING_LINK),1)
 ifneq (,$(findstring msvc,$(platform)))
-	$(LD) $(LINKOUT)$@ $(OBJECTS)
+	$(LD) $(LINKOUT) $@ $(OBJECTS)
 else
 	$(AR) rcs $@ $(OBJECTS)
 endif
 else
-	$(CC) $(fpic) $(SHARED) $(INCFLAGS) $(LDFLAGS) $(OBJOUT)$@ $(OBJECTS) $(LIBM)
+	$(CC) $(fpic) $(SHARED) $(INCFLAGS) $(LDFLAGS) $(OBJOUT) $@ $(OBJECTS) $(LIBM)
 endif
 
 %.o: %.c
