@@ -673,7 +673,7 @@ static void snes_init (void)
    Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
 }
 
-static void check_system_specs(void)
+static void set_system_specs(void)
 {
    unsigned level = 7;
    environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
@@ -703,7 +703,6 @@ void retro_init (void)
       libretro_supports_bitmasks = true;
 
    snes_init();
-   check_system_specs();
 }
 
 /* libretro uses relative values for analogue devices. 
@@ -1159,7 +1158,7 @@ bool retro_load_game(const struct retro_game_info *game)
 
    check_variables();
 
-
+   set_system_specs();
    environ_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &map);
 
    return TRUE;
