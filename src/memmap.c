@@ -1568,7 +1568,7 @@ void map_WriteProtectROM (void)
 	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true);
 
 #define MAP_HIROMMAP() \
-	printf("Map_HiROMMap\n"); \
+	S9xMessage(S9X_INFO, S9X_ROM_INFO, "Map_HiROMMap"); \
 	MAP_SYSTEM(); \
 	MAP_HIROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true); \
 	MAP_HIROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, true); \
