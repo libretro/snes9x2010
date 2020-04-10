@@ -1,3 +1,7 @@
+Next
+- Replace all printf functions with S9xMessage, as was      (Mahyar Koshkouei)
+  started in version 0.98.
+
 Snes9x 1.52
 - IMPORTANT NOTICE: The structure of savestates (also known
   as snapshots / freeze files) is incompatible with older

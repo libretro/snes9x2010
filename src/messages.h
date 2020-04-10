@@ -144,8 +144,10 @@
   (c) Copyright 1998 - 2001  John Stiles
   (c) Copyright 2001 - 2010  zones
 
-  (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE 
+  (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE
   WILL COMMERCIAL RIGHTS EVER BE APPROPRIATED TO ANY PARTY)
+
+  (c) Copyright 2020         Mahyar Koshkouei
 
   Specific ports contains the works of other authors. See headers in
   individual files.
@@ -182,18 +184,16 @@
 
 /* Types of message sent to S9xMessage() */
 
-enum
+typedef enum
 {
-	S9X_TRACE,
-	S9X_DEBUG,
-	S9X_WARNING,
-	S9X_INFO,
-	S9X_ERROR,
-	S9X_FATAL_ERROR
-};
+	S9X_MSG_DEBUG = 0,
+	S9X_MSG_INFO,
+	S9X_MSG_WARN,
+	S9X_MSG_ERROR
+} S9xMessagePriority;
 
 /* Individual message numbers */
-enum
+typedef enum
 {
 	S9X_ROM_INFO,
 	S9X_HEADERS_INFO,
@@ -226,6 +226,6 @@ enum
 	S9X_NOT_A_MOVIE_SNAPSHOT,
 	S9X_SNAPSHOT_INCONSISTENT,
 	S9X_AVI_INFO
-};
+} S9xMessageCategory;
 
 #endif

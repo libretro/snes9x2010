@@ -817,12 +817,12 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	}	while (more && (fp = OPEN_STREAM(fname, "rb")) != NULL);
 
 	if (Memory.HeaderCount == 0)
-		S9xMessage(S9X_INFO, S9X_HEADERS_INFO, "No ROM file header found.");
+		S9xMessage(S9X_MSG_INFO, S9X_HEADERS_INFO, "No ROM file header found.");
 	else
 		if (Memory.HeaderCount == 1)
-			S9xMessage(S9X_INFO, S9X_HEADERS_INFO, "Found ROM file header (and ignored it).");
+			S9xMessage(S9X_MSG_INFO, S9X_HEADERS_INFO, "Found ROM file header (and ignored it).");
 		else
-			S9xMessage(S9X_INFO, S9X_HEADERS_INFO, "Found multiple ROM file headers (and ignored them).");
+			S9xMessage(S9X_MSG_INFO, S9X_HEADERS_INFO, "Found multiple ROM file headers (and ignored them).");
 
 	return ((uint32) totalSize);
 }
@@ -869,7 +869,7 @@ again:
 	{
 		memmove(Memory.ROM, Memory.ROM + 512, totalFileSize - 512);
 		totalFileSize -= 512;
-		S9xMessage(S9X_INFO, S9X_HEADER_WARNING, "Try 'force no-header' option if the game doesn't work");
+		S9xMessage(S9X_MSG_INFO, S9X_HEADER_WARNING, "Try 'force no-header' option if the game doesn't work");
 		/* modifying ROM, so we need to rescore */
 		hi_score = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 		lo_score = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
@@ -976,7 +976,7 @@ again:
 
 	if (!Settings.ForceNotInterleaved && interleaved)
 	{
-		S9xMessage(S9X_INFO, S9X_ROM_INTERLEAVED_INFO, "ROM image is in interleaved format - converting...");
+		S9xMessage(S9X_MSG_INFO, S9X_ROM_INTERLEAVED_INFO, "ROM image is in interleaved format - converting...");
 
 		if (tales)
 		{
@@ -1021,7 +1021,7 @@ again:
 		{
 			if (retry_count == 0)
 			{
-				S9xMessage(S9X_INFO, S9X_ROM_CONFUSING_FORMAT_INFO, "ROM lied about its type! Trying again.");
+				S9xMessage(S9X_MSG_INFO, S9X_ROM_CONFUSING_FORMAT_INFO, "ROM lied about its type! Trying again.");
 				Settings.ForceNotInterleaved = TRUE;
 				Settings.ForceInterleaved = FALSE;
 				retry_count++;
@@ -1038,7 +1038,7 @@ again:
 		uint8	*tmp = (uint8 *) malloc(Memory.CalculatedSize - 0x400000);
 		if (tmp)
 		{
-			S9xMessage(S9X_INFO, S9X_ROM_INTERLEAVED_INFO, "Fixing swapped ExHiROM...");
+			S9xMessage(S9X_MSG_INFO, S9X_ROM_INTERLEAVED_INFO, "Fixing swapped ExHiROM...");
 			memcpy(tmp, Memory.ROM, Memory.CalculatedSize - 0x400000);
 			memmove(Memory.ROM, Memory.ROM + Memory.CalculatedSize - 0x400000, 0x400000);
 			memcpy(Memory.ROM + 0x400000, tmp, Memory.CalculatedSize - 0x400000);
@@ -1568,7 +1568,7 @@ void map_WriteProtectROM (void)
 	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true);
 
 #define MAP_HIROMMAP() \
-	S9xMessage(S9X_INFO, S9X_ROM_INFO, "Map_HiROMMap"); \
+	S9xMessage(S9X_MSG_INFO, S9X_ROM_INFO, "Map_HiROMMap"); \
 	MAP_SYSTEM(); \
 	MAP_HIROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true); \
 	MAP_HIROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, true); \
@@ -3251,7 +3251,7 @@ void InitROM (void)
 	sprintf(String, "\"%s\" [%s] %s, %s, %s, %s, SRAM:%s, ID:%s, CRC32:%08X",
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
 		(Memory.HiROM ? ((Memory.ExtendedFormat != NOPE) ? "ExHiROM": "HiROM") : "LoROM"), Size(), KartContents(Memory.ROMType), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), Memory.ROMId, Memory.ROMCRC32);
-	S9xMessage(S9X_INFO, S9X_ROM_INFO, String);
+	S9xMessage(S9X_MSG_INFO, S9X_ROM_INFO, String);
 
 	Settings.ForceLoROM = FALSE;
 	Settings.ForceHiROM = FALSE;

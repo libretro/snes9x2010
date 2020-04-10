@@ -176,34 +176,35 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#include <stdio.h>
+#include <fcntl.h>
 #include <stdint.h>
-#ifndef _MSC_VER
-#include <stdbool.h>
-#include <unistd.h>
-#endif
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <fcntl.h>
+#ifndef _MSC_VER
+#include <stdbool.h>
+#include <unistd.h>
+#endif
 
 #include <libretro.h>
 
 #include "libretro_core_options.h"
 
-#include "../src/boolean.h"
-#include "../src/snes9x.h"
-#include "../src/memmap.h"
-#include "../src/cpuexec.h"
-#include "../src/srtc.h"
-#include "../src/fxemu.h"
 #include "../src/apu.h"
+#include "../src/boolean.h"
+#include "../src/cheats.h"
+#include "../src/controls.h"
+#include "../src/cpuexec.h"
+#include "../src/display.h"
+#include "../src/fxemu.h"
+#include "../src/memmap.h"
+#include "../src/messages.h"
 #include "../src/ppu.h"
 #include "../src/snapshot.h"
-#include "../src/controls.h"
-#include "../src/cheats.h"
-#include "../src/display.h"
+#include "../src/snes9x.h"
+#include "../src/srtc.h"
 
 #define LR_MAP_BUTTON(id, name) S9xMapButton((id), S9xGetCommandT((name)))
 #define MAKE_BUTTON(pad, btn) (((pad)<<4)|(btn))
@@ -1209,10 +1210,13 @@ void S9xDeinitUpdate(int width, int height)
 /* Dummy functions that should probably be implemented correctly later. */
 const char* S9xGetDirectory(uint32_t dirtype) { return NULL; }
 
-void S9xMessage(int a, int b, const char* msg)
+void S9xMessage (S9xMessagePriority p, S9xMessageCategory c, const char *msg)
 {
+   // TODO: Add fprintf fallback.
    if (log_cb)
+   {
       log_cb(RETRO_LOG_INFO, "%s\n", msg);
+   }
 }
 
 /* S9x weirdness. */
