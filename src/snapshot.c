@@ -1261,10 +1261,10 @@ void S9xFreezeToStream (STREAM stream)
 
         S9xPackStatus();
 
-	sprintf(buffer, "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
+	snprintf(buffer, sizeof(buffer), "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
 	WRITE_STREAM(buffer, (uint64_t)strlen(buffer), stream);
 
-	sprintf(buffer, "NAM:%06d:%s%c", (int) strlen(Memory.ROMFilename) + 1, Memory.ROMFilename, 0);
+	snprintf(buffer, sizeof(buffer), "NAM:%06d:%s%c", (int) strlen(Memory.ROMFilename) + 1, Memory.ROMFilename, 0);
 	WRITE_STREAM(buffer, (uint64_t)strlen(buffer) + 1, stream);
 
 	FreezeStruct(stream, "CPU", &CPU, SnapCPU, COUNT(SnapCPU));

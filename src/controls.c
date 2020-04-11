@@ -249,7 +249,6 @@ s9xcommand_t			keymap[1024];
 static bool8			FLAG_LATCH = FALSE;
 static int32			curcontrollers[2] = { CONTROLS_NONE,    CONTROLS_NONE };
 static int32			newcontrollers[2] = { JOYPAD0, CONTROLS_NONE };
-static char			buf[256];
 uint16				joypad[8];
 
 static void DoGunLatch (int x, int y)
@@ -405,8 +404,13 @@ void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 i
 			return;
 
 		default:
-			fprintf(stderr, "Unknown controller type %d\n", controller);
+		{
+			char buf[128];
+			snprintf(buf, sizeof(buf),
+				 "Unknown controller type %u", controller);
+			S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_CONTROLS, buf);
 			break;
+		}
 	}
 
 	newcontrollers[port] = CONTROLS_NONE;
@@ -416,6 +420,7 @@ bool8 S9xVerifyControllers (void)
 {
 	bool8	ret;
 	int	port, i, used[NUMCTLS];
+	char    buf[256];
 
 	ret = FALSE;
 
@@ -442,8 +447,7 @@ bool8 S9xVerifyControllers (void)
 
 				if (used[i]++ > 0)
 				{
-					snprintf(buf, sizeof(buf), "Superscope used more than once! Disabling extra instances");
-					S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_CONTROLS, buf);
+					S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_CONTROLS, "Superscope used more than once! Disabling extra instances");
 					newcontrollers[port] = CONTROLS_NONE;
 					ret = TRUE;
 					break;
@@ -456,8 +460,7 @@ bool8 S9xVerifyControllers (void)
 
 				if (used[ONE_JUSTIFIER]++ > 0)
 				{
-					snprintf(buf, sizeof(buf), "Justifier used more than once! Disabling extra instances");
-					S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_CONTROLS, buf);
+					S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_CONTROLS, "Justifier used more than once! Disabling extra instances");
 					newcontrollers[port] = CONTROLS_NONE;
 					ret = TRUE;
 					break;
@@ -679,31 +682,36 @@ bool8 S9xMapPointer (uint32 id, s9xcommand_t mapping)
 	{
 		if (mapping.commandunion.pointer.aim_mouse0 && mouse[0].ID != InvalidControlID && mouse[0].ID != id)
 		{
-			fprintf(stderr, "ERROR: Rejecting attempt to control Mouse1 with two pointers\n");
+			S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_CONTROLS,
+				   "Rejecting attempt to control Mouse1 with two pointers");
 			return FALSE;
 		}
 
 		if (mapping.commandunion.pointer.aim_mouse1 && mouse[1].ID != InvalidControlID && mouse[1].ID != id)
 		{
-			fprintf(stderr, "ERROR: Rejecting attempt to control Mouse2 with two pointers\n");
+			S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_CONTROLS,
+				   "Rejecting attempt to control Mouse2 with two pointers");
 			return FALSE;
 		}
 
 		if (mapping.commandunion.pointer.aim_scope && superscope.ID != InvalidControlID && superscope.ID != id)
 		{
-			fprintf(stderr, "ERROR: Rejecting attempt to control SuperScope with two pointers\n");
+			S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_CONTROLS,
+				   "Rejecting attempt to control SuperScope with two pointers");
 			return FALSE;
 		}
 
 		if (mapping.commandunion.pointer.aim_justifier0 && justifier.ID[0] != InvalidControlID && justifier.ID[0] != id)
 		{
-			fprintf(stderr, "ERROR: Rejecting attempt to control Justifier1 with two pointers\n");
+			S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_CONTROLS,
+				   "Rejecting attempt to control Justifier1 with two pointers");
 			return FALSE;
 		}
 
 		if (mapping.commandunion.pointer.aim_justifier1 && justifier.ID[1] != InvalidControlID && justifier.ID[1] != id)
 		{
-			fprintf(stderr, "ERROR: Rejecting attempt to control Justifier2 with two pointers\n");
+			S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_CONTROLS,
+				   "Rejecting attempt to control Justifier2 with two pointers");
 			return FALSE;
 		}
 	}

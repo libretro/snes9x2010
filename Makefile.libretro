@@ -518,7 +518,7 @@ else ifneq (,$(findstring msvc,$(platform)))
 	WARNING_DEFINES =
 	CODE_DEFINES =
 else
-	WARNINGS_DEFINES = -Wall -W -Wno-unused-parameter -Wno-sign-compare -Wno-uninitialized
+	WARNINGS_DEFINES = -Wall -W -Wno-unused-parameter -Wno-sign-compare -Wno-uninitialized -Wno-implicit-fallthrough
 	CODE_DEFINES = -fomit-frame-pointer
 endif
 

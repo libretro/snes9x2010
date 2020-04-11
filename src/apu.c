@@ -147,6 +147,8 @@
   (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE 
   WILL COMMERCIAL RIGHTS EVER BE APPROPRIATED TO ANY PARTY)
 
+  (c) Copyright 2020        Mahyar Koshkouei
+
 
   Specific ports contains the works of other authors. See headers in
   individual files.
@@ -3420,10 +3422,16 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	buffer_size <<= 1;
 	buffer_size <<= 1;
 
-	printf("Sound buffer size: %d (%d samples)\n", buffer_size, sample_count);
+	{
+		char buf[128];
+		snprintf(buf, sizeof(buf), "Sound buffer size: %d (%d samples)",
+			buffer_size, sample_count);
+		S9xMessage(S9X_MSG_VERBOSE, S9X_CATEGORY_APU, buf);
+	}
 
 	if (landing_buffer)
 		free(landing_buffer);
+
 	landing_buffer = (short*)malloc(buffer_size * 2);
 	if (!landing_buffer)
 		return (FALSE);
@@ -3598,7 +3606,12 @@ void S9xAPUExecute (void)
 void S9xAPUTimingSetSpeedup (int ticks)
 {
 	if (ticks != 0)
-		printf("APU speedup hack: %d\n", ticks);
+	{
+		char buf[128];
+		snprintf(buf, sizeof(buf),
+			 "Setting APU speedup hack to %d ticks", ticks);
+		S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_APU, buf);
+	}
 
 	timing_hack_denominator = TEMPO_UNIT - ticks;
 	spc_set_tempo(timing_hack_denominator);

@@ -186,7 +186,7 @@
 
 typedef enum
 {
-	S9X_MSG_DEBUG = 0,
+	S9X_MSG_VERBOSE = 0,
 	S9X_MSG_INFO,
 	S9X_MSG_WARN,
 	S9X_MSG_ERROR

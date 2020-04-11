@@ -234,7 +234,7 @@ int one_c, slow_one_c, two_c;
 static bool libretro_supports_bitmasks = false;
 
 /* Used for logging to stderr if log_cb isn't available. */
-const char *lvl_str[] = { "DEBUG", "INFO", "WARN", "ERROR" };
+const char *lvl_str[] = { "VERBOSE", "INFO", "WARN", "ERROR" };
 const char *S9xMessageCategoryStr[] = {
 	"ROM", "PPU", "CPU", "APU", "MAP", "CONTROLS", "SNAPSHOT"
 };
