@@ -233,6 +233,20 @@ int one_c, slow_one_c, two_c;
 
 static bool libretro_supports_bitmasks = false;
 
+/* Used for logging to stderr if log_cb isn't available. */
+const char *lvl_str[] = { "DEBUG", "INFO", "WARN", "ERROR" };
+const char *S9xMessageCategoryStr[] = {
+	"ROM", "PPU", "CPU", "APU", "MAP", "CONTROLS", "SNAPSHOT"
+};
+
+#define LIBRETRO_LIB_NAME "Snes9x 2010"
+#define LIBRETRO_LOG_MSG(lvl, ...)					\
+		if (log_cb) log_cb(lvl, __VA_ARGS__);			\
+		else {							\
+			fprintf (stderr, "%s: %s: ", LIBRETRO_LIB_NAME, lvl_str[lvl]); \
+			fprintf (stderr, __VA_ARGS__); putc('\n', stderr); \
+		}
+
 static void check_variables(void)
 {
    bool reset_sfx = false;
@@ -446,7 +460,7 @@ void retro_get_system_info(struct retro_system_info *info)
 #else
    info->library_version  = CORE_VERSION;
 #endif
-   info->library_name     = "Snes9x 2010";
+   info->library_name     = LIBRETRO_LIB_NAME;
    info->block_extract    = false;
 }
 
@@ -522,8 +536,7 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
          retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
          break;
       default:
-         if (log_cb)
-            log_cb(RETRO_LOG_ERROR, "Invalid device!\n");
+	      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Invalid device!");
    }
 
    if (((retro_devices[0] == RETRO_DEVICE_JOYPAD) && retro_devices[1] == RETRO_DEVICE_JOYPAD) ||
@@ -635,8 +648,7 @@ static void snes_init (void)
    {
       Deinit();
       S9xDeinitAPU();
-      if (log_cb)
-         log_cb(RETRO_LOG_ERROR, "Failed to init Memory or APU.\n");
+      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Failed to init Memory or APU.");
       exit(1);
    }
    
@@ -697,8 +709,12 @@ void retro_init (void)
    environ_cb(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, &achievements);
 
    rgb565 = RETRO_PIXEL_FORMAT_RGB565;
-   if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565) && log_cb)
-         log_cb(RETRO_LOG_INFO, "Frontend supports RGB565 - will use that instead of XRGB1555.\n");
+   if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565))
+   {
+	   LIBRETRO_LOG_MSG(RETRO_LOG_INFO,
+			    "Frontend supports RGB565 - will use that instead "
+			    "of XRGB1555.");
+   }
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
       libretro_supports_bitmasks = true;
@@ -810,22 +826,20 @@ static void report_buttons (void)
 		      {
 			      coldata_update_screen = !coldata_update_screen;
                timeout = TIMER_DELAY;
-               if (log_cb)
-                  log_cb(RETRO_LOG_INFO, "coldata_update_screen: %d.\n", coldata_update_screen);
+	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "coldata_update_screen: %d."
+			coldata_update_screen);
 		      }
 		      if (pressed_r2 && timeout == 0)
 		      {
 			      PPU.RenderSub = !PPU.RenderSub;
                timeout = TIMER_DELAY;
-               if (log_cb)
-                  log_cb(RETRO_LOG_INFO, "RenderSub: %d.\n", PPU.RenderSub);
+	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "RenderSub: %d.", PPU.RenderSub);
 		      }
 		      if (pressed_r3 && timeout == 0)
 		      {
 			      PPU.SFXSpeedupHack = !PPU.SFXSpeedupHack;
                timeout = TIMER_DELAY;
-               if (log_cb)
-                  log_cb(RETRO_LOG_INFO, "SFXSpeedupHack: %d.\n", PPU.SFXSpeedupHack);
+	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "SFXSpeedupHack: %d.", PPU.SFXSpeedupHack);
 		      }
 #endif
 		      break;
@@ -886,8 +900,7 @@ static void report_buttons (void)
 		      break;
 
 	      default:
-            if (log_cb)
-               log_cb(RETRO_LOG_ERROR, "Unknown device.\n");
+		      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Unknown device.");
 
       }
    }
@@ -1016,7 +1029,7 @@ static bool merge_mapping(void)
 		return false;//can't merge the only one
 	a= &memorydesc[MAX_MAPS - (memorydesc_c-1)];
 	b= &memorydesc[MAX_MAPS - memorydesc_c];
-//printf("test %x/%x\n",a->start,b->start);
+
 	if (a->flags != b->flags)
 		return false;
 	if (a->disconnect != b->disconnect)
@@ -1027,7 +1040,6 @@ static bool merge_mapping(void)
 		return false;//we don't use these
 	if (((char*)a->ptr)+a->offset==((char*)b->ptr)+b->offset && a->select==b->select)
 	{
-//printf("merge/mirror\n");
 		a->select&=~(a->start^b->start);
 		memorydesc_c--;
 		return true;
@@ -1037,13 +1049,11 @@ static bool merge_mapping(void)
 		len=(0x1000000 - a->select);
 	if (len && ((len-1) & (len | a->disconnect))==0 && ((char*)a->ptr)+a->offset+len == ((char*)b->ptr)+b->offset)
 	{
-//printf("merge/consec\n");
 		a->select &=~ len;
 		a->disconnect &=~ len;
 		memorydesc_c--;
 		return true;
 	}
-//printf("nomerge\n");
 	return false;
 }
 
@@ -1143,17 +1153,14 @@ bool retro_load_game(const struct retro_game_info *game)
    loaded = LoadROM("");
    if (!loaded)
    {
-      struct retro_message msg; 
-      char msg_local[256];
+      const char err_msg[] = "ROM loading failed.";
+      struct retro_message msg = { err_msg, 360 };
 
-      snprintf(msg_local,
-            sizeof(msg_local), "ROM loading failed...");
-      if (log_cb)
-         log_cb(RETRO_LOG_ERROR, "ROM loading failed...\n");
-      msg.msg    = msg_local;
-      msg.frames = 360;
+      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, err_msg);
+
       if (environ_cb)
-         environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, (void*)&msg);
+         environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+
       return FALSE;
    }
 
@@ -1212,11 +1219,7 @@ const char* S9xGetDirectory(uint32_t dirtype) { return NULL; }
 
 void S9xMessage (S9xMessagePriority p, S9xMessageCategory c, const char *msg)
 {
-   // TODO: Add fprintf fallback.
-   if (log_cb)
-   {
-      log_cb(RETRO_LOG_INFO, "%s\n", msg);
-   }
+	LIBRETRO_LOG_MSG(p, "%s: %s", S9xMessageCategoryStr[c], msg);
 }
 
 /* S9x weirdness. */

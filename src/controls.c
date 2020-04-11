@@ -430,7 +430,7 @@ bool8 S9xVerifyControllers (void)
 				if (used[i]++ > 0)
 				{
 					snprintf(buf, sizeof(buf), "Mouse%d used more than once! Disabling extra instances", i - MOUSE0 + 1);
-					S9xMessage(S9X_MSG_ERROR, S9X_CONFIG_INFO, buf);
+					S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_CONTROLS, buf);
 					newcontrollers[port] = CONTROLS_NONE;
 					ret = TRUE;
 					break;
@@ -443,7 +443,7 @@ bool8 S9xVerifyControllers (void)
 				if (used[i]++ > 0)
 				{
 					snprintf(buf, sizeof(buf), "Superscope used more than once! Disabling extra instances");
-					S9xMessage(S9X_MSG_ERROR, S9X_CONFIG_INFO, buf);
+					S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_CONTROLS, buf);
 					newcontrollers[port] = CONTROLS_NONE;
 					ret = TRUE;
 					break;
@@ -457,7 +457,7 @@ bool8 S9xVerifyControllers (void)
 				if (used[ONE_JUSTIFIER]++ > 0)
 				{
 					snprintf(buf, sizeof(buf), "Justifier used more than once! Disabling extra instances");
-					S9xMessage(S9X_MSG_ERROR, S9X_CONFIG_INFO, buf);
+					S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_CONTROLS, buf);
 					newcontrollers[port] = CONTROLS_NONE;
 					ret = TRUE;
 					break;
@@ -474,7 +474,7 @@ bool8 S9xVerifyControllers (void)
 						if (used[mp5[port][i] - JOYPAD0]++ > 0)
 						{
 							snprintf(buf, sizeof(buf), "Joypad%d used more than once! Disabling extra instances", mp5[port][i] - JOYPAD0 + 1);
-							S9xMessage(S9X_MSG_ERROR, S9X_CONFIG_INFO, buf);
+							S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_CONTROLS, buf);
 							mp5[port][i] = CONTROLS_NONE;
 							ret = TRUE;
 							break;
@@ -495,7 +495,7 @@ bool8 S9xVerifyControllers (void)
 				if (used[i - JOYPAD0]++ > 0)
 				{
 					snprintf(buf, sizeof(buf), "Joypad%d used more than once! Disabling extra instances", i - JOYPAD0 + 1);
-					S9xMessage(S9X_MSG_ERROR, S9X_CONFIG_INFO, buf);
+					S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_CONTROLS, buf);
 					newcontrollers[port] = CONTROLS_NONE;
 					ret = TRUE;
 					break;
