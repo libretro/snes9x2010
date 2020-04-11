@@ -745,7 +745,7 @@ static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
 	if (size - calc_size == 512)
 	{
 		memmove(buf, buf + 512, calc_size);
-		*(headerCount)++;
+		(*headerCount)++;
 		size -= 512;
 	}
 
