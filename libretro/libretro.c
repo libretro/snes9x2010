@@ -648,7 +648,7 @@ static void snes_init (void)
    {
       Deinit();
       S9xDeinitAPU();
-      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Failed to init Memory or APU.");
+      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Failed to init Memory or APU.\n");
       exit(1);
    }
    
@@ -713,7 +713,7 @@ void retro_init (void)
    {
 	   LIBRETRO_LOG_MSG(RETRO_LOG_INFO,
 			    "Frontend supports RGB565 - will use that instead "
-			    "of XRGB1555.");
+			    "of XRGB1555.\n");
    }
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
@@ -826,20 +826,20 @@ static void report_buttons (void)
 		      {
 			      coldata_update_screen = !coldata_update_screen;
                timeout = TIMER_DELAY;
-	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "coldata_update_screen: %d."
+	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "coldata_update_screen: %d.\n"
 			coldata_update_screen);
 		      }
 		      if (pressed_r2 && timeout == 0)
 		      {
 			      PPU.RenderSub = !PPU.RenderSub;
                timeout = TIMER_DELAY;
-	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "RenderSub: %d.", PPU.RenderSub);
+	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "RenderSub: %d.\n", PPU.RenderSub);
 		      }
 		      if (pressed_r3 && timeout == 0)
 		      {
 			      PPU.SFXSpeedupHack = !PPU.SFXSpeedupHack;
                timeout = TIMER_DELAY;
-	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "SFXSpeedupHack: %d.", PPU.SFXSpeedupHack);
+	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "SFXSpeedupHack: %d.\n", PPU.SFXSpeedupHack);
 		      }
 #endif
 		      break;
@@ -900,7 +900,7 @@ static void report_buttons (void)
 		      break;
 
 	      default:
-		      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Unknown device.");
+		      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Unknown device.\n");
 
       }
    }
@@ -1153,7 +1153,7 @@ bool retro_load_game(const struct retro_game_info *game)
    loaded = LoadROM("");
    if (!loaded)
    {
-      const char err_msg[] = "ROM loading failed.";
+      const char err_msg[] = "ROM loading failed.\n";
       struct retro_message msg = { err_msg, 360 };
 
       LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, err_msg);
@@ -1219,7 +1219,7 @@ const char* S9xGetDirectory(uint32_t dirtype) { return NULL; }
 
 void S9xMessage (S9xMessagePriority p, S9xMessageCategory c, const char *msg)
 {
-	LIBRETRO_LOG_MSG(p, "%s: %s", S9xMessageCategoryStr[c], msg);
+	LIBRETRO_LOG_MSG(p, "%s: %s\n", S9xMessageCategoryStr[c], msg);
 }
 
 /* S9x weirdness. */
