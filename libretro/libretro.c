@@ -239,6 +239,10 @@ const char *S9xMessageCategoryStr[] = {
 	"ROM", "PPU", "CPU", "APU", "MAP", "CONTROLS", "SNAPSHOT"
 };
 
+/* Use a 128ms buffer. */
+#define APU_BUF_LEN_MS  128
+#define APU_BUF_SZ      (APU_BUF_LEN_MS * sizeof(int16_t) * 2)
+
 #define LIBRETRO_LIB_NAME "Snes9x 2010"
 #define LIBRETRO_LOG_MSG(lvl, ...)					\
 		if (log_cb) log_cb(lvl, __VA_ARGS__);			\
@@ -468,7 +472,7 @@ static void S9xAudioCallback(void)
 {
    size_t avail;
    /* Just pick a big buffer. We won't use it all. */
-   static int16_t audio_buf[0x20000];
+   static int16_t audio_buf[APU_BUF_SZ];
 
    S9xFinalizeSamples();
    avail = S9xGetSampleCount();
@@ -651,15 +655,14 @@ static void snes_init (void)
       LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Failed to init Memory or APU.\n");
       exit(1);
    }
-   
-   //very slow devices will still pop
-   
-   //this needs to be applied to all snes9x cores
-   
-   //increasing the buffer size does not cause extra lag(tested with 1000ms buffer)
-   //bool8 S9xInitSound (int buffer_ms, int lag_ms)
 
-   S9xInitSound(1000, 0);//just give it a 1 second buffer
+   if (S9xInitSound(APU_BUF_LEN_MS, 0) != true)
+   {
+      Deinit();
+      S9xDeinitAPU();
+      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Failed to create sound buffer.\n");
+      exit(1);
+   }
 
    S9xSetSamplesAvailableCallback(S9xAudioCallback);
 
