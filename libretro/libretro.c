@@ -425,8 +425,6 @@ void retro_set_input_state(retro_input_state_t cb)
    input_cb = cb;
 }
 
-static bool use_overscan;
-
 void retro_set_environment(retro_environment_t cb)
 {
    static const struct retro_controller_description port_1[] = {
@@ -625,16 +623,17 @@ static void map_buttons (void)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-   info->geometry.base_width = 256;
-   info->geometry.base_height = use_overscan ? 239 : 224;
-   info->geometry.max_width = 512;
-   info->geometry.max_height = 512;
+   info->geometry.base_width = SNES_WIDTH;
+   info->geometry.base_height = SNES_HEIGHT;
+   info->geometry.max_width = MAX_SNES_WIDTH;
+   info->geometry.max_height = MAX_SNES_HEIGHT;
    info->geometry.aspect_ratio = 4.0 / 3.0;
    if (!Settings.PAL)
-      info->timing.fps = 21477272.0 / 357366.0;
+      info->timing.fps = NTSC_MASTER_CLOCK / 357366.0;
    else
-      info->timing.fps = 21281370.0 / 425568.0;
-   info->timing.sample_rate = 32040.5;
+      info->timing.fps = PAL_MASTER_CLOCK / 425568.0;
+
+   info->timing.sample_rate = SNES_AUDIO_FREQ;
 }
 
 static void snes_init (void)
@@ -644,8 +643,8 @@ static void snes_init (void)
    Settings.Transparency = TRUE;
    Settings.FrameTimePAL = 20000;
    Settings.FrameTimeNTSC = 16667;
-   Settings.SoundPlaybackRate = 32000;
-   Settings.SoundInputRate = 32000;
+   Settings.SoundPlaybackRate = SNES_AUDIO_FREQ;
+   Settings.SoundInputRate = SNES_AUDIO_FREQ;
    Settings.HDMATimingHack = 100;
    Settings.BlockInvalidVRAMAccessMaster = TRUE;
    Settings.CartAName[0] = 0;
@@ -675,7 +674,7 @@ static void snes_init (void)
 
    S9xSetSamplesAvailableCallback( S9xAudioCallbackQueue );
 
-   GFX.Pitch = use_overscan ? 1024 : 2048; // FIXME: What is this supposed to do? Overscan has nothing to do with anything like this. If this is the Wii performance hack, it should be done differently.
+   GFX.Pitch = 512 * sizeof(uint16_t);
 
 #if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS) && !defined(__SWITCH__)
    /* request 128-bit alignment here if possible */
@@ -709,8 +708,6 @@ void retro_init (void)
    struct retro_log_callback log;
    enum retro_pixel_format rgb565;
    bool achievements             = true;
-   if (!environ_cb(RETRO_ENVIRONMENT_GET_OVERSCAN, &use_overscan))
-	   use_overscan = FALSE;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
       log_cb = log.log;
@@ -1203,27 +1200,9 @@ unsigned retro_get_region (void)
 
 void S9xDeinitUpdate(int width, int height)
 {
-   GFX.Pitch = width * 2;
-   
-   // TODO: Reverse case.
-   if (!use_overscan)
-   {
-      const uint16_t *frame = (const uint16_t*)GFX.Screen;
-      if (height == 239)
-      {
-         frame += 7 * 1024;
-         height = 224;
-      }
-      else if (height == 478)
-      {
-         frame += 15 * 512;
-         height = 448;
-      }
-
-      video_cb(frame, width, height, GFX.Pitch);
-   }
-   else
-      video_cb(GFX.Screen, width, height, GFX.Pitch);
+   //GFX.Pitch = width * 2;
+   /* TODO: Use SET_GEOMETRY to change display size. */
+   video_cb(GFX.Screen, width, height, GFX.Pitch);
 }
 
 /* Dummy functions that should probably be implemented correctly later. */

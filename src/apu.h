@@ -448,6 +448,7 @@ typedef struct
 
 	struct
 	{
+		/* TODO: Remove padding. */
 		/* padding to neutralize address overflow */
 		union {
 			uint8_t padding1 [0x100];
