@@ -478,7 +478,7 @@ void S9xAPUAllowTimeOverflow (bool8 allow);
 void S9xAPULoadState (uint8 * block);
 void S9xAPUSaveState (uint8 * block);
 
-bool8 S9xInitSound (int buffer_ms, int lag_ms);
+bool8 S9xInitSound (size_t buffer_size, int lag_ms);
 
 bool8 S9xSyncSound (void);
 int S9xGetSampleCount (void);

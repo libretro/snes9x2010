@@ -532,7 +532,7 @@ static INLINE void dsp_misc_30 (void)
 /* Voices */
 
 #define dsp_voice_V1(v) \
-	dsp_m.t_dir_addr = dsp_m.t_dir * 0x100 + dsp_m.t_srcn * 4; \
+	dsp_m.t_dir_addr = (dsp_m.t_dir * 0x100 + dsp_m.t_srcn * 4) & 0xffff; \
 	dsp_m.t_srcn = v->regs[V_SRCN]
 
 #define dsp_voice_V2(v) \
@@ -3071,8 +3071,9 @@ void NO_OPTIMIZE spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 ***********************************************************************************/
 
 #define APU_DEFAULT_INPUT_RATE		32000
-#define APU_MINIMUM_SAMPLE_COUNT	(512*8)
-#define APU_MINIMUM_SAMPLE_BLOCK	(128*8)
+#define APU_MINIMUM_SAMPLE_COUNT	(512)
+#define APU_MINIMUM_BUFF_SIZE		(APU_MINIMUM_SAMPLE_COUNT * 2 * 2)
+#define APU_MINIMUM_SAMPLE_BLOCK	(128)
 #define APU_NUMERATOR_NTSC		15664
 #define APU_DENOMINATOR_NTSC		328125
 #define APU_NUMERATOR_PAL		34176
@@ -3082,11 +3083,11 @@ static apu_callback	sa_callback     = NULL;
 
 static bool8		sound_in_sync   = TRUE;
 
-static int		buffer_size;
 static int		lag_master      = 0;
 static int		lag             = 0;
 
-static short		*landing_buffer = NULL;
+static int16_t		*landing_buffer = NULL;
+static size_t		buffer_size = 0;
 
 static bool8		resampler      = FALSE;
 
@@ -3169,6 +3170,7 @@ static void resampler_read(short *data, int num_samples)
 				bytesToConsume = bytesUntilBufferEnd;
 			if (rb_start >= rb_buffer_size)
 				rb_start = 0;
+
 			memcpy(data, &rb_buffer[rb_start], bytesToConsume);
 			data += bytesToConsume / sizeof(short);
 			rb_start += bytesToConsume;
@@ -3352,6 +3354,7 @@ static void spc_set_output( short* out, int size )
 void S9xFinalizeSamples (void)
 {
 	bool8 ret;
+
 	if (!Settings.Mute)
 	{
 		ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
@@ -3400,45 +3403,35 @@ static void UpdatePlaybackRate (void)
 	resampler_time_ratio(time_ratio);
 }
 
-bool8 S9xInitSound (int buffer_ms, int lag_ms)
+bool8 S9xInitSound (size_t req_buff_size, int lag_ms)
 {
-	/*	buffer_ms : buffer size given in millisecond
+	/*	buffer_size : size of buffer in bytes
 		lag_ms    : allowable time-lag given in millisecond */
-	int sample_count, lag_sample_count;
+	int lag_sample_count;
 
-	sample_count     = buffer_ms * 32000 / 1000;
 	lag_sample_count = lag_ms    * 32000 / 1000;
-
 	lag_master = lag_sample_count;
-
 	lag_master <<= 1;
-
 	lag = lag_master;
 
-	if (sample_count < APU_MINIMUM_SAMPLE_COUNT)
-		sample_count = APU_MINIMUM_SAMPLE_COUNT;
-
-	buffer_size = sample_count;
-	buffer_size <<= 1;
-	buffer_size <<= 1;
-
+	if(req_buff_size < APU_MINIMUM_BUFF_SIZE)
 	{
-		char buf[128];
-		snprintf(buf, sizeof(buf), "Sound buffer size: %d (%d samples)",
-			buffer_size, sample_count);
-		S9xMessage(S9X_MSG_VERBOSE, S9X_CATEGORY_APU, buf);
+		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_APU,
+			   "The requested buffer size was too small");
+		goto err;
 	}
+
+	buffer_size = req_buff_size;
 
 	if (landing_buffer)
 		free(landing_buffer);
 
-	landing_buffer = (short*)malloc(buffer_size * 2);
+	landing_buffer = (short*)malloc(req_buff_size);
 	if (!landing_buffer)
-		return (FALSE);
+		goto err;
 
 	/* The resampler and spc unit use samples (16-bit short) as
 	   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
-
 	if (!resampler)
 	{
 		resampler_new(buffer_size >> (Settings.SoundSync ? 0 : 1));
@@ -3453,10 +3446,19 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	UpdatePlaybackRate();
 
 	return TRUE;
+
+err:
+	Settings.Mute = 1;
+	S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_APU,
+			   "Audio output is disabled due to an error");
+	return FALSE;
 }
 
 void S9xSetSoundMute(bool8 mute)
 {
+	if(landing_buffer == NULL)
+		return;
+
 	Settings.Mute = mute;
 }
 

@@ -239,9 +239,11 @@ const char *S9xMessageCategoryStr[] = {
 	"ROM", "PPU", "CPU", "APU", "MAP", "CONTROLS", "SNAPSHOT"
 };
 
-/* Use a 128ms buffer. */
-#define APU_BUF_LEN_MS  128
-#define APU_BUF_SZ      (APU_BUF_LEN_MS * sizeof(int16_t) * 2)
+/* Use a 64ms buffer. */
+/* 32000*(64/1000) = 2048
+ * 2048 * 2 = 4096 because of stereo. */
+#define APU_BUF_FRAMES	(2048 * 2)
+#define APU_BUF_SZ      (APU_BUF_FRAMES * sizeof(int16_t))
 
 #define LIBRETRO_LIB_NAME "Snes9x 2010"
 #define LIBRETRO_LOG_MSG(lvl, ...)					\
@@ -468,7 +470,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->block_extract    = false;
 }
 
-static void S9xAudioCallback(void)
+static void S9xAudioCallbackQueue(void)
 {
    size_t avail;
    /* Just pick a big buffer. We won't use it all. */
@@ -476,6 +478,10 @@ static void S9xAudioCallback(void)
 
    S9xFinalizeSamples();
    avail = S9xGetSampleCount();
+
+   if(avail > APU_BUF_FRAMES)
+	   avail = APU_BUF_FRAMES;
+
    S9xMixSamples(audio_buf, avail);
    audio_batch_cb(audio_buf, avail >> 1);
 }
@@ -656,15 +662,18 @@ static void snes_init (void)
       exit(1);
    }
 
-   if (S9xInitSound(APU_BUF_LEN_MS, 0) != true)
+   if (S9xInitSound(APU_BUF_SZ, 0) != true)
    {
-      Deinit();
+	   const char aud_err[] = "Audio output is disabled due to an internal error";
+      struct retro_message msg = { aud_err, 360 };
+
+      if (environ_cb)
+         environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+
       S9xDeinitAPU();
-      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Failed to create sound buffer.\n");
-      exit(1);
    }
 
-   S9xSetSamplesAvailableCallback(S9xAudioCallback);
+   S9xSetSamplesAvailableCallback( S9xAudioCallbackQueue );
 
    GFX.Pitch = use_overscan ? 1024 : 2048; // FIXME: What is this supposed to do? Overscan has nothing to do with anything like this. If this is the Wii performance hack, it should be done differently.
 
@@ -944,7 +953,7 @@ void retro_run (void)
    S9xMainLoop();
 
    //Force emptying the audio buffer at the end of the frame
-   S9xAudioCallback();
+    S9xAudioCallbackQueue();
 }
 
 size_t retro_serialize_size (void)

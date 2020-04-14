@@ -493,9 +493,9 @@ fpic=
 endif
 
 ifeq ($(DEBUG), 1)
-	CFLAGS += -O0 -g
+	CFLAGS += -O0 -g3
 else
-	CFLAGS += -O2 -DNDEBUG -DGIT_VERSION=\"$(GIT_VERSION)\"
+	CFLAGS += -Og -g3 -flto=auto -DNDEBUG -DGIT_VERSION=\"$(GIT_VERSION)\"
 endif
 
 include $(BUILD_DIR)/Makefile.common
@@ -518,8 +518,8 @@ else ifneq (,$(findstring msvc,$(platform)))
 	WARNING_DEFINES =
 	CODE_DEFINES =
 else
-	WARNINGS_DEFINES = -Wall -W -Wno-unused-parameter -Wno-sign-compare -Wno-uninitialized -Wno-implicit-fallthrough
-	CODE_DEFINES = -fomit-frame-pointer
+	WARNINGS_DEFINES = -Wall -Wextra -Wno-sign-compare -Wno-implicit-fallthrough -pipe
+	#-fprofile-arcs -ftest-coverage
 endif
 
 COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) $(fpic)
@@ -559,11 +559,11 @@ else
 	$(AR) rcs $@ $(OBJECTS)
 endif
 else
-	$(CC) $(fpic) $(SHARED) $(INCFLAGS) $(LDFLAGS) $(OBJOUT) $@ $(OBJECTS) $(LIBM)
+	+$(CC) $(fpic) -Og -g3 $(SHARED) $(INCFLAGS) $(LDFLAGS) $(OBJOUT) $@ $(OBJECTS) $(LIBM) -flto -pipe -g3
 endif
 
 %.o: %.c
-	$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
+	+$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 clean-objs:
 	rm -rf $(OBJECTS)
