@@ -613,6 +613,7 @@ static bool8 is_SufamiTurbo_BIOS (uint8 *data, uint32 size)
    return FALSE;
 }
 
+#if SNES_SUPPORT_MULTI_CART
 static bool8 is_SufamiTurbo_Cart (uint8 *data, uint32 size)
 {
 	if (size >= 0x80000 && size <= 0x100000 && strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0
@@ -627,6 +628,7 @@ static bool8 is_SameGame_BIOS (uint8 *data, uint32 size)
 		return (TRUE);
    return (FALSE);
 }
+#endif
 
 static bool8 is_SameGame_Add_On (uint8 *data, uint32 size)
 {
@@ -1059,6 +1061,7 @@ again:
     return (TRUE);
 }
 
+#if SNES_SUPPORT_MULTI_CART
 bool8 LoadMultiCart (const char *cartA, const char *cartB)
 {
 	bool8 r;
@@ -1234,6 +1237,7 @@ bool8 LoadSameGame (const char *cartA, const char *cartB)
 
 	return (TRUE);
 }
+#endif /* SNES_SUPPORT_MULTI_CART */
 
 #define MAP_INITIALIZE() \
 { \

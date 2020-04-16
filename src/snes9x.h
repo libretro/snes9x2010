@@ -198,6 +198,11 @@ extern "C" {
 
 #define S9X_ACCURACY_LEVEL		3
 
+
+#ifndef SNES_SUPPORT_MULTI_CART
+#define SNES_SUPPORT_MULTI_CART		0
+#endif
+
 #include <boolean.h>
 #include <streams/memory_stream.h>
 
