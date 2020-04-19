@@ -147,7 +147,7 @@
   (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE 
   WILL COMMERCIAL RIGHTS EVER BE APPROPRIATED TO ANY PARTY)
 
-  (c) Copyright 2020        Mahyar Koshkouei
+  (c) Copyright 2020         Mahyar Koshkouei
 
 
   Specific ports contains the works of other authors. See headers in
@@ -1466,25 +1466,25 @@ void spc_enable_rom( int enable )
 		dsp_run( clock_count ); \
 	}
 
-static INLINE void spc_dsp_write( int data, int time )
+static INLINE void spc_dsp_write( const uint8_t data )
 {
-	int addr;
+	uint_fast8_t addr;
 
 	/* Writes DSP registers. */
 	addr = m.smp_regs[0][R_DSPADDR];
-	dsp_m.regs [addr] = (uint8_t) data;
+	dsp_m.regs [addr] = data;
 	switch ( addr & 0x0F )
 	{
 		case V_ENVX:
-			dsp_m.envx_buf = (uint8_t) data;
+			dsp_m.envx_buf = data;
 			break;
 
 		case V_OUTX:
-			dsp_m.outx_buf = (uint8_t) data;
+			dsp_m.outx_buf = data;
 			break;
 		case 0x0C:
 			if ( addr == R_KON )
-				dsp_m.new_kon = (uint8_t) data;
+				dsp_m.new_kon = data;
 
 			if ( addr == R_ENDX ) /* always cleared, regardless of data written */
 			{
@@ -1510,7 +1510,7 @@ static INLINE void spc_dsp_write( int data, int time )
 #define NO_READ_BEFORE_WRITE			8192
 #define NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO	4096 
 
-static void spc_cpu_write_smp_reg_( int data, int time, int addr )
+static void spc_cpu_write_smp_reg_( unsigned data, int time, int addr )
 {
 	switch ( addr )
    {
@@ -1596,7 +1596,7 @@ static void spc_cpu_write_smp_reg_( int data, int time, int addr )
    }
 }
 
-static void spc_cpu_write( int32_t data, uint16_t addr, int32_t time )
+static void spc_cpu_write( unsigned data, uint16_t addr, int32_t time )
 {
 	int32_t reg;
 	/* RAM */
@@ -1619,7 +1619,7 @@ static void spc_cpu_write( int32_t data, uint16_t addr, int32_t time )
 				{
 					RUN_DSP(time, reg_times [m.smp_regs[0][R_DSPADDR]] );
 					if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
-						spc_dsp_write( data, time );
+						spc_dsp_write( data );
 				}
 				else
 					spc_cpu_write_smp_reg_( data, time, reg);
@@ -1884,7 +1884,7 @@ loop:
 							  {
 								  RUN_DSP(rel_time, reg_times [m.smp_regs[0][R_DSPADDR]] );
 								  if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
-									  spc_dsp_write( data, rel_time );
+									  spc_dsp_write( data );
 							  }
 							  else
 								  spc_cpu_write_smp_reg_( data, rel_time, i);
@@ -1908,7 +1908,7 @@ loop:
 						  {
 							  RUN_DSP(rel_time, reg_times [m.smp_regs[0][R_DSPADDR]] );
 							  if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
-								  spc_dsp_write( a, rel_time );
+								  spc_dsp_write( a );
 						  }
 						  else if ( sel > 1 ) /* 1% not $F2 or $F3 */
 							  spc_cpu_write_smp_reg_( a, rel_time, i );
