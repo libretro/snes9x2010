@@ -3234,17 +3234,15 @@ static void resampler_read(short *data, int num_samples)
 		rb_start -= rb_buffer_size;
 }
 
-static void resampler_new(int num_samples)
+static uint_fast8_t resampler_new(size_t buffer_size)
 {
-	int new_size = num_samples << 1;
+	rb_buffer_size = buffer_size;
+	rb_buffer = malloc(rb_buffer_size);
+	if(rb_buffer == NULL)
+		return 1;
 
-	rb_buffer_size = new_size;
-	rb_buffer = (unsigned char*)malloc(rb_buffer_size);
-	memset (rb_buffer, 0, rb_buffer_size);
-
-	rb_size = 0;
-	rb_start = 0;
 	resampler_clear();
+	return 0;
 }
 
 static INLINE bool8 resampler_push(short *src, int num_samples)
@@ -3269,19 +3267,6 @@ static INLINE bool8 resampler_push(short *src, int num_samples)
 	rb_size += bytes;
 
 	return TRUE;
-}
-
-static INLINE void resampler_resize (int num_samples)
-{
-	/* int size; */
-	/* size = num_samples << 1; */
-	free(rb_buffer);
-	rb_buffer_size = rb_size;
-	rb_buffer = (unsigned char*)malloc(rb_buffer_size);
-	memset (rb_buffer, 0, rb_buffer_size);
-
-	rb_size = 0;
-	rb_start = 0;
 }
 
 /***********************************************************************************
@@ -3352,20 +3337,19 @@ static void spc_set_output( short* out, int size )
 
 void S9xFinalizeSamples (void)
 {
-	bool8 ret;
-
 	if (!Settings.Mute)
 	{
-		ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
-		sound_in_sync = FALSE;
+		bool8 ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
 
 		/* We weren't able to process the entire buffer. Potential overrun. */
-		if (!ret && Settings.SoundSync)
+		if (!ret)
+		{
+			sound_in_sync = FALSE;
 			return;
+		}
 	}
 
-	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED() || Settings.Mute))
-		sound_in_sync = TRUE;
+	sound_in_sync = TRUE;
 
 	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	spc_set_output(landing_buffer, buffer_size);
@@ -3375,16 +3359,6 @@ void S9xClearSamples (void)
 {
 	resampler_clear();
 	lag = lag_master;
-}
-
-bool8 S9xSyncSound (void)
-{
-	if (!Settings.SoundSync || sound_in_sync)
-		return TRUE;
-
-	sa_callback();
-
-	return sound_in_sync;
 }
 
 void S9xSetSamplesAvailableCallback (apu_callback callback)
@@ -3430,14 +3404,12 @@ bool8 S9xInitSound (size_t req_buff_size, int lag_ms)
 		goto err;
 
 	/* The resampler and spc unit use samples (16-bit short) as
-	   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
+	   arguments. */
 	if (!resampler)
 	{
-		resampler_new(buffer_size >> (Settings.SoundSync ? 0 : 1));
+		resampler_new(buffer_size);
 		resampler = TRUE;
 	}
-	else
-		resampler_resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
 
 	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	spc_set_output(landing_buffer, buffer_size >> 1);

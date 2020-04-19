@@ -147,6 +147,8 @@
   (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE 
   WILL COMMERCIAL RIGHTS EVER BE APPROPRIATED TO ANY PARTY)
 
+  (c) Copyright 2020         Mahyar Koshkouei
+
   Specific ports contains the works of other authors. See headers in
   individual files.
 
@@ -346,7 +348,6 @@ struct STimings
 
 struct SSettings
 {
-	bool8	SoundSync;
 	bool8	SuperFX;
 	uint8	DSP;
 	bool8	SA1;
