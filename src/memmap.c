@@ -196,6 +196,9 @@
 
 void S9xAppendMapping(struct retro_memory_descriptor *desc);
 
+/* Forward declarations. */
+static bool8 InitROM (void);
+
 #define MAP_LIBRETRO_RAW(flags, ptr, offset, start, select, disconnect, len) \
 	do { \
 		struct retro_memory_descriptor desc={flags, ptr, offset, start, select, disconnect, len, NULL}; \
@@ -860,7 +863,11 @@ again:
 
 	totalFileSize = FileLoader(Memory.ROM, filename, MAX_ROM_SIZE);
 	if (!totalFileSize)
+	{
+		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_ROM,
+				"Unable to load ROM");
 		return FALSE;
+	}
 
 	hi_score = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 	lo_score = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
@@ -1051,7 +1058,8 @@ again:
 	memset(&SNESGameFixes, 0, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
 
-	InitROM();
+	if(InitROM() != TRUE)
+		return (FALSE);
 
 	S9xInitCheatData();
 	S9xApplyCheats();
@@ -1123,7 +1131,8 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB)
 	memset(&SNESGameFixes, 0, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
 
-	InitROM();
+	if(InitROM() != TRUE)
+		return (FALSE);
 
 	S9xInitCheatData();
 	S9xApplyCheats();
@@ -1932,7 +1941,7 @@ static const char * Size (void)
 	return (str);
 }
 
-void InitROM (void)
+static bool8 InitROM (void)
 {
 	int p;
 	bool8 bs, isChecksumOK;
@@ -2013,6 +2022,13 @@ void InitROM (void)
 		l2 = (l > '9') ? l - '7' : l - '0';
 		r2 = (r > '9') ? r - '7' : r - '0';
 		Memory.CompanyId = l2 * 36 + r2;
+	}
+
+	if (Memory.SRAMSize > 16 || Memory.ROMSize < 7 || Memory.ROMSize - 7 > 23)
+	{
+		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_ROM,
+				"ROM is corrupt or invalid");
+		return (FALSE);
 	}
 
 	/* End of Parse SNES Header */
@@ -3293,4 +3309,6 @@ void InitROM (void)
 	Settings.ForceNTSC = FALSE;
 
 	S9xVerifyControllers();
+
+	return (TRUE);
 }
