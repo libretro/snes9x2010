@@ -1460,11 +1460,10 @@ void map_WriteProtectROM (void)
 }
 
 #define MAP_JUMBOLOROMMAP() \
-	/* XXX: Which game uses this? */ \
 	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_JumboLoROMMap"); \
 	MAP_SYSTEM(); \
 	MAP_LOROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000, true); \
-	MAP_LOROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000, true); \
+	MAP_LOROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize - 0x600000, 0x600000, true); \
 	MAP_LOROM_OFFSET(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0, true); \
 	MAP_LOROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0x200000, true); \
 	MAP_LOROMSRAM(); \
