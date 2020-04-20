@@ -5,6 +5,7 @@ STATIC_LINKING=0
 STATIC_LINKING_LINK=0
 LAGFIX=1
 
+LTO ?= -flto=auto 
 CORE_DIR := .
 BUILD_DIR = build
 OBJOUT = -o
@@ -495,7 +496,7 @@ endif
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g3
 else
-	CFLAGS += -Ofast -g3 -flto=auto -DNDEBUG -DGIT_VERSION=\"$(GIT_VERSION)\"
+	CFLAGS += -O2 -DNDEBUG -DGIT_VERSION=\"$(GIT_VERSION)\"
 endif
 
 include $(BUILD_DIR)/Makefile.common
@@ -518,11 +519,10 @@ else ifneq (,$(findstring msvc,$(platform)))
 	WARNING_DEFINES =
 	CODE_DEFINES =
 else
-	WARNINGS_DEFINES = -Wall -Wextra -Wno-sign-compare -Wno-implicit-fallthrough -pipe
-	#-fprofile-arcs -ftest-coverage
+	WARNINGS_DEFINES = -Wall -Wextra -Wno-sign-compare -Wno-implicit-fallthrough
 endif
 
-COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) $(fpic)
+COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) $(fpic) $(LTO)
 
 CFLAGS += $(DEFINES) $(COMMON_DEFINES)
 
@@ -559,7 +559,7 @@ else
 	$(AR) rcs $@ $(OBJECTS)
 endif
 else
-	+$(CC) $(fpic) $(SHARED) $(CFLAGS) $(INCFLAGS) $(LDFLAGS) $(OBJOUT) $@ $(OBJECTS) $(LIBM) -flto -pipe -g3
+	+$(CC) $(fpic) $(SHARED) $(CFLAGS) $(INCFLAGS) $(LDFLAGS) $(OBJOUT) $@ $(OBJECTS) $(LIBM) $(LTO)
 endif
 
 %.o: %.c
