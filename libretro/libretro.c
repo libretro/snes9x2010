@@ -257,7 +257,7 @@ static void check_variables(void)
 {
    bool reset_sfx = false;
    struct retro_variable var;
-   var.key = "snes9x_next_overclock";
+   var.key = "snes9x_2010_overclock";
    var.value = NULL;
    
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -299,7 +299,7 @@ static void check_variables(void)
       }
    }
 
-   var.key = "snes9x_next_overclock_cycles";
+   var.key = "snes9x_2010_overclock_cycles";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -318,11 +318,18 @@ static void check_variables(void)
            slow_one_c = 3;
            two_c = 3;
         }
+        else if (strcmp(var.value, "light") == 0)
+        {
+           overclock_cycles = true;
+           one_c = 6;
+           slow_one_c = 6;
+           two_c = 12;
+        }
         else
           overclock_cycles = false;
       }
 
-   var.key = "snes9x_next_reduce_sprite_flicker";
+   var.key = "snes9x_2010_reduce_sprite_flicker";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
