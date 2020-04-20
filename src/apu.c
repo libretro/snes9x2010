@@ -3234,7 +3234,7 @@ static void resampler_read(short *data, int num_samples)
 		rb_start -= rb_buffer_size;
 }
 
-static uint_fast8_t resampler_new(size_t buffer_size)
+static uint_fast8_t resampler_new(void)
 {
 	rb_buffer_size = buffer_size;
 	rb_buffer = malloc(rb_buffer_size);
@@ -3407,7 +3407,7 @@ bool8 S9xInitSound (size_t req_buff_size, int lag_ms)
 	   arguments. */
 	if (!resampler)
 	{
-		resampler_new(buffer_size);
+		resampler_new();
 		resampler = TRUE;
 	}
 
