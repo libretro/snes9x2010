@@ -5,7 +5,6 @@ STATIC_LINKING=0
 STATIC_LINKING_LINK=0
 LAGFIX=1
 
-LTO ?= -flto=auto 
 CORE_DIR := .
 BUILD_DIR = build
 OBJOUT = -o
@@ -114,6 +113,7 @@ ifeq ($(platform), unix)
 	EXT    ?= so
    TARGET := $(TARGET_NAME)_libretro$(PLAT).$(EXT)
 	fpic := -fPIC
+	LTO ?= -flto=auto 
 	SHARED := -shared -Wl,--version-script=libretro/link.T
 ifneq ($(findstring Haiku,$(shell uname -a)),)
 		LIBM :=
