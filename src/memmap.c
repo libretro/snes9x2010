@@ -196,6 +196,9 @@
 
 void S9xAppendMapping(struct retro_memory_descriptor *desc);
 
+/* Forward declarations. */
+static bool8 InitROM (void);
+
 #define MAP_LIBRETRO_RAW(flags, ptr, offset, start, select, disconnect, len) \
 	do { \
 		struct retro_memory_descriptor desc={flags, ptr, offset, start, select, disconnect, len, NULL}; \
@@ -613,6 +616,7 @@ static bool8 is_SufamiTurbo_BIOS (uint8 *data, uint32 size)
    return FALSE;
 }
 
+#if SNES_SUPPORT_MULTI_CART
 static bool8 is_SufamiTurbo_Cart (uint8 *data, uint32 size)
 {
 	if (size >= 0x80000 && size <= 0x100000 && strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0
@@ -627,6 +631,7 @@ static bool8 is_SameGame_BIOS (uint8 *data, uint32 size)
 		return (TRUE);
    return (FALSE);
 }
+#endif
 
 static bool8 is_SameGame_Add_On (uint8 *data, uint32 size)
 {
@@ -745,7 +750,7 @@ static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
 	if (size - calc_size == 512)
 	{
 		memmove(buf, buf + 512, calc_size);
-		*(headerCount)++;
+		(*headerCount)++;
 		size -= 512;
 	}
 
@@ -817,12 +822,12 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	}	while (more && (fp = OPEN_STREAM(fname, "rb")) != NULL);
 
 	if (Memory.HeaderCount == 0)
-		S9xMessage(S9X_INFO, S9X_HEADERS_INFO, "No ROM file header found.");
+		S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "No ROM file header found.");
 	else
 		if (Memory.HeaderCount == 1)
-			S9xMessage(S9X_INFO, S9X_HEADERS_INFO, "Found ROM file header (and ignored it).");
+			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "Found ROM file header (and ignored it).");
 		else
-			S9xMessage(S9X_INFO, S9X_HEADERS_INFO, "Found multiple ROM file headers (and ignored them).");
+			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "Found multiple ROM file headers (and ignored them).");
 
 	return ((uint32) totalSize);
 }
@@ -858,7 +863,11 @@ again:
 
 	totalFileSize = FileLoader(Memory.ROM, filename, MAX_ROM_SIZE);
 	if (!totalFileSize)
+	{
+		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_ROM,
+				"Unable to load ROM");
 		return FALSE;
+	}
 
 	hi_score = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 	lo_score = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
@@ -869,7 +878,7 @@ again:
 	{
 		memmove(Memory.ROM, Memory.ROM + 512, totalFileSize - 512);
 		totalFileSize -= 512;
-		S9xMessage(S9X_INFO, S9X_HEADER_WARNING, "Try 'force no-header' option if the game doesn't work");
+		S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "Try 'force no-header' option if the game doesn't work");
 		/* modifying ROM, so we need to rescore */
 		hi_score = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
 		lo_score = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0);
@@ -976,7 +985,7 @@ again:
 
 	if (!Settings.ForceNotInterleaved && interleaved)
 	{
-		S9xMessage(S9X_INFO, S9X_ROM_INTERLEAVED_INFO, "ROM image is in interleaved format - converting...");
+		S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "ROM image is in interleaved format - converting...");
 
 		if (tales)
 		{
@@ -1021,7 +1030,7 @@ again:
 		{
 			if (retry_count == 0)
 			{
-				S9xMessage(S9X_INFO, S9X_ROM_CONFUSING_FORMAT_INFO, "ROM lied about its type! Trying again.");
+				S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "ROM lied about its type! Trying again.");
 				Settings.ForceNotInterleaved = TRUE;
 				Settings.ForceInterleaved = FALSE;
 				retry_count++;
@@ -1038,7 +1047,7 @@ again:
 		uint8	*tmp = (uint8 *) malloc(Memory.CalculatedSize - 0x400000);
 		if (tmp)
 		{
-			S9xMessage(S9X_INFO, S9X_ROM_INTERLEAVED_INFO, "Fixing swapped ExHiROM...");
+			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "Fixing swapped ExHiROM...");
 			memcpy(tmp, Memory.ROM, Memory.CalculatedSize - 0x400000);
 			memmove(Memory.ROM, Memory.ROM + Memory.CalculatedSize - 0x400000, 0x400000);
 			memcpy(Memory.ROM + 0x400000, tmp, Memory.CalculatedSize - 0x400000);
@@ -1049,7 +1058,8 @@ again:
 	memset(&SNESGameFixes, 0, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
 
-	InitROM();
+	if(InitROM() != TRUE)
+		return (FALSE);
 
 	S9xInitCheatData();
 	S9xApplyCheats();
@@ -1059,6 +1069,7 @@ again:
     return (TRUE);
 }
 
+#if SNES_SUPPORT_MULTI_CART
 bool8 LoadMultiCart (const char *cartA, const char *cartB)
 {
 	bool8 r;
@@ -1120,7 +1131,8 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB)
 	memset(&SNESGameFixes, 0, sizeof(SNESGameFixes));
 	SNESGameFixes.SRAMInitialValue = 0x60;
 
-	InitROM();
+	if(InitROM() != TRUE)
+		return (FALSE);
 
 	S9xInitCheatData();
 	S9xApplyCheats();
@@ -1234,6 +1246,7 @@ bool8 LoadSameGame (const char *cartA, const char *cartB)
 
 	return (TRUE);
 }
+#endif /* SNES_SUPPORT_MULTI_CART */
 
 #define MAP_INITIALIZE() \
 { \
@@ -1447,11 +1460,10 @@ void map_WriteProtectROM (void)
 }
 
 #define MAP_JUMBOLOROMMAP() \
-	/* XXX: Which game uses this? */ \
-	printf("Map_JumboLoROMMap\n"); \
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_JumboLoROMMap"); \
 	MAP_SYSTEM(); \
 	MAP_LOROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000, true); \
-	MAP_LOROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000, true); \
+	MAP_LOROM_OFFSET(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize - 0x600000, 0x600000, true); \
 	MAP_LOROM_OFFSET(0x80, 0xbf, 0x8000, 0xffff, 0x400000, 0, true); \
 	MAP_LOROM_OFFSET(0xc0, 0xff, 0x0000, 0xffff, 0x400000, 0x200000, true); \
 	MAP_LOROMSRAM(); \
@@ -1479,7 +1491,7 @@ void map_WriteProtectROM (void)
 }
 
 #define MAP_SRAM512KLOROMMAP() \
-	printf("Map_SRAM512KLoROMMap\n"); \
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_SRAM512KLoROMMap"); \
 	MAP_SYSTEM(); \
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true); \
 	MAP_LOROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, true); \
@@ -1536,7 +1548,7 @@ void map_WriteProtectROM (void)
 	MAP_INDEX(0x80, 0xbf, 0x3000, 0x3fff, MAP_SETA_RISC, MAP_TYPE_I_O, true);
 
 #define MAP_LOROMMAP() \
-	printf("Map_LoROMMap\n"); \
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_LoROMMap"); \
 	MAP_SYSTEM(); \
 	\
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true); \
@@ -1568,7 +1580,7 @@ void map_WriteProtectROM (void)
 	MAP_INDEX(0xa0, 0xbf, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true);
 
 #define MAP_HIROMMAP() \
-	printf("Map_HiROMMap\n"); \
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "Map_HiROMMap"); \
 	MAP_SYSTEM(); \
 	MAP_HIROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true); \
 	MAP_HIROM(0x40, 0x7f, 0x0000, 0xffff, Memory.CalculatedSize, true); \
@@ -1587,7 +1599,6 @@ static const char * KartContents (uint8 ROMType)
 {
 	static char			str[64];
 	static const char	*contents[3] = { "ROM", "ROM+RAM", "ROM+RAM+BAT" };
-
 	char	chip[16];
 
 	if (ROMType == 0 && !Settings.BS)
@@ -1632,11 +1643,11 @@ static const char * KartContents (uint8 ROMType)
 		strcpy(chip, "+ST-018");
 	else
 	if (Settings.DSP)
-		sprintf(chip, "+DSP-%d", Settings.DSP);
+		snprintf(chip, sizeof(chip), "+DSP-%d", Settings.DSP);
 	else
 		strcpy(chip, "");
 
-	sprintf(str, "%s%s", contents[(ROMType & 0xf) % 3], chip);
+	snprintf(str, sizeof(str), "%s%s", contents[(ROMType & 0xf) % 3], chip);
 
 	return (str);
 }
@@ -1662,7 +1673,7 @@ static void Map_NoMAD1LoROMMap (void)
 static void Map_ROM24MBSLoROMMap (void)
 {
 	/* PCB: BSC-1A5M-01, BSC-1A7M-10*/
-	printf("Map_ROM24MBSLoROMMap\n");
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_ROM24MBSLoROMMap");
 	MAP_SYSTEM();
 
 	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x100000, 0, true);
@@ -1678,7 +1689,7 @@ static void Map_ROM24MBSLoROMMap (void)
 
 static void Map_SufamiTurboLoROMMap (void)
 {
-	printf("Map_SufamiTurboLoROMMap\n");
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_SufamiTurboLoROMMap");
 	MAP_SYSTEM();
 
 	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0, true);
@@ -1708,7 +1719,7 @@ static void Map_SufamiTurboLoROMMap (void)
 static void Map_SufamiTurboPseudoLoROMMap (void)
 {
 	/* for combined images */
-	printf("Map_SufamiTurboPseudoLoROMMap\n");
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_SufamiTurboPseudoLoROMMap");
 	MAP_SYSTEM();
 
 	MAP_LOROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, 0x40000, 0, true);
@@ -1732,7 +1743,7 @@ static void Map_SufamiTurboPseudoLoROMMap (void)
 static void Map_SuperFXLoROMMap (void)
 {
 	int c;
-	printf("Map_SuperFXLoROMMap\n");
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_SuperFXLoROMMap");
 	MAP_SYSTEM();
 
 	/* Replicate the first 2Mbit of the ROM at ROM + 2Mbit such that each 32K
@@ -1761,7 +1772,7 @@ static void Map_SuperFXLoROMMap (void)
 
 static void Map_SetaDSPLoROMMap (void)
 {
-	printf("Map_SetaDSPLoROMMap\n");
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_SetaDSPLoROMMap");
 	MAP_SYSTEM();
 
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true);
@@ -1785,7 +1796,7 @@ static void Map_SetaDSPLoROMMap (void)
 
 static void Map_SDD1LoROMMap (void)
 {
-	printf("Map_SDD1LoROMMap\n");
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_SDD1LoROMMap");
 	MAP_SYSTEM();
 
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true);
@@ -1804,7 +1815,7 @@ static void Map_SDD1LoROMMap (void)
 static void Map_SA1LoROMMap (void)
 {
 	int c;
-	printf("Map_SA1LoROMMap\n");
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_SA1LoROMMap");
 	MAP_SYSTEM();
 
 	MAP_LOROM(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize, true);
@@ -1850,7 +1861,7 @@ static void Map_SA1LoROMMap (void)
 
 static void Map_ExtendedHiROMMap (void)
 {
-	printf("Map_ExtendedHiROMMap\n");
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_ExtendedHiROMMap");
 	MAP_SYSTEM();
 
 	MAP_HIROM_OFFSET(0x00, 0x3f, 0x8000, 0xffff, Memory.CalculatedSize - 0x400000, 0x400000, true);
@@ -1866,7 +1877,7 @@ static void Map_ExtendedHiROMMap (void)
 
 static void Map_SameGameHiROMMap (void)
 {
-	printf("Map_SameGameHiROMMap\n");
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_SameGameHiROMMap");
 	MAP_SYSTEM();
 
 	MAP_HIROM_OFFSET(0x00, 0x1f, 0x8000, 0xffff, Multi.cartSizeA, Multi.cartOffsetA, true);
@@ -1886,7 +1897,7 @@ static void Map_SameGameHiROMMap (void)
 
 static void Map_SPC7110HiROMMap (void)
 {
-	printf("Map_SPC7110HiROMMap\n");
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "Map_SPC7110HiROMMap");
 	MAP_SYSTEM();
 
 	MAP_INDEX(0x00, 0x00, 0x6000, 0x7fff, MAP_HIROM_SRAM, MAP_TYPE_RAM, true);
@@ -1909,7 +1920,7 @@ static const char * StaticRAMSize (void)
 	if (Memory.SRAMSize > 16)
 		strcpy(str, "Corrupt");
 	else
-		sprintf(str, "%dKbits", 8 * (Memory.SRAMMask + 1) / 1024);
+		snprintf(str, sizeof(str), "%dKbits", 8 * (Memory.SRAMMask + 1) / 1024);
 
 	return (str);
 }
@@ -1924,12 +1935,12 @@ static const char * Size (void)
 	if (Memory.ROMSize < 7 || Memory.ROMSize - 7 > 23)
 		strcpy(str, "Corrupt");
 	else
-		sprintf(str, "%dMbits", 1 << (Memory.ROMSize - 7));
+		snprintf(str, sizeof(str), "%dMbits", 1 << (Memory.ROMSize - 7));
 
 	return (str);
 }
 
-void InitROM (void)
+static bool8 InitROM (void)
 {
 	int p;
 	bool8 bs, isChecksumOK;
@@ -1978,7 +1989,7 @@ void InitROM (void)
 	{
 		if (!(((RomHeader[0x29] & 0x20) && Memory.CalculatedSize <  0x100000) ||
 			 (!(RomHeader[0x29] & 0x20) && Memory.CalculatedSize == 0x100000)))
-			printf("BS: Size mismatch\n");
+			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, "BS: Size mismatch");
 
 		/* FIXME*/
 		p = 0;
@@ -2010,6 +2021,13 @@ void InitROM (void)
 		l2 = (l > '9') ? l - '7' : l - '0';
 		r2 = (r > '9') ? r - '7' : r - '0';
 		Memory.CompanyId = l2 * 36 + r2;
+	}
+
+	if (Memory.SRAMSize > 16 || Memory.ROMSize < 7 || Memory.ROMSize - 7 > 23)
+	{
+		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_ROM,
+				"ROM is corrupt or invalid");
+		return (FALSE);
 	}
 
 	/* End of Parse SNES Header */
@@ -2900,12 +2918,25 @@ void InitROM (void)
          Settings.SpeedhackGameID = SPEEDHACK_SUPER_MARIO_WORLD;
 
 	}
-	fprintf(stderr, "PPU.RenderSub = %d\n", PPU.RenderSub);
-	fprintf(stderr, "PPU.FullClipping = %d\n", PPU.FullClipping);
-	fprintf(stderr, "Settings.Transparency = %d\n", Settings.Transparency);
-	fprintf(stderr, "Settings.SpeedhackGameID = %d\n", Settings.SpeedhackGameID);
-	fprintf(stderr, "PPU.SFXSpeedupHack = %d\n", PPU.SFXSpeedupHack);
-	fprintf(stderr, "coldata_update_screen = %d\n", coldata_update_screen);
+
+	{
+		const struct {
+			const char *fmt;
+			int val;
+		} fmt_val[6] = {
+			{ "PPU.RenderSub = %d", PPU.RenderSub },
+			{ "PPU.FullClipping = %d", PPU.FullClipping },
+			{ "Settings.Transparency = %d", Settings.Transparency },
+			{ "Settings.SpeedhackGameID = %d", Settings.SpeedhackGameID },
+			{ "PPU.SFXSpeedupHack = %d", PPU.SFXSpeedupHack },
+			{ "coldata_update_screen = %d", coldata_update_screen }
+		};
+		for (int i = 0; i < 6; i++)
+		{
+			snprintf(String, sizeof(String), fmt_val[i].fmt, fmt_val[i].val);
+			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, String);
+		}
+	}
 
 	if (Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
 	{
@@ -3148,7 +3179,9 @@ void InitROM (void)
 		if (MATCH_NA("BATTLE GRANDPRIX"))
 		{
 			Timings.DMACPUSync = 20;
-			printf("DMA sync: %d\n", Timings.DMACPUSync);
+			snprintf(String, sizeof(String),
+				 "DMA sync: %d", Timings.DMACPUSync);
+			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, String);
 		}
 	}
 
@@ -3159,7 +3192,9 @@ void InitROM (void)
 		if (MATCH_NA("TRAVERSE")) /* Traverse - Starlight & Prairie*/
 		{
 			Timings.IRQPendCount = 1;
-			printf("IRQ count hack: %d\n", Timings.IRQPendCount);
+			snprintf(String, sizeof(String),
+				 "IRQ count hack: %d", Timings.IRQPendCount);
+			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, String);
 		}
 
 		/* An infinite loop reads $4212 and waits V-blank end, whereas 
@@ -3175,13 +3210,17 @@ void InitROM (void)
 		if (MATCH_NA("Aero the AcroBat 2"))
 		{
 			Timings.IRQPendCount = 2;
-			printf("IRQ count hack: %d\n", Timings.IRQPendCount);
+			snprintf(String, sizeof(String),
+				"IRQ count hack: %d", Timings.IRQPendCount);
+			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, String);
 		}
 
 		if (MATCH_NA("BATTLE BLAZE"))
 		{
 			Timings.IRQPendCount = 1;
-			printf("IRQ count hack: %d\n", Timings.IRQPendCount);
+			snprintf(String, sizeof(String),
+				 "IRQ count hack: %d", Timings.IRQPendCount);
+			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, String);
 		}
 	}
 
@@ -3193,7 +3232,8 @@ void InitROM (void)
 		if (MATCH_NA("X-MEN"))
 		{
 			Settings.BlockInvalidVRAMAccess = FALSE;
-			printf("Invalid VRAM access hack\n");
+			S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_MAP,
+				   "Invalid VRAM access hack");
 		}
 	}
 
@@ -3237,21 +3277,24 @@ void InitROM (void)
 		if (MATCH_NN("UNIRACERS"))
 		{
 			SNESGameFixes.Uniracers = TRUE;
-			printf("Applied Uniracers hack.\n");
+			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP,
+				   "Applied Uniracers hack.");
 		}
 	}
 
 	/* Show ROM information */
 
 	strcpy(Memory.RawROMName, Memory.ROMName);
-	sprintf(displayName, "%s", SafeANK(Memory.ROMRegion, Memory.ROMName));
-	sprintf(Memory.ROMName, "%s", Safe(Memory.ROMName));
-	sprintf(Memory.ROMId, "%s", Safe(Memory.ROMId));
+	snprintf(displayName, sizeof(displayName), "%s",
+		 SafeANK(Memory.ROMRegion, Memory.ROMName));
+	snprintf(Memory.ROMName, sizeof(Memory.ROMName),
+		 "%s", Safe(Memory.ROMName));
+	snprintf(Memory.ROMId, sizeof(Memory.ROMId), "%s", Safe(Memory.ROMId));
 
-	sprintf(String, "\"%s\" [%s] %s, %s, %s, %s, SRAM:%s, ID:%s, CRC32:%08X",
+	snprintf(String, sizeof(String), "\"%s\" [%s] %s, %s, %s, %s, SRAM:%s, ID:%s, CRC32:%08X",
 		displayName, isChecksumOK ? "checksum ok" : ((Multi.cartType == 4) ? "no checksum" : "bad checksum"),
 		(Memory.HiROM ? ((Memory.ExtendedFormat != NOPE) ? "ExHiROM": "HiROM") : "LoROM"), Size(), KartContents(Memory.ROMType), Settings.PAL ? "PAL" : "NTSC", StaticRAMSize(), Memory.ROMId, Memory.ROMCRC32);
-	S9xMessage(S9X_INFO, S9X_ROM_INFO, String);
+	S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, String);
 
 	Settings.ForceLoROM = FALSE;
 	Settings.ForceHiROM = FALSE;
@@ -3265,4 +3308,6 @@ void InitROM (void)
 	Settings.ForceNTSC = FALSE;
 
 	S9xVerifyControllers();
+
+	return (TRUE);
 }

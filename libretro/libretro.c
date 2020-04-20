@@ -176,34 +176,35 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#include <stdio.h>
+#include <fcntl.h>
 #include <stdint.h>
-#ifndef _MSC_VER
-#include <stdbool.h>
-#include <unistd.h>
-#endif
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <fcntl.h>
+#ifndef _MSC_VER
+#include <stdbool.h>
+#include <unistd.h>
+#endif
 
 #include <libretro.h>
 
 #include "libretro_core_options.h"
 
-#include "../src/boolean.h"
-#include "../src/snes9x.h"
-#include "../src/memmap.h"
-#include "../src/cpuexec.h"
-#include "../src/srtc.h"
-#include "../src/fxemu.h"
 #include "../src/apu.h"
+#include "../src/boolean.h"
+#include "../src/cheats.h"
+#include "../src/controls.h"
+#include "../src/cpuexec.h"
+#include "../src/display.h"
+#include "../src/fxemu.h"
+#include "../src/memmap.h"
+#include "../src/messages.h"
 #include "../src/ppu.h"
 #include "../src/snapshot.h"
-#include "../src/controls.h"
-#include "../src/cheats.h"
-#include "../src/display.h"
+#include "../src/snes9x.h"
+#include "../src/srtc.h"
 
 #define LR_MAP_BUTTON(id, name) S9xMapButton((id), S9xGetCommandT((name)))
 #define MAKE_BUTTON(pad, btn) (((pad)<<4)|(btn))
@@ -232,11 +233,31 @@ int one_c, slow_one_c, two_c;
 
 static bool libretro_supports_bitmasks = false;
 
+/* Used for logging to stderr if log_cb isn't available. */
+const char *lvl_str[] = { "VERBOSE", "INFO", "WARN", "ERROR" };
+const char *S9xMessageCategoryStr[] = {
+	"ROM", "PPU", "CPU", "APU", "MAP", "CONTROLS", "SNAPSHOT"
+};
+
+/* Use a 64ms buffer. */
+/* 32000*(64/1000) = 2048
+ * 2048 * 2 = 4096 because of stereo. */
+#define APU_BUF_FRAMES	(2048 * 2)
+#define APU_BUF_SZ      (APU_BUF_FRAMES * sizeof(int16_t))
+
+#define LIBRETRO_LIB_NAME "Snes9x 2010"
+#define LIBRETRO_LOG_MSG(lvl, ...)					\
+		if (log_cb) log_cb(lvl, __VA_ARGS__);			\
+		else {							\
+			fprintf (stderr, "%s: %s: ", LIBRETRO_LIB_NAME, lvl_str[lvl]); \
+			fprintf (stderr, __VA_ARGS__); putc('\n', stderr); \
+		}
+
 static void check_variables(void)
 {
    bool reset_sfx = false;
    struct retro_variable var;
-   var.key = "snes9x_next_overclock";
+   var.key = "snes9x_2010_overclock";
    var.value = NULL;
    
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -278,7 +299,7 @@ static void check_variables(void)
       }
    }
 
-   var.key = "snes9x_next_overclock_cycles";
+   var.key = "snes9x_2010_overclock_cycles";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -297,11 +318,18 @@ static void check_variables(void)
            slow_one_c = 3;
            two_c = 3;
         }
+        else if (strcmp(var.value, "light") == 0)
+        {
+           overclock_cycles = true;
+           one_c = 6;
+           slow_one_c = 6;
+           two_c = 12;
+        }
         else
           overclock_cycles = false;
       }
 
-   var.key = "snes9x_next_reduce_sprite_flicker";
+   var.key = "snes9x_2010_reduce_sprite_flicker";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -404,8 +432,6 @@ void retro_set_input_state(retro_input_state_t cb)
    input_cb = cb;
 }
 
-static bool use_overscan;
-
 void retro_set_environment(retro_environment_t cb)
 {
    static const struct retro_controller_description port_1[] = {
@@ -445,18 +471,22 @@ void retro_get_system_info(struct retro_system_info *info)
 #else
    info->library_version  = CORE_VERSION;
 #endif
-   info->library_name     = "Snes9x 2010";
+   info->library_name     = LIBRETRO_LIB_NAME;
    info->block_extract    = false;
 }
 
-static void S9xAudioCallback(void)
+static void S9xAudioCallbackQueue(void)
 {
    size_t avail;
    /* Just pick a big buffer. We won't use it all. */
-   static int16_t audio_buf[0x20000];
+   static int16_t audio_buf[APU_BUF_SZ];
 
    S9xFinalizeSamples();
    avail = S9xGetSampleCount();
+
+   if(avail > APU_BUF_FRAMES)
+	   avail = APU_BUF_FRAMES;
+
    S9xMixSamples(audio_buf, avail);
    audio_batch_cb(audio_buf, avail >> 1);
 }
@@ -521,8 +551,7 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
          retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
          break;
       default:
-         if (log_cb)
-            log_cb(RETRO_LOG_ERROR, "Invalid device!\n");
+	      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Invalid device!");
    }
 
    if (((retro_devices[0] == RETRO_DEVICE_JOYPAD) && retro_devices[1] == RETRO_DEVICE_JOYPAD) ||
@@ -601,16 +630,17 @@ static void map_buttons (void)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-   info->geometry.base_width = 256;
-   info->geometry.base_height = use_overscan ? 239 : 224;
-   info->geometry.max_width = 512;
-   info->geometry.max_height = 512;
+   info->geometry.base_width = SNES_WIDTH;
+   info->geometry.base_height = SNES_HEIGHT;
+   info->geometry.max_width = MAX_SNES_WIDTH;
+   info->geometry.max_height = MAX_SNES_HEIGHT;
    info->geometry.aspect_ratio = 4.0 / 3.0;
    if (!Settings.PAL)
-      info->timing.fps = 21477272.0 / 357366.0;
+      info->timing.fps = NTSC_MASTER_CLOCK / 357366.0;
    else
-      info->timing.fps = 21281370.0 / 425568.0;
-   info->timing.sample_rate = 32040.5;
+      info->timing.fps = PAL_MASTER_CLOCK / 425568.0;
+
+   info->timing.sample_rate = SNES_AUDIO_FREQ;
 }
 
 static void snes_init (void)
@@ -620,8 +650,8 @@ static void snes_init (void)
    Settings.Transparency = TRUE;
    Settings.FrameTimePAL = 20000;
    Settings.FrameTimeNTSC = 16667;
-   Settings.SoundPlaybackRate = 32000;
-   Settings.SoundInputRate = 32000;
+   Settings.SoundPlaybackRate = SNES_AUDIO_FREQ;
+   Settings.SoundInputRate = SNES_AUDIO_FREQ;
    Settings.HDMATimingHack = 100;
    Settings.BlockInvalidVRAMAccessMaster = TRUE;
    Settings.CartAName[0] = 0;
@@ -634,23 +664,24 @@ static void snes_init (void)
    {
       Deinit();
       S9xDeinitAPU();
-      if (log_cb)
-         log_cb(RETRO_LOG_ERROR, "Failed to init Memory or APU.\n");
+      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Failed to init Memory or APU.\n");
       exit(1);
    }
-   
-   //very slow devices will still pop
-   
-   //this needs to be applied to all snes9x cores
-   
-   //increasing the buffer size does not cause extra lag(tested with 1000ms buffer)
-   //bool8 S9xInitSound (int buffer_ms, int lag_ms)
 
-   S9xInitSound(1000, 0);//just give it a 1 second buffer
+   if (S9xInitSound(APU_BUF_SZ, 0) != true)
+   {
+	   const char aud_err[] = "Audio output is disabled due to an internal error";
+      struct retro_message msg = { aud_err, 360 };
 
-   S9xSetSamplesAvailableCallback(S9xAudioCallback);
+      if (environ_cb)
+         environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
 
-   GFX.Pitch = use_overscan ? 1024 : 2048; // FIXME: What is this supposed to do? Overscan has nothing to do with anything like this. If this is the Wii performance hack, it should be done differently.
+      S9xDeinitAPU();
+   }
+
+   S9xSetSamplesAvailableCallback( S9xAudioCallbackQueue );
+
+   GFX.Pitch = 512 * sizeof(uint16_t);
 
 #if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS) && !defined(__SWITCH__)
    /* request 128-bit alignment here if possible */
@@ -673,7 +704,7 @@ static void snes_init (void)
    Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
 }
 
-static void check_system_specs(void)
+static void set_system_specs(void)
 {
    unsigned level = 7;
    environ_cb(RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL, &level);
@@ -684,8 +715,6 @@ void retro_init (void)
    struct retro_log_callback log;
    enum retro_pixel_format rgb565;
    bool achievements             = true;
-   if (!environ_cb(RETRO_ENVIRONMENT_GET_OVERSCAN, &use_overscan))
-	   use_overscan = FALSE;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
       log_cb = log.log;
@@ -696,14 +725,17 @@ void retro_init (void)
    environ_cb(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, &achievements);
 
    rgb565 = RETRO_PIXEL_FORMAT_RGB565;
-   if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565) && log_cb)
-         log_cb(RETRO_LOG_INFO, "Frontend supports RGB565 - will use that instead of XRGB1555.\n");
+   if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565))
+   {
+	   LIBRETRO_LOG_MSG(RETRO_LOG_INFO,
+			    "Frontend supports RGB565 - will use that instead "
+			    "of XRGB1555.\n");
+   }
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
       libretro_supports_bitmasks = true;
 
    snes_init();
-   check_system_specs();
 }
 
 /* libretro uses relative values for analogue devices. 
@@ -810,22 +842,20 @@ static void report_buttons (void)
 		      {
 			      coldata_update_screen = !coldata_update_screen;
                timeout = TIMER_DELAY;
-               if (log_cb)
-                  log_cb(RETRO_LOG_INFO, "coldata_update_screen: %d.\n", coldata_update_screen);
+	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "coldata_update_screen: %d.\n"
+			coldata_update_screen);
 		      }
 		      if (pressed_r2 && timeout == 0)
 		      {
 			      PPU.RenderSub = !PPU.RenderSub;
                timeout = TIMER_DELAY;
-               if (log_cb)
-                  log_cb(RETRO_LOG_INFO, "RenderSub: %d.\n", PPU.RenderSub);
+	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "RenderSub: %d.\n", PPU.RenderSub);
 		      }
 		      if (pressed_r3 && timeout == 0)
 		      {
 			      PPU.SFXSpeedupHack = !PPU.SFXSpeedupHack;
                timeout = TIMER_DELAY;
-               if (log_cb)
-                  log_cb(RETRO_LOG_INFO, "SFXSpeedupHack: %d.\n", PPU.SFXSpeedupHack);
+	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "SFXSpeedupHack: %d.\n", PPU.SFXSpeedupHack);
 		      }
 #endif
 		      break;
@@ -886,8 +916,7 @@ static void report_buttons (void)
 		      break;
 
 	      default:
-            if (log_cb)
-               log_cb(RETRO_LOG_ERROR, "Unknown device.\n");
+		      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Unknown device.\n");
 
       }
    }
@@ -928,7 +957,7 @@ void retro_run (void)
    S9xMainLoop();
 
    //Force emptying the audio buffer at the end of the frame
-   S9xAudioCallback();
+    S9xAudioCallbackQueue();
 }
 
 size_t retro_serialize_size (void)
@@ -1016,7 +1045,7 @@ static bool merge_mapping(void)
 		return false;//can't merge the only one
 	a= &memorydesc[MAX_MAPS - (memorydesc_c-1)];
 	b= &memorydesc[MAX_MAPS - memorydesc_c];
-//printf("test %x/%x\n",a->start,b->start);
+
 	if (a->flags != b->flags)
 		return false;
 	if (a->disconnect != b->disconnect)
@@ -1027,7 +1056,6 @@ static bool merge_mapping(void)
 		return false;//we don't use these
 	if (((char*)a->ptr)+a->offset==((char*)b->ptr)+b->offset && a->select==b->select)
 	{
-//printf("merge/mirror\n");
 		a->select&=~(a->start^b->start);
 		memorydesc_c--;
 		return true;
@@ -1037,13 +1065,11 @@ static bool merge_mapping(void)
 		len=(0x1000000 - a->select);
 	if (len && ((len-1) & (len | a->disconnect))==0 && ((char*)a->ptr)+a->offset+len == ((char*)b->ptr)+b->offset)
 	{
-//printf("merge/consec\n");
 		a->select &=~ len;
 		a->disconnect &=~ len;
 		memorydesc_c--;
 		return true;
 	}
-//printf("nomerge\n");
 	return false;
 }
 
@@ -1143,23 +1169,20 @@ bool retro_load_game(const struct retro_game_info *game)
    loaded = LoadROM("");
    if (!loaded)
    {
-      struct retro_message msg; 
-      char msg_local[256];
+      const char err_msg[] = "ROM loading failed.\n";
+      struct retro_message msg = { err_msg, 360 };
 
-      snprintf(msg_local,
-            sizeof(msg_local), "ROM loading failed...");
-      if (log_cb)
-         log_cb(RETRO_LOG_ERROR, "ROM loading failed...\n");
-      msg.msg    = msg_local;
-      msg.frames = 360;
+      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, err_msg);
+
       if (environ_cb)
-         environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, (void*)&msg);
+         environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+
       return FALSE;
    }
 
    check_variables();
 
-
+   set_system_specs();
    environ_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &map);
 
    return TRUE;
@@ -1184,40 +1207,17 @@ unsigned retro_get_region (void)
 
 void S9xDeinitUpdate(int width, int height)
 {
-   if (height == 448 || height == 478){
-		GFX.Pitch = 1024;	/* Pitch 2048 -> 1024 */
-   }
-   else GFX.Pitch = 2048;		/* Pitch 1024 -> 2048 */
-
-   
-   // TODO: Reverse case.
-   if (!use_overscan)
-   {
-      const uint16_t *frame = (const uint16_t*)GFX.Screen;
-      if (height == 239)
-      {
-         frame += 7 * 1024;
-         height = 224;
-      }
-      else if (height == 478)
-      {
-         frame += 15 * 512;
-         height = 448;
-      }
-
-      video_cb(frame, width, height, GFX.Pitch);
-   }
-   else
-      video_cb(GFX.Screen, width, height, GFX.Pitch);
+   //GFX.Pitch = width * 2;
+   /* TODO: Use SET_GEOMETRY to change display size. */
+   video_cb(GFX.Screen, width, height, GFX.Pitch);
 }
 
 /* Dummy functions that should probably be implemented correctly later. */
 const char* S9xGetDirectory(uint32_t dirtype) { return NULL; }
 
-void S9xMessage(int a, int b, const char* msg)
+void S9xMessage (S9xMessagePriority p, S9xMessageCategory c, const char *msg)
 {
-   if (log_cb)
-      log_cb(RETRO_LOG_INFO, "%s\n", msg);
+	LIBRETRO_LOG_MSG(p, "%s: %s\n", S9xMessageCategoryStr[c], msg);
 }
 
 /* S9x weirdness. */

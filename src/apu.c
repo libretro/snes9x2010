@@ -147,6 +147,8 @@
   (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE 
   WILL COMMERCIAL RIGHTS EVER BE APPROPRIATED TO ANY PARTY)
 
+  (c) Copyright 2020         Mahyar Koshkouei
+
 
   Specific ports contains the works of other authors. See headers in
   individual files.
@@ -530,7 +532,7 @@ static INLINE void dsp_misc_30 (void)
 /* Voices */
 
 #define dsp_voice_V1(v) \
-	dsp_m.t_dir_addr = dsp_m.t_dir * 0x100 + dsp_m.t_srcn * 4; \
+	dsp_m.t_dir_addr = (dsp_m.t_dir * 0x100 + dsp_m.t_srcn * 4) & 0xffff; \
 	dsp_m.t_srcn = v->regs[V_SRCN]
 
 #define dsp_voice_V2(v) \
@@ -1464,25 +1466,25 @@ void spc_enable_rom( int enable )
 		dsp_run( clock_count ); \
 	}
 
-static INLINE void spc_dsp_write( int data, int time )
+static INLINE void spc_dsp_write( const uint8_t data )
 {
-	int addr;
+	uint_fast8_t addr;
 
 	/* Writes DSP registers. */
 	addr = m.smp_regs[0][R_DSPADDR];
-	dsp_m.regs [addr] = (uint8_t) data;
+	dsp_m.regs [addr] = data;
 	switch ( addr & 0x0F )
 	{
 		case V_ENVX:
-			dsp_m.envx_buf = (uint8_t) data;
+			dsp_m.envx_buf = data;
 			break;
 
 		case V_OUTX:
-			dsp_m.outx_buf = (uint8_t) data;
+			dsp_m.outx_buf = data;
 			break;
 		case 0x0C:
 			if ( addr == R_KON )
-				dsp_m.new_kon = (uint8_t) data;
+				dsp_m.new_kon = data;
 
 			if ( addr == R_ENDX ) /* always cleared, regardless of data written */
 			{
@@ -1508,7 +1510,7 @@ static INLINE void spc_dsp_write( int data, int time )
 #define NO_READ_BEFORE_WRITE			8192
 #define NO_READ_BEFORE_WRITE_DIVIDED_BY_TWO	4096 
 
-static void spc_cpu_write_smp_reg_( int data, int time, int addr )
+static void spc_cpu_write_smp_reg_( unsigned data, int time, int addr )
 {
 	switch ( addr )
    {
@@ -1594,7 +1596,7 @@ static void spc_cpu_write_smp_reg_( int data, int time, int addr )
    }
 }
 
-static void spc_cpu_write( int32_t data, uint16_t addr, int32_t time )
+static void spc_cpu_write( unsigned data, uint16_t addr, int32_t time )
 {
 	int32_t reg;
 	/* RAM */
@@ -1617,7 +1619,7 @@ static void spc_cpu_write( int32_t data, uint16_t addr, int32_t time )
 				{
 					RUN_DSP(time, reg_times [m.smp_regs[0][R_DSPADDR]] );
 					if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
-						spc_dsp_write( data, time );
+						spc_dsp_write( data );
 				}
 				else
 					spc_cpu_write_smp_reg_( data, time, reg);
@@ -1882,7 +1884,7 @@ loop:
 							  {
 								  RUN_DSP(rel_time, reg_times [m.smp_regs[0][R_DSPADDR]] );
 								  if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
-									  spc_dsp_write( data, rel_time );
+									  spc_dsp_write( data );
 							  }
 							  else
 								  spc_cpu_write_smp_reg_( data, rel_time, i);
@@ -1906,7 +1908,7 @@ loop:
 						  {
 							  RUN_DSP(rel_time, reg_times [m.smp_regs[0][R_DSPADDR]] );
 							  if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
-								  spc_dsp_write( a, rel_time );
+								  spc_dsp_write( a );
 						  }
 						  else if ( sel > 1 ) /* 1% not $F2 or $F3 */
 							  spc_cpu_write_smp_reg_( a, rel_time, i );
@@ -3068,9 +3070,9 @@ void NO_OPTIMIZE spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
  APU
 ***********************************************************************************/
 
-#define APU_DEFAULT_INPUT_RATE		32000
-#define APU_MINIMUM_SAMPLE_COUNT	(512*8)
-#define APU_MINIMUM_SAMPLE_BLOCK	(128*8)
+#define APU_MINIMUM_SAMPLE_COUNT	(512)
+#define APU_MINIMUM_BUFF_SIZE		(APU_MINIMUM_SAMPLE_COUNT * 2 * 2)
+#define APU_MINIMUM_SAMPLE_BLOCK	(128)
 #define APU_NUMERATOR_NTSC		15664
 #define APU_DENOMINATOR_NTSC		328125
 #define APU_NUMERATOR_PAL		34176
@@ -3080,11 +3082,11 @@ static apu_callback	sa_callback     = NULL;
 
 static bool8		sound_in_sync   = TRUE;
 
-static int		buffer_size;
 static int		lag_master      = 0;
 static int		lag             = 0;
 
-static short		*landing_buffer = NULL;
+static int16_t		*landing_buffer = NULL;
+static size_t		buffer_size = 0;
 
 static bool8		resampler      = FALSE;
 
@@ -3167,6 +3169,7 @@ static void resampler_read(short *data, int num_samples)
 				bytesToConsume = bytesUntilBufferEnd;
 			if (rb_start >= rb_buffer_size)
 				rb_start = 0;
+
 			memcpy(data, &rb_buffer[rb_start], bytesToConsume);
 			data += bytesToConsume / sizeof(short);
 			rb_start += bytesToConsume;
@@ -3231,17 +3234,15 @@ static void resampler_read(short *data, int num_samples)
 		rb_start -= rb_buffer_size;
 }
 
-static void resampler_new(int num_samples)
+static uint_fast8_t resampler_new(void)
 {
-	int new_size = num_samples << 1;
+	rb_buffer_size = buffer_size;
+	rb_buffer = malloc(rb_buffer_size);
+	if(rb_buffer == NULL)
+		return 1;
 
-	rb_buffer_size = new_size;
-	rb_buffer = (unsigned char*)malloc(rb_buffer_size);
-	memset (rb_buffer, 0, rb_buffer_size);
-
-	rb_size = 0;
-	rb_start = 0;
 	resampler_clear();
+	return 0;
 }
 
 static INLINE bool8 resampler_push(short *src, int num_samples)
@@ -3266,19 +3267,6 @@ static INLINE bool8 resampler_push(short *src, int num_samples)
 	rb_size += bytes;
 
 	return TRUE;
-}
-
-static INLINE void resampler_resize (int num_samples)
-{
-	/* int size; */
-	/* size = num_samples << 1; */
-	free(rb_buffer);
-	rb_buffer_size = rb_size;
-	rb_buffer = (unsigned char*)malloc(rb_buffer_size);
-	memset (rb_buffer, 0, rb_buffer_size);
-
-	rb_size = 0;
-	rb_start = 0;
 }
 
 /***********************************************************************************
@@ -3349,19 +3337,19 @@ static void spc_set_output( short* out, int size )
 
 void S9xFinalizeSamples (void)
 {
-	bool8 ret;
 	if (!Settings.Mute)
 	{
-		ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
-		sound_in_sync = FALSE;
+		bool8 ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
 
 		/* We weren't able to process the entire buffer. Potential overrun. */
-		if (!ret && Settings.SoundSync)
+		if (!ret)
+		{
+			sound_in_sync = FALSE;
 			return;
+		}
 	}
 
-	if (!Settings.SoundSync || (SPACE_EMPTY() >= SPACE_FILLED() || Settings.Mute))
-		sound_in_sync = TRUE;
+	sound_in_sync = TRUE;
 
 	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	spc_set_output(landing_buffer, buffer_size);
@@ -3373,16 +3361,6 @@ void S9xClearSamples (void)
 	lag = lag_master;
 }
 
-bool8 S9xSyncSound (void)
-{
-	if (!Settings.SoundSync || sound_in_sync)
-		return TRUE;
-
-	sa_callback();
-
-	return sound_in_sync;
-}
-
 void S9xSetSamplesAvailableCallback (apu_callback callback)
 {
 	sa_callback = callback;
@@ -3392,52 +3370,46 @@ static void UpdatePlaybackRate (void)
 {
 	double time_ratio;
 	if (Settings.SoundInputRate == 0)
-		Settings.SoundInputRate = APU_DEFAULT_INPUT_RATE;
+		Settings.SoundInputRate = SNES_AUDIO_FREQ;
 
 	time_ratio = (double) Settings.SoundInputRate * TEMPO_UNIT / (Settings.SoundPlaybackRate * timing_hack_denominator);
 	resampler_time_ratio(time_ratio);
 }
 
-bool8 S9xInitSound (int buffer_ms, int lag_ms)
+bool8 S9xInitSound (size_t req_buff_size, int lag_ms)
 {
-	/*	buffer_ms : buffer size given in millisecond
+	/*	buffer_size : size of buffer in bytes
 		lag_ms    : allowable time-lag given in millisecond */
-	int sample_count, lag_sample_count;
+	int lag_sample_count;
 
-	sample_count     = buffer_ms * 32000 / 1000;
-	lag_sample_count = lag_ms    * 32000 / 1000;
-
+	lag_sample_count = lag_ms    * SNES_AUDIO_FREQ / 1000;
 	lag_master = lag_sample_count;
-
 	lag_master <<= 1;
-
 	lag = lag_master;
 
-	if (sample_count < APU_MINIMUM_SAMPLE_COUNT)
-		sample_count = APU_MINIMUM_SAMPLE_COUNT;
+	if(req_buff_size < APU_MINIMUM_BUFF_SIZE)
+	{
+		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_APU,
+			   "The requested buffer size was too small");
+		goto err;
+	}
 
-	buffer_size = sample_count;
-	buffer_size <<= 1;
-	buffer_size <<= 1;
-
-	printf("Sound buffer size: %d (%d samples)\n", buffer_size, sample_count);
+	buffer_size = req_buff_size;
 
 	if (landing_buffer)
 		free(landing_buffer);
-	landing_buffer = (short*)malloc(buffer_size * 2);
+
+	landing_buffer = (short*)malloc(req_buff_size);
 	if (!landing_buffer)
-		return (FALSE);
+		goto err;
 
 	/* The resampler and spc unit use samples (16-bit short) as
-	   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
-
+	   arguments. */
 	if (!resampler)
 	{
-		resampler_new(buffer_size >> (Settings.SoundSync ? 0 : 1));
+		resampler_new();
 		resampler = TRUE;
 	}
-	else
-		resampler_resize(buffer_size >> (Settings.SoundSync ? 0 : 1));
 
 	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	spc_set_output(landing_buffer, buffer_size >> 1);
@@ -3445,70 +3417,76 @@ bool8 S9xInitSound (int buffer_ms, int lag_ms)
 	UpdatePlaybackRate();
 
 	return TRUE;
+
+err:
+	Settings.Mute = 1;
+	S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_APU,
+			   "Audio output is disabled due to an error");
+	return FALSE;
 }
 
 void S9xSetSoundMute(bool8 mute)
 {
+	if(landing_buffer == NULL)
+		return;
+
 	Settings.Mute = mute;
 }
 
-/* Must be called once before using */
-static unsigned char cycle_table [128] =
-{/*   01   23   45   67   89   AB   CD   EF */
-	0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x68, /* 0 */
-	0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x46, /* 1 */
-	0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x74, /* 2 */
-	0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x38, /* 3 */
-	0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x66, /* 4 */
-	0x48,0x47,0x45,0x56,0x55,0x45,0x22,0x43, /* 5 */
-	0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x75, /* 6 */
-	0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x36, /* 7 */
-	0x28,0x47,0x34,0x36,0x26,0x54,0x52,0x45, /* 8 */
-	0x48,0x47,0x45,0x56,0x55,0x55,0x22,0xC5, /* 9 */
-	0x38,0x47,0x34,0x36,0x26,0x44,0x52,0x44, /* A */
-	0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x34, /* B */
-	0x38,0x47,0x45,0x47,0x25,0x64,0x52,0x49, /* C */
-	0x48,0x47,0x56,0x67,0x45,0x55,0x22,0x83, /* D */
-	0x28,0x47,0x34,0x36,0x24,0x53,0x43,0x40, /* E */
-	0x48,0x47,0x45,0x56,0x34,0x54,0x22,0x60, /* F */
-};
-
-static signed char const reg_times_ [256] =
-{
-	-1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
-	2,  3,  0,  1,-12,  0,  1,  1,  7,  6, 14, 14, 27, 14, 14, 23,
-	5,  6,  3,  4, -1,  3,  4,  4, 10,  9, 14, 14, 26, -5, 14, 23,
-	8,  9,  6,  7,  2,  6,  7,  7, 13, 12, 14, 14, 27, -4, 14, 24,
-	11, 12,  9, 10,  5,  9, 10, 10, 16, 15, 14, 14, -2, -4, 14, 24,
-	14, 15, 12, 13,  8, 12, 13, 13, 19, 18, 14, 14, -2,-36, 14, 24,
-	17, 18, 15, 16, 11, 15, 16, 16, 22, 21, 14, 14, 28, -3, 14, 25,
-	20, 21, 18, 19, 14, 18, 19, 19, 25, 24, 14, 14, 14, 29, 14, 25,
-
-	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-	29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-};
-
 bool8 S9xInitAPU (void)
 {
-	int i;
+    uint8_t APUROM[64] =
+    {
+        0xCD, 0xEF, 0xBD, 0xE8, 0x00, 0xC6, 0x1D, 0xD0,
+        0xFC, 0x8F, 0xAA, 0xF4, 0x8F, 0xBB, 0xF5, 0x78,
+        0xCC, 0xF4, 0xD0, 0xFB, 0x2F, 0x19, 0xEB, 0xF4,
+        0xD0, 0xFC, 0x7E, 0xF4, 0xD0, 0x0B, 0xE4, 0xF5,
+        0xCB, 0xF4, 0xD7, 0x00, 0xFC, 0xD0, 0xF3, 0xAB,
+        0x01, 0x10, 0xEF, 0x7E, 0xF4, 0x10, 0xEB, 0xBA,
+        0xF6, 0xDA, 0x00, 0xBA, 0xF4, 0xC4, 0xF4, 0xDD,
+        0x5D, 0xD0, 0xDB, 0x1F, 0x00, 0x00, 0xC0, 0xFF
+    };
 
-	uint8_t APUROM[64] =
-	{
-		0xCD, 0xEF, 0xBD, 0xE8, 0x00, 0xC6, 0x1D, 0xD0,
-		0xFC, 0x8F, 0xAA, 0xF4, 0x8F, 0xBB, 0xF5, 0x78,
-		0xCC, 0xF4, 0xD0, 0xFB, 0x2F, 0x19, 0xEB, 0xF4,
-		0xD0, 0xFC, 0x7E, 0xF4, 0xD0, 0x0B, 0xE4, 0xF5,
-		0xCB, 0xF4, 0xD7, 0x00, 0xFC, 0xD0, 0xF3, 0xAB,
-		0x01, 0x10, 0xEF, 0x7E, 0xF4, 0x10, 0xEB, 0xBA,
-		0xF6, 0xDA, 0x00, 0xBA, 0xF4, 0xC4, 0xF4, 0xDD,
-		0x5D, 0xD0, 0xDB, 0x1F, 0x00, 0x00, 0xC0, 0xFF
-	};
+    /* Must be called once before using */
+    const uint8_t cycle_table [128] =
+    {   /*   01   23   45   67   89   AB   CD   EF */
+        0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x68, /* 0 */
+        0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x46, /* 1 */
+        0x28,0x47,0x34,0x36,0x26,0x54,0x54,0x74, /* 2 */
+        0x48,0x47,0x45,0x56,0x55,0x65,0x22,0x38, /* 3 */
+        0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x66, /* 4 */
+        0x48,0x47,0x45,0x56,0x55,0x45,0x22,0x43, /* 5 */
+        0x28,0x47,0x34,0x36,0x26,0x44,0x54,0x75, /* 6 */
+        0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x36, /* 7 */
+        0x28,0x47,0x34,0x36,0x26,0x54,0x52,0x45, /* 8 */
+        0x48,0x47,0x45,0x56,0x55,0x55,0x22,0xC5, /* 9 */
+        0x38,0x47,0x34,0x36,0x26,0x44,0x52,0x44, /* A */
+        0x48,0x47,0x45,0x56,0x55,0x55,0x22,0x34, /* B */
+        0x38,0x47,0x45,0x47,0x25,0x64,0x52,0x49, /* C */
+        0x48,0x47,0x56,0x67,0x45,0x55,0x22,0x83, /* D */
+        0x28,0x47,0x34,0x36,0x24,0x53,0x43,0x40, /* E */
+        0x48,0x47,0x45,0x56,0x34,0x54,0x22,0x60, /* F */
+    };
+
+    const int8_t reg_times_ [256] =
+    {
+            -1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
+             2,  3,  0,  1,-12,  0,  1,  1,  7,  6, 14, 14, 27, 14, 14, 23,
+             5,  6,  3,  4, -1,  3,  4,  4, 10,  9, 14, 14, 26, -5, 14, 23,
+             8,  9,  6,  7,  2,  6,  7,  7, 13, 12, 14, 14, 27, -4, 14, 24,
+            11, 12,  9, 10,  5,  9, 10, 10, 16, 15, 14, 14, -2, -4, 14, 24,
+            14, 15, 12, 13,  8, 12, 13, 13, 19, 18, 14, 14, -2,-36, 14, 24,
+            17, 18, 15, 16, 11, 15, 16, 16, 22, 21, 14, 14, 28, -3, 14, 25,
+            20, 21, 18, 19, 14, 18, 19, 19, 25, 24, 14, 14, 14, 29, 14, 25,
+            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+        };
 
 	memset( &m, 0, sizeof m );
 	dsp_init( m.ram.ram );
@@ -3523,7 +3501,7 @@ bool8 S9xInitAPU (void)
 	
 	
 	/* unpack cycle table */
-	for ( i = 0; i < 128; i++ )
+	for (uint_fast8_t  i = 0; i < 128; i++ )
 	{
 		int n = cycle_table [i];
 		m.cycle_table [i * 2 + 0] = n >> 4;
@@ -3535,8 +3513,7 @@ bool8 S9xInitAPU (void)
 	dsp_m.rom = m.rom;
 	dsp_m.hi_ram = m.hi_ram;
 
-	
-	memcpy( reg_times, reg_times_, sizeof reg_times );
+	memcpy( reg_times, reg_times_, sizeof(reg_times) );
 	
 	spc_reset();
 
@@ -3598,7 +3575,12 @@ void S9xAPUExecute (void)
 void S9xAPUTimingSetSpeedup (int ticks)
 {
 	if (ticks != 0)
-		printf("APU speedup hack: %d\n", ticks);
+	{
+		char buf[128];
+		snprintf(buf, sizeof(buf),
+			 "Setting APU speedup hack to %d ticks", ticks);
+		S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_APU, buf);
+	}
 
 	timing_hack_denominator = TEMPO_UNIT - ticks;
 	spc_set_tempo(timing_hack_denominator);

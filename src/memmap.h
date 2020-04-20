@@ -285,8 +285,6 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB);
 bool8 LoadSufamiTurbo (const char *cartA, const char *cartB);
 bool8 LoadSameGame (const char *cartA, const char *cartB);
 
-void	InitROM (void);
-
 void	map_WriteProtectROM (void);
 
 struct SMulti

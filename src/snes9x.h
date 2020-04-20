@@ -147,6 +147,8 @@
   (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE 
   WILL COMMERCIAL RIGHTS EVER BE APPROPRIATED TO ANY PARTY)
 
+  (c) Copyright 2020         Mahyar Koshkouei
+
   Specific ports contains the works of other authors. See headers in
   individual files.
 
@@ -198,6 +200,11 @@ extern "C" {
 
 #define S9X_ACCURACY_LEVEL		3
 
+
+#ifndef SNES_SUPPORT_MULTI_CART
+#define SNES_SUPPORT_MULTI_CART		0
+#endif
+
 #include <boolean.h>
 #include <streams/memory_stream.h>
 
@@ -230,6 +237,8 @@ extern "C" {
 
 #define	NTSC_MASTER_CLOCK	21477272.0
 #define	PAL_MASTER_CLOCK	21281370.0
+
+#define SNES_AUDIO_FREQ		32040.0
 
 #define SNES_MAX_NTSC_VCOUNTER	262
 #define SNES_MAX_PAL_VCOUNTER	312
@@ -339,7 +348,6 @@ struct STimings
 
 struct SSettings
 {
-	bool8	SoundSync;
 	bool8	SuperFX;
 	uint8	DSP;
 	bool8	SA1;
@@ -408,7 +416,7 @@ struct SSNESGameFixes
 	uint8	Uniracers;
 };
 
-void S9xMessage (int type, int number, const char *message);
+void S9xMessage (S9xMessagePriority p, S9xMessageCategory c, const char *msg);
 
 extern struct SSettings			Settings;
 extern struct SCPUState			CPU;
