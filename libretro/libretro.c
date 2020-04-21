@@ -257,91 +257,72 @@ static void check_variables(void)
 {
    bool reset_sfx = false;
    struct retro_variable var;
+
    var.key = "snes9x_2010_overclock";
    var.value = NULL;
-   
+
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (strcmp(var.value, "Disabled(10MHz)") == 0)
+      char *endptr;
+      double freq = strtod(var.value, &endptr);
+
+      /* There must be a space between the value and the unit. Therefore, we
+       * check that the character after the converter integer is a space. */
+      if (*endptr != ' ' || freq == 0.0)
       {
-         Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
-         reset_sfx = true;
+         LIBRETRO_LOG_MSG(RETRO_LOG_WARN,
+               "Unable to obtain SuperFX overclock setting.");
+         freq = 10.0;
       }
-      else if (strcmp(var.value, "40MHz") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 40.5e6;
-         reset_sfx = true;
-      }
-      else if (strcmp(var.value, "60MHz") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 60.5e6;
-         reset_sfx = true;
-      }
-      else if (strcmp(var.value, "80MHz") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 80.5e6;
-         reset_sfx = true;
-      }
-      else if (strcmp(var.value, "100MHz") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 100.5e6;
-         reset_sfx = true;
-      }
-      else if (strcmp(var.value, "Underclock(5MHz)") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 5.5e6;
-         reset_sfx = true;
-      }
-      else if (strcmp(var.value, "Underclock(8MHz)") == 0)
-      {
-         Settings.SuperFXSpeedPerLine = 0.417 * 8.5e6;
-         reset_sfx = true;
-      }
+
+      /* Convert MHz value to Hz and multiply by required factors. */
+      Settings.SuperFXSpeedPerLine = 0.417 * 1.5e6 * freq;
+      reset_sfx = true;
    }
 
    var.key = "snes9x_2010_overclock_cycles";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "compatible") == 0)
       {
-        if (strcmp(var.value, "compatible") == 0)
-        {
-           overclock_cycles = true;
-           one_c = 4;
-           slow_one_c = 5;
-           two_c = 6;
-        }
-        else if (strcmp(var.value, "max") == 0)
-        {
-           overclock_cycles = true;
-           one_c = 3;
-           slow_one_c = 3;
-           two_c = 3;
-        }
-        else if (strcmp(var.value, "light") == 0)
-        {
-           overclock_cycles = true;
-           one_c = 6;
-           slow_one_c = 6;
-           two_c = 12;
-        }
-        else
-          overclock_cycles = false;
+         overclock_cycles = true;
+         one_c = 4;
+         slow_one_c = 5;
+         two_c = 6;
       }
+      else if (strcmp(var.value, "max") == 0)
+      {
+         overclock_cycles = true;
+         one_c = 3;
+         slow_one_c = 3;
+         two_c = 3;
+      }
+      else if (strcmp(var.value, "light") == 0)
+      {
+         overclock_cycles = true;
+         one_c = 6;
+         slow_one_c = 6;
+         two_c = 12;
+      }
+      else
+         overclock_cycles = false;
+   }
 
    var.key = "snes9x_2010_reduce_sprite_flicker";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-      {
-        if (strcmp(var.value, "enabled") == 0)
-          reduce_sprite_flicker = true;
-        else
-          reduce_sprite_flicker = false;
-      }
+   {
+      if (strcmp(var.value, "enabled") == 0)
+         reduce_sprite_flicker = true;
+      else
+         reduce_sprite_flicker = false;
+   }
 
    if (reset_sfx)
-   S9xResetSuperFX();
+      S9xResetSuperFX();
 }
 
 void *retro_get_memory_data(unsigned type)

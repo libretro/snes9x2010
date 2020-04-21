@@ -39,18 +39,23 @@ struct retro_core_option_definition option_defs_us[] = {
    {
       "snes9x_2010_overclock",
       "SuperFX Overclock",
-      "Overclock or underclock the SuperFX chip. 10Mhz is stock clockspeed.",
+      "Overclock or underclock the SuperFX chip. This may improve the framerate and playability of games that use SuperFX.",
       {
-         { "Underclock(5MHz)", NULL },
-         { "Underclock(8MHz)", NULL },
-         { "Disabled(10MHz)",  NULL },
-         { "40MHz", NULL },
-         { "60MHz", NULL },
-         { "80MHz", NULL },
-         { "100MHz", NULL },
+         { "40 MHz", NULL },
+         { "30 MHz", NULL },
+         { "20 MHz", NULL },
+         { "15 MHz", NULL },
+         { "14 MHz", NULL },
+         { "13 MHz", NULL },
+         { "12 MHz", NULL },
+         { "11 MHz", NULL },
+         { "10 MHz (Default)",  NULL },
+         { "9 MHz (Underclock)", NULL },
+         { "8 MHz (Underclock)", NULL },
+         { "5 MHz (Underclock)", NULL },
          { NULL, NULL},
       },
-      "Disabled(10MHz)"
+      "10 MHz (Default)"
    },
    {
       "snes9x_2010_overclock_cycles",
