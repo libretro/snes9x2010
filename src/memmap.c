@@ -2920,6 +2920,7 @@ static bool8 InitROM (void)
 	}
 
 	{
+		unsigned i;
 		const struct {
 			const char *fmt;
 			int val;
@@ -2931,7 +2932,8 @@ static bool8 InitROM (void)
 			{ "PPU.SFXSpeedupHack = %d", PPU.SFXSpeedupHack },
 			{ "coldata_update_screen = %d", coldata_update_screen }
 		};
-		for (int i = 0; i < 6; i++)
+
+		for (i = 0; i < 6; i++)
 		{
 			snprintf(String, sizeof(String), fmt_val[i].fmt, fmt_val[i].val);
 			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, String);

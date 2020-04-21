@@ -3435,6 +3435,8 @@ void S9xSetSoundMute(bool8 mute)
 
 bool8 S9xInitAPU (void)
 {
+    unsigned i;
+
     uint8_t APUROM[64] =
     {
         0xCD, 0xEF, 0xBD, 0xE8, 0x00, 0xC6, 0x1D, 0xD0,
@@ -3501,7 +3503,7 @@ bool8 S9xInitAPU (void)
 	
 	
 	/* unpack cycle table */
-	for (uint_fast8_t  i = 0; i < 128; i++ )
+	for (i = 0; i < 128; i++ )
 	{
 		int n = cycle_table [i];
 		m.cycle_table [i * 2 + 0] = n >> 4;

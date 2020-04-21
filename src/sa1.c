@@ -368,25 +368,26 @@ void S9xSA1PostLoadState (void)
 
 static void S9xSetSA1MemMap (uint32 which1, uint8 map)
 {
+	unsigned c, i;
 	unsigned start  = which1 * 0x100 + 0xc00;
 	unsigned start2 = which1 * 0x200;
 
 	if (which1 >= 2)
 		start2 += 0x400;
 
-	for ( unsigned c = 0; c < 0x100; c += 16)
+	for (c = 0; c < 0x100; c += 16)
 	{
 		uint8	*block = &Memory.ROM[(map & 7) * 0x100000 + (c << 12)];
-		for ( unsigned i = c; i < c + 16; i++)
+		for (i = c; i < c + 16; i++)
 			Memory.Map[start  + i] = SA1.Map[start  + i] = block;
 	}
 
-	for ( unsigned c = 0; c < 0x200; c += 16)
+	for (c = 0; c < 0x200; c += 16)
 	{
 		int32 offset = (((map & 0x80) ? map : which1) & 7) * 0x100000 + (c << 11) - 0x8000;
 		uint8 *block = &Memory.ROM[offset];
 
-		for ( unsigned i = c + 8; i < c + 16; i++)
+		for (i = c + 8; i < c + 16; i++)
 			Memory.Map[start2 + i] = SA1.Map[start2 + i] = block;
 	}
 }
