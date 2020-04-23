@@ -183,6 +183,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <stdarg.h>
 #ifndef _MSC_VER
 #include <stdbool.h>
 #include <unistd.h>
@@ -226,18 +227,12 @@ static retro_input_state_t input_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
 static retro_environment_t environ_cb = NULL;
 
-extern s9xcommand_t			keymap[1024];
+extern s9xcommand_t keymap[1024];
 bool overclock_cycles = false;
 bool reduce_sprite_flicker = false;
 int one_c, slow_one_c, two_c;
 
 static bool libretro_supports_bitmasks = false;
-
-/* Used for logging to stderr if log_cb isn't available. */
-const char *lvl_str[] = { "VERBOSE", "INFO", "WARN", "ERROR" };
-const char *S9xMessageCategoryStr[] = {
-	"ROM", "PPU", "CPU", "APU", "MAP", "CONTROLS", "SNAPSHOT"
-};
 
 /* Use a 64ms buffer. */
 /* 32000*(64/1000) = 2048
@@ -246,12 +241,6 @@ const char *S9xMessageCategoryStr[] = {
 #define APU_BUF_SZ      (APU_BUF_FRAMES * sizeof(int16_t))
 
 #define LIBRETRO_LIB_NAME "Snes9x 2010"
-#define LIBRETRO_LOG_MSG(lvl, ...)					\
-		if (log_cb) log_cb(lvl, __VA_ARGS__);			\
-		else {							\
-			fprintf (stderr, "%s: %s: ", LIBRETRO_LIB_NAME, lvl_str[lvl]); \
-			fprintf (stderr, __VA_ARGS__); putc('\n', stderr); \
-		}
 
 static void check_variables(void)
 {
@@ -270,7 +259,7 @@ static void check_variables(void)
        * check that the character after the converter integer is a space. */
       if (*endptr != ' ' || freq == 0.0)
       {
-         LIBRETRO_LOG_MSG(RETRO_LOG_WARN,
+         S9xMessage(RETRO_LOG_WARN, S9X_CATEGORY_EXTERNAL,
                "Unable to obtain SuperFX overclock setting.");
          freq = 10.0;
       }
@@ -343,9 +332,11 @@ void *retro_get_memory_data(unsigned type)
       case RETRO_MEMORY_VIDEO_RAM:
          data = Memory.VRAM;
          break;
-      //case RETRO_MEMORY_ROM:
-      //   data = Memory.ROM;
-      //   break;
+#if 0
+      case RETRO_MEMORY_ROM:
+	 data = Memory.ROM;
+	 break;
+#endif
       default:
          data = NULL;
          break;
@@ -374,9 +365,11 @@ size_t retro_get_memory_size(unsigned type)
       case RETRO_MEMORY_VIDEO_RAM:
          size = 64 * 1024;
          break;
-      //case RETRO_MEMORY_ROM:
-      //   data = Memory.CalculatedSize;
-      //   break;
+#if 0
+      case RETRO_MEMORY_ROM:
+         data = Memory.CalculatedSize;
+         break;
+#endif
       default:
          size = 0;
          break;
@@ -396,7 +389,9 @@ void retro_set_video_refresh(retro_video_refresh_t cb)
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
-{}
+{
+   (void) cb;
+}
 
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb)
 {
@@ -532,7 +527,7 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
          retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
          break;
       default:
-	      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Invalid device!");
+	      S9xMessage(RETRO_LOG_ERROR, S9X_CATEGORY_EXTERNAL, "Invalid device!");
    }
 
    if (((retro_devices[0] == RETRO_DEVICE_JOYPAD) && retro_devices[1] == RETRO_DEVICE_JOYPAD) ||
@@ -645,13 +640,14 @@ static void snes_init (void)
    {
       Deinit();
       S9xDeinitAPU();
-      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Failed to init Memory or APU.\n");
+      S9xMessage(RETRO_LOG_ERROR, S9X_CATEGORY_EXTERNAL,
+		      "Failed to init Memory or APU.");
       exit(1);
    }
 
    if (S9xInitSound(APU_BUF_SZ, 0) != true)
    {
-	   const char aud_err[] = "Audio output is disabled due to an internal error";
+      const char *const aud_err = "Audio output is disabled due to an internal error";
       struct retro_message msg = { aud_err, 360 };
 
       if (environ_cb)
@@ -702,15 +698,15 @@ void retro_init (void)
    else
       log_cb = NULL;
 
-   // State that the core supports achievements.
+   /* State that the core supports achievements. */
    environ_cb(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, &achievements);
 
    rgb565 = RETRO_PIXEL_FORMAT_RGB565;
    if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565))
    {
-	   LIBRETRO_LOG_MSG(RETRO_LOG_INFO,
+	   S9xMessage(RETRO_LOG_INFO, S9X_CATEGORY_EXTERNAL,
 			    "Frontend supports RGB565 - will use that instead "
-			    "of XRGB1555.\n");
+			    "of XRGB1555.");
    }
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
@@ -760,18 +756,9 @@ uint16_t snes_lut[] = {
    SNES_TR_MASK
 };
 
-#define TIMER_DELAY 10
-//#define DEBUG_CONTROLS 1
-
-extern bool8 coldata_update_screen;
-
 static void report_buttons (void)
 {
    int i, j, _x, _y, port;
-#ifdef DEBUG_CONTROLS
-   bool pressed_r2, pressed_l2, pressed_r3;
-   static unsigned timeout = TIMER_DELAY;
-#endif
 
    for (port = 0; port <= 1; port++)
    {
@@ -782,14 +769,6 @@ static void report_buttons (void)
             if (libretro_supports_bitmasks)
             {
                ret = input_cb(port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
-#ifdef DEBUG_CONTROLS
-               if (port == 0)
-               {
-                  pressed_l2 = ret & (1 << RETRO_DEVICE_ID_JOYPAD_L2);
-                  pressed_r2 = ret & (1 << RETRO_DEVICE_ID_JOYPAD_R2);
-                  pressed_r3 = ret & (1 << RETRO_DEVICE_ID_JOYPAD_R3);
-               }
-#endif
             }
             else
             {
@@ -797,14 +776,6 @@ static void report_buttons (void)
                for (i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
                   if (input_cb(port, RETRO_DEVICE_JOYPAD, 0, i))
                      ret |= (1 << i);
-#ifdef DEBUG_CONTROLS
-               if (port == 0)
-               {
-                  pressed_l2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2);
-                  pressed_r2 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2);
-                  pressed_r3 = input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
-               }
-#endif
             }
 
             for (i = RETRO_DEVICE_ID_JOYPAD_B; i <= RETRO_DEVICE_ID_JOYPAD_R; i++)
@@ -818,27 +789,6 @@ static void report_buttons (void)
                   joypad[port] &= ~button_press;
             }
 
-#ifdef DEBUG_CONTROLS
-		      if (pressed_l2 && timeout == 0)
-		      {
-			      coldata_update_screen = !coldata_update_screen;
-               timeout = TIMER_DELAY;
-	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "coldata_update_screen: %d.\n"
-			coldata_update_screen);
-		      }
-		      if (pressed_r2 && timeout == 0)
-		      {
-			      PPU.RenderSub = !PPU.RenderSub;
-               timeout = TIMER_DELAY;
-	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "RenderSub: %d.\n", PPU.RenderSub);
-		      }
-		      if (pressed_r3 && timeout == 0)
-		      {
-			      PPU.SFXSpeedupHack = !PPU.SFXSpeedupHack;
-               timeout = TIMER_DELAY;
-	       LIBRETRO_LOG_MSG(RETRO_LOG_INFO, "SFXSpeedupHack: %d.\n", PPU.SFXSpeedupHack);
-		      }
-#endif
 		      break;
 	      case RETRO_DEVICE_JOYPAD_MULTITAP:
 		      for (j = 0; j < 4; j++)
@@ -897,14 +847,11 @@ static void report_buttons (void)
 		      break;
 
 	      default:
-		      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, "Unknown device.\n");
+		      S9xMessage(RETRO_LOG_ERROR, S9X_CATEGORY_EXTERNAL,
+				      "Unknown input device.");
 
       }
    }
-#ifdef DEBUG_CONTROLS
-   if (timeout != 0)
-      timeout--;
-#endif
 }
 
 void retro_run (void)
@@ -937,12 +884,13 @@ void retro_run (void)
    report_buttons();
    S9xMainLoop();
 
-   //Force emptying the audio buffer at the end of the frame
+   /* Force emptying the audio buffer at the end of the frame. */
     S9xAudioCallbackQueue();
 }
 
 size_t retro_serialize_size (void)
 {
+   /* FIXME: No fail check, magic large number, etc. */
    uint8_t *tmpbuf = (uint8_t*)malloc(5000000);
    memstream_set_buffer(tmpbuf, (uint64_t)5000000);
    S9xFreezeGame("");
@@ -992,24 +940,28 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
    uint8 val;
    
    bool8 sram;
-   uint8 bytes[3];//used only by GoldFinger, ignored for now 
+   uint8 bytes[3]; /* used only by GoldFinger, ignored for now */
    
    if (S9xGameGenieToRaw(code, &address, &val)!=NULL &&
        S9xProActionReplayToRaw(code, &address, &val)!=NULL &&
        S9xGoldFingerToRaw(code, &address, &sram, &val, bytes)!=NULL)
-   { // bad code, ignore
+   {
+      /* Ignore bad codes. */
       return;
    }
-   if (index>Cheat.num_cheats) return; // cheat added in weird order, ignore
-   if (index==Cheat.num_cheats) Cheat.num_cheats++;
+   if (index>Cheat.num_cheats)
+      return; /* Ignore cheat added in weird order. */
+
+   if (index==Cheat.num_cheats)
+      Cheat.num_cheats++;
    
    Cheat.c[index].address = address;
    Cheat.c[index].byte = val;
    Cheat.c[index].enabled = enabled;
    
-   Cheat.c[index].saved = FALSE; // it'll be saved next time cheats run anyways
+   Cheat.c[index].saved = FALSE; /* it'll be saved next time cheats run */
    
-   Settings.ApplyCheats=true;
+   Settings.ApplyCheats = true;
    S9xApplyCheats();
 } 
 
@@ -1023,7 +975,8 @@ static bool merge_mapping(void)
 	uint32 len;
 
 	if (memorydesc_c==1)
-		return false;//can't merge the only one
+		return false; /* can't merge the only one */
+
 	a= &memorydesc[MAX_MAPS - (memorydesc_c-1)];
 	b= &memorydesc[MAX_MAPS - memorydesc_c];
 
@@ -1034,7 +987,8 @@ static bool merge_mapping(void)
 	if (a->len != b->len)
 		return false;
 	if (a->addrspace || b->addrspace)
-		return false;//we don't use these
+		return false; /* we don't use these */
+
 	if (((char*)a->ptr)+a->offset==((char*)b->ptr)+b->offset && a->select==b->select)
 	{
 		a->select&=~(a->start^b->start);
@@ -1056,7 +1010,8 @@ static bool merge_mapping(void)
 
 void S9xAppendMapping(struct retro_memory_descriptor *desc)
 {
-	//do it backwards - snes9x defines the last one to win, while we define the first one to win
+	/* do it backwards - snes9x defines the last one to win, while we define
+	 * the first one to win */
 	memcpy(&memorydesc[MAX_MAPS - (++memorydesc_c)], desc, sizeof(struct retro_memory_descriptor));
 	while (merge_mapping()) {}
 }
@@ -1150,10 +1105,10 @@ bool retro_load_game(const struct retro_game_info *game)
    loaded = LoadROM("");
    if (!loaded)
    {
-      const char err_msg[] = "ROM loading failed.\n";
+      const char *const err_msg = "ROM loading failed.";
       struct retro_message msg = { err_msg, 360 };
 
-      LIBRETRO_LOG_MSG(RETRO_LOG_ERROR, err_msg);
+      S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_EXTERNAL, err_msg);
 
       if (environ_cb)
          environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
@@ -1169,12 +1124,13 @@ bool retro_load_game(const struct retro_game_info *game)
    return TRUE;
 }
 
-bool retro_load_game_special(
-  unsigned game_type,
-  const struct retro_game_info *info, size_t num_info
-)
+bool retro_load_game_special(unsigned game_type,
+		const struct retro_game_info *info, size_t num_info)
 {
-   init_descriptors();
+   (void) game_type;
+   (void) info;
+   (void) num_info;
+
    return false;
 }
 
@@ -1188,8 +1144,7 @@ unsigned retro_get_region (void)
 
 void S9xDeinitUpdate(int width, int height)
 {
-   //GFX.Pitch = width * 2;
-   /* TODO: Use SET_GEOMETRY to change display size. */
+   /* GFX.Pitch = width * 2; */
    video_cb(GFX.Screen, width, height, GFX.Pitch);
 }
 
@@ -1198,7 +1153,21 @@ const char* S9xGetDirectory(uint32_t dirtype) { return NULL; }
 
 void S9xMessage (S9xMessagePriority p, S9xMessageCategory c, const char *msg)
 {
-	LIBRETRO_LOG_MSG(p, "%s: %s\n", S9xMessageCategoryStr[c], msg);
+	const char *const S9xMessageCategoryStr[] = {
+		"ROM", "PPU", "CPU", "APU", "MAP", "CONTROLS", "SNAPSHOT", "EXT"
+	};
+
+	if (log_cb)
+		log_cb(p, "%s: %s\n", S9xMessageCategoryStr[c], msg);
+	else
+	{
+		const char *const p_str[] = {
+			"VERBOSE", "INFO", "WARN", "ERROR"
+		};
+		fprintf (stderr, "[%s] %s [%s]: %s\n", p_str[p],
+				LIBRETRO_LIB_NAME, S9xMessageCategoryStr[c],
+				msg);
+	}
 }
 
 /* S9x weirdness. */
