@@ -133,7 +133,7 @@ else ifeq ($(platform), osx)
 	TARGET := $(TARGET_NAME)_libretro.$(EXT)
 	fpic := -fPIC
 ifeq ($(arch),ppc)
-		CFLAGS += -D__ppc__ -DMSB_FIRST
+	CFLAGS += -D__ppc__ -DMSB_FIRST -DHAVE_NO_LANGEXTRA
 endif
 	OSXVER = $(shell sw_vers -productVersion | cut -d. -f 2)
 	OSX_GT_MOJAVE = $(shell (( $(OSXVER) >= 14)) && echo "YES")
