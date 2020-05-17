@@ -519,7 +519,7 @@ else ifneq (,$(findstring msvc,$(platform)))
 	WARNING_DEFINES =
 	CODE_DEFINES =
 else
-	WARNINGS_DEFINES = -Wall -Wextra -Wno-sign-compare -Wno-implicit-fallthrough
+	WARNINGS_DEFINES = -Wall -Wextra -Wno-sign-compare
 endif
 
 COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) $(fpic) $(LTO)
