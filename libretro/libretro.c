@@ -893,7 +893,7 @@ size_t retro_serialize_size (void)
    /* FIXME: No fail check, magic large number, etc. */
    uint8_t *tmpbuf = (uint8_t*)malloc(5000000);
    memstream_set_buffer(tmpbuf, (uint64_t)5000000);
-   S9xFreezeGame("");
+   S9xFreezeGame();
    free(tmpbuf);
    return memstream_get_last_size();
 }
@@ -908,7 +908,7 @@ bool retro_serialize(void *data, size_t size)
       Settings.FastSavestates = 0 != (result & 4);
    }
    memstream_set_buffer((uint8_t*)data, (uint64_t)size);
-   if (S9xFreezeGame("") == FALSE)
+   if (S9xFreezeGame() == FALSE)
       return FALSE;
 
    return TRUE;
@@ -922,7 +922,7 @@ bool retro_unserialize(const void * data, size_t size)
    if (okay)
       Settings.FastSavestates = 0 != (result & 4);
    memstream_set_buffer((uint8_t*)data, (uint64_t)size);
-   if (S9xUnfreezeGame("") == FALSE)
+   if (S9xUnfreezeGame() == FALSE)
       return FALSE;
 
    return TRUE;

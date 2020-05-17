@@ -1353,7 +1353,7 @@ void S9xFreezeToStream (STREAM stream)
 		FreezeStruct(stream, "BSX", &BSX, SnapBSX, COUNT(SnapBSX));
 }
 
-bool8 S9xFreezeGame (const char *filename)
+bool8 S9xFreezeGame (void)
 {
 	STREAM	stream = NULL;
 
@@ -1368,7 +1368,7 @@ bool8 S9xFreezeGame (const char *filename)
 	return (FALSE);
 }
 
-bool8 S9xUnfreezeGame (const char * filename)
+bool8 S9xUnfreezeGame (void)
 {
 	STREAM stream = NULL;
 
