@@ -559,7 +559,7 @@ else
 	$(AR) rcs $@ $(OBJECTS)
 endif
 else
-	+$(CC) $(fpic) $(SHARED) $(CFLAGS) $(INCFLAGS) $(LDFLAGS) $(OBJOUT) $@ $(OBJECTS) $(LIBM) $(LTO)
+	$(CC) $(fpic) $(SHARED) $(CFLAGS) $(INCFLAGS) $(LDFLAGS) $(OBJOUT) $@ $(OBJECTS) $(LIBM) $(LTO)
 endif
 
 %.o: %.c
