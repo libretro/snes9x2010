@@ -193,6 +193,11 @@
 
 #include "libretro_core_options.h"
 
+#ifdef _3DS
+void* linearMemAlign(size_t size, size_t alignment);
+void linearFree(void* mem);
+#endif
+
 #include "../src/apu.h"
 #include "../src/boolean.h"
 #include "../src/cheats.h"
@@ -664,7 +669,7 @@ static void snes_init (void)
    /* request 128-bit alignment here if possible */
    posix_memalign((void**)&GFX.Screen, 16, GFX.Pitch * 512 * sizeof(uint16));
 #elif defined(_3DS)
-   GFX.Screen = (uint16*) memalign(16, GFX.Pitch * 512 * sizeof(uint16));
+   GFX.Screen = (uint16*) linearMemAlign(GFX.Pitch * 512 * sizeof(uint16), 0x80);
 #else
    GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
 #endif
@@ -725,9 +730,12 @@ void retro_deinit(void)
    Deinit();
    S9xGraphicsDeinit();
    S9xUnmapAllControls();
-   
+#if defined(_3DS)
+   if (GFX.Screen)
+      linearFree(GFX.Screen);
+#else
    free(GFX.Screen);
-   
+#endif
    libretro_supports_bitmasks = false;
 }
 
