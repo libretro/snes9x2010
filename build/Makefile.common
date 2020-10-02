@@ -40,6 +40,7 @@ SOURCES_C := $(CORE_DIR)/src/apu.c \
 	$(CORE_DIR)/src/srtc.c \
 	$(CORE_DIR)/src/tile.c \
 	$(CORE_DIR)/src/hwregisters.c \
+        $(CORE_DIR)/filter/snes_ntsc.c \
 	$(CORE_DIR)/libretro/libretro.c
 
 ifeq ($(STATIC_LINKING),1)

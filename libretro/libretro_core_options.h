@@ -31,11 +31,9 @@ extern "C" {
  *   frontend language definition */
 
 struct retro_core_option_definition option_defs_us[] = {
-
-   /* These variable names and possible values constitute an ABI with ZMZ (ZSNES Libretro player).
-    * Changing "Show layer 1" is fine, but don't change "layer_1"/etc or the possible values ("Yes|No").
-    * Adding more variables and rearranging them is safe. */
-
+	/* These variable names and possible values constitute an ABI with ZMZ (ZSNES Libretro player).
+	 * Changing "Show layer 1" is fine, but don't change "layer_1"/etc or the possible values ("Yes|No").
+	 * Adding more variables and rearranging them is safe. */
    {
       "snes9x_2010_overclock",
       "SuperFX Overclock",
@@ -81,6 +79,71 @@ struct retro_core_option_definition option_defs_us[] = {
       },
       "disabled"
    },
+   {
+      "snes9x_2010_region",
+      "Console Region (Restart)",
+      "Specify which region the system is from. 'PAL' is 50hz, 'NTSC' is 60hz. Games will run faster or slower than normal if the incorrect region is selected.",
+      {
+         { "auto", "Auto" },
+         { "ntsc", "NTSC" },
+         { "pal",  "PAL" },
+         { NULL, NULL},
+      },
+      "auto"
+   },
+   {
+      "snes9x_2010_aspect",
+      "Preferred Aspect Ratio",
+      "Choose the preferred content aspect ratio. This will only apply when RetroArch's aspect ratio is set to 'Core provided' in the Video settings.",
+      {
+         { "4:3",         NULL },
+         { "uncorrected", "Uncorrected" },
+         { "auto",        "Auto" },
+         { "ntsc",        "NTSC" },
+         { "pal",         "PAL" },
+         { NULL, NULL},
+      },
+      "auto"
+   },
+   {
+      "snes9x_2010_turbodelay",
+      "Set Autofire Pulse",
+      "Fire interval: medium - 6 frames, fast - 4 frames, slow - 8 frames.",
+      {
+         { "medium", "Medium" },
+         { "fast", "Fast" },
+         { "slow", "Slow "},
+         { NULL, NULL },
+      },
+      "medium"
+   },
+   {
+      "snes9x_2010_blargg",
+      "Blargg NTSC Filter",
+      "Apply a video filter to mimic various NTSC TV signals.",
+      {
+         { "disabled",   NULL },
+         { "monochrome", "Monochrome" },
+         { "rf",         "RF" },
+         { "composite",  "Composite" },
+         { "s-video",    "S-Video" },
+         { "rgb",        "RGB" },
+         { NULL, NULL},
+      },
+      "disabled"
+   },
+   {
+      "snes9x_2010_block_invalid_vram_access",
+      "Block Invalid VRAM Access (Restart)",
+      "Some homebrew/ROM hacks require this option to be disabled for correct operation.",
+      {
+         { "enabled",  NULL },
+         { "disabled", NULL },
+         { NULL, NULL},
+      },
+      "enabled"
+   },
+
    { NULL, NULL, NULL, {{0}}, NULL },
 };
 
