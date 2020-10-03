@@ -198,7 +198,7 @@ extern struct SSRTCSnapshot	srtcsnap;
 void S9xInitSRTC (void);
 void S9xResetSRTC (void);
 void S9xSRTCPreSaveState (void);
-void S9xSRTCPostLoadState (int);
+void S9xSRTCPostLoadState (void);
 void S9xSetSRTC (uint8, uint16);
 uint8 S9xGetSRTC (uint16);
 

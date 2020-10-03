@@ -1083,10 +1083,10 @@ static FreezeData	SnapBSX[] =
 	ARRAY_ENTRY(6, test2192, 32, uint8_ARRAY_V)
 };
 
-static bool8 S9xOpenSnapshotFile(const char * file_mode, STREAM *file)
+static bool8 S9xOpenSnapshotFile(STREAM *file)
 {
-	if((*file = OPEN_STREAM("", file_mode)) != 0)
-		return (TRUE);
+   if((*file = OPEN_STREAM("")) != 0)
+      return (TRUE);
    return (FALSE);
 }
 
@@ -1357,7 +1357,7 @@ bool8 S9xFreezeGame (void)
 {
 	STREAM	stream = NULL;
 
-	if (S9xOpenSnapshotFile("wb", &stream))
+	if (S9xOpenSnapshotFile(&stream))
 	{
 		S9xFreezeToStream(stream);
 		CLOSE_STREAM(stream);
@@ -1372,7 +1372,7 @@ bool8 S9xUnfreezeGame (void)
 {
 	STREAM stream = NULL;
 
-	if (S9xOpenSnapshotFile("rb", &stream))
+	if (S9xOpenSnapshotFile(&stream))
 	{
 		int result = S9xUnfreezeFromStream(stream);
 		CLOSE_STREAM(stream);
@@ -1984,10 +1984,10 @@ int S9xUnfreezeFromStream (STREAM stream)
 			S9xSDD1PostLoadState();
 
 		if (local_spc7110)
-			S9xSPC7110PostLoadState(version);
+			S9xSPC7110PostLoadState();
 
 		if (local_srtc)
-			S9xSRTCPostLoadState(version);
+			S9xSRTCPostLoadState();
 
 		if (local_bsx_data)
 			S9xBSXPostLoadState();

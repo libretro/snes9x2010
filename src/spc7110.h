@@ -271,7 +271,7 @@ void S9xInitSPC7110 (void);
 void S9xResetSPC7110 (void);
 void S9xFreeSPC7110 (void);
 void S9xSPC7110PreSaveState (void);
-void S9xSPC7110PostLoadState (int);
+void S9xSPC7110PostLoadState (void);
 void S9xSetSPC7110 (uint8 Byte, uint16 Address);
 uint8 S9xGetSPC7110 (uint16 address);
 uint8 S9xGetSPC7110Byte (uint32 address);

@@ -220,7 +220,7 @@ extern "C" {
 #define WRITE_STREAM(p, l, s)    memstream_write(s, p, l)
 #define GETS_STREAM(p, l, s)     memstream_gets(s, p, l)
 #define GETC_STREAM(s)           memstream_getc(s)
-#define OPEN_STREAM(f, m)        memstream_open(0)
+#define OPEN_STREAM(f)           memstream_open(0)
 #define FIND_STREAM(f)           memstream_pos(f)
 #define REVERT_STREAM(f, o, s)   memstream_seek(f, o, s)
 #define CLOSE_STREAM(s)          memstream_close(s)

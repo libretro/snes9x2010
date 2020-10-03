@@ -473,7 +473,7 @@ void S9xSRTCPreSaveState (void)
 	srtcsnap.rtc_index = (int32) srtc_index;
 }
 
-void S9xSRTCPostLoadState (int unused)
+void S9xSRTCPostLoadState (void)
 {
 	srtc_mode  = srtcsnap.rtc_mode;
 	srtc_index = (signed)         srtcsnap.rtc_index;

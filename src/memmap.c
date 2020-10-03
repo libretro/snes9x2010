@@ -838,7 +838,7 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 	split_path(filename, drive, dir, name, exts);
 	make_path(fname, drive, dir, name, exts);
 
-	fp = OPEN_STREAM(fname, "rb");
+	fp = OPEN_STREAM(fname);
 	if (!fp)
 		return (0);
 
@@ -880,7 +880,7 @@ static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
 			else
 				more = FALSE;
 
-	}	while (more && (fp = OPEN_STREAM(fname, "rb")) != NULL);
+	}	while (more && (fp = OPEN_STREAM(fname)) != NULL);
 
 	if (Memory.HeaderCount == 0)
 		S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "No ROM file header found.");

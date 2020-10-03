@@ -1861,7 +1861,7 @@ void S9xSPC7110PreSaveState (void)
 	}
 }
 
-void S9xSPC7110PostLoadState (int version)//version unused
+void S9xSPC7110PostLoadState (void)
 {
 	r4801 = s7snap.r4801;
 	r4802 = s7snap.r4802;
