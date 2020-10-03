@@ -257,6 +257,8 @@ typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t );
 
 typedef struct
 {
+	/* pointer to voice's DSP registers */
+	uint8_t* regs;
 	/* decoded samples (twice the size to simplify wrap handling) */
 	int buf [BRR_BUF_SIZE_X2];
 	/* place in buffer where next samples will be decoded */
@@ -267,8 +269,6 @@ typedef struct
 	int brr_addr;
 	/* current decoding offset in BRR block */
 	int brr_offset;
-	/* pointer to voice's DSP registers */
-	uint8_t* regs;
 	/* bitmask for voice: 0x01 for voice 0, 0x02 for voice 1, etc. */
 	int vbit;
 	/* KON delay/current setup phase */
@@ -283,14 +283,20 @@ typedef struct
 
 typedef struct
 {
-	uint8_t regs [REGISTER_COUNT];
+	int (*echo_hist_pos) [2]; /* &echo_hist [0 to 7] */
+   dsp_voice_t voices [VOICE_COUNT]; /* ptr alignment */
+
+	uint8_t *rom, *hi_ram;
+	uint8_t* ram; /* 64K shared RAM between DSP and SMP */
+	short* out;
+	short* out_end;
+	short* out_begin;
 
 	/* Echo history keeps most recent 8 samples 
            (twice the size to simplify wrap handling) */
 
 	int echo_hist [ECHO_HIST_SIZE_X2] [2];
 
-	int (*echo_hist_pos) [2]; /* &echo_hist [0 to 7] */
 
 	int every_other_sample; /* toggles every sample */
 	int kon;                /* KON value when last checked */
@@ -302,9 +308,6 @@ typedef struct
 
 	/* Hidden registers also written to when main register is written to */
 	int new_kon;
-	uint8_t endx_buf;
-	uint8_t envx_buf;
-	uint8_t outx_buf;
 
 	/* Temporary state between clocks */
 
@@ -336,17 +339,14 @@ typedef struct
 	int t_echo_out [2];
 	int t_echo_in  [2];
 
-	dsp_voice_t voices [VOICE_COUNT];
+	int rom_enabled;
 
-	/* non-emulation state */
-	uint8_t* ram; /* 64K shared RAM between DSP and SMP */
-	short* out;
-	short* out_end;
-	short* out_begin;
 	short extra [EXTRA_SIZE];
 
-	int rom_enabled;
-	uint8_t *rom, *hi_ram;
+	uint8_t endx_buf;
+	uint8_t envx_buf;
+	uint8_t outx_buf;
+	uint8_t regs [REGISTER_COUNT];
 } dsp_state_t;
 
 #if !SPC_NO_COPY_STATE_FUNCS
@@ -415,9 +415,10 @@ uint8_t *spc_apuram (void);
 
 typedef struct
 {
-	Timer timers [TIMER_COUNT];
-
-	uint8_t smp_regs [2] [REG_COUNT];
+	short*   buf_begin;
+	short*	buf_end;
+	short*   extra_pos;
+	short    extra_buf [EXTRA_SIZE];
 
 	struct
 	{
@@ -435,14 +436,15 @@ typedef struct
 	int         tempo;
 
 	int         extra_clocks;
-	short*   buf_begin;
-	short*	buf_end;
-	short*   extra_pos;
-	short    extra_buf [EXTRA_SIZE];
 
 	int         rom_enabled;
+
+	Timer timers [TIMER_COUNT]; /* int alignment */
+
 	uint8_t     rom    [ROM_SIZE];
 	uint8_t     hi_ram [ROM_SIZE];
+
+	uint8_t smp_regs [2] [REG_COUNT];
 
 	unsigned char cycle_table [256];
 
@@ -457,6 +459,7 @@ typedef struct
 		uint8_t ram      [0x10000];
 		uint8_t padding2 [0x100];
 	} ram;
+
 } spc_state_t;
 
 /* Number of samples written to output since last set */

@@ -180,6 +180,7 @@
    Large thanks to John Weidman for all his initial research
    Thanks to Seph3 for his modem notes */
 
+#include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 #include <time.h>

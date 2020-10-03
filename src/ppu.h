@@ -270,35 +270,35 @@
 
 struct ClipData
 {
-	uint8	Count;
-	uint8	DrawMode[6];
 	uint16	Left[6];
 	uint16	Right[6];
+	uint8	Count;
+	uint8	DrawMode[6];
 };
 
 struct InternalPPU
 {
-	struct ClipData Clip[2][6];
-	bool8	OBJChanged;
-	bool8	DirectColourMapsNeedRebuild;
 	uint8	*TileCache[7];
 	uint8	*TileCached[7];
+	uint8	*XB;
+	int	RenderedScreenWidth;
+	int	RenderedScreenHeight;
+	int	CurrentLine;
+	int	PreviousLine;
+	struct ClipData Clip[2][6];         /* uint16 alignment */
+	uint16	ScreenColors[256];
 #ifdef CORRECT_VRAM_READS
 	uint16	VRAMReadBuffer;
 #else
 	bool8	FirstVRAMRead;
 #endif
+	bool8	OBJChanged;
+	bool8	DirectColourMapsNeedRebuild;
 	bool8	Interlace;
 	bool8	InterlaceOBJ;
 	bool8	PseudoHires;
 	bool8	DoubleWidthPixels;
 	bool8	DoubleHeightPixels;
-	int	CurrentLine;
-	int	PreviousLine;
-	uint8	*XB;
-	uint16	ScreenColors[256];
-	int	RenderedScreenWidth;
-	int	RenderedScreenHeight;
 	bool8 RenderThisFrame;
 };
 
@@ -306,9 +306,9 @@ struct SOBJ
 {
 	int16	HPos;
 	uint16	VPos;
+	uint16	Name;
 	uint8	HFlip;
 	uint8	VFlip;
-	uint16	Name;
 	uint8	Priority;
 	uint8	Palette;
 	uint8	Size;
@@ -318,12 +318,12 @@ struct SPPU
 {
 	struct
 	{
-		bool8	High;
-		uint8	Increment;
 		uint16	Address;
 		uint16	Mask1;
 		uint16	FullGraphicCount;
 		uint16	Shift;
+		uint8	Increment;
+		bool8	High;
 	}	VMA;
 
 	uint32	WRAM;
@@ -333,59 +333,14 @@ struct SPPU
 		uint16	SCBase;
 		uint16	HOffset;
 		uint16	VOffset;
-		uint8	BGSize;
 		uint16	NameBase;
 		uint16	SCSize;
+		uint8	BGSize;
 	}	BG[4];
 
-	uint8	BGMode;
-	uint8	BG3Priority;
-	bool8	RenderSub;
 
-	bool8	CGFLIP;
-	uint8	CGFLIPRead;
-	uint8	CGADD;
-	uint16	CGDATA[256];
-
-	struct SOBJ OBJ[128];
-	bool8	OBJThroughMain;
-	bool8	OBJThroughSub;
-	bool8	OBJAddition;
-	uint16	OBJNameBase;
-	uint16	OBJNameSelect;
-	uint8	OBJSizeSelect;
-
-	uint16	OAMAddr;
-	uint16	SavedOAMAddr;
-	uint8	OAMPriorityRotation;
-	uint8	OAMFlip;
-	uint8	OAMReadFlip;
-	uint16	OAMTileAddress;
-	uint16	OAMWriteRegister;
-	uint8	OAMData[512 + 32];
-
-	uint8	FirstSprite;
-	uint8	LastSprite;
-	uint8	RangeTimeOver;
-
-	bool8	HTimerEnabled;
-	bool8	VTimerEnabled;
 	short	HTimerPosition;
 	short	VTimerPosition;
-	uint16	IRQHBeamPos;
-	uint16	IRQVBeamPos;
-
-	uint8	HBeamFlip;
-	uint8	VBeamFlip;
-	uint16	HBeamPosLatched;
-	uint16	VBeamPosLatched;
-	uint16	GunHLatch;
-	uint16	GunVLatch;
-	uint8	HVBeamCounterLatched;
-
-	bool8	Mode7HFlip;
-	bool8	Mode7VFlip;
-	uint8	Mode7Repeat;
 	short	MatrixA;
 	short	MatrixB;
 	short	MatrixC;
@@ -394,34 +349,51 @@ struct SPPU
 	short	CentreY;
 	short	M7HOFS;
 	short	M7VOFS;
-
+	struct SOBJ OBJ[128]; /* int16 alignment */
+	uint16	OBJNameBase;
+	uint16	OBJNameSelect;
+	uint16	CGDATA[256];
+	uint16	OAMAddr;
+	uint16	SavedOAMAddr;
+	uint16	OAMTileAddress;
+	uint16	OAMWriteRegister;
+	uint16	IRQHBeamPos;
+	uint16	IRQVBeamPos;
+	uint16	HBeamPosLatched;
+	uint16	VBeamPosLatched;
+	uint16	GunHLatch;
+	uint16	GunVLatch;
+	uint16	ScreenHeight;
+	uint8	BGMode;
+	uint8	BG3Priority;
+	uint8	CGFLIPRead;
+	uint8	CGADD;
+	uint8	OBJSizeSelect;
+	uint8	OAMPriorityRotation;
+	uint8	OAMFlip;
+	uint8	OAMReadFlip;
+	uint8	FirstSprite;
+	uint8	LastSprite;
+	uint8	RangeTimeOver;
+	uint8	OAMData[512 + 32];
+	uint8	HBeamFlip;
+	uint8	VBeamFlip;
+	uint8	HVBeamCounterLatched;
+	uint8	Mode7Repeat;
 	uint8	Mosaic;
 	uint8	MosaicStart;
-	bool8	BGMosaic[4];
-	bool8	DisableMosaicHack;
-	bool8	SFXSpeedupHack;
-
 	uint8	Window1Left;
 	uint8	Window1Right;
 	uint8	Window2Left;
 	uint8	Window2Right;
-	bool8	RecomputeClipWindows;
 	uint8	ClipCounts[6];
 	uint8	ClipWindowOverlapLogic[6];
 	uint8	ClipWindow1Enable[6];
 	uint8	ClipWindow2Enable[6];
-	bool8	ClipWindow1Inside[6];
-	bool8	ClipWindow2Inside[6];
-
-	bool8	ForcedBlanking;
-
 	uint8	FixedColourRed;
 	uint8	FixedColourGreen;
 	uint8	FixedColourBlue;
 	uint8	Brightness;
-	uint16	ScreenHeight;
-
-	bool8	Need16x8Mulitply;
 	uint8	BGnxOFSbyte;
 	uint8	M7byte;
 
@@ -431,6 +403,23 @@ struct SPPU
 	uint8	OpenBus1;
 	uint8	OpenBus2;
 
+	bool8	CGFLIP;
+	bool8	RenderSub;
+	bool8	OBJThroughMain;
+	bool8	OBJThroughSub;
+	bool8	OBJAddition;
+	bool8	HTimerEnabled;
+	bool8	VTimerEnabled;
+	bool8	Mode7HFlip;
+	bool8	Mode7VFlip;
+	bool8	BGMosaic[4];
+	bool8	DisableMosaicHack;
+	bool8	SFXSpeedupHack;
+	bool8	RecomputeClipWindows;
+	bool8	ClipWindow1Inside[6];
+	bool8	ClipWindow2Inside[6];
+	bool8	ForcedBlanking;
+	bool8	Need16x8Mulitply;
 	bool8	FullClipping;
 };
 
@@ -458,38 +447,10 @@ void S9xDoAutoJoypad (void);
 
 struct SGFX
 {
-	uint16	*Screen;
-	uint16	*SubScreen;
-	uint8	*ZBuffer;
-	uint8	*SubZBuffer;
-	uint32	Pitch;
-	uint32	ScreenSize;
-	uint16	*S;
-	uint8	*DB;
-	uint16	*X2;
-	uint16	*ZERO;
-	uint32	RealPPL;		/* true PPL of Screen buffer */
-	uint32	PPL;			/* number of pixels on each of Screen buffer */
-	uint32	LinesPerTile;		/* number of lines in 1 tile (4 or 8 due to interlace) */
-	uint16	*ScreenColors;		/* screen colors for rendering main */
-	uint16	*RealScreenColors;	/* screen colors, ignoring color window clipping */
-	uint8	Z1;			/* depth for comparison */
-	uint8	Z2;			/* depth to save */
-	uint32	FixedColour;
-	uint8	DoInterlace;
-	uint8	InterlaceFrame;
-	uint32	StartY;
-	uint32	EndY;
-	bool8	ClipColors;
-	uint8	OBJWidths[128];
-	uint8	OBJVisibleTiles[128];
-
-	struct ClipData	*Clip;
-
 	struct
 	{
-		uint8	RTOFlags;
 		int16	Tiles;
+		uint8	RTOFlags;
 
 		struct
 		{
@@ -510,12 +471,43 @@ struct SGFX
 	void	(*DrawMode7BG1Nomath) (uint32, uint32, int);
 	void	(*DrawMode7BG2Math) (uint32, uint32, int);
 	void	(*DrawMode7BG2Nomath) (uint32, uint32, int);
+	struct ClipData	*Clip;
+	uint16	*Screen;
+	uint16	*SubScreen;
+	uint8	*ZBuffer;
+	uint8	*SubZBuffer;
+	uint16	*S;
+	uint8	*DB;
+	uint16	*X2;
+	uint16	*ZERO;
+	uint16	*ScreenColors;		/* screen colors for rendering main */
+	uint16	*RealScreenColors;	/* screen colors, ignoring color window clipping */
+	uint32	Pitch;
+	uint32	ScreenSize;
+	uint32	RealPPL;		/* true PPL of Screen buffer */
+	uint32	PPL;			/* number of pixels on each of Screen buffer */
+	uint32	LinesPerTile;		/* number of lines in 1 tile (4 or 8 due to interlace) */
+	uint32	FixedColour;
+	uint32	StartY;
+	uint32	EndY;
+	uint8	OBJWidths[128];
+	uint8	OBJVisibleTiles[128];
+	uint8	Z1;			/* depth for comparison */
+	uint8	Z2;			/* depth to save */
+	uint8	DoInterlace;
+	uint8	InterlaceFrame;
+	bool8	ClipColors;
 };
 
 struct SBG
 {
 	uint8	(*ConvertTile) (uint8 *, uint32, uint32);
 	uint8	(*ConvertTileFlip) (uint8 *, uint32, uint32);
+
+	uint8	*Buffer;
+	uint8	*BufferFlip;
+	uint8	*Buffered;
+	uint8	*BufferedFlip;
 
 	uint32	TileSizeH;
 	uint32	TileSizeV;
@@ -529,13 +521,10 @@ struct SBG
 	uint32	StartPalette;
 	uint32	PaletteShift;
 	uint32	PaletteMask;
+
 	uint8	EnableMath;
 	uint8	InterlaceLine;
 
-	uint8	*Buffer;
-	uint8	*BufferFlip;
-	uint8	*Buffered;
-	uint8	*BufferedFlip;
 	bool8	DirectColourMode;
 };
 
