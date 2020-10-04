@@ -703,16 +703,22 @@ static void map_buttons(void)
 
 float get_aspect_ratio(unsigned width, unsigned height)
 {
+	double sample_frequency_ntsc;
+	double sample_frequency_pal;
+	double sample_freq;
+	double dot_rate;
+    double par;
+
 	if (aspect_ratio_mode == ASPECT_RATIO_4_3)
 		return (4.0f / 3.0f);
 	else if (aspect_ratio_mode == ASPECT_RATIO_1_1)
 		return (float)width / (float)height;
 
 	// OV2: not sure if these really make sense - NTSC is similar to 4:3, PAL looks weird
-	double sample_frequency_ntsc = 135000000.0f / 11.0f;
-	double sample_frequency_pal = 14750000.0;
-	double sample_freq = (retro_get_region() == RETRO_REGION_NTSC) ? sample_frequency_ntsc : sample_frequency_pal;
-	double dot_rate = (Settings.PAL ? PAL_MASTER_CLOCK : NTSC_MASTER_CLOCK) / 4.0;
+	sample_frequency_ntsc = 135000000.0f / 11.0f;
+	sample_frequency_pal = 14750000.0;
+	sample_freq = (retro_get_region() == RETRO_REGION_NTSC) ? sample_frequency_ntsc : sample_frequency_pal;
+	dot_rate = (Settings.PAL ? PAL_MASTER_CLOCK : NTSC_MASTER_CLOCK) / 4.0;
 
 	if (aspect_ratio_mode == ASPECT_RATIO_NTSC) // ntsc
 	{
@@ -725,7 +731,7 @@ float get_aspect_ratio(unsigned width, unsigned height)
 		dot_rate = PAL_MASTER_CLOCK / 4.0;
 	}
 
-	double par = sample_freq / 2.0 / dot_rate;
+	par = sample_freq / 2.0 / dot_rate;
 
 	return (float)(width * par / height);
 }
@@ -893,7 +899,7 @@ uint16_t snes_lut[] = {
 #define SWITCH_L2	(input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2))
 #define PRESSED_R2 	(input_cb(port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2))
 
-static inline void report_buttons(void)
+static void report_buttons(void)
 {
 	uint32_t i, port;
 	int16_t ret;
@@ -1026,8 +1032,8 @@ static inline void report_buttons(void)
 
    	if (SWITCH_L2 && !input_vars.switch_state)
    	{
-		input_vars.switch_state = true;
 		struct retro_message message;
+        input_vars.switch_state = true;
 		message.frames = 120;
 		message.msg = NULL;
 
