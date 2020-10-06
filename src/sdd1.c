@@ -191,6 +191,9 @@
  */
 
 #include <string.h>
+
+#include <retro_inline.h>
+
 #include "snes9x.h"
 #include "memmap.h"
 #include "port.h"

@@ -6,12 +6,6 @@ ifneq (,$(findstring msvc200,$(platform)))
 INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
 endif
 
-ifneq (,$(findstring msvc,$(platform)))
-COREDEFINES += -DINLINE=_inline
-else
-COREDEFINES += -DINLINE=inline
-endif
-
 ifeq ($(LAGFIX),1)
 	COREDEFINES += -DLAGFIX
 endif

@@ -188,6 +188,8 @@
 #ifndef _NEWTILE_CPP
 #define _NEWTILE_CPP
 
+#include <retro_inline.h>
+
 #include "snes9x.h"
 #include "ppu.h"
 #include "tile.h"

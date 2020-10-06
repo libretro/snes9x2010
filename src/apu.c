@@ -185,6 +185,8 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include <retro_inline.h>
+
 #include "blargg_endian.h"
 #include "apu.h"
 
