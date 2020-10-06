@@ -180,6 +180,8 @@
 #ifndef _CPUEXEC_H_
 #define _CPUEXEC_H_
 
+#include <retro_inline.h>
+
 #include "ppu.h"
 
 struct SOpcodes
