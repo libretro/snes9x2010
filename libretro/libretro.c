@@ -339,7 +339,7 @@ static void check_variables(void)
 		 * check that the character after the converter integer is a space. */
 		if (*endptr != ' ' || freq == 0.0)
 		{
-			S9xMessage(RETRO_LOG_WARN, S9X_CATEGORY_EXTERNAL, "Unable to obtain SuperFX overclock setting.");
+			S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_EXTERNAL, "Unable to obtain SuperFX overclock setting.");
 			freq = 10.0;
 		}
 
@@ -623,7 +623,7 @@ void retro_set_controller_port_device(unsigned in_port, unsigned device)
 			retro_devices[port] = RETRO_DEVICE_LIGHTGUN_JUSTIFIERS;
 		break;
 		default:
-			S9xMessage(RETRO_LOG_ERROR, S9X_CATEGORY_EXTERNAL, "Invalid device!");
+			S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_EXTERNAL, "Invalid device!");
 		break;
 	}
 
@@ -781,7 +781,7 @@ void retro_init(void)
 
 	rgb565 = RETRO_PIXEL_FORMAT_RGB565;
 	if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &rgb565))
-		S9xMessage(RETRO_LOG_INFO, S9X_CATEGORY_EXTERNAL, "Frontend supports RGB565 - will use that instead of XRGB1555.");
+		S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_EXTERNAL, "Frontend supports RGB565 - will use that instead of XRGB1555.");
 
 	if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
 		libretro_supports_bitmasks = true;
@@ -812,7 +812,7 @@ void retro_init(void)
 	{
 		Deinit();
 		S9xDeinitAPU();
-		S9xMessage(RETRO_LOG_ERROR, S9X_CATEGORY_EXTERNAL, "Failed to init Memory or APU.");
+		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_EXTERNAL, "Failed to init Memory or APU.");
 		exit(1);
 	}
 
@@ -1025,7 +1025,7 @@ static void report_buttons(void)
 					S9xApplyCommand(keymap[MAKE_BUTTON(port + 1, i)], input_cb(port, RETRO_DEVICE_LIGHTGUN_JUSTIFIER, 0, i), 0);
 			break;
 			default:
-				S9xMessage(RETRO_LOG_ERROR, S9X_CATEGORY_EXTERNAL,"Unknown input device.");
+				S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_EXTERNAL,"Unknown input device.");
 			break;
 		}
 	}
@@ -1335,12 +1335,29 @@ void S9xDeinitUpdate(int width, int height)
 /* Dummy functions that should probably be implemented correctly later. */
 const char* S9xGetDirectory(uint32_t dirtype) { return NULL; }
 
+static enum retro_log_level s9x_msg_priority_to_retro_log(S9xMessagePriority p)
+{
+   switch (p)
+   {
+      case S9X_MSG_VERBOSE:
+         return RETRO_LOG_DEBUG;
+      case S9X_MSG_INFO:
+         return RETRO_LOG_INFO;
+      case S9X_MSG_WARN:
+         return RETRO_LOG_WARN;
+      case S9X_MSG_ERROR:
+         return RETRO_LOG_ERROR;
+   }
+   return RETRO_LOG_INFO;
+}
+
 void S9xMessage (S9xMessagePriority p, S9xMessageCategory c, const char *msg)
 {
 	const char *const S9xMessageCategoryStr[] = {
 		"ROM", "PPU", "CPU", "APU", "MAP", "CONTROLS", "SNAPSHOT", "EXT"
 	};
+   enum retro_log_level p_info = s9x_msg_priority_to_retro_log(p);
 
 	if (log_cb)
-		log_cb(p, "%s: %s\n", S9xMessageCategoryStr[c], msg);
+		log_cb(p_info, "%s: %s\n", S9xMessageCategoryStr[c], msg);
 }
