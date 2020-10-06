@@ -33,6 +33,7 @@ libretro-build-windows-x64:
     - .core-defs
     - .libretro-windows-x64-mingw-make-default
   variables:
+    platform: windows_x86_64
     MAKEFILE: Makefile.libretro
     
 # Android
