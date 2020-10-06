@@ -1721,8 +1721,7 @@ static uint8 prev_screen = 0;
 #define REPORT_SCREEN() \
 if(prev_screen != PPU.BGMode) \
 { \
-	fprintf(stderr, "MODE: #%d.\n", PPU.BGMode); \
-	prev_screen = PPU.BGMode; \
+   prev_screen = PPU.BGMode; \
 }
 #else
 #define REPORT_SCREEN()

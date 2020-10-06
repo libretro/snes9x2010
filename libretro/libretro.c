@@ -1343,13 +1343,4 @@ void S9xMessage (S9xMessagePriority p, S9xMessageCategory c, const char *msg)
 
 	if (log_cb)
 		log_cb(p, "%s: %s\n", S9xMessageCategoryStr[c], msg);
-	else
-	{
-		const char *const p_str[] = {
-			"VERBOSE", "INFO", "WARN", "ERROR"
-		};
-		fprintf (stderr, "[%s] %s [%s]: %s\n", p_str[p],
-				LIBRETRO_LIB_NAME, S9xMessageCategoryStr[c],
-				msg);
-	}
 }

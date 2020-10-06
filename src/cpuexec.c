@@ -367,7 +367,6 @@ static INLINE void speedhacks_manager (void)
       case SPEEDHACK_DKC1:
          PPU.SFXSpeedupHack = FALSE;
          var_mem = Memory.RAM[0x003E]; /* current level - 7E003E */
-         //fprintf(stderr, "current_level: %d.\n", ram);
          if(var_mem == 49 || var_mem == 217 || var_mem == 66 || var_mem == 67)
             PPU.SFXSpeedupHack = TRUE;
          break;

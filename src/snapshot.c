@@ -1143,10 +1143,7 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 	for (i = 0; i < num_fields; i++)
 	{
 		if (SNAPSHOT_VERSION < fields[i].debuted_in)
-		{
-			/*fprintf(stderr, "%s[%p]: field has bad debuted_in value %d, > %d.", name, (void *) fields, fields[i].debuted_in, SNAPSHOT_VERSION);*/
 			continue;
-		}
 
 		if (SNAPSHOT_VERSION < fields[i].deleted_in)
 			len += FreezeSize(fields[i].size, fields[i].type);
