@@ -669,6 +669,7 @@ static bool8 allASCII (uint8 *b, int size)
 	return (TRUE);
 }
 
+#if SNES_SUPPORT_MULTI_CART
 static bool8 is_SufamiTurbo_BIOS (uint8 *data, uint32 size)
 {
 	if (size == 0x40000 && strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0
@@ -677,7 +678,6 @@ static bool8 is_SufamiTurbo_BIOS (uint8 *data, uint32 size)
    return FALSE;
 }
 
-#if SNES_SUPPORT_MULTI_CART
 static bool8 is_SufamiTurbo_Cart (uint8 *data, uint32 size)
 {
 	if (size >= 0x80000 && size <= 0x100000 && strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0
@@ -692,7 +692,6 @@ static bool8 is_SameGame_BIOS (uint8 *data, uint32 size)
 		return (TRUE);
    return (FALSE);
 }
-#endif
 
 static bool8 is_SameGame_Add_On (uint8 *data, uint32 size)
 {
@@ -700,6 +699,7 @@ static bool8 is_SameGame_Add_On (uint8 *data, uint32 size)
 		return (TRUE);
    return (FALSE);
 }
+#endif
 
 static int ScoreHiROM (uint32 calculated_size, uint8 * rom,  bool8 skip_header, int32 romoff)
 {
