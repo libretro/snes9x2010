@@ -3,26 +3,55 @@
     JNI_PATH: .
     CORENAME: snes9x2010
 
+# Inclusion templates, required for the build to work
 include:
-  - template: Jobs/Code-Quality.gitlab-ci.yml
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/libnx-static.yml'
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/vita-static.yml'
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/linux-x64.yml'
+  ################################## DESKTOPS ################################
+  # Windows 64-bit
   - project: 'libretro-infrastructure/ci-templates'
     file: '/windows-x64-mingw.yml'
+
+  # Linux 64-bit
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/linux-x64.yml'
+
+  # MacOS 64-bit
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/osx-x64.yml'
+
+  ################################## CELLULAR ################################
+  # Android
   - project: 'libretro-infrastructure/ci-templates'
     file: '/android-jni.yml'
 
+  ################################## CONSOLES ################################
+  # Nintendo Switch
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/libnx-static.yml'
+
+  # PlayStation Vita
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/vita-static.yml'
+
+# Stages for building
 stages:
   - build-prepare
   - build-shared
   - build-static
-  - test
 
-#Desktop
+##############################################################################
+#################################### STAGES ##################################
+##############################################################################
+#
+################################### DESKTOPS #################################
+# Windows 64-bit
+libretro-build-windows-x64:
+  extends:
+    - .core-defs
+    - .libretro-windows-x64-mingw-make-default
+  variables:
+    MAKEFILE: Makefile.libretro
+
+# Linux 64-bit
 libretro-build-linux-x64:
   extends:
     - .core-defs
@@ -30,35 +59,41 @@ libretro-build-linux-x64:
   variables:
     MAKEFILE: Makefile.libretro
 
-libretro-build-windows-x64:
+# MacOS 64-bit
+libretro-build-osx-x64:
   extends:
     - .core-defs
-    - .libretro-windows-x64-mingw-make-default
+    - .libretro-osx-x64-make-default
   variables:
     MAKEFILE: Makefile.libretro
-    
-# Android
+
+################################### CELLULAR #################################
+# Android ARMv7a
 android-armeabi-v7a:
   extends:
     - .core-defs
     - .libretro-android-jni-armeabi-v7a
 
+# Android ARMv8a
 android-arm64-v8a:
   extends:
     - .core-defs
     - .libretro-android-jni-arm64-v8a
 
+# Android 64-bit x86
 android-x86_64:
   extends:
     - .core-defs
     - .libretro-android-jni-x86_64
     
+# Android 32-bit x86
 android-x86:
   extends:
     - .core-defs
     - .libretro-android-jni-x86
 
-# Static
+################################### CONSOLES #################################
+# Nintendo Switch
 libretro-build-libnx-aarch64:
   extends:
     - .core-defs
@@ -66,6 +101,7 @@ libretro-build-libnx-aarch64:
   variables:
     MAKEFILE: Makefile.libretro
 
+# PlayStation Vita
 libretro-build-vita:
   extends:
     - .core-defs
