@@ -114,7 +114,7 @@ android-x86:
 # iOS9
 ios9:
   extends:
-    - .libretro-ios9
+    - .libretro-ios9-make-default
     - .core-defs
 
 ################################### CONSOLES #################################
