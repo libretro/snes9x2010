@@ -9,6 +9,7 @@
   variables:
     JNI_PATH: .
     CORENAME: snes9x2010
+    MAKEFILE: Makefile.libretro
 
 # Inclusion templates, required for the build to work
 include:
@@ -31,13 +32,26 @@ include:
     file: '/android-jni.yml'
 
   ################################## CONSOLES ################################
-  # Nintendo Switch
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/libnx-static.yml'
 
   # PlayStation Vita
   - project: 'libretro-infrastructure/ci-templates'
     file: '/vita-static.yml'
+
+  # Nintendo 3DS
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/ctr-static.yml'
+
+  # Nintendo GameCube
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/ngc-static.yml'
+
+  # Nintendo Wii
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/wii-static.yml'
+
+  # Nintendo Switch
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/libnx-static.yml'
 
 # Stages for building
 stages:
@@ -53,65 +67,73 @@ stages:
 # Windows 64-bit
 libretro-build-windows-x64:
   extends:
-    - .core-defs
     - .libretro-windows-x64-mingw-make-default
-  variables:
-    MAKEFILE: Makefile.libretro
+    - .core-defs
 
 # Linux 64-bit
 libretro-build-linux-x64:
   extends:
-    - .core-defs
     - .libretro-linux-x64-make-default
-  variables:
-    MAKEFILE: Makefile.libretro
+    - .core-defs
 
 # MacOS 64-bit
 libretro-build-osx-x64:
   extends:
-    - .core-defs
     - .libretro-osx-x64-make-default
-  variables:
-    MAKEFILE: Makefile.libretro
+    - .core-defs
 
 ################################### CELLULAR #################################
 # Android ARMv7a
 android-armeabi-v7a:
   extends:
-    - .core-defs
     - .libretro-android-jni-armeabi-v7a
+    - .core-defs
 
 # Android ARMv8a
 android-arm64-v8a:
   extends:
-    - .core-defs
     - .libretro-android-jni-arm64-v8a
+    - .core-defs
 
 # Android 64-bit x86
 android-x86_64:
   extends:
-    - .core-defs
     - .libretro-android-jni-x86_64
+    - .core-defs
     
 # Android 32-bit x86
 android-x86:
   extends:
-    - .core-defs
     - .libretro-android-jni-x86
+    - .core-defs
 
 ################################### CONSOLES #################################
-# Nintendo Switch
-libretro-build-libnx-aarch64:
-  extends:
-    - .core-defs
-    - .libretro-libnx-static-retroarch-master
-  variables:
-    MAKEFILE: Makefile.libretro
-
 # PlayStation Vita
 libretro-build-vita:
   extends:
-    - .core-defs
     - .libretro-vita-static-retroarch-master
-  variables:
-    MAKEFILE: Makefile.libretro
+    - .core-defs
+
+# Nintendo 3DS
+libretro-build-ctr:
+  extends:
+    - .libretro-ctr-static-retroarch-master
+    - .core-defs
+
+# Nintendo GameCube
+libretro-build-ngc:
+  extends:
+    - .libretro-ngc-static-retroarch-master
+    - .core-defs
+
+# Nintendo Wii
+libretro-build-wii:
+  extends:
+    - .libretro-wii-static-retroarch-master
+    - .core-defs
+
+# Nintendo Switch
+libretro-build-libnx-aarch64:
+  extends:
+    - .libretro-libnx-static-retroarch-master
+    - .core-defs
