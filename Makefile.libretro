@@ -489,10 +489,7 @@ ifeq ($(STATIC_LINKING),1)
 DEFINES += -DSTATIC_LINKING
 endif
 
-ifeq ($(platform), sncps3)
-	WARNINGS_DEFINES =
-	CODE_DEFINES =
-else ifeq ($(platform), ios)
+ifeq ($(platform), ios)
 	WARNINGS_DEFINES =
 	CODE_DEFINES =
 else ifneq (,$(findstring msvc,$(platform)))
