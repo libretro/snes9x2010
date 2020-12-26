@@ -427,17 +427,11 @@ static void S9xEndScreenRefresh (void)
 	if (IPPU.RenderThisFrame)
 	{
 		FLUSH_REDRAW();
-
-		if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
-		{
-			S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
-#ifdef LAGFIX
-			finishedFrame = true;
-#endif
-		}
 	}
-	else
+
+	if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
 	{
+		S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
 #ifdef LAGFIX
 		finishedFrame = true;
 #endif
