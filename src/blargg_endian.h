@@ -5,7 +5,7 @@
 #define BLARGG_ENDIAN
 
 /* Uncomment to enable platform-specific (and possibly non-portable) optimizations */
-#ifndef EMSCRIPTEN
+#if !defined(EMSCRIPTEN) && !defined(_3DS)
 #define BLARGG_NONPORTABLE 1
 #endif
 
