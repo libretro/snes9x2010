@@ -465,9 +465,6 @@ else ifeq ($(platform), gcw0)
 	CFLAGS += $(PTHREAD_FLAGS)
 	CFLAGS += -ffast-math -march=mips32 -mtune=mips32r2 -mhard-float
 
-else ifeq ($(platform), msvc)
-	OBJOUT = -Fo
-
 # Nintendo Switch (libtransistor)
 else ifeq ($(platform), switch)
 	EXT=a
