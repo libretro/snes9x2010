@@ -86,13 +86,17 @@ LDXFLAGS = $(PLATLDXFLAGS) $(RETROLDXFLAGS)
 # Tuning
 
 ifeq ($(DEBUG),1)
-  CFLAGS   += -Od -Zi -D_DEBUG
-  CXXFLAGS += -Od -Zi -D_DEBUG
-  LDFLAGS  += -DEBUG -DLL
+  CFLAGS     += -MTd
+  CXXFLAGS   += -MTd
+  CFLAGS     += -Od -Zi -D_DEBUG
+  CXXFLAGS   += -Od -Zi -D_DEBUG
+  LDFLAGS    += -DEBUG -DLL
 else
-  CFLAGS   += -O2 -DNDEBUG
-  CXXFLAGS += -O2 -DNDEBUG
-  LDFLAGS  += -DLL
+  CFLAGS     += -MT
+  CXXFLAGS   += -MT
+  CFLAGS     += -O2 -DNDEBUG
+  CXXFLAGS   += -O2 -DNDEBUG
+  LDFLAGS    += -DLL
 endif
 
 ifneq ($(LOG_PERFORMANCE),)
