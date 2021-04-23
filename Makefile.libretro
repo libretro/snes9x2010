@@ -115,7 +115,7 @@ ifeq ($(platform), unix)
 	EXT    ?= so
    TARGET := $(TARGET_NAME)_libretro$(PLAT).$(EXT)
 	fpic := -fPIC
-	LTO ?= -flto=auto 
+	LTO ?= -flto 
 	SHARED := -shared -Wl,--version-script=libretro/link.T
 ifneq ($(findstring Haiku,$(shell uname -a)),)
 		LIBM :=
