@@ -249,10 +249,6 @@ static retro_input_state_t		input_cb = NULL;
 static retro_audio_sample_batch_t			audio_batch_cb = NULL;
 static retro_environment_t		environ_cb = NULL;
 
-static uint8 *rom_buf              = NULL;
-static const uint8 *rom_data       = NULL;
-static size_t rom_size             = 0;
-
 static unsigned frameskip_type = 0;
 static unsigned frameskip_threshold = 0;
 static uint16_t frameskip_counter = 0;
@@ -1412,10 +1408,9 @@ static void init_descriptors(void)
 	environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 }
 
-bool retro_load_game(const struct retro_game_info *info)
+bool retro_load_game(const struct retro_game_info *game)
 {
 	int loaded;
-   const struct retro_game_info_ext *info_ext = NULL;
 	struct retro_memory_map map;
 
 	init_descriptors();
@@ -1424,41 +1419,8 @@ bool retro_load_game(const struct retro_game_info *info)
 	map.descriptors = memorydesc + MAX_MAPS - memorydesc_c;
 	map.num_descriptors = memorydesc_c;
 
-   /* Snes9x 2010 requires a persistent ROM data buffer */
-   rom_buf  = NULL;
-   rom_data = NULL;
-   rom_size = 0;
-
-   if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &info_ext) &&
-       info_ext->persistent_data)
-   {
-      rom_data = (const uint8*)info_ext->data;
-      rom_size = info_ext->size;
-   }
-
-   /* If frontend does not support persistent
-    * content data, must create a copy */
-   if (!rom_data)
-   {
-      if (!info)
-         return false;
-
-      rom_size = info->size;
-      rom_buf  = (uint8*)malloc(rom_size);
-
-      if (!rom_buf)
-      {
-         if (log_cb)
-            log_cb(RETRO_LOG_INFO, "[Snes9x 2010]: Failed to allocate ROM buffer!\n");
-         return false;
-      }
-
-      memcpy(rom_buf, (const uint8*)info->data, rom_size);
-      rom_data = (const uint8*)rom_buf;
-   }
-
 	/* Hack. S9x cannot do stuff from RAM. <_< */
-	memstream_set_buffer((uint8_t*)rom_data, (uint64_t)rom_size);
+	memstream_set_buffer((uint8_t*)game->data, (uint64_t)game->size);
 
 	loaded = LoadROM("");
 	if (!loaded)
@@ -1492,15 +1454,7 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 	return false;
 }
 
-void retro_unload_game (void)
-{
-   if (rom_buf)
-      free(rom_buf);
-
-   rom_buf               = NULL;
-   rom_data              = NULL;
-   rom_size              = 0;
-}
+void retro_unload_game (void) { }
 
 unsigned retro_get_region (void)
 {
