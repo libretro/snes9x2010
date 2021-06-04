@@ -255,7 +255,6 @@ typedef struct
 	uint8	BlockIsROM[MEMMAP_NUM_BLOCKS];
 	uint8	ExtendedFormat;
 
-	char	ROMFilename[PATH_MAX + 1];
 	char	ROMName[ROM_NAME_LEN];
 	char	RawROMName[ROM_NAME_LEN];
 	char	ROMId[5];
@@ -280,7 +279,7 @@ typedef struct
 bool8	Init (void);
 void	Deinit (void);
 
-bool8 LoadROM (const char *filename);
+bool8 LoadROM (void);
 bool8 LoadMultiCart (const char *cartA, const char *cartB);
 bool8 LoadSufamiTurbo (const char *cartA, const char *cartB);
 bool8 LoadSameGame (const char *cartA, const char *cartB);

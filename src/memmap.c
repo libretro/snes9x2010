@@ -259,66 +259,6 @@ static const uint32	crc32Table[256] =
 	0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-/* S9x weirdness. */
-static void split_path(const char * path, char * drive, char * dir, char * fname, char * ext)
-{
-   char *slash = strrchr((char*)path, SLASH_CHAR);
-   char *dot   = strrchr((char*)path, '.');
-
-   if (dot && slash && dot < slash)
-      dot = NULL;
-
-   if (!slash)
-   {
-      *dir = 0;
-
-      strcpy(fname, path);
-
-      if (dot)
-      {
-         fname[dot - path] = 0;
-         strcpy(ext, dot + 1);
-      }
-      else
-         *ext = 0;
-   }
-   else
-   {
-      strcpy(dir, path);
-      dir[slash - path] = 0;
-
-      strcpy(fname, slash + 1);
-
-      if (dot)
-      {
-         fname[dot - slash - 1] = 0;
-         strcpy(ext, dot + 1);
-      }
-      else
-         *ext = 0;
-   }
-}
-
-static void make_path(char *path, const char *a,
-      const char *dir, const char *fname, const char *ext)
-{
-   if (dir && *dir)
-   {
-      strcpy(path, dir);
-      strcat(path, SLASH_STR);
-   }
-   else
-      *path = 0;
-
-   strcat(path, fname);
-
-   if (ext && *ext)
-   {
-      strcat(path, ".");
-      strcat(path, ext);
-   }
-}
-
 /* deinterleave*/
 
 static void S9xDeinterleaveType1 (int size, uint8 *base)
@@ -804,9 +744,7 @@ static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, i
 
 static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
 {
-	uint32 calc_size;
-
-	calc_size = (size / 0x2000) * 0x2000;
+	uint32 calc_size = (size / 0x2000) * 0x2000;
 
 	if (size - calc_size == 512)
 	{
@@ -818,69 +756,31 @@ static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
 	return (size);
 }
 
-static uint32 FileLoader (uint8 *buffer, const char *filename, int32 maxsize)
+static uint32 FileLoader (uint8 *buffer, int32 maxsize)
 {
 	/* <- ROM size without header */
 	/* ** Memory.HeaderCount */
 	/* ** Memory.ROMFilename */
 
-	bool8	more;
-	uint64_t	size;
-	char	fname[PATH_MAX + 1], drive[_MAX_DRIVE + 1], dir[PATH_MAX + 1], name[PATH_MAX + 1], exts[PATH_MAX + 1];
-	int	len;
 	uint8	*ptr;
 	STREAM	fp;
-	int32 totalSize = 0;
-	char *ext = &exts[0];
-
+	uint64_t	size      = 0;
+	int32 totalSize    = 0;
 	Memory.HeaderCount = 0;
 
-	split_path(filename, drive, dir, name, exts);
-	make_path(fname, drive, dir, name, exts);
-
-	fp = OPEN_STREAM(fname);
+	fp                 = OPEN_STREAM();
 	if (!fp)
 		return (0);
 
-	strcpy(Memory.ROMFilename, fname);
+	ptr                = buffer;
 
-	len  = 0;
-	size = 0;
-	more = FALSE;
-	ptr = buffer;
+   size               = READ_STREAM(ptr, (uint64_t)(
+            maxsize + 0x200 - (ptr - buffer)), fp);
+   CLOSE_STREAM(fp);
 
-	do
-	{
-		size = READ_STREAM(ptr, (uint64_t)(maxsize + 0x200 - (ptr - buffer)), fp);
-		CLOSE_STREAM(fp);
-
-		size = HeaderRemove(size, &Memory.HeaderCount, ptr);
-		totalSize += size;
-		ptr += size;
-
-		/* check for multi file roms*/
-		if (ptr - buffer < maxsize + 0x200 &&
-				(isdigit(ext[0]) && ext[1] == 0 && ext[0] < '9'))
-		{
-			more = TRUE;
-			ext[0]++;
-			make_path(fname, drive, dir, name, exts);
-		}
-		else
-			if (ptr - buffer < maxsize + 0x200 &&
-					(((len = strlen(name)) == 7 || len == 8) &&
-						strncasecmp(name, "sf", 2) == 0 &&
-						isdigit(name[2]) && isdigit(name[3]) && isdigit(name[4]) && isdigit(name[5]) &&
-						isalpha(name[len - 1])))
-			{
-				more = TRUE;
-				name[len - 1]++;
-				make_path(fname, drive, dir, name, exts);
-			}
-			else
-				more = FALSE;
-
-	}	while (more && (fp = OPEN_STREAM(fname)) != NULL);
+   size               = HeaderRemove(size, &Memory.HeaderCount, ptr);
+   totalSize         += size;
+   ptr               += size;
 
 	if (Memory.HeaderCount == 0)
 		S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "No ROM file header found.");
@@ -903,7 +803,7 @@ static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
 	return (~crc32);
 }
 
-bool8 LoadROM (const char *filename)
+bool8 LoadROM (void)
 {
 	int	hi_score, lo_score, retry_count;
 	bool8 interleaved, tales;
@@ -912,9 +812,6 @@ bool8 LoadROM (const char *filename)
 
 	retry_count = 0;
 
-	if (!filename)
-		return FALSE;
-
 	memset(Memory.ROM, 0, MAX_ROM_SIZE);
 	memset(&Multi, 0, sizeof(Multi));
 
@@ -922,7 +819,7 @@ again:
 	Memory.CalculatedSize = 0;
 	Memory.ExtendedFormat = NOPE;
 
-	totalFileSize = FileLoader(Memory.ROM, filename, MAX_ROM_SIZE);
+	totalFileSize = FileLoader(Memory.ROM, MAX_ROM_SIZE);
 	if (!totalFileSize)
 	{
 		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_ROM,
@@ -1259,14 +1156,6 @@ bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
 	else
 		return (FALSE);
 
-	if (Multi.cartSizeA)
-		strcpy(Memory.ROMFilename, Multi.fileNameA);
-	else
-	if (Multi.cartSizeB)
-		strcpy(Memory.ROMFilename, Multi.fileNameB);
-	else
-		strcpy(Memory.ROMFilename, path);
-
 	Memory.LoROM = TRUE;
 	Memory.HiROM = FALSE;
 	Memory.CalculatedSize = 0x40000;
@@ -1298,8 +1187,6 @@ bool8 LoadSameGame (const char *cartA, const char *cartB)
 		else
 			strcpy(Multi.fileNameB, cartB);
 	}
-
-	strcpy(Memory.ROMFilename, Multi.fileNameA);
 
 	Memory.LoROM = FALSE;
 	Memory.HiROM = TRUE;

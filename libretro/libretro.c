@@ -1422,7 +1422,7 @@ bool retro_load_game(const struct retro_game_info *game)
 	/* Hack. S9x cannot do stuff from RAM. <_< */
 	memstream_set_buffer((uint8_t*)game->data, (uint64_t)game->size);
 
-	loaded = LoadROM("");
+	loaded = LoadROM();
 	if (!loaded)
 	{
 		const char *const err_msg = "ROM loading failed.";

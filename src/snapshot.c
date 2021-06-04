@@ -1085,7 +1085,7 @@ static FreezeData	SnapBSX[] =
 
 static bool8 S9xOpenSnapshotFile(STREAM *file)
 {
-   if((*file = OPEN_STREAM("")) != 0)
+   if((*file = OPEN_STREAM()) != 0)
       return (TRUE);
    return (FALSE);
 }
@@ -1261,7 +1261,7 @@ void S9xFreezeToStream (STREAM stream)
 	snprintf(buffer, sizeof(buffer), "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
 	WRITE_STREAM(buffer, (uint64_t)strlen(buffer), stream);
 
-	snprintf(buffer, sizeof(buffer), "NAM:%06d:%s%c", (int) strlen(Memory.ROMFilename) + 1, Memory.ROMFilename, 0);
+	strcpy(buffer, "NAM:1:0");
 	WRITE_STREAM(buffer, (uint64_t)strlen(buffer) + 1, stream);
 
 	FreezeStruct(stream, "CPU", &CPU, SnapCPU, COUNT(SnapCPU));
