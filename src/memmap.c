@@ -763,34 +763,20 @@ static uint32 FileLoader (uint8 *buffer, int32 maxsize)
 	/* ** Memory.ROMFilename */
 
 	uint8	*ptr;
-	STREAM	fp;
 	uint64_t	size      = 0;
-	int32 totalSize    = 0;
-	Memory.HeaderCount = 0;
+	STREAM fp          = OPEN_STREAM();
 
-	fp                 = OPEN_STREAM();
+	Memory.HeaderCount = 0;
 	if (!fp)
 		return (0);
 
 	ptr                = buffer;
 
    size               = READ_STREAM(ptr, (uint64_t)(
-            maxsize + 0x200 - (ptr - buffer)), fp);
+            maxsize + 0x200), fp);
    CLOSE_STREAM(fp);
 
-   size               = HeaderRemove(size, &Memory.HeaderCount, ptr);
-   totalSize         += size;
-   ptr               += size;
-
-	if (Memory.HeaderCount == 0)
-		S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "No ROM file header found.");
-	else
-		if (Memory.HeaderCount == 1)
-			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "Found ROM file header (and ignored it).");
-		else
-			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "Found multiple ROM file headers (and ignored them).");
-
-	return ((uint32) totalSize);
+   return HeaderRemove(size, &Memory.HeaderCount, ptr);
 }
 
 static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
