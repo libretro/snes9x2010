@@ -566,10 +566,15 @@ void Deinit (void)
 
 	if (Memory.ROM)
 	{
-		Memory.ROM -= 0x8000;
-		free(Memory.ROM);
+      if (!Memory.PersistentData)
+      {
+         Memory.ROM -= 0x8000;
+         free(Memory.ROM);
+      }
 		Memory.ROM = NULL;
 	}
+
+   Memory.PersistentData = false;
 
 	if(Settings.SPC7110 || Settings.SPC7110RTC)
 	{
@@ -742,27 +747,36 @@ static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, i
 	return (score);
 }
 
-static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
-{
-	uint32 calc_size = (size / 0x2000) * 0x2000;
-
-	if (size - calc_size == 512)
-	{
-		memmove(buf, buf + 512, calc_size);
-		(*headerCount)++;
-		size -= 512;
-	}
-
-	return (size);
-}
-
-static uint32 FileLoader (uint8 *buffer, int32 maxsize)
+static uint32 FileLoader_persistent(uint8 *buffer, int32 maxsize)
 {
 	/* <- ROM size without header */
 	/* ** Memory.HeaderCount */
 	/* ** Memory.ROMFilename */
+   uint64_t size      = maxsize;
+	uint32 calc_size   = (size / 0x2000) * 0x2000;
 
-	uint8	*ptr;
+	Memory.HeaderCount = 0;
+
+	if (size - calc_size == 512)
+	{
+      Memory.ROM = buffer  + 512;
+      size       = maxsize - 512;
+
+		Memory.HeaderCount++;
+	}
+   else
+      Memory.ROM = buffer;
+
+	return size;
+}
+
+static uint32 FileLoader (uint8 *buffer, int32 maxsize)
+{
+   uint32 calc_size;
+	/* <- ROM size without header */
+	/* ** Memory.HeaderCount */
+	/* ** Memory.ROMFilename */
+
 	uint64_t	size      = 0;
 	STREAM fp          = OPEN_STREAM();
 
@@ -770,13 +784,20 @@ static uint32 FileLoader (uint8 *buffer, int32 maxsize)
 	if (!fp)
 		return (0);
 
-	ptr                = buffer;
-
-   size               = READ_STREAM(ptr, (uint64_t)(
+   size               = READ_STREAM(buffer, (uint64_t)(
             maxsize + 0x200), fp);
    CLOSE_STREAM(fp);
 
-   return HeaderRemove(size, &Memory.HeaderCount, ptr);
+	calc_size = (size / 0x2000) * 0x2000;
+
+	if (size - calc_size == 512)
+	{
+		memmove(buffer, buffer + 512, calc_size);
+		Memory.HeaderCount++;
+		size -= 512;
+	}
+
+	return size;
 }
 
 static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
@@ -789,14 +810,13 @@ static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
 	return (~crc32);
 }
 
-bool8 LoadROM (void)
+bool8 LoadROM (bool8 persistent_data, uint8_t *rom_data, size_t rom_size)
 {
-	int	hi_score, lo_score, retry_count;
+	int	hi_score, lo_score;
 	bool8 interleaved, tales;
 	uint8 * RomHeader;
 	int32 totalFileSize;
-
-	retry_count = 0;
+	int retry_count = 0;
 
 	memset(Memory.ROM, 0, MAX_ROM_SIZE);
 	memset(&Multi, 0, sizeof(Multi));
@@ -805,7 +825,17 @@ again:
 	Memory.CalculatedSize = 0;
 	Memory.ExtendedFormat = NOPE;
 
-	totalFileSize = FileLoader(Memory.ROM, MAX_ROM_SIZE);
+   if (persistent_data)
+   {
+      Memory.PersistentData = true;
+      totalFileSize         = FileLoader_persistent(rom_data, rom_size);
+   }
+   else
+   {
+      totalFileSize         = FileLoader(Memory.ROM, MAX_ROM_SIZE);
+      Memory.PersistentData = false;
+   }
+
 	if (!totalFileSize)
 	{
 		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_ROM,
@@ -854,10 +884,8 @@ again:
 
 	if (Memory.ExtendedFormat != NOPE)
 	{
-		int	swappedhirom, swappedlorom;
-
-		swappedhirom = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0x400000);
-		swappedlorom = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0x400000);
+		int swappedhirom = ScoreHiROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0x400000);
+		int swappedlorom = ScoreLoROM(Memory.CalculatedSize, Memory.ROM, FALSE, 0x400000);
 
 		/* set swapped here */
 		if (max(swappedlorom, swappedhirom) >= max(lo_score, hi_score))
@@ -872,7 +900,7 @@ again:
 	}
 
 	interleaved = FALSE;
-	tales = FALSE;
+	tales       = FALSE;
 
 	interleaved = Settings.ForceInterleaved || Settings.ForceInterleaved2 || Settings.ForceInterleaveGD24;
 

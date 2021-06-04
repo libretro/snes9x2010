@@ -266,6 +266,7 @@ typedef struct
 	uint32	ROMChecksum;
 	uint32	ROMComplementChecksum;
 	uint32	ROMCRC32;
+   bool8 PersistentData;
 
 	bool8	HiROM;
 	bool8	LoROM;
@@ -279,7 +280,7 @@ typedef struct
 bool8	Init (void);
 void	Deinit (void);
 
-bool8 LoadROM (void);
+bool8 LoadROM (bool8 persistent_data, uint8_t *rom_data, size_t rom_size);
 bool8 LoadMultiCart (const char *cartA, const char *cartB);
 bool8 LoadSufamiTurbo (const char *cartA, const char *cartB);
 bool8 LoadSameGame (const char *cartA, const char *cartB);

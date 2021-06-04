@@ -609,6 +609,14 @@ void retro_set_input_state(retro_input_state_t cb) { input_cb = cb; }
 
 void retro_set_environment(retro_environment_t cb)
 {
+   static const struct retro_system_content_info_override content_overrides[] = {
+      {
+         "smc|fig|sfc|gd3|gd7|dx2|bsx|swc", /* extensions */
+         false,    /* need_fullpath */
+         true      /* persistent_data */
+      },
+      { NULL, false, false }
+   };
 	static const struct retro_controller_description port_1[] = {
 		{ "SNES Joypad", RETRO_DEVICE_JOYPAD },
 		{ "SNES Mouse", RETRO_DEVICE_MOUSE },
@@ -635,6 +643,9 @@ void retro_set_environment(retro_environment_t cb)
 
 	libretro_set_core_options(environ_cb);
 	environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+   /* Request a persistent content data buffer */
+   environ_cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE,
+         (void*)content_overrides);
 }
 
 void retro_get_system_info(struct retro_system_info *info)
@@ -1411,7 +1422,9 @@ static void init_descriptors(void)
 bool retro_load_game(const struct retro_game_info *game)
 {
 	int loaded;
+   bool persistent_data                       = false;
 	struct retro_memory_map map;
+   const struct retro_game_info_ext *info_ext = NULL;
 
 	init_descriptors();
 	memorydesc_c = 0;
@@ -1422,7 +1435,11 @@ bool retro_load_game(const struct retro_game_info *game)
 	/* Hack. S9x cannot do stuff from RAM. <_< */
 	memstream_set_buffer((uint8_t*)game->data, (uint64_t)game->size);
 
-	loaded = LoadROM();
+   if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &info_ext) &&
+         info_ext->persistent_data)
+      persistent_data = true;
+
+	loaded = LoadROM(persistent_data, (uint8_t*)game->data, game->size);
 	if (!loaded)
 	{
 		const char *const err_msg = "ROM loading failed.";
