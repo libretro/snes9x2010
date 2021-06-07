@@ -1261,7 +1261,7 @@ void S9xFreezeToStream (STREAM stream)
 	snprintf(buffer, sizeof(buffer), "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
 	WRITE_STREAM(buffer, (uint64_t)strlen(buffer), stream);
 
-	strcpy(buffer, "NAM:1:0");
+	strcpy(buffer, "NAM:000001:");
 	WRITE_STREAM(buffer, (uint64_t)strlen(buffer) + 1, stream);
 
 	FreezeStruct(stream, "CPU", &CPU, SnapCPU, COUNT(SnapCPU));
