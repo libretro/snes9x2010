@@ -927,7 +927,7 @@ void retro_init(void)
 
 	GFX.Pitch = MAX_SNES_WIDTH_NTSC * sizeof(uint16_t);
 
-#if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS) && !defined(__SWITCH__)
+#if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS) && !defined(__SWITCH__) && !defined(VITA)
 	/* request 128-bit alignment here if possible */
 	posix_memalign((void**)&GFX.Screen, 16, GFX.Pitch * 512 * sizeof(uint16));
 	posix_memalign( (void**)&ntsc_screen_buffer, 16, GFX.Pitch * MAX_SNES_HEIGHT * sizeof(uint16_t) );
