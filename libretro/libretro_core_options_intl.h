@@ -11,9 +11,10 @@
 
 /*
  ********************************
- * VERSION: 1.3
+ * VERSION: 2.0
  ********************************
  *
+ * - 2.0: Add support for core options v2 interface
  * - 1.3: Move translations to libretro_core_options_intl.h
  *        - libretro_core_options_intl.h includes BOM and utf-8
  *          fix for MSVC 2010-2013
@@ -73,7 +74,16 @@ extern "C" {
 
 /* RETRO_LANGUAGE_TURKISH */
 
-struct retro_core_option_definition option_defs_tr[] = {
+struct retro_core_option_v2_category option_cats_tr[] = {
+   {
+      "hacks",
+      NULL,
+      NULL
+   },
+   { NULL, NULL, NULL },
+};
+
+struct retro_core_option_v2_definition option_defs_tr[] = {
 
    /* These variable names and possible values constitute an ABI with ZMZ (ZSNES Libretro player).
     * Changing "Show layer 1" is fine, but don't change "layer_1"/etc or the possible values ("Yes|No").
@@ -81,7 +91,10 @@ struct retro_core_option_definition option_defs_tr[] = {
    {
       "snes9x_2010_overclock",
       "SuperFX Hız Aşırtma",
+      NULL,
       "SuperFX işlemcisi frekans çarpanıdır. Kare hızını artırabilir veya zamanlama hatalarına neden olabilir. 10 altındaki değerler yavaş cihazlarda oyun performansını artırabilir.",
+      NULL,
+      NULL,
       {
          { "40 MHz", NULL },
          { "30 MHz", NULL },
@@ -97,12 +110,15 @@ struct retro_core_option_definition option_defs_tr[] = {
          { "5 MHz (Underclock)", NULL },
          { NULL, NULL},
       },
-      "10 MHz (Default)"
+      NULL
    },
    {
       "snes9x_2010_overclock_cycles",
       "Yavaşlamayı Azalt (Hack, Güvensiz)",
+      "Yavaslamayi Azalt (G�vensiz)",
       "SNES İşlemcisi için hız aşırtmadır. Oyunların çökmesine neden olabilir! Daha kısa yükleme süreleri için 'Hafif'i, yavaşlama gösteren oyunların çoğunda' Uyumlu 've yalnızca kesinlikle gerekliyse' Maks 'kullanın (Gradius 3, Süper R tipi ...).",
+      NULL,
+      NULL,
       {
          { "disabled",   NULL },
          { "light",      "Hafif" },
@@ -110,21 +126,39 @@ struct retro_core_option_definition option_defs_tr[] = {
          { "max",        "Maks" },
          { NULL, NULL},
       },
-      "disabled"
+      NULL
    },
    {
       "snes9x_2010_reduce_sprite_flicker",
       "Kırılmayı Azalt (Hack, Güvensiz)",
+      NULL,
       "Ekranda aynı anda çizilebilen sprite sayısını arttırır.",
+      NULL,
+      NULL,
       {
          { "disabled", NULL },
          { "enabled",  NULL },
          { NULL, NULL},
       },
-      "disabled"
+      NULL
    },
-   { NULL, NULL, NULL, {{0}}, NULL },
+   { NULL, NULL, NULL, NULL, NULL, NULL, {{0}}, NULL },
 };
+
+struct retro_core_options_v2 options_tr = {
+   option_cats_tr,
+   option_defs_tr
+};
+
+/* RETRO_LANGUAGE_SLOVAK */
+
+/* RETRO_LANGUAGE_PERSIAN */
+
+/* RETRO_LANGUAGE_HEBREW */
+
+/* RETRO_LANGUAGE_ASTURIAN */
+
+/* RETRO_LANGUAGE_FINNISH */
 
 #ifdef __cplusplus
 }

@@ -280,6 +280,7 @@ static struct
 } input_vars;
 
 static uint8_t aspect_ratio_mode = ASPECT_RATIO_4_3;
+static bool libretro_supports_option_categories = false;
 static bool libretro_supports_bitmasks = false;
 static uint32_t retro_devices[2];
 
@@ -633,7 +634,9 @@ void retro_set_environment(retro_environment_t cb)
 
 	environ_cb = cb;
 
-	libretro_set_core_options(environ_cb);
+        libretro_supports_option_categories = false;
+	libretro_set_core_options(environ_cb,
+           &libretro_supports_option_categories);
 	environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 }
 
@@ -970,6 +973,7 @@ void retro_deinit(void)
 	free(ntsc_screen_buffer);
 #endif
 	/* Reset globals (required for static builds) */
+        libretro_supports_option_categories = false;
 	libretro_supports_bitmasks = false;
 	frameskip_type             = 0;
 	frameskip_threshold        = 0;
