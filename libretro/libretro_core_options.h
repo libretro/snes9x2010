@@ -75,7 +75,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "pal",  "PAL" },
          { NULL, NULL},
       },
-      "auto"
+      "auto",
+      NULL
    },
    {
       "snes9x_2010_aspect",
@@ -92,7 +93,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "pal",         "PAL" },
          { NULL, NULL},
       },
-      "auto"
+      "auto",
+      NULL
    },
    {
       "snes9x_2010_turbodelay",
@@ -107,7 +109,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "slow", "Slow "},
          { NULL, NULL },
       },
-      "medium"
+      "medium",
+      NULL
    },
    {
       "snes9x_2010_blargg",
@@ -125,7 +128,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "rgb",        "RGB" },
          { NULL, NULL},
       },
-      "disabled"
+      "disabled",
+      NULL
    },
    {
       "snes9x_2010_frameskip",
@@ -140,7 +144,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "manual",   "Manual" },
          { NULL, NULL},
       },
-      "disabled"
+      "disabled",
+      NULL
    },
    {
       "snes9x_2010_frameskip_threshold",
@@ -168,7 +173,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "60", NULL },
          { NULL, NULL },
       },
-      "33"
+      "33",
+      "int"
    },
    {
       "snes9x_2010_overclock",
@@ -192,7 +198,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "40 MHz", NULL },
          { NULL, NULL},
       },
-      "10 MHz (Default)"
+      "10 MHz (Default)",
+      NULL
    },
    {
       "snes9x_2010_overclock_cycles",
@@ -208,7 +215,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "max",        "Max" },
          { NULL, NULL},
       },
-      "disabled"
+      "disabled",
+      NULL
    },
    {
       "snes9x_2010_reduce_sprite_flicker",
@@ -222,7 +230,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "enabled",  NULL },
          { NULL, NULL},
       },
-      "disabled"
+      "disabled",
+      "bool"
    },
    {
       "snes9x_2010_block_invalid_vram_access",
@@ -236,10 +245,11 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { "disabled", NULL },
          { NULL, NULL},
       },
-      "enabled"
+      "enabled",
+      "bool"
    },
 
-   { NULL, NULL, NULL, NULL, NULL, NULL, {{0}}, NULL },
+   { NULL, NULL, NULL, NULL, NULL, NULL, {{0}}, NULL, NULL },
 };
 
 struct retro_core_options_v2 options_us = {
