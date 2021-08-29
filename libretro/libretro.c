@@ -1420,9 +1420,6 @@ bool retro_load_game(const struct retro_game_info *game)
 	init_descriptors();
 	memorydesc_c = 0;
 
-	map.descriptors = memorydesc + MAX_MAPS - memorydesc_c;
-	map.num_descriptors = memorydesc_c;
-
 	/* Hack. S9x cannot do stuff from RAM. <_< */
 	memstream_set_buffer((uint8_t*)game->data, (uint64_t)game->size);
 
@@ -1444,6 +1441,10 @@ bool retro_load_game(const struct retro_game_info *game)
 
 	retro_set_audio_buff_status_cb();
 	set_system_specs();
+
+	map.descriptors = memorydesc + MAX_MAPS - memorydesc_c;
+	map.num_descriptors = memorydesc_c;
+
 	environ_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &map);
 
 	return TRUE;
