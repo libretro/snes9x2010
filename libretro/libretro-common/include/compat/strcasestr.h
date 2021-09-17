@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memory_stream.h).
+ * The following license statement only applies to this file (strcasestr.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,44 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
-#define _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
+#ifndef __LIBRETRO_SDK_COMPAT_STRCASESTR_H
+#define __LIBRETRO_SDK_COMPAT_STRCASESTR_H
 
-#include <stdint.h>
-#include <stddef.h>
+#include <string.h>
+
+#if defined(RARCH_INTERNAL) && defined(HAVE_CONFIG_H)
+#include "../../../config.h"
+#endif
+
+#ifndef HAVE_STRCASESTR
 
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 
-typedef struct memstream memstream_t;
+/* Avoid possible naming collisions during link
+ * since we prefer to use the actual name. */
+#define strcasestr(haystack, needle) strcasestr_retro__(haystack, needle)
 
-memstream_t *memstream_open(unsigned writing);
-
-void memstream_close(memstream_t *stream);
-
-uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes);
-
-uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes);
-
-int memstream_getc(memstream_t *stream);
-
-void memstream_putc(memstream_t *stream, int c);
-
-char *memstream_gets(memstream_t *stream, char *buffer, size_t len);
-
-uint64_t memstream_pos(memstream_t *stream);
-
-void memstream_rewind(memstream_t *stream);
-
-int64_t memstream_seek(memstream_t *stream, int64_t offset, int whence);
-
-void memstream_set_buffer(uint8_t *buffer, uint64_t size);
-
-uint64_t memstream_get_last_size(void);
-
-uint64_t memstream_get_ptr(memstream_t *stream);
+char *strcasestr(const char *haystack, const char *needle);
 
 RETRO_END_DECLS
+
+#endif
 
 #endif

@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memory_stream.h).
+ * The following license statement only applies to this file (fopen_utf8.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,44 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
-#define _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
+#include <compat/fopen_utf8.h>
+#include <encodings/utf.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include <stdint.h>
-#include <stddef.h>
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
+#endif
 
-#include <retro_common_api.h>
+#ifdef _WIN32
+#undef fopen
 
-RETRO_BEGIN_DECLS
+void *fopen_utf8(const char * filename, const char * mode)
+{
+#if defined(LEGACY_WIN32)
+   FILE             *ret = NULL;
+   char * filename_local = utf8_to_local_string_alloc(filename);
 
-typedef struct memstream memstream_t;
+   if (!filename_local)
+      return NULL;
+   ret = fopen(filename_local, mode);
+   if (filename_local)
+      free(filename_local);
+   return ret;
+#else
+   wchar_t * filename_w = utf8_to_utf16_string_alloc(filename);
+   wchar_t * mode_w = utf8_to_utf16_string_alloc(mode);
+   FILE* ret = NULL;
 
-memstream_t *memstream_open(unsigned writing);
-
-void memstream_close(memstream_t *stream);
-
-uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes);
-
-uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes);
-
-int memstream_getc(memstream_t *stream);
-
-void memstream_putc(memstream_t *stream, int c);
-
-char *memstream_gets(memstream_t *stream, char *buffer, size_t len);
-
-uint64_t memstream_pos(memstream_t *stream);
-
-void memstream_rewind(memstream_t *stream);
-
-int64_t memstream_seek(memstream_t *stream, int64_t offset, int whence);
-
-void memstream_set_buffer(uint8_t *buffer, uint64_t size);
-
-uint64_t memstream_get_last_size(void);
-
-uint64_t memstream_get_ptr(memstream_t *stream);
-
-RETRO_END_DECLS
-
+   if (filename_w && mode_w)
+      ret = _wfopen(filename_w, mode_w);
+   if (filename_w)
+      free(filename_w);
+   if (mode_w)
+      free(mode_w);
+   return ret;
+#endif
+}
 #endif

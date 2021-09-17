@@ -560,7 +560,7 @@ else ifneq (,$(findstring msvc,$(platform)))
 	WARNING_DEFINES =
 	CODE_DEFINES =
 else
-	WARNINGS_DEFINES = -Wall -Wextra -Wno-sign-compare
+	WARNINGS_DEFINES = -Wall -Wextra -Wno-sign-compare -Wno-unused-parameter
 endif
 
 COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) $(fpic) $(LTO)

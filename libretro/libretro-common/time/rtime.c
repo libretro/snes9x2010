@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memory_stream.h).
+ * The following license statement only applies to this file (rtime.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,44 +20,62 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
-#define _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
-
-#include <stdint.h>
-#include <stddef.h>
-
-#include <retro_common_api.h>
-
-RETRO_BEGIN_DECLS
-
-typedef struct memstream memstream_t;
-
-memstream_t *memstream_open(unsigned writing);
-
-void memstream_close(memstream_t *stream);
-
-uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes);
-
-uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes);
-
-int memstream_getc(memstream_t *stream);
-
-void memstream_putc(memstream_t *stream, int c);
-
-char *memstream_gets(memstream_t *stream, char *buffer, size_t len);
-
-uint64_t memstream_pos(memstream_t *stream);
-
-void memstream_rewind(memstream_t *stream);
-
-int64_t memstream_seek(memstream_t *stream, int64_t offset, int whence);
-
-void memstream_set_buffer(uint8_t *buffer, uint64_t size);
-
-uint64_t memstream_get_last_size(void);
-
-uint64_t memstream_get_ptr(memstream_t *stream);
-
-RETRO_END_DECLS
-
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <retro_assert.h>
+#include <stdlib.h>
 #endif
+
+#include <string.h>
+#include <time/rtime.h>
+
+#ifdef HAVE_THREADS
+/* TODO/FIXME - global */
+slock_t *rtime_localtime_lock = NULL;
+#endif
+
+/* Must be called before using rtime_localtime() */
+void rtime_init(void)
+{
+   rtime_deinit();
+#ifdef HAVE_THREADS
+   if (!rtime_localtime_lock)
+      rtime_localtime_lock = slock_new();
+
+   retro_assert(rtime_localtime_lock);
+#endif
+}
+
+/* Must be called upon program termination */
+void rtime_deinit(void)
+{
+#ifdef HAVE_THREADS
+   if (rtime_localtime_lock)
+   {
+      slock_free(rtime_localtime_lock);
+      rtime_localtime_lock = NULL;
+   }
+#endif
+}
+
+/* Thread-safe wrapper for localtime() */
+struct tm *rtime_localtime(const time_t *timep, struct tm *result)
+{
+   struct tm *time_info = NULL;
+
+   /* Lock mutex */
+#ifdef HAVE_THREADS
+   slock_lock(rtime_localtime_lock);
+#endif
+
+   time_info = localtime(timep);
+   if (time_info)
+      memcpy(result, time_info, sizeof(struct tm));
+
+   /* Unlock mutex */
+#ifdef HAVE_THREADS
+   slock_unlock(rtime_localtime_lock);
+#endif
+
+   return result;
+}
