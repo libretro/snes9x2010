@@ -190,6 +190,8 @@
 #include "bsx.h"
 #include "display.h"
 
+#include <streams/file_stream.h>
+
 extern uint8 OpenBus;
 
 #define BIOS_SIZE	0x100000
@@ -957,7 +959,7 @@ uint8 * S9xGetBasePointerBSX (uint32 address)
 
 static bool8 BSX_LoadBIOS (void)
 {
-	FILE	*fp;
+	RFILE	*fp = NULL;
 	char	path[PATH_MAX + 1], name[PATH_MAX + 1];
 	bool8	r = FALSE;
 
@@ -966,20 +968,25 @@ static bool8 BSX_LoadBIOS (void)
 	strcpy(name, path);
 	strcat(name, "BS-X.bin");
 
-	fp = fopen(name, "rb");
+	fp = filestream_open(name, RETRO_VFS_FILE_ACCESS_READ,
+			RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
 	if (!fp)
 	{
 		strcpy(name, path);
 		strcat(name, "BS-X.bios");
-		fp = fopen(name, "rb");
+
+		fp = filestream_open(name, RETRO_VFS_FILE_ACCESS_READ,
+				RETRO_VFS_FILE_ACCESS_HINT_NONE);
 	}
 
 	if (fp)
 	{
-		size_t	size;
+		int64_t	size;
 
-		size = fread((void *) Memory.BIOSROM, 1, BIOS_SIZE, fp);
-		fclose(fp);
+		size = filestream_read(fp, (void *)Memory.BIOSROM, BIOS_SIZE);
+		filestream_close(fp);
+
 		if (size == BIOS_SIZE)
 			r = TRUE;
 	}

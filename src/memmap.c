@@ -193,6 +193,7 @@
 #include "display.h"
 #include "spc7110dec.h"
 
+#include <streams/file_stream.h>
 #include <libretro.h>
 
 void S9xAppendMapping(struct retro_memory_descriptor *desc);
@@ -1088,8 +1089,8 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB)
 
 bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
 {
-	FILE * fp;
-	size_t	size;
+	RFILE *fp = NULL;
+	int64_t	size;
 	char	path[PATH_MAX + 1];
 
 	Multi.cartOffsetA = 0x100000;
@@ -1131,12 +1132,15 @@ bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
 	strcat(path, SLASH_STR);
 	strcat(path, "STBIOS.bin");
 
-	fp = fopen(path, "rb");
+	fp = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+			RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
 	if (fp)
 	{
-		size = fread((void *)Memory.ROM, 1, 0x40000, fp);
-		fclose(fp);
-		if (!is_SufamiTurbo_BIOS(Memory.ROM, size))
+		size = filestream_read(fp, (void *)Memory.ROM, 0x40000);
+		filestream_close(fp);
+
+		if ((size <= 0) || !is_SufamiTurbo_BIOS(Memory.ROM, (size_t)size))
 			return (FALSE);
 	}
 	else

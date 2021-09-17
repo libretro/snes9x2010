@@ -191,6 +191,7 @@
 #endif
 
 #include <libretro.h>
+#include <streams/file_stream.h>
 #include "libretro_core_options.h"
 
 #ifdef _3DS
@@ -632,12 +633,19 @@ void retro_set_environment(retro_environment_t cb)
 		{ 0, 0 }
 	};
 
+	struct retro_vfs_interface_info vfs_iface_info;
+
 	environ_cb = cb;
 
-        libretro_supports_option_categories = false;
+	libretro_supports_option_categories = false;
 	libretro_set_core_options(environ_cb,
            &libretro_supports_option_categories);
 	environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+
+	vfs_iface_info.required_interface_version = 1;
+	vfs_iface_info.iface                      = NULL;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
+		filestream_vfs_init(&vfs_iface_info);
 }
 
 void retro_get_system_info(struct retro_system_info *info)
@@ -1489,7 +1497,22 @@ void S9xDeinitUpdate(int width, int height)
 }
 
 /* Dummy functions that should probably be implemented correctly later. */
-const char* S9xGetDirectory(uint32_t dirtype) { return NULL; }
+const char* S9xGetDirectory(uint32_t dirtype)
+{
+	const char *directory = NULL;
+
+	if (dirtype == BIOS_DIR)
+	{
+		if (!environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &directory) ||
+		    !directory)
+		{
+			if (log_cb)
+				log_cb(RETRO_LOG_WARN, "No system directory defined, unable to load bios files.\n");
+		}
+	}
+
+	return directory;
+}
 
 static enum retro_log_level s9x_msg_priority_to_retro_log(S9xMessagePriority p)
 {

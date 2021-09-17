@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memory_stream.h).
+ * The following license statement only applies to this file (compat_strcasestr.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,44 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
-#define _LIBRETRO_SDK_FILE_MEMORY_STREAM_H
+#include <ctype.h>
 
-#include <stdint.h>
-#include <stddef.h>
+#include <compat/strcasestr.h>
 
-#include <retro_common_api.h>
+/* Pretty much strncasecmp. */
+static int casencmp(const char *a, const char *b, size_t n)
+{
+   size_t i;
 
-RETRO_BEGIN_DECLS
+   for (i = 0; i < n; i++)
+   {
+      int a_lower = tolower(a[i]);
+      int b_lower = tolower(b[i]);
+      if (a_lower != b_lower)
+         return a_lower - b_lower;
+   }
 
-typedef struct memstream memstream_t;
+   return 0;
+}
 
-memstream_t *memstream_open(unsigned writing);
+char *strcasestr_retro__(const char *haystack, const char *needle)
+{
+   size_t i, search_off;
+   size_t hay_len    = strlen(haystack);
+   size_t needle_len = strlen(needle);
 
-void memstream_close(memstream_t *stream);
+   if (needle_len > hay_len)
+      return NULL;
 
-uint64_t memstream_read(memstream_t *stream, void *data, uint64_t bytes);
+   search_off = hay_len - needle_len;
+   for (i = 0; i <= search_off; i++)
+      if (!casencmp(haystack + i, needle, needle_len))
+         return (char*)haystack + i;
 
-uint64_t memstream_write(memstream_t *stream, const void *data, uint64_t bytes);
-
-int memstream_getc(memstream_t *stream);
-
-void memstream_putc(memstream_t *stream, int c);
-
-char *memstream_gets(memstream_t *stream, char *buffer, size_t len);
-
-uint64_t memstream_pos(memstream_t *stream);
-
-void memstream_rewind(memstream_t *stream);
-
-int64_t memstream_seek(memstream_t *stream, int64_t offset, int whence);
-
-void memstream_set_buffer(uint8_t *buffer, uint64_t size);
-
-uint64_t memstream_get_last_size(void);
-
-uint64_t memstream_get_ptr(memstream_t *stream);
-
-RETRO_END_DECLS
-
-#endif
+   return NULL;
+}
