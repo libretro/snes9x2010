@@ -564,8 +564,12 @@ else
 endif
 
 COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) $(fpic) $(LTO)
+LDFLAGS += $(LTO)
 
 CFLAGS += $(DEFINES) $(COMMON_DEFINES)
+
+OBJOUT   = -o 
+LINKOUT  = -o 
 
 ifneq (,$(findstring msvc,$(platform)))
 	OBJOUT = -Fo
@@ -577,8 +581,6 @@ else
 	LD = link.exe
 endif
 else
-	OBJOUT   = -o
-	LINKOUT  = -o
 	LD = $(CC)
 endif
 
@@ -591,20 +593,14 @@ else
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-ifeq ($(platform), emscripten)
-	$(CC) $(CFLAGS) $(OBJOUT)$@ $^
-else ifeq ($(STATIC_LINKING_LINK),1)
-ifneq (,$(findstring msvc,$(platform)))
-	$(LD) $(LINKOUT) $@ $(OBJECTS)
-else
+ifeq ($(STATIC_LINKING), 1)
 	$(AR) rcs $@ $(OBJECTS)
-endif
 else
-	$(CC) $(fpic) $(SHARED) $(CFLAGS) $(INCFLAGS) $(LDFLAGS) $(OBJOUT) $@ $(OBJECTS) $(LIBM) $(LTO)
+	$(LD) $(LINKOUT)$@ $(SHARED) $(OBJECTS) $(LDFLAGS) $(LIBS)
 endif
 
 %.o: %.c
-	+$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
+	$(CC) -c $(OBJOUT)$@ $< $(CFLAGS) $(INCFLAGS)
 
 clean-objs:
 	rm -rf $(OBJECTS)

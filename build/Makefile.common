@@ -1,6 +1,12 @@
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro/libretro-common
-INCFLAGS   := -I$(CORE_DIR)/libretro -I$(CORE_DIR)/src -I$(LIBRETRO_COMM_DIR)/include
-COREDEFINES = -DHAVE_STRINGS_H -DHAVE_INTTYPES_H -D__LIBRETRO__ -DRIGHTSHIFT_IS_SAR 
+INCFLAGS          := -I$(CORE_DIR)/libretro -I$(CORE_DIR)/src -I$(LIBRETRO_COMM_DIR)/include
+COREDEFINES        = -D__LIBRETRO__ -DRIGHTSHIFT_IS_SAR 
+
+ifneq (,$(findstring msvc,$(platform)))
+COREDEFINES        += -DINLINE=_inline
+else
+COREDEFINES        += -DINLINE=inline
+endif
 
 ifneq (,$(findstring msvc200,$(platform)))
 INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
@@ -43,6 +49,7 @@ SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_snprintf.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \

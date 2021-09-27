@@ -1,6 +1,6 @@
 ##############
-# Works on hosts Linux
-# apt-get install mingw-w64
+# Works on hosts Windows (x64)
+# Download Visual Studio 2010
 
 ##########################
 # Checks the host platform
@@ -16,6 +16,10 @@ else ifneq ($(findstring win,$(shell uname -a)),)
   HOST_PLATFORM = windows
 endif
 
+####################################
+# Core-specific switches
+
+FRONTEND_SUPPORTS_RGB565=1
 
 ####################################
 # Variable setup for Makefile.common
@@ -59,7 +63,8 @@ SOEXT  = .dll
 
 STATIC_LINKING = 0
 PLATDEFS       = 
-PLATCFLAGS     = -DWIN32 -DCORRECT_VRAM_READS -D_WINDOWS -D_USRDLL -D_CRT_SECURE_NO_WARNINGS -DMSVC2010_EXPORTS -DFRONTEND_SUPPORTS_RGB565 -DGIT_VERSION=\"$(GIT_VERSION)\"
+PLATCFLAGS     = $(COREDEFINES) -DWIN32 -D_WINDOWS -D_USRDLL -D_CRT_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_DEPRECATE -DMSVC2010_EXPORTS
+PLATCFLAGS    += -DCORRECT_VRAM_READS
 PLATCXXFLAGS   = $(PLATCFLAGS)
 #PLATLDFLAGS   = -shared -lm
 #PLATLDXFLAGS   = -shared -lm
@@ -86,16 +91,16 @@ LDXFLAGS = $(PLATLDXFLAGS) $(RETROLDXFLAGS)
 # Tuning
 
 ifeq ($(DEBUG),1)
-  CFLAGS     += -MTd
-  CXXFLAGS   += -MTd
   CFLAGS     += -Od -Zi -D_DEBUG
   CXXFLAGS   += -Od -Zi -D_DEBUG
+  CFLAGS     += -MTd
+  CXXFLAGS   += -MTd
   LDFLAGS    += -DEBUG -DLL
 else
-  CFLAGS     += -MT
-  CXXFLAGS   += -MT
   CFLAGS     += -O2 -DNDEBUG
   CXXFLAGS   += -O2 -DNDEBUG
+  CFLAGS     += -MT
+  CXXFLAGS   += -MT
   LDFLAGS    += -DLL
 endif
 
