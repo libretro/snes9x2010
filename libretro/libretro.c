@@ -176,21 +176,15 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <stdarg.h>
-
-#ifndef _MSC_VER
-#include <stdbool.h>
-#include <unistd.h>
-#endif
+#include <string.h>
+#include <ctype.h>
 
 #include <libretro.h>
+#include <vfs/vfs.h>
 #include <streams/file_stream.h>
 #include "libretro_core_options.h"
 
@@ -200,7 +194,6 @@ void linearFree(void* mem);
 #endif
 
 #include "../src/apu.h"
-#include "../src/boolean.h"
 #include "../src/cheats.h"
 #include "../src/controls.h"
 #include "../src/cpuexec.h"
@@ -611,6 +604,7 @@ void retro_set_input_state(retro_input_state_t cb) { input_cb = cb; }
 
 void retro_set_environment(retro_environment_t cb)
 {
+        bool local_bool_val = false;
 	static const struct retro_controller_description port_1[] = {
 		{ "SNES Joypad", RETRO_DEVICE_JOYPAD },
 		{ "SNES Mouse", RETRO_DEVICE_MOUSE },
@@ -638,8 +632,11 @@ void retro_set_environment(retro_environment_t cb)
 	environ_cb = cb;
 
 	libretro_supports_option_categories = false;
-	libretro_set_core_options(environ_cb,
-           &libretro_supports_option_categories);
+
+	libretro_set_core_options(environ_cb, &local_bool_val);
+  
+        libretro_supports_option_categories = local_bool_val;
+
 	environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 
 	vfs_iface_info.required_interface_version = 1;

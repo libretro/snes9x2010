@@ -180,9 +180,7 @@
 #ifndef _PORT_H_
 #define _PORT_H_
 
-#ifndef _MSC_VER
-#include <stdbool.h>
-#endif
+#include <boolean.h>
 #include <limits.h>
 #include <sys/types.h>
 
