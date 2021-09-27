@@ -31,8 +31,8 @@ include:
     file: '/windows-i686-msvc10-msys2.yml'
 
   # Windows msvc05 32-bit
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/windows-i686-msvc05-msys2.yml'
+  #- project: 'libretro-infrastructure/ci-templates'
+    #file: '/windows-i686-msvc05-msys2.yml'
 
   # Linux 64-bit
   - project: 'libretro-infrastructure/ci-templates'
@@ -134,10 +134,10 @@ libretro-build-windows-msvc10-i686:
     - .core-defs
 
 # Windows msvc05 32-bit
-libretro-build-windows-msvc05-i686:
-  extends:
-    - .libretro-windows-i686-msvc05-msys2-make-default
-    - .core-defs
+#libretro-build-windows-msvc05-i686:
+  #extends:
+    #- .libretro-windows-i686-msvc05-msys2-make-default
+    #- .core-defs
 
 # Linux 64-bit
 libretro-build-linux-x64:
