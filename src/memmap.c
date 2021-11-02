@@ -175,7 +175,6 @@
   Super NES and Super Nintendo Entertainment System are trademarks of
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
-#include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -2056,6 +2055,9 @@ static bool8 InitROM (void)
 		/* SPC7110*/
 		case 0xF93A:
 			Settings.SPC7110RTC = TRUE;
+			Settings.SPC7110    = TRUE;
+			S9xInitSPC7110();
+			break;
 		case 0xF53A:
 			Settings.SPC7110 = TRUE;
 			S9xInitSPC7110();
