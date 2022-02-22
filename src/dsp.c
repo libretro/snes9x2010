@@ -456,11 +456,19 @@ static void DSP1_Inverse (int16 Coefficient, int16 Exponent, int16 *iCoefficient
 		}
 
 		/* Step Three: Normalize*/
+#ifdef __GNUC__
+		{
+			const int shift = __builtin_clz(Coefficient) - (8 * sizeof(int) - 15);
+			Coefficient <<= shift;
+			Exponent -= shift;
+		}
+#else
 		while (Coefficient < 0x4000)
 		{
 			Coefficient <<= 1;
 			Exponent--;
 		}
+#endif
 
 		/* Step Four: Special Case*/
 		if (Coefficient == 0x4000)
@@ -537,8 +545,17 @@ static void DSP1_Normalize (int16 m, int16 *Coefficient, int16 *Exponent)
 {
 	int16 i, e;
 
-	i = 0x4000;
 	e = 0;
+
+#ifdef __GNUC__
+	i = m < 0 ? ~m : m;
+
+	if (i == 0)
+		e = 15;
+	else
+		e = __builtin_clz(i) - (8 * sizeof(int) - 15);
+#else
+	i = 0x4000;
 
 	if (m < 0)
 	{
@@ -556,6 +573,7 @@ static void DSP1_Normalize (int16 m, int16 *Coefficient, int16 *Exponent)
 			e++;
 		}
 	}
+#endif
 
 	if (e > 0)
 		*Coefficient = m * DSP1ROM[0x21 + e] << 1;
@@ -571,8 +589,17 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 
 	n = Product & 0x7fff;
 	m = Product >> 15;
-	i = 0x4000;
 	e = 0;
+
+#ifdef __GNUC__
+	i = m < 0 ? ~m : m;
+
+	if (i == 0)
+		e = 15;
+	else
+		e = __builtin_clz(i) - (8 * sizeof(int) - 15);
+#else
+	i = 0x4000;
 
 	if (m < 0)
 	{
@@ -590,6 +617,7 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 			e++;
 		}
 	}
+#endif
 
 	if (e > 0)
 	{
@@ -599,6 +627,14 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 			*Coefficient += n * DSP1ROM[0x0040 - e] >> 15;
 		else
 		{
+#ifdef __GNUC__
+			i = m < 0 ? ~(n | 0x8000) : n;
+
+			if (i == 0)
+				e += 15;
+			else
+				e += __builtin_clz(i) - (8 * sizeof(int) - 15);
+#else
 			i = 0x4000;
 
 			if (m < 0)
@@ -617,6 +653,7 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 					e++;
 				}
 			}
+#endif
 
 			if (e > 15)
 				*Coefficient = n * DSP1ROM[0x0012 + e] << 1;
@@ -663,7 +700,7 @@ static void DSP1_Op0C (void)
 
 static void DSP1_Parameter (int16 Fx, int16 Fy, int16 Fz, int16 Lfe, int16 Les, int16 Aas, int16 Azs, int16 *Vof, int16 *Vva, int16 *Cx, int16 *Cy)
 {
-	const int16	MaxAZS_Exp[16] =
+	static const int16	MaxAZS_Exp[16] =
 	{
 		0x38b4, 0x38b7, 0x38ba, 0x38be, 0x38c0, 0x38c4, 0x38c7, 0x38ca,
 		0x38ce,	0x38d0, 0x38d4, 0x38d7, 0x38da, 0x38dd, 0x38e0, 0x38e4
@@ -1561,7 +1598,7 @@ void DSP1SetByte (uint8 byte, uint16 address)
 							DSP1.Op11m  = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
 							DSP1.Op11Zr = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
 							DSP1.Op11Yr = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
-							DSP1.Op11Xr = (int16) (DSP1.parameters[7] | (DSP1.parameters[7] << 8));
+							DSP1.Op11Xr = (int16) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
 
 							DSP1_Op11();
 							break;
@@ -3094,12 +3131,12 @@ static void DSP3_OP1E_D (int16 move, int16 *lo, int16 *hi)
 
 static void DSP3_OP1E_D1 (int16 move, int16 *lo, int16 *hi)
 {
-	const uint16	HiAdd[] =
+	static const uint16	HiAdd[] =
 	{
 		0x00, 0xFF, 0x00, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x01, 0x00, 0xFF, 0x00
 	};
 
-	const uint16	LoAdd[] =
+	static const uint16	LoAdd[] =
 	{
 		0x00, 0x00, 0x01, 0x01, 0x00, 0xFF, 0xFF, 0x00
 	};
@@ -3323,7 +3360,7 @@ static int32 DSP4_READ_DWORD (void)
 static int16 DSP4_Inverse (int16 value)
 {
 	/* Attention: This lookup table is not verified */
-	const uint16	div_lut[64] =
+	static const uint16	div_lut[64] =
 	{
 		0x0000, 0x8000, 0x4000, 0x2aaa, 0x2000, 0x1999, 0x1555, 0x1249,
 		0x1000, 0x0e38, 0x0ccc, 0x0ba2, 0x0aaa, 0x09d8, 0x0924, 0x0888,
@@ -4368,7 +4405,7 @@ static void DSP4_OP09 (void)
 
 static void DSP4_OP0A (int16 n2, int16 *o1, int16 *o2, int16 *o3, int16 *o4)
 {
-	const uint16	OP0A_Values[16] =
+	static const uint16	OP0A_Values[16] =
 	{
 		0x0000, 0x0030, 0x0060, 0x0090, 0x00c0, 0x00f0, 0x0120, 0x0150,
 		0xfe80, 0xfeb0, 0xfee0, 0xff10, 0xff40, 0xff70, 0xffa0, 0xffd0
