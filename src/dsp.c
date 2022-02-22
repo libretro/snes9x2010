@@ -663,7 +663,7 @@ static void DSP1_Op0C (void)
 
 static void DSP1_Parameter (int16 Fx, int16 Fy, int16 Fz, int16 Lfe, int16 Les, int16 Aas, int16 Azs, int16 *Vof, int16 *Vva, int16 *Cx, int16 *Cy)
 {
-	const int16	MaxAZS_Exp[16] =
+	static const int16	MaxAZS_Exp[16] =
 	{
 		0x38b4, 0x38b7, 0x38ba, 0x38be, 0x38c0, 0x38c4, 0x38c7, 0x38ca,
 		0x38ce,	0x38d0, 0x38d4, 0x38d7, 0x38da, 0x38dd, 0x38e0, 0x38e4
@@ -3094,12 +3094,12 @@ static void DSP3_OP1E_D (int16 move, int16 *lo, int16 *hi)
 
 static void DSP3_OP1E_D1 (int16 move, int16 *lo, int16 *hi)
 {
-	const uint16	HiAdd[] =
+	static const uint16	HiAdd[] =
 	{
 		0x00, 0xFF, 0x00, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x01, 0x00, 0xFF, 0x00
 	};
 
-	const uint16	LoAdd[] =
+	static const uint16	LoAdd[] =
 	{
 		0x00, 0x00, 0x01, 0x01, 0x00, 0xFF, 0xFF, 0x00
 	};
@@ -3323,7 +3323,7 @@ static int32 DSP4_READ_DWORD (void)
 static int16 DSP4_Inverse (int16 value)
 {
 	/* Attention: This lookup table is not verified */
-	const uint16	div_lut[64] =
+	static const uint16	div_lut[64] =
 	{
 		0x0000, 0x8000, 0x4000, 0x2aaa, 0x2000, 0x1999, 0x1555, 0x1249,
 		0x1000, 0x0e38, 0x0ccc, 0x0ba2, 0x0aaa, 0x09d8, 0x0924, 0x0888,
@@ -4368,7 +4368,7 @@ static void DSP4_OP09 (void)
 
 static void DSP4_OP0A (int16 n2, int16 *o1, int16 *o2, int16 *o3, int16 *o4)
 {
-	const uint16	OP0A_Values[16] =
+	static const uint16	OP0A_Values[16] =
 	{
 		0x0000, 0x0030, 0x0060, 0x0090, 0x00c0, 0x00f0, 0x0120, 0x0150,
 		0xfe80, 0xfeb0, 0xfee0, 0xff10, 0xff40, 0xff70, 0xffa0, 0xffd0
