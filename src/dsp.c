@@ -456,11 +456,19 @@ static void DSP1_Inverse (int16 Coefficient, int16 Exponent, int16 *iCoefficient
 		}
 
 		/* Step Three: Normalize*/
+#ifdef __GNUC__
+		{
+			const int shift = __builtin_clz(Coefficient) - (8 * sizeof(int) - 15);
+			Coefficient <<= shift;
+			Exponent -= shift;
+		}
+#else
 		while (Coefficient < 0x4000)
 		{
 			Coefficient <<= 1;
 			Exponent--;
 		}
+#endif
 
 		/* Step Four: Special Case*/
 		if (Coefficient == 0x4000)
@@ -537,8 +545,17 @@ static void DSP1_Normalize (int16 m, int16 *Coefficient, int16 *Exponent)
 {
 	int16 i, e;
 
-	i = 0x4000;
 	e = 0;
+
+#ifdef __GNUC__
+	i = m < 0 ? ~m : m;
+
+	if (i == 0)
+		e = 15;
+	else
+		e = __builtin_clz(i) - (8 * sizeof(int) - 15);
+#else
+	i = 0x4000;
 
 	if (m < 0)
 	{
@@ -556,6 +573,7 @@ static void DSP1_Normalize (int16 m, int16 *Coefficient, int16 *Exponent)
 			e++;
 		}
 	}
+#endif
 
 	if (e > 0)
 		*Coefficient = m * DSP1ROM[0x21 + e] << 1;
@@ -571,8 +589,17 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 
 	n = Product & 0x7fff;
 	m = Product >> 15;
-	i = 0x4000;
 	e = 0;
+
+#ifdef __GNUC__
+	i = m < 0 ? ~m : m;
+
+	if (i == 0)
+		e = 15;
+	else
+		e = __builtin_clz(i) - (8 * sizeof(int) - 15);
+#else
+	i = 0x4000;
 
 	if (m < 0)
 	{
@@ -590,6 +617,7 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 			e++;
 		}
 	}
+#endif
 
 	if (e > 0)
 	{
@@ -599,6 +627,14 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 			*Coefficient += n * DSP1ROM[0x0040 - e] >> 15;
 		else
 		{
+#ifdef __GNUC__
+			i = m < 0 ? ~(n | 0x8000) : n;
+
+			if (i == 0)
+				e += 15;
+			else
+				e += __builtin_clz(i) - (8 * sizeof(int) - 15);
+#else
 			i = 0x4000;
 
 			if (m < 0)
@@ -617,6 +653,7 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 					e++;
 				}
 			}
+#endif
 
 			if (e > 15)
 				*Coefficient = n * DSP1ROM[0x0012 + e] << 1;
