@@ -217,14 +217,17 @@ else ifeq ($(platform), qnx)
 	CFLAGS += -D__BLACKBERRY_QNX__
 
 # Lightweight PS3 Homebrew SDK
-else ifeq ($(platform), psl1ght)
+else ifneq (,$(filter $(platform), ps3 psl1ght))
 	EXT=a
 	TARGET := $(TARGET_NAME)_libretro_$(platform).$(EXT)
-	CC = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
-	AR = $(PS3DEV)/ppu/bin/ppu-ar$(EXE_EXT)
-	CFLAGS += -D__ppc__ -DMSB_FIRST
+	CC = $(PS3DEV)/ppu/bin/ppu-$(COMMONLV)gcc$(EXE_EXT)
+	AR = $(PS3DEV)/ppu/bin/ppu-$(COMMONLV)ar$(EXE_EXT)
+	CFLAGS += -D__ppc__ -DMSB_FIRST -D__PS3__
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
+	ifeq ($(platform), psl1ght)
+		CFLAGS += -D__PSL1GHT__
+	endif
 
 # PSP
 else ifeq ($(platform), psp1)
