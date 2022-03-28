@@ -764,7 +764,7 @@ static uint32 FileLoader (uint8 *buffer, int32 maxsize)
 
 	uint8	*ptr;
 	uint64_t	size      = 0;
-	STREAM fp          = OPEN_STREAM();
+	STREAM fp          = OPEN_STREAM(0);
 
 	Memory.HeaderCount = 0;
 	if (!fp)

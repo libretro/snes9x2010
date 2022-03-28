@@ -194,4 +194,6 @@ bool8 S9xFreezeGame (void);
 bool8 S9xUnfreezeGame (void);
 int S9xUnfreezeFromStream (STREAM stream);
 
+int32 SnapshotSize(void);
+
 #endif
