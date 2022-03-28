@@ -1083,9 +1083,9 @@ static FreezeData	SnapBSX[] =
 	ARRAY_ENTRY(6, test2192, 32, uint8_ARRAY_V)
 };
 
-static bool8 S9xOpenSnapshotFile(STREAM *file)
+static bool8 S9xOpenSnapshotFile(STREAM *file, unsigned write)
 {
-   if((*file = OPEN_STREAM()) != 0)
+   if((*file = OPEN_STREAM(write)) != 0)
       return (TRUE);
    return (FALSE);
 }
@@ -1354,7 +1354,7 @@ bool8 S9xFreezeGame (void)
 {
 	STREAM	stream = NULL;
 
-	if (S9xOpenSnapshotFile(&stream))
+	if (S9xOpenSnapshotFile(&stream, 1))
 	{
 		S9xFreezeToStream(stream);
 		CLOSE_STREAM(stream);
@@ -1369,7 +1369,7 @@ bool8 S9xUnfreezeGame (void)
 {
 	STREAM stream = NULL;
 
-	if (S9xOpenSnapshotFile(&stream))
+	if (S9xOpenSnapshotFile(&stream, 0))
 	{
 		int result = S9xUnfreezeFromStream(stream);
 		CLOSE_STREAM(stream);
@@ -2017,4 +2017,106 @@ int S9xUnfreezeFromStream (STREAM stream)
 	if (local_bsx_data)		free(local_bsx_data);
 
 	return (result);
+}
+
+static int32 BlockSize (const char *name, int data_size)
+{
+	(void)name;
+	return 11 + data_size;
+}
+
+static int32 StructSize (const char *name, FreezeData *fields, int num_fields)
+{
+	int	len, i;
+
+	len  = 0;
+
+	for (i = 0; i < num_fields; i++)
+	{
+		if (SNAPSHOT_VERSION < fields[i].debuted_in)
+			continue;
+
+		if (SNAPSHOT_VERSION < fields[i].deleted_in)
+			len += FreezeSize(fields[i].size, fields[i].type);
+	}
+
+	return BlockSize(name, len);
+}
+
+int32 SnapshotSize(void)
+{
+	char	buffer[1024];
+	int32 len = 0;
+
+	snprintf(buffer, sizeof(buffer), "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
+	len += strlen(buffer);
+
+	strcpy(buffer, "NAM:000001:");
+	len += strlen(buffer) + 1;
+
+	len += StructSize("CPU", SnapCPU, COUNT(SnapCPU));
+
+	len += StructSize("REG", SnapRegisters, COUNT(SnapRegisters));
+
+	len += StructSize("PPU", SnapPPU, COUNT(SnapPPU));
+
+	len += StructSize("DMA", SnapDMA, COUNT(SnapDMA));
+
+	len += BlockSize ("VRA", 0x10000);
+
+	len += BlockSize ("RAM", 0x20000);
+
+	len += BlockSize ("SRA", 0x80000);
+
+	len += BlockSize ("FIL", 0x8000);
+
+	len += BlockSize ("SND", SPC_SAVE_STATE_BLOCK_SIZE);
+
+	len += StructSize("CTL", SnapControls, COUNT(SnapControls));
+
+	len += StructSize("TIM", SnapTimings, COUNT(SnapTimings));
+
+	if (Settings.SuperFX)
+		len += StructSize("SFX", SnapFX, COUNT(SnapFX));
+
+	if (Settings.SA1)
+	{
+		len += StructSize("SA1", SnapSA1, COUNT(SnapSA1));
+		len += StructSize("SAR", SnapSA1Registers, COUNT(SnapSA1Registers));
+	}
+
+	if (Settings.DSP == 1)
+		len += StructSize("DP1", SnapDSP1, COUNT(SnapDSP1));
+
+	if (Settings.DSP == 2)
+		len += StructSize("DP2", SnapDSP2, COUNT(SnapDSP2));
+
+	if (Settings.DSP == 4)
+		len += StructSize("DP4", SnapDSP4, COUNT(SnapDSP4));
+
+	if (Settings.C4)
+		len += BlockSize ("CX4", 8192);
+
+	if (Settings.SETA == ST_010)
+		len += StructSize("ST0", SnapST010, COUNT(SnapST010));
+
+	if (Settings.OBC1)
+	{
+		len += StructSize("OBC", SnapOBC1, COUNT(SnapOBC1));
+		len += BlockSize ("OBM", 8192);
+	}
+
+	if (Settings.SPC7110)
+		len += StructSize("S71", SnapSPC7110Snap, COUNT(SnapSPC7110Snap));
+
+	if (Settings.SRTC)
+		len += StructSize("SRT", SnapSRTCSnap, COUNT(SnapSRTCSnap));
+
+	if (Settings.SRTC || Settings.SPC7110RTC)
+		len += BlockSize ("CLK", 20);
+
+	if (Settings.BS)
+		len += StructSize("BSX", SnapBSX, COUNT(SnapBSX));
+
+	return len;
 }

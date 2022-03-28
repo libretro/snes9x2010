@@ -1342,14 +1342,12 @@ void retro_run(void)
 
 size_t retro_serialize_size(void)
 {
-	/* FIXME: No fail check, magic large number, etc. */
-	uint8_t *tmpbuf = (uint8_t*)malloc(5000000);
-	memstream_set_buffer(tmpbuf, (uint64_t)5000000);
+	int32 size = SnapshotSize();
 
-	S9xFreezeGame();
-	free(tmpbuf);
+	if (size < 0)
+		return 0;
 
-	return memstream_get_last_size();
+	return (size_t)size;
 }
 
 bool retro_serialize(void *data, size_t size)
