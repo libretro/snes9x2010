@@ -224,8 +224,16 @@ void linearFree(void* mem);
 /* Use a 64ms buffer. */
 /* 32000*(64/1000) = 2048
  * 2048 * 2 = 4096 because of stereo. */
-#define APU_BUF_FRAMES		(2048 * 2)
-#define APU_BUF_SZ		(APU_BUF_FRAMES * sizeof(int16_t))
+#define APU_BUF_FRAMES (2048 * 2)
+#define APU_BUF_SIZE   (APU_BUF_FRAMES * sizeof(int16_t))
+
+#define VIDEO_REFRESH_RATE_PAL  (PAL_MASTER_CLOCK / (double)(SNES_CYCLES_PER_SCANLINE * SNES_MAX_PAL_VCOUNTER))
+#define VIDEO_REFRESH_RATE_NTSC (NTSC_MASTER_CLOCK / (double)(SNES_CYCLES_PER_SCANLINE * SNES_MAX_NTSC_VCOUNTER))
+
+static int16_t *audio_out_buffer     = NULL;
+static size_t audio_out_buffer_size  = 0;
+static size_t audio_out_buffer_pos   = 0;
+static size_t audio_batch_frames_max = (1 << 16);
 
 enum
 {
@@ -658,20 +666,94 @@ void retro_get_system_info(struct retro_system_info *info)
 	info->block_extract    = false;
 }
 
+static void audio_out_buffer_init(void)
+{
+	float refresh_rate      = (retro_get_region() == RETRO_REGION_NTSC) ?
+			VIDEO_REFRESH_RATE_NTSC : VIDEO_REFRESH_RATE_PAL;
+	float samples_per_frame = SNES_AUDIO_FREQ / refresh_rate;
+	size_t buffer_size      = ((size_t)samples_per_frame + 1) << 1;
+
+	audio_out_buffer        = (int16_t *)malloc(buffer_size * sizeof(int16_t));
+	audio_out_buffer_size   = buffer_size;
+	audio_out_buffer_pos    = 0;
+	audio_batch_frames_max  = (1 << 16);
+}
+
+static void audio_out_buffer_deinit(void)
+{
+	if (audio_out_buffer)
+		free(audio_out_buffer);
+
+	audio_out_buffer       = NULL;
+	audio_out_buffer_size  = 0;
+	audio_out_buffer_pos   = 0;
+	audio_batch_frames_max = (1 << 16);
+}
+
 static void S9xAudioCallbackQueue(void)
 {
-	size_t avail;
-	/* Just pick a big buffer. We won't use it all. */
-	static int16_t audio_buf[APU_BUF_SZ];
+	size_t available_samples;
+	size_t buffer_capacity = audio_out_buffer_size -
+			audio_out_buffer_pos;
 
 	S9xFinalizeSamples();
-	avail = S9xGetSampleCount();
+	available_samples = S9xGetSampleCount();
 
-	if (avail > APU_BUF_FRAMES)
-		avail = APU_BUF_FRAMES;
+	if (buffer_capacity < available_samples)
+	{
+		int16_t *tmp_buffer = NULL;
+		size_t tmp_buffer_size;
 
-	S9xMixSamples(audio_buf, avail);
-	audio_batch_cb(audio_buf, avail >> 1);
+		tmp_buffer_size = audio_out_buffer_size + (available_samples - buffer_capacity);
+		tmp_buffer_size = (tmp_buffer_size << 1) - (tmp_buffer_size >> 1);
+		tmp_buffer      = (int16_t *)malloc(tmp_buffer_size * sizeof(int16_t));
+
+		memcpy(tmp_buffer, audio_out_buffer,
+				audio_out_buffer_pos * sizeof(int16_t));
+
+		free(audio_out_buffer);
+
+		audio_out_buffer      = tmp_buffer;
+		audio_out_buffer_size = tmp_buffer_size;
+	}
+
+	S9xMixSamples(audio_out_buffer + audio_out_buffer_pos,
+			available_samples);
+	audio_out_buffer_pos += available_samples;
+}
+
+static void audio_upload_samples(void)
+{
+	size_t available_frames;
+	int16_t *audio_out_buffer_ptr;
+
+	S9xAudioCallbackQueue();
+
+	audio_out_buffer_ptr = audio_out_buffer;
+	available_frames     = audio_out_buffer_pos >> 1;
+
+	/* Since the audio output buffer can
+	 * (theoretically) have an arbitrarily size,
+	 * we must write it in chunks of the largest
+	 * size supported by the frontend */
+	while (available_frames > 0)
+	{
+		size_t frames_to_write = (available_frames >
+				audio_batch_frames_max) ?
+						audio_batch_frames_max :
+						available_frames;
+		size_t frames_written = audio_batch_cb(
+				audio_out_buffer_ptr, frames_to_write);
+
+		if ((frames_written < frames_to_write) &&
+			 (frames_written > 0))
+			audio_batch_frames_max = frames_written;
+
+		available_frames     -= frames_to_write;
+		audio_out_buffer_ptr += frames_to_write << 1;
+	}
+
+	audio_out_buffer_pos = 0;
 }
 
 void retro_set_controller_port_device(unsigned in_port, unsigned device)
@@ -849,17 +931,18 @@ static void update_geometry(void)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-	unsigned width = SNES_WIDTH;
+	unsigned width  = SNES_WIDTH;
 	unsigned height = PPU.ScreenHeight;
 
-	info->geometry.base_width = width;
-	info->geometry.base_height = height;
-	info->geometry.max_width = MAX_SNES_WIDTH_NTSC;
-	info->geometry.max_height = MAX_SNES_HEIGHT;
-
+	info->geometry.base_width   = width;
+	info->geometry.base_height  = height;
+	info->geometry.max_width    = MAX_SNES_WIDTH_NTSC;
+	info->geometry.max_height   = MAX_SNES_HEIGHT;
 	info->geometry.aspect_ratio = get_aspect_ratio(width, height);
-	info->timing.sample_rate = SNES_AUDIO_FREQ;
-	info->timing.fps = (retro_get_region() == RETRO_REGION_NTSC) ? (21477272.0 / 357366.0) : (21281370.0 / 425568.0);
+
+	info->timing.sample_rate    = SNES_AUDIO_FREQ;
+	info->timing.fps            = (retro_get_region() == RETRO_REGION_NTSC) ?
+			VIDEO_REFRESH_RATE_NTSC : VIDEO_REFRESH_RATE_PAL;
 }
 
 static void set_system_specs(void)
@@ -920,7 +1003,7 @@ void retro_init(void)
 		exit(1);
 	}
 
-	if (S9xInitSound(APU_BUF_SZ, 0) != true)
+	if (S9xInitSound(APU_BUF_SIZE, 0) != true)
 	{
 		const char *const aud_err = "Audio output is disabled due to an internal error";
 		struct retro_message msg = { aud_err, 360 };
@@ -977,8 +1060,10 @@ void retro_deinit(void)
 	free(GFX.Screen);
 	free(ntsc_screen_buffer);
 #endif
+	audio_out_buffer_deinit();
+
 	/* Reset globals (required for static builds) */
-        libretro_supports_option_categories = false;
+	libretro_supports_option_categories = false;
 	libretro_supports_bitmasks = false;
 	frameskip_type             = 0;
 	frameskip_threshold        = 0;
@@ -1252,8 +1337,7 @@ void retro_run(void)
 
 	S9xMainLoop();
 
-	/* Force emptying the audio buffer at the end of the frame. */
-	S9xAudioCallbackQueue();
+	audio_upload_samples();
 }
 
 size_t retro_serialize_size(void)
@@ -1444,6 +1528,7 @@ bool retro_load_game(const struct retro_game_info *game)
 
 	check_variables(true);
 
+	audio_out_buffer_init();
 	retro_set_audio_buff_status_cb();
 	set_system_specs();
 
