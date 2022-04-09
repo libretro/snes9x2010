@@ -187,17 +187,7 @@ extern "C" {
 enum s9x_getdirtype
 {
 	DEFAULT_DIR = 0,
-	HOME_DIR,
-	ROMFILENAME_DIR,
-	ROM_DIR,
-	SRAM_DIR,
-	SNAPSHOT_DIR,
-	SCREENSHOT_DIR,
-	SPC_DIR,
-	CHEAT_DIR,
-	IPS_DIR,
 	BIOS_DIR,
-	LOG_DIR,
 	LAST_DIR
 };
 
