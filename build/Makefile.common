@@ -16,9 +16,6 @@ ifeq ($(LAGFIX),1)
 	COREDEFINES += -DLAGFIX
 endif
 
-ifeq ($(HAVE_GRIFFIN), 1)
-SOURCES_C := $(CORE_DIR)/src/snes9x_griffin.c $(CORE_DIR)/src/sa1.c
-else
 SOURCES_C := $(CORE_DIR)/src/apu.c \
 	$(CORE_DIR)/src/bsx.c \
 	$(CORE_DIR)/src/c4emu.c \
@@ -60,6 +57,4 @@ SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
-endif
-
 endif
