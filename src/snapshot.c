@@ -1702,12 +1702,13 @@ int S9xUnfreezeFromStream (STREAM stream)
 	uint8 *local_srtc          = NULL;
 	uint8 *local_rtc_data      = NULL;
 	uint8 *local_bsx_data      = NULL;
-	uint64_t len               = (uint64_t)strlen(SNAPSHOT_MAGIC) + 1 + 4 + 1;
+	size_t snapshot_magic_len  = strlen(SNAPSHOT_MAGIC);
+	uint64_t len               = (uint64_t)snapshot_magic_len + 1 + 4 + 1;
 
 	if (READ_STREAM(buffer, len, stream) != len)
 		return (WRONG_FORMAT);
 
-	if (strncmp(buffer, SNAPSHOT_MAGIC, strlen(SNAPSHOT_MAGIC)) != 0)
+	if (strncmp(buffer, SNAPSHOT_MAGIC, snapshot_magic_len) != 0)
 		return (WRONG_FORMAT);
 
 	version = atoi(&buffer[strlen(SNAPSHOT_MAGIC) + 1]);
