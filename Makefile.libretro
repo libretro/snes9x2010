@@ -190,6 +190,8 @@ endif
 CFLAGS += -DIOS
    CC = cc -arch arm64 -isysroot $(IOSSDK)
    CXX = c++ -arch arm64 -isysroot $(IOSSDK)
+   CC     += -mappletvos-version-min=11.0
+   CFLAGS += -mappletvos-version-min=11.0
 
 # Theos iOS
 else ifeq ($(platform), theos_ios)
