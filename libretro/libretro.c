@@ -284,6 +284,8 @@ static struct
 static uint8_t aspect_ratio_mode = ASPECT_RATIO_4_3;
 static bool libretro_supports_option_categories = false;
 static bool libretro_supports_bitmasks = false;
+static bool libretro_supports_sw_fb = false;
+static bool libretro_sw_fb_checked = false;
 static uint32_t retro_devices[2];
 
 // filter
@@ -1065,6 +1067,8 @@ void retro_deinit(void)
 	/* Reset globals (required for static builds) */
 	libretro_supports_option_categories = false;
 	libretro_supports_bitmasks = false;
+	libretro_supports_sw_fb    = false;
+	libretro_sw_fb_checked     = false;
 	frameskip_type             = 0;
 	frameskip_threshold        = 0;
 	frameskip_counter          = 0;
@@ -1572,8 +1576,54 @@ void S9xDeinitUpdate(int width, int height)
 		video_cb(ntsc_screen_buffer, SNES_NTSC_OUT_WIDTH(width), height, GFX.Pitch);
 	}
 	else
-		/* GFX.Pitch = width * 2; */
-		video_cb(GFX.Screen, width, height, GFX.Pitch);
+	{
+		if (!libretro_sw_fb_checked)
+		{
+			struct retro_framebuffer fb = {0};
+			fb.width         = width;
+			fb.height        = height;
+			fb.access_flags  = RETRO_MEMORY_ACCESS_WRITE;
+
+			if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
+					&& fb.format == RETRO_PIXEL_FORMAT_RGB565)
+			{
+				libretro_supports_sw_fb = true;
+				if (log_cb)
+					log_cb(RETRO_LOG_INFO, "Software framebuffer acquired successfully.\n");
+			}
+
+			libretro_sw_fb_checked = true;
+		}
+
+		if (libretro_supports_sw_fb)
+		{
+			struct retro_framebuffer fb = {0};
+			fb.width         = width;
+			fb.height        = height;
+			fb.access_flags  = RETRO_MEMORY_ACCESS_WRITE;
+
+			if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
+					&& fb.format == RETRO_PIXEL_FORMAT_RGB565)
+			{
+				unsigned y;
+				uint16_t *src = GFX.Screen;
+				uint8_t *dst  = (uint8_t *)fb.data;
+
+				for (y = 0; y < (unsigned)height; y++)
+				{
+					memcpy(dst, src, width * sizeof(uint16_t));
+					src += GFX.Pitch >> 1;
+					dst += fb.pitch;
+				}
+
+				video_cb(fb.data, width, height, fb.pitch);
+			}
+			else
+				video_cb(GFX.Screen, width, height, GFX.Pitch);
+		}
+		else
+			video_cb(GFX.Screen, width, height, GFX.Pitch);
+	}
 }
 
 /* Dummy functions that should probably be implemented correctly later. */
