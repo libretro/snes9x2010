@@ -1024,19 +1024,21 @@ void retro_init(void)
 	GFX.Pitch = MAX_SNES_WIDTH_NTSC * sizeof(uint16_t);
 
 #if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS) && !defined(__SWITCH__) && !defined(VITA)
-	/* request 128-bit alignment here if possible */
-	if (posix_memalign((void**)&GFX.Screen, 16, GFX.Pitch * 512 * sizeof(uint16)) != 0)
+	/* GFX.Pitch is already in bytes (= MAX_SNES_WIDTH_NTSC * sizeof(uint16_t));
+	   buffer size is Pitch * lines, not Pitch * lines * sizeof(uint16) again.
+	   request 128-bit alignment here if possible */
+	if (posix_memalign((void**)&GFX.Screen, 16, GFX.Pitch * 512) != 0)
 		GFX.Screen = NULL;
-	if (posix_memalign((void**)&ntsc_screen_buffer, 16, GFX.Pitch * MAX_SNES_HEIGHT * sizeof(uint16_t)) != 0)
+	if (posix_memalign((void**)&ntsc_screen_buffer, 16, GFX.Pitch * MAX_SNES_HEIGHT) != 0)
 		ntsc_screen_buffer = NULL;
 	if ((!GFX.Screen || !ntsc_screen_buffer) && log_cb)
 		log_cb(RETRO_LOG_ERROR, "Failed to allocate aligned screen buffers.\n");
 #elif defined(_3DS)
-	GFX.Screen = (uint16*) linearMemAlign(GFX.Pitch * 512 * sizeof(uint16), 0x80);
-	ntsc_screen_buffer = (uint16_t*)linearMemAlign(GFX.Pitch *  MAX_SNES_HEIGHT * sizeof(uint16_t), 0x80);
+	GFX.Screen = (uint16*) linearMemAlign(GFX.Pitch * 512, 0x80);
+	ntsc_screen_buffer = (uint16_t*)linearMemAlign(GFX.Pitch * MAX_SNES_HEIGHT, 0x80);
 #else
-	GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512 * sizeof(uint16));
-	ntsc_screen_buffer = (uint16_t *)calloc(1, GFX.Pitch * MAX_SNES_HEIGHT * sizeof(uint16));
+	GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512);
+	ntsc_screen_buffer = (uint16_t *)calloc(1, GFX.Pitch * MAX_SNES_HEIGHT);
 #endif
 	S9xGraphicsInit();
 

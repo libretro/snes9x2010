@@ -195,7 +195,7 @@ struct SSA1Registers
 struct SSA1
 {
 	struct SOpcodes	*S9xOpcodes;
-	uint8	*S9xOpLengths;
+	const uint8	*S9xOpLengths;
 	uint8	_Carry;
 	uint8	_Zero;
 	uint8	_Negative;
@@ -242,10 +242,10 @@ extern struct SOpcodes		S9xSA1OpcodesM1X1[256];
 extern struct SOpcodes		S9xSA1OpcodesM1X0[256];
 extern struct SOpcodes		S9xSA1OpcodesM0X1[256];
 extern struct SOpcodes		S9xSA1OpcodesM0X0[256];
-extern uint8			S9xOpLengthsM1X1[256];
-extern uint8			S9xOpLengthsM1X0[256];
-extern uint8			S9xOpLengthsM0X1[256];
-extern uint8			S9xOpLengthsM0X0[256];
+extern const uint8			S9xOpLengthsM1X1[256];
+extern const uint8			S9xOpLengthsM1X0[256];
+extern const uint8			S9xOpLengthsM0X1[256];
+extern const uint8			S9xOpLengthsM0X0[256];
 
 uint8 S9xGetSA1 (uint32 address);
 void S9xSetSA1 (uint8 byte, uint32 address);

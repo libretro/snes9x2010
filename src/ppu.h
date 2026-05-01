@@ -280,7 +280,7 @@ struct InternalPPU
 {
 	uint8	*TileCache[7];
 	uint8	*TileCached[7];
-	uint8	*XB;
+	const uint8	*XB;
 	int	RenderedScreenWidth;
 	int	RenderedScreenHeight;
 	int	CurrentLine;
@@ -549,7 +549,7 @@ struct SLineMatrixData
 	short	M7VOFS;
 };
 
-extern uint8		mul_brightness[16][32];
+extern const uint8	mul_brightness[16][32];
 extern struct SBG	BG;
 extern struct SGFX	GFX;
 
