@@ -858,6 +858,14 @@ V(V9_V6_V3,2) -> V(V9,2) V(V6,3) V(V3,4) */
 /* Runs DSP for specified number of clocks (~1024000 per second). Every 32 clocks
    a pair of samples is be generated. */
 
+/* dsp_run uses intentional case fallthroughs to advance the SPC-DSP through
+   its 32-cycle phase schedule one tick at a time. Silence the warning
+   locally rather than annotating each of the 32 sites. */
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 static void dsp_run( int clocks_remain )
 {
    dsp_voice_t *v0, *v1, *v2;
@@ -1145,6 +1153,10 @@ static void dsp_run( int clocks_remain )
       }
    }
 }
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 /* Sets destination for output samples. If out is NULL or out_size is 0,
    doesn't generate any. */
@@ -1607,7 +1619,7 @@ static void spc_cpu_write( unsigned data, uint16_t addr, int32_t time )
 			   if ( reg != 2 && reg != 4 && reg != 5 && reg != 6 && reg != 7 )
 			   TODO: this is a bit on the fragile side */
 
-         if ( ((~0x2F00 << 16) << reg) < 0 ) /* 36% */
+         if ( (0x2F00 & (1 << (15 - reg))) == 0 ) /* 36% */
 			{
 				if ( reg == R_DSPDATA ) /* 99% */
 				{
@@ -1770,6 +1782,15 @@ static int spc_cpu_read( uint16_t addr, int32_t time )
 	nz  = (in << 4 & 0x800) | (~in & Z02);\
 }
 
+/* spc_run_until_ is the SPC700 instruction dispatcher. Its address-mode
+   macros (ADDR_MODES, ADDR_MODES_, ADDR_MODES_NO_DP, LOGICAL_OP) deliberately
+   chain case labels via fallthrough to share the address calculation
+   prologue across opcodes. Silence the warning around the whole function. */
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 static uint8_t* spc_run_until_( int end_time )
 {
    unsigned addr, t;
@@ -1872,7 +1893,7 @@ loop:
 						  m.smp_regs[0][i] = (uint8_t) data;
 
 						  /* Registers other than $F2 and $F4-$F7 */
-                    if ( ((~0x2F00 << 16) << i) < 0 ) /* 12% */
+                    if ( (0x2F00 & (1 << (15 - i))) == 0 ) /* 12% */
 						  {
 							  if ( i == R_DSPDATA ) /* 99% */
 							  {
@@ -2810,6 +2831,10 @@ stop:
 	m.timers [2].next_time -= rel_time;
 	return &m.smp_regs[0][R_CPUIO0];
 }
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 /* Runs SPC to end_time and starts a new time frame at 0 */
 

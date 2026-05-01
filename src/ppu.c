@@ -3965,6 +3965,15 @@ static uint8 dma_channels_to_be_used[8] = {0};
 static bool8 special_chips_active = FALSE;
 
 
+/* S9xDoDMA's transfer-mode handlers for modes 1/3/4/5/7 use
+   switch-into-loop (Duff's device) to resume mid-stride from a saved
+   sub-index `b` when a DMA is interrupted. The resulting fallthroughs
+   between case labels are intentional. */
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 static void S9xDoDMA (void)
 {
 	uint8 Channel;
@@ -4695,6 +4704,10 @@ static void S9xDoDMA (void)
 		CPU.CurrentDMAorHDMAChannel = -1;
 	}
 }
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 void S9xSetCPU (uint8 Byte, uint16 Address)
 {

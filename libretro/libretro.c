@@ -1025,8 +1025,12 @@ void retro_init(void)
 
 #if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS) && !defined(__SWITCH__) && !defined(VITA)
 	/* request 128-bit alignment here if possible */
-	posix_memalign((void**)&GFX.Screen, 16, GFX.Pitch * 512 * sizeof(uint16));
-	posix_memalign( (void**)&ntsc_screen_buffer, 16, GFX.Pitch * MAX_SNES_HEIGHT * sizeof(uint16_t) );
+	if (posix_memalign((void**)&GFX.Screen, 16, GFX.Pitch * 512 * sizeof(uint16)) != 0)
+		GFX.Screen = NULL;
+	if (posix_memalign((void**)&ntsc_screen_buffer, 16, GFX.Pitch * MAX_SNES_HEIGHT * sizeof(uint16_t)) != 0)
+		ntsc_screen_buffer = NULL;
+	if ((!GFX.Screen || !ntsc_screen_buffer) && log_cb)
+		log_cb(RETRO_LOG_ERROR, "Failed to allocate aligned screen buffers.\n");
 #elif defined(_3DS)
 	GFX.Screen = (uint16*) linearMemAlign(GFX.Pitch * 512 * sizeof(uint16), 0x80);
 	ntsc_screen_buffer = (uint16_t*)linearMemAlign(GFX.Pitch *  MAX_SNES_HEIGHT * sizeof(uint16_t), 0x80);

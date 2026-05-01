@@ -1318,6 +1318,7 @@ void DSP1SetByte (uint8 byte, uint16 address)
 				case 0x37:
 				case 0x3F:
 					DSP1.command = 0x1f;
+					/* fallthrough */
 				case 0x1f: DSP1.in_count = 1; break;
 				default:
 				case 0x80:
