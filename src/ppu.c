@@ -463,7 +463,7 @@ void SetupOBJ (void)
 	}
 	else /* evil FirstSprite+Y case*/
 	{
-		uint8	OBJOnLine[SNES_HEIGHT_EXTENDED][128];
+		static uint8	OBJOnLine[SNES_HEIGHT_EXTENDED][128];
       bool8 AnyOBJOnLine[SNES_HEIGHT_EXTENDED];
       memset(AnyOBJOnLine, FALSE, sizeof(AnyOBJOnLine));
 
@@ -2089,38 +2089,6 @@ static INLINE uint8 CalcWindowMask (int i, uint8 W1, uint8 W2)
 	return (0);
 }
 
-#if 0
-static INLINE void StoreWindowRegions (uint8 Mask, struct ClipData *Clip, int n_regions, int16 *windows, uint8 *drawing_modes, bool8 sub, bool8 StoreMode0)
-{
-	int	ct = 0;
-
-	for (int j = 0; j < n_regions; j++)
-	{
-		int	DrawMode = drawing_modes[j];
-		if (sub)
-			DrawMode |= 1;
-		if (Mask & (1 << j))
-			DrawMode = 0;
-
-		if (!StoreMode0 && !DrawMode)
-			continue;
-
-		if (ct > 0 && Clip->Right[ct - 1] == windows[j] && Clip->DrawMode[ct - 1] == DrawMode)
-			Clip->Right[ct - 1] = windows[j + 1]; /* This region borders with and has the same drawing mode as the previous region: merge them.*/
-		else
-		{
-			/* Add a new region to the BG*/
-			Clip->Left[ct]     = windows[j];
-			Clip->Right[ct]    = windows[j + 1];
-			Clip->DrawMode[ct] = DrawMode;
-			ct++;
-		}
-	}
-
-	Clip->Count = ct;
-}
-#endif
-
 #define StoreWindowRegions_StoreMode1_Mask0(Clip, Clip2) \
 { \
 	int ct, ct2, k; \
@@ -2461,7 +2429,7 @@ void S9xUpdateScreen (void)
 			GFX.S += GFX.RealPPL;
 
 		for ( l = GFX.StartY; l <= GFX.EndY; l++, GFX.S += GFX.PPL)
-			memset(GFX.S, 0, IPPU.RenderedScreenWidth * sizeof(int));
+			memset(GFX.S, 0, IPPU.RenderedScreenWidth * sizeof(uint16));
 	}
 
 	IPPU.PreviousLine = IPPU.CurrentLine;
@@ -3706,10 +3674,6 @@ uint8 S9xGetPPU (uint16 Address)
 		}
 	}
 
-#if 0
-   if (Address <= 0x2183)
-      return GetPPU[Address - 0x2100](Address);
-#else
 	if ((Address & 0xffc0) == 0x2140) /* APUIO0, APUIO1, APUIO2, APUIO3 */
 	{
 		/* will run the APU until given APU time before reading value */
@@ -3947,7 +3911,6 @@ uint8 S9xGetPPU (uint16 Address)
 				return (OpenBus);
 		}
 	}
-#endif
 	else
 	{
 		if (Settings.SuperFX && Address >= 0x3000 && Address <= 0x32ff)

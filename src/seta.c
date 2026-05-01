@@ -442,18 +442,6 @@ static void ST010_SortDrivers (uint16 Positions, uint16 Places[32], uint16 Drive
 	}
 }
 
-/*
-static void SETA_Distance (int16 Y0, int16 X0, int16 &Distance)
-{
-	if (X0 < 0)
-		X0 = -X0;
-	if (Y0 < 0)
-		Y0 = -Y0;
-
-	Distance = ((X0 * 0x7af0) + 0x4000) >> 15;
-}
-*/
-
 uint8 S9xGetST010 (uint32 Address)
 {
 	if (!(Address & 0x80000))

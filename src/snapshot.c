@@ -1150,6 +1150,8 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 	}
 
 	block = (uint8*)malloc(len);
+	if (!block)
+		return;
 	ptr = block;
 
 	for (i = 0; i < num_fields; i++)

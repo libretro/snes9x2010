@@ -842,6 +842,8 @@ void spc7110_decomp_reset (void)
 void spc7110_decomp_start (void)
 {
 	unsigned i;
+	if (decomp_buffer)
+		free(decomp_buffer);
 	decomp_buffer = (uint8_t*)malloc(SPC7110_DECOMP_BUFFER_SIZE);
 	spc7110_decomp_reset();
 

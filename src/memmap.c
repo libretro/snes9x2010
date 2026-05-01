@@ -366,26 +366,26 @@ static void S9xDeinterleaveGD24 (int size, uint8 *base)
 
 bool8 Init (void)
 {
-	Memory.RAM	 = (uint8 *) malloc(0x20000);
-	Memory.SRAM = (uint8 *) malloc(0x80000);
-	Memory.VRAM = (uint8 *) malloc(0x10000);
-	Memory.ROM  = (uint8 *) malloc(MAX_ROM_SIZE + 0x200 + 0x8000);
+	Memory.RAM	 = (uint8 *) calloc(1, 0x20000);
+	Memory.SRAM = (uint8 *) calloc(1, 0x80000);
+	Memory.VRAM = (uint8 *) calloc(1, 0x10000);
+	Memory.ROM  = (uint8 *) calloc(1, MAX_ROM_SIZE + 0x200 + 0x8000);
 
-	IPPU.TileCache[TILE_2BIT]       = (uint8 *) malloc(MAX_2BIT_TILES * 64);
-	IPPU.TileCache[TILE_4BIT]       = (uint8 *) malloc(MAX_4BIT_TILES * 64);
-	IPPU.TileCache[TILE_8BIT]       = (uint8 *) malloc(MAX_8BIT_TILES * 64);
-	IPPU.TileCache[TILE_2BIT_EVEN]  = (uint8 *) malloc(MAX_2BIT_TILES * 64);
-	IPPU.TileCache[TILE_2BIT_ODD]   = (uint8 *) malloc(MAX_2BIT_TILES * 64);
-	IPPU.TileCache[TILE_4BIT_EVEN]  = (uint8 *) malloc(MAX_4BIT_TILES * 64);
-	IPPU.TileCache[TILE_4BIT_ODD]   = (uint8 *) malloc(MAX_4BIT_TILES * 64);
+	IPPU.TileCache[TILE_2BIT]       = (uint8 *) calloc(1, MAX_2BIT_TILES * 64);
+	IPPU.TileCache[TILE_4BIT]       = (uint8 *) calloc(1, MAX_4BIT_TILES * 64);
+	IPPU.TileCache[TILE_8BIT]       = (uint8 *) calloc(1, MAX_8BIT_TILES * 64);
+	IPPU.TileCache[TILE_2BIT_EVEN]  = (uint8 *) calloc(1, MAX_2BIT_TILES * 64);
+	IPPU.TileCache[TILE_2BIT_ODD]   = (uint8 *) calloc(1, MAX_2BIT_TILES * 64);
+	IPPU.TileCache[TILE_4BIT_EVEN]  = (uint8 *) calloc(1, MAX_4BIT_TILES * 64);
+	IPPU.TileCache[TILE_4BIT_ODD]   = (uint8 *) calloc(1, MAX_4BIT_TILES * 64);
 
-	IPPU.TileCached[TILE_2BIT]      = (uint8 *) malloc(MAX_2BIT_TILES);
-	IPPU.TileCached[TILE_4BIT]      = (uint8 *) malloc(MAX_4BIT_TILES);
-	IPPU.TileCached[TILE_8BIT]      = (uint8 *) malloc(MAX_8BIT_TILES);
-	IPPU.TileCached[TILE_2BIT_EVEN] = (uint8 *) malloc(MAX_2BIT_TILES);
-	IPPU.TileCached[TILE_2BIT_ODD]  = (uint8 *) malloc(MAX_2BIT_TILES);
-	IPPU.TileCached[TILE_4BIT_EVEN] = (uint8 *) malloc(MAX_4BIT_TILES);
-	IPPU.TileCached[TILE_4BIT_ODD]  = (uint8 *) malloc(MAX_4BIT_TILES);
+	IPPU.TileCached[TILE_2BIT]      = (uint8 *) calloc(1, MAX_2BIT_TILES);
+	IPPU.TileCached[TILE_4BIT]      = (uint8 *) calloc(1, MAX_4BIT_TILES);
+	IPPU.TileCached[TILE_8BIT]      = (uint8 *) calloc(1, MAX_8BIT_TILES);
+	IPPU.TileCached[TILE_2BIT_EVEN] = (uint8 *) calloc(1, MAX_2BIT_TILES);
+	IPPU.TileCached[TILE_2BIT_ODD]  = (uint8 *) calloc(1, MAX_2BIT_TILES);
+	IPPU.TileCached[TILE_4BIT_EVEN] = (uint8 *) calloc(1, MAX_4BIT_TILES);
+	IPPU.TileCached[TILE_4BIT_ODD]  = (uint8 *) calloc(1, MAX_4BIT_TILES);
 
 
 	/* don't render subscreen speed hack - disable this by default by 
@@ -414,27 +414,6 @@ bool8 Init (void)
 		Deinit();
 		return (FALSE);
 	}
-
-	memset(Memory.RAM, 0,  0x20000);
-	memset(Memory.SRAM, 0, 0x80000);
-	memset(Memory.VRAM, 0, 0x10000);
-	memset(Memory.ROM, 0,  MAX_ROM_SIZE + 0x200 + 0x8000);
-
-	memset(IPPU.TileCache[TILE_2BIT], 0, MAX_2BIT_TILES * 64);
-	memset(IPPU.TileCache[TILE_4BIT], 0, MAX_4BIT_TILES * 64);
-	memset(IPPU.TileCache[TILE_8BIT], 0, MAX_8BIT_TILES * 64);
-	memset(IPPU.TileCache[TILE_2BIT_EVEN], 0,  MAX_2BIT_TILES * 64);
-	memset(IPPU.TileCache[TILE_2BIT_ODD], 0,   MAX_2BIT_TILES * 64);
-	memset(IPPU.TileCache[TILE_4BIT_EVEN], 0,  MAX_4BIT_TILES * 64);
-	memset(IPPU.TileCache[TILE_4BIT_ODD], 0,   MAX_4BIT_TILES * 64);
-
-	memset(IPPU.TileCached[TILE_2BIT], 0,      MAX_2BIT_TILES);
-	memset(IPPU.TileCached[TILE_4BIT], 0,      MAX_4BIT_TILES);
-	memset(IPPU.TileCached[TILE_8BIT], 0,      MAX_8BIT_TILES);
-	memset(IPPU.TileCached[TILE_2BIT_EVEN], 0, MAX_2BIT_TILES);
-	memset(IPPU.TileCached[TILE_2BIT_ODD], 0,  MAX_2BIT_TILES);
-	memset(IPPU.TileCached[TILE_4BIT_EVEN], 0, MAX_4BIT_TILES);
-	memset(IPPU.TileCached[TILE_4BIT_ODD], 0,  MAX_4BIT_TILES);
 
 	/* FillRAM uses first 32K of ROM image area, otherwise space just
 	wasted. Might be read by the SuperFX code. */
@@ -2844,15 +2823,6 @@ static bool8 InitROM (void)
             MATCH_NA("STAR FOX") ||		/* Star Fox (US/JP)*/
             MATCH_NA("STAR WING"))		/* Star Wing (EU)*/
          Settings.SpeedhackGameID = SPEEDHACK_STAR_FOX_1;
-
-		#if 0
-		if(MATCH_ID("AKL"))		/* Killer Instinct*/
-			Settings.SpeedhackGameID = SPEEDHACK_KILLER_INSTINCT;
-		else if(
-				MATCH_NA("Super Metroid") 	/* Super Metroid*/
-		)
-			Settings.SpeedhackGameID = SPEEDHACK_SUPER_METROID;
-		#endif
 
 		if( MATCH_NA("SUPER MARIOWORLD"))	/* Super Mario World*/
          Settings.SpeedhackGameID = SPEEDHACK_SUPER_MARIO_WORLD;

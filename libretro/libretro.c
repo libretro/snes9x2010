@@ -710,6 +710,9 @@ static void S9xAudioCallbackQueue(void)
 		tmp_buffer_size = (tmp_buffer_size << 1) - (tmp_buffer_size >> 1);
 		tmp_buffer      = (int16_t *)malloc(tmp_buffer_size * sizeof(int16_t));
 
+		if (!tmp_buffer)
+			return;
+
 		memcpy(tmp_buffer, audio_out_buffer,
 				audio_out_buffer_pos * sizeof(int16_t));
 

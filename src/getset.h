@@ -200,11 +200,11 @@ static INLINE uint8 S9xGetByte (uint32 Address)
 {
    int		block    = (Address & 0xffffff) >> MEMMAP_SHIFT;
 	uint8	*GetAddress = Memory.Map[block];
-   int32    speed    = memory_speed(Address);
 
 	if (GetAddress >= (uint8 *) MAP_LAST)
 	{
       uint8 byte;
+      int32    speed    = memory_speed(Address);
 	#ifdef CPU_SHUTDOWN
 		if (Memory.BlockIsRAM[block])
 			CPU.WaitAddress = CPU.PBPCAtOpcodeStart;
@@ -386,13 +386,13 @@ static INLINE uint16 S9xGetWord (uint32 Address, uint32 w)
 
 static INLINE void S9xSetByte (uint8 Byte, uint32 Address)
 {
-#ifdef CPU_SHUTDOWN
-	CPU.WaitAddress = 0xffffffff;
-#endif
-
 	int		block = (Address & 0xffffff) >> MEMMAP_SHIFT;
 	uint8	*SetAddress = Memory.WriteMap[block];
 	int32	speed = memory_speed(Address);
+
+#ifdef CPU_SHUTDOWN
+	CPU.WaitAddress = 0xffffffff;
+#endif
 
 	if (SetAddress >= (uint8 *) MAP_LAST)
 	{

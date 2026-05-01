@@ -871,16 +871,12 @@ static void dsp_run( int clocks_remain )
    {
       switch ( phase )
       {
-#if 0
-         if ( 0 && !--clocks_remain )
-            break;
-#endif
          case 0:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
          v1 = (dsp_voice_t*)(v0 + 1);
          dsp_voice_V5(v0);
          dsp_voice_V2(v1);
-         if ( 1 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 1:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
@@ -889,7 +885,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V3a(v1);
          dsp_voice_V3b(v1);
          dsp_voice_V3c(v1);
-         if ( 2 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 2:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
@@ -898,7 +894,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V7(v0);
          dsp_voice_V1(v2);
          dsp_voice_V4(v1);
-         if ( 3 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 3:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
@@ -907,7 +903,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V8(v0);
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
-         if ( 4 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 4:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
@@ -918,7 +914,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V3a(v2);
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
-         if ( 5 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 5:
          v0 = (dsp_voice_t*)&dsp_m.voices[1];
@@ -927,7 +923,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V7(v0);
          dsp_voice_V1(v2);
          dsp_voice_V4(v1);
-         if ( 6 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 6:
          v0 = (dsp_voice_t*)&dsp_m.voices[1];
@@ -936,7 +932,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V8(v0);
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
-         if ( 7 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 7:
          v0 = (dsp_voice_t*)&dsp_m.voices[1];
@@ -947,7 +943,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V3a(v2);
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
-         if ( 8 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 8:
          v0 = (dsp_voice_t*)&dsp_m.voices[2];
@@ -956,7 +952,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V7(v0);
          dsp_voice_V1(v2);
          dsp_voice_V4(v1);
-         if ( 9 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 9:
          v0 = (dsp_voice_t*)&dsp_m.voices[2];
@@ -965,7 +961,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V8(v0);
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
-         if ( 10 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 10:
          v0 = (dsp_voice_t*)&dsp_m.voices[2];
@@ -976,7 +972,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V3a(v2);
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
-         if ( 11 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 11:
          v0 = (dsp_voice_t*)&dsp_m.voices[3];
@@ -985,7 +981,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V7(v0);
          dsp_voice_V1(v2);
          dsp_voice_V4(v1);
-         if ( 12 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 12:
          v0 = (dsp_voice_t*)&dsp_m.voices[3];
@@ -994,7 +990,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V8(v0);
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
-         if ( 13 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 13:
          v0 = (dsp_voice_t*)&dsp_m.voices[3];
@@ -1005,7 +1001,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V3a(v2);
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
-         if ( 14 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 14:
          v0 = (dsp_voice_t*)&dsp_m.voices[4];
@@ -1014,7 +1010,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V7(v0);
          dsp_voice_V1(v2);
          dsp_voice_V4(v1);
-         if ( 15 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 15:
          v0 = (dsp_voice_t*)&dsp_m.voices[4];
@@ -1023,7 +1019,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V8(v0);
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
-         if ( 16 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 16:
          v0 = (dsp_voice_t*)&dsp_m.voices[4];
@@ -1034,7 +1030,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V3a(v2);
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
-         if ( 17 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 17:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
@@ -1043,7 +1039,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V1(v0);
          dsp_voice_V7(v1);
          dsp_voice_V4(v2);
-         if ( 18 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 18:
          v0 = (dsp_voice_t*)&dsp_m.voices[5];
@@ -1052,7 +1048,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V8(v0);
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
-         if ( 19 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 19:
          v0 = (dsp_voice_t*)&dsp_m.voices[5];
@@ -1063,7 +1059,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V3a(v2);
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
-         if ( 20 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 20:
          v0 = (dsp_voice_t*)&dsp_m.voices[1];
@@ -1072,7 +1068,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V1(v0);
          dsp_voice_V7(v1);
          dsp_voice_V4(v2);
-         if ( 21 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 21:
          v2 = (dsp_voice_t*)&dsp_m.voices[0];
@@ -1081,7 +1077,7 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V8(v0);
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
-         if ( 22 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 22:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
@@ -1091,19 +1087,19 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V9(v1);
          dsp_voice_V6(v2);
          dsp_echo_22();
-         if ( 23 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 23:
          v0 = (dsp_voice_t*)&dsp_m.voices[7];
          dsp_voice_V7(v0);
          dsp_echo_23();
-         if ( 24 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 24:
          v0 = (dsp_voice_t*)&dsp_m.voices[7];
          dsp_voice_V8(v0);
          dsp_echo_24();
-         if ( 25 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 25:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
@@ -1111,33 +1107,33 @@ static void dsp_run( int clocks_remain )
          dsp_voice_V3b(v0);
          dsp_voice_V9(v1);
          dsp_echo_25();
-         if ( 26 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 26:
          dsp_echo_26();
-         if ( 27 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 27:
          MISC_27();
          dsp_echo_27();
-         if ( 28 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 28:
          MISC_28();
          ECHO_28();
-         if ( 29 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 29:
          MISC_29();
          dsp_echo_29();
-         if ( 30 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 30:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
          dsp_misc_30();
          dsp_voice_V3c(v0);
          ECHO_WRITE(1);
-         if ( 31 && !--clocks_remain )
+         if ( !--clocks_remain )
             break;
          case 31:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
@@ -1552,10 +1548,6 @@ static void spc_cpu_write_smp_reg_( unsigned data, int time, int addr )
          break;
 
       case R_TEST:
-#if 0
-         if ( (uint8_t) data != 0x0A )
-            dprintf( "SPC wrote to test register\n" );
-#endif
          break;
 
       case R_CONTROL:
@@ -2801,10 +2793,6 @@ out_of_time:
 stop:
 
 	/* Uncache registers */
-#if 0
-	if ( GET_PC() >= 0x10000 )
-		dprintf( "SPC: PC wrapped around\n" );
-#endif
 	m.cpu_regs.pc = (uint16_t) GET_PC();
 	m.cpu_regs.sp = ( uint8_t) GET_SP();
 	m.cpu_regs.a  = ( uint8_t) a;
