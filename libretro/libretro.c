@@ -676,9 +676,12 @@ static void audio_out_buffer_init(void)
 	size_t buffer_size       = ((size_t)samples_per_frame + 1) << 1;
 
 	audio_out_buffer        = (int16_t *)malloc(buffer_size * sizeof(int16_t));
-	audio_out_buffer_size   = buffer_size;
+	audio_out_buffer_size   = audio_out_buffer ? buffer_size : 0;
 	audio_out_buffer_pos    = 0;
 	audio_batch_frames_max  = (1 << 16);
+
+	if (!audio_out_buffer && log_cb)
+		log_cb(RETRO_LOG_ERROR, "Failed to allocate audio output buffer.\n");
 }
 
 static void audio_out_buffer_deinit(void)
@@ -713,8 +716,9 @@ static void S9xAudioCallbackQueue(void)
 		if (!tmp_buffer)
 			return;
 
-		memcpy(tmp_buffer, audio_out_buffer,
-				audio_out_buffer_pos * sizeof(int16_t));
+		if (audio_out_buffer)
+			memcpy(tmp_buffer, audio_out_buffer,
+					audio_out_buffer_pos * sizeof(int16_t));
 
 		free(audio_out_buffer);
 
@@ -1038,8 +1042,6 @@ void retro_init(void)
 			tmp_ntsc = NULL;
 		GFX.Screen         = (uint16 *)tmp_screen;
 		ntsc_screen_buffer = (uint16_t *)tmp_ntsc;
-		if ((!GFX.Screen || !ntsc_screen_buffer) && log_cb)
-			log_cb(RETRO_LOG_ERROR, "Failed to allocate aligned screen buffers.\n");
 	}
 #elif defined(_3DS)
 	GFX.Screen = (uint16*) linearMemAlign(GFX.Pitch * 512, 0x80);
@@ -1048,6 +1050,8 @@ void retro_init(void)
 	GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512);
 	ntsc_screen_buffer = (uint16_t *)calloc(1, GFX.Pitch * MAX_SNES_HEIGHT);
 #endif
+	if ((!GFX.Screen || !ntsc_screen_buffer) && log_cb)
+		log_cb(RETRO_LOG_ERROR, "Failed to allocate screen buffers.\n");
 	S9xGraphicsInit();
 
 	retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
