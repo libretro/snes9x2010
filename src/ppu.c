@@ -1524,7 +1524,7 @@ static INLINE void DrawBackgroundMode7 (int bg, void (*DrawMath) (uint32, uint32
 	}
 }
 
-static INLINE void RenderScreen_SFXSpeedupHack()
+static INLINE void RenderScreen_SFXSpeedupHack(void)
 {
 	uint8	BGActive = Memory.FillRAM[0x212d];
 	int	D = (Memory.FillRAM[0x2130] & 2) << 4; /* 'do math' depth flag */

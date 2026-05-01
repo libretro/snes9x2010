@@ -670,10 +670,10 @@ void retro_get_system_info(struct retro_system_info *info)
 
 static void audio_out_buffer_init(void)
 {
-	float refresh_rate      = (retro_get_region() == RETRO_REGION_NTSC) ?
+	double refresh_rate      = (retro_get_region() == RETRO_REGION_NTSC) ?
 			VIDEO_REFRESH_RATE_NTSC : VIDEO_REFRESH_RATE_PAL;
-	float samples_per_frame = SNES_AUDIO_FREQ / refresh_rate;
-	size_t buffer_size      = ((size_t)samples_per_frame + 1) << 1;
+	double samples_per_frame = SNES_AUDIO_FREQ / refresh_rate;
+	size_t buffer_size       = ((size_t)samples_per_frame + 1) << 1;
 
 	audio_out_buffer        = (int16_t *)malloc(buffer_size * sizeof(int16_t));
 	audio_out_buffer_size   = buffer_size;
@@ -1026,13 +1026,21 @@ void retro_init(void)
 #if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS) && !defined(__SWITCH__) && !defined(VITA)
 	/* GFX.Pitch is already in bytes (= MAX_SNES_WIDTH_NTSC * sizeof(uint16_t));
 	   buffer size is Pitch * lines, not Pitch * lines * sizeof(uint16) again.
-	   request 128-bit alignment here if possible */
-	if (posix_memalign((void**)&GFX.Screen, 16, GFX.Pitch * 512) != 0)
-		GFX.Screen = NULL;
-	if (posix_memalign((void**)&ntsc_screen_buffer, 16, GFX.Pitch * MAX_SNES_HEIGHT) != 0)
-		ntsc_screen_buffer = NULL;
-	if ((!GFX.Screen || !ntsc_screen_buffer) && log_cb)
-		log_cb(RETRO_LOG_ERROR, "Failed to allocate aligned screen buffers.\n");
+	   request 128-bit alignment here if possible.
+	   posix_memalign output goes through void* temporaries to avoid the
+	   strict-aliasing violation that '(void**)&GFX.Screen' would create. */
+	{
+		void *tmp_screen = NULL;
+		void *tmp_ntsc   = NULL;
+		if (posix_memalign(&tmp_screen, 16, GFX.Pitch * 512) != 0)
+			tmp_screen = NULL;
+		if (posix_memalign(&tmp_ntsc, 16, GFX.Pitch * MAX_SNES_HEIGHT) != 0)
+			tmp_ntsc = NULL;
+		GFX.Screen         = (uint16 *)tmp_screen;
+		ntsc_screen_buffer = (uint16_t *)tmp_ntsc;
+		if ((!GFX.Screen || !ntsc_screen_buffer) && log_cb)
+			log_cb(RETRO_LOG_ERROR, "Failed to allocate aligned screen buffers.\n");
+	}
 #elif defined(_3DS)
 	GFX.Screen = (uint16*) linearMemAlign(GFX.Pitch * 512, 0x80);
 	ntsc_screen_buffer = (uint16_t*)linearMemAlign(GFX.Pitch * MAX_SNES_HEIGHT, 0x80);

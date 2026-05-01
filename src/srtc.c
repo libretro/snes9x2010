@@ -190,8 +190,6 @@
 #include "srtc.h"
 #include "display.h"
 
-#include "spc7110dec.h"
-
 #define MEMORY_CARTRTC_READ(a)		RTCData.reg[(a)]
 #define MEMORY_CARTRTC_WRITE(a, b)	{ RTCData.reg[(a)] = (b); }
 
@@ -363,7 +361,6 @@ static unsigned srtcemu_weekday(unsigned year, unsigned month, unsigned day)
 
 void S9xInitSRTC (void)
 {
-	spc7110_decomp_start();
 	srtc_mode = RTCM_READ;
 	srtc_index = -1;
 	srtcemu_update_time();

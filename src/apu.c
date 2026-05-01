@@ -2889,7 +2889,7 @@ static void spc_end_frame( int end_time )
 
 /* Support SNES_MEMORY_APURAM */
 
-uint8_t * spc_apuram()
+uint8_t * spc_apuram(void)
 {
 	return m.ram.ram;
 }
