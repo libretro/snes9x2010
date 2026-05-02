@@ -1558,24 +1558,6 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 			DrawBackground(n, D + Zh, D + Zl); \
 		}
 
-	#define DO_BG_DEPTH4(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
-		if (BGActive & (1 << n)) \
-		{ \
-			BG.StartPalette = pal; \
-			BG.EnableMath = 0; \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_Depth4(); \
-			if (offset) \
-			{ \
-				BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
-			} \
-			else \
-			{ \
-				DrawBackground(n, D + Zh, D + Zl); \
-			} \
-		}
-
 	#define DO_BG_DEPTH4_OFFSET0(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
 		if (BGActive & (1 << n)) \
 		{ \
@@ -1613,14 +1595,10 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 	}
 
 	#undef DO_BG_DEPTH2
-	#undef DO_BG_DEPTH4
 	#undef DO_BG_DEPTH4_OFFSET0
 	#undef DO_BG_DEPTH4_OFFSET1
 
 	BG.EnableMath = 0;
-
-	BGActive = 0;
-	D = 0;
 
 	GFX.S = GFX.Screen;
 	GFX.DB = GFX.ZBuffer;
@@ -1650,24 +1628,6 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth2(); \
 			DrawBackground(n, D + Zh, D + Zl); \
-		}
-
-	#define DO_BG_DEPTH4(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
-		if (BGActive & (1 << n)) \
-		{ \
-			BG.StartPalette = pal; \
-			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter_Depth4(); \
-			if (offset) \
-			{ \
-				BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
-				DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
-			} \
-			else \
-			{ \
-				DrawBackground(n, D + Zh, D + Zl); \
-			} \
 		}
 
 	#define DO_BG_DEPTH4_OFFSET0(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
@@ -1706,7 +1666,6 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 	}
 
 	#undef DO_BG_DEPTH2
-	#undef DO_BG_DEPTH4
 	#undef DO_BG_DEPTH4_OFFSET0
 	#undef DO_BG_DEPTH4_OFFSET1
 
@@ -1763,49 +1722,6 @@ static INLINE void RenderScreen (bool8 sub)
 	BG.NameSelect = 0;
 	S9xSelectTileRenderers(PPU.BGMode, sub, FALSE);
 
-	#define DO_BG(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
-		if (BGActive & (1 << n)) \
-		{ \
-			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (!hires && PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter(depth, hires, sub, PPU.BGMosaic[n]); \
-			\
-			if (offset) \
-			{ \
-				BG.OffsetSizeH = (!hires && PPU.BG[2].BGSize) ? 16 : 8; \
-				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
-				\
-				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
-					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
-				else \
-					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
-			} \
-			else \
-			{ \
-				if (PPU.BGMosaic[n] && (hires || PPU.Mosaic > 1)) \
-					DrawBackgroundMosaic(n, D + Zh, D + Zl); \
-				else \
-					DrawBackground(n, D + Zh, D + Zl); \
-			} \
-		}
-
-	#define DO_BG_HIRES0_OFFSET0(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
-		if (BGActive & (1 << n)) \
-		{ \
-			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter(depth, hires, sub, PPU.BGMosaic[n]); \
-			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
-				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
-			else \
-				DrawBackground(n, D + Zh, D + Zl); \
-		}
-
 	#define DO_BG_HIRES0_OFFSET0_D2(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
 		if (BGActive & (1 << n)) \
 		{ \
@@ -1849,24 +1765,6 @@ static INLINE void RenderScreen (bool8 sub)
 				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 			else \
 				DrawBackground(n, D + Zh, D + Zl); \
-		}
-
-	#define DO_BG_HIRES0_OFFSET1(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
-		if (BGActive & (1 << n)) \
-		{ \
-			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter(depth, 0, sub, PPU.BGMosaic[n]); \
-			\
-			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
-			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
-			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
-			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
-			else \
-			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
 		}
 
 	#define DO_BG_HIRES0_OFFSET1_D2(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
@@ -1954,23 +1852,6 @@ static INLINE void RenderScreen (bool8 sub)
 				else \
 					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
 		}
-	#define DO_BG_HIRES1_OFFSET1(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
-		if (BGActive & (1 << n)) \
-		{ \
-			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter(depth, hires, sub, PPU.BGMosaic[n]); \
-			\
-				BG.OffsetSizeH = 8; \
-				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
-				\
-				if (PPU.BGMosaic[n]) \
-					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
-				else \
-					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
-		}
 
 	switch (PPU.BGMode)
 	{
@@ -2034,9 +1915,12 @@ static INLINE void RenderScreen (bool8 sub)
 			break;
 	}
 
-	#undef DO_BG
-	#undef DO_BG_HIRES0_OFFSET0
-	#undef DO_BG_HIRES0_OFFSET1
+	#undef DO_BG_HIRES0_OFFSET0_D2
+	#undef DO_BG_HIRES0_OFFSET0_D4
+	#undef DO_BG_HIRES0_OFFSET0_D8
+	#undef DO_BG_HIRES0_OFFSET1_D2
+	#undef DO_BG_HIRES0_OFFSET1_D4
+	#undef DO_BG_HIRES0_OFFSET1_D8
 	#undef DO_BG_HIRES1_OFFSET0
 	#undef DO_BG_HIRES1_OFFSET1
 
@@ -2336,6 +2220,10 @@ static void S9xComputeClipWindows (void)
 
 void S9xUpdateScreen (void)
 {
+	/* clip and Offset are referenced from inside the DRAW_BACKDROP_NO_MATH
+	   and DrawBackdrop macros below, which inline into this function's
+	   scope. They look unused at this declaration point but the macros
+	   need them. */
 	int clip;
 	uint32 Offset;
 
