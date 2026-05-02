@@ -480,8 +480,8 @@ struct SGFX
 	uint8	*DB;
 	uint16	*X2;
 	uint16	*ZERO;
-	uint16	*ScreenColors;		/* screen colors for rendering main */
-	uint16	*RealScreenColors;	/* screen colors, ignoring color window clipping */
+	const uint16	*ScreenColors;		/* screen colors for rendering main */
+	const uint16	*RealScreenColors;	/* screen colors, ignoring color window clipping */
 	uint32	Pitch;
 	uint32	ScreenSize;
 	uint32	RealPPL;		/* true PPL of Screen buffer */

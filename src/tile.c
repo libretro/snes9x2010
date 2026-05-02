@@ -214,7 +214,7 @@ static INLINE uint16 COLOR_SUB (uint16 C1, uint16 C2)
 }
 
 static uint16	DirectColourMaps[8][256];
-static uint16 BlackColourMap[256] = {0};
+static const uint16 BlackColourMap[256] = {0};
 
 static void S9xBuildDirectColourMaps (void)
 {
