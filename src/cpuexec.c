@@ -197,136 +197,126 @@ extern uint8	*HDMAMemPointers[8];
 static uint32 idle_loop_target_pc;
 static bool8 idle_loop_elimination_enable;
 
-#ifdef LAGFIX
-bool8 finishedFrame = false;
-#endif
+static bool8 finishedFrame = false;
 
 void S9xMainLoop (void)
 {
 	do
 	{
-#ifdef LAGFIX
-	do
-	{
-#endif
-		register uint8	Op;
-		register struct	SOpcodes *Opcodes;
+		do
+		{
+			register uint8	Op;
+			register struct	SOpcodes *Opcodes;
 
-		/* Speedhack - skip idle loop if exists. */
-		if (idle_loop_elimination_enable &&
+			/* Speedhack - skip idle loop if exists. */
+			if (idle_loop_elimination_enable &&
             (Registers.PBPC == idle_loop_target_pc) && (CPU.Cycles < CPU.NextEvent))
          CPU.Cycles = CPU.NextEvent;
 
-		if (CPU.Flags)
-		{
-			if (CPU.Flags & NMI_FLAG)
+			if (CPU.Flags)
 			{
-				if (Timings.NMITriggerPos <= CPU.Cycles)
+				if (CPU.Flags & NMI_FLAG)
 				{
-					CPU.Flags &= ~NMI_FLAG;
-					Timings.NMITriggerPos = 0xffff;
-					if (CPU.WaitingForInterrupt)
+					if (Timings.NMITriggerPos <= CPU.Cycles)
 					{
-						CPU.WaitingForInterrupt = FALSE;
-						Registers.PCw++;
-					}
+						CPU.Flags &= ~NMI_FLAG;
+						Timings.NMITriggerPos = 0xffff;
+						if (CPU.WaitingForInterrupt)
+						{
+							CPU.WaitingForInterrupt = FALSE;
+							Registers.PCw++;
+						}
 
-					S9xOpcode_NMI();
+						S9xOpcode_NMI();
+					}
 				}
-			}
 
 
-			if (CPU.Flags & IRQ_FLAG)
-			{
-				if (CPU.IRQPending)
-					CPU.IRQPending--;	/* FIXME: In case of IRQ during WRAM refresh */
-				else
+				if (CPU.Flags & IRQ_FLAG)
 				{
-					if (CPU.WaitingForInterrupt)
-					{
-						CPU.WaitingForInterrupt = FALSE;
-						Registers.PCw++;
-					}
-
-					if (CPU.IRQActive)
-					{
-						/* in IRQ handler $4211 is supposed to be read, so IRQ_FLAG should be cleared. */
-						if (!CheckFlag(IRQ))
-							S9xOpcode_IRQ();
-					}
+					if (CPU.IRQPending)
+						CPU.IRQPending--;	/* FIXME: In case of IRQ during WRAM refresh */
 					else
-						CPU.Flags &= ~IRQ_FLAG;
+					{
+						if (CPU.WaitingForInterrupt)
+						{
+							CPU.WaitingForInterrupt = FALSE;
+							Registers.PCw++;
+						}
+
+						if (CPU.IRQActive)
+						{
+							/* in IRQ handler $4211 is supposed to be read, so IRQ_FLAG should be cleared. */
+							if (!CheckFlag(IRQ))
+								S9xOpcode_IRQ();
+						}
+						else
+							CPU.Flags &= ~IRQ_FLAG;
+					}
 				}
+
+				if (CPU.Flags & SCAN_KEYS_FLAG)
+					break;
+
 			}
 
-			if (CPU.Flags & SCAN_KEYS_FLAG)
+			Opcodes = S9xOpcodesSlow;
+
+			CPU.PrevCycles = CPU.Cycles;
+
+			if (CPU.PCBase)
+			{
+				Op = CPU.PCBase[Registers.PCw];
+				CPU.Cycles += CPU.MemSpeed;
+				Opcodes = ICPU.S9xOpcodes;
+			}
+			else
+			{
+				Op = S9xGetByte(Registers.PBPC);
+				OpenBus = Op;
+			}
+
+			if ((Registers.PCw & MEMMAP_MASK) + ICPU.S9xOpLengths[Op] >= MEMMAP_BLOCK_SIZE)
+			{
+				uint8	*oldPCBase = CPU.PCBase;
+
+				CPU.PCBase = S9xGetBasePointer(ICPU.ShiftedPB + ((uint16) (Registers.PCw + 4)));
+				if (oldPCBase != CPU.PCBase || (Registers.PCw & ~MEMMAP_MASK) == (0xffff & ~MEMMAP_MASK))
+					Opcodes = S9xOpcodesSlow;
+			}
+
+			Registers.PCw++;
+			(*Opcodes[Op].S9xOpcode)();
+
+
+			if (Settings.SA1)
+				S9xSA1MainLoop();
+
+		#if (S9X_ACCURACY_LEVEL <= 2)
+			while (CPU.Cycles >= CPU.NextEvent)
+				S9xDoHEventProcessing();
+		#endif
+
+			if (finishedFrame)
 				break;
 
-		}
+		} while (1);
 
-		Opcodes = S9xOpcodesSlow;
-
-		CPU.PrevCycles = CPU.Cycles;
-
-		if (CPU.PCBase)
+		if (!finishedFrame)
 		{
-			Op = CPU.PCBase[Registers.PCw];
-			CPU.Cycles += CPU.MemSpeed;
-			Opcodes = ICPU.S9xOpcodes;
+			S9xPackStatus();
+
+			if (CPU.Flags & SCAN_KEYS_FLAG)
+			{
+				CPU.Flags &= ~SCAN_KEYS_FLAG;
+			}
 		}
 		else
 		{
-			Op = S9xGetByte(Registers.PBPC);
-			OpenBus = Op;
+			finishedFrame = false;
+			break;
 		}
-
-		if ((Registers.PCw & MEMMAP_MASK) + ICPU.S9xOpLengths[Op] >= MEMMAP_BLOCK_SIZE)
-		{
-			uint8	*oldPCBase = CPU.PCBase;
-
-			CPU.PCBase = S9xGetBasePointer(ICPU.ShiftedPB + ((uint16) (Registers.PCw + 4)));
-			if (oldPCBase != CPU.PCBase || (Registers.PCw & ~MEMMAP_MASK) == (0xffff & ~MEMMAP_MASK))
-				Opcodes = S9xOpcodesSlow;
-		}
-
-		Registers.PCw++;
-		(*Opcodes[Op].S9xOpcode)();
-
-
-		if (Settings.SA1)
-			S9xSA1MainLoop();
-
-	#if (S9X_ACCURACY_LEVEL <= 2)
-		while (CPU.Cycles >= CPU.NextEvent)
-			S9xDoHEventProcessing();
-	#endif
-	
-#ifdef LAGFIX
-	if (finishedFrame)
-        	break;
-#endif
-                
-	}while(1);
-
-#ifdef LAGFIX
-	if (!finishedFrame)
-        {
-#endif
-	S9xPackStatus();
-
-	if (CPU.Flags & SCAN_KEYS_FLAG)
-	{
-		CPU.Flags &= ~SCAN_KEYS_FLAG;
-	}
-#ifdef LAGFIX
-        }
-        else
-        {
-            finishedFrame = false;
-            break;
-        }
-    }while(!finishedFrame);
-#endif
+	} while (!finishedFrame);
 }
 
 
@@ -411,9 +401,7 @@ static void S9xEndScreenRefresh (void)
 	if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
 	{
 		S9xDeinitUpdate(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
-#ifdef LAGFIX
 		finishedFrame = true;
-#endif
 	}
 	PPU.GunVLatch = 1000; /* i.e., never latch */
 	PPU.GunHLatch = 0;

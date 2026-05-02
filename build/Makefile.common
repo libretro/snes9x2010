@@ -12,10 +12,6 @@ ifneq (,$(findstring msvc200,$(platform)))
 INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
 endif
 
-ifeq ($(LAGFIX),1)
-	COREDEFINES += -DLAGFIX
-endif
-
 SOURCES_C := $(CORE_DIR)/src/apu.c \
 	$(CORE_DIR)/src/bsx.c \
 	$(CORE_DIR)/src/c4emu.c \
