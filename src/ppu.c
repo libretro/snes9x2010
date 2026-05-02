@@ -2368,6 +2368,14 @@ void S9xUpdateScreen (void)
 		{
 			register uint32 y;
 			register int x;
+
+			/* Mid-frame width promotion needs a 2x-wider buffer than
+			   we acquired. Bail out of any sw_fb redirect first;
+			   afterwards GFX.Screen points at the persistent buffer
+			   sized for max width, with the partial render copied
+			   into it. */
+			S9xLibretroSwFbAbort();
+
 			/* Have to back out of the regular speed hack */
 			for ( y = 0; y < GFX.StartY; y++)
 			{
@@ -2387,6 +2395,10 @@ void S9xUpdateScreen (void)
 		if (!IPPU.DoubleHeightPixels && IPPU.Interlace && (PPU.BGMode == 5 || PPU.BGMode == 6))
 		{
 			register int32 y;
+
+			/* Same for mid-frame height promotion: acquired buffer
+			   is sized for unpromoted height. */
+			S9xLibretroSwFbAbort();
 
 			IPPU.DoubleHeightPixels = TRUE;
 			IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;

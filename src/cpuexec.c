@@ -1111,6 +1111,15 @@ void S9xDoHEventProcessing (void)
 
 						GFX.PPL = GFX.RealPPL << cond_2;
 						GFX.DoInterlace += cond_2;
+
+						/* Backend hook: try to redirect GFX.Screen at the
+						   frontend's swapchain buffer for zero-copy
+						   presentation. May silently rewrite GFX.Screen,
+						   GFX.Pitch, GFX.RealPPL and GFX.PPL. No-op when
+						   redirect is not possible (NTSC filter on,
+						   frontend doesn't support sw_fb, etc.). */
+						S9xLibretroSwFbAcquire(IPPU.RenderedScreenWidth,
+								IPPU.RenderedScreenHeight);
 					}
 
 					PPU.MosaicStart = 0;

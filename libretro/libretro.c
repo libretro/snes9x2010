@@ -286,6 +286,32 @@ static bool libretro_supports_option_categories = false;
 static bool libretro_supports_bitmasks = false;
 static bool libretro_supports_sw_fb = false;
 static bool libretro_sw_fb_checked = false;
+
+/* Direct-render state for the sw_fb optimization. When sw_fb_active is
+   true for the current frame, GFX.Screen has been redirected to point at
+   a frontend-supplied software framebuffer. The renderer writes pixels
+   there directly, and S9xDeinitUpdate hands fb.data to video_cb instead
+   of GFX.Screen. The acquire happens at the cpuexec.c hook (after this
+   frame's resolution is known); abort happens at the ppu.c promotion
+   sites if a mid-frame mode change forces a wider/taller buffer.
+   Saved fields hold the originals for the abort/release-after-frame
+   restoration. */
+static bool      sw_fb_active        = false;
+static void     *sw_fb_data          = NULL;
+static unsigned  sw_fb_width         = 0;
+static unsigned  sw_fb_height        = 0;
+static size_t    sw_fb_pitch         = 0;
+static uint16   *sw_fb_saved_screen  = NULL;
+static int       sw_fb_saved_pitch   = 0;
+
+/* Persistent buffer pointers. GFX.Screen is allowed to be temporarily
+   overwritten by the sw_fb redirect and various swap paths; we always
+   know the buffer the core actually owns by keeping a separate copy
+   here, untouched after retro_init. retro_deinit frees these directly
+   instead of GFX.Screen so the wrong pointer can't be freed even if
+   some abnormal teardown path leaves the redirect state inconsistent. */
+static void *owned_screen_buffer  = NULL;
+static void *owned_ntsc_buffer    = NULL;
 static uint32_t retro_devices[2];
 
 // filter
@@ -1052,6 +1078,12 @@ void retro_init(void)
 #endif
 	if ((!GFX.Screen || !ntsc_screen_buffer) && log_cb)
 		log_cb(RETRO_LOG_ERROR, "Failed to allocate screen buffers.\n");
+
+	/* Stash the canonical pointers so retro_deinit always frees what we
+	   allocated, even if the sw_fb redirect leaves GFX.Screen pointing
+	   at the frontend's swapchain at teardown time. */
+	owned_screen_buffer = GFX.Screen;
+	owned_ntsc_buffer   = ntsc_screen_buffer;
 	S9xGraphicsInit();
 
 	retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
@@ -1070,19 +1102,36 @@ void retro_init(void)
 
 void retro_deinit(void)
 {
+	/* If the user closes content with pause-on-menu disabled, retro_deinit
+	   can fire while a frame is mid-render and GFX.Screen still points at
+	   the frontend's swapchain buffer. Restore for tidiness, but the
+	   actual robustness comes from freeing owned_screen_buffer below
+	   instead of GFX.Screen. */
+	if (sw_fb_saved_screen)
+	{
+		GFX.Screen   = sw_fb_saved_screen;
+		GFX.Pitch    = sw_fb_saved_pitch;
+		sw_fb_saved_screen = NULL;
+		sw_fb_active = false;
+	}
+
 	S9xDeinitAPU();
 	Deinit();
 	S9xGraphicsDeinit();
 	S9xUnmapAllControls();
 #if defined(_3DS)
-	if (GFX.Screen)
-		linearFree(GFX.Screen);
-	if (ntsc_screen_buffer)
-		linearFree(ntsc_screen_buffer);
+	if (owned_screen_buffer)
+		linearFree(owned_screen_buffer);
+	if (owned_ntsc_buffer)
+		linearFree(owned_ntsc_buffer);
 #else
-	free(GFX.Screen);
-	free(ntsc_screen_buffer);
+	free(owned_screen_buffer);
+	free(owned_ntsc_buffer);
 #endif
+	owned_screen_buffer = NULL;
+	owned_ntsc_buffer   = NULL;
+	GFX.Screen          = NULL;
+	ntsc_screen_buffer  = NULL;
 	audio_out_buffer_deinit();
 
 	/* Reset globals (required for static builds) */
@@ -1284,6 +1333,159 @@ static void report_buttons(void)
 #undef SWITCH_L2
 #undef PRESSED_R2
 
+/* Direct-render path for RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER.
+ *
+ * Why this exists: the frontend reuses a single buffer in its swapchain,
+ * so handing the core a write-through pointer to that buffer lets the
+ * renderer skip the end-of-frame copy from GFX.Screen. The libretro spec
+ * is strict about this path: when video_cb is called with a pointer
+ * obtained from sw_fb, the (data, width, height, pitch) values must
+ * match exactly what the env call returned. We therefore acquire the
+ * buffer at the exact dimensions for THIS frame, not the worst case.
+ *
+ * The hook lives in cpuexec.c at the same point that recomputes
+ * IPPU.RenderedScreenWidth/Height for the new frame (V_Counter ==
+ * FIRST_VISIBLE_LINE). At that point the frame's planned width/height
+ * are known and no scanline has rendered yet, so swapping GFX.Screen
+ * is safe.
+ *
+ * Mid-frame mode changes can promote the rendered area beyond what we
+ * acquired (BGMode 5/6 or pseudo-hires switched on after the frame
+ * started, or interlace toggled on). The promotion code in ppu.c calls
+ * S9xLibretroSwFbAbort() before its line-doubling loops; that copies
+ * whatever has been rendered so far back to the persistent GFX.Screen
+ * (which is sized for the worst case) and restores the GFX.* fields.
+ * The promotion then proceeds in the persistent buffer and the frame
+ * finishes on the no-sw_fb path. */
+static void sw_fb_acquire_internal(unsigned width, unsigned height)
+{
+	struct retro_framebuffer fb;
+
+	/* Defensive restore: if a previous frame left GFX.Screen pointing
+	   at a frontend buffer (sw_fb_saved_screen non-NULL means we have
+	   a valid restoration point cached from an earlier acquire that
+	   wasn't cleanly released), put it back BEFORE we evaluate any
+	   conditions for this frame. This ensures the renderer always
+	   writes at the canonical pitch when the NTSC filter is on or
+	   when the redirect would otherwise be skipped, regardless of
+	   how state got desynced. */
+	if (sw_fb_saved_screen)
+	{
+		GFX.Screen        = sw_fb_saved_screen;
+		GFX.Pitch         = sw_fb_saved_pitch;
+		GFX.RealPPL       = GFX.Pitch >> 1;
+		GFX.PPL           = GFX.RealPPL << (IPPU.DoubleHeightPixels ? 1 : 0);
+		sw_fb_saved_screen = NULL;
+	}
+	sw_fb_active = false;
+
+	if (!libretro_supports_sw_fb || !IPPU.RenderThisFrame || snes_ntsc_filter)
+		return;
+	if (width == 0 || height == 0)
+		return;
+
+	memset(&fb, 0, sizeof(fb));
+	fb.width        = width;
+	fb.height       = height;
+	fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+
+	if (!environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb))
+		return;
+	if (fb.format != RETRO_PIXEL_FORMAT_RGB565)
+		return;
+	if (!fb.data)
+		return;
+	/* Reject buffers wider than our persistent GFX.Screen: the renderer
+	   indexes GFX.SubScreen with the same Offset += GFX.PPL stride it
+	   uses for GFX.Screen, and SubScreen is sized at init for the
+	   max-width pitch. A wider stride here would walk past SubScreen's
+	   allocation. Smaller is fine - we just use a sub-region of
+	   SubScreen. */
+	if ((int)fb.pitch > GFX.Pitch)
+		return;
+	/* Sanity: pitch must accommodate the requested width. */
+	if (fb.pitch < width * sizeof(uint16))
+		return;
+
+	sw_fb_saved_screen = GFX.Screen;
+	sw_fb_saved_pitch  = GFX.Pitch;
+
+	GFX.Screen   = (uint16 *)fb.data;
+	GFX.Pitch    = (int)fb.pitch;
+	GFX.RealPPL  = GFX.Pitch >> 1;
+	GFX.PPL      = GFX.RealPPL << (IPPU.DoubleHeightPixels ? 1 : 0);
+
+	sw_fb_data   = fb.data;
+	sw_fb_width  = width;
+	sw_fb_height = height;
+	sw_fb_pitch  = fb.pitch;
+	sw_fb_active = true;
+}
+
+void S9xLibretroSwFbAcquire(int width, int height)
+{
+	sw_fb_acquire_internal((unsigned)width, (unsigned)height);
+}
+
+/* Abort an in-progress sw_fb redirect. Called from ppu.c when mid-frame
+   resolution promotion forces us off the direct-render path. Copies any
+   pixels rendered so far from fb.data back to the original GFX.Screen,
+   then restores the GFX.* fields. After this returns sw_fb_active is
+   false and GFX.Screen points at the persistent worst-case buffer. */
+void S9xLibretroSwFbAbort(void)
+{
+	unsigned y;
+	const uint8_t *src;
+	uint8_t *dst;
+	size_t copy_bytes;
+
+	if (!sw_fb_active)
+		return;
+
+	/* Copy the partial render back. We don't know how much of the buffer
+	   was actually written, but the renderer has been writing scanlines
+	   0..(height-1) in order via GFX.S, and the post-render hires/
+	   interlace promotion is the only thing that needs to re-read those
+	   pixels. Copy the full acquired region; cost is bounded by
+	   sw_fb_pitch * sw_fb_height = at most 1208 * 478 = 577 KB, only
+	   when a mid-frame promotion fires. */
+	src = (const uint8_t *)sw_fb_data;
+	dst = (uint8_t *)sw_fb_saved_screen;
+	copy_bytes = sw_fb_width * sizeof(uint16);
+	for (y = 0; y < sw_fb_height; y++)
+	{
+		memcpy(dst, src, copy_bytes);
+		src += sw_fb_pitch;
+		dst += sw_fb_saved_pitch;
+	}
+
+	GFX.Screen   = sw_fb_saved_screen;
+	GFX.Pitch    = sw_fb_saved_pitch;
+	GFX.RealPPL  = GFX.Pitch >> 1;
+	GFX.PPL      = GFX.RealPPL << (IPPU.DoubleHeightPixels ? 1 : 0);
+
+	sw_fb_active = false;
+	sw_fb_saved_screen = NULL;  /* mark restored */
+}
+
+/* Release the redirect after S9xMainLoop completes successfully (no
+   abort). Restores GFX.* without copying back, since S9xDeinitUpdate
+   already called video_cb on fb.data. */
+static void sw_fb_release_after_frame(void)
+{
+	if (!sw_fb_active)
+		return;
+
+	GFX.Screen = sw_fb_saved_screen;
+	GFX.Pitch  = sw_fb_saved_pitch;
+	GFX.RealPPL = GFX.Pitch >> 1;
+	GFX.PPL     = GFX.RealPPL << (IPPU.DoubleHeightPixels ? 1 : 0);
+	sw_fb_active = false;
+	sw_fb_saved_screen = NULL;  /* mark restored - prevents the
+	                               defensive re-restore in the next
+	                               acquire from undoing valid state */
+}
+
 void retro_run(void)
 {
 	int result = -1;
@@ -1361,6 +1563,7 @@ void retro_run(void)
 	report_buttons();
 
 	S9xMainLoop();
+	sw_fb_release_after_frame();
 
 	audio_upload_samples();
 }
@@ -1572,7 +1775,20 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 	return false;
 }
 
-void retro_unload_game (void) { }
+void retro_unload_game (void)
+{
+	/* See retro_deinit: with pause-on-menu disabled the frontend may
+	   tear down while a frame is mid-render. Unwind any active sw_fb
+	   redirect so subsequent code (including a re-load_game without an
+	   intervening retro_deinit) sees GFX.Screen at its original value. */
+	if (sw_fb_saved_screen)
+	{
+		GFX.Screen   = sw_fb_saved_screen;
+		GFX.Pitch    = sw_fb_saved_pitch;
+		sw_fb_saved_screen = NULL;
+		sw_fb_active = false;
+	}
+}
 
 unsigned retro_get_region (void)
 {
@@ -1587,20 +1803,38 @@ void S9xDeinitUpdate(int width, int height)
 		video_cb(NULL, width, height, GFX.Pitch);
 	else if (snes_ntsc_filter)
 	{
+		/* Both blitters (lores and hires) produce the same number of
+		   NTSC output pixels per scanline - the hires variant just
+		   consumes input pixels at twice the rate per output chunk.
+		   For a 256-wide lores frame and a 512-wide hires frame the
+		   output is identical at SNES_NTSC_OUT_WIDTH(256) = 602
+		   pixels. SNES_NTSC_OUT_WIDTH() is documented in
+		   filter/snes_ntsc.h as the LOW-RES output width formula and
+		   gives the wrong (1197) answer when applied to hires width
+		   - using that as the video_cb width would tell the frontend
+		   to display a 1197-wide frame whose rightmost ~595 pixels
+		   were never written. */
+		unsigned ntsc_out_width = SNES_NTSC_OUT_WIDTH(SNES_WIDTH);
+		size_t   ntsc_out_pitch = (size_t)ntsc_out_width * sizeof(uint16_t);
 		burst_phase = (burst_phase + 1) % 3;
 
 		if (width == 512)
-			snes_ntsc_blit_hires(&snes_ntsc, GFX.Screen, GFX.Pitch / 2, burst_phase, width, height, ntsc_screen_buffer, GFX.Pitch);
+			snes_ntsc_blit_hires(&snes_ntsc, GFX.Screen, GFX.Pitch / 2, burst_phase, width, height, ntsc_screen_buffer, (long)ntsc_out_pitch);
 		else
-			snes_ntsc_blit(&snes_ntsc, GFX.Screen, GFX.Pitch / 2, burst_phase, width, height, ntsc_screen_buffer, GFX.Pitch);
+			snes_ntsc_blit(&snes_ntsc, GFX.Screen, GFX.Pitch / 2, burst_phase, width, height, ntsc_screen_buffer, (long)ntsc_out_pitch);
 
-		video_cb(ntsc_screen_buffer, SNES_NTSC_OUT_WIDTH(width), height, GFX.Pitch);
+		video_cb(ntsc_screen_buffer, ntsc_out_width, height, ntsc_out_pitch);
 	}
 	else
 	{
+		/* Lazily probe sw_fb support on first non-NTSC frame. The probe
+		   only sets the libretro_supports_sw_fb flag; subsequent frames
+		   acquire via the cpuexec.c hook (S9xLibretroSwFbAcquire) at
+		   start-of-frame, where this frame's exact dimensions are known. */
 		if (!libretro_sw_fb_checked)
 		{
-			struct retro_framebuffer fb = {0};
+			struct retro_framebuffer fb;
+			memset(&fb, 0, sizeof(fb));
 			fb.width         = width;
 			fb.height        = height;
 			fb.access_flags  = RETRO_MEMORY_ACCESS_WRITE;
@@ -1616,34 +1850,21 @@ void S9xDeinitUpdate(int width, int height)
 			libretro_sw_fb_checked = true;
 		}
 
-		if (libretro_supports_sw_fb)
+		if (sw_fb_active)
 		{
-			struct retro_framebuffer fb = {0};
-			fb.width         = width;
-			fb.height        = height;
-			fb.access_flags  = RETRO_MEMORY_ACCESS_WRITE;
-
-			if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
-					&& fb.format == RETRO_PIXEL_FORMAT_RGB565)
-			{
-				unsigned y;
-				uint16_t *src = GFX.Screen;
-				uint8_t *dst  = (uint8_t *)fb.data;
-
-				for (y = 0; y < (unsigned)height; y++)
-				{
-					memcpy(dst, src, width * sizeof(uint16_t));
-					src += GFX.Pitch >> 1;
-					dst += fb.pitch;
-				}
-
-				video_cb(fb.data, width, height, fb.pitch);
-			}
-			else
-				video_cb(GFX.Screen, width, height, GFX.Pitch);
+			/* Renderer wrote directly into the frontend's buffer; just
+			   present it. video_cb gets exactly the (data, width,
+			   height, pitch) values returned by the env call. No copy. */
+			video_cb(sw_fb_data, sw_fb_width, sw_fb_height, sw_fb_pitch);
 		}
 		else
+		{
+			/* Either sw_fb is unsupported, or this frame's acquire
+			   was skipped/aborted. Hand GFX.Screen to the frontend;
+			   the frontend's own copy into its swapchain is
+			   unavoidable on this path. */
 			video_cb(GFX.Screen, width, height, GFX.Pitch);
+		}
 	}
 }
 

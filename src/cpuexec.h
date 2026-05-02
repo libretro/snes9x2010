@@ -221,6 +221,14 @@ void S9xSoftReset (void);
 void S9xDoHEventProcessing (void);
 void S9xDeinitUpdate (int width, int height);
 
+/* Direct-render hooks for the libretro backend. The implementation in
+   libretro.c may try to redirect GFX.Screen at the exact known dimensions
+   for the current frame, then unwind that redirect if a mid-frame
+   resolution promotion forces a fallback. Other backends may stub these
+   to no-ops. Definitions live in libretro/libretro.c. */
+void S9xLibretroSwFbAcquire (int width, int height);
+void S9xLibretroSwFbAbort (void);
+
 #define S9X_CLEAR_IRQ(source) \
 	CPU.IRQActive &= ~source; \
 	if (!CPU.IRQActive) \
