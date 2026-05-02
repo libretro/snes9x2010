@@ -2370,27 +2370,19 @@ static bool8 InitROM (void)
 		   slow in hi-res mosaic mode - no difference with these games 
 		   between normal hi-res renderer and mosaic version - only double the FPS */
 
-		if (
+		PPU.DisableMosaicHack = !(
 				MATCH_NN("SeikenDensetsu3") ||
 				MATCH_NA("SeikenDensetsu3Sample1") ||	/* Seiken Densetsu 3 */
-				MATCH_NA("ROMANCING SAGA3"))		/* Romancing Saga 3 */
-      {
-			PPU.DisableMosaicHack = FALSE;
-      }
-		else
-			PPU.DisableMosaicHack = TRUE;
+				MATCH_NA("ROMANCING SAGA3"));		/* Romancing Saga 3 */
 
 		/* Speedup hack for Star Fox 2/Vortex */
-		if (
+		PPU.SFXSpeedupHack = (
             MATCH_NA("VORTEX") ||			/* Vortex */
             MATCH_NA("Super Street Fighter21") ||	/* Super Street Fighter II */
             MATCH_NA("STAR FOX") ||			/* Star Fox (US/JP)*/
             MATCH_NA("STAR WING") ||			/* Star Wing (EU)*/
             MATCH_NA("STAR FOX 2") ||			/* Star Fox 2 (Beta) */
-            MATCH_NA("STARFOX2"))			/* Star Fox 2 (SNES Classic) */
-					PPU.SFXSpeedupHack = TRUE;
-				else
-					PPU.SFXSpeedupHack = FALSE;
+            MATCH_NA("STARFOX2"));			/* Star Fox 2 (SNES Classic) */
 
 
 	/* FORCIBLY DISABLE HIGH-RES */
@@ -2413,7 +2405,7 @@ static bool8 InitROM (void)
 
 			TODO: This glitches with rewind enabled (RetroArch), force-disable it
 			when rewind is active */
-		if(
+		PPU.RenderSub = !(
 				MATCH_NA("Super Metroid") 	/* Super Metroid*/
 				|| MATCH_NA("DONKEY KONG COUNTRY") /* Donkey Kong Country 1 */
 				|| MATCH_NA("AREA88")		/* Area 88 */
@@ -2593,12 +2585,9 @@ static bool8 InitROM (void)
 			|| MATCH_NA("DOOM")		/* Doom */
 			|| MATCH_NA("XAK 1")		/* Xak 1*/
 			|| MATCH_NA("XARDION")		/* Xardion*/
-			)
-		  	PPU.RenderSub = FALSE;
-		else
-			PPU.RenderSub = TRUE;
+			);
 
-		if(
+		coldata_update_screen = !(
 				//MATCH_NA("Super Metroid") 	/* Super Metroid*/
 				//|| MATCH_NA("DONKEY KONG COUNTRY") /* Donkey Kong Country 1 */
 				//|| MATCH_NA("AREA88")		/* Area 88 */
@@ -2778,23 +2767,17 @@ static bool8 InitROM (void)
 			//|| MATCH_NA("DOOM")		/* Doom */
 			//|| MATCH_NA("XAK 1")		/* Xak 1*/
 			//|| MATCH_NA("XARDION")		/* Xardion*/
-			)
-		  	coldata_update_screen = FALSE;
-		else
-			coldata_update_screen = TRUE;
+			);
 
 		Settings.SpeedhackGameID = SPEEDHACK_NONE;
 
 		/* Clipping hack - gains around 5-7 extra fps - only use it 
 		   for specific games where nothing breaks with this hack on */
 
-		if(
+		PPU.FullClipping = !(
 			MATCH_NA("FINAL FANTASY 6")	/* Final Fantasy VI (JP) */
 			|| MATCH_NA("FINAL FANTASY 3")	/* Final Fantasy III (US) */
-		)
-			PPU.FullClipping = FALSE;
-		else
-			PPU.FullClipping = TRUE;
+		);
 
 		/* SPEED HACK PATHS */
 		if(
@@ -2853,7 +2836,7 @@ static bool8 InitROM (void)
 	if (Settings.AccessoryAutoDetection == ACCESSORY_AUTODETECTION_CONFIRM)
 	{
 		/* Multitap accessory detection */
-		if(
+		Settings.CurrentROMisMultitapCompatible = (
 				MATCH_NN("BARKLEY") ||				/* Barkley Shut Up and Jam!*/
 				MATCH_ID("ABCJ") ||				/* Battle Cross*/
 				MATCH_NA("Bill Walsh College FB1") ||		/* Bill Walsh College Football*/
@@ -2942,13 +2925,10 @@ static bool8 InitROM (void)
 				MATCH_NC("MADDEN") ||				/* All Madden games*/
 				MATCH_NC("MICRO MACHINES") ||			/* All Micro Machines games*/
 				MATCH_ID("Q4")					/* ?*/
-				)
-				Settings.CurrentROMisMultitapCompatible = TRUE;
-		else
-			Settings.CurrentROMisMultitapCompatible = FALSE;
+				);
 
 		/* Mouse accessory detection */
-		if	(
+		Settings.CurrentROMisMouseCompatible = (
 				MATCH_NC("ACME ANIMATION FACTOR") ||	/* ACME Animation Factory*/
 				MATCH_ID("ACM") ||
 				MATCH_NC("ALICE PAINT") ||		/* Alice no Paint Adventure*/
@@ -3046,13 +3026,10 @@ static bool8 InitROM (void)
 				MATCH_ID("APJJ") ||				
 				MATCH_NA("ZAN2 SPIRITS") ||		/* Zan 2: Spirits*/
 				MATCH_NA("ZAN3 SFC")			/* Zan 3: Spirits*/
-				)
-				Settings.CurrentROMisMouseCompatible = TRUE;
-		else
-			Settings.CurrentROMisMouseCompatible = FALSE;
+				);
 
 		/* Super Scope accessory detection */
-		if	(
+		Settings.CurrentROMisSuperScopeCompatible = (
 				MATCH_NA("BATTLE CLASH") ||		/* Battle Clash (EU/US) (*)*/
 										/* Space Bazooka (JP)*/
 				MATCH_NA("SPACE BAZOOKA") ||		/* Space Bazooka (JP) (*)*/
@@ -3068,10 +3045,7 @@ static bool8 InitROM (void)
 				MATCH_NA("X ZONE") ||			/* X-Zone*/
 				/*FIXME: TODO: Add Yoshi no Road Hunting - CRC32: 52948F3C*/
 				MATCH_NA("YOSHI'S SAFARI")		/* Yoshi's Safari*/
-			)
-			Settings.CurrentROMisSuperScopeCompatible = TRUE;
-		else
-			Settings.CurrentROMisSuperScopeCompatible = FALSE;
+			);
 	}
 
 	S9xAPUTimingSetSpeedup(Timings.APUSpeedup);

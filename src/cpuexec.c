@@ -390,10 +390,7 @@ static INLINE void speedhacks_manager (void)
             coldata_update_screen = TRUE;
          break;
       case SPEEDHACK_STAR_FOX_1:
-         if (PPU.BGMode == 1 || PPU.BGMode == 2)
-            PPU.SFXSpeedupHack = TRUE;
-         else
-            PPU.SFXSpeedupHack = FALSE;
+         PPU.SFXSpeedupHack = (PPU.BGMode == 1 || PPU.BGMode == 2);
          break;
       case SPEEDHACK_SUPER_MARIO_WORLD:
          idle_loop_target_pc = 0x00806B;

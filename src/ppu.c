@@ -4687,15 +4687,8 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 		switch (Address)
 		{
 			case 0x4200: /* NMITIMEN*/
-				if (Byte & 0x20)
-					PPU.VTimerEnabled = TRUE;
-				else
-					PPU.VTimerEnabled = FALSE;
-
-				if (Byte & 0x10)
-					PPU.HTimerEnabled = TRUE;
-				else
-					PPU.HTimerEnabled = FALSE;
+				PPU.VTimerEnabled = !!(Byte & 0x20);
+				PPU.HTimerEnabled = !!(Byte & 0x10);
 
 				S9xUpdateHVTimerPosition();
 
@@ -4818,10 +4811,7 @@ void S9xSetCPU (uint8 Byte, uint16 Address)
 
 				memset(dma_channels_to_be_used, 0, 8 * sizeof(uint8));
 
-				if (Settings.SPC7110 || Settings.SDD1 || Settings.SA1)
-					special_chips_active = TRUE;
-				else
-					special_chips_active = FALSE;
+				special_chips_active = (Settings.SPC7110 || Settings.SDD1 || Settings.SA1);
 
 				if (Byte & 0x01)
 					dma_channels_to_be_used[0] = 1;
