@@ -198,7 +198,20 @@
 extern uint8	*HDMAMemPointers[8];
 
 extern struct SLineData			LineData[240];
-static uint8 dma_sa1_channels_chars[9][8];
+/* Bit-shuffle table for SA-1 SuperFX-style character DMA conversion.
+   Indexed [depth][bit_in_byte]. Only depth=2/4/8 are valid SA-1 BG
+   depths so the other rows stay zero-initialized. */
+static const uint8 dma_sa1_channels_chars[9][8] = {
+	{0},
+	{0},
+	{0, 1, 0, 1, 0, 1, 0, 1},   /* depth 2 */
+	{0},
+	{0, 1, 16, 17, 0, 1, 16, 17}, /* depth 4 */
+	{0},
+	{0},
+	{0},
+	{0, 1, 16, 17, 32, 33, 48, 49} /* depth 8 */
+};
 
 extern bool reduce_sprite_flicker;
 
@@ -294,33 +307,6 @@ bool8 S9xGraphicsInit (void)
 		}
 	}
 
-	dma_sa1_channels_chars[2][0] = 0;
-	dma_sa1_channels_chars[2][1] = 1;
-	dma_sa1_channels_chars[2][2] = 0;
-	dma_sa1_channels_chars[2][3] = 1;
-	dma_sa1_channels_chars[2][4] = 0;
-	dma_sa1_channels_chars[2][5] = 1;
-	dma_sa1_channels_chars[2][6] = 0;
-	dma_sa1_channels_chars[2][7] = 1;
-
-	dma_sa1_channels_chars[4][0] = 0;
-	dma_sa1_channels_chars[4][1] = 1;
-	dma_sa1_channels_chars[4][2] = 16;
-	dma_sa1_channels_chars[4][3] = 17;
-	dma_sa1_channels_chars[4][4] = 0;
-	dma_sa1_channels_chars[4][5] = 1;
-	dma_sa1_channels_chars[4][6] = 16;
-	dma_sa1_channels_chars[4][7] = 17;
-
-	dma_sa1_channels_chars[8][0] = 0;
-	dma_sa1_channels_chars[8][1] = 1;
-	dma_sa1_channels_chars[8][2] = 16;
-	dma_sa1_channels_chars[8][3] = 17;
-	dma_sa1_channels_chars[8][4] = 32;
-	dma_sa1_channels_chars[8][5] = 33;
-	dma_sa1_channels_chars[8][6] = 48;
-	dma_sa1_channels_chars[8][7] = 49;
-
 	return (TRUE);
 }
 
@@ -343,7 +329,7 @@ void S9xGraphicsDeinit (void)
 	if (GFX.SubZBuffer) { free(GFX.SubZBuffer); GFX.SubZBuffer = NULL; }
 }
 
-static int objsize_array[8][4] = {
+static const int objsize_array[8][4] = {
 	{8,	8,	16,	16}, /*0*/
 	{8,	8,	32,	32}, /*1*/
 	{8,	8,	64,	64}, /*2*/
@@ -1672,20 +1658,6 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 	BG.EnableMath = (Memory.FillRAM[0x2131] & 0x20);
 }
 
-//#define REPORT_MODES 1
-
-#ifdef REPORT_MODES
-static uint8 prev_screen = 0;
-
-#define REPORT_SCREEN() \
-if(prev_screen != PPU.BGMode) \
-{ \
-   prev_screen = PPU.BGMode; \
-}
-#else
-#define REPORT_SCREEN()
-#endif
-
 static INLINE void RenderScreen (bool8 sub)
 {
 	uint8	BGActive = Memory.FillRAM[0x212c+sub];
@@ -1860,43 +1832,36 @@ static INLINE void RenderScreen (bool8 sub)
 			DO_BG_HIRES0_OFFSET0_D2(1, 32, 2, FALSE, FALSE, 14, 10, 0);
 			DO_BG_HIRES0_OFFSET0_D2(2, 64, 2, FALSE, FALSE,  7,  3, 0);
 			DO_BG_HIRES0_OFFSET0_D2(3, 96, 2, FALSE, FALSE,  6,  2, 0);
-			REPORT_SCREEN();
 			break;
 
 		case 1:
 			DO_BG_HIRES0_OFFSET0_D4(0,  0, 4, FALSE, FALSE, 15, 11, 0);
 			DO_BG_HIRES0_OFFSET0_D4(1,  0, 4, FALSE, FALSE, 14, 10, 0);
 			DO_BG_HIRES0_OFFSET0_D2(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
-			REPORT_SCREEN();
 			break;
 
 		case 2:
 			DO_BG_HIRES0_OFFSET1_D4(0,  0, 4, FALSE, TRUE,  15,  7, 8);
 			DO_BG_HIRES0_OFFSET1_D4(1,  0, 4, FALSE, TRUE,  11,  3, 8);
-			REPORT_SCREEN();
 			break;
 
 		case 3:
 			DO_BG_HIRES0_OFFSET0_D8(0,  0, 8, FALSE, FALSE, 15,  7, 0);
 			DO_BG_HIRES0_OFFSET0_D4(1,  0, 4, FALSE, FALSE, 11,  3, 0);
-			REPORT_SCREEN();
 			break;
 
 		case 4:
 			DO_BG_HIRES0_OFFSET1_D8(0,  0, 8, FALSE, TRUE,  15,  7, 0);
 			DO_BG_HIRES0_OFFSET1_D2(1,  0, 2, FALSE, TRUE,  11,  3, 0);
-			REPORT_SCREEN();
 			break;
 
 		case 5:
 			DO_BG_HIRES1_OFFSET0(0,  0, 4, TRUE,  FALSE, 15,  7, 0);
 			DO_BG_HIRES1_OFFSET0(1,  0, 2, TRUE,  FALSE, 11,  3, 0);
-			REPORT_SCREEN();
 			break;
 
 		case 6:
 			DO_BG_HIRES1_OFFSET1(0,  0, 4, TRUE,  TRUE,  15,  7, 8);
-			REPORT_SCREEN();
 			break;
 
 		case 7:
@@ -1911,7 +1876,6 @@ static INLINE void RenderScreen (bool8 sub)
 				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 2);
 				DrawBackgroundMode7(1, GFX.DrawMode7BG2Math, GFX.DrawMode7BG2Nomath, D);
 			}
-			REPORT_SCREEN();
 			break;
 	}
 
@@ -3146,8 +3110,8 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 
 				if (Byte & 0x0c)
 				{
-					static uint16 Shift[4]    = { 0, 5, 6, 7 };
-					static uint16 IncCount[4] = { 0, 32, 64, 128 };
+					static const uint16 Shift[4]    = { 0, 5, 6, 7 };
+					static const uint16 IncCount[4] = { 0, 32, 64, 128 };
 
 					uint8 i = (Byte & 0x0c) >> 2;
 					PPU.VMA.FullGraphicCount = IncCount[i];

@@ -245,7 +245,7 @@ static int high_context_bits;
 static int low_context_bits;
 static int prev_bits[8];
 
-static struct
+static const struct
 {
 	uint8 code_size;
 	uint8 MPS_next;
@@ -286,7 +286,7 @@ static struct
     /* 32 */ { 7,24,22}
 };
 
-static uint8 run_table[128] = {
+static const uint8 run_table[128] = {
     128,  64,  96,  32, 112,  48,  80,  16, 120,  56,  88,  24, 104,  40,  72,
       8, 124,  60,  92,  28, 108,  44,  76,  12, 116,  52,  84,  20, 100,  36,
      68,   4, 126,  62,  94,  30, 110,  46,  78,  14, 118,  54,  86,  22, 102,

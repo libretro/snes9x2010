@@ -657,7 +657,7 @@ static void S9xStartHDMA (void)
 	CPU.CurrentDMAorHDMAChannel = tmpch;
 }
 
-static int HDMA_ModeByteCounts[8] =
+static const int HDMA_ModeByteCounts[8] =
 {
 	1, 2, 2, 4, 4, 4, 2, 4
 };

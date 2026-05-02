@@ -576,7 +576,7 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	interlace = obj ? FALSE : IPPU.Interlace;
 	hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
 
-	if (!IPPU.DoubleWidthPixels)	// normal width
+	if (!IPPU.DoubleWidthPixels)	/* normal width */
 	{
 		DT     = Renderers_DrawTile16Normal1x1;
 		DCT    = Renderers_DrawClippedTile16Normal1x1;
@@ -586,16 +586,17 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal1x1 : Renderers_DrawMode7BG2Normal1x1;
 		GFX.LinesPerTile = 8;
 	}
-	else if(hires)			//hires double width
+	else if (hires)			/* hires double width */
 	{
+		DB     = Renderers_DrawBackdrop16Hires;
+		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Hires : Renderers_DrawMode7BG1Hires;
+		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Hires : Renderers_DrawMode7BG2Hires;
+
 		if (interlace)
 		{
 			DT     = Renderers_DrawTile16HiresInterlace;
 			DCT    = Renderers_DrawClippedTile16HiresInterlace;
 			DMP    = Renderers_DrawMosaicPixel16HiresInterlace;
-			DB     = Renderers_DrawBackdrop16Hires;
-			DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Hires : Renderers_DrawMode7BG1Hires;
-			DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Hires : Renderers_DrawMode7BG2Hires;
 			GFX.LinesPerTile = 4;
 		}
 		else
@@ -603,22 +604,20 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 			DT     = Renderers_DrawTile16Hires;
 			DCT    = Renderers_DrawClippedTile16Hires;
 			DMP    = Renderers_DrawMosaicPixel16Hires;
-			DB     = Renderers_DrawBackdrop16Hires;
-			DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Hires : Renderers_DrawMode7BG1Hires;
-			DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Hires : Renderers_DrawMode7BG2Hires;
 			GFX.LinesPerTile = 8;
 		}
 	}
-	else
+	else				/* normal2x1 - DoubleWidthPixels but not hires */
 	{
+		DB     = Renderers_DrawBackdrop16Normal2x1;
+		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Normal2x1 : Renderers_DrawMode7BG1Normal2x1;
+		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal2x1 : Renderers_DrawMode7BG2Normal2x1;
+
 		if (interlace)
 		{
 			DT     = Renderers_DrawTile16Interlace;
 			DCT    = Renderers_DrawClippedTile16Interlace;
 			DMP    = Renderers_DrawMosaicPixel16Interlace;
-			DB     = Renderers_DrawBackdrop16Normal2x1;
-			DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Normal2x1 : Renderers_DrawMode7BG1Normal2x1;
-			DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal2x1 : Renderers_DrawMode7BG2Normal2x1;
 			GFX.LinesPerTile = 4;
 		}
 		else
@@ -626,9 +625,6 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 			DT     = Renderers_DrawTile16Normal2x1;
 			DCT    = Renderers_DrawClippedTile16Normal2x1;
 			DMP    = Renderers_DrawMosaicPixel16Normal2x1;
-			DB     = Renderers_DrawBackdrop16Normal2x1;
-			DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Normal2x1 : Renderers_DrawMode7BG1Normal2x1;
-			DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal2x1 : Renderers_DrawMode7BG2Normal2x1;
 			GFX.LinesPerTile = 8;
 		}
 	}
