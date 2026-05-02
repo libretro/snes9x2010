@@ -366,6 +366,13 @@ static void S9xDeinterleaveGD24 (int size, uint8 *base)
 
 bool8 Init (void)
 {
+	/* Defensive teardown: if Init() is re-entered without an intervening
+	   Deinit() (statically linked frontends where retro_init can be
+	   called twice, console ROM-swap flows that re-init the core), the
+	   18 calloc calls below would orphan all prior allocations -
+	   9MB+ of buffers. Deinit() is idempotent. */
+	Deinit();
+
 	Memory.RAM	 = (uint8 *) calloc(1, 0x20000);
 	Memory.SRAM = (uint8 *) calloc(1, 0x80000);
 	Memory.VRAM = (uint8 *) calloc(1, 0x10000);

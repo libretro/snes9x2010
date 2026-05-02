@@ -221,6 +221,13 @@ bool8 S9xGraphicsInit (void)
 {
 	uint32 r, g, b;
 
+	/* Defensive teardown: see Memory.Init() in memmap.c for the rationale.
+	   If S9xGraphicsInit is re-entered without an intervening
+	   S9xGraphicsDeinit (statically linked frontends), the 5 mallocs
+	   below would orphan the previous buffers. S9xGraphicsDeinit is
+	   idempotent. */
+	S9xGraphicsDeinit();
+
 	S9xInitTileRenderer();
 
 	GFX.DoInterlace = 0;

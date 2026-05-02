@@ -1061,6 +1061,28 @@ void retro_init(void)
 
 	GFX.Pitch = MAX_SNES_WIDTH_NTSC * sizeof(uint16_t);
 
+	/* Defensive teardown: if retro_init is re-entered without an
+	   intervening retro_deinit (statically linked frontends, console
+	   re-init paths), the screen allocations below would orphan the
+	   prior buffers. Free via the canonical owned_* handles so we
+	   release the original allocations even if a sw_fb redirect had
+	   rewritten GFX.Screen to the frontend's swapchain. */
+#if defined(_3DS)
+	if (owned_screen_buffer)
+		linearFree(owned_screen_buffer);
+	if (owned_ntsc_buffer)
+		linearFree(owned_ntsc_buffer);
+#else
+	if (owned_screen_buffer)
+		free(owned_screen_buffer);
+	if (owned_ntsc_buffer)
+		free(owned_ntsc_buffer);
+#endif
+	owned_screen_buffer = NULL;
+	owned_ntsc_buffer   = NULL;
+	GFX.Screen          = NULL;
+	ntsc_screen_buffer  = NULL;
+
 #if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS) && !defined(__SWITCH__) && !defined(VITA)
 	/* GFX.Pitch is already in bytes (= MAX_SNES_WIDTH_NTSC * sizeof(uint16_t));
 	   buffer size is Pitch * lines, not Pitch * lines * sizeof(uint16) again.
