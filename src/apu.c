@@ -251,7 +251,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 /* Gaussian interpolation */
 
-static short gauss [512] =
+static const short gauss [512] =
 {
    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,
@@ -293,8 +293,8 @@ static INLINE int dsp_interpolate( dsp_voice_t *v )
 {
 	/* Make pointers into gaussian based on fractional position between samples */
 	int offset = v->interp_pos >> 4 & 0xFF;
-	short *fwd = (short*)(gauss + 255 - offset);
-	short *rev = (short*)(gauss + offset); /* mirror left half of gaussian */
+	const short *fwd = gauss + 255 - offset;
+	const short *rev = gauss + offset; /* mirror left half of gaussian */
 	
 	int *in  = (int*)&v->buf[(v->interp_pos >> 12) + v->buf_pos];
 	int out = (fwd [  0] * in [0]) >> 11;
@@ -1399,7 +1399,25 @@ static void NO_OPTIMIZE dsp_copy_state( unsigned char** io, dsp_copy_func_t copy
 ***********************************************************************************/
 
 static spc_state_t m;
-static signed char reg_times [256];
+static const signed char reg_times [256] =
+{
+        -1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
+         2,  3,  0,  1,-12,  0,  1,  1,  7,  6, 14, 14, 27, 14, 14, 23,
+         5,  6,  3,  4, -1,  3,  4,  4, 10,  9, 14, 14, 26, -5, 14, 23,
+         8,  9,  6,  7,  2,  6,  7,  7, 13, 12, 14, 14, 27, -4, 14, 24,
+        11, 12,  9, 10,  5,  9, 10, 10, 16, 15, 14, 14, -2, -4, 14, 24,
+        14, 15, 12, 13,  8, 12, 13, 13, 19, 18, 14, 14, -2,-36, 14, 24,
+        17, 18, 15, 16, 11, 15, 16, 16, 22, 21, 14, 14, 28, -3, 14, 25,
+        20, 21, 18, 19, 14, 18, 19, 19, 25, 24, 14, 14, 14, 29, 14, 25,
+        29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+        29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+        29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+        29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+        29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+        29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+        29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+        29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
+};
 static bool8 allow_time_overflow;
 
 /* Copyright (C) 2004-2007 Shay Green. This module is free software; you
@@ -1785,10 +1803,14 @@ static int spc_cpu_read( uint16_t addr, int32_t time )
 /* spc_run_until_ is the SPC700 instruction dispatcher. Its address-mode
    macros (ADDR_MODES, ADDR_MODES_, ADDR_MODES_NO_DP, LOGICAL_OP) deliberately
    chain case labels via fallthrough to share the address calculation
-   prologue across opcodes. Silence the warning around the whole function. */
+   prologue across opcodes. The same macros also redeclare locals named
+   't' and 'addr' inside nested blocks, shadowing the function-scope
+   declarations - this is upstream Blargg code where renaming locals is
+   unsafe. Silence both warnings around the whole function. */
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#pragma GCC diagnostic ignored "-Wshadow"
 #endif
 
 static uint8_t* spc_run_until_( int end_time )
@@ -3485,26 +3507,6 @@ bool8 S9xInitAPU (void)
         0x48,0x47,0x45,0x56,0x34,0x54,0x22,0x60, /* F */
     };
 
-    static const int8_t reg_times_ [256] =
-    {
-            -1,  0,-11,-10,-15,-11, -2, -2,  4,  3, 14, 14, 26, 26, 14, 22,
-             2,  3,  0,  1,-12,  0,  1,  1,  7,  6, 14, 14, 27, 14, 14, 23,
-             5,  6,  3,  4, -1,  3,  4,  4, 10,  9, 14, 14, 26, -5, 14, 23,
-             8,  9,  6,  7,  2,  6,  7,  7, 13, 12, 14, 14, 27, -4, 14, 24,
-            11, 12,  9, 10,  5,  9, 10, 10, 16, 15, 14, 14, -2, -4, 14, 24,
-            14, 15, 12, 13,  8, 12, 13, 13, 19, 18, 14, 14, -2,-36, 14, 24,
-            17, 18, 15, 16, 11, 15, 16, 16, 22, 21, 14, 14, 28, -3, 14, 25,
-            20, 21, 18, 19, 14, 18, 19, 19, 25, 24, 14, 14, 14, 29, 14, 25,
-            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-            29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-        };
-
 	memset( &m, 0, sizeof m );
 	dsp_init( m.ram.ram );
 	
@@ -3529,15 +3531,31 @@ bool8 S9xInitAPU (void)
 
 	dsp_m.rom = m.rom;
 	dsp_m.hi_ram = m.hi_ram;
-
-	memcpy( reg_times, reg_times_, sizeof(reg_times) );
 	
 	spc_reset();
 
 
 	memcpy( m.rom, APUROM, sizeof m.rom );
 
-	landing_buffer = NULL;
+	/* On statically linked platforms (consoles, mobile) the libretro core
+	   stays in memory across ROM unload/reload. If S9xInitAPU is called
+	   without a preceding S9xDeinitAPU - re-init from a different code
+	   path, second ROM load on a frontend that doesn't tear down the core
+	   - the file-static landing_buffer / rb_buffer / resampler state
+	   carries over from the previous session and the assignment below
+	   would orphan the old allocations. Free them here so init is
+	   idempotent. */
+	if (landing_buffer)
+	{
+		free(landing_buffer);
+		landing_buffer = NULL;
+	}
+	if (resampler)
+	{
+		free(rb_buffer);
+		rb_buffer = NULL;
+		resampler = FALSE;
+	}
 
 	return TRUE;
 }
@@ -3547,6 +3565,7 @@ void S9xDeinitAPU (void)
 	if (resampler)
 	{
 		free(rb_buffer);
+		rb_buffer = NULL;
 		resampler = FALSE;
 	}
 

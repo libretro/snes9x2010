@@ -701,6 +701,14 @@ static void audio_out_buffer_init(void)
 	double samples_per_frame = SNES_AUDIO_FREQ / refresh_rate;
 	size_t buffer_size       = ((size_t)samples_per_frame + 1) << 1;
 
+	/* Defensive free for the load -> unload -> load pattern: retro_unload_game
+	   doesn't tear down the audio buffer (only retro_deinit does), so a
+	   second retro_load_game without an intervening retro_deinit would
+	   orphan the previous allocation. Statically linked frontends and
+	   ROM-swap flows hit this path. */
+	if (audio_out_buffer)
+		free(audio_out_buffer);
+
 	audio_out_buffer        = (int16_t *)malloc(buffer_size * sizeof(int16_t));
 	audio_out_buffer_size   = audio_out_buffer ? buffer_size : 0;
 	audio_out_buffer_pos    = 0;
