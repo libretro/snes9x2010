@@ -1558,6 +1558,19 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		(Pix_) = b__ & MASK; \
 	}
 
+/* Same as M7HR_LOOKUP_PIX but additionally returns the raw byte
+   (before MASK is applied). The raw byte's bit 0x80 is the BG2
+   per-pixel priority bit in EXTBG mode. */
+#define M7HR_LOOKUP_PIX_RAW(X_, Y_, Pix_, RawByte_) \
+	{ \
+		int X__ = (X_); \
+		int Y__ = (Y_); \
+		uint8 *TileData__ = VRAM1 + (Memory.VRAM[((Y__ & ~7) << 5) + ((X__ >> 2) & ~1)] << 7); \
+		uint8 b__ = *(TileData__ + ((Y__ & 7) << 4) + ((X__ & 7) << 1)); \
+		(Pix_) = b__ & MASK; \
+		(RawByte_) = b__; \
+	}
+
 /* Look up the four bilinear corners around fractional position
    (Xi, Yi) where Xi, Yi are integer texel coordinates already
    masked to [0..0x3ff]. Detects the common case where all four
@@ -1565,8 +1578,13 @@ extern struct SLineMatrixData	LineMatrixData[240];
    Yi & 7 != 7) and does ONE map lookup instead of FOUR. About
    76% of bilinear samples hit this fast path; the slow path
    handles the tile-boundary edges by falling back to four
-   separate lookups via M7HR_LOOKUP_PIX. */
-#define M7HR_LOOKUP_4(Xi_, Yi_, p_tl, p_tr, p_bl, p_br) \
+   separate lookups via M7HR_LOOKUP_PIX.
+
+   Also returns b_tl_raw - the raw (unmasked) byte for the TL
+   corner. Used by BG2BL to recover the per-pixel priority bit
+   (b_tl_raw & 0x80) in EXTBG mode; ignored by BG1BL where Z is
+   constant. */
+#define M7HR_LOOKUP_4(Xi_, Yi_, p_tl, p_tr, p_bl, p_br, b_tl_raw) \
 	{ \
 		int Xi__ = (Xi_); \
 		int Yi__ = (Yi_); \
@@ -1577,7 +1595,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
 			uint8 *TileData__ = VRAM1 + (Memory.VRAM[((Yi__ & ~7) << 5) + ((Xi__ >> 2) & ~1)] << 7); \
 			uint8 *row0__ = TileData__ + (yib__ << 4); \
 			uint8 *row1__ = TileData__ + ((yib__ + 1) << 4); \
-			(p_tl) = row0__[xib__       << 1] & MASK; \
+			uint8 b_tl__ = row0__[xib__       << 1]; \
+			(b_tl_raw) = b_tl__; \
+			(p_tl) = b_tl__ & MASK; \
 			(p_tr) = row0__[(xib__ + 1) << 1] & MASK; \
 			(p_bl) = row1__[xib__       << 1] & MASK; \
 			(p_br) = row1__[(xib__ + 1) << 1] & MASK; \
@@ -1586,7 +1606,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		{ \
 			int Xi1__ = (Xi__ + 1) & 0x3ff; \
 			int Yi1__ = (Yi__ + 1) & 0x3ff; \
-			M7HR_LOOKUP_PIX(Xi__, Yi__, (p_tl)); \
+			M7HR_LOOKUP_PIX_RAW(Xi__, Yi__, (p_tl), (b_tl_raw)); \
 			M7HR_LOOKUP_PIX(Xi1__, Yi__, (p_tr)); \
 			M7HR_LOOKUP_PIX(Xi__, Yi1__, (p_bl)); \
 			M7HR_LOOKUP_PIX(Xi1__, Yi1__, (p_br)); \
@@ -1612,8 +1632,11 @@ extern struct SLineMatrixData	LineMatrixData[240];
    sample is out-of-range and PPU.Mode7Repeat == 3. The corner index
    into the fill tile is (X & 7, Y & 7) which always falls within
    the same 8x8 fill tile, so this is a single TileData lookup with
-   four pixel reads. */
-#define M7HR_LOOKUP_4_FILL(Xi_, Yi_, p_tl, p_tr, p_bl, p_br) \
+   four pixel reads.
+
+   Also returns b_tl_raw - the raw (unmasked) byte for the TL corner.
+   See M7HR_LOOKUP_4 for usage. */
+#define M7HR_LOOKUP_4_FILL(Xi_, Yi_, p_tl, p_tr, p_bl, p_br, b_tl_raw) \
 	{ \
 		int Xi__ = (Xi_); \
 		int Yi__ = (Yi_); \
@@ -1623,7 +1646,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		int yib1__ = (Yi__ + 1) & 7; \
 		uint8 *row0__ = VRAM1 + (yib0__ << 4); \
 		uint8 *row1__ = VRAM1 + (yib1__ << 4); \
-		(p_tl) = row0__[xib0__ << 1] & MASK; \
+		uint8 b_tl__ = row0__[xib0__ << 1]; \
+		(b_tl_raw) = b_tl__; \
+		(p_tl) = b_tl__ & MASK; \
 		(p_tr) = row0__[xib1__ << 1] & MASK; \
 		(p_bl) = row1__[xib0__ << 1] & MASK; \
 		(p_br) = row1__[xib1__ << 1] & MASK; \
@@ -1634,9 +1659,22 @@ extern struct SLineMatrixData	LineMatrixData[240];
    to GFX.S[Offset+out_offset] / GFX.DB[Offset+out_offset] subject to
    the Z test. Shared between the Mode7Repeat == 0 (wrap) path and
    the in-range case of the Mode7Repeat != 0 paths. */
-#define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, Xf, Yf) \
+/* Given four corner palette indices, the raw TL byte (for BG2's
+   per-pixel priority bit), and fractional weights, do the bilinear
+   blend (with the all-equal early-out) and write the result to
+   GFX.S[Offset+out_offset] / GFX.DB[Offset+out_offset] subject to
+   the Z test. Shared between the Mode7Repeat == 0 (wrap) path and
+   the in-range case of the Mode7Repeat != 0 paths.
+
+   The raw TL byte is exposed as local 'b' so that Z1/Z2 macro
+   expansions can reference 'b & 0x80' the same way the native HR
+   path does. For BG1, Z1 is constant and 'b' is unused; the
+   compiler eliminates the dead read. */
+#define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw, Xf, Yf) \
 	{ \
+		uint8 b = (b_tl_raw); \
 		uint16 blended; \
+		(void)b; \
 		if ((p_tl) == (p_tr) && (p_tl) == (p_bl) && (p_tl) == (p_br)) \
 		{ \
 			blended = GFX.ScreenColors[(p_tl)]; \
@@ -1663,8 +1701,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		uint32 Xf = (uint32)((X_full) & 0xff); \
 		uint32 Yf = (uint32)((Y_full) & 0xff); \
 		uint8 p_tl, p_tr, p_bl, p_br; \
-		M7HR_LOOKUP_4(Xi, Yi, p_tl, p_tr, p_bl, p_br); \
-		M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, Xf, Yf); \
+		uint8 b_tl_raw_; \
+		M7HR_LOOKUP_4(Xi, Yi, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
+		M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf, Yf); \
 	}
 
 #define DRAW_TILE_NORMAL_M7HIRES_BILINEAR() \
@@ -1741,16 +1780,17 @@ extern struct SLineMatrixData	LineMatrixData[240];
 				uint32 Yf1 = (uint32)((CC + DD) & 0xff); \
 				uint32 Xf2, Yf2; \
 				uint8 p_tl, p_tr, p_bl, p_br; \
+				uint8 b_tl_raw_; \
 				/* Sample 1 -> output 2*x */ \
 				if (((X1 | Y1) & ~0x3ff) == 0) \
 				{ \
-					M7HR_LOOKUP_4(X1, Y1, p_tl, p_tr, p_bl, p_br); \
-					M7HR_BLEND_AND_WRITE(2 * x, p_tl, p_tr, p_bl, p_br, Xf1, Yf1); \
+					M7HR_LOOKUP_4(X1, Y1, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
+					M7HR_BLEND_AND_WRITE(2 * x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1); \
 				} \
 				else if (PPU.Mode7Repeat == 3) \
 				{ \
-					M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br); \
-					M7HR_BLEND_AND_WRITE(2 * x, p_tl, p_tr, p_bl, p_br, Xf1, Yf1); \
+					M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
+					M7HR_BLEND_AND_WRITE(2 * x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1); \
 				} \
 				/* else: clip - leave pixel untouched (transparent) */ \
 				AA += aa_h; CC += cc_h; \
@@ -1761,13 +1801,13 @@ extern struct SLineMatrixData	LineMatrixData[240];
 				Yf2 = (uint32)((CC + DD) & 0xff); \
 				if (((X2 | Y2) & ~0x3ff) == 0) \
 				{ \
-					M7HR_LOOKUP_4(X2, Y2, p_tl, p_tr, p_bl, p_br); \
-					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, Xf2, Yf2); \
+					M7HR_LOOKUP_4(X2, Y2, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
+					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2); \
 				} \
 				else if (PPU.Mode7Repeat == 3) \
 				{ \
-					M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br); \
-					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, Xf2, Yf2); \
+					M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
+					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2); \
 				} \
 				AA += aa - aa_h; CC += cc - cc_h; \
 			} \
@@ -2077,8 +2117,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #undef DCMODE
 #undef BG
 
-#define Z1			(D + 3)
-#define Z2			(D + 3)
+#define Z1			(D + ((b & 0x80) ? 11 : 3))
+#define Z2			(D + ((b & 0x80) ? 11 : 3))
 #define MASK		0x7f
 #define DCMODE		0
 #define BG			1
