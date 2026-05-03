@@ -1085,7 +1085,13 @@ void S9xDoHEventProcessing (void)
 						IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
 						IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
 
-						cond_1 = (Settings.SupportHiRes && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires));
+						/* cond_1: this frame should render at 2x horizontal width.
+						   Triggered by Mode 5/6 / PseudoHires as on hardware,
+						   plus the M7Hires option which forces 2x width when
+						   the frame starts in Mode 7 so the M7Hires renderer
+						   has a 512-wide buffer to write into. */
+						cond_1 = (Settings.SupportHiRes && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires
+								|| (Settings.Mode7Hires && PPU.BGMode == 7)));
 						cond_2 = (Settings.SupportHiRes && IPPU.Interlace);
 
 						GFX.RealPPL = GFX.Pitch >> 1;

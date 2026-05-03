@@ -753,6 +753,22 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 		}
 	}
 
+	/* Mode 7 hires: when the option is on, the frame is Mode 7, the
+	   buffer has been promoted to 2x width (either at frame start in
+	   cpuexec.c or mid-frame in S9xUpdateScreen), and the BG is not
+	   mosaicked, override DM7BG1/DM7BG2 to point at the M7Hires
+	   renderers. Mosaic falls through to the existing Normal2x1
+	   mosaic - sub-pixel refinement of mosaic blocks is meaningless.
+	   Subscreen also falls through - color math composition stays at
+	   native sample rate. */
+	if (Settings.Mode7Hires && BGMode == 7 && IPPU.DoubleWidthPixels && !sub)
+	{
+		if (!M7M1)
+			DM7BG1 = Renderers_DrawMode7BG1HRNormal1x1;
+		if (!M7M2)
+			DM7BG2 = Renderers_DrawMode7BG2HRNormal1x1;
+	}
+
 	GFX.DrawTileNomath        = DT[0];
 	GFX.DrawClippedTileNomath = DCT[0];
 	GFX.DrawMosaicPixelNomath = DMP[0];
@@ -1344,6 +1360,147 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		} \
 	}
 
+/* High-resolution Mode 7 renderer body: same structure as DRAW_TILE_NORMAL
+   but produces two output pixels per native column with the matrix step
+   halved, giving 2x horizontal anti-aliased output.
+
+   Per native column x in [Left, Right), generates two output samples at
+   buffer indices 2*x and 2*x+1. Between samples the matrix coordinates
+   advance by aa_h = aa/2 and cc_h = cc/2 (16.8 fixed-point, a >>1
+   preserves precision adequately - the SNES uses the same integer
+   arithmetic for sub-pixel matrix walks and rounding errors below the
+   half-LSB don't propagate visibly across a 128x128 texture).
+
+   Total advance per native column is still aa, cc (two half steps). The
+   second sample lands halfway between where two adjacent native pixels
+   would have sampled, which is what produces the smoother appearance.
+
+   Used in conjunction with the Normal1x1 DRAW_PIXEL macro (which writes
+   to GFX.S[Offset + N]) so the two pixel writes hit Offset + 2*x and
+   Offset + 2*x + 1 in the doubled output buffer. */
+
+#define DRAW_TILE_NORMAL_M7HIRES() \
+	struct SLineMatrixData *l; \
+	uint32 x, Line, Offset; \
+	uint8	*VRAM1; \
+	int aa, cc, aa_h, cc_h, startx; \
+	VRAM1 = Memory.VRAM + 1; \
+   GFX.RealScreenColors = IPPU.ScreenColors; \
+	if (DCMODE) \
+	{ \
+		if (IPPU.DirectColourMapsNeedRebuild) \
+			S9xBuildDirectColourMaps(); \
+		GFX.RealScreenColors = DirectColourMaps[0]; \
+	} \
+	\
+	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
+	Offset = GFX.StartY * GFX.PPL; \
+	l = &LineMatrixData[GFX.StartY]; \
+	\
+	for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
+	{ \
+		int AA, BB, CC, DD, xx, yy; \
+		int32 HOffset, VOffset, CentreX, CentreY; \
+		uint8 Pix, starty; \
+		\
+		HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
+		VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
+		CentreX = ((int32) l->CentreX << 19) >> 19; \
+		CentreY = ((int32) l->CentreY << 19) >> 19; \
+		\
+		starty = Line + 1; \
+		if (PPU.Mode7VFlip) \
+			starty ^= 0xff; \
+		yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
+		\
+		if (PPU.Mode7HFlip) \
+		{ \
+			startx = Right - 1; \
+			aa = -l->MatrixA; \
+			cc = -l->MatrixC; \
+		} \
+		else \
+		{ \
+			startx = Left; \
+			aa = l->MatrixA; \
+			cc = l->MatrixC; \
+		} \
+		aa_h = aa / 2; \
+		cc_h = cc / 2; \
+		xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
+		if (!PPU.Mode7Repeat) \
+		{ \
+			for ( x = Left; x < Right; x++) \
+			{ \
+				int X, Y; \
+				uint8 *TileData, b; \
+				\
+				/* Sample 1 -> output index 2*x */ \
+				X = ((AA + BB) >> 8) & 0x3ff; \
+				Y = ((CC + DD) >> 8) & 0x3ff; \
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+				DRAW_PIXEL(2 * x, Pix = (b & MASK)); \
+				AA += aa_h; CC += cc_h; \
+				\
+				/* Sample 2 -> output index 2*x + 1 */ \
+				X = ((AA + BB) >> 8) & 0x3ff; \
+				Y = ((CC + DD) >> 8) & 0x3ff; \
+				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+				DRAW_PIXEL(2 * x + 1, Pix = (b & MASK)); \
+				AA += aa - aa_h; CC += cc - cc_h; \
+			} \
+		} \
+		else \
+		{ \
+			for ( x = Left; x < Right; x++) \
+			{ \
+				int X, Y; \
+				uint8 *TileData, b; \
+				int do_draw; \
+				\
+				/* Sample 1 -> output index 2*x */ \
+				X = ((AA + BB) >> 8); \
+				Y = ((CC + DD) >> 8); \
+				do_draw = 1; \
+				if (((X | Y) & ~0x3ff) == 0) \
+				{ \
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+				} \
+				else if (PPU.Mode7Repeat == 3) \
+					b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1)); \
+				else \
+					do_draw = 0; \
+				if (do_draw) \
+					DRAW_PIXEL(2 * x, Pix = (b & MASK)); \
+				AA += aa_h; CC += cc_h; \
+				\
+				/* Sample 2 -> output index 2*x + 1 */ \
+				X = ((AA + BB) >> 8); \
+				Y = ((CC + DD) >> 8); \
+				do_draw = 1; \
+				if (((X | Y) & ~0x3ff) == 0) \
+				{ \
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+				} \
+				else if (PPU.Mode7Repeat == 3) \
+					b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1)); \
+				else \
+					do_draw = 0; \
+				if (do_draw) \
+					DRAW_PIXEL(2 * x + 1, Pix = (b & MASK)); \
+				AA += aa - aa_h; CC += cc - cc_h; \
+			} \
+		} \
+	}
+
 #define DRAW_TILE_MOSAIC() \
 	struct SLineMatrixData *l; \
 	uint32 Line, Offset; \
@@ -1542,10 +1699,70 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #undef NAME1
 #undef ARGS
 #undef DRAW_TILE
-#undef DRAW_TILE_NORMAL
-#undef DRAW_TILE_MOSAIC
 #undef Z1
 #undef Z2
+
+/* Mode 7 hires (M7HIRES) renderers: 2x horizontal sample/output for
+   Mode 7 backgrounds. Use the M7Hires DRAW_TILE body and gate the
+   level-2 body to emit only the Normal1x1 NAME2 variant; the M7Hires
+   tile body itself handles output at 2x indices. Two NAME1 variants:
+   DrawMode7BG1HR and DrawMode7BG2HR, mirroring the regular Mode 7 BG1
+   and BG2 priority/MASK conventions. Mosaic is intentionally not
+   implemented for hires - mosaic falls back to the native renderer
+   when the option is on (mosaic by definition produces blocks;
+   sub-pixel refinement is meaningless there).
+
+   These functions are scaffolded but not yet referenced by any
+   dispatcher. The wiring lands in a follow-up patch. */
+
+#define ARGS		uint32 Left, uint32 Right, int D
+#define M7HIRES_ONLY
+
+#define Z1			(D + 7)
+#define Z2			(D + 7)
+#define MASK		0xff
+#define DCMODE		(Memory.FillRAM[0x2130] & 1)
+#define BG			0
+#define DRAW_TILE()	DRAW_TILE_NORMAL_M7HIRES()
+#define NAME1		DrawMode7BG1HR
+
+/* Second-level include: Get the DrawMode7BG1HR renderers (Normal1x1 only). */
+
+#include "tile.c"
+
+#undef NAME1
+#undef DRAW_TILE
+#undef Z1
+#undef Z2
+#undef MASK
+#undef DCMODE
+#undef BG
+
+#define Z1			(D + ((b & 0x80) ? 11 : 3))
+#define Z2			(D + ((b & 0x80) ? 11 : 3))
+#define MASK		0x7f
+#define DCMODE		0
+#define BG			1
+#define DRAW_TILE()	DRAW_TILE_NORMAL_M7HIRES()
+#define NAME1		DrawMode7BG2HR
+
+/* Second-level include: Get the DrawMode7BG2HR renderers (Normal1x1 only). */
+
+#include "tile.c"
+
+#undef NAME1
+#undef DRAW_TILE
+#undef Z1
+#undef Z2
+#undef MASK
+#undef DCMODE
+#undef BG
+#undef ARGS
+#undef M7HIRES_ONLY
+
+#undef DRAW_TILE_NORMAL
+#undef DRAW_TILE_NORMAL_M7HIRES
+#undef DRAW_TILE_MOSAIC
 #undef NO_INTERLACE
 
 /*****************************************************************************/
@@ -1573,6 +1790,15 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 #undef NAME2
 #undef DRAW_PIXEL
+
+/* The remaining NAME2 variants (Normal2x1, Hires, Interlace,
+   HiresInterlace) are not used by the M7Hires Mode 7 renderers - the
+   M7Hires DRAW_TILE body emits to 2x output indices itself, so it pairs
+   with the Normal1x1 DRAW_PIXEL above. The M7HIRES_ONLY guard lets
+   those NAME1 instantiations skip these blocks and emit only the
+   Normal1x1 variant. All other NAME1 instantiations leave M7HIRES_ONLY
+   undefined, so the existing set of variants is generated unchanged. */
+#ifndef M7HIRES_ONLY
 
 /* The 2x1 pixel plotter, for normal rendering when we've used hires/interlace already this frame. */
 
@@ -1654,6 +1880,8 @@ if (Z1 > GFX.DB[Offset + 2 * N] && (M)) \
 #undef DRAW_PIXEL
 
 #endif
+
+#endif /* !M7HIRES_ONLY */
 
 #undef BPSTART
 #undef PITCH

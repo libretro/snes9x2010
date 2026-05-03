@@ -555,6 +555,16 @@ static void check_variables(bool first_run)
 		else
 			reduce_sprite_flicker = false;
 	}
+
+	var.key = "snes9x_2010_mode7_hires";
+	var.value = NULL;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (strcmp(var.value, "enabled") == 0)
+			Settings.Mode7Hires = TRUE;
+		else
+			Settings.Mode7Hires = FALSE;
+	}
 	/* Reinitialise frameskipping, if required */
 	if (!first_run &&
 	    ((frameskip_type     != prev_frameskip_type) ||

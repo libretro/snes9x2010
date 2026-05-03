@@ -238,6 +238,20 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       },
       "enabled"
    },
+   {
+      "snes9x_2010_mode7_hires",
+      "Mode 7 - Hires (Restart)",
+      NULL,
+      "Render Mode 7 backgrounds at 2x horizontal resolution. Affects only Mode 7 (driving / racing / overhead-rotation games). Other modes are unchanged. May cost performance; default off.",
+      NULL,
+      "hacks",
+      {
+         { "disabled", NULL },
+         { "enabled",  NULL },
+         { NULL, NULL},
+      },
+      "disabled"
+   },
 
    { NULL, NULL, NULL, NULL, NULL, NULL, {{0}}, NULL },
 };

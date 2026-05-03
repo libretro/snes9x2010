@@ -2223,7 +2223,8 @@ void S9xUpdateScreen (void)
 
 		if(Settings.SupportHiRes)
 		{
-		if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
+		if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires
+				|| (Settings.Mode7Hires && PPU.BGMode == 7)))
 		{
 			register uint32 y;
 			register int x;
