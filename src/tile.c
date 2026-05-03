@@ -2014,122 +2014,10 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		} \
 	}
 
-/* High-resolution Mode 7 at 4x horizontal: same structure as
-   DRAW_TILE_NORMAL_M7HIRES but with four sub-samples per native
-   pixel (aa_q = aa/4 quarter-step), writing to output indices
-   4*x .. 4*x+3. Used when Settings.Mode7Hires == 4. The buffer
-   has been promoted to 4x width before this renderer runs.
-   Like the 2x variant, this is nearest-neighbor sampling at the
-   sub-pixel rate; bilinear filtering is in M7HIRES_4X_BILINEAR. */
-#define DRAW_TILE_NORMAL_M7HIRES_4X() \
-	struct SLineMatrixData *l; \
-	uint32 x, Line, Offset; \
-	uint8	*VRAM1; \
-	int aa, cc, aa_q, cc_q, startx; \
-	VRAM1 = Memory.VRAM + 1; \
-   GFX.RealScreenColors = IPPU.ScreenColors; \
-	if (DCMODE) \
-	{ \
-		if (IPPU.DirectColourMapsNeedRebuild) \
-			S9xBuildDirectColourMaps(); \
-		GFX.RealScreenColors = DirectColourMaps[0]; \
-	} \
-	\
-	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
-	Offset = GFX.StartY * GFX.PPL; \
-	l = &LineMatrixData[GFX.StartY]; \
-	\
-	for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
-	{ \
-		int AA, BB, CC, DD, xx, yy; \
-		int32 HOffset, VOffset, CentreX, CentreY; \
-		uint8 Pix, starty; \
-		\
-		HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
-		VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
-		CentreX = ((int32) l->CentreX << 19) >> 19; \
-		CentreY = ((int32) l->CentreY << 19) >> 19; \
-		\
-		starty = Line + 1; \
-		if (PPU.Mode7VFlip) \
-			starty ^= 0xff; \
-		yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
-		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
-		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
-		\
-		if (PPU.Mode7HFlip) \
-		{ \
-			startx = Right - 1; \
-			aa = -l->MatrixA; \
-			cc = -l->MatrixC; \
-		} \
-		else \
-		{ \
-			startx = Left; \
-			aa = l->MatrixA; \
-			cc = l->MatrixC; \
-		} \
-		aa_q = aa / 4; \
-		cc_q = cc / 4; \
-		xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
-		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
-		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
-		if (!PPU.Mode7Repeat) \
-		{ \
-			for ( x = Left; x < Right; x++) \
-			{ \
-				int X, Y, sub; \
-				uint8 *TileData, b; \
-				/* Four sub-samples at x/4, x/4+1, x/4+2, x/4+3 \
-				   (native-pixel quarter steps). */ \
-				for (sub = 0; sub < 4; sub++) \
-				{ \
-					X = ((AA + BB) >> 8) & 0x3ff; \
-					Y = ((CC + DD) >> 8) & 0x3ff; \
-					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
-					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
-					DRAW_PIXEL(4 * x + sub, Pix = (b & MASK)); \
-					/* Quarter-step advance, with the leftover \
-					   distributed on the final sub-sample so the \
-					   total advance per native pixel sums to aa/cc. */ \
-					if (sub < 3) { AA += aa_q; CC += cc_q; } \
-					else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; } \
-				} \
-			} \
-		} \
-		else \
-		{ \
-			for ( x = Left; x < Right; x++) \
-			{ \
-				int X, Y, sub, do_draw; \
-				uint8 *TileData, b; \
-				for (sub = 0; sub < 4; sub++) \
-				{ \
-					X = ((AA + BB) >> 8); \
-					Y = ((CC + DD) >> 8); \
-					do_draw = 1; \
-					if (((X | Y) & ~0x3ff) == 0) \
-					{ \
-						TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
-						b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
-					} \
-					else if (PPU.Mode7Repeat == 3) \
-						b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1)); \
-					else \
-						do_draw = 0; \
-					if (do_draw) \
-						DRAW_PIXEL(4 * x + sub, Pix = (b & MASK)); \
-					if (sub < 3) { AA += aa_q; CC += cc_q; } \
-					else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; } \
-				} \
-			} \
-		} \
-	}
-
-/* Bilinear-filtered Mode 7 at 4x horizontal: same as
-   DRAW_TILE_NORMAL_M7HIRES_4X but each sub-sample goes through
-   M7HR_SAMPLE_BILINEAR / M7HR_BLEND_AND_WRITE for the configured
-   filter (stable or smooth). */
+/* Bilinear-filtered Mode 7 at 4x horizontal: takes four sub-samples
+   per native pixel like the HR4X path (now de-templated above), but
+   each sub-sample goes through M7HR_SAMPLE_BILINEAR /
+   M7HR_BLEND_AND_WRITE for the configured filter (stable or smooth). */
 #define DRAW_TILE_NORMAL_M7HIRES_4X_BILINEAR() \
 	struct SLineMatrixData *l; \
 	uint32 x, Line, Offset; \
@@ -2572,6 +2460,296 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #undef ARGS
 #undef M7HIRES_ONLY
 
+/* ====================================================================
+ * Mode 7 4x hires (HR4X) renderers
+ * ====================================================================
+ *
+ * Two NAME1 families: DrawMode7BG1HR4X (BG1) and DrawMode7BG2HR4X
+ * (BG2 EXTBG). Each renderer samples the SNES Mode 7 affine matrix
+ * four times per native pixel, advancing AA, CC by aa_q = aa/4 and
+ * cc_q = cc/4 between sub-samples. Output goes to four contiguous
+ * buffer pixels at GFX.S[Offset + 4*x .. + 4*x + 3]. The buffer
+ * has been promoted to 4x SNES width before this renderer runs;
+ * see cpuexec.c (frame-start promotion) and ppu.c::S9xUpdateScreen
+ * (mid-frame promotion).
+ *
+ * BG1 vs BG2: differ in MASK (0xff vs 0x7f), Z1/Z2 (constant +7 vs
+ * priority-bit-dependent), and DCMODE (Direct Colour from $2130
+ * bit 0 vs always off). Same renderer body otherwise.
+ *
+ * Each family has 7 functions, one per color-math op:
+ *   _              NoMath        (no color math, copy through)
+ *   Add_           Add subscreen / fixed colour
+ *   AddF1_2_       Add fixed colour, half intensity
+ *   AddS1_2_       Add subscreen if available else fixed, half
+ *   Sub_           Subtract subscreen / fixed colour
+ *   SubF1_2_       Subtract fixed colour, half intensity
+ *   SubS1_2_       Subtract subscreen if available else fixed, half
+ *
+ * The 7-fold fan-out is materialised by the local
+ * DEFINE_M7_HR4X_FAMILY macro below. Each instantiation produces
+ * one specialised function with the math op resolved at compile
+ * time, so the inner pixel-write loop never branches on math state.
+ *
+ * Compatibility note: this section is hand-written. The earlier
+ * templated HR2X / BL / BL4X / BL1X paths still go through the
+ * 3-level #include "tile.c" scaffold (see docs/tile-internals.md
+ * for the templating model). HR4X is the first family converted
+ * as part of the tile-untangle work; the remaining families will
+ * follow incrementally.
+ */
+
+/* Local fan-out for the 14 HR4X functions (2 BGs x 7 math ops).
+ *
+ * Parameters:
+ *   suffix         token suffix appended to the function name
+ *                  (e.g. "AddF1_2_" -> ...HR4XAddF1_2_Normal1x1)
+ *   MATH_SELECTOR  one of NOMATH, REGMATH, MATHF1_2, MATHS1_2.
+ *                  These are the file-level macros from the preamble
+ *                  that select the colour-math arithmetic shape.
+ *   MATH_OP        token concatenated by COLOR_##Op when the
+ *                  selector resolves: ADD or SUB. NOMATH ignores it.
+ *   BG_NAME        DrawMode7BG1HR4X or DrawMode7BG2HR4X.
+ *   Z_EXPR         expression for Z1/Z2 (BG1: D+7 constant.
+ *                  BG2: D + ((b & 0x80) ? 11 : 3) per-pixel).
+ *   MASK_VAL       palette mask: 0xff for BG1, 0x7f for BG2.
+ *   DC_EXPR        Direct Colour Mode enable expression.
+ *
+ * Body structure:
+ *   - Per-line setup: unpack the matrix from LineMatrixData, apply
+ *     HFlip, compute aa/cc and aa_q/cc_q quarter-step, set up AA/BB
+ *     /CC/DD initial values.
+ *   - For each native pixel x in [Left, Right): take 4 sub-samples,
+ *     each looking up the texel from VRAM via the Mode 7 affine
+ *     transform, then writing to buffer index 4*x + sub.
+ *   - Quarter-step advance with the rounding leftover deposited on
+ *     the final sub-sample so the per-native-pixel advance sums to
+ *     exactly aa/cc (no drift).
+ *   - Two paths inside the pixel loop: PPU.Mode7Repeat == 0 (wrap,
+ *     no clipping) and PPU.Mode7Repeat != 0 (clip out-of-range, or
+ *     fill with tile 0 in mode 3).
+ */
+#define DEFINE_M7_HR4X_FAMILY(suffix, MATH_SELECTOR, MATH_OP,                  \
+                              BG_NAME, Z_EXPR, MASK_VAL, DC_EXPR)              \
+static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
+{                                                                              \
+    struct SLineMatrixData *l;                                                 \
+    uint32 x, Line, Offset;                                                    \
+    uint8 *VRAM1 = Memory.VRAM + 1;                                            \
+    int aa, cc, aa_q, cc_q, startx;                                            \
+                                                                               \
+    GFX.RealScreenColors = IPPU.ScreenColors;                                  \
+    if (DC_EXPR)                                                               \
+    {                                                                          \
+        if (IPPU.DirectColourMapsNeedRebuild)                                  \
+            S9xBuildDirectColourMaps();                                        \
+        GFX.RealScreenColors = DirectColourMaps[0];                            \
+    }                                                                          \
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
+    Offset = GFX.StartY * GFX.PPL;                                             \
+    l = &LineMatrixData[GFX.StartY];                                           \
+                                                                               \
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)  \
+    {                                                                          \
+        int AA, BB, CC, DD, xx, yy;                                            \
+        int32 HOffset, VOffset, CentreX, CentreY;                              \
+        uint8 Pix, starty;                                                     \
+                                                                               \
+        HOffset = ((int32) l->M7HOFS  << 19) >> 19;                            \
+        VOffset = ((int32) l->M7VOFS  << 19) >> 19;                            \
+        CentreX = ((int32) l->CentreX << 19) >> 19;                            \
+        CentreY = ((int32) l->CentreY << 19) >> 19;                            \
+                                                                               \
+        starty = Line + 1;                                                     \
+        if (PPU.Mode7VFlip)                                                    \
+            starty ^= 0xff;                                                    \
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);                            \
+        BB = ((l->MatrixB * starty) & ~63)                                     \
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);                   \
+        DD = ((l->MatrixD * starty) & ~63)                                     \
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);                   \
+                                                                               \
+        if (PPU.Mode7HFlip)                                                    \
+        {                                                                      \
+            startx = Right - 1;                                                \
+            aa = -l->MatrixA;                                                  \
+            cc = -l->MatrixC;                                                  \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            startx = Left;                                                     \
+            aa = l->MatrixA;                                                   \
+            cc = l->MatrixC;                                                   \
+        }                                                                      \
+        aa_q = aa / 4;                                                         \
+        cc_q = cc / 4;                                                         \
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);                            \
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);                  \
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);                  \
+                                                                               \
+        if (!PPU.Mode7Repeat)                                                  \
+        {                                                                      \
+            /* Wrap path: X & Y mask to 10 bits, no clipping. */               \
+            for (x = Left; x < Right; x++)                                     \
+            {                                                                  \
+                int X, Y, sub;                                                 \
+                uint8 *TileData, b;                                            \
+                for (sub = 0; sub < 4; sub++)                                  \
+                {                                                              \
+                    X = ((AA + BB) >> 8) & 0x3ff;                              \
+                    Y = ((CC + DD) >> 8) & 0x3ff;                              \
+                    TileData = VRAM1 +                                         \
+                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));         \
+                    Pix = (b & MASK_VAL);                                      \
+                    /* Z-test + write. Z_EXPR may reference 'b' (BG2). */      \
+                    {                                                          \
+                        uint32 idx = 4 * x + sub;                              \
+                        if ((Z_EXPR) > GFX.DB[Offset + idx] && Pix)            \
+                        {                                                      \
+                            GFX.S[Offset + idx] = MATH_SELECTOR(               \
+                                MATH_OP,                                       \
+                                GFX.ScreenColors[Pix],                         \
+                                GFX.SubScreen[Offset + idx],                   \
+                                GFX.SubZBuffer[Offset + idx]);                 \
+                            GFX.DB[Offset + idx] = (Z_EXPR);                   \
+                        }                                                      \
+                    }                                                          \
+                    /* Quarter-step. Final sub-sample absorbs the              \
+                     * rounding leftover so the total advance equals           \
+                     * aa/cc per native pixel. */                              \
+                    if (sub < 3)                                               \
+                    {                                                          \
+                        AA += aa_q;                                            \
+                        CC += cc_q;                                            \
+                    }                                                          \
+                    else                                                       \
+                    {                                                          \
+                        AA += aa - 3 * aa_q;                                   \
+                        CC += cc - 3 * cc_q;                                   \
+                    }                                                          \
+                }                                                              \
+            }                                                                  \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)         \
+             * or fill with tile 0 (mode 3). */                                \
+            for (x = Left; x < Right; x++)                                     \
+            {                                                                  \
+                int X, Y, sub, do_draw;                                        \
+                uint8 *TileData, b;                                            \
+                for (sub = 0; sub < 4; sub++)                                  \
+                {                                                              \
+                    X = ((AA + BB) >> 8);                                      \
+                    Y = ((CC + DD) >> 8);                                      \
+                    do_draw = 1;                                               \
+                    if (((X | Y) & ~0x3ff) == 0)                               \
+                    {                                                          \
+                        TileData = VRAM1 +                                     \
+                            (Memory.VRAM[((Y & ~7) << 5)                       \
+                                       + ((X >> 2) & ~1)] << 7);               \
+                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));     \
+                    }                                                          \
+                    else if (PPU.Mode7Repeat == 3)                             \
+                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));        \
+                    else                                                       \
+                        do_draw = 0;                                           \
+                    if (do_draw)                                               \
+                    {                                                          \
+                        uint32 idx = 4 * x + sub;                              \
+                        Pix = (b & MASK_VAL);                                  \
+                        if ((Z_EXPR) > GFX.DB[Offset + idx] && Pix)            \
+                        {                                                      \
+                            GFX.S[Offset + idx] = MATH_SELECTOR(               \
+                                MATH_OP,                                       \
+                                GFX.ScreenColors[Pix],                         \
+                                GFX.SubScreen[Offset + idx],                   \
+                                GFX.SubZBuffer[Offset + idx]);                 \
+                            GFX.DB[Offset + idx] = (Z_EXPR);                   \
+                        }                                                      \
+                    }                                                          \
+                    if (sub < 3)                                               \
+                    {                                                          \
+                        AA += aa_q;                                            \
+                        CC += cc_q;                                            \
+                    }                                                          \
+                    else                                                       \
+                    {                                                          \
+                        AA += aa - 3 * aa_q;                                   \
+                        CC += cc - 3 * cc_q;                                   \
+                    }                                                          \
+                }                                                              \
+            }                                                                  \
+        }                                                                      \
+    }                                                                          \
+}
+
+/* BG1 fan-out: 7 math variants. Z = D + 7 constant. MASK = 0xff.
+ * DCMODE follows $2130 bit 0 (Direct Colour Mode). */
+DEFINE_M7_HR4X_FAMILY(_,        NOMATH,   ADD, DrawMode7BG1HR4X,
+                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+DEFINE_M7_HR4X_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG1HR4X,
+                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+DEFINE_M7_HR4X_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG1HR4X,
+                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+DEFINE_M7_HR4X_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG1HR4X,
+                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+DEFINE_M7_HR4X_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG1HR4X,
+                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+DEFINE_M7_HR4X_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG1HR4X,
+                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+DEFINE_M7_HR4X_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG1HR4X,
+                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void (*Renderers_DrawMode7BG1HR4XNormal1x1[7]) (uint32, uint32, int) =
+{
+    DrawMode7BG1HR4X_Normal1x1,
+    DrawMode7BG1HR4XAdd_Normal1x1,
+    DrawMode7BG1HR4XAddF1_2_Normal1x1,
+    DrawMode7BG1HR4XAddS1_2_Normal1x1,
+    DrawMode7BG1HR4XSub_Normal1x1,
+    DrawMode7BG1HR4XSubF1_2_Normal1x1,
+    DrawMode7BG1HR4XSubS1_2_Normal1x1,
+};
+
+/* BG2 fan-out: 7 math variants. Z = D + ((b & 0x80) ? 11 : 3) -- the
+ * EXTBG per-pixel priority bit lives in bit 0x80 of the raw sampled
+ * byte, which selects high (11) vs low (3) priority tier. The macro
+ * body exposes 'b' as a local so Z_EXPR can reach it. MASK = 0x7f
+ * (the priority bit is excluded from the palette index). DCMODE is
+ * always off for BG2 EXTBG. */
+DEFINE_M7_HR4X_FAMILY(_,        NOMATH,   ADD, DrawMode7BG2HR4X,
+                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+DEFINE_M7_HR4X_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG2HR4X,
+                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+DEFINE_M7_HR4X_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG2HR4X,
+                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+DEFINE_M7_HR4X_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG2HR4X,
+                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+DEFINE_M7_HR4X_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG2HR4X,
+                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+DEFINE_M7_HR4X_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG2HR4X,
+                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+DEFINE_M7_HR4X_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG2HR4X,
+                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void (*Renderers_DrawMode7BG2HR4XNormal1x1[7]) (uint32, uint32, int) =
+{
+    DrawMode7BG2HR4X_Normal1x1,
+    DrawMode7BG2HR4XAdd_Normal1x1,
+    DrawMode7BG2HR4XAddF1_2_Normal1x1,
+    DrawMode7BG2HR4XAddS1_2_Normal1x1,
+    DrawMode7BG2HR4XSub_Normal1x1,
+    DrawMode7BG2HR4XSubF1_2_Normal1x1,
+    DrawMode7BG2HR4XSubS1_2_Normal1x1,
+};
+
+#undef DEFINE_M7_HR4X_FAMILY
+
+/* End of HR4X de-templated section.
+ * ==================================================================== */
+
 /* Mode 7 hires bilinear (M7HIRES_BILINEAR) renderers: same 2x output
    rate as M7Hires but each output pixel is bilinear-blended from the
    four texels surrounding the fractional sample position. Smooths the
@@ -2625,45 +2803,6 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define NAME1		DrawMode7BG2BL
 
 /* Second-level include: Get the DrawMode7BG2BL renderers (Normal1x1 only). */
-
-#include "tile.c"
-
-#undef NAME1
-#undef DRAW_TILE
-#undef Z1
-#undef Z2
-#undef MASK
-#undef DCMODE
-#undef BG
-
-/* Mode 7 4x hires (HR4X) renderers: 4x horizontal sample/output.
-   Same scaffold as HR2X, just with the 4x DRAW_TILE macro. */
-
-#define Z1			(D + 7)
-#define Z2			(D + 7)
-#define MASK		0xff
-#define DCMODE		(Memory.FillRAM[0x2130] & 1)
-#define BG			0
-#define DRAW_TILE()	DRAW_TILE_NORMAL_M7HIRES_4X()
-#define NAME1		DrawMode7BG1HR4X
-
-#include "tile.c"
-
-#undef NAME1
-#undef DRAW_TILE
-#undef Z1
-#undef Z2
-#undef MASK
-#undef DCMODE
-#undef BG
-
-#define Z1			(D + ((b & 0x80) ? 11 : 3))
-#define Z2			(D + ((b & 0x80) ? 11 : 3))
-#define MASK		0x7f
-#define DCMODE		0
-#define BG			1
-#define DRAW_TILE()	DRAW_TILE_NORMAL_M7HIRES_4X()
-#define NAME1		DrawMode7BG2HR4X
 
 #include "tile.c"
 
@@ -2758,7 +2897,6 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #undef DRAW_TILE_NORMAL
 #undef DRAW_TILE_NORMAL_M7HIRES
 #undef DRAW_TILE_NORMAL_M7HIRES_BILINEAR
-#undef DRAW_TILE_NORMAL_M7HIRES_4X
 #undef DRAW_TILE_NORMAL_M7HIRES_4X_BILINEAR
 #undef DRAW_TILE_NORMAL_M7BL_1X
 #undef DRAW_TILE_MOSAIC
