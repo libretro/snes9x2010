@@ -1608,6 +1608,54 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		(out) = (uint16)(((r >> 16) << 11) | ((g >> 16) << 6) | (b >> 16)); \
 	}
 
+/* Look up four corners from the fill tile (tile 0) - used when the
+   sample is out-of-range and PPU.Mode7Repeat == 3. The corner index
+   into the fill tile is (X & 7, Y & 7) which always falls within
+   the same 8x8 fill tile, so this is a single TileData lookup with
+   four pixel reads. */
+#define M7HR_LOOKUP_4_FILL(Xi_, Yi_, p_tl, p_tr, p_bl, p_br) \
+	{ \
+		int Xi__ = (Xi_); \
+		int Yi__ = (Yi_); \
+		int xib0__ =  Xi__      & 7; \
+		int yib0__ =  Yi__      & 7; \
+		int xib1__ = (Xi__ + 1) & 7; \
+		int yib1__ = (Yi__ + 1) & 7; \
+		uint8 *row0__ = VRAM1 + (yib0__ << 4); \
+		uint8 *row1__ = VRAM1 + (yib1__ << 4); \
+		(p_tl) = row0__[xib0__ << 1] & MASK; \
+		(p_tr) = row0__[xib1__ << 1] & MASK; \
+		(p_bl) = row1__[xib0__ << 1] & MASK; \
+		(p_br) = row1__[xib1__ << 1] & MASK; \
+	}
+
+/* Given four corner palette indices and fractional weights, do the
+   bilinear blend (with the all-equal early-out) and write the result
+   to GFX.S[Offset+out_offset] / GFX.DB[Offset+out_offset] subject to
+   the Z test. Shared between the Mode7Repeat == 0 (wrap) path and
+   the in-range case of the Mode7Repeat != 0 paths. */
+#define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, Xf, Yf) \
+	{ \
+		uint16 blended; \
+		if ((p_tl) == (p_tr) && (p_tl) == (p_bl) && (p_tl) == (p_br)) \
+		{ \
+			blended = GFX.ScreenColors[(p_tl)]; \
+		} \
+		else \
+		{ \
+			uint16 c_tl = GFX.ScreenColors[(p_tl)]; \
+			uint16 c_tr = GFX.ScreenColors[(p_tr)]; \
+			uint16 c_bl = GFX.ScreenColors[(p_bl)]; \
+			uint16 c_br = GFX.ScreenColors[(p_br)]; \
+			M7HR_BLEND_RGB(blended, c_tl, c_tr, c_bl, c_br, (Xf), (Yf)); \
+		} \
+		if (Z1 > GFX.DB[Offset + (out_offset)]) \
+		{ \
+			GFX.S[Offset + (out_offset)] = blended; \
+			GFX.DB[Offset + (out_offset)] = Z2; \
+		} \
+	}
+
 #define M7HR_SAMPLE_BILINEAR(out_offset, X_full, Y_full) \
 	{ \
 		int Xi = ((X_full) >> 8) & 0x3ff; \
@@ -1615,28 +1663,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		uint32 Xf = (uint32)((X_full) & 0xff); \
 		uint32 Yf = (uint32)((Y_full) & 0xff); \
 		uint8 p_tl, p_tr, p_bl, p_br; \
-		uint16 blended; \
 		M7HR_LOOKUP_4(Xi, Yi, p_tl, p_tr, p_bl, p_br); \
-		if (p_tl == p_tr && p_tl == p_bl && p_tl == p_br) \
-		{ \
-			/* Solid-color region: bilinear blend of four equal \
-			   colors is that color exactly. Skip the blend math \
-			   and 3 of the 4 palette lookups. */ \
-			blended = GFX.ScreenColors[p_tl]; \
-		} \
-		else \
-		{ \
-			uint16 c_tl = GFX.ScreenColors[p_tl]; \
-			uint16 c_tr = GFX.ScreenColors[p_tr]; \
-			uint16 c_bl = GFX.ScreenColors[p_bl]; \
-			uint16 c_br = GFX.ScreenColors[p_br]; \
-			M7HR_BLEND_RGB(blended, c_tl, c_tr, c_bl, c_br, Xf, Yf); \
-		} \
-		if (Z1 > GFX.DB[Offset + (out_offset)]) \
-		{ \
-			GFX.S[Offset + (out_offset)] = blended; \
-			GFX.DB[Offset + (out_offset)] = Z2; \
-		} \
+		M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, Xf, Yf); \
 	}
 
 #define DRAW_TILE_NORMAL_M7HIRES_BILINEAR() \
@@ -1692,12 +1720,57 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
 		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
 		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
-		for ( x = Left; x < Right; x++) \
+		if (!PPU.Mode7Repeat) \
 		{ \
-			M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD); \
-			AA += aa_h; CC += cc_h; \
-			M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD); \
-			AA += aa - aa_h; CC += cc - cc_h; \
+			for ( x = Left; x < Right; x++) \
+			{ \
+				M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD); \
+				AA += aa_h; CC += cc_h; \
+				M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD); \
+				AA += aa - aa_h; CC += cc - cc_h; \
+			} \
+		} \
+		else \
+		{ \
+			for ( x = Left; x < Right; x++) \
+			{ \
+				int X1 = (AA + BB) >> 8; \
+				int Y1 = (CC + DD) >> 8; \
+				int X2, Y2; \
+				uint32 Xf1 = (uint32)((AA + BB) & 0xff); \
+				uint32 Yf1 = (uint32)((CC + DD) & 0xff); \
+				uint32 Xf2, Yf2; \
+				uint8 p_tl, p_tr, p_bl, p_br; \
+				/* Sample 1 -> output 2*x */ \
+				if (((X1 | Y1) & ~0x3ff) == 0) \
+				{ \
+					M7HR_LOOKUP_4(X1, Y1, p_tl, p_tr, p_bl, p_br); \
+					M7HR_BLEND_AND_WRITE(2 * x, p_tl, p_tr, p_bl, p_br, Xf1, Yf1); \
+				} \
+				else if (PPU.Mode7Repeat == 3) \
+				{ \
+					M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br); \
+					M7HR_BLEND_AND_WRITE(2 * x, p_tl, p_tr, p_bl, p_br, Xf1, Yf1); \
+				} \
+				/* else: clip - leave pixel untouched (transparent) */ \
+				AA += aa_h; CC += cc_h; \
+				/* Sample 2 -> output 2*x + 1 */ \
+				X2  = (AA + BB) >> 8; \
+				Y2  = (CC + DD) >> 8; \
+				Xf2 = (uint32)((AA + BB) & 0xff); \
+				Yf2 = (uint32)((CC + DD) & 0xff); \
+				if (((X2 | Y2) & ~0x3ff) == 0) \
+				{ \
+					M7HR_LOOKUP_4(X2, Y2, p_tl, p_tr, p_bl, p_br); \
+					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, Xf2, Yf2); \
+				} \
+				else if (PPU.Mode7Repeat == 3) \
+				{ \
+					M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br); \
+					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, Xf2, Yf2); \
+				} \
+				AA += aa - aa_h; CC += cc - cc_h; \
+			} \
 		} \
 	}
 
