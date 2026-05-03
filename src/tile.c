@@ -1558,6 +1558,41 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		(Pix_) = b__ & MASK; \
 	}
 
+/* Look up the four bilinear corners around fractional position
+   (Xi, Yi) where Xi, Yi are integer texel coordinates already
+   masked to [0..0x3ff]. Detects the common case where all four
+   corners fall within the same 8x8 tile (Xi & 7 != 7 and
+   Yi & 7 != 7) and does ONE map lookup instead of FOUR. About
+   76% of bilinear samples hit this fast path; the slow path
+   handles the tile-boundary edges by falling back to four
+   separate lookups via M7HR_LOOKUP_PIX. */
+#define M7HR_LOOKUP_4(Xi_, Yi_, p_tl, p_tr, p_bl, p_br) \
+	{ \
+		int Xi__ = (Xi_); \
+		int Yi__ = (Yi_); \
+		int xib__ = Xi__ & 7; \
+		int yib__ = Yi__ & 7; \
+		if (xib__ != 7 && yib__ != 7) \
+		{ \
+			uint8 *TileData__ = VRAM1 + (Memory.VRAM[((Yi__ & ~7) << 5) + ((Xi__ >> 2) & ~1)] << 7); \
+			uint8 *row0__ = TileData__ + (yib__ << 4); \
+			uint8 *row1__ = TileData__ + ((yib__ + 1) << 4); \
+			(p_tl) = row0__[xib__       << 1] & MASK; \
+			(p_tr) = row0__[(xib__ + 1) << 1] & MASK; \
+			(p_bl) = row1__[xib__       << 1] & MASK; \
+			(p_br) = row1__[(xib__ + 1) << 1] & MASK; \
+		} \
+		else \
+		{ \
+			int Xi1__ = (Xi__ + 1) & 0x3ff; \
+			int Yi1__ = (Yi__ + 1) & 0x3ff; \
+			M7HR_LOOKUP_PIX(Xi__, Yi__, (p_tl)); \
+			M7HR_LOOKUP_PIX(Xi1__, Yi__, (p_tr)); \
+			M7HR_LOOKUP_PIX(Xi__, Yi1__, (p_bl)); \
+			M7HR_LOOKUP_PIX(Xi1__, Yi1__, (p_br)); \
+		} \
+	}
+
 #define M7HR_BLEND_RGB(out, TL, TR, BL, BR, Xf, Yf) \
 	{ \
 		uint32 wx1 = (Xf), wx0 = 256 - wx1; \
@@ -1575,21 +1610,28 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 #define M7HR_SAMPLE_BILINEAR(out_offset, X_full, Y_full) \
 	{ \
-		int Xi = (X_full) >> 8; \
-		int Yi = (Y_full) >> 8; \
+		int Xi = ((X_full) >> 8) & 0x3ff; \
+		int Yi = ((Y_full) >> 8) & 0x3ff; \
 		uint32 Xf = (uint32)((X_full) & 0xff); \
 		uint32 Yf = (uint32)((Y_full) & 0xff); \
 		uint8 p_tl, p_tr, p_bl, p_br; \
-		uint16 c_tl, c_tr, c_bl, c_br, blended; \
-		M7HR_LOOKUP_PIX(Xi     & 0x3ff, Yi     & 0x3ff, p_tl); \
-		M7HR_LOOKUP_PIX((Xi+1) & 0x3ff, Yi     & 0x3ff, p_tr); \
-		M7HR_LOOKUP_PIX(Xi     & 0x3ff, (Yi+1) & 0x3ff, p_bl); \
-		M7HR_LOOKUP_PIX((Xi+1) & 0x3ff, (Yi+1) & 0x3ff, p_br); \
-		c_tl = GFX.ScreenColors[p_tl]; \
-		c_tr = GFX.ScreenColors[p_tr]; \
-		c_bl = GFX.ScreenColors[p_bl]; \
-		c_br = GFX.ScreenColors[p_br]; \
-		M7HR_BLEND_RGB(blended, c_tl, c_tr, c_bl, c_br, Xf, Yf); \
+		uint16 blended; \
+		M7HR_LOOKUP_4(Xi, Yi, p_tl, p_tr, p_bl, p_br); \
+		if (p_tl == p_tr && p_tl == p_bl && p_tl == p_br) \
+		{ \
+			/* Solid-color region: bilinear blend of four equal \
+			   colors is that color exactly. Skip the blend math \
+			   and 3 of the 4 palette lookups. */ \
+			blended = GFX.ScreenColors[p_tl]; \
+		} \
+		else \
+		{ \
+			uint16 c_tl = GFX.ScreenColors[p_tl]; \
+			uint16 c_tr = GFX.ScreenColors[p_tr]; \
+			uint16 c_bl = GFX.ScreenColors[p_bl]; \
+			uint16 c_br = GFX.ScreenColors[p_br]; \
+			M7HR_BLEND_RGB(blended, c_tl, c_tr, c_bl, c_br, Xf, Yf); \
+		} \
 		if (Z1 > GFX.DB[Offset + (out_offset)]) \
 		{ \
 			GFX.S[Offset + (out_offset)] = blended; \
