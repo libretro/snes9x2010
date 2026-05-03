@@ -252,6 +252,20 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       },
       "disabled"
    },
+   {
+      "snes9x_2010_mode7_hires_bilinear",
+      "Mode 7 - Hires Bilinear Filter",
+      NULL,
+      "When 'Mode 7 - Hires' is enabled, blend each output pixel from four neighbouring texture samples instead of using the nearest. Smooths out the chroma speckle visible at high-contrast palette boundaries on Mode 7 surfaces, at the cost of additional per-pixel work. No effect when 'Mode 7 - Hires' is disabled.",
+      NULL,
+      "hacks",
+      {
+         { "disabled", NULL },
+         { "enabled",  NULL },
+         { NULL, NULL},
+      },
+      "disabled"
+   },
 
    { NULL, NULL, NULL, NULL, NULL, NULL, {{0}}, NULL },
 };

@@ -405,6 +405,7 @@ struct SSettings
    bool8    NormalControls;
 	bool8		SupportHiRes;
 	bool8		Mode7Hires;
+	bool8		Mode7HiresBilinear;
 	bool8		Transparency;
    float    SuperFXSpeedPerLine;
    bool8	FastSavestates;

@@ -565,6 +565,16 @@ static void check_variables(bool first_run)
 		else
 			Settings.Mode7Hires = FALSE;
 	}
+
+	var.key = "snes9x_2010_mode7_hires_bilinear";
+	var.value = NULL;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (strcmp(var.value, "enabled") == 0)
+			Settings.Mode7HiresBilinear = TRUE;
+		else
+			Settings.Mode7HiresBilinear = FALSE;
+	}
 	/* Reinitialise frameskipping, if required */
 	if (!first_run &&
 	    ((frameskip_type     != prev_frameskip_type) ||
@@ -648,9 +658,44 @@ void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_c
 void retro_set_input_poll(retro_input_poll_t cb) { poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_cb = cb; }
 
+/* Dynamic visibility for the Mode 7 - Hires Bilinear Filter option:
+   only show it in the frontend menu when Mode 7 - Hires itself is
+   enabled. Returns true when a visibility change was made so the
+   frontend can refresh its display without a retro_run() round-trip.
+
+   The callback is wired up in retro_set_environment via
+   RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK. The
+   frontend invokes it whenever any option value changes. */
+static bool update_option_visibility(void)
+{
+	static bool last_visible       = true;
+	bool        visible            = false;
+	struct retro_variable          var;
+	struct retro_core_option_display option_display;
+
+	if (!environ_cb)
+		return false;
+
+	var.key   = "snes9x_2010_mode7_hires";
+	var.value = NULL;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+		visible = (strcmp(var.value, "enabled") == 0);
+
+	if (visible == last_visible)
+		return false;
+
+	option_display.key     = "snes9x_2010_mode7_hires_bilinear";
+	option_display.visible = visible;
+	environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
+
+	last_visible = visible;
+	return true;
+}
+
 void retro_set_environment(retro_environment_t cb)
 {
         bool local_bool_val = false;
+	struct retro_core_options_update_display_callback update_display_cb;
 	static const struct retro_controller_description port_1[] = {
 		{ "SNES Joypad", RETRO_DEVICE_JOYPAD },
 		{ "SNES Mouse", RETRO_DEVICE_MOUSE },
@@ -682,6 +727,18 @@ void retro_set_environment(retro_environment_t cb)
 	libretro_set_core_options(environ_cb, &local_bool_val);
   
         libretro_supports_option_categories = local_bool_val;
+
+	/* Register the option-visibility callback with the frontend so
+	   the bilinear option is hidden when Mode 7 - Hires is off.
+	   Optional - frontends that don't support env 69 just show all
+	   options, which is fine. */
+	update_display_cb.callback = update_option_visibility;
+	environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK,
+			&update_display_cb);
+
+	/* Initial visibility pass for frontends that didn't trigger the
+	   callback automatically at registration time. */
+	update_option_visibility();
 
 	environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 
