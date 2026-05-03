@@ -1669,28 +1669,100 @@ extern struct SLineMatrixData	LineMatrixData[240];
    The raw TL byte is exposed as local 'b' so that Z1/Z2 macro
    expansions can reference 'b & 0x80' the same way the native HR
    path does. For BG1, Z1 is constant and 'b' is unused; the
-   compiler eliminates the dead read. */
+   compiler eliminates the dead read.
+
+   Index 0 is the SNES universal transparency index. Native HR's
+   DRAW_PIXEL skips writes when (M = Pix & MASK) is zero, leaving
+   GFX.DB[N] = 0 so DrawBackdrop() can fill that pixel later. This
+   bilinear path mirrors that semantics with a 4-bit per-corner
+   opacity bitmap (op_mask):
+
+     op_mask == 0x0 -> all four corners transparent. Skip the
+                       pixel; backdrop will fill at end of frame.
+     op_mask == 0xF -> all four corners opaque. Take the fast
+                       path: all-equal early-out for solid regions,
+                       otherwise the standard bilinear blend with
+                       the >> 16 fixed-shift formula.
+     op_mask other  -> mixed transparency. Alpha-aware blend:
+                       zero-index corners contribute zero weight;
+                       sum the weights of the opaque corners and
+                       divide each per-channel result by that sum
+                       to renormalize. The result is that texture
+                       edges (mixed transparent + opaque corners)
+                       smoothly fade into the backdrop instead of
+                       producing a sharp seam. */
 #define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw, Xf, Yf) \
 	{ \
 		uint8 b = (b_tl_raw); \
+		uint8 op_tl = ((p_tl) != 0); \
+		uint8 op_tr = ((p_tr) != 0); \
+		uint8 op_bl = ((p_bl) != 0); \
+		uint8 op_br = ((p_br) != 0); \
+		uint8 op_mask = op_tl | (op_tr << 1) | (op_bl << 2) | (op_br << 3); \
 		uint16 blended; \
 		(void)b; \
-		if ((p_tl) == (p_tr) && (p_tl) == (p_bl) && (p_tl) == (p_br)) \
+		if (op_mask == 0) \
 		{ \
-			blended = GFX.ScreenColors[(p_tl)]; \
+			/* All transparent: skip. Backdrop fills via DrawBackdrop. */ \
+		} \
+		else if (op_mask == 0xF) \
+		{ \
+			/* All opaque: fast path. */ \
+			if ((p_tl) == (p_tr) && (p_tl) == (p_bl) && (p_tl) == (p_br)) \
+			{ \
+				blended = GFX.ScreenColors[(p_tl)]; \
+			} \
+			else \
+			{ \
+				uint16 c_tl = GFX.ScreenColors[(p_tl)]; \
+				uint16 c_tr = GFX.ScreenColors[(p_tr)]; \
+				uint16 c_bl = GFX.ScreenColors[(p_bl)]; \
+				uint16 c_br = GFX.ScreenColors[(p_br)]; \
+				M7HR_BLEND_RGB(blended, c_tl, c_tr, c_bl, c_br, (Xf), (Yf)); \
+			} \
+			if (Z1 > GFX.DB[Offset + (out_offset)]) \
+			{ \
+				GFX.S[Offset + (out_offset)] = blended; \
+				GFX.DB[Offset + (out_offset)] = Z2; \
+			} \
 		} \
 		else \
 		{ \
-			uint16 c_tl = GFX.ScreenColors[(p_tl)]; \
-			uint16 c_tr = GFX.ScreenColors[(p_tr)]; \
-			uint16 c_bl = GFX.ScreenColors[(p_bl)]; \
-			uint16 c_br = GFX.ScreenColors[(p_br)]; \
-			M7HR_BLEND_RGB(blended, c_tl, c_tr, c_bl, c_br, (Xf), (Yf)); \
-		} \
-		if (Z1 > GFX.DB[Offset + (out_offset)]) \
-		{ \
-			GFX.S[Offset + (out_offset)] = blended; \
-			GFX.DB[Offset + (out_offset)] = Z2; \
+			/* Mixed transparency: alpha-aware blend. Zero-index \
+			   corners contribute zero weight; renormalize the \
+			   remaining weights via division. */ \
+			uint32 wx1_ = (Xf), wx0_ = 256 - wx1_; \
+			uint32 wy1_ = (Yf), wy0_ = 256 - wy1_; \
+			uint32 w_tl_ = op_tl ? wx0_ * wy0_ : 0; \
+			uint32 w_tr_ = op_tr ? wx1_ * wy0_ : 0; \
+			uint32 w_bl_ = op_bl ? wx0_ * wy1_ : 0; \
+			uint32 w_br_ = op_br ? wx1_ * wy1_ : 0; \
+			uint32 wsum_ = w_tl_ + w_tr_ + w_bl_ + w_br_; \
+			if (wsum_ != 0) \
+			{ \
+				uint16 c_tl = op_tl ? GFX.ScreenColors[(p_tl)] : 0; \
+				uint16 c_tr = op_tr ? GFX.ScreenColors[(p_tr)] : 0; \
+				uint16 c_bl = op_bl ? GFX.ScreenColors[(p_bl)] : 0; \
+				uint16 c_br = op_br ? GFX.ScreenColors[(p_br)] : 0; \
+				uint32 r_ = ((c_tl >> 11) & 0x1f) * w_tl_ \
+				          + ((c_tr >> 11) & 0x1f) * w_tr_ \
+				          + ((c_bl >> 11) & 0x1f) * w_bl_ \
+				          + ((c_br >> 11) & 0x1f) * w_br_; \
+				uint32 g_ = ((c_tl >>  6) & 0x1f) * w_tl_ \
+				          + ((c_tr >>  6) & 0x1f) * w_tr_ \
+				          + ((c_bl >>  6) & 0x1f) * w_bl_ \
+				          + ((c_br >>  6) & 0x1f) * w_br_; \
+				uint32 b_ = ( c_tl        & 0x1f) * w_tl_ \
+				          + ( c_tr        & 0x1f) * w_tr_ \
+				          + ( c_bl        & 0x1f) * w_bl_ \
+				          + ( c_br        & 0x1f) * w_br_; \
+				blended = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_)); \
+				if (Z1 > GFX.DB[Offset + (out_offset)]) \
+				{ \
+					GFX.S[Offset + (out_offset)] = blended; \
+					GFX.DB[Offset + (out_offset)] = Z2; \
+				} \
+			} \
 		} \
 	}
 
