@@ -1613,19 +1613,27 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		} \
 	}
 
-#define M7HR_BLEND_RGB(out, TL, TR, BL, BR, Xf, Yf) \
+/* Horizontal-only blend. Vertical blending across texel rows could
+   produce muddy artifacts when adjacent rows contain dissimilar
+   content (e.g. Tiny Toons rainbow rings, palette-rotation effects,
+   anything with horizontal banding or per-line CGRAM/VRAM HDMA),
+   because the bilinear blend averages dissimilar palette entries
+   into colors visibly different from both source rows. The vertical
+   blend's upside is small -- Mode 7 perspective is dominated by the
+   X axis, where adjacent texels are visibly close. The downside is
+   severe: any time the row above and the row below disagree, you
+   get a one-scanline stripe of wrong colors.
+
+   This blend ignores the bottom row (BL/BR/Yf): the caller selects
+   the nearer texel row in Y via nearest-neighbor and passes its two
+   corners as TL and TR. Only the X axis is interpolated. */
+#define M7HR_BLEND_RGB(out, TL, TR, Xf) \
 	{ \
 		uint32 wx1 = (Xf), wx0 = 256 - wx1; \
-		uint32 wy1 = (Yf), wy0 = 256 - wy1; \
-		uint32 w_tl = wx0 * wy0, w_tr = wx1 * wy0; \
-		uint32 w_bl = wx0 * wy1, w_br = wx1 * wy1; \
-		uint32 r = (((TL) >> 11) & 0x1f) * w_tl + (((TR) >> 11) & 0x1f) * w_tr \
-		         + (((BL) >> 11) & 0x1f) * w_bl + (((BR) >> 11) & 0x1f) * w_br; \
-		uint32 g = (((TL) >>  6) & 0x1f) * w_tl + (((TR) >>  6) & 0x1f) * w_tr \
-		         + (((BL) >>  6) & 0x1f) * w_bl + (((BR) >>  6) & 0x1f) * w_br; \
-		uint32 b = (((TL)      ) & 0x1f) * w_tl + (((TR)      ) & 0x1f) * w_tr \
-		         + (((BL)      ) & 0x1f) * w_bl + (((BR)      ) & 0x1f) * w_br; \
-		(out) = (uint16)(((r >> 16) << 11) | ((g >> 16) << 6) | (b >> 16)); \
+		uint32 r = (((TL) >> 11) & 0x1f) * wx0 + (((TR) >> 11) & 0x1f) * wx1; \
+		uint32 g = (((TL) >>  6) & 0x1f) * wx0 + (((TR) >>  6) & 0x1f) * wx1; \
+		uint32 b = (((TL)      ) & 0x1f) * wx0 + (((TR)      ) & 0x1f) * wx1; \
+		(out) = (uint16)(((r >> 8) << 11) | ((g >> 8) << 6) | (b >> 8)); \
 	}
 
 /* Look up four corners from the fill tile (tile 0) - used when the
@@ -1654,17 +1662,17 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		(p_br) = row1__[xib1__ << 1] & MASK; \
 	}
 
-/* Given four corner palette indices and fractional weights, do the
-   bilinear blend (with the all-equal early-out) and write the result
-   to GFX.S[Offset+out_offset] / GFX.DB[Offset+out_offset] subject to
-   the Z test. Shared between the Mode7Repeat == 0 (wrap) path and
-   the in-range case of the Mode7Repeat != 0 paths. */
 /* Given four corner palette indices, the raw TL byte (for BG2's
-   per-pixel priority bit), and fractional weights, do the bilinear
-   blend (with the all-equal early-out) and write the result to
-   GFX.S[Offset+out_offset] / GFX.DB[Offset+out_offset] subject to
-   the Z test. Shared between the Mode7Repeat == 0 (wrap) path and
-   the in-range case of the Mode7Repeat != 0 paths.
+   per-pixel priority bit), and fractional weights, do the
+   horizontal-only blend (with the same-index early-out) and write
+   the result to GFX.S[Offset+out_offset] / GFX.DB[Offset+out_offset]
+   subject to the Z test. Shared between the Mode7Repeat == 0 (wrap)
+   path and the in-range case of the Mode7Repeat != 0 paths.
+
+   Y axis is nearest-neighbor: Yf < 128 selects the top texel row
+   (TL/TR), Yf >= 128 selects the bottom row (BL/BR). The two
+   corners on the chosen row are then linearly interpolated in X.
+   See M7HR_BLEND_RGB for why we don't blend across rows.
 
    The raw TL byte is exposed as local 'b' so that Z1/Z2 macro
    expansions can reference 'b & 0x80' the same way the native HR
@@ -1674,22 +1682,20 @@ extern struct SLineMatrixData	LineMatrixData[240];
    Index 0 is the SNES universal transparency index. Native HR's
    DRAW_PIXEL skips writes when (M = Pix & MASK) is zero, leaving
    GFX.DB[N] = 0 so DrawBackdrop() can fill that pixel later. This
-   bilinear path mirrors that semantics with a 4-bit per-corner
-   opacity bitmap (op_mask):
+   blend mirrors that semantics with a 4-bit per-corner opacity
+   bitmap (op_mask):
 
      op_mask == 0x0 -> all four corners transparent. Skip the
                        pixel; backdrop will fill at end of frame.
      op_mask == 0xF -> all four corners opaque. Take the fast
-                       path: all-equal early-out for solid regions,
-                       otherwise the standard bilinear blend with
-                       the >> 16 fixed-shift formula.
-     op_mask other  -> mixed transparency. Alpha-aware blend:
-                       zero-index corners contribute zero weight;
-                       sum the weights of the opaque corners and
-                       divide each per-channel result by that sum
-                       to renormalize. The result is that texture
-                       edges (mixed transparent + opaque corners)
-                       smoothly fade into the backdrop instead of
+                       path: same-index early-out for solid regions,
+                       otherwise horizontal blend on the Yf-selected
+                       row.
+     op_mask other  -> mixed transparency. Alpha-aware horizontal
+                       blend on the Yf-selected row: a transparent
+                       corner contributes zero weight; the remaining
+                       weight is renormalized so texture edges fade
+                       smoothly into the backdrop instead of
                        producing a sharp seam. */
 #define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw, Xf, Yf) \
 	{ \
@@ -1701,14 +1707,26 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		uint8 op_mask = op_tl | (op_tr << 1) | (op_bl << 2) | (op_br << 3); \
 		uint16 blended; \
 		(void)b; \
+		(void)(Yf); \
 		if (op_mask == 0) \
 		{ \
 			/* All transparent: skip. Backdrop fills via DrawBackdrop. */ \
 		} \
 		else if (op_mask == 0xF) \
 		{ \
-			/* All opaque: fast path. */ \
-			if ((p_tl) == (p_tr) && (p_tl) == (p_bl) && (p_tl) == (p_br)) \
+			/* All opaque: fast path. Y-axis is nearest-neighbor (always \
+			   the top row Yi, mirroring native HD Mode 7's floor-Y \
+			   sampling), X-axis is linearly interpolated between the \
+			   row's two corners. \
+			   \
+			   Why "always top" and not "nearer based on Yf": picking by \
+			   Yf creates a discontinuity wherever Yf transitions across \
+			   128 between adjacent screen lines -- the boundary line \
+			   would suddenly sample row Yi+1 (which is the next line's \
+			   Yi), leaking content from a different scanline into this \
+			   one. HD-no-BL avoids this by always using floor Y; we do \
+			   the same. */ \
+			if ((p_tl) == (p_tr)) \
 			{ \
 				blended = GFX.ScreenColors[(p_tl)]; \
 			} \
@@ -1716,9 +1734,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 			{ \
 				uint16 c_tl = GFX.ScreenColors[(p_tl)]; \
 				uint16 c_tr = GFX.ScreenColors[(p_tr)]; \
-				uint16 c_bl = GFX.ScreenColors[(p_bl)]; \
-				uint16 c_br = GFX.ScreenColors[(p_br)]; \
-				M7HR_BLEND_RGB(blended, c_tl, c_tr, c_bl, c_br, (Xf), (Yf)); \
+				M7HR_BLEND_RGB(blended, c_tl, c_tr, (Xf)); \
 			} \
 			if (Z1 > GFX.DB[Offset + (out_offset)]) \
 			{ \
@@ -1728,34 +1744,22 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		} \
 		else \
 		{ \
-			/* Mixed transparency: alpha-aware blend. Zero-index \
-			   corners contribute zero weight; renormalize the \
-			   remaining weights via division. */ \
+			/* Mixed transparency: alpha-aware horizontal blend on the \
+			   top texel row (Yi). Zero-index corners contribute zero \
+			   weight; renormalize the remaining weight via division. \
+			   See the all-opaque branch for why we always use the top \
+			   row instead of choosing per-Yf. */ \
 			uint32 wx1_ = (Xf), wx0_ = 256 - wx1_; \
-			uint32 wy1_ = (Yf), wy0_ = 256 - wy1_; \
-			uint32 w_tl_ = op_tl ? wx0_ * wy0_ : 0; \
-			uint32 w_tr_ = op_tr ? wx1_ * wy0_ : 0; \
-			uint32 w_bl_ = op_bl ? wx0_ * wy1_ : 0; \
-			uint32 w_br_ = op_br ? wx1_ * wy1_ : 0; \
-			uint32 wsum_ = w_tl_ + w_tr_ + w_bl_ + w_br_; \
+			uint32 w_l_ = op_tl ? wx0_ : 0; \
+			uint32 w_r_ = op_tr ? wx1_ : 0; \
+			uint32 wsum_ = w_l_ + w_r_; \
 			if (wsum_ != 0) \
 			{ \
-				uint16 c_tl = op_tl ? GFX.ScreenColors[(p_tl)] : 0; \
-				uint16 c_tr = op_tr ? GFX.ScreenColors[(p_tr)] : 0; \
-				uint16 c_bl = op_bl ? GFX.ScreenColors[(p_bl)] : 0; \
-				uint16 c_br = op_br ? GFX.ScreenColors[(p_br)] : 0; \
-				uint32 r_ = ((c_tl >> 11) & 0x1f) * w_tl_ \
-				          + ((c_tr >> 11) & 0x1f) * w_tr_ \
-				          + ((c_bl >> 11) & 0x1f) * w_bl_ \
-				          + ((c_br >> 11) & 0x1f) * w_br_; \
-				uint32 g_ = ((c_tl >>  6) & 0x1f) * w_tl_ \
-				          + ((c_tr >>  6) & 0x1f) * w_tr_ \
-				          + ((c_bl >>  6) & 0x1f) * w_bl_ \
-				          + ((c_br >>  6) & 0x1f) * w_br_; \
-				uint32 b_ = ( c_tl        & 0x1f) * w_tl_ \
-				          + ( c_tr        & 0x1f) * w_tr_ \
-				          + ( c_bl        & 0x1f) * w_bl_ \
-				          + ( c_br        & 0x1f) * w_br_; \
+				uint16 c_l = op_tl ? GFX.ScreenColors[(p_tl)] : 0; \
+				uint16 c_r = op_tr ? GFX.ScreenColors[(p_tr)] : 0; \
+				uint32 r_ = ((c_l >> 11) & 0x1f) * w_l_ + ((c_r >> 11) & 0x1f) * w_r_; \
+				uint32 g_ = ((c_l >>  6) & 0x1f) * w_l_ + ((c_r >>  6) & 0x1f) * w_r_; \
+				uint32 b_ = ( c_l        & 0x1f) * w_l_ + ( c_r        & 0x1f) * w_r_; \
 				blended = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_)); \
 				if (Z1 > GFX.DB[Offset + (out_offset)]) \
 				{ \
