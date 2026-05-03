@@ -298,6 +298,11 @@ struct InternalPPU
 	bool8	InterlaceOBJ;
 	bool8	PseudoHires;
 	bool8	DoubleWidthPixels;
+	/* Set when this frame's buffer is at 4x SNES width (Mode 7 hires
+	   = 4x). DoubleWidthPixels is also TRUE in this case; consumers
+	   that only need to know "is the buffer wider than native" can
+	   keep checking DoubleWidthPixels alone. */
+	bool8	QuadWidthPixels;
 	bool8	DoubleHeightPixels;
 	bool8 RenderThisFrame;
 };

@@ -319,7 +319,14 @@ static int snes_ntsc_filter = 0;
 static snes_ntsc_t snes_ntsc;
 static snes_ntsc_setup_t ntsc_setup;
 static uint16_t *ntsc_screen_buffer = NULL;
-static const uint32_t MAX_SNES_WIDTH_NTSC = ((SNES_NTSC_OUT_WIDTH(256) + 3) / 4) * 4;
+/* Buffer width must fit both NTSC filter output (~604 px after
+   rounding to a 4-pixel multiple) and the 4x Mode 7 hires renderer
+   (1024 px). The buffer is sized to the max of these. Frames that
+   don't use 4x hires write only the leftmost N px and the trailing
+   columns are unused garbage. */
+#define MAX_SNES_WIDTH_NTSC ((SNES_NTSC_OUT_WIDTH(256) + 3) / 4 * 4)
+#define MAX_SNES_WIDTH_4X   1024
+#define MAX_BUFFER_WIDTH    (MAX_SNES_WIDTH_4X > MAX_SNES_WIDTH_NTSC ? MAX_SNES_WIDTH_4X : MAX_SNES_WIDTH_NTSC)
 
 static void update_geometry();
 
@@ -560,20 +567,24 @@ static void check_variables(bool first_run)
 	var.value = NULL;
 	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
-		if (strcmp(var.value, "enabled") == 0)
-			Settings.Mode7Hires = TRUE;
+		if (strcmp(var.value, "4x") == 0)
+			Settings.Mode7Hires = 4;
+		else if (strcmp(var.value, "2x") == 0 || strcmp(var.value, "enabled") == 0)
+			Settings.Mode7Hires = 2;
 		else
-			Settings.Mode7Hires = FALSE;
+			Settings.Mode7Hires = 0;
 	}
 
 	var.key = "snes9x_2010_mode7_hires_bilinear";
 	var.value = NULL;
 	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
-		if (strcmp(var.value, "enabled") == 0)
-			Settings.Mode7HiresBilinear = TRUE;
+		if (strcmp(var.value, "smooth") == 0)
+			Settings.Mode7HiresBilinear = 2;
+		else if (strcmp(var.value, "stable") == 0 || strcmp(var.value, "enabled") == 0)
+			Settings.Mode7HiresBilinear = 1;
 		else
-			Settings.Mode7HiresBilinear = FALSE;
+			Settings.Mode7HiresBilinear = 0;
 	}
 	/* Reinitialise frameskipping, if required */
 	if (!first_run &&
@@ -658,44 +669,9 @@ void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_batch_c
 void retro_set_input_poll(retro_input_poll_t cb) { poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb) { input_cb = cb; }
 
-/* Dynamic visibility for the Mode 7 - Hires Bilinear Filter option:
-   only show it in the frontend menu when Mode 7 - Hires itself is
-   enabled. Returns true when a visibility change was made so the
-   frontend can refresh its display without a retro_run() round-trip.
-
-   The callback is wired up in retro_set_environment via
-   RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK. The
-   frontend invokes it whenever any option value changes. */
-static bool update_option_visibility(void)
-{
-	static bool last_visible       = true;
-	bool        visible            = false;
-	struct retro_variable          var;
-	struct retro_core_option_display option_display;
-
-	if (!environ_cb)
-		return false;
-
-	var.key   = "snes9x_2010_mode7_hires";
-	var.value = NULL;
-	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-		visible = (strcmp(var.value, "enabled") == 0);
-
-	if (visible == last_visible)
-		return false;
-
-	option_display.key     = "snes9x_2010_mode7_hires_bilinear";
-	option_display.visible = visible;
-	environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
-
-	last_visible = visible;
-	return true;
-}
-
 void retro_set_environment(retro_environment_t cb)
 {
         bool local_bool_val = false;
-	struct retro_core_options_update_display_callback update_display_cb;
 	static const struct retro_controller_description port_1[] = {
 		{ "SNES Joypad", RETRO_DEVICE_JOYPAD },
 		{ "SNES Mouse", RETRO_DEVICE_MOUSE },
@@ -728,17 +704,8 @@ void retro_set_environment(retro_environment_t cb)
   
         libretro_supports_option_categories = local_bool_val;
 
-	/* Register the option-visibility callback with the frontend so
-	   the bilinear option is hidden when Mode 7 - Hires is off.
-	   Optional - frontends that don't support env 69 just show all
-	   options, which is fine. */
-	update_display_cb.callback = update_option_visibility;
-	environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK,
-			&update_display_cb);
-
-	/* Initial visibility pass for frontends that didn't trigger the
-	   callback automatically at registration time. */
-	update_option_visibility();
+	/* (No option-visibility callback: the bilinear and hires options
+	   are now independent and both are always shown.) */
 
 	environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 
@@ -1046,7 +1013,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 	info->geometry.base_width   = width;
 	info->geometry.base_height  = height;
-	info->geometry.max_width    = MAX_SNES_WIDTH_NTSC;
+	info->geometry.max_width    = MAX_BUFFER_WIDTH;
 	info->geometry.max_height   = MAX_SNES_HEIGHT;
 	info->geometry.aspect_ratio = get_aspect_ratio(width, height);
 
@@ -1126,7 +1093,7 @@ void retro_init(void)
 
 	S9xSetSamplesAvailableCallback(S9xAudioCallbackQueue);
 
-	GFX.Pitch = MAX_SNES_WIDTH_NTSC * sizeof(uint16_t);
+	GFX.Pitch = MAX_BUFFER_WIDTH * sizeof(uint16_t);
 
 	/* Defensive teardown: if retro_init is re-entered without an
 	   intervening retro_deinit (statically linked frontends, console
@@ -1151,7 +1118,7 @@ void retro_init(void)
 	ntsc_screen_buffer  = NULL;
 
 #if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS) && !defined(__SWITCH__) && !defined(VITA)
-	/* GFX.Pitch is already in bytes (= MAX_SNES_WIDTH_NTSC * sizeof(uint16_t));
+	/* GFX.Pitch is already in bytes (= MAX_BUFFER_WIDTH * sizeof(uint16_t));
 	   buffer size is Pitch * lines, not Pitch * lines * sizeof(uint16) again.
 	   request 128-bit alignment here if possible.
 	   posix_memalign output goes through void* temporaries to avoid the

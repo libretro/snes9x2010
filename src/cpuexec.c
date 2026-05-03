@@ -1077,7 +1077,7 @@ void S9xDoHEventProcessing (void)
 					if (!GFX.DoInterlace || !GFX.InterlaceFrame)
 					{
 						/* S9x Start Screen Refresh */
-						bool8 cond_1, cond_2;
+						bool8 cond_1, cond_2, cond_q;
 
 						GFX.DoInterlace -= (GFX.DoInterlace == TRUE);
 
@@ -1085,19 +1085,29 @@ void S9xDoHEventProcessing (void)
 						IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
 						IPPU.PseudoHires = Memory.FillRAM[0x2133] & 8;
 
-						/* cond_1: this frame should render at 2x horizontal width.
+						/* cond_1: this frame should render at 2x or wider.
 						   Triggered by Mode 5/6 / PseudoHires as on hardware,
-						   plus the M7Hires option which forces 2x width when
-						   the frame starts in Mode 7 so the M7Hires renderer
-						   has a 512-wide buffer to write into. */
+						   plus the Mode7Hires option which forces a wider
+						   buffer when the frame starts in Mode 7 so the
+						   M7Hires/M7HR4X renderers have room to write into.
+
+						   cond_q: this frame should render at 4x. Only set
+						   for Mode 7 with the 4x hires setting. */
 						cond_1 = (Settings.SupportHiRes && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires
 								|| (Settings.Mode7Hires && PPU.BGMode == 7)));
+						cond_q = (Settings.SupportHiRes && PPU.BGMode == 7 && Settings.Mode7Hires == 4);
 						cond_2 = (Settings.SupportHiRes && IPPU.Interlace);
 
 						GFX.RealPPL = GFX.Pitch >> 1;
-						IPPU.RenderedScreenWidth = SNES_WIDTH << cond_1;
+						/* Width factor: 4 for Mode 7 + 4x hires, 2 for any
+						   other hires path, 1 for native. */
+						{
+							int width_factor = cond_q ? 4 : (cond_1 ? 2 : 1);
+							IPPU.RenderedScreenWidth = SNES_WIDTH * width_factor;
+						}
 						IPPU.RenderedScreenHeight = PPU.ScreenHeight << cond_2;
 						IPPU.DoubleWidthPixels = cond_1;
+						IPPU.QuadWidthPixels = cond_q;
 						IPPU.DoubleHeightPixels = cond_2;
 
 						GFX.PPL = GFX.RealPPL << cond_2;

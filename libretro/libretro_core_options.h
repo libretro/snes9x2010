@@ -242,29 +242,31 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "snes9x_2010_mode7_hires",
       "Mode 7 - Hires (Restart)",
       NULL,
-      "Render Mode 7 backgrounds at 2x horizontal resolution. Affects only Mode 7 (driving / racing / overhead-rotation games). Other modes are unchanged. May cost performance; default off.",
+      "Render Mode 7 backgrounds at higher horizontal resolution. 2x renders at 512 px (smoother diagonals); 4x renders at 1024 px (smoothest, more expensive). Affects only Mode 7 (driving / racing / overhead-rotation games). Other modes are unchanged. Default off.",
       NULL,
       "hacks",
       {
          { "disabled", NULL },
-         { "enabled",  NULL },
+         { "2x",       NULL },
+         { "4x",       NULL },
          { NULL, NULL},
       },
       "disabled"
    },
    {
       "snes9x_2010_mode7_hires_bilinear",
-      "Mode 7 - Hires Bilinear Filter",
+      "Mode 7 - Bilinear Filter",
       NULL,
-      "When 'Mode 7 - Hires' is enabled, blend each output pixel from four neighbouring texture samples instead of using the nearest. Smooths out the chroma speckle visible at high-contrast palette boundaries on Mode 7 surfaces, at the cost of additional per-pixel work. No effect when 'Mode 7 - Hires' is disabled.",
+      "Apply bilinear filtering to Mode 7 backgrounds. Stable: blends along the X axis only with floor-Y sampling. Robust against high-contrast horizontal banding (rainbow rings, palette-rotation effects); recommended default. Smooth: full 4-corner bilinear, more aggressive smoothing along both axes, but can produce a one-scanline seam where adjacent texel rows contain dissimilar palette entries (e.g. Tiny Toons title). Independent of the Hires option; works at native, 2x and 4x.",
       NULL,
       "hacks",
       {
          { "disabled", NULL },
-         { "enabled",  NULL },
+         { "stable",   NULL },
+         { "smooth",   NULL },
          { NULL, NULL},
       },
-      "disabled"
+      "stable"
    },
 
    { NULL, NULL, NULL, NULL, NULL, NULL, {{0}}, NULL },

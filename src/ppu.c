@@ -562,7 +562,7 @@ static void DrawOBJS (int D)
 	void (*DrawTile) (uint32, uint32, uint32, uint32) = NULL;
 	void (*DrawClippedTile) (uint32, uint32, uint32, uint32, uint32, uint32) = NULL;
 
-	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+	PixWidth = IPPU.QuadWidthPixels ? 4 : (IPPU.DoubleWidthPixels ? 2 : 1);
 	BG.InterlaceLine = GFX.InterlaceFrame ? 8 : 0;
 	GFX.Z1 = 2;
 
@@ -680,7 +680,7 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 
 	OffsetMask  = (BG.TileSizeH == 16) ? 0x3ff : 0x1ff;
 	OffsetShift = (BG.TileSizeV == 16) ? 4 : 3;
-	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+	PixWidth = IPPU.QuadWidthPixels ? 4 : (IPPU.DoubleWidthPixels ? 2 : 1);
 	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
@@ -914,7 +914,7 @@ static void DrawBackgroundMosaic (int bg, uint8 Zh, uint8 Zl)
 
 	OffsetMask  = (BG.TileSizeH == 16) ? 0x3ff : 0x1ff;
 	OffsetShift = (BG.TileSizeV == 16) ? 4 : 3;
-	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+	PixWidth = IPPU.QuadWidthPixels ? 4 : (IPPU.DoubleWidthPixels ? 2 : 1);
 	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
 
 	MosaicStart = ((uint32) GFX.StartY - PPU.MosaicStart) % PPU.Mosaic;
@@ -1092,7 +1092,7 @@ static void DrawBackgroundOffset (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 	Offset2Mask  = (BG.OffsetSizeH == 16) ? 0x3ff : 0x1ff;
 	Offset2Shift = (BG.OffsetSizeV == 16) ? 4 : 3;
 	OffsetEnableMask = 0x2000 << bg;
-	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+	PixWidth = IPPU.QuadWidthPixels ? 4 : (IPPU.DoubleWidthPixels ? 2 : 1);
 	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
@@ -1309,7 +1309,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8 Zh, uint8 Zl, int VOffOff)
 	Offset2Mask  = (BG.OffsetSizeH == 16) ? 0x3ff : 0x1ff;
 	Offset2Shift = (BG.OffsetSizeV == 16) ? 4 : 3;
 	OffsetEnableMask = 0x2000 << bg;
-	PixWidth = IPPU.DoubleWidthPixels ? 2 : 1;
+	PixWidth = IPPU.QuadWidthPixels ? 4 : (IPPU.DoubleWidthPixels ? 2 : 1);
 	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
 
 	MosaicStart = ((uint32) GFX.StartY - PPU.MosaicStart) % PPU.Mosaic;
@@ -2228,8 +2228,11 @@ void S9xUpdateScreen (void)
 		{
 			register uint32 y;
 			register int x;
+			/* Promote to 4x when this is Mode 7 with the 4x setting,
+			   otherwise to 2x as on hardware / 2x Mode 7 hires. */
+			int factor = (PPU.BGMode == 7 && Settings.Mode7Hires == 4) ? 4 : 2;
 
-			/* Mid-frame width promotion needs a 2x-wider buffer than
+			/* Mid-frame width promotion needs a wider buffer than
 			   we acquired. Bail out of any sw_fb redirect first;
 			   afterwards GFX.Screen points at the persistent buffer
 			   sized for max width, with the partial render copied
@@ -2240,16 +2243,22 @@ void S9xUpdateScreen (void)
 			for ( y = 0; y < GFX.StartY; y++)
 			{
 				register uint16 *p, *q;
+				int i;
 
 				p = GFX.Screen + y * GFX.PPL + 255;
-				q = GFX.Screen + y * GFX.PPL + 510;
+				q = GFX.Screen + y * GFX.PPL + 256 * factor - 1;
 
-				for ( x = 255; x >= 0; x--, p--, q -= 2)
-					*q = *(q + 1) = *p;
+				for ( x = 255; x >= 0; x--, p--)
+				{
+					/* Replicate p's value 'factor' times into q, q-1, ... */
+					for (i = 0; i < factor; i++, q--)
+						*q = *p;
+				}
 			}
 
 			IPPU.DoubleWidthPixels = TRUE;
-			IPPU.RenderedScreenWidth = 512;
+			IPPU.QuadWidthPixels = (factor == 4);
+			IPPU.RenderedScreenWidth = SNES_WIDTH * factor;
 		}
 
 		if (!IPPU.DoubleHeightPixels && IPPU.Interlace && (PPU.BGMode == 5 || PPU.BGMode == 6))
@@ -2348,8 +2357,9 @@ void S9xDrawCrosshair (const char *crosshair, uint8 fgcolor, uint8 bgcolor, int1
 	x -= 7;
 	y -= 7;
 
-	if (IPPU.DoubleWidthPixels) { cx = 2; x *= 2; W *= 2; }
-	if (IPPU.DoubleHeightPixels) { rx = 2; y *= 2; H *= 2; }
+	if (IPPU.QuadWidthPixels)        { cx = 4; x *= 4; W *= 4; }
+	else if (IPPU.DoubleWidthPixels) { cx = 2; x *= 2; W *= 2; }
+	if (IPPU.DoubleHeightPixels)     { rx = 2; y *= 2; H *= 2; }
 
 	fg = get_crosshair_color(fgcolor);
 	bg = get_crosshair_color(bgcolor);
@@ -5201,6 +5211,7 @@ void S9xSoftResetPPU (void)
 	IPPU.Interlace = FALSE;
 	IPPU.InterlaceOBJ = FALSE;
 	IPPU.DoubleWidthPixels = FALSE;
+	IPPU.QuadWidthPixels = FALSE;
 	IPPU.DoubleHeightPixels = FALSE;
 	IPPU.CurrentLine = 0;
 	IPPU.PreviousLine = 0;

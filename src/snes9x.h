@@ -404,8 +404,17 @@ struct SSettings
 	bool8		CurrentROMisJustifierCompatible;
    bool8    NormalControls;
 	bool8		SupportHiRes;
-	bool8		Mode7Hires;
-	bool8		Mode7HiresBilinear;
+	/* Mode 7 hires upsample factor: 0 = off (native 256), 2 = 2x
+	   horizontal (512), 4 = 4x horizontal (1024). Buffer width is
+	   promoted accordingly when in Mode 7. */
+	int32		Mode7Hires;
+	/* Mode 7 bilinear filter mode: 0 = off, 1 = stable (X-only blend
+	   with floor-Y), 2 = smooth (full 4-corner bilinear). The smooth
+	   mode is more aggressive but exposes a one-scanline seam on
+	   content with abrupt vertical texel changes (e.g. Tiny Toons
+	   rainbow rings). Stable matches HD-no-BL's Y-axis sampling and
+	   only smooths X, so it cannot produce that seam. */
+	int32		Mode7HiresBilinear;
 	bool8		Transparency;
    float    SuperFXSpeedPerLine;
    bool8	FastSavestates;

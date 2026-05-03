@@ -700,7 +700,23 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	interlace = obj ? FALSE : IPPU.Interlace;
 	hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
 
-	if (!IPPU.DoubleWidthPixels)	/* normal width */
+	if (IPPU.QuadWidthPixels)		/* quad width (Mode 7 hires 4x) */
+	{
+		DT     = Renderers_DrawTile16Normal4x1;
+		DCT    = Renderers_DrawClippedTile16Normal4x1;
+		DMP    = Renderers_DrawMosaicPixel16Normal4x1;
+		DB     = Renderers_DrawBackdrop16Normal4x1;
+		/* M7-mosaic 4x not implemented; mosaic is meaningless under
+		   sub-pixel refinement. Fall through to 2x mosaic, which
+		   replicates each native pixel twice -- the buffer is 4x
+		   wide, so half the columns will be unfilled. Mode 7 mosaic
+		   is rare; this is a graceful-degrade rather than a hard
+		   failure. */
+		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Normal2x1 : Renderers_DrawMode7BG1Normal2x1;
+		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal2x1 : Renderers_DrawMode7BG2Normal2x1;
+		GFX.LinesPerTile = 8;
+	}
+	else if (!IPPU.DoubleWidthPixels)	/* normal width */
 	{
 		DT     = Renderers_DrawTile16Normal1x1;
 		DCT    = Renderers_DrawClippedTile16Normal1x1;
@@ -753,37 +769,75 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 		}
 	}
 
-	/* Mode 7 hires: when the option is on, the frame is Mode 7, the
-	   buffer has been promoted to 2x width (either at frame start in
-	   cpuexec.c or mid-frame in S9xUpdateScreen), and the BG is not
-	   mosaicked, override DM7BG1/DM7BG2 to point at the M7Hires
-	   renderers. Mosaic falls through to the existing Normal2x1
-	   mosaic - sub-pixel refinement of mosaic blocks is meaningless.
-	   Subscreen also falls through - color math composition stays at
-	   native sample rate.
+	/* Mode 7 hires / bilinear dispatch.
 
-	   Settings.Mode7HiresBilinear chooses between nearest-neighbor
-	   sampling (HR variants, the original M7Hires behaviour) and
-	   bilinear filtering (BL variants, which blend each output pixel
-	   from the four texels surrounding the fractional sample
-	   position). The bilinear path costs more per pixel but smooths
-	   the chroma speckle visible at high-contrast palette boundaries
-	   with nearest-neighbor sampling. */
-	if (Settings.Mode7Hires && BGMode == 7 && IPPU.DoubleWidthPixels && !sub)
+	   Two orthogonal options drive the choice:
+	     Settings.Mode7Hires:         0 (off), 2 (2x), 4 (4x)
+	     Settings.Mode7HiresBilinear: 0 (off), 1 (stable), 2 (smooth)
+
+	   The stable/smooth distinction is an internal runtime flag
+	   inside M7HR_BLEND_AND_WRITE, so a single BL renderer body
+	   handles both filter modes. Stable does X-only blending with
+	   floor-Y nearest-neighbor (matches HD-no-BL's Y sampling, no
+	   one-scanline seam on hostile content). Smooth does the full
+	   4-corner bilinear blend (more aggressive smoothing, but can
+	   produce a one-scanline seam where adjacent texel rows
+	   disagree -- e.g. Tiny Toons rainbow rings).
+
+	   When BL is on at Hires=off, we need a 1x BL renderer that
+	   fills the native 256-wide buffer with bilinear samples (one
+	   sub-sample per output pixel). When BL is on at Hires=2, the
+	   existing 2x BL renderer (two sub-samples per native pixel)
+	   applies. When BL is on at Hires=4, the new 4x BL renderer
+	   (four sub-samples). HR-only variants drop the BL math
+	   entirely, just nearest-neighbor sampling at the chosen rate.
+
+	   Mosaic falls through unchanged at all hires levels -- mosaic
+	   is intentionally unrefined. Subscreen also falls through:
+	   color math composition stays at native sample rate. */
+	if (BGMode == 7 && !sub)
 	{
-		if (Settings.Mode7HiresBilinear)
+		if (Settings.Mode7Hires == 4 && IPPU.QuadWidthPixels)
 		{
-			if (!M7M1)
-				DM7BG1 = Renderers_DrawMode7BG1BLNormal1x1;
-			if (!M7M2)
-				DM7BG2 = Renderers_DrawMode7BG2BLNormal1x1;
+			if (Settings.Mode7HiresBilinear)
+			{
+				if (!M7M1)
+					DM7BG1 = Renderers_DrawMode7BG1BL4XNormal1x1;
+				if (!M7M2)
+					DM7BG2 = Renderers_DrawMode7BG2BL4XNormal1x1;
+			}
+			else
+			{
+				if (!M7M1)
+					DM7BG1 = Renderers_DrawMode7BG1HR4XNormal1x1;
+				if (!M7M2)
+					DM7BG2 = Renderers_DrawMode7BG2HR4XNormal1x1;
+			}
 		}
-		else
+		else if (Settings.Mode7Hires == 2 && IPPU.DoubleWidthPixels)
 		{
+			if (Settings.Mode7HiresBilinear)
+			{
+				if (!M7M1)
+					DM7BG1 = Renderers_DrawMode7BG1BLNormal1x1;
+				if (!M7M2)
+					DM7BG2 = Renderers_DrawMode7BG2BLNormal1x1;
+			}
+			else
+			{
+				if (!M7M1)
+					DM7BG1 = Renderers_DrawMode7BG1HRNormal1x1;
+				if (!M7M2)
+					DM7BG2 = Renderers_DrawMode7BG2HRNormal1x1;
+			}
+		}
+		else if (Settings.Mode7HiresBilinear && !IPPU.DoubleWidthPixels)
+		{
+			/* BL on at Hires=off: bilinear at native 1x width. */
 			if (!M7M1)
-				DM7BG1 = Renderers_DrawMode7BG1HRNormal1x1;
+				DM7BG1 = Renderers_DrawMode7BG1BL1XNormal1x1;
 			if (!M7M2)
-				DM7BG2 = Renderers_DrawMode7BG2HRNormal1x1;
+				DM7BG2 = Renderers_DrawMode7BG2BL1XNormal1x1;
 		}
 	}
 
@@ -1613,20 +1667,19 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		} \
 	}
 
-/* Horizontal-only blend. Vertical blending across texel rows could
+/* Stable (X-only) blend. Vertical blending across texel rows can
    produce muddy artifacts when adjacent rows contain dissimilar
    content (e.g. Tiny Toons rainbow rings, palette-rotation effects,
    anything with horizontal banding or per-line CGRAM/VRAM HDMA),
    because the bilinear blend averages dissimilar palette entries
-   into colors visibly different from both source rows. The vertical
-   blend's upside is small -- Mode 7 perspective is dominated by the
-   X axis, where adjacent texels are visibly close. The downside is
-   severe: any time the row above and the row below disagree, you
-   get a one-scanline stripe of wrong colors.
+   into colors visibly different from both source rows. Stable
+   ignores the bottom row entirely: the caller passes the top row's
+   two corners (TL and TR), and only X is interpolated.
 
-   This blend ignores the bottom row (BL/BR/Yf): the caller selects
-   the nearer texel row in Y via nearest-neighbor and passes its two
-   corners as TL and TR. Only the X axis is interpolated. */
+   This is the safer default. It matches HD-no-BL's Y sampling
+   exactly (floor Y) and inherits its seam-free behaviour, while
+   still smoothing X-axis aliasing which is the main visible win
+   for Mode 7 perspective. */
 #define M7HR_BLEND_RGB(out, TL, TR, Xf) \
 	{ \
 		uint32 wx1 = (Xf), wx0 = 256 - wx1; \
@@ -1634,6 +1687,27 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		uint32 g = (((TL) >>  6) & 0x1f) * wx0 + (((TR) >>  6) & 0x1f) * wx1; \
 		uint32 b = (((TL)      ) & 0x1f) * wx0 + (((TR)      ) & 0x1f) * wx1; \
 		(out) = (uint16)(((r >> 8) << 11) | ((g >> 8) << 6) | (b >> 8)); \
+	}
+
+/* Smooth (4-corner) blend. Full bilinear interpolation across all
+   four texels surrounding the fractional sample position. More
+   aggressive smoothing than stable, particularly along the Y axis,
+   but can produce a one-scanline seam where adjacent texel rows
+   differ abruptly (the blend lands far from both rows -- a "muddy"
+   average that doesn't match either neighbour). */
+#define M7HR_BLEND_RGB_4C(out, TL, TR, BL, BR, Xf, Yf) \
+	{ \
+		uint32 wx1 = (Xf), wx0 = 256 - wx1; \
+		uint32 wy1 = (Yf), wy0 = 256 - wy1; \
+		uint32 w_tl = wx0 * wy0, w_tr = wx1 * wy0; \
+		uint32 w_bl = wx0 * wy1, w_br = wx1 * wy1; \
+		uint32 r = (((TL) >> 11) & 0x1f) * w_tl + (((TR) >> 11) & 0x1f) * w_tr \
+		         + (((BL) >> 11) & 0x1f) * w_bl + (((BR) >> 11) & 0x1f) * w_br; \
+		uint32 g = (((TL) >>  6) & 0x1f) * w_tl + (((TR) >>  6) & 0x1f) * w_tr \
+		         + (((BL) >>  6) & 0x1f) * w_bl + (((BR) >>  6) & 0x1f) * w_br; \
+		uint32 b = (((TL)      ) & 0x1f) * w_tl + (((TR)      ) & 0x1f) * w_tr \
+		         + (((BL)      ) & 0x1f) * w_bl + (((BR)      ) & 0x1f) * w_br; \
+		(out) = (uint16)(((r >> 16) << 11) | ((g >> 16) << 6) | (b >> 16)); \
 	}
 
 /* Look up four corners from the fill tile (tile 0) - used when the
@@ -1664,15 +1738,21 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 /* Given four corner palette indices, the raw TL byte (for BG2's
    per-pixel priority bit), and fractional weights, do the
-   horizontal-only blend (with the same-index early-out) and write
-   the result to GFX.S[Offset+out_offset] / GFX.DB[Offset+out_offset]
-   subject to the Z test. Shared between the Mode7Repeat == 0 (wrap)
-   path and the in-range case of the Mode7Repeat != 0 paths.
+   configured Mode 7 blend (stable X-only on floor-Y, or smooth
+   4-corner bilinear) and write the result to GFX.S[Offset+out_offset]
+   / GFX.DB[Offset+out_offset] subject to the Z test. Shared between
+   the Mode7Repeat == 0 (wrap) path and the in-range case of the
+   Mode7Repeat != 0 paths.
 
-   Y axis is nearest-neighbor: Yf < 128 selects the top texel row
-   (TL/TR), Yf >= 128 selects the bottom row (BL/BR). The two
-   corners on the chosen row are then linearly interpolated in X.
-   See M7HR_BLEND_RGB for why we don't blend across rows.
+   Settings.Mode7HiresBilinear selects the filter:
+     == 1 (stable)  Y is nearest-neighbor (floor Yi, mirroring HD
+                    Mode 7's sampling). X is interpolated between
+                    the row's two corners. Cannot produce one-line
+                    Y seams.
+     == 2 (smooth)  Full 4-corner bilinear. Smoother on gradient
+                    content, but can produce a one-scanline seam
+                    on hostile content where adjacent texel rows
+                    contain dissimilar palette entries.
 
    The raw TL byte is exposed as local 'b' so that Z1/Z2 macro
    expansions can reference 'b & 0x80' the same way the native HR
@@ -1689,12 +1769,11 @@ extern struct SLineMatrixData	LineMatrixData[240];
                        pixel; backdrop will fill at end of frame.
      op_mask == 0xF -> all four corners opaque. Take the fast
                        path: same-index early-out for solid regions,
-                       otherwise horizontal blend on the Yf-selected
-                       row.
-     op_mask other  -> mixed transparency. Alpha-aware horizontal
-                       blend on the Yf-selected row: a transparent
-                       corner contributes zero weight; the remaining
-                       weight is renormalized so texture edges fade
+                       otherwise the configured blend.
+     op_mask other  -> mixed transparency. Alpha-aware variant of
+                       the configured blend: zero-index corners
+                       contribute zero weight; the remaining weight
+                       is renormalized so texture edges fade
                        smoothly into the backdrop instead of
                        producing a sharp seam. */
 #define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw, Xf, Yf) \
@@ -1705,36 +1784,44 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		uint8 op_bl = ((p_bl) != 0); \
 		uint8 op_br = ((p_br) != 0); \
 		uint8 op_mask = op_tl | (op_tr << 1) | (op_bl << 2) | (op_br << 3); \
+		uint8 smooth = (Settings.Mode7HiresBilinear == 2); \
 		uint16 blended; \
 		(void)b; \
-		(void)(Yf); \
 		if (op_mask == 0) \
 		{ \
 			/* All transparent: skip. Backdrop fills via DrawBackdrop. */ \
 		} \
 		else if (op_mask == 0xF) \
 		{ \
-			/* All opaque: fast path. Y-axis is nearest-neighbor (always \
-			   the top row Yi, mirroring native HD Mode 7's floor-Y \
-			   sampling), X-axis is linearly interpolated between the \
-			   row's two corners. \
-			   \
-			   Why "always top" and not "nearer based on Yf": picking by \
-			   Yf creates a discontinuity wherever Yf transitions across \
-			   128 between adjacent screen lines -- the boundary line \
-			   would suddenly sample row Yi+1 (which is the next line's \
-			   Yi), leaking content from a different scanline into this \
-			   one. HD-no-BL avoids this by always using floor Y; we do \
-			   the same. */ \
-			if ((p_tl) == (p_tr)) \
+			/* All opaque: fast path. */ \
+			if (smooth) \
 			{ \
-				blended = GFX.ScreenColors[(p_tl)]; \
+				if ((p_tl) == (p_tr) && (p_tl) == (p_bl) && (p_tl) == (p_br)) \
+				{ \
+					blended = GFX.ScreenColors[(p_tl)]; \
+				} \
+				else \
+				{ \
+					uint16 c_tl = GFX.ScreenColors[(p_tl)]; \
+					uint16 c_tr = GFX.ScreenColors[(p_tr)]; \
+					uint16 c_bl = GFX.ScreenColors[(p_bl)]; \
+					uint16 c_br = GFX.ScreenColors[(p_br)]; \
+					M7HR_BLEND_RGB_4C(blended, c_tl, c_tr, c_bl, c_br, (Xf), (Yf)); \
+				} \
 			} \
 			else \
 			{ \
-				uint16 c_tl = GFX.ScreenColors[(p_tl)]; \
-				uint16 c_tr = GFX.ScreenColors[(p_tr)]; \
-				M7HR_BLEND_RGB(blended, c_tl, c_tr, (Xf)); \
+				/* Stable: X-only on floor-Y row. */ \
+				if ((p_tl) == (p_tr)) \
+				{ \
+					blended = GFX.ScreenColors[(p_tl)]; \
+				} \
+				else \
+				{ \
+					uint16 c_tl = GFX.ScreenColors[(p_tl)]; \
+					uint16 c_tr = GFX.ScreenColors[(p_tr)]; \
+					M7HR_BLEND_RGB(blended, c_tl, c_tr, (Xf)); \
+				} \
 			} \
 			if (Z1 > GFX.DB[Offset + (out_offset)]) \
 			{ \
@@ -1744,27 +1831,64 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		} \
 		else \
 		{ \
-			/* Mixed transparency: alpha-aware horizontal blend on the \
-			   top texel row (Yi). Zero-index corners contribute zero \
-			   weight; renormalize the remaining weight via division. \
-			   See the all-opaque branch for why we always use the top \
-			   row instead of choosing per-Yf. */ \
-			uint32 wx1_ = (Xf), wx0_ = 256 - wx1_; \
-			uint32 w_l_ = op_tl ? wx0_ : 0; \
-			uint32 w_r_ = op_tr ? wx1_ : 0; \
-			uint32 wsum_ = w_l_ + w_r_; \
-			if (wsum_ != 0) \
+			/* Mixed transparency: alpha-aware blend. */ \
+			if (smooth) \
 			{ \
-				uint16 c_l = op_tl ? GFX.ScreenColors[(p_tl)] : 0; \
-				uint16 c_r = op_tr ? GFX.ScreenColors[(p_tr)] : 0; \
-				uint32 r_ = ((c_l >> 11) & 0x1f) * w_l_ + ((c_r >> 11) & 0x1f) * w_r_; \
-				uint32 g_ = ((c_l >>  6) & 0x1f) * w_l_ + ((c_r >>  6) & 0x1f) * w_r_; \
-				uint32 b_ = ( c_l        & 0x1f) * w_l_ + ( c_r        & 0x1f) * w_r_; \
-				blended = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_)); \
-				if (Z1 > GFX.DB[Offset + (out_offset)]) \
+				/* 4-corner alpha-aware blend. Zero-index corners \
+				   contribute zero weight; renormalize via division. */ \
+				uint32 wx1_ = (Xf), wx0_ = 256 - wx1_; \
+				uint32 wy1_ = (Yf), wy0_ = 256 - wy1_; \
+				uint32 w_tl_ = op_tl ? wx0_ * wy0_ : 0; \
+				uint32 w_tr_ = op_tr ? wx1_ * wy0_ : 0; \
+				uint32 w_bl_ = op_bl ? wx0_ * wy1_ : 0; \
+				uint32 w_br_ = op_br ? wx1_ * wy1_ : 0; \
+				uint32 wsum_ = w_tl_ + w_tr_ + w_bl_ + w_br_; \
+				if (wsum_ != 0) \
 				{ \
-					GFX.S[Offset + (out_offset)] = MATH(blended, GFX.SubScreen[Offset + (out_offset)], GFX.SubZBuffer[Offset + (out_offset)]); \
-					GFX.DB[Offset + (out_offset)] = Z2; \
+					uint16 c_tl = op_tl ? GFX.ScreenColors[(p_tl)] : 0; \
+					uint16 c_tr = op_tr ? GFX.ScreenColors[(p_tr)] : 0; \
+					uint16 c_bl = op_bl ? GFX.ScreenColors[(p_bl)] : 0; \
+					uint16 c_br = op_br ? GFX.ScreenColors[(p_br)] : 0; \
+					uint32 r_ = ((c_tl >> 11) & 0x1f) * w_tl_ \
+					          + ((c_tr >> 11) & 0x1f) * w_tr_ \
+					          + ((c_bl >> 11) & 0x1f) * w_bl_ \
+					          + ((c_br >> 11) & 0x1f) * w_br_; \
+					uint32 g_ = ((c_tl >>  6) & 0x1f) * w_tl_ \
+					          + ((c_tr >>  6) & 0x1f) * w_tr_ \
+					          + ((c_bl >>  6) & 0x1f) * w_bl_ \
+					          + ((c_br >>  6) & 0x1f) * w_br_; \
+					uint32 b_ = ( c_tl        & 0x1f) * w_tl_ \
+					          + ( c_tr        & 0x1f) * w_tr_ \
+					          + ( c_bl        & 0x1f) * w_bl_ \
+					          + ( c_br        & 0x1f) * w_br_; \
+					blended = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_)); \
+					if (Z1 > GFX.DB[Offset + (out_offset)]) \
+					{ \
+						GFX.S[Offset + (out_offset)] = MATH(blended, GFX.SubScreen[Offset + (out_offset)], GFX.SubZBuffer[Offset + (out_offset)]); \
+						GFX.DB[Offset + (out_offset)] = Z2; \
+					} \
+				} \
+			} \
+			else \
+			{ \
+				/* Stable: alpha-aware horizontal blend on top row only. */ \
+				uint32 wx1_ = (Xf), wx0_ = 256 - wx1_; \
+				uint32 w_l_ = op_tl ? wx0_ : 0; \
+				uint32 w_r_ = op_tr ? wx1_ : 0; \
+				uint32 wsum_ = w_l_ + w_r_; \
+				if (wsum_ != 0) \
+				{ \
+					uint16 c_l = op_tl ? GFX.ScreenColors[(p_tl)] : 0; \
+					uint16 c_r = op_tr ? GFX.ScreenColors[(p_tr)] : 0; \
+					uint32 r_ = ((c_l >> 11) & 0x1f) * w_l_ + ((c_r >> 11) & 0x1f) * w_r_; \
+					uint32 g_ = ((c_l >>  6) & 0x1f) * w_l_ + ((c_r >>  6) & 0x1f) * w_r_; \
+					uint32 b_ = ( c_l        & 0x1f) * w_l_ + ( c_r        & 0x1f) * w_r_; \
+					blended = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_)); \
+					if (Z1 > GFX.DB[Offset + (out_offset)]) \
+					{ \
+						GFX.S[Offset + (out_offset)] = MATH(blended, GFX.SubScreen[Offset + (out_offset)], GFX.SubZBuffer[Offset + (out_offset)]); \
+						GFX.DB[Offset + (out_offset)] = Z2; \
+					} \
 				} \
 			} \
 		} \
@@ -1886,6 +2010,305 @@ extern struct SLineMatrixData	LineMatrixData[240];
 					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2); \
 				} \
 				AA += aa - aa_h; CC += cc - cc_h; \
+			} \
+		} \
+	}
+
+/* High-resolution Mode 7 at 4x horizontal: same structure as
+   DRAW_TILE_NORMAL_M7HIRES but with four sub-samples per native
+   pixel (aa_q = aa/4 quarter-step), writing to output indices
+   4*x .. 4*x+3. Used when Settings.Mode7Hires == 4. The buffer
+   has been promoted to 4x width before this renderer runs.
+   Like the 2x variant, this is nearest-neighbor sampling at the
+   sub-pixel rate; bilinear filtering is in M7HIRES_4X_BILINEAR. */
+#define DRAW_TILE_NORMAL_M7HIRES_4X() \
+	struct SLineMatrixData *l; \
+	uint32 x, Line, Offset; \
+	uint8	*VRAM1; \
+	int aa, cc, aa_q, cc_q, startx; \
+	VRAM1 = Memory.VRAM + 1; \
+   GFX.RealScreenColors = IPPU.ScreenColors; \
+	if (DCMODE) \
+	{ \
+		if (IPPU.DirectColourMapsNeedRebuild) \
+			S9xBuildDirectColourMaps(); \
+		GFX.RealScreenColors = DirectColourMaps[0]; \
+	} \
+	\
+	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
+	Offset = GFX.StartY * GFX.PPL; \
+	l = &LineMatrixData[GFX.StartY]; \
+	\
+	for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
+	{ \
+		int AA, BB, CC, DD, xx, yy; \
+		int32 HOffset, VOffset, CentreX, CentreY; \
+		uint8 Pix, starty; \
+		\
+		HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
+		VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
+		CentreX = ((int32) l->CentreX << 19) >> 19; \
+		CentreY = ((int32) l->CentreY << 19) >> 19; \
+		\
+		starty = Line + 1; \
+		if (PPU.Mode7VFlip) \
+			starty ^= 0xff; \
+		yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
+		\
+		if (PPU.Mode7HFlip) \
+		{ \
+			startx = Right - 1; \
+			aa = -l->MatrixA; \
+			cc = -l->MatrixC; \
+		} \
+		else \
+		{ \
+			startx = Left; \
+			aa = l->MatrixA; \
+			cc = l->MatrixC; \
+		} \
+		aa_q = aa / 4; \
+		cc_q = cc / 4; \
+		xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
+		if (!PPU.Mode7Repeat) \
+		{ \
+			for ( x = Left; x < Right; x++) \
+			{ \
+				int X, Y, sub; \
+				uint8 *TileData, b; \
+				/* Four sub-samples at x/4, x/4+1, x/4+2, x/4+3 \
+				   (native-pixel quarter steps). */ \
+				for (sub = 0; sub < 4; sub++) \
+				{ \
+					X = ((AA + BB) >> 8) & 0x3ff; \
+					Y = ((CC + DD) >> 8) & 0x3ff; \
+					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+					DRAW_PIXEL(4 * x + sub, Pix = (b & MASK)); \
+					/* Quarter-step advance, with the leftover \
+					   distributed on the final sub-sample so the \
+					   total advance per native pixel sums to aa/cc. */ \
+					if (sub < 3) { AA += aa_q; CC += cc_q; } \
+					else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; } \
+				} \
+			} \
+		} \
+		else \
+		{ \
+			for ( x = Left; x < Right; x++) \
+			{ \
+				int X, Y, sub, do_draw; \
+				uint8 *TileData, b; \
+				for (sub = 0; sub < 4; sub++) \
+				{ \
+					X = ((AA + BB) >> 8); \
+					Y = ((CC + DD) >> 8); \
+					do_draw = 1; \
+					if (((X | Y) & ~0x3ff) == 0) \
+					{ \
+						TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+						b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+					} \
+					else if (PPU.Mode7Repeat == 3) \
+						b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1)); \
+					else \
+						do_draw = 0; \
+					if (do_draw) \
+						DRAW_PIXEL(4 * x + sub, Pix = (b & MASK)); \
+					if (sub < 3) { AA += aa_q; CC += cc_q; } \
+					else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; } \
+				} \
+			} \
+		} \
+	}
+
+/* Bilinear-filtered Mode 7 at 4x horizontal: same as
+   DRAW_TILE_NORMAL_M7HIRES_4X but each sub-sample goes through
+   M7HR_SAMPLE_BILINEAR / M7HR_BLEND_AND_WRITE for the configured
+   filter (stable or smooth). */
+#define DRAW_TILE_NORMAL_M7HIRES_4X_BILINEAR() \
+	struct SLineMatrixData *l; \
+	uint32 x, Line, Offset; \
+	uint8	*VRAM1; \
+	int aa, cc, aa_q, cc_q, startx; \
+	VRAM1 = Memory.VRAM + 1; \
+   GFX.RealScreenColors = IPPU.ScreenColors; \
+	if (DCMODE) \
+	{ \
+		if (IPPU.DirectColourMapsNeedRebuild) \
+			S9xBuildDirectColourMaps(); \
+		GFX.RealScreenColors = DirectColourMaps[0]; \
+	} \
+	\
+	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
+	Offset = GFX.StartY * GFX.PPL; \
+	l = &LineMatrixData[GFX.StartY]; \
+	\
+	for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
+	{ \
+		int AA, BB, CC, DD, xx, yy; \
+		int32 HOffset, VOffset, CentreX, CentreY; \
+		uint8 starty; \
+		\
+		HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
+		VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
+		CentreX = ((int32) l->CentreX << 19) >> 19; \
+		CentreY = ((int32) l->CentreY << 19) >> 19; \
+		\
+		starty = Line + 1; \
+		if (PPU.Mode7VFlip) \
+			starty ^= 0xff; \
+		yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
+		\
+		if (PPU.Mode7HFlip) \
+		{ \
+			startx = Right - 1; \
+			aa = -l->MatrixA; \
+			cc = -l->MatrixC; \
+		} \
+		else \
+		{ \
+			startx = Left; \
+			aa = l->MatrixA; \
+			cc = l->MatrixC; \
+		} \
+		aa_q = aa / 4; \
+		cc_q = cc / 4; \
+		xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
+		if (!PPU.Mode7Repeat) \
+		{ \
+			for ( x = Left; x < Right; x++) \
+			{ \
+				int sub; \
+				for (sub = 0; sub < 4; sub++) \
+				{ \
+					M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD); \
+					if (sub < 3) { AA += aa_q; CC += cc_q; } \
+					else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; } \
+				} \
+			} \
+		} \
+		else \
+		{ \
+			for ( x = Left; x < Right; x++) \
+			{ \
+				int sub; \
+				for (sub = 0; sub < 4; sub++) \
+				{ \
+					int Xs = (AA + BB) >> 8; \
+					int Ys = (CC + DD) >> 8; \
+					uint32 Xfs = (uint32)((AA + BB) & 0xff); \
+					uint32 Yfs = (uint32)((CC + DD) & 0xff); \
+					uint8 p_tl, p_tr, p_bl, p_br; \
+					uint8 b_tl_raw_; \
+					if (((Xs | Ys) & ~0x3ff) == 0) \
+					{ \
+						M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
+						M7HR_BLEND_AND_WRITE(4 * x + sub, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs); \
+					} \
+					else if (PPU.Mode7Repeat == 3) \
+					{ \
+						M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
+						M7HR_BLEND_AND_WRITE(4 * x + sub, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs); \
+					} \
+					if (sub < 3) { AA += aa_q; CC += cc_q; } \
+					else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; } \
+				} \
+			} \
+		} \
+	}
+
+/* Bilinear-filtered Mode 7 at native (1x) width: one sample per
+   native output pixel, but filtered through the configured bilinear
+   blend (stable or smooth). The sample position is the native pixel
+   centre; output goes to GFX.S[Offset + x] (no sub-pixel index).
+   Used when Settings.Mode7HiresBilinear is on at Hires=off. */
+#define DRAW_TILE_NORMAL_M7BL_1X() \
+	struct SLineMatrixData *l; \
+	uint32 x, Line, Offset; \
+	uint8	*VRAM1; \
+	int aa, cc, startx; \
+	VRAM1 = Memory.VRAM + 1; \
+   GFX.RealScreenColors = IPPU.ScreenColors; \
+	if (DCMODE) \
+	{ \
+		if (IPPU.DirectColourMapsNeedRebuild) \
+			S9xBuildDirectColourMaps(); \
+		GFX.RealScreenColors = DirectColourMaps[0]; \
+	} \
+	\
+	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
+	Offset = GFX.StartY * GFX.PPL; \
+	l = &LineMatrixData[GFX.StartY]; \
+	\
+	for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
+	{ \
+		int AA, BB, CC, DD, xx, yy; \
+		int32 HOffset, VOffset, CentreX, CentreY; \
+		uint8 starty; \
+		\
+		HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
+		VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
+		CentreX = ((int32) l->CentreX << 19) >> 19; \
+		CentreY = ((int32) l->CentreY << 19) >> 19; \
+		\
+		starty = Line + 1; \
+		if (PPU.Mode7VFlip) \
+			starty ^= 0xff; \
+		yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
+		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
+		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
+		\
+		if (PPU.Mode7HFlip) \
+		{ \
+			startx = Right - 1; \
+			aa = -l->MatrixA; \
+			cc = -l->MatrixC; \
+		} \
+		else \
+		{ \
+			startx = Left; \
+			aa = l->MatrixA; \
+			cc = l->MatrixC; \
+		} \
+		xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
+		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
+		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
+		if (!PPU.Mode7Repeat) \
+		{ \
+			for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
+			{ \
+				M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD); \
+			} \
+		} \
+		else \
+		{ \
+			for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
+			{ \
+				int Xs = (AA + BB) >> 8; \
+				int Ys = (CC + DD) >> 8; \
+				uint32 Xfs = (uint32)((AA + BB) & 0xff); \
+				uint32 Yfs = (uint32)((CC + DD) & 0xff); \
+				uint8 p_tl, p_tr, p_bl, p_br; \
+				uint8 b_tl_raw_; \
+				if (((Xs | Ys) & ~0x3ff) == 0) \
+				{ \
+					M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
+					M7HR_BLEND_AND_WRITE(x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs); \
+				} \
+				else if (PPU.Mode7Repeat == 3) \
+				{ \
+					M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
+					M7HR_BLEND_AND_WRITE(x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs); \
+				} \
 			} \
 		} \
 	}
@@ -2212,12 +2635,132 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #undef MASK
 #undef DCMODE
 #undef BG
+
+/* Mode 7 4x hires (HR4X) renderers: 4x horizontal sample/output.
+   Same scaffold as HR2X, just with the 4x DRAW_TILE macro. */
+
+#define Z1			(D + 7)
+#define Z2			(D + 7)
+#define MASK		0xff
+#define DCMODE		(Memory.FillRAM[0x2130] & 1)
+#define BG			0
+#define DRAW_TILE()	DRAW_TILE_NORMAL_M7HIRES_4X()
+#define NAME1		DrawMode7BG1HR4X
+
+#include "tile.c"
+
+#undef NAME1
+#undef DRAW_TILE
+#undef Z1
+#undef Z2
+#undef MASK
+#undef DCMODE
+#undef BG
+
+#define Z1			(D + ((b & 0x80) ? 11 : 3))
+#define Z2			(D + ((b & 0x80) ? 11 : 3))
+#define MASK		0x7f
+#define DCMODE		0
+#define BG			1
+#define DRAW_TILE()	DRAW_TILE_NORMAL_M7HIRES_4X()
+#define NAME1		DrawMode7BG2HR4X
+
+#include "tile.c"
+
+#undef NAME1
+#undef DRAW_TILE
+#undef Z1
+#undef Z2
+#undef MASK
+#undef DCMODE
+#undef BG
+
+/* Mode 7 4x bilinear (BL4X) renderers. Same scaffold as BL2X. */
+
+#define Z1			(D + 7)
+#define Z2			(D + 7)
+#define MASK		0xff
+#define DCMODE		(Memory.FillRAM[0x2130] & 1)
+#define BG			0
+#define DRAW_TILE()	DRAW_TILE_NORMAL_M7HIRES_4X_BILINEAR()
+#define NAME1		DrawMode7BG1BL4X
+
+#include "tile.c"
+
+#undef NAME1
+#undef DRAW_TILE
+#undef Z1
+#undef Z2
+#undef MASK
+#undef DCMODE
+#undef BG
+
+#define Z1			(D + ((b & 0x80) ? 11 : 3))
+#define Z2			(D + ((b & 0x80) ? 11 : 3))
+#define MASK		0x7f
+#define DCMODE		0
+#define BG			1
+#define DRAW_TILE()	DRAW_TILE_NORMAL_M7HIRES_4X_BILINEAR()
+#define NAME1		DrawMode7BG2BL4X
+
+#include "tile.c"
+
+#undef NAME1
+#undef DRAW_TILE
+#undef Z1
+#undef Z2
+#undef MASK
+#undef DCMODE
+#undef BG
+
+/* Mode 7 1x bilinear (BL1X) renderers: bilinear filter at native
+   width. One sample per native pixel. Used when bilinear is on at
+   Hires=off. */
+
+#define Z1			(D + 7)
+#define Z2			(D + 7)
+#define MASK		0xff
+#define DCMODE		(Memory.FillRAM[0x2130] & 1)
+#define BG			0
+#define DRAW_TILE()	DRAW_TILE_NORMAL_M7BL_1X()
+#define NAME1		DrawMode7BG1BL1X
+
+#include "tile.c"
+
+#undef NAME1
+#undef DRAW_TILE
+#undef Z1
+#undef Z2
+#undef MASK
+#undef DCMODE
+#undef BG
+
+#define Z1			(D + ((b & 0x80) ? 11 : 3))
+#define Z2			(D + ((b & 0x80) ? 11 : 3))
+#define MASK		0x7f
+#define DCMODE		0
+#define BG			1
+#define DRAW_TILE()	DRAW_TILE_NORMAL_M7BL_1X()
+#define NAME1		DrawMode7BG2BL1X
+
+#include "tile.c"
+
+#undef NAME1
+#undef DRAW_TILE
+#undef Z1
+#undef Z2
+#undef MASK
+#undef DCMODE
+#undef BG
 #undef ARGS
 #undef M7HIRES_ONLY
 
 #undef DRAW_TILE_NORMAL
 #undef DRAW_TILE_NORMAL_M7HIRES
 #undef DRAW_TILE_NORMAL_M7HIRES_BILINEAR
+#undef DRAW_TILE_NORMAL_M7HIRES_4X
+#undef DRAW_TILE_NORMAL_M7HIRES_4X_BILINEAR
+#undef DRAW_TILE_NORMAL_M7BL_1X
 #undef DRAW_TILE_MOSAIC
 #undef NO_INTERLACE
 
@@ -2269,6 +2812,31 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define NAME2				Normal2x1
 
 /* Third-level include: Get the Normal2x1 renderers. */
+
+#include "tile.c"
+
+#undef NAME2
+#undef DRAW_PIXEL
+
+/* The 4x1 pixel plotter, for Mode 7 hires 4x rendering. Each native
+   pixel writes to four buffer pixels at Offset + 4*N, +4*N+1,
+   +4*N+2, +4*N+3. Used for non-Mode7 BG layers and sprites/HUD when
+   the frame is in 4x Mode 7 hires; the Mode 7 BGs themselves use
+   the M7HR_4X / M7BL_4X tile bodies which write to the same indices
+   directly. */
+
+#define DRAW_PIXEL_N4x1(N, M) \
+	if (Z1 > GFX.DB[Offset + 4 * N] && (M)) \
+	{ \
+		uint16 cc__ = MATH(GFX.ScreenColors[Pix], GFX.SubScreen[Offset + 4 * N], GFX.SubZBuffer[Offset + 4 * N]); \
+		GFX.S[Offset + 4 * N] = GFX.S[Offset + 4 * N + 1] = GFX.S[Offset + 4 * N + 2] = GFX.S[Offset + 4 * N + 3] = cc__; \
+		GFX.DB[Offset + 4 * N] = GFX.DB[Offset + 4 * N + 1] = GFX.DB[Offset + 4 * N + 2] = GFX.DB[Offset + 4 * N + 3] = Z2; \
+	}
+
+#define DRAW_PIXEL(N, M)	DRAW_PIXEL_N4x1(N, M)
+#define NAME2				Normal4x1
+
+/* Third-level include: Get the Normal4x1 renderers. */
 
 #include "tile.c"
 
