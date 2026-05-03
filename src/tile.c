@@ -189,6 +189,7 @@
 #define _NEWTILE_CPP
 
 #include <retro_inline.h>
+#include <stdio.h>
 
 #include "snes9x.h"
 #include "ppu.h"
@@ -1722,7 +1723,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 			} \
 			if (Z1 > GFX.DB[Offset + (out_offset)]) \
 			{ \
-				GFX.S[Offset + (out_offset)] = blended; \
+				GFX.S[Offset + (out_offset)] = MATH(blended, GFX.SubScreen[Offset + (out_offset)], GFX.SubZBuffer[Offset + (out_offset)]); \
 				GFX.DB[Offset + (out_offset)] = Z2; \
 			} \
 		} \
@@ -1759,7 +1760,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 				blended = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_)); \
 				if (Z1 > GFX.DB[Offset + (out_offset)]) \
 				{ \
-					GFX.S[Offset + (out_offset)] = blended; \
+					GFX.S[Offset + (out_offset)] = MATH(blended, GFX.SubScreen[Offset + (out_offset)], GFX.SubZBuffer[Offset + (out_offset)]); \
 					GFX.DB[Offset + (out_offset)] = Z2; \
 				} \
 			} \
@@ -1795,6 +1796,36 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
 	Offset = GFX.StartY * GFX.PPL; \
 	l = &LineMatrixData[GFX.StartY]; \
+	\
+	{ \
+		static uint32 _bl_dbg_call_count = 0; \
+		static uint32 _bl_dbg_useful_count = 0; \
+		uint32 _now = _bl_dbg_call_count++; \
+		bool8 _palette_ready = (GFX.ScreenColors[1] != 0 || GFX.ScreenColors[2] != 0 || GFX.ScreenColors[3] != 0); \
+		bool8 _do_dump = (_now < 3) || (_palette_ready && _bl_dbg_useful_count < 10) || ((_now % 120) == 0); \
+		if (_palette_ready) _bl_dbg_useful_count++; \
+		if (_do_dump) \
+		{ \
+			fprintf(stderr, "[BL_DBG] call=%u uful=%u BG=%d BGmode=%d Mode7Repeat=%d StartY=%d EndY=%d\n", \
+				_now, _bl_dbg_useful_count, BG, PPU.BGMode, PPU.Mode7Repeat, GFX.StartY, GFX.EndY); \
+			fprintf(stderr, "[BL_DBG]   reg2105=%02x reg2130=%02x reg2131=%02x reg2132=%02x reg2133=%02x\n", \
+				Memory.FillRAM[0x2105], Memory.FillRAM[0x2130], Memory.FillRAM[0x2131], \
+				Memory.FillRAM[0x2132], Memory.FillRAM[0x2133]); \
+			fprintf(stderr, "[BL_DBG]   reg212C=%02x reg212D=%02x reg212E=%02x reg212F=%02x\n", \
+				Memory.FillRAM[0x212C], Memory.FillRAM[0x212D], \
+				Memory.FillRAM[0x212E], Memory.FillRAM[0x212F]); \
+			fprintf(stderr, "[BL_DBG]   ClipColors=%d DCMODE=%d MASK=0x%02x Z1=tier_bg%d FixedColour=%04x\n", \
+				GFX.ClipColors, (int)(DCMODE), MASK, BG, GFX.FixedColour); \
+			fprintf(stderr, "[BL_DBG]   ScreenColors[0..7] = %04x %04x %04x %04x %04x %04x %04x %04x\n", \
+				GFX.ScreenColors[0], GFX.ScreenColors[1], GFX.ScreenColors[2], GFX.ScreenColors[3], \
+				GFX.ScreenColors[4], GFX.ScreenColors[5], GFX.ScreenColors[6], GFX.ScreenColors[7]); \
+			fprintf(stderr, "[BL_DBG]   ScreenColors[8..15] = %04x %04x %04x %04x %04x %04x %04x %04x\n", \
+				GFX.ScreenColors[8], GFX.ScreenColors[9], GFX.ScreenColors[10], GFX.ScreenColors[11], \
+				GFX.ScreenColors[12], GFX.ScreenColors[13], GFX.ScreenColors[14], GFX.ScreenColors[15]); \
+			fprintf(stderr, "[BL_DBG]   line0: MatrixA=%d B=%d C=%d D=%d M7HOFS=%d M7VOFS=%d CentreX=%d CentreY=%d\n", \
+				l->MatrixA, l->MatrixB, l->MatrixC, l->MatrixD, l->M7HOFS, l->M7VOFS, l->CentreX, l->CentreY); \
+		} \
+	} \
 	\
 	for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
 	{ \
@@ -1839,6 +1870,25 @@ extern struct SLineMatrixData	LineMatrixData[240];
 				AA += aa_h; CC += cc_h; \
 				M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD); \
 				AA += aa - aa_h; CC += cc - cc_h; \
+				{ \
+					static uint32 _bl_pix_dbg = 0; \
+					if ((Line == 60 || Line == 80 || Line == 100) && (x == 32 || x == 96 || x == 128) && (_bl_pix_dbg++ % 4) == 0) \
+					{ \
+						int Xi_dbg = ((AA + BB) >> 8) & 0x3ff; \
+						int Yi_dbg = ((CC + DD) >> 8) & 0x3ff; \
+						uint8 _ptl, _ptr, _pbl, _pbr, _btl_raw; \
+						bool8 _xi_oor = ((((AA + BB) >> 8) | ((CC + DD) >> 8)) & ~0x3ff) != 0; \
+						M7HR_LOOKUP_4(Xi_dbg, Yi_dbg, _ptl, _ptr, _pbl, _pbr, _btl_raw); \
+						fprintf(stderr, "[BL_PIX] L=%u x=%u BG=%d Xi=%d Yi=%d OOR=%d corners=(%d,%d,%d,%d) raw_tl=%02x cols=(%04x,%04x,%04x,%04x) DB=%d Sub=%04x SubZ=%02x scrS=%04x DC=%d\n", \
+							Line, x, BG, Xi_dbg, Yi_dbg, _xi_oor ? 1 : 0, \
+							_ptl, _ptr, _pbl, _pbr, _btl_raw, \
+							GFX.ScreenColors[_ptl], GFX.ScreenColors[_ptr], \
+							GFX.ScreenColors[_pbl], GFX.ScreenColors[_pbr], \
+							GFX.DB[Offset + 2*x], \
+							GFX.SubScreen[Offset + 2*x], GFX.SubZBuffer[Offset + 2*x], \
+							GFX.S[Offset + 2*x], (int)(DCMODE)); \
+					} \
+				} \
 			} \
 		} \
 		else \
