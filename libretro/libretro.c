@@ -1018,21 +1018,11 @@ void retro_init(void)
 	if (!Init() || !S9xInitAPU())
 	{
 		Deinit();
-		S9xDeinitAPU();
 		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_EXTERNAL, "Failed to init Memory or APU.");
 		exit(1);
 	}
 
-	if (S9xInitSound() != true)
-	{
-		const char *const aud_err = "Audio output is disabled due to an internal error";
-		struct retro_message msg = { aud_err, 360 };
-
-		if (environ_cb)
-			environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
-
-		S9xDeinitAPU();
-	}
+	S9xInitSound();
 
 	GFX.Pitch = MAX_BUFFER_WIDTH * sizeof(uint16_t);
 
@@ -1120,7 +1110,6 @@ void retro_deinit(void)
 		sw_fb_active = false;
 	}
 
-	S9xDeinitAPU();
 	Deinit();
 	S9xGraphicsDeinit();
 	S9xUnmapAllControls();

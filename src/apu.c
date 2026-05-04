@@ -238,11 +238,6 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 	out [0] = l;\
 	out [1] = r;\
 	out += 2;\
-	if ( out >= dsp_m.out_end )\
-	{\
-		out       = dsp_m.extra;\
-		dsp_m.out_end = &dsp_m.extra [EXTRA_SIZE];\
-	}\
 }\
 
 
@@ -801,11 +796,6 @@ static INLINE void dsp_echo_27 (void)
 	out [0] = l;
 	out [1] = r;
 	out += 2;
-	if ( out >= dsp_m.out_end )
-	{
-		out = dsp_m.extra;
-		dsp_m.out_end = &dsp_m.extra [EXTRA_SIZE];
-	}
 	dsp_m.out = out;
 }
 
@@ -1130,16 +1120,13 @@ static void dsp_run( int clocks_remain )
 #pragma GCC diagnostic pop
 #endif
 
-/* Sets destination for output samples. If out is NULL or out_size is 0,
-   doesn't generate any. */
+/* Sets destination for output samples. The caller is responsible for
+   passing a real buffer; with the bsnes-style audio path this is always
+   landing_buffer (sized for the worst-case PAL ticks=4 frame), so the
+   DSP cursor never approaches out_end and there's no overflow path. */
 
 static void dsp_set_output( short * out, int size )
 {
-	if ( !out )
-	{
-		out  = dsp_m.extra;
-		size = EXTRA_SIZE;
-	}
 	dsp_m.out_begin = out;
 	dsp_m.out       = out;
 	dsp_m.out_end   = out + size;
@@ -1199,7 +1186,6 @@ static void dsp_reset (void)
 static void dsp_init( void* ram_64k )
 {
 	dsp_m.ram = (uint8_t*) ram_64k;
-	dsp_set_output( 0, 0 );
 	dsp_reset();
 }
 
@@ -2869,13 +2855,6 @@ uint8_t * spc_apuram(void)
 	return m.ram.ram;
 }
 
-/* Init */
-
-static void spc_reset_buffer(void)
-{
-	dsp_set_output( 0, 0 );
-}
-
 /* Sets tempo, where tempo_unit = normal, tempo_unit / 2 = half speed, etc. */
 
 static void spc_set_tempo( int t )
@@ -2931,8 +2910,6 @@ static void spc_reset_common( int timer_counter_init )
 	}
 	
 	spc_set_tempo( m.tempo );
-
-	spc_reset_buffer();
 }
 
 /*	Resets SPC to power-on state. This resets your output buffer, so you must
@@ -3147,12 +3124,11 @@ unsigned S9xGetAudioSampleRate (void)
 	return (unsigned)(SNES_AUDIO_FREQ * TEMPO_UNIT / timing_hack_denominator + 0.5);
 }
 
-bool8 S9xInitSound (void)
+void S9xInitSound (void)
 {
 	/* landing_buffer is a static array; nothing to allocate. Just hand
 	   the DSP its initial cursor pointing at the start. */
 	dsp_set_output(landing_buffer, LANDING_BUFFER_FRAMES * 2);
-	return TRUE;
 }
 
 bool8 S9xInitAPU (void)
@@ -3223,15 +3199,6 @@ bool8 S9xInitAPU (void)
 	memcpy( m.rom, APUROM, sizeof m.rom );
 
 	return TRUE;
-}
-
-void S9xDeinitAPU (void)
-{
-	/* No dynamic state to release. landing_buffer is a static array;
-	   APU CPU/timer/DSP state lives in the file-static `m` and `dsp_m`
-	   structs which are reset on the next S9xInitAPU. Kept as a function
-	   for symmetry with S9xInitAPU and so external callers (the libretro
-	   driver's teardown paths) don't need to change. */
 }
 
 #define S9X_APU_GET_CLOCK(cpucycles)		((ratio_numerator * (cpucycles - reference_time) + spc_remainder) / ratio_denominator)

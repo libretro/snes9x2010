@@ -193,7 +193,6 @@ typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t );
    Reduces emulation accuracy. */
 
 #define VOICE_COUNT		8
-#define EXTRA_SIZE		16
 #define BRR_BUF_SIZE		12
 #define BRR_BUF_SIZE_X2		24
 #define BRR_BLOCK_SIZE		9
@@ -340,8 +339,6 @@ typedef struct
 
 	int rom_enabled;
 
-	short extra [EXTRA_SIZE];
-
 	uint8_t endx_buf;
 	uint8_t envx_buf;
 	uint8_t outx_buf;
@@ -451,7 +448,6 @@ typedef struct
 #define SPC_SAVE_STATE_BLOCK_SIZE	(STATE_SIZE + 8)
 
 bool8 S9xInitAPU (void);
-void S9xDeinitAPU (void);
 void S9xResetAPU (void);
 void S9xSoftResetAPU (void);
 uint8 S9xAPUReadPort (int port);
@@ -463,7 +459,7 @@ void S9xAPUAllowTimeOverflow (bool8 allow);
 void S9xAPULoadState (uint8 * block);
 void S9xAPUSaveState (uint8 * block);
 
-bool8 S9xInitSound (void);
+void S9xInitSound (void);
 
 const short *S9xDrainAudio (int *count_out);
 unsigned S9xGetAudioSampleRate (void);
