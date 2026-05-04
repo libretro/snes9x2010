@@ -225,7 +225,7 @@ void linearFree(void* mem);
 #define VIDEO_REFRESH_RATE_NTSC (NTSC_MASTER_CLOCK / (double)(SNES_CYCLES_PER_SCANLINE * SNES_MAX_NTSC_VCOUNTER))
 
 /* Pre-zeroed silence buffer used in place of real SPC output when
-   Settings.Mute is set. Sized for one worst-case PAL frame at the
+   audio_muted is set. Sized for one worst-case PAL frame at the
    highest effective SPC rate (ticks=4 speedup, ~651 stereo). The
    '+ a bit' rounds up to a tidy power of two. RetroArch's audio_batch_cb
    only reads (frame_count * 2) shorts, so over-sizing is harmless and
@@ -235,6 +235,14 @@ void linearFree(void* mem);
    initialized at startup) rather than .rodata; we never write to it. */
 #define MUTE_BUFFER_FRAMES 768
 static int16_t mute_buffer[MUTE_BUFFER_FRAMES * 2];
+
+/* Set when the frontend has signalled that audio should not be played
+   (either user has disabled audio or a frontend-controlled fast-forward
+   path has set RETRO_AVENABLE_HARD_DISABLE_AUDIO). When set, we still
+   call audio_batch_cb every frame - skipping it would let RetroArch's
+   audio ring drain and pull DRC out of steady-state tracking - but
+   substitute the silence buffer for the SPC's actual output. */
+static bool audio_muted;
 
 enum
 {
@@ -755,7 +763,7 @@ static void audio_upload_samples(void)
 	if (n <= 0)
 		return;
 
-	if (Settings.Mute)
+	if (audio_muted)
 	{
 		src = mute_buffer;
 		if (n > MUTE_BUFFER_FRAMES * 2)
@@ -1502,13 +1510,13 @@ void retro_run(void)
 		bool hardDisableAudio = 0 != (result & 0x08);
 		IPPU.RenderThisFrame = videoEnabled;
 
-		S9xSetSoundMute(!audioEnabled || hardDisableAudio);
+		audio_muted = !audioEnabled || hardDisableAudio;
 		Settings.HardDisableAudio = hardDisableAudio;
 	}
 	else
 	{
 		IPPU.RenderThisFrame = true;
-		S9xSetSoundMute(false);
+		audio_muted = false;
 		Settings.HardDisableAudio = false;
 	}
 

@@ -3155,11 +3155,6 @@ bool8 S9xInitSound (void)
 	return TRUE;
 }
 
-void S9xSetSoundMute(bool8 mute)
-{
-	Settings.Mute = mute;
-}
-
 bool8 S9xInitAPU (void)
 {
     unsigned i;

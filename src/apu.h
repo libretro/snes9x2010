@@ -466,7 +466,6 @@ void S9xAPUSaveState (uint8 * block);
 bool8 S9xInitSound (void);
 
 const short *S9xDrainAudio (int *count_out);
-void S9xSetSoundMute (bool8 mute);
 unsigned S9xGetAudioSampleRate (void);
 
 #endif
