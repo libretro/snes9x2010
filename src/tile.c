@@ -1129,111 +1129,246 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #undef Z1
 #undef Z2
 
-/* Basic routine to render a clipped tile. Inputs same as above. */
+/* ====================================================================
+ * DrawClippedTile16 renderers
+ * ====================================================================
+ *
+ * One NAME1 family: DrawClippedTile16. Renders a tile clipped to
+ * an arbitrary [StartPixel, StartPixel + Width) horizontal range.
+ * Used by the BG-tile path when the visible region of the tile is
+ * less than the full 8 pixels (e.g. clipped against a window or
+ * the screen edge).
+ *
+ * Body shape:
+ *   - Decode the Tile parameter into a cached 64-pixel tile via
+ *     GET_CACHED_TILE.
+ *   - If the tile is blank, early-return.
+ *   - Branch on H_FLIP / V_FLIP bits in the Tile parameter.
+ *   - For each scanline, run an 8-case switch on StartPixel that
+ *     falls through to the next case until Width pixels have been
+ *     drawn. Each case calls DRAW_PIXEL with the assignment-and-test
+ *     `Pix = bp[idx]` -- if the source pixel is transparent, the
+ *     AND short-circuits and the write is skipped.
+ *
+ * Z values are runtime: GFX.Z1 / GFX.Z2 (set by the caller for each
+ * BG layer's per-priority pass).
+ *
+ * ARGS shape: (Tile, Offset, StartPixel, Width, StartLine, LineCount).
+ * Six parameters. Note this differs from DrawMosaicPixel16's order
+ * (which has StartPixel/Width/StartLine in the order
+ * StartLine/StartPixel/Width).
+ *
+ * Six NAME2 variants emitted: Normal1x1, Normal2x1, Normal4x1,
+ * Hires, Interlace, HiresInterlace. Per NAME2:
+ *   BPSTART = StartLine                               (non-interlace)
+ *           = (StartLine * 2 + BG.InterlaceLine)      (interlace)
+ *   BP_STEP = 8                                       (PITCH = 1, non-interlace)
+ *           = 16                                      (PITCH = 2, interlace)
+ *
+ * BP_STEP is the per-line advance of the cache-row pointer (the
+ * original templated form used `8 * PITCH`; we substitute the
+ * product directly to keep the call-site literal).
+ *
+ * 7 math variants per NAME2, 6 NAME2 = 42 functions + 6 dispatch
+ * arrays.
+ */
 
-#define Z1	GFX.Z1
-#define Z2	GFX.Z2
+/* ---- Section-internal pixel plotters -------------------------------
+ *
+ * Same shape as DrawMosaicPixel16's MP_PIXEL_*: Z1 = GFX.Z1,
+ * Z2 = GFX.Z2 baked in, Pix is a runtime variable, N is
+ * unparenthesized to match original DRAW_PIXEL_* substitution
+ * semantics. Locally named CT_PIXEL_* per the section-local
+ * pattern. */
 
-#define DRAW_TILE() \
-	uint8	*pCache, *bp, Pix, w; \
-	int32	l; \
-	\
-	GET_CACHED_TILE(); \
-	if (IS_BLANK_TILE()) \
-		return; \
-	SELECT_PALETTE(); \
-	\
-	if (!(Tile & (V_FLIP | H_FLIP))) \
-	{ \
-		bp = pCache + BPSTART; \
-		for (l = LineCount; l > 0; l--, bp += 8 * PITCH, Offset += GFX.PPL) \
-		{ \
-		 w = Width; \
-         switch (StartPixel) \
-         { \
-            case 0: DRAW_PIXEL(0, Pix = bp[0]); if (!--w) break; /* Fall through */ \
-            case 1: DRAW_PIXEL(1, Pix = bp[1]); if (!--w) break; /* Fall through */ \
-            case 2: DRAW_PIXEL(2, Pix = bp[2]); if (!--w) break; /* Fall through */ \
-            case 3: DRAW_PIXEL(3, Pix = bp[3]); if (!--w) break; /* Fall through */ \
-            case 4: DRAW_PIXEL(4, Pix = bp[4]); if (!--w) break; /* Fall through */ \
-            case 5: DRAW_PIXEL(5, Pix = bp[5]); if (!--w) break; /* Fall through */ \
-            case 6: DRAW_PIXEL(6, Pix = bp[6]); if (!--w) break; /* Fall through */ \
-            case 7: DRAW_PIXEL(7, Pix = bp[7]); break; \
-         } \
-		} \
-	} \
-	else \
-	if (!(Tile & V_FLIP)) \
-	{ \
-		bp = pCache + BPSTART; \
-		for (l = LineCount; l > 0; l--, bp += 8 * PITCH, Offset += GFX.PPL) \
-		{ \
-		   w = Width; \
-         switch (StartPixel) \
-         { \
-            case 0: DRAW_PIXEL(0, Pix = bp[7]); if (!--w) break; /* Fall through */ \
-            case 1: DRAW_PIXEL(1, Pix = bp[6]); if (!--w) break; /* Fall through */ \
-            case 2: DRAW_PIXEL(2, Pix = bp[5]); if (!--w) break; /* Fall through */ \
-            case 3: DRAW_PIXEL(3, Pix = bp[4]); if (!--w) break; /* Fall through */ \
-            case 4: DRAW_PIXEL(4, Pix = bp[3]); if (!--w) break; /* Fall through */ \
-            case 5: DRAW_PIXEL(5, Pix = bp[2]); if (!--w) break; /* Fall through */ \
-            case 6: DRAW_PIXEL(6, Pix = bp[1]); if (!--w) break; /* Fall through */ \
-            case 7: DRAW_PIXEL(7, Pix = bp[0]); break; \
-         } \
-		} \
-	} \
-	else \
-	if (!(Tile & H_FLIP)) \
-	{ \
-		bp = pCache + 56 - BPSTART; \
-		for (l = LineCount; l > 0; l--, bp -= 8 * PITCH, Offset += GFX.PPL) \
-		{ \
-		 w = Width; \
-         switch (StartPixel) \
-         { \
-            case 0: DRAW_PIXEL(0, Pix = bp[0]); if (!--w) break; /* Fall through */ \
-            case 1: DRAW_PIXEL(1, Pix = bp[1]); if (!--w) break; /* Fall through */ \
-            case 2: DRAW_PIXEL(2, Pix = bp[2]); if (!--w) break; /* Fall through */ \
-            case 3: DRAW_PIXEL(3, Pix = bp[3]); if (!--w) break; /* Fall through */ \
-            case 4: DRAW_PIXEL(4, Pix = bp[4]); if (!--w) break; /* Fall through */ \
-            case 5: DRAW_PIXEL(5, Pix = bp[5]); if (!--w) break; /* Fall through */ \
-            case 6: DRAW_PIXEL(6, Pix = bp[6]); if (!--w) break; /* Fall through */ \
-            case 7: DRAW_PIXEL(7, Pix = bp[7]); break; \
-         } \
-		} \
-	} \
-	else \
-	{ \
-		bp = pCache + 56 - BPSTART; \
-		for (l = LineCount; l > 0; l--, bp -= 8 * PITCH, Offset += GFX.PPL) \
-		{ \
-		 w = Width; \
-       switch (StartPixel) \
-       { \
-          case 0: DRAW_PIXEL(0, Pix = bp[7]); if (!--w) break; /* Fall through */ \
-          case 1: DRAW_PIXEL(1, Pix = bp[6]); if (!--w) break; /* Fall through */ \
-          case 2: DRAW_PIXEL(2, Pix = bp[5]); if (!--w) break; /* Fall through */ \
-          case 3: DRAW_PIXEL(3, Pix = bp[4]); if (!--w) break; /* Fall through */ \
-          case 4: DRAW_PIXEL(4, Pix = bp[3]); if (!--w) break; /* Fall through */ \
-          case 5: DRAW_PIXEL(5, Pix = bp[2]); if (!--w) break; /* Fall through */ \
-          case 6: DRAW_PIXEL(6, Pix = bp[1]); if (!--w) break; /* Fall through */ \
-          case 7: DRAW_PIXEL(7, Pix = bp[0]); break; \
-       } \
-		} \
-	}
+#define CT_PIXEL_N1x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + N] && (M)) \
+    { \
+        GFX.S[Offset + N] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + N], \
+            GFX.SubZBuffer[Offset + N]); \
+        GFX.DB[Offset + N] = GFX.Z2; \
+    }
 
-#define NAME1	DrawClippedTile16
-#define ARGS	uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount
+#define CT_PIXEL_N2x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
+    { \
+        GFX.S[Offset + 2 * N] = GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 2 * N], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
+    }
 
-/* Second-level include: Get the DrawClippedTile16 renderers. */
+#define CT_PIXEL_N4x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + 4 * N] && (M)) \
+    { \
+        uint16 cc__ = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 4 * N], \
+            GFX.SubZBuffer[Offset + 4 * N]); \
+        GFX.S[Offset + 4 * N] = GFX.S[Offset + 4 * N + 1] = GFX.S[Offset + 4 * N + 2] = GFX.S[Offset + 4 * N + 3] = cc__; \
+        GFX.DB[Offset + 4 * N] = GFX.DB[Offset + 4 * N + 1] = GFX.DB[Offset + 4 * N + 2] = GFX.DB[Offset + 4 * N + 3] = GFX.Z2; \
+    }
 
-#include "tile.c"
+#define CT_PIXEL_H2x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
+    { \
+        GFX.S[Offset + 2 * N] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 2 * N], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
+            (GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * N + 2]), \
+            GFX.RealScreenColors[Pix], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
+    }
 
-#undef NAME1
-#undef ARGS
-#undef DRAW_TILE
-#undef Z1
-#undef Z2
+/* ---- Section-internal tile body ------------------------------------
+ *
+ * Body identical to the previously-templated DRAW_TILE() macro for
+ * clipped-tile (now deleted), parameterized for explicit
+ * BPSTART_EXPR / BP_STEP_EXPR / MATH_SELECTOR / MATH_OP / PIXEL_PLOT.
+ * Four flip-case branches inside, each running an 8-case switch
+ * over StartPixel with fall-through and post-case `--w` decrement
+ * to honour the Width clamp. */
+#define TILE_BODY_CLIPPED(BPSTART_EXPR, BP_STEP_EXPR, MATH_SELECTOR, MATH_OP, PIXEL_PLOT) \
+{ \
+    uint8 *pCache, *bp, Pix, w; \
+    int32 l; \
+    GET_CACHED_TILE(); \
+    if (IS_BLANK_TILE()) \
+        return; \
+    SELECT_PALETTE(); \
+    if (!(Tile & (V_FLIP | H_FLIP))) \
+    { \
+        bp = pCache + (BPSTART_EXPR); \
+        for (l = LineCount; l > 0; l--, bp += (BP_STEP_EXPR), Offset += GFX.PPL) \
+        { \
+            w = Width; \
+            switch (StartPixel) \
+            { \
+                case 0: PIXEL_PLOT(0, Pix = bp[0], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 1: PIXEL_PLOT(1, Pix = bp[1], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 2: PIXEL_PLOT(2, Pix = bp[2], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 3: PIXEL_PLOT(3, Pix = bp[3], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 4: PIXEL_PLOT(4, Pix = bp[4], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 5: PIXEL_PLOT(5, Pix = bp[5], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 6: PIXEL_PLOT(6, Pix = bp[6], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 7: PIXEL_PLOT(7, Pix = bp[7], MATH_SELECTOR, MATH_OP) break; \
+            } \
+        } \
+    } \
+    else \
+    if (!(Tile & V_FLIP)) \
+    { \
+        bp = pCache + (BPSTART_EXPR); \
+        for (l = LineCount; l > 0; l--, bp += (BP_STEP_EXPR), Offset += GFX.PPL) \
+        { \
+            w = Width; \
+            switch (StartPixel) \
+            { \
+                case 0: PIXEL_PLOT(0, Pix = bp[7], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 1: PIXEL_PLOT(1, Pix = bp[6], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 2: PIXEL_PLOT(2, Pix = bp[5], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 3: PIXEL_PLOT(3, Pix = bp[4], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 4: PIXEL_PLOT(4, Pix = bp[3], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 5: PIXEL_PLOT(5, Pix = bp[2], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 6: PIXEL_PLOT(6, Pix = bp[1], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 7: PIXEL_PLOT(7, Pix = bp[0], MATH_SELECTOR, MATH_OP) break; \
+            } \
+        } \
+    } \
+    else \
+    if (!(Tile & H_FLIP)) \
+    { \
+        bp = pCache + 56 - (BPSTART_EXPR); \
+        for (l = LineCount; l > 0; l--, bp -= (BP_STEP_EXPR), Offset += GFX.PPL) \
+        { \
+            w = Width; \
+            switch (StartPixel) \
+            { \
+                case 0: PIXEL_PLOT(0, Pix = bp[0], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 1: PIXEL_PLOT(1, Pix = bp[1], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 2: PIXEL_PLOT(2, Pix = bp[2], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 3: PIXEL_PLOT(3, Pix = bp[3], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 4: PIXEL_PLOT(4, Pix = bp[4], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 5: PIXEL_PLOT(5, Pix = bp[5], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 6: PIXEL_PLOT(6, Pix = bp[6], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 7: PIXEL_PLOT(7, Pix = bp[7], MATH_SELECTOR, MATH_OP) break; \
+            } \
+        } \
+    } \
+    else \
+    { \
+        bp = pCache + 56 - (BPSTART_EXPR); \
+        for (l = LineCount; l > 0; l--, bp -= (BP_STEP_EXPR), Offset += GFX.PPL) \
+        { \
+            w = Width; \
+            switch (StartPixel) \
+            { \
+                case 0: PIXEL_PLOT(0, Pix = bp[7], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 1: PIXEL_PLOT(1, Pix = bp[6], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 2: PIXEL_PLOT(2, Pix = bp[5], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 3: PIXEL_PLOT(3, Pix = bp[4], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 4: PIXEL_PLOT(4, Pix = bp[3], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 5: PIXEL_PLOT(5, Pix = bp[2], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 6: PIXEL_PLOT(6, Pix = bp[1], MATH_SELECTOR, MATH_OP) if (!--w) break; /* Fall through */ \
+                case 7: PIXEL_PLOT(7, Pix = bp[0], MATH_SELECTOR, MATH_OP) break; \
+            } \
+        } \
+    } \
+}
+
+/* ---- Outer fan-out ------------------------------------------------- */
+#define DEFINE_CT_FN(suffix, MATH_SELECTOR, MATH_OP, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+static void DrawClippedTile16##suffix##NAME2_TAG \
+    (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount) \
+TILE_BODY_CLIPPED(BPSTART_EXPR, BP_STEP_EXPR, MATH_SELECTOR, MATH_OP, PIXEL_PLOT)
+
+/* Per-NAME2 7-fold math fan-out plus dispatch array. */
+#define DEFINE_CT_NAME2(NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_CT_FN(_,        NOMATH,   ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_CT_FN(Add_,     REGMATH,  ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_CT_FN(AddF1_2_, MATHF1_2, ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_CT_FN(AddS1_2_, MATHS1_2, ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_CT_FN(Sub_,     REGMATH,  SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_CT_FN(SubF1_2_, MATHF1_2, SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_CT_FN(SubS1_2_, MATHS1_2, SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+static void (*Renderers_DrawClippedTile16##NAME2_TAG[7]) (uint32, uint32, uint32, uint32, uint32, uint32) = \
+{ \
+    DrawClippedTile16_##NAME2_TAG, \
+    DrawClippedTile16Add_##NAME2_TAG, \
+    DrawClippedTile16AddF1_2_##NAME2_TAG, \
+    DrawClippedTile16AddS1_2_##NAME2_TAG, \
+    DrawClippedTile16Sub_##NAME2_TAG, \
+    DrawClippedTile16SubF1_2_##NAME2_TAG, \
+    DrawClippedTile16SubS1_2_##NAME2_TAG, \
+};
+
+/* Non-interlace NAME2 variants: BPSTART = StartLine, BP_STEP = 8. */
+DEFINE_CT_NAME2(Normal1x1, StartLine,  8, CT_PIXEL_N1x1)
+DEFINE_CT_NAME2(Normal2x1, StartLine,  8, CT_PIXEL_N2x1)
+DEFINE_CT_NAME2(Normal4x1, StartLine,  8, CT_PIXEL_N4x1)
+DEFINE_CT_NAME2(Hires,     StartLine,  8, CT_PIXEL_H2x1)
+
+/* Interlace NAME2 variants: BPSTART = StartLine * 2 + BG.InterlaceLine,
+ * BP_STEP = 16 (PITCH = 2). */
+DEFINE_CT_NAME2(Interlace,      (StartLine * 2 + BG.InterlaceLine), 16, CT_PIXEL_N2x1)
+DEFINE_CT_NAME2(HiresInterlace, (StartLine * 2 + BG.InterlaceLine), 16, CT_PIXEL_H2x1)
+
+#undef DEFINE_CT_NAME2
+#undef DEFINE_CT_FN
+#undef TILE_BODY_CLIPPED
+#undef CT_PIXEL_H2x1
+#undef CT_PIXEL_N4x1
+#undef CT_PIXEL_N2x1
+#undef CT_PIXEL_N1x1
+
+/* End of DrawClippedTile16 de-templated section.
+ * ==================================================================== */
 
 /* ====================================================================
  * DrawMosaicPixel16 renderers
