@@ -1235,50 +1235,177 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #undef Z1
 #undef Z2
 
-/* Basic routine to render a single mosaic pixel.
-   DRAW_PIXEL, BPSTART, Z1, Z2 and Pix are the same as above, but PITCH is not used. */
+/* ====================================================================
+ * DrawMosaicPixel16 renderers
+ * ====================================================================
+ *
+ * One NAME1 family: DrawMosaicPixel16. Renders a single mosaic
+ * pixel (replicated across an HMosaic-by-LineCount block) sourced
+ * from one cached tile. Used by the BG-mosaic path (non-Mode-7
+ * mosaic).
+ *
+ * Body shape:
+ *   - Decode the Tile parameter into a cached 64-pixel tile via
+ *     GET_CACHED_TILE.
+ *   - If the tile is blank, early-return.
+ *   - Apply H_FLIP / V_FLIP from the Tile bits to pick the correct
+ *     row of the tile (BPSTART + StartPixel or its mirror).
+ *   - If the chosen pixel is non-zero (palette index), replicate
+ *     it across the rectangle [Offset, Offset + Width) x
+ *     [0, LineCount) lines, advancing Offset by GFX.PPL per line.
+ *
+ * Z values are runtime: GFX.Z1 / GFX.Z2 (set by the caller for each
+ * BG layer's per-priority pass). The DRAW_PIXEL "M" parameter is
+ * the literal 1 (no per-pixel test inside the replication loop;
+ * the source-pixel transparency check happened once outside).
+ *
+ * ARGS shape: (Tile, Offset, StartLine, StartPixel, Width,
+ * LineCount). Six parameters; Offset is per-call.
+ *
+ * Six NAME2 variants emitted:
+ *   Normal1x1, Normal2x1, Normal4x1, Hires (BPSTART = StartLine)
+ *   Interlace, HiresInterlace
+ *     (BPSTART = StartLine * 2 + BG.InterlaceLine)
+ *
+ * The original templated form generated all six via the level-2
+ * dispatch's per-NAME2 BPSTART/PITCH/DRAW_PIXEL macro redefinitions.
+ * (PITCH is not actually used by mosaic-pixel.) The de-templated
+ * form bakes BPSTART per-NAME2 directly into each instantiation.
+ *
+ * 7 math variants per NAME2, 6 NAME2 = 42 functions + 6 dispatch
+ * arrays.
+ */
 
-#define Z1	GFX.Z1
-#define Z2	GFX.Z2
+/* ---- Section-internal pixel plotters -------------------------------
+ *
+ * Mirror the original DRAW_PIXEL_* shapes with Z1 = GFX.Z1,
+ * Z2 = GFX.Z2 baked in (these are file-scope GFX struct fields,
+ * not constants). Pix is a runtime variable declared in the body.
+ * N is unparenthesized to match the original DRAW_PIXEL_*
+ * substitution semantics (Stage 2.6b/2.7 lesson). */
 
-#define DRAW_TILE() \
-	uint8	*pCache, Pix; \
-	int32	l, w; \
-	\
-	GET_CACHED_TILE(); \
-	if (IS_BLANK_TILE()) \
-		return; \
-	SELECT_PALETTE(); \
-	\
-	if (Tile & H_FLIP) \
-		StartPixel = 7 - StartPixel; \
-	\
-	if (Tile & V_FLIP) \
-		Pix = pCache[56 - BPSTART + StartPixel]; \
-	else \
-		Pix = pCache[BPSTART + StartPixel]; \
-	\
-	if (Pix) \
-	{ \
-		for (l = LineCount; l > 0; l--, Offset += GFX.PPL) \
-		{ \
-			for (w = Width - 1; w >= 0; w--) \
-				DRAW_PIXEL(w, 1); \
-		} \
-	}
+#define MP_PIXEL_N1x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + N] && (M)) \
+    { \
+        GFX.S[Offset + N] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + N], \
+            GFX.SubZBuffer[Offset + N]); \
+        GFX.DB[Offset + N] = GFX.Z2; \
+    }
 
-#define NAME1	DrawMosaicPixel16
-#define ARGS	uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount
+#define MP_PIXEL_N2x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
+    { \
+        GFX.S[Offset + 2 * N] = GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 2 * N], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
+    }
 
-/* Second-level include: Get the DrawMosaicPixel16 renderers. */
+#define MP_PIXEL_N4x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + 4 * N] && (M)) \
+    { \
+        uint16 cc__ = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 4 * N], \
+            GFX.SubZBuffer[Offset + 4 * N]); \
+        GFX.S[Offset + 4 * N] = GFX.S[Offset + 4 * N + 1] = GFX.S[Offset + 4 * N + 2] = GFX.S[Offset + 4 * N + 3] = cc__; \
+        GFX.DB[Offset + 4 * N] = GFX.DB[Offset + 4 * N + 1] = GFX.DB[Offset + 4 * N + 2] = GFX.DB[Offset + 4 * N + 3] = GFX.Z2; \
+    }
 
-#include "tile.c"
+#define MP_PIXEL_H2x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
+    { \
+        GFX.S[Offset + 2 * N] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 2 * N], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
+            (GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * N + 2]), \
+            GFX.RealScreenColors[Pix], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
+    }
 
-#undef NAME1
-#undef ARGS
-#undef DRAW_TILE
-#undef Z1
-#undef Z2
+/* ---- Section-internal tile body ------------------------------------
+ *
+ * Body identical to the previously-templated DRAW_TILE() macro for
+ * mosaic-pixel (now deleted), parameterized for explicit
+ * BPSTART_EXPR / MATH_SELECTOR / MATH_OP / PIXEL_PLOT. */
+#define TILE_BODY_MOSAIC_PIXEL(BPSTART_EXPR, MATH_SELECTOR, MATH_OP, PIXEL_PLOT) \
+{ \
+    uint8 *pCache, Pix; \
+    int32 l, w; \
+    GET_CACHED_TILE(); \
+    if (IS_BLANK_TILE()) \
+        return; \
+    SELECT_PALETTE(); \
+    if (Tile & H_FLIP) \
+        StartPixel = 7 - StartPixel; \
+    if (Tile & V_FLIP) \
+        Pix = pCache[56 - (BPSTART_EXPR) + StartPixel]; \
+    else \
+        Pix = pCache[(BPSTART_EXPR) + StartPixel]; \
+    if (Pix) \
+    { \
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL) \
+        { \
+            for (w = Width - 1; w >= 0; w--) \
+                PIXEL_PLOT(w, 1, MATH_SELECTOR, MATH_OP) \
+        } \
+    } \
+}
+
+/* ---- Outer fan-out ------------------------------------------------- */
+#define DEFINE_MP_FN(suffix, MATH_SELECTOR, MATH_OP, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
+static void DrawMosaicPixel16##suffix##NAME2_TAG \
+    (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount) \
+TILE_BODY_MOSAIC_PIXEL(BPSTART_EXPR, MATH_SELECTOR, MATH_OP, PIXEL_PLOT)
+
+/* Per-NAME2 7-fold math fan-out plus dispatch array. */
+#define DEFINE_MP_NAME2(NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
+DEFINE_MP_FN(_,        NOMATH,   ADD, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
+DEFINE_MP_FN(Add_,     REGMATH,  ADD, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
+DEFINE_MP_FN(AddF1_2_, MATHF1_2, ADD, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
+DEFINE_MP_FN(AddS1_2_, MATHS1_2, ADD, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
+DEFINE_MP_FN(Sub_,     REGMATH,  SUB, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
+DEFINE_MP_FN(SubF1_2_, MATHF1_2, SUB, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
+DEFINE_MP_FN(SubS1_2_, MATHS1_2, SUB, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
+static void (*Renderers_DrawMosaicPixel16##NAME2_TAG[7]) (uint32, uint32, uint32, uint32, uint32, uint32) = \
+{ \
+    DrawMosaicPixel16_##NAME2_TAG, \
+    DrawMosaicPixel16Add_##NAME2_TAG, \
+    DrawMosaicPixel16AddF1_2_##NAME2_TAG, \
+    DrawMosaicPixel16AddS1_2_##NAME2_TAG, \
+    DrawMosaicPixel16Sub_##NAME2_TAG, \
+    DrawMosaicPixel16SubF1_2_##NAME2_TAG, \
+    DrawMosaicPixel16SubS1_2_##NAME2_TAG, \
+};
+
+/* Non-interlace NAME2 variants: BPSTART = StartLine. */
+DEFINE_MP_NAME2(Normal1x1, StartLine, MP_PIXEL_N1x1)
+DEFINE_MP_NAME2(Normal2x1, StartLine, MP_PIXEL_N2x1)
+DEFINE_MP_NAME2(Normal4x1, StartLine, MP_PIXEL_N4x1)
+DEFINE_MP_NAME2(Hires,     StartLine, MP_PIXEL_H2x1)
+
+/* Interlace NAME2 variants: BPSTART = StartLine * 2 + BG.InterlaceLine.
+ * PITCH (which is 2 in interlace) is not used by mosaic-pixel --
+ * the body iterates l = LineCount lines without skipping. */
+DEFINE_MP_NAME2(Interlace,      (StartLine * 2 + BG.InterlaceLine), MP_PIXEL_N2x1)
+DEFINE_MP_NAME2(HiresInterlace, (StartLine * 2 + BG.InterlaceLine), MP_PIXEL_H2x1)
+
+#undef DEFINE_MP_NAME2
+#undef DEFINE_MP_FN
+#undef TILE_BODY_MOSAIC_PIXEL
+#undef MP_PIXEL_H2x1
+#undef MP_PIXEL_N4x1
+#undef MP_PIXEL_N2x1
+#undef MP_PIXEL_N1x1
+
+/* End of DrawMosaicPixel16 de-templated section.
+ * ==================================================================== */
 
 /* ====================================================================
  * DrawBackdrop16 renderers
