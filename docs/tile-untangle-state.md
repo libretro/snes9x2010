@@ -16,10 +16,10 @@ If anything in this file contradicts conversation history or memory,
 
 **Branch:** `tile-untangle` (origin/libretro/snes9x2010)
 **Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x"
-**Stage:** Stage 3.5 + Stage 4 complete (structural cleanup + fan-out unrolling).
-**Last code commit:** Stage 3.5 + Stage 4 — tile.c: unroll fan-out macros + structural cleanup (this commit)
-**Previous code commit:** `a40fa37` — tile.c: de-template DrawTile16 + remove dispatch scaffold (Stage 2.11 + Stage 3)
-**In-flight work:** none
+**Stage:** Commit A complete (body-macro inlining). All 11 `TILE_BODY_*` macros are gone.
+**Last code commit:** Commit A — tile.c: inline body macros into per-function bodies (this commit)
+**Previous code commit:** `7af3f84` — tile.c: unroll fan-out macros + structural cleanup (Stage 3.5 + Stage 4) [upstream as "Last untangle step"]
+**In-flight work:** none (commit A is a complete unit; commit B = inline documentation is a separate future effort).
 **Working tree:** clean
 
 State file lives in-tree at `docs/tile-untangle-state.md`. Updates
@@ -33,17 +33,30 @@ families: DrawBackdrop16 (`9ac00cb`), DrawMosaicPixel16
 (`bb3cacf`), DrawClippedTile16 (`8906302`), DrawTile16 + scaffold
 removal (`a40fa37`).
 
-**Stage 3.5 (structural cleanup) and Stage 4 (fan-out unrolling)
-landed together in this commit.** All 313 renderer function
-definitions are now written explicitly with `static void NAME(args)
-TILE_BODY_*(args)` — no more `DEFINE_*_FN` / `DEFINE_*_NAME2` /
-`DEFINE_*_BG` / `DEFINE_*_FAMILY` macros generating function
-definitions. Body macros (`TILE_BODY_*`), pixel plotters
-(`DT_PIXEL_*`, `CT_PIXEL_*`, etc.), color-math ops (`NOMATH`,
-`REGMATH`, `MATHF1_2`, `MATHS1_2`, `COLOR_ADD*` / `COLOR_SUB*`)
-and helpers (`GET_CACHED_TILE`, `IS_BLANK_TILE`, `SELECT_PALETTE`,
-`H_FLIP`, `V_FLIP`, `CLIP_10_BIT_SIGNED`, `M7HR_LOOKUP_4`,
-`M7HR_BLEND_AND_WRITE`, `M7HR_SAMPLE_BILINEAR`) all stay as macros.
+**Commit A (this commit) inlines all 11 body macros into the
+per-function bodies.** Every renderer function now contains its
+full body verbatim — no more `TILE_BODY_*(...)` macro invocation
+on the second line of each function. The file grew from ~4,900
+lines to ~28,600 lines as a result. Plotters, color-math, and
+file-scope helpers stay as macros per the user's instruction.
+
+What stays as macros:
+- Pixel plotters (`DT_PIXEL_*`, `CT_PIXEL_*`, `MP_PIXEL_*`,
+  `BACKDROP_PIXEL_*`, `M7N_PIXEL_*`).
+- Color-math (`NOMATH`, `REGMATH`, `MATHF1_2`, `MATHS1_2`,
+  `COLOR_ADD*` / `COLOR_SUB*`).
+- File-scope helpers (`GET_CACHED_TILE`, `IS_BLANK_TILE`,
+  `SELECT_PALETTE`, `H_FLIP`, `V_FLIP`, `CLIP_10_BIT_SIGNED`).
+- Mode 7 hires bilinear helpers (`M7HR_LOOKUP_4`,
+  `M7HR_BLEND_AND_WRITE`, `M7HR_SAMPLE_BILINEAR`,
+  `M7HR_LOOKUP_4_FILL`).
+
+What's gone (compared to `7af3f84`):
+- `TILE_BODY_UNCLIPPED`, `TILE_BODY_CLIPPED`,
+  `TILE_BODY_MOSAIC_PIXEL`, `TILE_BODY_BACKDROP`.
+- `TILE_BODY_NORMAL_M7`, `TILE_BODY_MOSAIC_M7`.
+- `TILE_BODY_M7_HR`, `TILE_BODY_M7_HR4X`, `TILE_BODY_M7_BL`,
+  `TILE_BODY_M7_BL4X`, `TILE_BODY_M7_BL1X`.
 
 The dead `#ifndef NAME1` wrapper at line 996 (always true since
 NAME1 is never defined) is also removed (Stage 3.5). The outer
@@ -327,7 +340,7 @@ Goal: remove the now-dead `#ifndef NAME1` wrapper at `src/tile.c`
 line 996. With Stage 3 complete, NAME1 is never defined; the
 wrapper's body always runs and the `#else` branch is dead code.
 
-**Done** (this commit). The `#ifndef NAME1 / #endif` pair has been
+**Done** (`7af3f84`). The `#ifndef NAME1 / #endif` pair has been
 collapsed; the family-code block now runs unconditionally on the
 recursive include. Replaced with an explanatory banner comment
 describing the recursive-include landing-zone purpose. The outer
@@ -338,7 +351,7 @@ code (family bodies).
 
 Bundled with Stage 4.
 
-Status: **DONE** (this commit, bundled with Stage 4).
+Status: **DONE** (`7af3f84`, bundled with Stage 4).
 
 ### Stage 4 — Unroll function-emitting fan-out macros
 
@@ -352,7 +365,7 @@ attributes on hot vs cold variants, function-level diff diagnostics)
 are easier to apply when each function is a separate textual unit
 instead of one row in a fan-out macro.
 
-**Done** (this commit). All 313 renderer functions are now written
+**Done** (`7af3f84`). All 313 renderer functions are now written
 explicitly. No macros emit function definitions. The 11 fan-out
 macros that previously did so are gone:
 
@@ -410,7 +423,7 @@ it easy to find the function block for a given variant. Section
 banners and section-end markers preserve the original structural
 documentation.
 
-Status: **DONE** (this commit).
+Status: **DONE** (`7af3f84`).
 
 ### Stage 5 — Folding optimizations (future)
 
@@ -456,7 +469,96 @@ Status: **TODO** (re-evaluate later, profile-driven)
 
 ## Commit log (newest first)
 
-### Stage 3.5 + Stage 4 — tile.c: unroll fan-out macros + structural cleanup (this commit)
+### Commit A — tile.c: inline body macros into per-function bodies (this commit)
+
+Inlines all 11 `TILE_BODY_*` macros into the bodies of the 313
+renderer functions. Per the user's request: "tile.c is still macro
+soup, not what I expected. these macros add considerably to
+compilation time and make the code completely incomprehensible."
+The user's specific direction: "you should be able to restructure
+this code so that we don't need all this macro soup", with
+"static inline" rejected ("we cannot guarantee the compiler will
+inline every single invocation, best to keep that as macros") and
+the small macros (plotters, color math, helpers) explicitly kept
+as-is.
+
+What's gone:
+  - `TILE_BODY_UNCLIPPED` (was DrawTile16's body)
+  - `TILE_BODY_CLIPPED` (was DrawClippedTile16's body)
+  - `TILE_BODY_MOSAIC_PIXEL` (was DrawMosaicPixel16's body)
+  - `TILE_BODY_BACKDROP` (was DrawBackdrop16's body)
+  - `TILE_BODY_NORMAL_M7` (was DrawMode7BG{1,2}'s body)
+  - `TILE_BODY_MOSAIC_M7` (was DrawMode7MosaicBG{1,2}'s body)
+  - `TILE_BODY_M7_HR` (was DrawMode7BG{1,2}HR's body)
+  - `TILE_BODY_M7_HR4X` (was DrawMode7BG{1,2}HR4X's body)
+  - `TILE_BODY_M7_BL` (was DrawMode7BG{1,2}BL's body)
+  - `TILE_BODY_M7_BL4X` (was DrawMode7BG{1,2}BL4X's body)
+  - `TILE_BODY_M7_BL1X` (was DrawMode7BG{1,2}BL1X's body)
+
+How:
+  - Each `#define TILE_BODY_X(...)` macro was parsed by a Python
+    script (`/home/claude/inline.py`).
+  - Each call site `static void NAME(args) TILE_BODY_X(arg1, ...)`
+    was replaced with the full inlined function body via
+    token-aware parameter substitution (regex with word
+    boundaries to avoid partial-name matches).
+  - The substituted body has all macro parameters resolved
+    (`MATH_SELECTOR` -> `REGMATH`, `MATH_OP` -> `ADD`, `Z_EXPR` ->
+    `(D + 7)`, etc.). Plotter macros that the body invokes
+    (`DT_PIXEL_*`, `M7N_PIXEL_*`, etc.) stay as macros and expand
+    at compile time as before.
+  - All `#define TILE_BODY_*` and `#undef TILE_BODY_*` lines
+    deleted.
+  - Stale comments referencing the now-deleted body macros were
+    rewritten to reflect the inlined state.
+
+What stays as macros (per the user's instruction):
+  - Pixel plotters: `DT_PIXEL_*`, `CT_PIXEL_*`, `MP_PIXEL_*`,
+    `BACKDROP_PIXEL_*`, `M7N_PIXEL_*`.
+  - Color-math: `NOMATH`, `REGMATH`, `MATHF1_2`, `MATHS1_2`,
+    `COLOR_ADD*`, `COLOR_SUB*`.
+  - File-scope helpers: `GET_CACHED_TILE`, `IS_BLANK_TILE`,
+    `SELECT_PALETTE`, `H_FLIP`, `V_FLIP`, `CLIP_10_BIT_SIGNED`.
+  - Mode 7 bilinear helpers: `M7HR_LOOKUP_4`,
+    `M7HR_BLEND_AND_WRITE`, `M7HR_SAMPLE_BILINEAR`,
+    `M7HR_LOOKUP_4_FILL`.
+
+Effect:
+  - Each of the 313 renderer functions can now be read top-to-bottom
+    without macro chasing for the body. Only small leaf macros
+    (plotters / color-math / helpers) need expansion to follow the
+    code, and those are localized: a plotter macro is small enough
+    to mentally inline at a glance.
+  - File grew from 4,903 lines (`7af3f84`) to 28,591 lines (this
+    commit). +23,688 lines net. The volume is what it costs to
+    write each function independently.
+  - Compile-time impact is expected to drop because the preprocessor
+    no longer expands gigantic body macros 7-14 times per family;
+    the resulting token stream is the same but fewer intermediate
+    expansions are needed. Not measured here -- that's a `make`
+    benchmark to run separately.
+
+Symbol verification (vs pristine `7af3f84`):
+  - 313 Draw* functions; full per-function size diff is empty
+    across all 313 (verified). True pure refactor.
+  - 44 Renderers_ arrays; full diff empty.
+  - Build clean, zero warnings.
+
+Files changed: `src/tile.c` +25,XXX / -1,5XX (-1 net body macro
+definitions; +23,688 net lines for inlined bodies).
+
+This is "commit A" of the macro-removal sub-effort. "Commit B"
+(adding inline documentation explaining what each body does, e.g.
+the Mode 7 matrix-rotation arithmetic and the bilinear blend
+math) is a separate future effort: it requires actually
+understanding the SNES PPU semantics rather than just transcribing
+code, and Claude should treat its draft comments as guesses to
+verify rather than authoritative documentation.
+
+Behaviour invariants -- to be verified externally by Lib before
+push: audio bit-identical, savestate compat, valgrind clean.
+
+### `7af3f84` — tile.c: unroll fan-out macros + structural cleanup (Stage 3.5 + Stage 4)
 
 Removes the now-dead `#ifndef NAME1` wrapper (Stage 3.5) and unrolls
 all 11 function-emitting fan-out macros into explicit `static void
@@ -1380,4 +1482,4 @@ the truth-value of the comment.)
 
 ---
 
-*Last updated: Stage 3.5 + Stage 4 commit (structural cleanup + fan-out unrolling). Branch `tile-untangle` past upstream `a40fa37` by one commit. All 313 renderer functions now written explicitly; no macros emit function definitions. Body macros, plotters, color-math, and helpers all remain as macros. Optional Stage 5 (folding optimizations) is profile-driven future work.*
+*Last updated: commit A (body-macro inlining). Branch `tile-untangle` past upstream `7af3f84` by one commit. All 11 `TILE_BODY_*` macros are gone; each renderer function now contains its full body inline. tile.c grew from ~4,900 to ~28,600 lines as a result. Plotters / color-math / file-scope helpers all stay as macros. Optional commit B (per-body inline documentation) is a separate future effort that requires SNES PPU domain knowledge.*
