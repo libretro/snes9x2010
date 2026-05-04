@@ -1280,46 +1280,155 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 #undef Z1
 #undef Z2
 
-/* Basic routine to render the backdrop.
+/* ====================================================================
+ * DrawBackdrop16 renderers
+ * ====================================================================
+ *
+ * One NAME1 family: DrawBackdrop16. Fills a horizontal range of the
+ * scanline buffer with the backdrop colour (palette index 0). No
+ * tile lookup, no priority test against per-pixel data -- the
+ * backdrop is always at depth 1, drawn after all BG/OBJ layers, so
+ * the Z-test reduces to "1 > GFX.DB[N]" (i.e. only fill where
+ * nothing has been written yet).
+ *
+ * The original templated form baked Z1 = Z2 = 1 and Pix = 0 as
+ * preprocessor #defines around #include "tile.c". The de-templated
+ * form bakes the same constants into the plotter macros directly.
+ *
+ * ARGS shape differs from Mode 7 / tile families: takes (Offset,
+ * Left, Right). Offset is the per-call scanline base offset, not
+ * a local computed inside the body.
+ *
+ * Four NAME2 variants emitted: Normal1x1, Normal2x1, Normal4x1,
+ * Hires. All four are referenced by the dispatcher; the original
+ * templated form used NO_INTERLACE to skip Interlace and
+ * HiresInterlace, and we do the same here by just not emitting them.
+ *
+ * 7 math variants per NAME2, 4 NAME2 = 28 functions + 4 dispatch
+ * arrays.
+ */
 
-   DRAW_PIXEL is the same as above, but since we're just replicating a single
-   pixel there's no need for PITCH or BPSTART
-   (or interlace at all, really).
+/* ---- Section-internal pixel plotters -------------------------------
+ *
+ * Mirror the original DRAW_PIXEL_* macro shapes exactly, with Z1,
+ * Z2, Pix, and M (the per-call test) baked in as literals: Z = 1,
+ * Pix = 0, M = 1. The `&& (1)` clause is preserved verbatim so the
+ * expression tree the compiler sees is identical to the templated
+ * expansion.
+ *
+ * Shape: (N, MATH_SELECTOR, MATH_OP). N is the scanline x-index;
+ * the output index depends on the plotter's pixel rate (1x, 2x,
+ * 4x, or 2x-hires). N is unparenthesized inside the body to match
+ * the original DRAW_PIXEL_* substitution semantics. */
 
-   The backdrop is always depth = 1, so Z1 = Z2 = 1.
-   And backdrop is always color 0. */
+/* Normal1x1: writes one pixel at Offset + N. */
+#define BACKDROP_PIXEL_N1x1(N, MATH_SELECTOR, MATH_OP) \
+    if (1 > GFX.DB[Offset + N] && (1)) \
+    { \
+        GFX.S[Offset + N] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[0], \
+            GFX.SubScreen[Offset + N], \
+            GFX.SubZBuffer[Offset + N]); \
+        GFX.DB[Offset + N] = 1; \
+    }
 
-#define NO_INTERLACE	1
-#define Z1				1
-#define Z2				1
-#define Pix				0
+/* Normal2x1: writes two adjacent pixels at Offset + 2*N and +2*N+1. */
+#define BACKDROP_PIXEL_N2x1(N, MATH_SELECTOR, MATH_OP) \
+    if (1 > GFX.DB[Offset + 2 * N] && (1)) \
+    { \
+        GFX.S[Offset + 2 * N] = GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[0], \
+            GFX.SubScreen[Offset + 2 * N], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = 1; \
+    }
 
-#define DRAW_TILE() \
-	uint32	l, x; \
-	\
-	GFX.RealScreenColors = IPPU.ScreenColors; \
-	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
-	\
-	for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL) \
-	{ \
-		for (x = Left; x < Right; x++) \
-			DRAW_PIXEL(x, 1); \
-	}
+/* Normal4x1: writes four adjacent pixels at Offset + 4*N..+4*N+3. */
+#define BACKDROP_PIXEL_N4x1(N, MATH_SELECTOR, MATH_OP) \
+    if (1 > GFX.DB[Offset + 4 * N] && (1)) \
+    { \
+        uint16 cc__ = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[0], \
+            GFX.SubScreen[Offset + 4 * N], \
+            GFX.SubZBuffer[Offset + 4 * N]); \
+        GFX.S[Offset + 4 * N] = GFX.S[Offset + 4 * N + 1] = GFX.S[Offset + 4 * N + 2] = GFX.S[Offset + 4 * N + 3] = cc__; \
+        GFX.DB[Offset + 4 * N] = GFX.DB[Offset + 4 * N + 1] = GFX.DB[Offset + 4 * N + 2] = GFX.DB[Offset + 4 * N + 3] = 1; \
+    }
 
-#define NAME1	DrawBackdrop16
-#define ARGS	uint32 Offset, uint32 Left, uint32 Right
+/* Hires (H2x1): main-screen pixel goes through MATH normally;
+ * sub-screen-side pixel uses the swapped operand order. */
+#define BACKDROP_PIXEL_H2x1(N, MATH_SELECTOR, MATH_OP) \
+    if (1 > GFX.DB[Offset + 2 * N] && (1)) \
+    { \
+        GFX.S[Offset + 2 * N] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[0], \
+            GFX.SubScreen[Offset + 2 * N], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
+            (GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * N + 2]), \
+            GFX.RealScreenColors[0], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = 1; \
+    }
 
-/* Second-level include: Get the DrawBackdrop16 renderers. */
+/* ---- Section-internal tile body ------------------------------------
+ *
+ * Per-line walk, one scanline at a time. Body identical to the
+ * previously-templated DRAW_TILE() macro for backdrop (now deleted),
+ * parameterized for explicit MATH_SELECTOR / MATH_OP / PIXEL_PLOT. */
+#define TILE_BODY_BACKDROP(MATH_SELECTOR, MATH_OP, PIXEL_PLOT) \
+{ \
+    uint32 l, x; \
+    GFX.RealScreenColors = IPPU.ScreenColors; \
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
+    for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL) \
+    { \
+        for (x = Left; x < Right; x++) \
+            PIXEL_PLOT(x, MATH_SELECTOR, MATH_OP) \
+    } \
+}
 
-#include "tile.c"
+/* ---- Outer fan-out ------------------------------------------------- */
+#define DEFINE_BACKDROP_FN(suffix, MATH_SELECTOR, MATH_OP, NAME2_TAG, PIXEL_PLOT) \
+static void DrawBackdrop16##suffix##NAME2_TAG (uint32 Offset, uint32 Left, uint32 Right) \
+TILE_BODY_BACKDROP(MATH_SELECTOR, MATH_OP, PIXEL_PLOT)
 
-#undef NAME1
-#undef ARGS
-#undef DRAW_TILE
-#undef Pix
-#undef Z1
-#undef Z2
-#undef NO_INTERLACE
+/* Per-NAME2 7-fold math fan-out plus dispatch array. */
+#define DEFINE_BACKDROP_NAME2(NAME2_TAG, PIXEL_PLOT) \
+DEFINE_BACKDROP_FN(_,        NOMATH,   ADD, NAME2_TAG, PIXEL_PLOT) \
+DEFINE_BACKDROP_FN(Add_,     REGMATH,  ADD, NAME2_TAG, PIXEL_PLOT) \
+DEFINE_BACKDROP_FN(AddF1_2_, MATHF1_2, ADD, NAME2_TAG, PIXEL_PLOT) \
+DEFINE_BACKDROP_FN(AddS1_2_, MATHS1_2, ADD, NAME2_TAG, PIXEL_PLOT) \
+DEFINE_BACKDROP_FN(Sub_,     REGMATH,  SUB, NAME2_TAG, PIXEL_PLOT) \
+DEFINE_BACKDROP_FN(SubF1_2_, MATHF1_2, SUB, NAME2_TAG, PIXEL_PLOT) \
+DEFINE_BACKDROP_FN(SubS1_2_, MATHS1_2, SUB, NAME2_TAG, PIXEL_PLOT) \
+static void (*Renderers_DrawBackdrop16##NAME2_TAG[7]) (uint32, uint32, uint32) = \
+{ \
+    DrawBackdrop16_##NAME2_TAG, \
+    DrawBackdrop16Add_##NAME2_TAG, \
+    DrawBackdrop16AddF1_2_##NAME2_TAG, \
+    DrawBackdrop16AddS1_2_##NAME2_TAG, \
+    DrawBackdrop16Sub_##NAME2_TAG, \
+    DrawBackdrop16SubF1_2_##NAME2_TAG, \
+    DrawBackdrop16SubS1_2_##NAME2_TAG, \
+};
+
+/* Emit the four NAME2 variants the dispatcher uses. */
+DEFINE_BACKDROP_NAME2(Normal1x1, BACKDROP_PIXEL_N1x1)
+DEFINE_BACKDROP_NAME2(Normal2x1, BACKDROP_PIXEL_N2x1)
+DEFINE_BACKDROP_NAME2(Normal4x1, BACKDROP_PIXEL_N4x1)
+DEFINE_BACKDROP_NAME2(Hires,     BACKDROP_PIXEL_H2x1)
+
+#undef DEFINE_BACKDROP_NAME2
+#undef DEFINE_BACKDROP_FN
+#undef TILE_BODY_BACKDROP
+#undef BACKDROP_PIXEL_H2x1
+#undef BACKDROP_PIXEL_N4x1
+#undef BACKDROP_PIXEL_N2x1
+#undef BACKDROP_PIXEL_N1x1
+
+/* End of DrawBackdrop16 de-templated section.
+ * ==================================================================== */
 
 /* All Mode 7 renderer families (native, mosaic, HR2X, HR4X, BL2X,
  * BL4X, BL1X) are de-templated and emit their functions explicitly

@@ -16,28 +16,29 @@ If anything in this file contradicts conversation history or memory,
 
 **Branch:** `tile-untangle` (origin/libretro/snes9x2010)
 **Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x"
-**Stage:** Stages 2.6b + 2.7 complete (mosaic Mode 7 de-templated; dead native NAME2 variants dropped); ready for Stage 2.8 (DrawBackdrop16)
-**Last code commit:** Stage 2.6b/2.7 — tile.c: de-template mosaic Mode 7 + drop dead NAME2 variants (this commit)
-**Previous code commit:** `f5894be` — tile.c: de-template native Mode 7 BG renderers (Stage 2.6a)
+**Stage:** Stage 2.8 complete (DrawBackdrop16 de-templated); ready for Stage 2.9 (DrawMosaicPixel16)
+**Last code commit:** Stage 2.8 — tile.c: de-template DrawBackdrop16 (this commit)
+**Previous code commit:** `3c7ad4f` — tile.c: de-template mosaic Mode 7 + drop dead NAME2 variants (Stage 2.6b/2.7)
 **In-flight work:** none
 **Working tree:** clean
 
 State file lives in-tree at `docs/tile-untangle-state.md`. Updates
 ride along in the relevant commit.
 
-All Mode 7 renderer families are now fully de-templated:
-HR4X (`0cbca9e`), BL4X (`69f75a1`), BL1X (`0e147ff`), BL (`6fde805`),
-HR (`624492c`), native BG (`f5894be`), mosaic + dead-array cleanup
-(this commit). The Mode 7 group is done. Stage 2.8 starts the
-non-Mode-7 families: DrawBackdrop16 first, then DrawMosaicPixel16,
-DrawClippedTile16, DrawTile16.
+All Mode 7 renderer families are de-templated: HR4X (`0cbca9e`),
+BL4X (`69f75a1`), BL1X (`0e147ff`), BL (`6fde805`), HR (`624492c`),
+native BG (`f5894be`), mosaic + dead-array cleanup (`3c7ad4f`).
+DrawBackdrop16 is also de-templated (this commit). The remaining
+non-Mode-7 families: DrawMosaicPixel16 (Stage 2.9),
+DrawClippedTile16 (Stage 2.10), DrawTile16 (Stage 2.11). After
+those, Stage 3 removes the level-2 and level-3 templating scaffold
+from `tile.c`.
 
 The level-1 Mode 7 templating scaffold is gone: file-scope
 `Z1`/`Z2`/`MASK`/`DCMODE`/`BG`/`NO_INTERLACE` `#define`s for Mode 7
 removed. The `DRAW_TILE_NORMAL` and `DRAW_TILE_MOSAIC` macros are
 deleted. The level-2 dispatch in `tile.c` is still alive because
-the non-Mode-7 templated families (DrawBackdrop16,
-DrawMosaicPixel16, DrawClippedTile16, DrawTile16) still use it.
+DrawMosaicPixel16, DrawClippedTile16, and DrawTile16 still use it.
 
 ## Invariants — must hold at every commit
 
@@ -197,22 +198,29 @@ Order (small/safe first, large/risky last):
    (Stage 2.6a, `f5894be`). Full NAME2 set emitted in 2.6a; dead
    variants dropped in 2.6b/2.7 below.
 
-   Stage 2.6b folded into Stage 2.7 (this commit): drop the
+   Stage 2.6b folded into Stage 2.7 (`3c7ad4f`): drop the
    never-referenced NAME2 variants (Normal4x1, Interlace,
    HiresInterlace) for the de-templated families. Cleans up all
    the unused-Renderers warnings.
 
 7. ~~`DrawMode7MosaicBG1` and `DrawMode7MosaicBG2` (Stage 2.7)~~ —
-   **done** (this commit). Mosaic Mode 7 de-templated using a
+   **done** (`3c7ad4f`). Mosaic Mode 7 de-templated using a
    `TILE_BODY_MOSAIC_M7` body macro plus `DEFINE_M7_MOSAIC_*`
    fan-out, mirroring the native machinery. Combined with 2.6b
    (drop dead NAME2 variants for both native and mosaic) into
    one commit. The `DRAW_TILE_MOSAIC` macro is gone, and the
    file-scope `Z1`/`Z2`/`MASK`/`DCMODE`/`BG`/`NO_INTERLACE`
    `#define`s for Mode 7 are gone.
-8. `DrawBackdrop16` — full NAME2 set. **Next.** First non-Mode-7
-   family.
-9. `DrawMosaicPixel16` — full NAME2 set.
+8. ~~`DrawBackdrop16` — full NAME2 set.~~ — **done** (Stage 2.8,
+   this commit). Four NAME2 variants emitted (Normal1x1, Normal2x1,
+   Normal4x1, Hires) -- the Interlace and HiresInterlace variants
+   the level-2 dispatch normally generates were already excluded
+   by the templated form's `NO_INTERLACE` define and the
+   de-templated form simply doesn't emit them. Backdrop-specific
+   plotters (`BACKDROP_PIXEL_*`) bake in `Z = 1`, `M = 1`,
+   `Pix = 0` as literals to match the original DRAW_PIXEL
+   expansion exactly.
+9. `DrawMosaicPixel16` — full NAME2 set. **Next.**
 10. `DrawClippedTile16` — full NAME2 set.
 11. `DrawTile16` — full NAME2 set. Largest; convert last.
 
@@ -290,7 +298,86 @@ Status: **TODO** (re-evaluate later)
 
 ## Commit log (newest first)
 
-### Stage 2.6b/2.7 — tile.c: de-template mosaic Mode 7 + drop dead NAME2 variants (this commit)
+### Stage 2.8 — tile.c: de-template DrawBackdrop16 (this commit)
+
+Stage 2.8. First non-Mode-7 family de-templated. DrawBackdrop16
+is the renderer that fills a horizontal range of the scanline
+buffer with the backdrop colour (palette index 0) at depth 1,
+drawn after all BG/OBJ layers.
+
+Structurally simpler than Mode 7:
+  - No tile lookup, no per-pixel data
+  - Z is constant 1 (depth 1, drawn last)
+  - Pix is constant 0 (always palette index 0)
+  - The DRAW_PIXEL "M" parameter (test) is constant 1
+  - ARGS shape is `(uint32 Offset, uint32 Left, uint32 Right)` --
+    Offset is a parameter, not a body-local
+
+Different ARGS from Mode 7 (which uses `(uint32 Left, uint32 Right,
+int D)`) means the body and fan-out can't share with Mode 7's
+machinery. The de-templated form uses a separate set of
+`BACKDROP_PIXEL_*` plotter macros and a `TILE_BODY_BACKDROP` body
+macro.
+
+The original templated form baked Z = 1, Pix = 0 as preprocessor
+#defines and used NO_INTERLACE to skip Interlace/HiresInterlace
+variants. The de-templated form bakes the same constants directly
+into the plotter macros and simply doesn't emit Interlace
+variants.
+
+Per-NAME2 plotters mirror the original DRAW_PIXEL_* expansion
+exactly, including the `&& (1)` clause from the templated `M = 1`
+substitution. This preserves the expression tree shape the
+compiler sees and gives byte-identical codegen.
+
+Files changed: `src/tile.c`, +136/-39, +97 net. The de-templated
+form is bigger than the templated source because backdrop's
+templated form was tiny (40 lines, all the work was in the
+level-2/3 dispatch); explicit form unrolls 4 plotter macros plus
+body plus 4 fan-out invocations.
+
+Removed:
+  - templated DrawBackdrop16 instantiation block
+  - `#define NO_INTERLACE` / `Z1` / `Z2` / `Pix` and matching
+    `#undef`s
+  - DRAW_TILE() macro definition for backdrop
+
+Added:
+  - de-templated section with banner comment
+  - `BACKDROP_PIXEL_N1x1` / `N2x1` / `N4x1` / `H2x1` plotters
+  - `TILE_BODY_BACKDROP` body macro
+  - `DEFINE_BACKDROP_FN` / `DEFINE_BACKDROP_NAME2` fan-out
+  - 28 explicit `DrawBackdrop16*_*` functions
+  - 4 explicit `Renderers_DrawBackdrop16*` arrays
+
+Symbol verification (vs pristine `3c7ad4f`):
+  - 313 Draw* functions; full per-function size diff vs pristine
+    is empty (verified). True pure refactor.
+  - 44 Renderers_ arrays; full diff empty.
+  - Build clean, zero warnings.
+
+Lessons from earlier stages applied (no codegen surprises this
+time):
+  - N parameter unparenthesized in plotter bodies (Stage 2.6b/2.7
+    lesson)
+  - `&& (M)` clause preserved verbatim in plotter, even though
+    M is the literal `1` (Stage 2.5 lesson about preserving
+    expression-tree shape)
+
+The non-Mode-7 families now have one done (DrawBackdrop16) and
+three remaining (DrawMosaicPixel16, DrawClippedTile16,
+DrawTile16). After those, Stage 3 removes the level-2/3
+templating scaffold.
+
+This commit also updates docs/tile-untangle-state.md to reflect
+Stage 2.8 completion. Bundled SHA refresh from the previous
+rebase.
+
+Behaviour invariants -- to be verified externally by Lib before
+push: audio bit-identical, savestate compat, valgrind clean,
+7-distinct-math-variants on the 28 new backdrop functions.
+
+### `3c7ad4f` — tile.c: de-template mosaic Mode 7 + drop dead NAME2 variants (Stage 2.6b/2.7)
 
 Combines Stage 2.6b (drop unused NAME2 variants for de-templated
 native Mode 7 BG families) and Stage 2.7 (de-template the mosaic
@@ -784,4 +871,4 @@ the truth-value of the comment.)
 
 ---
 
-*Last updated: combined Stage 2.6b + 2.7 commit (de-template mosaic Mode 7, drop dead NAME2 variants for native+mosaic). Branch `tile-untangle` past upstream `f5894be` by one commit. The Mode 7 group is complete: HR4X, BL4X, BL1X, BL, HR, native BG, mosaic BG all de-templated. Stage 2.8 (DrawBackdrop16) starts the non-Mode-7 families.*
+*Last updated: Stage 2.8 commit (de-template DrawBackdrop16). Branch `tile-untangle` past upstream `3c7ad4f` by one commit. The Mode 7 group is complete plus DrawBackdrop16. Three non-Mode-7 families remain: DrawMosaicPixel16 (Stage 2.9), DrawClippedTile16 (Stage 2.10), DrawTile16 (Stage 2.11).*
