@@ -2830,7 +2830,15 @@ stop:
 #pragma GCC diagnostic pop
 #endif
 
-/* Runs SPC to end_time and starts a new time frame at 0 */
+/* Runs SPC to end_time and starts a new time frame at 0.
+
+   Catches CPU/timer/DSP up to end_time. The DSP writes its samples into
+   landing_buffer at dsp_m.out (advanced by dsp_set_output). At end of
+   frame the libretro driver pulls everything written via S9xMixSamples,
+   which delivers (dsp_m.out - landing_buffer) mono samples and resets
+   the cursor for the next frame. There is no per-frame integer-sample
+   alignment to maintain - the frontend's resampler handles whatever
+   count we deliver via Dynamic Rate Control. */
 
 static void spc_end_frame( int end_time )
 {
@@ -2840,44 +2848,20 @@ static void spc_end_frame( int end_time )
 
 	if ( end_time > m.spc_time )
 		spc_run_until_( end_time );
-	
-	m.spc_time     -= end_time;
-	m.extra_clocks += end_time;
-	
+
+	m.spc_time -= end_time;
+
 	/* Catch timers up to CPU */
 	for ( i = 0; i < TIMER_COUNT; i++ )
 	{
 		if ( 0 >= m.timers[i].next_time )
 			spc_run_timer_( &m.timers [i], 0 );
 	}
-	
+
 	/* Catch DSP up to CPU */
 	if ( m.dsp_time < 0 )
 	{
 		RUN_DSP( 0, MAX_REG_TIME );
-	}
-	
-	/* Save any extra samples beyond what should be generated */
-	if ( m.buf_begin )
-	{
-		short *main_end, *dsp_end, *out, *in;
-		/* Get end pointers */
-		main_end = m.buf_end;	/* end of data written to buf */
-		dsp_end  = dsp_m.out;	/* end of data written to dsp.extra() */
-		if ( m.buf_begin <= dsp_end && dsp_end <= main_end )
-		{
-			main_end = dsp_end;
-			dsp_end  = dsp_m.extra; /* nothing in DSP's extra */
-		}
-
-		/* Copy any extra samples at these ends into extra_buf */
-		out = m.extra_buf;
-		for ( in = m.buf_begin + SPC_SAMPLE_COUNT(); in < main_end; in++ )
-			*out++ = *in;
-		for ( in = dsp_m.extra; in < dsp_end ; in++ )
-			*out++ = *in;
-
-		m.extra_pos = out;
 	}
 }
 
@@ -2892,13 +2876,6 @@ uint8_t * spc_apuram(void)
 
 static void spc_reset_buffer(void)
 {
-	short *out;
-	/* Start with half extra buffer of silence */
-	out = m.extra_buf;
-	while ( out < &m.extra_buf [EXTRA_SIZE_DIV_2] )
-		*out++ = 0;
-	m.extra_pos = out;
-	m.buf_begin = 0;
 	dsp_set_output( 0, 0 );
 }
 
@@ -2957,8 +2934,7 @@ static void spc_reset_common( int timer_counter_init )
 	}
 	
 	spc_set_tempo( m.tempo );
-	
-	m.extra_clocks = 0;
+
 	spc_reset_buffer();
 }
 
@@ -3099,215 +3075,58 @@ static uint32		ratio_numerator = APU_NUMERATOR_NTSC;
 static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 
 /***********************************************************************************
-	RESAMPLER
+	APU AUDIO PATH
 
-	Single-producer / single-consumer pipeline. The SPC writes raw 32040Hz
-	stereo samples directly into landing_buffer over the course of a frame;
-	at end of frame, S9xMixSamples reads from landing_buffer (either by
-	memcpy when the input rate matches the output rate, or by 4-tap hermite
-	interpolation when an APU speedup hack has skewed the ratio) and then
-	resets landing_buffer for the next frame.
+	bsnes-style: SPC's DSP writes stereo pairs into landing_buffer over the
+	frame; at end of frame, S9xMixSamples delivers everything DSP wrote
+	(dsp_m.out - landing_buffer mono samples) and resets the DSP cursor for
+	the next frame's writes. The frontend's resampler handles conversion
+	from the SPC's native rate (declared via retro_get_system_av_info,
+	using S9xGetAudioSampleRate below) to the host audio rate.
 
-	The previous implementation copied through an intermediate ring buffer
-	(rb_buffer + resampler_push + resampler_read). With the libretro driver
-	pulling exactly once per retro_run (since the previous commit) the ring
-	is unnecessary - one producer, one consumer, no concurrent access.
-	Removing it eliminates a per-frame memcpy of the whole sample run and
-	~140 lines of bookkeeping.
-
-	Hermite history (r_left/r_right tap registers) and the fractional input
-	cursor (r_frac) still carry across frames so the speedup-hack output
-	stream remains continuous.
-************************************************************************************/
-static uint32_t r_step;
-static uint32_t r_frac;
-static int    r_left[4], r_right[4];
-
-#define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
-#define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
-
-static INLINE int32_t hermite (int32_t mu1, int32_t a, int32_t b, int32_t c, int32_t d)
-{
-	int32_t mu2, mu3, m0, m1, a0, a1, a2, a3;
-
-	mu2 = ((mu1 * mu1) >> 15);
-	mu3 = ((mu2 * mu1) >> 15);
-
-	m0 = (c - a) << 14;
-	m1 = (d - b) << 14;
-
-	a0 = (((mu3 << 1) - (3 * mu2) + 32768) * b);
-	a1 = ((mu3 - (mu2 << 1) + mu1) * m0) >> 15;
-	a2 = ((mu3 -     mu2) * m1) >> 15;
-	a3 = ((3 * mu2 - (mu3 << 1)) * c);
-
-	return ((a0) + (a1) + (a2) + (a3)) >> 15;
-}
-
-static void resampler_clear(void)
-{
-	r_frac = 65536;
-	r_left [0] = r_left [1] = r_left [2] = r_left [3] = 0;
-	r_right[0] = r_right[1] = r_right[2] = r_right[3] = 0;
-}
-
-static void resampler_time_ratio(double ratio)
-{
-	r_step = 65536 * ratio;
-	resampler_clear();
-}
-
-/***********************************************************************************
-	APU
+	No internal resampler. No per-frame integer-sample alignment, no
+	"extra_buf" overflow carry, no SPC_SAMPLE_COUNT bookkeeping. Whatever
+	count of samples DSP produced this frame, that count goes to the
+	frontend, which absorbs the per-frame variation via Dynamic Rate
+	Control (which is exactly what DRC is for).
  ***********************************************************************************/
 
-/* Sets destination for output samples */
-
-static void spc_set_output( short* out, int size )
-{
-	short *out_end, *in;
-
-	out_end = out + size;
-	m.buf_begin = out;
-	m.buf_end   = out_end;
-
-	/* Copy extra to output */
-	in = m.extra_buf;
-	while ( in < m.extra_pos && out < out_end )
-		*out++ = *in++;
-
-	/* Handle output being full already */
-	if ( out >= out_end )
-	{
-		/* Have DSP write to remaining extra space */
-		out     = dsp_m.extra; 
-		out_end = &dsp_m.extra[EXTRA_SIZE];
-
-		/* Copy any remaining extra samples as if DSP wrote them */
-		while ( in < m.extra_pos )
-			*out++ = *in++;
-	}
-
-	dsp_set_output( out, out_end - out );
-}
-
-/* Drain one frame of pending audio into caller's buffer.
-
-   max_samples is the caller's buffer capacity in mono samples (= 2 x stereo
-   frames); writes are clamped against it. Returns the number of mono
-   samples actually written.
-
-   Three paths, one branch on Settings.Mute / r_step:
-
-   * Mute: zero the buffer to keep the frontend's audio clock aligned with
-     video. Output count matches the rate the bypass / hermite paths would
-     have produced (so the frontend sees a stable sample cadence).
-
-   * Bypass (input rate == output rate, the common case): one memcpy from
-     landing_buffer.
-
-   * Hermite (APU speedup hack): 4-tap interpolation reading directly from
-     landing_buffer. r_left/r_right tap registers and r_frac carry across
-     frames so the output stream stays continuous.
-
-   Always finishes by zeroing the integer-sample bits of m.extra_clocks
-   and re-arming the SPC's output cursor via spc_set_output, which folds
-   any extra_buf overflow into the head of landing_buffer for the next
-   frame's writes. */
 int S9xMixSamples (short *buffer, int max_samples)
 {
-	int in_samples = SPC_SAMPLE_COUNT();
 	int written;
 
-	if (in_samples <= 0)
-	{
+	/* DSP has been writing into landing_buffer at dsp_m.out throughout the
+	   frame. The count of mono samples produced this frame is the cursor's
+	   distance from the start of the buffer. */
+	written = (int)(dsp_m.out - landing_buffer);
+	if (written < 0)
 		written = 0;
-	}
-	else if (Settings.Mute)
-	{
-		/* Match the cadence the bypass / hermite paths would produce. */
-		if (r_step == 65536)
-			written = in_samples;
-		else
-			written = (((uint32_t)in_samples * sizeof(short)) << 14) / r_step * 2;
+	if (written > max_samples)
+		written = max_samples;
 
-		if (written > max_samples)
-			written = max_samples;
+	if (Settings.Mute)
 		memset(buffer, 0, written * sizeof(short));
-	}
-	else if (r_step == 65536)
-	{
-		written = in_samples;
-		if (written > max_samples)
-			written = max_samples;
-		memcpy(buffer, landing_buffer, written * sizeof(short));
-	}
 	else
-	{
-		short *src = landing_buffer;
-		int    in_pos = 0;
-		int    o_pos  = 0;
-		int    out_cap;
+		memcpy(buffer, landing_buffer, written * sizeof(short));
 
-		/* Hermite output count, clamped against caller buffer:
-		   floor((in_bytes << 14 - r_frac) / r_step) * 2 */
-		out_cap = (((uint32_t)in_samples * sizeof(short)) << 14) - r_frac;
-		out_cap = out_cap / r_step * 2;
-		if (out_cap > max_samples)
-			out_cap = max_samples;
-
-		/* The producer wrote stereo pairs (L,R,L,R,...). */
-		while (o_pos < out_cap && in_pos < in_samples)
-		{
-			int s_left  = src[in_pos];
-			int s_right = src[in_pos + 1];
-
-			while (r_frac <= 65536 && o_pos < out_cap)
-			{
-				int v = hermite(r_frac >> 1,
-					r_left[0], r_left[1], r_left[2], r_left[3]);
-				buffer[o_pos]     = SHORT_CLAMP(v);
-				v = hermite(r_frac >> 1,
-					r_right[0], r_right[1], r_right[2], r_right[3]);
-				buffer[o_pos + 1] = SHORT_CLAMP(v);
-
-				o_pos  += 2;
-				r_frac += r_step;
-			}
-
-			if (r_frac > 65536)
-			{
-				r_left [0] = r_left [1];
-				r_left [1] = r_left [2];
-				r_left [2] = r_left [3];
-				r_left [3] = s_left;
-
-				r_right[0] = r_right[1];
-				r_right[1] = r_right[2];
-				r_right[2] = r_right[3];
-				r_right[3] = s_right;
-
-				r_frac -= 65536;
-				in_pos += 2;
-			}
-		}
-		written = o_pos;
-	}
-
-	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-	spc_set_output(landing_buffer, buffer_size >> 1);
+	/* Reset DSP cursor to the head of landing_buffer for the next frame. */
+	dsp_set_output(landing_buffer, buffer_size >> 1);
 
 	return written;
 }
 
-static void UpdatePlaybackRate (void)
-{
-	double time_ratio;
-	if (Settings.SoundInputRate == 0)
-		Settings.SoundInputRate = SNES_AUDIO_FREQ;
+/* Effective SPC output sample rate for the current cart.
 
-	time_ratio = (double) Settings.SoundInputRate * TEMPO_UNIT / (Settings.SoundPlaybackRate * timing_hack_denominator);
-	resampler_time_ratio(time_ratio);
+   For carts with no APU speedup hack (the vast majority), this is just
+   SNES_AUDIO_FREQ. For carts that use the speedup hack
+   (S9xAPUTimingSetSpeedup with ticks > 0; ~70 game IDs in memmap.c)
+   the SPC runs at TEMPO_UNIT / timing_hack_denominator times its
+   normal rate and produces samples at the same multiplier. The
+   libretro driver reports this as info->timing.sample_rate so the
+   frontend resampler handles the conversion to host audio rate. */
+unsigned S9xGetAudioSampleRate (void)
+{
+	return (unsigned)((double)SNES_AUDIO_FREQ * TEMPO_UNIT / timing_hack_denominator + 0.5);
 }
 
 bool8 S9xInitSound (size_t req_buff_size)
@@ -3329,12 +3148,7 @@ bool8 S9xInitSound (size_t req_buff_size)
 	if (!landing_buffer)
 		goto err;
 
-	resampler_clear();
-
-	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-	spc_set_output(landing_buffer, buffer_size >> 1);
-
-	UpdatePlaybackRate();
+	dsp_set_output(landing_buffer, buffer_size >> 1);
 
 	return TRUE;
 
@@ -3497,8 +3311,6 @@ void S9xAPUTimingSetSpeedup (int ticks)
 	ratio_numerator = Settings.PAL ? APU_NUMERATOR_PAL : APU_NUMERATOR_NTSC;
 	ratio_denominator = Settings.PAL ? APU_DENOMINATOR_PAL : APU_DENOMINATOR_NTSC;
 	ratio_denominator = ratio_denominator * timing_hack_denominator / TEMPO_UNIT;
-
-	UpdatePlaybackRate();
 }
 
 void S9xAPUAllowTimeOverflow (bool8 allow)
@@ -3512,11 +3324,7 @@ void S9xResetAPU (void)
 	spc_remainder = 0;
 	spc_reset();
 
-	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-
-	spc_set_output(landing_buffer, buffer_size >> 1);
-
-	resampler_clear();
+	dsp_set_output(landing_buffer, buffer_size >> 1);
 }
 
 void S9xSoftResetAPU (void)
@@ -3525,10 +3333,7 @@ void S9xSoftResetAPU (void)
 	spc_remainder = 0;
 	spc_soft_reset();
 
-	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-	spc_set_output(landing_buffer, buffer_size >> 1);
-
-	resampler_clear();
+	dsp_set_output(landing_buffer, buffer_size >> 1);
 }
 
 static void NO_OPTIMIZE from_apu_to_state (uint8 **buf, void *var, size_t size)

@@ -194,7 +194,6 @@ typedef void (*dsp_copy_func_t)( unsigned char** io, void* state, size_t );
 
 #define VOICE_COUNT		8
 #define EXTRA_SIZE		16
-#define EXTRA_SIZE_DIV_2	8
 #define BRR_BUF_SIZE		12
 #define BRR_BUF_SIZE_X2		24
 #define BRR_BLOCK_SIZE		9
@@ -415,11 +414,6 @@ uint8_t *spc_apuram (void);
 
 typedef struct
 {
-	short*   buf_begin;
-	short*	buf_end;
-	short*   extra_pos;
-	short    extra_buf [EXTRA_SIZE];
-
 	struct
 	{
 		int pc;
@@ -434,8 +428,6 @@ typedef struct
 	int  spc_time;
 
 	int         tempo;
-
-	int         extra_clocks;
 
 	int         rom_enabled;
 
@@ -462,9 +454,6 @@ typedef struct
 
 } spc_state_t;
 
-/* Number of samples written to output since last set */
-#define SPC_SAMPLE_COUNT() ((m.extra_clocks >> 5) * 2)
-
 #define SPC_SAVE_STATE_BLOCK_SIZE	(STATE_SIZE + 8)
 
 bool8 S9xInitAPU (void);
@@ -484,5 +473,6 @@ bool8 S9xInitSound (size_t buffer_size);
 
 int  S9xMixSamples (short *buffer, int max_samples);
 void S9xSetSoundMute (bool8 mute);
+unsigned S9xGetAudioSampleRate (void);
 
 #endif

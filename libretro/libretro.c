@@ -948,7 +948,13 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->geometry.max_height   = MAX_SNES_HEIGHT;
 	info->geometry.aspect_ratio = get_aspect_ratio(width, height);
 
-	info->timing.sample_rate    = SNES_AUDIO_FREQ;
+	/* The SPC's effective output rate is SNES_AUDIO_FREQ for normal carts
+	   and SNES_AUDIO_FREQ * TEMPO_UNIT / timing_hack_denominator for carts
+	   that use the APU speedup hack (~70 game IDs handled in memmap.c).
+	   Reporting the effective rate here lets the frontend's resampler
+	   handle conversion to the host's audio output rate; ours runs at
+	   ratio 1.0 (the bypass path) for both cases. */
+	info->timing.sample_rate    = (double)S9xGetAudioSampleRate();
 	info->timing.fps            = (retro_get_region() == RETRO_REGION_NTSC) ?
 			VIDEO_REFRESH_RATE_NTSC : VIDEO_REFRESH_RATE_PAL;
 }
