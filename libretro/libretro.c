@@ -742,11 +742,11 @@ void retro_get_system_info(struct retro_system_info *info)
 /* Drain one frame of audio from the resampler and hand it to the frontend
  * in a single audio_batch_cb call.
  *
- * Why this is the only entry point: libretro pulls audio exactly once per
- * retro_run via the batch callback. The mid-frame "samples available" hook
- * (S9xSetSamplesAvailableCallback) that upstream Snes9x exposes for SDL-
- * style frontends is not wired here; samples accumulate in the resampler
- * across the whole frame and ship in one batch when the frame ends.
+ * libretro pulls audio exactly once per retro_run via the batch callback.
+ * The mid-frame "samples available" hook (S9xSetSamplesAvailableCallback)
+ * that upstream Snes9x exposes for SDL-style frontends is not wired here;
+ * samples accumulate in landing_buffer across the whole frame and ship in
+ * one batch when the frame ends.
  *
  * Sizing: SNES_AUDIO_FREQ / region_refresh_rate gives ~534 stereo frames
  * (NTSC) or ~641 (PAL). APU speedup hacks raise the SPC sample-production
@@ -758,25 +758,10 @@ void retro_get_system_info(struct retro_system_info *info)
  * the silence to keep the frontend's audio clock aligned with video. */
 static void audio_upload_samples(void)
 {
-	int available_samples;
-	size_t available_frames;
-
-	S9xFinalizeSamples();
-	available_samples = S9xGetSampleCount();
-	if (available_samples <= 0)
-		return;
-
-	/* Hard clamp against the static drain buffer. In normal operation
-	   this is unreachable; the comment above bounds the worst case at
-	   ~642 stereo frames against AUDIO_OUT_FRAMES_MAX = 768. If it ever
-	   fires, dropping the tail is preferable to writing past the array. */
-	if ((size_t)available_samples > sizeof(audio_out_buffer) / sizeof(audio_out_buffer[0]))
-		available_samples = sizeof(audio_out_buffer) / sizeof(audio_out_buffer[0]);
-
-	S9xMixSamples(audio_out_buffer, available_samples);
-
-	available_frames = (size_t)available_samples >> 1;
-	audio_batch_cb(audio_out_buffer, available_frames);
+	int n = S9xMixSamples(audio_out_buffer,
+		(int)(sizeof(audio_out_buffer) / sizeof(audio_out_buffer[0])));
+	if (n > 0)
+		audio_batch_cb(audio_out_buffer, (size_t)n >> 1);
 }
 
 void retro_set_controller_port_device(unsigned in_port, unsigned device)

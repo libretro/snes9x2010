@@ -3122,7 +3122,6 @@ static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 static uint32_t r_step;
 static uint32_t r_frac;
 static int    r_left[4], r_right[4];
-static int    pending_in_samples;   /* mono samples waiting in landing_buffer */
 
 #define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 #define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
@@ -3147,7 +3146,6 @@ static INLINE int32_t hermite (int32_t mu1, int32_t a, int32_t b, int32_t c, int
 
 static void resampler_clear(void)
 {
-	pending_in_samples = 0;
 	r_frac = 65536;
 	r_left [0] = r_left [1] = r_left [2] = r_left [3] = 0;
 	r_right[0] = r_right[1] = r_right[2] = r_right[3] = 0;
@@ -3193,79 +3191,78 @@ static void spc_set_output( short* out, int size )
 	dsp_set_output( out, out_end - out );
 }
 
-/* Snapshot the count of mono samples the SPC has written into
-   landing_buffer this frame. landing_buffer is NOT reset here - the
-   consumer (S9xMixSamples) reads directly from it and resets it after
-   consumption. The reset must happen before the next SPC tick so the
-   caller is required to call S9xMixSamples between every pair of
-   S9xFinalizeSamples calls; the libretro driver does this once per
-   frame and that ordering is guaranteed. */
-void S9xFinalizeSamples (void)
+/* Drain one frame of pending audio into caller's buffer.
+
+   max_samples is the caller's buffer capacity in mono samples (= 2 x stereo
+   frames); writes are clamped against it. Returns the number of mono
+   samples actually written.
+
+   Three paths, one branch on Settings.Mute / r_step:
+
+   * Mute: zero the buffer to keep the frontend's audio clock aligned with
+     video. Output count matches the rate the bypass / hermite paths would
+     have produced (so the frontend sees a stable sample cadence).
+
+   * Bypass (input rate == output rate, the common case): one memcpy from
+     landing_buffer.
+
+   * Hermite (APU speedup hack): 4-tap interpolation reading directly from
+     landing_buffer. r_left/r_right tap registers and r_frac carry across
+     frames so the output stream stays continuous.
+
+   Always finishes by zeroing the integer-sample bits of m.extra_clocks
+   and re-arming the SPC's output cursor via spc_set_output, which folds
+   any extra_buf overflow into the head of landing_buffer for the next
+   frame's writes. */
+int S9xMixSamples (short *buffer, int max_samples)
 {
-	pending_in_samples = Settings.Mute ? 0 : SPC_SAMPLE_COUNT();
-}
+	int in_samples = SPC_SAMPLE_COUNT();
+	int written;
 
-/* Output sample count derivable from pending input + fractional state.
-   Bypass path: 1:1, count is just the input count. Hermite path: the
-   resampler emits floor((in_bytes << 14 - r_frac) / r_step) * 2 mono
-   samples - the same formula the ring-buffer implementation used, with
-   pending_in_samples * sizeof(short) substituted for the old rb_size. */
-int S9xGetSampleCount (void)
-{
-	uint32_t in_bytes;
-
-	if (pending_in_samples <= 0)
-		return 0;
-
-	if (r_step == 65536)
-		return pending_in_samples;
-
-	in_bytes = (uint32_t)pending_in_samples * sizeof(short);
-	return ((in_bytes << 14) - r_frac) / r_step * 2;
-}
-
-/* Drain pending samples from landing_buffer into caller's buffer, then
-   reset landing_buffer for the next frame's SPC writes.
-
-   sample_count is in mono samples and must not exceed S9xGetSampleCount().
-   Two paths:
-
-   * Bypass (input rate == output rate): one memcpy from landing_buffer.
-
-   * Hermite (APU speedup hack active): 4-tap interpolation reading
-     directly from landing_buffer. r_left/r_right tap registers and
-     r_frac carry over between calls so the output stream is
-     continuous across frames.
-
-   Always finishes by resetting m.extra_clocks's sample bits and
-   calling spc_set_output, which restarts SPC writes at the head of
-   landing_buffer (and folds in any extra_buf overflow). */
-bool8 S9xMixSamples (short *buffer, unsigned sample_count)
-{
-	if (Settings.Mute)
+	if (in_samples <= 0)
 	{
-		memset(buffer, 0, sample_count * sizeof(short));
+		written = 0;
+	}
+	else if (Settings.Mute)
+	{
+		/* Match the cadence the bypass / hermite paths would produce. */
+		if (r_step == 65536)
+			written = in_samples;
+		else
+			written = (((uint32_t)in_samples * sizeof(short)) << 14) / r_step * 2;
+
+		if (written > max_samples)
+			written = max_samples;
+		memset(buffer, 0, written * sizeof(short));
 	}
 	else if (r_step == 65536)
 	{
-		memcpy(buffer, landing_buffer, sample_count * sizeof(short));
+		written = in_samples;
+		if (written > max_samples)
+			written = max_samples;
+		memcpy(buffer, landing_buffer, written * sizeof(short));
 	}
 	else
 	{
-		short *src        = landing_buffer;
-		int    in_samples = pending_in_samples;
-		int    in_pos     = 0;
-		unsigned o_pos    = 0;
+		short *src = landing_buffer;
+		int    in_pos = 0;
+		int    o_pos  = 0;
+		int    out_cap;
 
-		/* Direct hermite over landing_buffer. The producer writes
-		   stereo pairs (L,R,L,R,...), so in_pos advances by 2 per
-		   input pair consumed. */
-		while (o_pos < sample_count && in_pos < in_samples)
+		/* Hermite output count, clamped against caller buffer:
+		   floor((in_bytes << 14 - r_frac) / r_step) * 2 */
+		out_cap = (((uint32_t)in_samples * sizeof(short)) << 14) - r_frac;
+		out_cap = out_cap / r_step * 2;
+		if (out_cap > max_samples)
+			out_cap = max_samples;
+
+		/* The producer wrote stereo pairs (L,R,L,R,...). */
+		while (o_pos < out_cap && in_pos < in_samples)
 		{
 			int s_left  = src[in_pos];
 			int s_right = src[in_pos + 1];
 
-			while (r_frac <= 65536 && o_pos < sample_count)
+			while (r_frac <= 65536 && o_pos < out_cap)
 			{
 				int v = hermite(r_frac >> 1,
 					r_left[0], r_left[1], r_left[2], r_left[3]);
@@ -3294,13 +3291,13 @@ bool8 S9xMixSamples (short *buffer, unsigned sample_count)
 				in_pos += 2;
 			}
 		}
+		written = o_pos;
 	}
 
-	pending_in_samples = 0;
 	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
-	spc_set_output(landing_buffer, buffer_size);
+	spc_set_output(landing_buffer, buffer_size >> 1);
 
-	return TRUE;
+	return written;
 }
 
 static void UpdatePlaybackRate (void)
