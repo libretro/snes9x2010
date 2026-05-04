@@ -199,10 +199,9 @@
 
 static INLINE uint16 COLOR_SUB (uint16 C1, uint16 C2)
 {
-	uint16	mC1, mC2, v = ALPHA_BITS_MASK;
-
-	mC1 = C1 & FIRST_COLOR_MASK;
-	mC2 = C2 & FIRST_COLOR_MASK;
+	uint16	v   = ALPHA_BITS_MASK;
+	uint16	mC1 = C1 & FIRST_COLOR_MASK;
+	uint16	mC2 = C2 & FIRST_COLOR_MASK;
 	if (mC1 > mC2) v += (mC1 - mC2);
 
 	mC1 = C1 & SECOND_COLOR_MASK;
@@ -9384,13 +9383,12 @@ static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -9467,13 +9465,12 @@ static void DrawMode7BG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -9550,13 +9547,12 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -9633,13 +9629,12 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -9716,13 +9711,12 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -9799,13 +9793,12 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -9882,13 +9875,12 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -9977,13 +9969,12 @@ static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10060,13 +10051,12 @@ static void DrawMode7BG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10143,13 +10133,12 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10226,13 +10215,12 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10309,13 +10297,12 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10392,13 +10379,12 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10475,13 +10461,12 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10570,13 +10555,12 @@ static void DrawMode7BG1_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10653,13 +10637,12 @@ static void DrawMode7BG1Add_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10736,13 +10719,12 @@ static void DrawMode7BG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10819,13 +10801,12 @@ static void DrawMode7BG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10902,13 +10883,12 @@ static void DrawMode7BG1Sub_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -10985,13 +10965,12 @@ static void DrawMode7BG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11068,13 +11047,12 @@ static void DrawMode7BG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11157,13 +11135,12 @@ static void DrawMode7BG2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11234,13 +11211,12 @@ static void DrawMode7BG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11311,13 +11287,12 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11388,13 +11363,12 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11465,13 +11439,12 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11542,13 +11515,12 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11619,13 +11591,12 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11708,13 +11679,12 @@ static void DrawMode7BG2_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11785,13 +11755,12 @@ static void DrawMode7BG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11862,13 +11831,12 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -11939,13 +11907,12 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -12016,13 +11983,12 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -12093,13 +12059,12 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -12170,13 +12135,12 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -12259,13 +12223,12 @@ static void DrawMode7BG2_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -12336,13 +12299,12 @@ static void DrawMode7BG2Add_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -12413,13 +12375,12 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -12490,13 +12451,12 @@ static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -12567,13 +12527,12 @@ static void DrawMode7BG2Sub_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -12644,13 +12603,12 @@ static void DrawMode7BG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -12721,13 +12679,12 @@ static void DrawMode7BG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
     for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-        starty = Line + 1;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -18162,15 +18119,13 @@ static void DrawMode7BG1HR_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -18337,15 +18292,13 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -18512,15 +18465,13 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -18687,15 +18638,13 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -18862,15 +18811,13 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -19037,15 +18984,13 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -19212,15 +19157,13 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -19394,15 +19337,13 @@ static void DrawMode7BG2HR_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -19563,15 +19504,13 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -19732,15 +19671,13 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -19901,15 +19838,13 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -20070,15 +20005,13 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -20239,15 +20172,13 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -20408,15 +20339,13 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -20642,15 +20571,13 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -20796,15 +20723,13 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -20950,15 +20875,13 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -21104,15 +21027,13 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -21258,15 +21179,13 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -21412,15 +21331,13 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -21566,15 +21483,13 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -21731,15 +21646,13 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -21879,15 +21792,13 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -22027,15 +21938,13 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -22175,15 +22084,13 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -22323,15 +22230,13 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -22471,15 +22376,13 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -22619,15 +22522,13 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 Pix, starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 Pix;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -22845,15 +22746,12 @@ static void DrawMode7BG1BL_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -22983,15 +22881,12 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -23121,15 +23016,12 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -23259,15 +23151,12 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -23397,15 +23286,12 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -23535,15 +23421,12 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -23673,15 +23556,12 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -23818,15 +23698,12 @@ static void DrawMode7BG2BL_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -23950,15 +23827,12 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -24082,15 +23956,12 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -24214,15 +24085,12 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -24346,15 +24214,12 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -24478,15 +24343,12 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -24610,15 +24472,12 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -24805,15 +24664,12 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -24920,15 +24776,12 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -25035,15 +24888,12 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -25150,15 +25000,12 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -25265,15 +25112,12 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -25380,15 +25224,12 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -25495,15 +25336,12 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -25618,15 +25456,12 @@ static void DrawMode7BG2BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -25727,15 +25562,12 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -25836,15 +25668,12 @@ static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -25945,15 +25774,12 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -26054,15 +25880,12 @@ static void DrawMode7BG2BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -26163,15 +25986,12 @@ static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -26272,15 +26092,12 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -26443,15 +26260,12 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -26544,15 +26358,12 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -26645,15 +26456,12 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -26746,15 +26554,12 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -26847,15 +26652,12 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -26948,15 +26750,12 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -27049,15 +26848,12 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -27157,15 +26953,12 @@ static void DrawMode7BG2BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -27252,15 +27045,12 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -27347,15 +27137,12 @@ static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -27442,15 +27229,12 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -27537,15 +27321,12 @@ static void DrawMode7BG2BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -27632,15 +27413,12 @@ static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -27727,15 +27505,12 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
     {
         int AA, BB, CC, DD, xx, yy;
-        int32 HOffset, VOffset, CentreX, CentreY;
-        uint8 starty;
+        int32 HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+        int32 VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+        int32 CentreX = ((int32) l->CentreX << 19) >> 19;
+        int32 CentreY = ((int32) l->CentreY << 19) >> 19;
+        uint8 starty = Line + 1;
 
-        HOffset = ((int32) l->M7HOFS  << 19) >> 19;
-        VOffset = ((int32) l->M7VOFS  << 19) >> 19;
-        CentreX = ((int32) l->CentreX << 19) >> 19;
-        CentreY = ((int32) l->CentreY << 19) >> 19;
-
-        starty = Line + 1;
         if (PPU.Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
@@ -27857,14 +27632,11 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	void	(**DB)		(uint32, uint32, uint32);
 	void	(**DM7BG1)	(uint32, uint32, int);
 	void	(**DM7BG2)	(uint32, uint32, int);
-	int i;
-	bool8	M7M1, M7M2, interlace, hires;
-
-	M7M1 = PPU.BGMosaic[0] && PPU.Mosaic > 1;
-	M7M2 = PPU.BGMosaic[1] && PPU.Mosaic > 1;
-
-	interlace = obj ? FALSE : IPPU.Interlace;
-	hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
+	int     i;
+	bool8   M7M1      = PPU.BGMosaic[0] && PPU.Mosaic > 1;
+	bool8   M7M2      = PPU.BGMosaic[1] && PPU.Mosaic > 1;
+	bool8   interlace = obj ? FALSE : IPPU.Interlace;
+	bool8   hires     = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
 
 	if (IPPU.QuadWidthPixels)		/* quad width (Mode 7 hires 4x) */
 	{

@@ -14,16 +14,18 @@ If anything in this file contradicts conversation history or memory,
 
 ## Current state
 
-**Branch:** `tile-untangle` (origin/libretro/snes9x2010)
-**Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x"
-**Stage:** De-self-include — removed the `#include "tile.c"` self-recursion at line 660; file is now laid out linearly.
-**Last code commit:** De-self-include — tile.c: remove self-include and reorder helpers/renderers/dispatch linearly (this commit)
-**Previous code commit:** `9c27ab2` — tile.c: delete BG2 if(0) dead branches; hoist Mode7HiresBilinear from per-pixel to per-call
-**In-flight work:** none.
-**Working tree:** clean (after this commit lands).
+**Branch:** `master` (the `tile-untangle` work is merged).
+**Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x" (merge-base of the tile-untangle branch with master).
+**Status:** Tile-untangle effort merged to master via PR #167 (`66a907a`). The 18 commits that made up the work are preserved as connected history under the merge commit. tile.c is no longer a templating engine: 313 explicit renderer functions, 44 dispatch arrays, all bodies inlined, no self-recursion.
+**Last code commit on this effort:** `af28f95` — tile.c: remove self-include; lay out file linearly.
+**Working tree:** dirty (this state-file update pending; will ride along with the next code commit on master).
 
-State file lives in-tree at `docs/tile-untangle-state.md`. Updates
-ride along in the relevant commit.
+State file lives in-tree at `docs/tile-untangle-state.md`. It served
+as a scratchpad during the de-templating effort (continuity across
+multiple sessions, intent-of-each-commit doc, byte-identical anchor
+record). Now that the work is merged it functions as a written
+record of what was done and why. Future tile.c optimization work
+can append to it but doesn't have to be planned in it.
 
 **All renderer families are de-templated and the dispatch scaffold
 is gone.** The Mode 7 group: HR4X (`0cbca9e`), BL4X (`69f75a1`),
@@ -61,7 +63,7 @@ What's gone (compared to `7af3f84`):
 The dead `#ifndef NAME1` wrapper at line 996 (always true since
 NAME1 is never defined) is also removed (Stage 3.5). The outer
 `#ifndef _NEWTILE_CPP / #else` split and the line-660 self-include
-**have now also been removed (this commit)**. `tile.c` is laid out
+**have now also been removed (`af28f95`)**. `tile.c` is laid out
 linearly: includes, then helpers and tile-cache conversion routines
 (lines 197-659 in the previous numbering), then the renderers (the
 former `#else` arm), then the `S9xSelect*` dispatch helpers (what
@@ -72,7 +74,7 @@ per-NAME2 BPSTART / PITCH / DRAW_PIXEL macros and the per-(NAME1,
 NAME2) 7-fold MAKENAME fan-out are gone (Stage 4). The level-2 /
 level-3 `#ifndef NAME2` / `#else / Third-level` blocks are gone
 (Stage 3). The line-660 `#include "tile.c"` self-recursion is gone
-(this commit). The only top-level preprocessor scaffold that remains
+(`af28f95`). The only top-level preprocessor scaffold that remains
 is `#ifdef MSB_FIRST` at ~line 253 selecting between two `pixbit[][]`
 lookup tables for big- vs little-endian compiles -- this is real
 endianness conditional, not templating.
@@ -470,7 +472,95 @@ Status: **TODO** (re-evaluate later, profile-driven)
 
 ## Commit log (newest first)
 
-### De-self-include — tile.c: remove self-include and reorder helpers/renderers/dispatch linearly (this commit)
+### Fold first-assignments into decls (this commit, on master)
+
+Cleanup pass that converts patterns of the form
+
+```c
+T name1, name2, name3;
+name1 = expr;
+name2 = expr;
+```
+
+into
+
+```c
+T name1 = expr;
+T name2 = expr;
+T name3;
+```
+
+i.e. fold the first assignment of each variable up into its declaration
+and leave names that are conditionally set (in branches) or set later
+in the function as bare decls.
+
+Sites folded:
+  - `COLOR_SUB`: `mC1`, `mC2` → init-decls. `v` was already
+    init-declared; its decl line gets split out alongside the new
+    `mC1`/`mC2` init-decls.
+  - `S9xSelectTileRenderers`: `M7M1`, `M7M2`, `interlace`, `hires`
+    → init-decls. `int i;` stays bare (set inside branches).
+  - 70 native + mosaic Mode 7 functions: `int32 HOffset, VOffset,
+    CentreX, CentreY;` decl block → 4 separate `int32 X = ...;`
+    init-decls. `uint8 Pix, starty;` decl → `uint8 Pix; uint8
+    starty = Line + 1;`. `Pix` stays bare since it's set inside
+    inner-loop pixel writes.
+  - 42 Mode 7 hires functions (HR / HR4X / BL / BL4X / BL1X): same
+    int32 fold + `uint8 starty;` solo → `uint8 starty = Line + 1;`.
+
+Sites intentionally NOT folded:
+  - 42 mosaic Mode 7 functions. Their preamble has an extra
+    `if (Line + VMosaic > GFX.EndY) VMosaic = ...;` clamp between
+    the decl block and the four `HOffset = ...;` assignments.
+    Folding the assignments into the decls reorders the code
+    textually -- semantically equivalent (the clamp doesn't read
+    HOffset and the int32 inits don't read VMosaic), but the
+    compiler ends up laying out stack frames slightly differently
+    and emits ~+563 bytes of mov-instruction drift across the 42
+    affected functions. Since this is meant to be a pure cleanup
+    commit, we leave these alone. They could be folded in a
+    follow-up if/when the codegen drift is acceptable.
+  - The renderer-function preambles `uint8 *pCache, *bp, Pix, n;`.
+    `bp` is conditionally set in 4 H_FLIP/V_FLIP branches; folding
+    one branch's assignment up to the decl would muddle the
+    structure. `Pix` is set inside plotter macros, `n` is a for-
+    loop counter, `pCache` is set inside a `GET_CACHED_TILE()`
+    macro. None are foldable in a clean way.
+  - The `int AA, BB, CC, DD, xx, yy;` decl in M7 functions. `BB`,
+    `DD`, `xx`, `yy` are foldable in linear flow, but `AA` and
+    `CC` are set in HFlip branches. Splitting the decl into
+    `int AA, CC;` plus separate init-decls for the others would
+    work but is a more invasive rewrite. Left for a follow-up.
+
+How:
+  - Two manual edits for `COLOR_SUB` and `S9xSelectTileRenderers`.
+  - A Python script (`/home/claude/fold_m7_preamble.py`) handles the
+    M7 preamble patterns: 6 named patterns total, 4 of which fire
+    (Patterns 1, 2, 5, 6); 2 are intentionally skipped (Patterns 3,
+    4 -- the mosaic variants).
+  - A trailing cleanup pass collapses runs of 3+ consecutive blank
+    lines to 2, and double-blanks left behind by the BL-family fold
+    to single blanks.
+
+Verification (vs pristine `66a907a`):
+  - 313 Draw* functions: full per-function size diff is empty across
+    all 313. Pure refactor.
+  - 44 Renderers_ arrays: full diff empty.
+  - Build clean, zero warnings.
+
+Files changed: `src/tile.c` -228 lines net (638 insertions, 866
+deletions in git's view, but most of the delta is line-shape
+rather than removal -- multi-decl + assignment-line pairs become
+single init-decl lines, so each fold removes ~1 line).
+
+Behaviour invariants -- to be verified externally by Lib before
+push: audio bit-identical, savestate compat, valgrind clean.
+This commit is a pure refactor with byte-identical codegen, so
+all three should hold trivially.
+
+### `66a907a` — Merge pull request #167 from libretro/tile-untangle
+
+### `af28f95` — tile.c: remove self-include and reorder helpers/renderers/dispatch linearly
 
 Removes the `#include "tile.c"` self-recursion at line 660 of the
 previous file structure, and reorders the file so that helpers,
@@ -1656,4 +1746,4 @@ the truth-value of the comment.)
 
 ---
 
-*Last updated: de-self-include. Branch `tile-untangle` past upstream `9c27ab2` by one commit. The `#include "tile.c"` self-recursion at line 660 is gone; the file is laid out linearly (includes -> helpers -> renderers -> dispatch). All 313 functions byte-identical to pristine `9c27ab2`. Compile time on tile.c drops about 0.2-0.4 seconds (~2-4%) -- modest, since the preprocessor was already fast at scanning the skipped #ifndef block. Real value is structural: the file is now profilable, debuggable, and tools can index it without preprocessor games.*
+*Last updated: cleanup commit on master folding first-assignments into decls. Branch `master` past PR-merge `66a907a` by one commit. 226 sites folded across `COLOR_SUB`, `S9xSelectTileRenderers`, and 154 M7 function preambles (native M7 + BL family). Mosaic M7 preambles (42 functions) are intentionally NOT folded -- their textual structure interleaves an `if (Line + VMosaic > GFX.EndY)` clamp between the decl and the assignments, and folding causes ~+563 bytes of codegen drift. Result: byte-identical to pristine `66a907a` across all 313 Draw functions and all 44 dispatch arrays.*
