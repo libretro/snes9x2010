@@ -16,15 +16,16 @@ If anything in this file contradicts conversation history or memory,
 
 **Branch:** `tile-untangle` (origin/libretro/snes9x2010)
 **Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x"
-**Stage:** Stage 2.2 complete (BL4X de-templated); ready to start Stage 2.3 (BL1X)
-**Last commit on tile-untangle:** `345b890` — tile.c: de-template Mode 7 BL4X renderers (Stage 2.2)
-**Penultimate commit:** `ae6edbe` — tile.c: parameterize Mode 7 bilinear helper macros (Stage 2.2 prep)
+**Stage:** Stage 2.3 complete (BL1X de-templated); ready to start Stage 2.4 (BL2X)
+**Last code commit:** Stage 2.3 — tile.c: de-template Mode 7 BL1X renderers (this commit)
+**Previous code commit:** `69f75a1` — tile.c: de-template Mode 7 BL4X renderers (Stage 2.2)
+**Penultimate code commit:** `54c9153` — tile.c: parameterize Mode 7 bilinear helper macros (Stage 2.2 prep)
 **In-flight work:** none
 **Working tree:** clean
 
-Local branch is 2 commits ahead of upstream (`0cbca9e`).
-Awaiting Lib's external invariant verification + push of both
-`ae6edbe` and `345b890` before continuing to Stage 2.3.
+State file lives in-tree at `docs/tile-untangle-state.md`. Updates
+ride along in the relevant commit (no separate "Update doc"
+commits going forward).
 
 ## Invariants — must hold at every commit
 
@@ -159,13 +160,15 @@ Order (small/safe first, large/risky last):
 
 1. ~~`DrawMode7BG1HR4X` and `DrawMode7BG2HR4X`~~ — **done** (0cbca9e).
 2. ~~`DrawMode7BG1BL4X` and `DrawMode7BG2BL4X`~~ — **done**
-   (Stage 2.2a `ae6edbe` parameterize helpers; Stage 2.2b `345b890`
+   (Stage 2.2a `54c9153` parameterize helpers; Stage 2.2b `69f75a1`
    de-template BL4X). The parameterization commit is shared with
    subsequent BL stages.
-3. `DrawMode7BG1BL1X` and `DrawMode7BG2BL1X` — **next**.
-   Helpers are already parameterized; this should be a single
-   commit using the same fan-out pattern as HR4X / BL4X.
-4. `DrawMode7BG1BL` and `DrawMode7BG2BL` (the existing 2x BL).
+3. ~~`DrawMode7BG1BL1X` and `DrawMode7BG2BL1X`~~ — **done**
+   (Stage 2.3, this commit). Same fan-out pattern as BL4X but
+   without sub-pixel division. Single commit since helpers were
+   already parameterized.
+4. `DrawMode7BG1BL` and `DrawMode7BG2BL` (the existing 2x BL) —
+   **next**.
 5. `DrawMode7BG1HR` and `DrawMode7BG2HR` (the existing 2x HR).
 6. `DrawMode7BG1` and `DrawMode7BG2` (native Mode 7) — full
    NAME2 set (Normal1x1, Normal2x1, Normal4x1, Hires, Interlace,
@@ -250,11 +253,58 @@ Status: **TODO** (re-evaluate later)
 
 ## Commit log (newest first)
 
-### `345b890` — tile.c: de-template Mode 7 BL4X renderers (Stage 2.2)
+### Stage 2.3 — tile.c: de-template Mode 7 BL1X renderers (this commit)
+
+Stage 2.3. Same fan-out pattern as HR4X / BL4X: a local
+`DEFINE_M7_BL1X_FAMILY` macro materializes 14 functions (7 math
+variants x 2 BGs) using the parameterized helpers from `54c9153`.
+
+BL1X is the bilinear-filtered Mode 7 path at native (1x) width --
+one sample per native pixel, but each sample goes through bilinear
+blending. Used when the user enables bilinear without enabling
+hires.
+
+Differs from BL2X / BL4X in that there's no sub-pixel division of
+aa/cc (no aa_q/aa_h locals) and output goes to GFX.S[Offset + x]
+(no 2*x or 4*x sub-pixel index). The wrap path uses
+M7HR_SAMPLE_BILINEAR; the repeat path inlines the LOOKUP_4 /
+LOOKUP_4_FILL split for per-sample range checking.
+
+Files changed: `src/tile.c`, +211/-133, +78 net.
+
+Removed:
+  - templated `DrawMode7BG{1,2}BL1X` instantiation block (~38 lines)
+  - `DRAW_TILE_NORMAL_M7BL_1X` macro definition (~90 lines, no
+    longer referenced)
+  - dangling `#undef DRAW_TILE_NORMAL_M7BL_1X`
+
+Added:
+  - de-templated section with banner + fan-out macro doc
+  - 14 explicit `DrawMode7BG{1,2}BL1X*_Normal1x1` functions
+  - 2 explicit `Renderers_DrawMode7BG{1,2}BL1XNormal1x1` arrays
+
+Symbol verification (vs pristine `bc47509`):
+  - 14 BL1X functions present, byte-identical machine code
+    (verified by comparing function sizes via nm --print-size)
+  - 2 Renderers_ arrays present
+  - Total Draw* count unchanged: 313
+  - Total Renderers_* count unchanged: 45
+  - No new warnings
+
+Behaviour invariants — to be verified externally by Lib before
+push: audio bit-identical, savestate compat, valgrind clean,
+7-distinct-math-variants on BL1X.
+
+This commit also updates docs/tile-untangle-state.md (in-tree)
+to reflect Stage 2.3 completion. Per the new convention, state
+file updates ride along in the relevant commit instead of being
+batched into separate "Update doc" commits.
+
+### `69f75a1` — tile.c: de-template Mode 7 BL4X renderers (Stage 2.2)
 
 Stage 2.2b. Same fan-out pattern as HR4X: a local
 `DEFINE_M7_BL4X_FAMILY` macro materializes 14 functions (7 math
-variants x 2 BGs) using the parameterized helpers from `ae6edbe`.
+variants x 2 BGs) using the parameterized helpers from `54c9153`.
 
 Files changed: `src/tile.c`, +217/-135, +82 net.
 
@@ -269,7 +319,7 @@ Added:
   - 14 explicit `DrawMode7BG{1,2}BL4X*_Normal1x1` functions
   - 2 explicit `Renderers_DrawMode7BG{1,2}BL4XNormal1x1` arrays
 
-Symbol verification (vs pristine `ae6edbe`):
+Symbol verification (vs pristine `54c9153`):
   - 14 BL4X functions present, byte-identical machine code
   - 2 Renderers_ arrays present
   - Total Draw* count unchanged: 313
@@ -285,7 +335,7 @@ Behaviour invariants — to be verified externally by Lib before
 push: audio bit-identical, savestate compat, valgrind clean,
 7-distinct-math-variants on BL4X.
 
-### `ae6edbe` — tile.c: parameterize Mode 7 bilinear helper macros (Stage 2.2 prep)
+### `54c9153` — tile.c: parameterize Mode 7 bilinear helper macros (Stage 2.2 prep)
 
 Stage 2.2a. Pure refactor in preparation for BL4X de-templating.
 Six helper macros that the bilinear renderer paths share
@@ -393,9 +443,9 @@ invariants unaffected by definition.
 ## Open followups (deferred from in-flight work, not bundled)
 
 (none currently — the BL color-math stale comment was fixed as
-part of `ae6edbe` since the macro refactor in that commit changed
+part of `54c9153` since the macro refactor in that commit changed
 the truth-value of the comment.)
 
 ---
 
-*Last updated: after Stage 2.2 (`ae6edbe` parameterize helpers, `345b890` de-template BL4X). Branch `tile-untangle` is local at `345b890`, two commits past upstream `0cbca9e`. Awaiting Lib's external invariant verification + push of both. Ready to start Stage 2.3 (BL1X) once both land upstream.*
+*Last updated: Stage 2.3 commit (de-template Mode 7 BL1X). Branch `tile-untangle` past upstream `bc47509` by one commit. Three M7 hires families are now fully de-templated (HR4X, BL4X, BL1X). Stage 2.4 (BL2X) is next; that's the existing 2x bilinear path.*
