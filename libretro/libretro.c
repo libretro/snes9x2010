@@ -221,21 +221,13 @@ void linearFree(void* mem);
 #define CORE_VERSION	"1.52.4"
 #define LIBRETRO_LIB_NAME "Snes9x 2010"
 
-/* APU_BUF_SIZE sizes the SPC->resampler landing buffer (and resampler ring),
-   not the per-frame drain buffer.
+/* APU_BUF_SIZE sizes the SPC's landing buffer.
 
-   The drain buffer holds one frame's worth of stereo samples on the way out
-   to audio_batch_cb. Worst case is one PAL frame at SNES_AUDIO_FREQ:
-
-       32040 / 50.007 ~= 641 stereo frames
-
-   APU speedup hacks (Rendering Ranger R2 etc.) make the SPC produce more
-   raw samples per CPU frame, but the resampler runs with r_step > 65536 in
-   that case and downsamples back, so the per-frame output count stays at
-   ~641. r_frac carries fractional state across frames so an occasional
-   frame may emit one extra sample.
-
-   AUDIO_OUT_FRAMES_MAX = 768 covers that with ~20% headroom in 3 KB.
+   The drain buffer (audio_out_buffer) holds one frame's worth of stereo
+   samples on the way out to audio_batch_cb. Worst case is one PAL frame
+   at the SPC's effective rate: ~32550 / 50.007 ~= 651 stereo frames
+   for a ticks=4 speedup-hack cart in PAL (the absolute worst case).
+   AUDIO_OUT_FRAMES_MAX = 768 covers that with margin in 3 KB.
    One pull per retro_run, no chunking, no growth. */
 #define APU_BUF_FRAMES        (2048 * 2)
 #define APU_BUF_SIZE          (APU_BUF_FRAMES * sizeof(int16_t))
@@ -748,11 +740,11 @@ void retro_get_system_info(struct retro_system_info *info)
  * samples accumulate in landing_buffer across the whole frame and ship in
  * one batch when the frame ends.
  *
- * Sizing: SNES_AUDIO_FREQ / region_refresh_rate gives ~534 stereo frames
- * (NTSC) or ~641 (PAL). APU speedup hacks raise the SPC sample-production
- * rate but the resampler downsamples to keep the output rate fixed, so
- * the per-frame output count stays at ~641. AUDIO_OUT_FRAMES_MAX = 768
- * covers the worst case with margin.
+ * Sizing: ~534 stereo frames per NTSC frame, ~641 per PAL, plus up to
+ * 1.6% more on speedup-hack carts (the SPC produces samples at
+ * TEMPO_UNIT / timing_hack_denominator times its normal rate and we
+ * report that higher rate to the frontend - see S9xGetAudioSampleRate).
+ * AUDIO_OUT_FRAMES_MAX = 768 covers the worst case with margin.
  *
  * S9xMixSamples returns silence when Settings.Mute is set; we still emit
  * the silence to keep the frontend's audio clock aligned with video. */
@@ -948,12 +940,11 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->geometry.max_height   = MAX_SNES_HEIGHT;
 	info->geometry.aspect_ratio = get_aspect_ratio(width, height);
 
-	/* The SPC's effective output rate is SNES_AUDIO_FREQ for normal carts
-	   and SNES_AUDIO_FREQ * TEMPO_UNIT / timing_hack_denominator for carts
-	   that use the APU speedup hack (~70 game IDs handled in memmap.c).
-	   Reporting the effective rate here lets the frontend's resampler
-	   handle conversion to the host's audio output rate; ours runs at
-	   ratio 1.0 (the bypass path) for both cases. */
+	/* The SPC's effective output rate is its native 32040 Hz for ordinary
+	   carts and ~32550 Hz (or similar) for carts that use the APU speedup
+	   hack (~70 game IDs handled in memmap.c). Reporting the effective
+	   rate here lets the frontend's resampler handle conversion to the
+	   host audio rate. */
 	info->timing.sample_rate    = (double)S9xGetAudioSampleRate();
 	info->timing.fps            = (retro_get_region() == RETRO_REGION_NTSC) ?
 			VIDEO_REFRESH_RATE_NTSC : VIDEO_REFRESH_RATE_PAL;
@@ -994,8 +985,6 @@ void retro_init(void)
 	Settings.Transparency = TRUE;
 	Settings.FrameTimePAL = 20000;
 	Settings.FrameTimeNTSC = 16667;
-	Settings.SoundPlaybackRate = SNES_AUDIO_FREQ;
-	Settings.SoundInputRate = SNES_AUDIO_FREQ;
 	Settings.HDMATimingHack = 100;
 	Settings.CartAName[0] = 0;
 	Settings.CartBName[0] = 0;

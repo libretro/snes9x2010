@@ -1214,8 +1214,6 @@ static void dsp_soft_reset (void)
 
 /* State save/load */
 
-#if !SPC_NO_COPY_STATE_FUNCS
-
 static void spc_copier_copy(spc_state_copy_t * copier, void* state, size_t size )
 {
 	copier->func(copier->buf, state, size );
@@ -1360,7 +1358,6 @@ static void NO_OPTIMIZE dsp_copy_state( unsigned char** io, dsp_copy_func_t copy
 	
 	spc_copier_extra(&copier);
 }
-#endif
 
 /* Core SPC emulation: CPU, timers, SMP registers, memory */
 
@@ -2984,7 +2981,6 @@ static void spc_soft_reset (void)
 	dsp_soft_reset();
 }
 
-#if !SPC_NO_COPY_STATE_FUNCS
 void NO_OPTIMIZE spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 {
 	int i;
@@ -3048,8 +3044,6 @@ void NO_OPTIMIZE spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 
 	spc_copier_extra(&copier);
 }
-#endif
-
 
 /***********************************************************************************
  APU
@@ -3093,12 +3087,10 @@ static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 
 int S9xMixSamples (short *buffer, int max_samples)
 {
-	int written;
-
 	/* DSP has been writing into landing_buffer at dsp_m.out throughout the
 	   frame. The count of mono samples produced this frame is the cursor's
 	   distance from the start of the buffer. */
-	written = (int)(dsp_m.out - landing_buffer);
+	int written = (int)(dsp_m.out - landing_buffer);
 	if (written < 0)
 		written = 0;
 	if (written > max_samples)
@@ -3115,6 +3107,16 @@ int S9xMixSamples (short *buffer, int max_samples)
 	return written;
 }
 
+/* SPC's natural audio output rate.
+
+   The SPC700 / S-DSP samples at exactly 32 kHz nominally, but the SNES
+   master clock relationship gives 32040 Hz (NTSC) as the SPC's true
+   per-second sample count. snes9x has historically used 32040.0 as the
+   single canonical value across NTSC and PAL, since the SPC clock is
+   not derived from the video clock and runs at the same rate in both
+   regions. */
+#define SNES_AUDIO_FREQ 32040.0
+
 /* Effective SPC output sample rate for the current cart.
 
    For carts with no APU speedup hack (the vast majority), this is just
@@ -3126,7 +3128,7 @@ int S9xMixSamples (short *buffer, int max_samples)
    frontend resampler handles the conversion to host audio rate. */
 unsigned S9xGetAudioSampleRate (void)
 {
-	return (unsigned)((double)SNES_AUDIO_FREQ * TEMPO_UNIT / timing_hack_denominator + 0.5);
+	return (unsigned)(SNES_AUDIO_FREQ * TEMPO_UNIT / timing_hack_denominator + 0.5);
 }
 
 bool8 S9xInitSound (size_t req_buff_size)

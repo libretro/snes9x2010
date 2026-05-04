@@ -348,16 +348,12 @@ typedef struct
 	uint8_t regs [REGISTER_COUNT];
 } dsp_state_t;
 
-#if !SPC_NO_COPY_STATE_FUNCS
-
 typedef struct {
 	dsp_copy_func_t func;
 	unsigned char** buf;
 } spc_state_copy_t;
 
 #define SPC_COPY( type, state ) state = (type) spc_copier_copy_int(&copier, state, sizeof (type) );
-
-#endif
 
 #define REG_COUNT	0x10
 #define PORT_COUNT	4
@@ -390,10 +386,8 @@ typedef struct {
 /* Value that padding should be filled with */
 #define CPU_PAD_FILL 0xFF
 
-#if !SPC_NO_COPY_STATE_FUNCS
-	/* Saves/loads state */
-	void spc_copy_state( unsigned char** io, dsp_copy_func_t );
-#endif
+/* Saves/loads state */
+void spc_copy_state( unsigned char** io, dsp_copy_func_t );
 
 /* rel_time_t - Time relative to m_spc_time. Speeds up code a bit by eliminating
    need to constantly add m_spc_time to time from CPU. CPU uses time that ends 

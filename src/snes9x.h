@@ -238,8 +238,6 @@ extern "C" {
 #define	NTSC_MASTER_CLOCK	21477272.0
 #define	PAL_MASTER_CLOCK	21281370.0
 
-#define SNES_AUDIO_FREQ		32040.0
-
 #define SNES_MAX_NTSC_VCOUNTER	262
 #define SNES_MAX_PAL_VCOUNTER	312
 #define SNES_HCOUNTER_MAX	341
@@ -380,8 +378,6 @@ struct SSettings
 
 	uint32  SpeedhackGameID;
 
-	uint32	SoundPlaybackRate;
-	uint32	SoundInputRate;
 	bool8	Mute;
 
 	bool8	Multi;
