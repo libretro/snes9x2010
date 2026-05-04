@@ -221,19 +221,30 @@ void linearFree(void* mem);
 #define CORE_VERSION	"1.52.4"
 #define LIBRETRO_LIB_NAME "Snes9x 2010"
 
-/* Use a 64ms buffer. */
-/* 32000*(64/1000) = 2048
- * 2048 * 2 = 4096 because of stereo. */
-#define APU_BUF_FRAMES (2048 * 2)
-#define APU_BUF_SIZE   (APU_BUF_FRAMES * sizeof(int16_t))
+/* APU_BUF_SIZE sizes the SPC->resampler landing buffer (and resampler ring),
+   not the per-frame drain buffer.
+
+   The drain buffer holds one frame's worth of stereo samples on the way out
+   to audio_batch_cb. Worst case is one PAL frame at SNES_AUDIO_FREQ:
+
+       32040 / 50.007 ~= 641 stereo frames
+
+   APU speedup hacks (Rendering Ranger R2 etc.) make the SPC produce more
+   raw samples per CPU frame, but the resampler runs with r_step > 65536 in
+   that case and downsamples back, so the per-frame output count stays at
+   ~641. r_frac carries fractional state across frames so an occasional
+   frame may emit one extra sample.
+
+   AUDIO_OUT_FRAMES_MAX = 768 covers that with ~20% headroom in 3 KB.
+   One pull per retro_run, no chunking, no growth. */
+#define APU_BUF_FRAMES        (2048 * 2)
+#define APU_BUF_SIZE          (APU_BUF_FRAMES * sizeof(int16_t))
+#define AUDIO_OUT_FRAMES_MAX  768
 
 #define VIDEO_REFRESH_RATE_PAL  (PAL_MASTER_CLOCK / (double)(SNES_CYCLES_PER_SCANLINE * SNES_MAX_PAL_VCOUNTER))
 #define VIDEO_REFRESH_RATE_NTSC (NTSC_MASTER_CLOCK / (double)(SNES_CYCLES_PER_SCANLINE * SNES_MAX_NTSC_VCOUNTER))
 
-static int16_t *audio_out_buffer     = NULL;
-static size_t audio_out_buffer_size  = 0;
-static size_t audio_out_buffer_pos   = 0;
-static size_t audio_batch_frames_max = (1 << 16);
+static int16_t audio_out_buffer[AUDIO_OUT_FRAMES_MAX * 2];
 
 enum
 {
@@ -728,109 +739,44 @@ void retro_get_system_info(struct retro_system_info *info)
 	info->block_extract    = false;
 }
 
-static void audio_out_buffer_init(void)
+/* Drain one frame of audio from the resampler and hand it to the frontend
+ * in a single audio_batch_cb call.
+ *
+ * Why this is the only entry point: libretro pulls audio exactly once per
+ * retro_run via the batch callback. The mid-frame "samples available" hook
+ * (S9xSetSamplesAvailableCallback) that upstream Snes9x exposes for SDL-
+ * style frontends is not wired here; samples accumulate in the resampler
+ * across the whole frame and ship in one batch when the frame ends.
+ *
+ * Sizing: SNES_AUDIO_FREQ / region_refresh_rate gives ~534 stereo frames
+ * (NTSC) or ~641 (PAL). APU speedup hacks raise the SPC sample-production
+ * rate but the resampler downsamples to keep the output rate fixed, so
+ * the per-frame output count stays at ~641. AUDIO_OUT_FRAMES_MAX = 768
+ * covers the worst case with margin.
+ *
+ * S9xMixSamples returns silence when Settings.Mute is set; we still emit
+ * the silence to keep the frontend's audio clock aligned with video. */
+static void audio_upload_samples(void)
 {
-	double refresh_rate      = (retro_get_region() == RETRO_REGION_NTSC) ?
-			VIDEO_REFRESH_RATE_NTSC : VIDEO_REFRESH_RATE_PAL;
-	double samples_per_frame = SNES_AUDIO_FREQ / refresh_rate;
-	size_t buffer_size       = ((size_t)samples_per_frame + 1) << 1;
-
-	/* Defensive free for the load -> unload -> load pattern: retro_unload_game
-	   doesn't tear down the audio buffer (only retro_deinit does), so a
-	   second retro_load_game without an intervening retro_deinit would
-	   orphan the previous allocation. Statically linked frontends and
-	   ROM-swap flows hit this path. */
-	if (audio_out_buffer)
-		free(audio_out_buffer);
-
-	audio_out_buffer        = (int16_t *)malloc(buffer_size * sizeof(int16_t));
-	audio_out_buffer_size   = audio_out_buffer ? buffer_size : 0;
-	audio_out_buffer_pos    = 0;
-	audio_batch_frames_max  = (1 << 16);
-
-	if (!audio_out_buffer && log_cb)
-		log_cb(RETRO_LOG_ERROR, "Failed to allocate audio output buffer.\n");
-}
-
-static void audio_out_buffer_deinit(void)
-{
-	if (audio_out_buffer)
-		free(audio_out_buffer);
-
-	audio_out_buffer       = NULL;
-	audio_out_buffer_size  = 0;
-	audio_out_buffer_pos   = 0;
-	audio_batch_frames_max = (1 << 16);
-}
-
-static void S9xAudioCallbackQueue(void)
-{
-	size_t available_samples;
-	size_t buffer_capacity = audio_out_buffer_size -
-			audio_out_buffer_pos;
+	int available_samples;
+	size_t available_frames;
 
 	S9xFinalizeSamples();
 	available_samples = S9xGetSampleCount();
+	if (available_samples <= 0)
+		return;
 
-	if (buffer_capacity < available_samples)
-	{
-		int16_t *tmp_buffer = NULL;
-		size_t tmp_buffer_size;
+	/* Hard clamp against the static drain buffer. In normal operation
+	   this is unreachable; the comment above bounds the worst case at
+	   ~642 stereo frames against AUDIO_OUT_FRAMES_MAX = 768. If it ever
+	   fires, dropping the tail is preferable to writing past the array. */
+	if ((size_t)available_samples > sizeof(audio_out_buffer) / sizeof(audio_out_buffer[0]))
+		available_samples = sizeof(audio_out_buffer) / sizeof(audio_out_buffer[0]);
 
-		tmp_buffer_size = audio_out_buffer_size + (available_samples - buffer_capacity);
-		tmp_buffer_size = (tmp_buffer_size << 1) - (tmp_buffer_size >> 1);
-		tmp_buffer      = (int16_t *)malloc(tmp_buffer_size * sizeof(int16_t));
+	S9xMixSamples(audio_out_buffer, available_samples);
 
-		if (!tmp_buffer)
-			return;
-
-		if (audio_out_buffer)
-			memcpy(tmp_buffer, audio_out_buffer,
-					audio_out_buffer_pos * sizeof(int16_t));
-
-		free(audio_out_buffer);
-
-		audio_out_buffer      = tmp_buffer;
-		audio_out_buffer_size = tmp_buffer_size;
-	}
-
-	S9xMixSamples(audio_out_buffer + audio_out_buffer_pos,
-			available_samples);
-	audio_out_buffer_pos += available_samples;
-}
-
-static void audio_upload_samples(void)
-{
-	size_t available_frames;
-	int16_t *audio_out_buffer_ptr;
-
-	S9xAudioCallbackQueue();
-
-	audio_out_buffer_ptr = audio_out_buffer;
-	available_frames     = audio_out_buffer_pos >> 1;
-
-	/* Since the audio output buffer can
-	 * (theoretically) have an arbitrarily size,
-	 * we must write it in chunks of the largest
-	 * size supported by the frontend */
-	while (available_frames > 0)
-	{
-		size_t frames_to_write = (available_frames >
-				audio_batch_frames_max) ?
-						audio_batch_frames_max :
-						available_frames;
-		size_t frames_written = audio_batch_cb(
-				audio_out_buffer_ptr, frames_to_write);
-
-		if ((frames_written < frames_to_write) &&
-			 (frames_written > 0))
-			audio_batch_frames_max = frames_written;
-
-		available_frames     -= frames_to_write;
-		audio_out_buffer_ptr += frames_to_write << 1;
-	}
-
-	audio_out_buffer_pos = 0;
+	available_frames = (size_t)available_samples >> 1;
+	audio_batch_cb(audio_out_buffer, available_frames);
 }
 
 void retro_set_controller_port_device(unsigned in_port, unsigned device)
@@ -1080,7 +1026,7 @@ void retro_init(void)
 		exit(1);
 	}
 
-	if (S9xInitSound(APU_BUF_SIZE, 0) != true)
+	if (S9xInitSound(APU_BUF_SIZE) != true)
 	{
 		const char *const aud_err = "Audio output is disabled due to an internal error";
 		struct retro_message msg = { aud_err, 360 };
@@ -1090,8 +1036,6 @@ void retro_init(void)
 
 		S9xDeinitAPU();
 	}
-
-	S9xSetSamplesAvailableCallback(S9xAudioCallbackQueue);
 
 	GFX.Pitch = MAX_BUFFER_WIDTH * sizeof(uint16_t);
 
@@ -1196,7 +1140,6 @@ void retro_deinit(void)
 	owned_ntsc_buffer   = NULL;
 	GFX.Screen          = NULL;
 	ntsc_screen_buffer  = NULL;
-	audio_out_buffer_deinit();
 
 	/* Reset globals (required for static builds) */
 	libretro_supports_option_categories = false;
@@ -1818,7 +1761,6 @@ bool retro_load_game(const struct retro_game_info *game)
 
 	check_variables(true);
 
-	audio_out_buffer_init();
 	retro_set_audio_buff_status_cb();
 	set_system_specs();
 
@@ -1861,8 +1803,6 @@ unsigned retro_get_region (void)
 
 void S9xDeinitUpdate(int width, int height)
 {
-	static int burst_phase = 0;
-
 	if (!IPPU.RenderThisFrame)
 		video_cb(NULL, width, height, GFX.Pitch);
 	else if (snes_ntsc_filter)
@@ -1880,7 +1820,12 @@ void S9xDeinitUpdate(int width, int height)
 		   were never written. */
 		unsigned ntsc_out_width = SNES_NTSC_OUT_WIDTH(SNES_WIDTH);
 		size_t   ntsc_out_pitch = (size_t)ntsc_out_width * sizeof(uint16_t);
-		burst_phase = (burst_phase + 1) % 3;
+		/* Tie the chroma burst phase to the emulated frame counter so
+		   the NTSC output is reproducible across retro_init/_deinit
+		   cycles and is unaffected by libretro frameskip (a skipped
+		   frame doesn't visit this branch but still bumps ICPU.Frame
+		   in cpuexec.c, so the phase advances either way). */
+		int burst_phase = (int)(ICPU.Frame % 3);
 
 		if (width == 512)
 			snes_ntsc_blit_hires(&snes_ntsc, GFX.Screen, GFX.Pitch / 2, burst_phase, width, height, ntsc_screen_buffer, (long)ntsc_out_pitch);

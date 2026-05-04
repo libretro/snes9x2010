@@ -465,8 +465,6 @@ typedef struct
 /* Number of samples written to output since last set */
 #define SPC_SAMPLE_COUNT() ((m.extra_clocks >> 5) * 2)
 
-typedef void (*apu_callback)(void);
-
 #define SPC_SAVE_STATE_BLOCK_SIZE	(STATE_SIZE + 8)
 
 bool8 S9xInitAPU (void);
@@ -482,13 +480,11 @@ void S9xAPUAllowTimeOverflow (bool8 allow);
 void S9xAPULoadState (uint8 * block);
 void S9xAPUSaveState (uint8 * block);
 
-bool8 S9xInitSound (size_t buffer_size, int lag_ms);
+bool8 S9xInitSound (size_t buffer_size);
 
 int S9xGetSampleCount (void);
 void S9xFinalizeSamples (void);
-void S9xClearSamples (void);
 bool8 S9xMixSamples (short * buffer, unsigned sample_count);
-void S9xSetSamplesAvailableCallback (apu_callback);
 void S9xSetSoundMute(bool8 mute);
 
 #endif

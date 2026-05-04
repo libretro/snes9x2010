@@ -3081,18 +3081,10 @@ void NO_OPTIMIZE spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 
 #define APU_MINIMUM_SAMPLE_COUNT	(512)
 #define APU_MINIMUM_BUFF_SIZE		(APU_MINIMUM_SAMPLE_COUNT * 2 * 2)
-#define APU_MINIMUM_SAMPLE_BLOCK	(128)
 #define APU_NUMERATOR_NTSC		15664
 #define APU_DENOMINATOR_NTSC		328125
 #define APU_NUMERATOR_PAL		34176
 #define APU_DENOMINATOR_PAL		709379
-
-static apu_callback	sa_callback     = NULL;
-
-static bool8		sound_in_sync   = TRUE;
-
-static int		lag_master      = 0;
-static int		lag             = 0;
 
 static int16_t		*landing_buffer = NULL;
 static size_t		buffer_size = 0;
@@ -3284,25 +3276,14 @@ static INLINE bool8 resampler_push(short *src, int num_samples)
 
 bool8 S9xMixSamples (short *buffer, unsigned sample_count)
 {
-	if (!Settings.Mute)
-	{
-		if (S9xGetSampleCount() >= (sample_count + lag))
-		{
-			resampler_read(buffer, sample_count);
-			if (lag == lag_master)
-				lag = 0;
-		}
-		else
-		{
-			memset(buffer, 0, sample_count << 1);
-			if (lag == 0)
-				lag = lag_master;
+	if (Settings.Mute)
+		return TRUE;
 
-			return (FALSE);
-		}
-	}
-
-	return (TRUE);
+	/* Caller is expected to have asked S9xGetSampleCount() and to be
+	   requesting no more than that. The end-of-frame libretro driver
+	   guarantees this; underrun is structurally impossible. */
+	resampler_read(buffer, sample_count);
+	return TRUE;
 }
 
 int S9xGetSampleCount (void)
@@ -3347,32 +3328,10 @@ static void spc_set_output( short* out, int size )
 void S9xFinalizeSamples (void)
 {
 	if (!Settings.Mute)
-	{
-		bool8 ret = resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
-
-		/* We weren't able to process the entire buffer. Potential overrun. */
-		if (!ret)
-		{
-			sound_in_sync = FALSE;
-			return;
-		}
-	}
-
-	sound_in_sync = TRUE;
+		resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
 
 	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	spc_set_output(landing_buffer, buffer_size);
-}
-
-void S9xClearSamples (void)
-{
-	resampler_clear();
-	lag = lag_master;
-}
-
-void S9xSetSamplesAvailableCallback (apu_callback callback)
-{
-	sa_callback = callback;
 }
 
 static void UpdatePlaybackRate (void)
@@ -3385,17 +3344,9 @@ static void UpdatePlaybackRate (void)
 	resampler_time_ratio(time_ratio);
 }
 
-bool8 S9xInitSound (size_t req_buff_size, int lag_ms)
+bool8 S9xInitSound (size_t req_buff_size)
 {
-	/*	buffer_size : size of buffer in bytes
-		lag_ms    : allowable time-lag given in millisecond */
-	int lag_sample_count;
-
-	lag_sample_count = lag_ms    * SNES_AUDIO_FREQ / 1000;
-	lag_master = lag_sample_count;
-	lag_master <<= 1;
-	lag = lag_master;
-
+	/* req_buff_size : size of landing/ring buffer in bytes */
 	if(req_buff_size < APU_MINIMUM_BUFF_SIZE)
 	{
 		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_APU,
@@ -3570,14 +3521,18 @@ void S9xAPUSetReferenceTime (int32 cpucycles)
 
 void S9xAPUExecute (void)
 {
-	/* Accumulate partial APU cycles */
+	/* Per-scanline timing rebase. The catch-up itself is usually a no-op
+	   because S9xAPUReadPort/S9xAPUWritePort already drove spc_run_until_
+	   to current cycle, but this is also the only path that advances the
+	   SPC when a game has no port traffic for many lines. The reference-
+	   time reset that follows keeps the multiply in S9X_APU_GET_CLOCK
+	   from overflowing uint32 (per-frame products would). The libretro
+	   driver is the sole caller path; sample drainage happens once at
+	   end-of-frame in retro_run, not from inside this function. */
 	spc_end_frame(S9X_APU_GET_CLOCK(CPU.Cycles));
 
 	spc_remainder = S9X_APU_GET_CLOCK_REMAINDER(CPU.Cycles);
 	reference_time = CPU.Cycles;
-
-	if (SPC_SAMPLE_COUNT() >= APU_MINIMUM_SAMPLE_BLOCK || !sound_in_sync)
-		sa_callback();
 }
 
 void S9xAPUTimingSetSpeedup (int ticks)
