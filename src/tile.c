@@ -9457,7 +9457,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
                                       GFX.S / GFX.DB / GFX.SubScreen
                                       / GFX.SubZBuffer arrays. */
 #define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw, Xf, Yf, \
-                             math_selector, math_op, z1_expr, z2_expr, offset) \
+                             math_selector, math_op, z1_expr, z2_expr, offset, smooth_arg) \
 	{ \
 		uint8 b = (b_tl_raw); \
 		uint8 op_tl = ((p_tl) != 0); \
@@ -9465,7 +9465,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		uint8 op_bl = ((p_bl) != 0); \
 		uint8 op_br = ((p_br) != 0); \
 		uint8 op_mask = op_tl | (op_tr << 1) | (op_bl << 2) | (op_br << 3); \
-		uint8 smooth = (Settings.Mode7HiresBilinear == 2); \
+		uint8 smooth_local = (smooth_arg); \
 		uint16 blended; \
 		(void)b; \
 		if (op_mask == 0) \
@@ -9475,7 +9475,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		else if (op_mask == 0xF) \
 		{ \
 			/* All opaque: fast path. */ \
-			if (smooth) \
+			if (smooth_local) \
 			{ \
 				if ((p_tl) == (p_tr) && (p_tl) == (p_bl) && (p_tl) == (p_br)) \
 				{ \
@@ -9513,7 +9513,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		else \
 		{ \
 			/* Mixed transparency: alpha-aware blend. */ \
-			if (smooth) \
+			if (smooth_local) \
 			{ \
 				/* 4-corner alpha-aware blend. Zero-index corners \
 				   contribute zero weight; renormalize via division. */ \
@@ -9587,7 +9587,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
    offset). out_offset is relative to 'offset'. */
 #define M7HR_SAMPLE_BILINEAR(out_offset, X_full, Y_full, \
                              vram1, mask, \
-                             math_selector, math_op, z1_expr, z2_expr, offset) \
+                             math_selector, math_op, z1_expr, z2_expr, offset, smooth_arg) \
 	{ \
 		int Xi = ((X_full) >> 8) & 0x3ff; \
 		int Yi = ((Y_full) >> 8) & 0x3ff; \
@@ -9597,7 +9597,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		uint8 b_tl_raw_; \
 		M7HR_LOOKUP_4(Xi, Yi, p_tl, p_tr, p_bl, p_br, b_tl_raw_, (vram1), (mask)); \
 		M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf, Yf, \
-		                     math_selector, math_op, z1_expr, z2_expr, (offset)); \
+		                     math_selector, math_op, z1_expr, z2_expr, (offset), smooth_arg); \
 	}
 
 /* ====================================================================
@@ -11499,12 +11499,6 @@ static void DrawMode7BG2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -11582,12 +11576,6 @@ static void DrawMode7BG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -11665,12 +11653,6 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -11748,12 +11730,6 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -11831,12 +11807,6 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -11914,12 +11884,6 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -11997,12 +11961,6 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12092,12 +12050,6 @@ static void DrawMode7BG2_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12175,12 +12127,6 @@ static void DrawMode7BG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12258,12 +12204,6 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12341,12 +12281,6 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12424,12 +12358,6 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12507,12 +12435,6 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12590,12 +12512,6 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12685,12 +12601,6 @@ static void DrawMode7BG2_Hires (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12768,12 +12678,6 @@ static void DrawMode7BG2Add_Hires (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12851,12 +12755,6 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -12934,12 +12832,6 @@ static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -13017,12 +12909,6 @@ static void DrawMode7BG2Sub_Hires (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -13100,12 +12986,6 @@ static void DrawMode7BG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -13183,12 +13063,6 @@ static void DrawMode7BG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -15997,12 +15871,6 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -16124,12 +15992,6 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -16251,12 +16113,6 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -16378,12 +16234,6 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -16505,12 +16355,6 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -16632,12 +16476,6 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -16759,12 +16597,6 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -16898,12 +16730,6 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -17025,12 +16851,6 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -17152,12 +16972,6 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -17279,12 +17093,6 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -17406,12 +17214,6 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -17533,12 +17335,6 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -17660,12 +17456,6 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -17799,12 +17589,6 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -17926,12 +17710,6 @@ static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -18053,12 +17831,6 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -18180,12 +17952,6 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -18307,12 +18073,6 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -18434,12 +18194,6 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -18561,12 +18315,6 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     uint8 *VRAM1 = Memory.VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
     HMosaic = 1;
@@ -19987,12 +19735,6 @@ static void DrawMode7BG2HR_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -20162,12 +19904,6 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -20337,12 +20073,6 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -20512,12 +20242,6 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -20687,12 +20411,6 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -20862,12 +20580,6 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -21037,12 +20749,6 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -22366,12 +22072,6 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -22520,12 +22220,6 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -22674,12 +22368,6 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -22828,12 +22516,6 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -22982,12 +22664,6 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -23136,12 +22812,6 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -23290,12 +22960,6 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -23513,6 +23177,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -23571,12 +23236,12 @@ static void DrawMode7BG1BL_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0xff,
                     NOMATH, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     NOMATH, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -23602,7 +23267,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         NOMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -23611,7 +23276,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         NOMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -23627,7 +23292,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         NOMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -23636,7 +23301,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         NOMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -23650,6 +23315,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -23708,12 +23374,12 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0xff,
                     REGMATH, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     REGMATH, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -23739,7 +23405,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         REGMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -23748,7 +23414,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         REGMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -23764,7 +23430,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         REGMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -23773,7 +23439,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         REGMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -23787,6 +23453,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -23845,12 +23512,12 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHF1_2, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHF1_2, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -23876,7 +23543,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHF1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -23885,7 +23552,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHF1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -23901,7 +23568,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHF1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -23910,7 +23577,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHF1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -23924,6 +23591,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -23982,12 +23650,12 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHS1_2, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHS1_2, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -24013,7 +23681,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHS1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24022,7 +23690,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHS1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -24038,7 +23706,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHS1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24047,7 +23715,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHS1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -24061,6 +23729,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -24119,12 +23788,12 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0xff,
                     REGMATH, SUB,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     REGMATH, SUB,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -24150,7 +23819,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         REGMATH, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24159,7 +23828,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         REGMATH, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -24175,7 +23844,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         REGMATH, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24184,7 +23853,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         REGMATH, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -24198,6 +23867,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -24256,12 +23926,12 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHF1_2, SUB,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHF1_2, SUB,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -24287,7 +23957,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHF1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24296,7 +23966,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHF1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -24312,7 +23982,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHF1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24321,7 +23991,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHF1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -24335,6 +24005,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -24393,12 +24064,12 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHS1_2, SUB,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHS1_2, SUB,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -24424,7 +24095,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHS1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24433,7 +24104,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHS1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -24449,7 +24120,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHS1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24458,7 +24129,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHS1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -24485,14 +24156,9 @@ static void DrawMode7BG2BL_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -24543,12 +24209,12 @@ static void DrawMode7BG2BL_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     NOMATH, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     NOMATH, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -24574,7 +24240,7 @@ static void DrawMode7BG2BL_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         NOMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24583,7 +24249,7 @@ static void DrawMode7BG2BL_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         NOMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -24599,7 +24265,7 @@ static void DrawMode7BG2BL_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         NOMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24608,7 +24274,7 @@ static void DrawMode7BG2BL_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         NOMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -24622,14 +24288,9 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -24680,12 +24341,12 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     REGMATH, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     REGMATH, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -24711,7 +24372,7 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         REGMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24720,7 +24381,7 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         REGMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -24736,7 +24397,7 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         REGMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24745,7 +24406,7 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         REGMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -24759,14 +24420,9 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -24817,12 +24473,12 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHF1_2, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHF1_2, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -24848,7 +24504,7 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHF1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24857,7 +24513,7 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHF1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -24873,7 +24529,7 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHF1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24882,7 +24538,7 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHF1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -24896,14 +24552,9 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -24954,12 +24605,12 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHS1_2, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHS1_2, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -24985,7 +24636,7 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHS1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -24994,7 +24645,7 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHS1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -25010,7 +24661,7 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHS1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -25019,7 +24670,7 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHS1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -25033,14 +24684,9 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -25091,12 +24737,12 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     REGMATH, SUB,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     REGMATH, SUB,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -25122,7 +24768,7 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         REGMATH, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -25131,7 +24777,7 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         REGMATH, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -25147,7 +24793,7 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         REGMATH, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -25156,7 +24802,7 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         REGMATH, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -25170,14 +24816,9 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -25228,12 +24869,12 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHF1_2, SUB,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHF1_2, SUB,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -25259,7 +24900,7 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHF1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -25268,7 +24909,7 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHF1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -25284,7 +24925,7 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHF1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -25293,7 +24934,7 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHF1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -25307,14 +24948,9 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -25365,12 +25001,12 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHS1_2, SUB,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa_h; CC += cc_h;
                 M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHS1_2, SUB,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 AA += aa - aa_h; CC += cc - cc_h;
             }
         }
@@ -25396,7 +25032,7 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHS1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -25405,7 +25041,7 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
                         MATHS1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 /* else: clip - leave pixel untouched (transparent) */
                 AA += aa_h; CC += cc_h;
@@ -25421,7 +25057,7 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHS1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -25430,7 +25066,7 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHS1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
             }
@@ -25501,6 +25137,7 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -25562,7 +25199,7 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0xff,
                         NOMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -25590,7 +25227,7 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             NOMATH, ADD,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -25599,7 +25236,7 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             NOMATH, ADD,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -25615,6 +25252,7 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -25676,7 +25314,7 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0xff,
                         REGMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -25704,7 +25342,7 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             REGMATH, ADD,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -25713,7 +25351,7 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             REGMATH, ADD,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -25729,6 +25367,7 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -25790,7 +25429,7 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0xff,
                         MATHF1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -25818,7 +25457,7 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHF1_2, ADD,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -25827,7 +25466,7 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHF1_2, ADD,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -25843,6 +25482,7 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -25904,7 +25544,7 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0xff,
                         MATHS1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -25932,7 +25572,7 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHS1_2, ADD,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -25941,7 +25581,7 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHS1_2, ADD,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -25957,6 +25597,7 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -26018,7 +25659,7 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0xff,
                         REGMATH, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -26046,7 +25687,7 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             REGMATH, SUB,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -26055,7 +25696,7 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             REGMATH, SUB,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -26071,6 +25712,7 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -26132,7 +25774,7 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0xff,
                         MATHF1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -26160,7 +25802,7 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHF1_2, SUB,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -26169,7 +25811,7 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHF1_2, SUB,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -26185,6 +25827,7 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -26246,7 +25889,7 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0xff,
                         MATHS1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -26274,7 +25917,7 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHS1_2, SUB,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -26283,7 +25926,7 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHS1_2, SUB,
-                            ((D + 7)), ((D + 7)), Offset);
+                            ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -26313,14 +25956,9 @@ static void DrawMode7BG2BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -26374,7 +26012,7 @@ static void DrawMode7BG2BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0x7f,
                         NOMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -26402,7 +26040,7 @@ static void DrawMode7BG2BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             NOMATH, ADD,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -26411,7 +26049,7 @@ static void DrawMode7BG2BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             NOMATH, ADD,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -26427,14 +26065,9 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -26488,7 +26121,7 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0x7f,
                         REGMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -26516,7 +26149,7 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             REGMATH, ADD,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -26525,7 +26158,7 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             REGMATH, ADD,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -26541,14 +26174,9 @@ static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -26602,7 +26230,7 @@ static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0x7f,
                         MATHF1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -26630,7 +26258,7 @@ static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHF1_2, ADD,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -26639,7 +26267,7 @@ static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHF1_2, ADD,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -26655,14 +26283,9 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -26716,7 +26339,7 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0x7f,
                         MATHS1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -26744,7 +26367,7 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHS1_2, ADD,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -26753,7 +26376,7 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHS1_2, ADD,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -26769,14 +26392,9 @@ static void DrawMode7BG2BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -26830,7 +26448,7 @@ static void DrawMode7BG2BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0x7f,
                         REGMATH, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -26858,7 +26476,7 @@ static void DrawMode7BG2BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             REGMATH, SUB,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -26867,7 +26485,7 @@ static void DrawMode7BG2BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             REGMATH, SUB,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -26883,14 +26501,9 @@ static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -26944,7 +26557,7 @@ static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0x7f,
                         MATHF1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -26972,7 +26585,7 @@ static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHF1_2, SUB,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -26981,7 +26594,7 @@ static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHF1_2, SUB,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -26997,14 +26610,9 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -27058,7 +26666,7 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
                         VRAM1, 0x7f,
                         MATHS1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
                 }
@@ -27086,7 +26694,7 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHS1_2, SUB,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     else if (PPU.Mode7Repeat == 3)
                     {
@@ -27095,7 +26703,7 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHS1_2, SUB,
-                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
                     else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
@@ -27167,6 +26775,7 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -27223,7 +26832,7 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     NOMATH, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
             }
         }
         else
@@ -27245,7 +26854,7 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         NOMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -27254,7 +26863,7 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         NOMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
             }
         }
@@ -27267,6 +26876,7 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -27323,7 +26933,7 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     REGMATH, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
             }
         }
         else
@@ -27345,7 +26955,7 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         REGMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -27354,7 +26964,7 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         REGMATH, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
             }
         }
@@ -27367,6 +26977,7 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -27423,7 +27034,7 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHF1_2, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
             }
         }
         else
@@ -27445,7 +27056,7 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHF1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -27454,7 +27065,7 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHF1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
             }
         }
@@ -27467,6 +27078,7 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -27523,7 +27135,7 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHS1_2, ADD,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
             }
         }
         else
@@ -27545,7 +27157,7 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHS1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -27554,7 +27166,7 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHS1_2, ADD,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
             }
         }
@@ -27567,6 +27179,7 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -27623,7 +27236,7 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     REGMATH, SUB,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
             }
         }
         else
@@ -27645,7 +27258,7 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         REGMATH, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -27654,7 +27267,7 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         REGMATH, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
             }
         }
@@ -27667,6 +27280,7 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -27723,7 +27337,7 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHF1_2, SUB,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
             }
         }
         else
@@ -27745,7 +27359,7 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHF1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -27754,7 +27368,7 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHF1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
             }
         }
@@ -27767,6 +27381,7 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -27823,7 +27438,7 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0xff,
                     MATHS1_2, SUB,
-                    ((D + 7)), ((D + 7)), Offset);
+                    ((D + 7)), ((D + 7)), Offset, smooth);
             }
         }
         else
@@ -27845,7 +27460,7 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHS1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -27854,7 +27469,7 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHS1_2, SUB,
-                        ((D + 7)), ((D + 7)), Offset);
+                        ((D + 7)), ((D + 7)), Offset, smooth);
                 }
             }
         }
@@ -27880,14 +27495,9 @@ static void DrawMode7BG2BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -27936,7 +27546,7 @@ static void DrawMode7BG2BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     NOMATH, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
             }
         }
         else
@@ -27958,7 +27568,7 @@ static void DrawMode7BG2BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         NOMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -27967,7 +27577,7 @@ static void DrawMode7BG2BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         NOMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
             }
         }
@@ -27980,14 +27590,9 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -28036,7 +27641,7 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     REGMATH, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
             }
         }
         else
@@ -28058,7 +27663,7 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         REGMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -28067,7 +27672,7 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         REGMATH, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
             }
         }
@@ -28080,14 +27685,9 @@ static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -28136,7 +27736,7 @@ static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHF1_2, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
             }
         }
         else
@@ -28158,7 +27758,7 @@ static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHF1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -28167,7 +27767,7 @@ static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHF1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
             }
         }
@@ -28180,14 +27780,9 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -28236,7 +27831,7 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHS1_2, ADD,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
             }
         }
         else
@@ -28258,7 +27853,7 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHS1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -28267,7 +27862,7 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHS1_2, ADD,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
             }
         }
@@ -28280,14 +27875,9 @@ static void DrawMode7BG2BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -28336,7 +27926,7 @@ static void DrawMode7BG2BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     REGMATH, SUB,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
             }
         }
         else
@@ -28358,7 +27948,7 @@ static void DrawMode7BG2BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         REGMATH, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -28367,7 +27957,7 @@ static void DrawMode7BG2BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         REGMATH, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
             }
         }
@@ -28380,14 +27970,9 @@ static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -28436,7 +28021,7 @@ static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHF1_2, SUB,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
             }
         }
         else
@@ -28458,7 +28043,7 @@ static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHF1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -28467,7 +28052,7 @@ static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHF1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
             }
         }
@@ -28480,14 +28065,9 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 x, Line, Offset;
     uint8 *VRAM1 = Memory.VRAM + 1;
     int aa, cc, startx;
+    uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = IPPU.ScreenColors;
-    if (0)
-    {
-        if (IPPU.DirectColourMapsNeedRebuild)
-            S9xBuildDirectColourMaps();
-        GFX.RealScreenColors = DirectColourMaps[0];
-    }
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     Offset = GFX.StartY * GFX.PPL;
     l = &LineMatrixData[GFX.StartY];
@@ -28536,7 +28116,7 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
                     VRAM1, 0x7f,
                     MATHS1_2, SUB,
-                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
             }
         }
         else
@@ -28558,7 +28138,7 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHS1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 else if (PPU.Mode7Repeat == 3)
                 {
@@ -28567,7 +28147,7 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHS1_2, SUB,
-                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset);
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
             }
         }

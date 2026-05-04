@@ -16,11 +16,11 @@ If anything in this file contradicts conversation history or memory,
 
 **Branch:** `tile-untangle` (origin/libretro/snes9x2010)
 **Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x"
-**Stage:** Commit A complete (body-macro inlining). All 11 `TILE_BODY_*` macros are gone.
-**Last code commit:** Commit A — tile.c: inline body macros into per-function bodies (this commit)
-**Previous code commit:** `7af3f84` — tile.c: unroll fan-out macros + structural cleanup (Stage 3.5 + Stage 4) [upstream as "Last untangle step"]
-**In-flight work:** none (commit A is a complete unit; commit B = inline documentation is a separate future effort).
-**Working tree:** clean
+**Stage:** Items 2 + 3 from the post-commit-A optimization list.
+**Last code commit:** Items 2+3 — tile.c: delete BG2 if(0) dead branches; hoist Mode7HiresBilinear from per-pixel to per-call (this commit)
+**Previous code commit:** `f5720b6` — tile.c: inline body macros into per-function bodies (commit A)
+**In-flight work:** none.
+**Working tree:** clean (after this commit lands).
 
 State file lives in-tree at `docs/tile-untangle-state.md`. Updates
 ride along in the relevant commit.
@@ -33,7 +33,7 @@ families: DrawBackdrop16 (`9ac00cb`), DrawMosaicPixel16
 (`bb3cacf`), DrawClippedTile16 (`8906302`), DrawTile16 + scaffold
 removal (`a40fa37`).
 
-**Commit A (this commit) inlines all 11 body macros into the
+**Commit A (`f5720b6`) inlines all 11 body macros into the
 per-function bodies.** Every renderer function now contains its
 full body verbatim — no more `TILE_BODY_*(...)` macro invocation
 on the second line of each function. The file grew from ~4,900
@@ -469,7 +469,86 @@ Status: **TODO** (re-evaluate later, profile-driven)
 
 ## Commit log (newest first)
 
-### Commit A — tile.c: inline body macros into per-function bodies (this commit)
+### Items 2+3 — tile.c: delete BG2 if(0) dead branches; hoist Mode7HiresBilinear from per-pixel to per-call (this commit)
+
+Two related cleanups from the post-commit-A optimization list, bundled
+because they're independently small and both target Mode 7 hot paths.
+
+**Item 3 (BG2 if(0) deletion):** the body-inlining in commit A
+(`f5720b6`) substituted `DC_EXPR = 0` into BG2 Mode 7 functions,
+producing 77 instances of dead `if (0) { ... }` blocks (one per BG2
+native + mosaic + HR/HR4X/BL/BL4X/BL1X function). The compiler was
+already deleting these blocks; this commit deletes them at the
+source level. -462 lines, byte-identical machine code.
+
+The deleted block in each BG2 function:
+```
+    if (0)
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+```
+This block is the inlined Direct Colour Mode handling for BG1 (which
+has `DC_EXPR = (Memory.FillRAM[0x2130] & 1)`), but for BG2 the
+`DC_EXPR` is the literal `0` so the conditional and its body are
+dead.
+
+**Item 2 (Mode7HiresBilinear hoist):** `Settings.Mode7HiresBilinear`
+is a frame-constant setting (set from the libretro environment-variable
+callback on init / option-change), but the previous code read it
+once per pixel inside `M7HR_BLEND_AND_WRITE`. This commit threads it
+through the macro chain as a parameter, computed once per renderer
+function call (which itself is once per scanline group via a
+function-pointer dispatch).
+
+Implementation (Strategy C of three considered):
+  - `M7HR_BLEND_AND_WRITE` macro: added `smooth_arg` as the last
+    parameter. Internal `uint8 smooth = (Settings.Mode7HiresBilinear
+    == 2);` line replaced with `uint8 smooth_local = (smooth_arg);`
+    (renamed to avoid shadowing the outer `smooth` declared in the
+    enclosing function).
+  - `M7HR_SAMPLE_BILINEAR` macro: added `smooth_arg` parameter and
+    threads it through to the wrapped `M7HR_BLEND_AND_WRITE` call.
+  - All 168 external call sites updated: 56 of `M7HR_SAMPLE_BILINEAR`
+    and 112 of `M7HR_BLEND_AND_WRITE`, all in BL/BL4X/BL1X family
+    functions (HR/HR4X are nearest-neighbour and don't blend).
+  - Each of the 42 BL family functions (3 family x 2 BG x 7 math)
+    declares `uint8 smooth = (Settings.Mode7HiresBilinear == 2);`
+    once at the top, before the per-line loop.
+
+Not byte-identical to pristine (`f5720b6`): BL family function
+sizes shifted in both directions, total -140 bytes (-0.04% of BL
+family code). All non-BL functions byte-identical. Behavior is
+equivalent: `smooth` is computed identically, just hoisted.
+
+Other strategies considered:
+  - Strategy A: have the macro reference an outer-scope `smooth`
+    directly. Rejected: the macro becomes dependent on caller scope,
+    which is exactly the macro-coupling we've been reducing.
+  - Strategy B: specialize each BL function into two (smooth /
+    not-smooth) variants and branch at function entry. Rejected for
+    now: doubles BL family function count, would need profile data
+    to justify. Could be a future commit if the per-pixel branch on
+    `smooth` shows up in profiles.
+
+Symbol verification (vs pristine `f5720b6`):
+  - 313 Draw* functions present (verified).
+  - 44 Renderers_ arrays present (verified).
+  - Function size diff: 88 lines, all in BL family. All non-BL
+    functions byte-identical.
+  - Build clean, zero warnings.
+
+Files changed: `src/tile.c` -420 net (item 3 -462, item 2 +42).
+
+Behaviour invariants -- to be verified externally by Lib before
+push: audio bit-identical (this is the crucial check since codegen
+drifted), savestate compat, valgrind clean. Audio hashes should
+match if the hoist is truly equivalent; if they don't, I need to
+investigate.
+
+### `f5720b6` — tile.c: inline body macros into per-function bodies (commit A)
 
 Inlines all 11 `TILE_BODY_*` macros into the bodies of the 313
 renderer functions. Per the user's request: "tile.c is still macro
@@ -1482,4 +1561,4 @@ the truth-value of the comment.)
 
 ---
 
-*Last updated: commit A (body-macro inlining). Branch `tile-untangle` past upstream `7af3f84` by one commit. All 11 `TILE_BODY_*` macros are gone; each renderer function now contains its full body inline. tile.c grew from ~4,900 to ~28,600 lines as a result. Plotters / color-math / file-scope helpers all stay as macros. Optional commit B (per-body inline documentation) is a separate future effort that requires SNES PPU domain knowledge.*
+*Last updated: items 2+3 (BG2 if(0) deletion + Mode7HiresBilinear hoist). Branch `tile-untangle` past upstream `f5720b6` by one commit. **First commit in the effort that is NOT byte-identical** -- BL family function sizes shifted slightly (-140 bytes total, mixed individual changes); behaviour equivalent, codegen drifted because the per-pixel global read became a per-call register const. All other functions still byte-identical to pristine.*
