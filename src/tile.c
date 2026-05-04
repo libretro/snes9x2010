@@ -1340,98 +1340,6 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #define DCMODE		(Memory.FillRAM[0x2130] & 1)
 #define BG		0
 
-#define DRAW_TILE_NORMAL() \
-	struct SLineMatrixData *l; \
-	uint32 x, Line, Offset; \
-	uint8	*VRAM1; \
-	int aa, cc, startx; \
-	VRAM1 = Memory.VRAM + 1; \
-   GFX.RealScreenColors = IPPU.ScreenColors; \
-	if (DCMODE) \
-	{ \
-		if (IPPU.DirectColourMapsNeedRebuild) \
-			S9xBuildDirectColourMaps(); \
-		GFX.RealScreenColors = DirectColourMaps[0]; \
-	} \
-	\
-	GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
-	Offset = GFX.StartY * GFX.PPL; \
-	l = &LineMatrixData[GFX.StartY]; \
-	\
-	for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
-	{ \
-		int AA, BB, CC, DD, xx, yy; \
-		int32 HOffset, VOffset, CentreX, CentreY; \
-		uint8 Pix, starty; \
-		\
-		HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
-		VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
-		CentreX = ((int32) l->CentreX << 19) >> 19; \
-		CentreY = ((int32) l->CentreY << 19) >> 19; \
-		\
-		starty = Line + 1; \
-		if (PPU.Mode7VFlip) \
-			starty ^= 0xff; \
-		yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
-		BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
-		DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
-		\
-		if (PPU.Mode7HFlip) \
-		{ \
-			startx = Right - 1; \
-			aa = -l->MatrixA; \
-			cc = -l->MatrixC; \
-		} \
-		else \
-		{ \
-			startx = Left; \
-			aa = l->MatrixA; \
-			cc = l->MatrixC; \
-		} \
-		xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
-		AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
-		CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
-		if (!PPU.Mode7Repeat) \
-		{ \
-			for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
-			{ \
-				int X, Y; \
-				uint8 *TileData, b; \
-				\
-				X = ((AA + BB) >> 8) & 0x3ff; \
-				Y = ((CC + DD) >> 8) & 0x3ff; \
-				\
-				TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
-				b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
-				\
-				DRAW_PIXEL(x, Pix = (b & MASK)); \
-			} \
-		} \
-		else \
-		{ \
-			for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
-			{ \
-				int X, Y; \
-				uint8 *TileData, b; \
-				X = ((AA + BB) >> 8); \
-				Y = ((CC + DD) >> 8); \
-				\
-				if (((X | Y) & ~0x3ff) == 0) \
-				{ \
-					TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
-					b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
-				} \
-				else \
-				if (PPU.Mode7Repeat == 3) \
-					b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1)); \
-				else \
-					continue; \
-				\
-				DRAW_PIXEL(x, Pix = (b & MASK)); \
-			} \
-		} \
-	}
-
 /* High-resolution Mode 7 with bilinear filtering: same output rate
    as the nearest-neighbour HR family (de-templated below), but
    each output pixel is blended from the four texels surrounding
@@ -1964,21 +1872,252 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		MosaicStart = 0; \
 	}
 
-#define DRAW_TILE()	DRAW_TILE_NORMAL()
-#define NAME1		DrawMode7BG1
-#define ARGS		uint32 Left, uint32 Right, int D
+/* ====================================================================
+ * Native Mode 7 (BG1, BG2) renderers
+ * ====================================================================
+ *
+ * Two NAME1 families: DrawMode7BG1 (BG1) and DrawMode7BG2 (BG2 EXTBG).
+ * Native (no horizontal upsampling) Mode 7. One sample per native
+ * pixel. Differs from the M7 hires families in that there's no
+ * sub-pixel sampling -- each output pixel comes from exactly one
+ * Mode 7 texture sample, written through a NAME2-specific pixel
+ * plotter (Normal1x1, Normal2x1, Normal4x1, Hires, Interlace,
+ * HiresInterlace).
+ *
+ * The templated form generates 6 NAME2 variants per (NAME1, math)
+ * combination. Three of those (Normal4x1, Interlace, HiresInterlace)
+ * are not referenced by the dispatcher; LTO strips them. All six
+ * are still emitted here to match the templated form byte-for-byte.
+ * The dead variants are removed in a follow-up commit.
+ *
+ * BG1 vs BG2 split:
+ *   BG1: Z = D + 7 const, MASK = 0xff, DCMODE = $2130 bit 0.
+ *   BG2: Z = D + ((b & 0x80) ? 11 : 3), MASK = 0x7f, DCMODE = 0.
+ *
+ * The mosaic variants (DrawMode7MosaicBG1, DrawMode7MosaicBG2)
+ * remain templated for now and are de-templated in Stage 2.7.
+ * The templated MosaicBG1 / MosaicBG2 blocks below this section
+ * still rely on the file-scope Z1/Z2/MASK/DCMODE/BG/NO_INTERLACE
+ * #defines.
+ */
 
-/* Second-level include: Get the DrawMode7BG1 renderers. */
+/* ---- Section-internal pixel plotters -------------------------------
+ *
+ * These mirror the Normal1x1 / Normal2x1 / Normal4x1 / Hires2x1
+ * plotter shapes from the level-2 dispatch in tile.c, but take
+ * MATH_SELECTOR / MATH_OP / Z_EXPR as macro parameters instead of
+ * reading Z1 / Z2 / MATH from enclosing scope. The plotter is
+ * passed as a parameter to TILE_BODY_NORMAL_M7 below, which calls
+ * it once per pixel.
+ *
+ * Shape: (N, M, MATH_SELECTOR, MATH_OP, Z_EXPR) where N is the
+ * native-column index (0..255 typically) and M is the
+ * assignment-and-test expression (Pix = (b & MASK_VAL)) -- we
+ * preserve the original assignment-in-test form so the compiler
+ * can short-circuit the AND when Z fails. The output index is
+ * derived from N according to the plotter's pixel rate. */
 
-#include "tile.c"
+/* Normal1x1: writes one pixel at Offset + N. */
+#define M7N_PIXEL_N1x1(N, M, MATH_SELECTOR, MATH_OP, Z_EXPR) \
+    if ((Z_EXPR) > GFX.DB[Offset + (N)] && (M)) \
+    { \
+        GFX.S[Offset + (N)] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + (N)], \
+            GFX.SubZBuffer[Offset + (N)]); \
+        GFX.DB[Offset + (N)] = (Z_EXPR); \
+    }
 
-#undef NAME1
-#undef DRAW_TILE
+/* Normal2x1: writes two adjacent pixels at Offset + 2*N and
+ * Offset + 2*N + 1, both with the same colour and Z value. */
+#define M7N_PIXEL_N2x1(N, M, MATH_SELECTOR, MATH_OP, Z_EXPR) \
+    if ((Z_EXPR) > GFX.DB[Offset + 2 * (N)] && (M)) \
+    { \
+        GFX.S[Offset + 2 * (N)] = GFX.S[Offset + 2 * (N) + 1] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 2 * (N)], \
+            GFX.SubZBuffer[Offset + 2 * (N)]); \
+        GFX.DB[Offset + 2 * (N)] = GFX.DB[Offset + 2 * (N) + 1] = (Z_EXPR); \
+    }
+
+/* Normal4x1: writes four adjacent pixels at Offset + 4*N..+4*N+3. */
+#define M7N_PIXEL_N4x1(N, M, MATH_SELECTOR, MATH_OP, Z_EXPR) \
+    if ((Z_EXPR) > GFX.DB[Offset + 4 * (N)] && (M)) \
+    { \
+        uint16 cc__ = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 4 * (N)], \
+            GFX.SubZBuffer[Offset + 4 * (N)]); \
+        GFX.S[Offset + 4 * (N)] = GFX.S[Offset + 4 * (N) + 1] = GFX.S[Offset + 4 * (N) + 2] = GFX.S[Offset + 4 * (N) + 3] = cc__; \
+        GFX.DB[Offset + 4 * (N)] = GFX.DB[Offset + 4 * (N) + 1] = GFX.DB[Offset + 4 * (N) + 2] = GFX.DB[Offset + 4 * (N) + 3] = (Z_EXPR); \
+    }
+
+/* Hires (H2x1): main-screen pixel goes through MATH normally;
+ * sub-screen-side pixel uses a swapped operand order so the
+ * subscreen pixel at +2N+2 acts as the "subscreen" for the
+ * main pixel at +2N+1 (see PPU/CGADSUB hires-math notes in the
+ * non-Mode-7 plotter). */
+#define M7N_PIXEL_H2x1(N, M, MATH_SELECTOR, MATH_OP, Z_EXPR) \
+    if ((Z_EXPR) > GFX.DB[Offset + 2 * (N)] && (M)) \
+    { \
+        GFX.S[Offset + 2 * (N)] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 2 * (N)], \
+            GFX.SubZBuffer[Offset + 2 * (N)]); \
+        GFX.S[Offset + 2 * (N) + 1] = MATH_SELECTOR(MATH_OP, \
+            (GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * (N) + 2]), \
+            GFX.RealScreenColors[Pix], \
+            GFX.SubZBuffer[Offset + 2 * (N)]); \
+        GFX.DB[Offset + 2 * (N)] = GFX.DB[Offset + 2 * (N) + 1] = (Z_EXPR); \
+    }
+
+/* ---- Section-internal tile body ------------------------------------
+ *
+ * TILE_BODY_NORMAL_M7 is the per-line Mode 7 native body. Takes the
+ * pixel plotter (M7N_PIXEL_*) as a parameter via PIXEL_PLOT and
+ * forwards MATH_SELECTOR / MATH_OP / Z_EXPR / MASK_VAL / DC_EXPR.
+ * The body itself is identical to the previously-templated
+ * DRAW_TILE_NORMAL macro (now deleted): the structure and the
+ * arithmetic are unchanged. */
+#define TILE_BODY_NORMAL_M7(MATH_SELECTOR, MATH_OP, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
+{ \
+    struct SLineMatrixData *l; \
+    uint32 x, Line, Offset; \
+    uint8 *VRAM1 = Memory.VRAM + 1; \
+    int aa, cc, startx; \
+    GFX.RealScreenColors = IPPU.ScreenColors; \
+    if (DC_EXPR) \
+    { \
+        if (IPPU.DirectColourMapsNeedRebuild) \
+            S9xBuildDirectColourMaps(); \
+        GFX.RealScreenColors = DirectColourMaps[0]; \
+    } \
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors; \
+    Offset = GFX.StartY * GFX.PPL; \
+    l = &LineMatrixData[GFX.StartY]; \
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++) \
+    { \
+        int AA, BB, CC, DD, xx, yy; \
+        int32 HOffset, VOffset, CentreX, CentreY; \
+        uint8 Pix, starty; \
+        HOffset = ((int32) l->M7HOFS  << 19) >> 19; \
+        VOffset = ((int32) l->M7VOFS  << 19) >> 19; \
+        CentreX = ((int32) l->CentreX << 19) >> 19; \
+        CentreY = ((int32) l->CentreY << 19) >> 19; \
+        starty = Line + 1; \
+        if (PPU.Mode7VFlip) \
+            starty ^= 0xff; \
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY); \
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8); \
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8); \
+        if (PPU.Mode7HFlip) \
+        { \
+            startx = Right - 1; \
+            aa = -l->MatrixA; \
+            cc = -l->MatrixC; \
+        } \
+        else \
+        { \
+            startx = Left; \
+            aa = l->MatrixA; \
+            cc = l->MatrixC; \
+        } \
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX); \
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63); \
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63); \
+        if (!PPU.Mode7Repeat) \
+        { \
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
+            { \
+                int X, Y; \
+                uint8 *TileData, b; \
+                X = ((AA + BB) >> 8) & 0x3ff; \
+                Y = ((CC + DD) >> 8) & 0x3ff; \
+                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+                PIXEL_PLOT(x, Pix = (b & MASK_VAL), MATH_SELECTOR, MATH_OP, (Z_EXPR)) \
+            } \
+        } \
+        else \
+        { \
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
+            { \
+                int X, Y; \
+                uint8 *TileData, b; \
+                X = ((AA + BB) >> 8); \
+                Y = ((CC + DD) >> 8); \
+                if (((X | Y) & ~0x3ff) == 0) \
+                { \
+                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7); \
+                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1)); \
+                } \
+                else \
+                if (PPU.Mode7Repeat == 3) \
+                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1)); \
+                else \
+                    continue; \
+                PIXEL_PLOT(x, Pix = (b & MASK_VAL), MATH_SELECTOR, MATH_OP, (Z_EXPR)) \
+            } \
+        } \
+    } \
+}
+
+/* ---- Outer fan-out: emit one function per (math, NAME2) ------------
+ *
+ * Materializes one DrawMode7BG{N}{suffix}{NAME2_TAG} function
+ * with the chosen math op and pixel plotter. */
+#define DEFINE_M7_FN(suffix, MATH_SELECTOR, MATH_OP, BG_NAME, NAME2_TAG, \
+                     Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
+static void BG_NAME##suffix##NAME2_TAG (uint32 Left, uint32 Right, int D) \
+TILE_BODY_NORMAL_M7(MATH_SELECTOR, MATH_OP, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT)
+
+/* Per-NAME2 7-fold math fan-out, plus the dispatcher array. The
+ * 4-stage interlace pattern (Normal2x1 / Hires / Interlace /
+ * HiresInterlace) of the templated form is preserved here: in
+ * the templated code Interlace/HiresInterlace differ from
+ * Normal2x1/Hires only via BPSTART/PITCH which the Mode 7 body
+ * doesn't reference, so the bodies are identical and LTO folds
+ * them. We emit the same set of functions; the same LTO folding
+ * applies. */
+#define DEFINE_M7_NAME2(BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
+DEFINE_M7_FN(_,        NOMATH,   ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
+DEFINE_M7_FN(Add_,     REGMATH,  ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
+DEFINE_M7_FN(AddF1_2_, MATHF1_2, ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
+DEFINE_M7_FN(AddS1_2_, MATHS1_2, ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
+DEFINE_M7_FN(Sub_,     REGMATH,  SUB, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
+DEFINE_M7_FN(SubF1_2_, MATHF1_2, SUB, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
+DEFINE_M7_FN(SubS1_2_, MATHS1_2, SUB, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
+static void (*Renderers_##BG_NAME##NAME2_TAG[7]) (uint32, uint32, int) = \
+{ \
+    BG_NAME##_##NAME2_TAG, \
+    BG_NAME##Add_##NAME2_TAG, \
+    BG_NAME##AddF1_2_##NAME2_TAG, \
+    BG_NAME##AddS1_2_##NAME2_TAG, \
+    BG_NAME##Sub_##NAME2_TAG, \
+    BG_NAME##SubF1_2_##NAME2_TAG, \
+    BG_NAME##SubS1_2_##NAME2_TAG, \
+};
+
+/* Per-NAME1 6-fold NAME2 fan-out: emit all 6 NAME2 variants
+ * (Normal1x1, Normal2x1, Normal4x1, Hires, Interlace, HiresInterlace).
+ * Some are LTO-folded or LTO-DCE'd; see banner comment for which
+ * are actually referenced by the dispatcher. */
+#define DEFINE_M7_BG(BG_NAME, Z_EXPR, MASK_VAL, DC_EXPR) \
+DEFINE_M7_NAME2(BG_NAME, Normal1x1,      Z_EXPR, MASK_VAL, DC_EXPR, M7N_PIXEL_N1x1) \
+DEFINE_M7_NAME2(BG_NAME, Normal2x1,      Z_EXPR, MASK_VAL, DC_EXPR, M7N_PIXEL_N2x1) \
+DEFINE_M7_NAME2(BG_NAME, Normal4x1,      Z_EXPR, MASK_VAL, DC_EXPR, M7N_PIXEL_N4x1) \
+DEFINE_M7_NAME2(BG_NAME, Hires,          Z_EXPR, MASK_VAL, DC_EXPR, M7N_PIXEL_H2x1) \
+DEFINE_M7_NAME2(BG_NAME, Interlace,      Z_EXPR, MASK_VAL, DC_EXPR, M7N_PIXEL_N2x1) \
+DEFINE_M7_NAME2(BG_NAME, HiresInterlace, Z_EXPR, MASK_VAL, DC_EXPR, M7N_PIXEL_H2x1)
+
+/* BG1 fan-out. */
+DEFINE_M7_BG(DrawMode7BG1, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
 
 #define DRAW_TILE()	DRAW_TILE_MOSAIC()
 #define NAME1		DrawMode7MosaicBG1
+#define ARGS		uint32 Left, uint32 Right, int D
 
-/* Second-level include: Get the DrawMode7MosaicBG1 renderers. */
+/* Second-level include: Get the DrawMode7MosaicBG1 renderers (templated; de-templated in Stage 2.7). */
 
 #include "tile.c"
 
@@ -1990,25 +2129,22 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #undef DCMODE
 #undef BG
 
-#define NAME1		DrawMode7BG2
-#define DRAW_TILE()	DRAW_TILE_NORMAL()
 #define Z1			(D + ((b & 0x80) ? 11 : 3))
 #define Z2			(D + ((b & 0x80) ? 11 : 3))
 #define MASK		0x7f
 #define DCMODE		0
 #define BG			1
 
-/* Second-level include: Get the DrawMode7BG2 renderers. */
-
-#include "tile.c"
-
-#undef NAME1
-#undef DRAW_TILE
+/* BG2 fan-out. The Z_EXPR references the local 'b' (the raw
+ * sampled byte) for the EXTBG per-pixel priority bit. 'b' is
+ * declared inside TILE_BODY_NORMAL_M7's per-pixel scope and is
+ * in scope at the PIXEL_PLOT call site. */
+DEFINE_M7_BG(DrawMode7BG2, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
 
 #define DRAW_TILE()	DRAW_TILE_MOSAIC()
 #define NAME1		DrawMode7MosaicBG2
 
-/* Second-level include: Get the DrawMode7MosaicBG2 renderers. */
+/* Second-level include: Get the DrawMode7MosaicBG2 renderers (templated; de-templated in Stage 2.7). */
 
 #include "tile.c"
 
@@ -2020,6 +2156,19 @@ extern struct SLineMatrixData	LineMatrixData[240];
 #undef DRAW_TILE
 #undef Z1
 #undef Z2
+
+#undef DEFINE_M7_BG
+#undef DEFINE_M7_NAME2
+#undef DEFINE_M7_FN
+#undef TILE_BODY_NORMAL_M7
+#undef M7N_PIXEL_H2x1
+#undef M7N_PIXEL_N4x1
+#undef M7N_PIXEL_N2x1
+#undef M7N_PIXEL_N1x1
+
+/* End of native Mode 7 (BG1, BG2) de-templated section.
+ * Mosaic variants are still templated above; de-templated in Stage 2.7.
+ * ==================================================================== */
 
 /* ====================================================================
  * Mode 7 2x hires (HR / HR2X) renderers
@@ -3283,7 +3432,6 @@ static void (*Renderers_DrawMode7BG2BL1XNormal1x1[7]) (uint32, uint32, int) =
 /* End of BL1X de-templated section.
  * ==================================================================== */
 
-#undef DRAW_TILE_NORMAL
 #undef DRAW_TILE_MOSAIC
 #undef NO_INTERLACE
 
