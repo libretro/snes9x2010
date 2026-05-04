@@ -1585,7 +1585,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
                                           (Xi,Yi+1), (Xi+1,Yi+1)
      Each texel resolves to an RGB565 colour via
      GFX.ScreenColors[palette_index]. Palette index 0 contributes
-     the backdrop colour (ScreenColors[0]) to the blend.
+     no weight to the blend (treated as transparent); see
+     M7HR_BLEND_AND_WRITE for the per-corner opacity handling.
 
    The bilinear blend is the standard tensor-product of horizontal
    then vertical linear interpolation, with weights computed as
@@ -1594,34 +1595,42 @@ extern struct SLineMatrixData	LineMatrixData[240];
    and per-channel rounding via >>16 after summing the four weighted
    contributions.
 
-   Colour math is bypassed in this path (no MATH() invocation): the
-   blended colour is written directly to GFX.S. This is acceptable
-   because (a) colour math on Mode 7 is rare in practice and (b)
-   doing it correctly would require sub-pixel sampling of the
-   subscreen as well, which is out of scope. The Math/Nomath
-   variants of this renderer all expand to functionally identical
-   bodies; the third-level template still emits 7 of them but their
-   behaviour does not differ. */
+   The blended colour goes through MATH() like nearest-neighbour Mode
+   7 does, so colour math (CGADSUB / CGWSEL) works on bilinear-
+   filtered Mode 7. The 7 generated functions per (NAME1, NAME2)
+   pair are therefore genuinely distinct -- one per math op. (This
+   was not always true: an earlier version of the BL path bypassed
+   MATH and the 7 variants collapsed to one. Commit 6d214cf -- "Mode
+   7 hires bilinear: respect color math" -- fixed that.) */
 
-#define M7HR_LOOKUP_PIX(X_, Y_, Pix_) \
+/* Look up one bilinear corner texel.
+
+   Parameters:
+     X_, Y_   integer texel coordinates (already masked to the
+              valid VRAM range by the caller).
+     Pix_     out: palette index, with the caller's MASK applied.
+     vram1    pointer to the start of VRAM tile data
+              (Memory.VRAM + 1; computed once per renderer call).
+     mask     palette mask: 0xff for BG1, 0x7f for BG2 EXTBG. */
+#define M7HR_LOOKUP_PIX(X_, Y_, Pix_, vram1, mask) \
 	{ \
 		int X__ = (X_); \
 		int Y__ = (Y_); \
-		uint8 *TileData__ = VRAM1 + (Memory.VRAM[((Y__ & ~7) << 5) + ((X__ >> 2) & ~1)] << 7); \
+		uint8 *TileData__ = (vram1) + (Memory.VRAM[((Y__ & ~7) << 5) + ((X__ >> 2) & ~1)] << 7); \
 		uint8 b__ = *(TileData__ + ((Y__ & 7) << 4) + ((X__ & 7) << 1)); \
-		(Pix_) = b__ & MASK; \
+		(Pix_) = b__ & (mask); \
 	}
 
 /* Same as M7HR_LOOKUP_PIX but additionally returns the raw byte
    (before MASK is applied). The raw byte's bit 0x80 is the BG2
    per-pixel priority bit in EXTBG mode. */
-#define M7HR_LOOKUP_PIX_RAW(X_, Y_, Pix_, RawByte_) \
+#define M7HR_LOOKUP_PIX_RAW(X_, Y_, Pix_, RawByte_, vram1, mask) \
 	{ \
 		int X__ = (X_); \
 		int Y__ = (Y_); \
-		uint8 *TileData__ = VRAM1 + (Memory.VRAM[((Y__ & ~7) << 5) + ((X__ >> 2) & ~1)] << 7); \
+		uint8 *TileData__ = (vram1) + (Memory.VRAM[((Y__ & ~7) << 5) + ((X__ >> 2) & ~1)] << 7); \
 		uint8 b__ = *(TileData__ + ((Y__ & 7) << 4) + ((X__ & 7) << 1)); \
-		(Pix_) = b__ & MASK; \
+		(Pix_) = b__ & (mask); \
 		(RawByte_) = b__; \
 	}
 
@@ -1637,8 +1646,14 @@ extern struct SLineMatrixData	LineMatrixData[240];
    Also returns b_tl_raw - the raw (unmasked) byte for the TL
    corner. Used by BG2BL to recover the per-pixel priority bit
    (b_tl_raw & 0x80) in EXTBG mode; ignored by BG1BL where Z is
-   constant. */
-#define M7HR_LOOKUP_4(Xi_, Yi_, p_tl, p_tr, p_bl, p_br, b_tl_raw) \
+   constant.
+
+   Parameters:
+     Xi_, Yi_                       integer texel coords (in-range)
+     p_tl, p_tr, p_bl, p_br         out: four corner palette indices
+     b_tl_raw                       out: raw TL byte before MASK
+     vram1, mask                    see M7HR_LOOKUP_PIX */
+#define M7HR_LOOKUP_4(Xi_, Yi_, p_tl, p_tr, p_bl, p_br, b_tl_raw, vram1, mask) \
 	{ \
 		int Xi__ = (Xi_); \
 		int Yi__ = (Yi_); \
@@ -1646,24 +1661,24 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		int yib__ = Yi__ & 7; \
 		if (xib__ != 7 && yib__ != 7) \
 		{ \
-			uint8 *TileData__ = VRAM1 + (Memory.VRAM[((Yi__ & ~7) << 5) + ((Xi__ >> 2) & ~1)] << 7); \
+			uint8 *TileData__ = (vram1) + (Memory.VRAM[((Yi__ & ~7) << 5) + ((Xi__ >> 2) & ~1)] << 7); \
 			uint8 *row0__ = TileData__ + (yib__ << 4); \
 			uint8 *row1__ = TileData__ + ((yib__ + 1) << 4); \
 			uint8 b_tl__ = row0__[xib__       << 1]; \
 			(b_tl_raw) = b_tl__; \
-			(p_tl) = b_tl__ & MASK; \
-			(p_tr) = row0__[(xib__ + 1) << 1] & MASK; \
-			(p_bl) = row1__[xib__       << 1] & MASK; \
-			(p_br) = row1__[(xib__ + 1) << 1] & MASK; \
+			(p_tl) = b_tl__ & (mask); \
+			(p_tr) = row0__[(xib__ + 1) << 1] & (mask); \
+			(p_bl) = row1__[xib__       << 1] & (mask); \
+			(p_br) = row1__[(xib__ + 1) << 1] & (mask); \
 		} \
 		else \
 		{ \
 			int Xi1__ = (Xi__ + 1) & 0x3ff; \
 			int Yi1__ = (Yi__ + 1) & 0x3ff; \
-			M7HR_LOOKUP_PIX_RAW(Xi__, Yi__, (p_tl), (b_tl_raw)); \
-			M7HR_LOOKUP_PIX(Xi1__, Yi__, (p_tr)); \
-			M7HR_LOOKUP_PIX(Xi__, Yi1__, (p_bl)); \
-			M7HR_LOOKUP_PIX(Xi1__, Yi1__, (p_br)); \
+			M7HR_LOOKUP_PIX_RAW(Xi__, Yi__, (p_tl), (b_tl_raw), (vram1), (mask)); \
+			M7HR_LOOKUP_PIX(Xi1__, Yi__, (p_tr), (vram1), (mask)); \
+			M7HR_LOOKUP_PIX(Xi__, Yi1__, (p_bl), (vram1), (mask)); \
+			M7HR_LOOKUP_PIX(Xi1__, Yi1__, (p_br), (vram1), (mask)); \
 		} \
 	}
 
@@ -1717,8 +1732,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
    four pixel reads.
 
    Also returns b_tl_raw - the raw (unmasked) byte for the TL corner.
-   See M7HR_LOOKUP_4 for usage. */
-#define M7HR_LOOKUP_4_FILL(Xi_, Yi_, p_tl, p_tr, p_bl, p_br, b_tl_raw) \
+   See M7HR_LOOKUP_4 for usage and parameter meanings. */
+#define M7HR_LOOKUP_4_FILL(Xi_, Yi_, p_tl, p_tr, p_bl, p_br, b_tl_raw, vram1, mask) \
 	{ \
 		int Xi__ = (Xi_); \
 		int Yi__ = (Yi_); \
@@ -1726,21 +1741,21 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		int yib0__ =  Yi__      & 7; \
 		int xib1__ = (Xi__ + 1) & 7; \
 		int yib1__ = (Yi__ + 1) & 7; \
-		uint8 *row0__ = VRAM1 + (yib0__ << 4); \
-		uint8 *row1__ = VRAM1 + (yib1__ << 4); \
+		uint8 *row0__ = (vram1) + (yib0__ << 4); \
+		uint8 *row1__ = (vram1) + (yib1__ << 4); \
 		uint8 b_tl__ = row0__[xib0__ << 1]; \
 		(b_tl_raw) = b_tl__; \
-		(p_tl) = b_tl__ & MASK; \
-		(p_tr) = row0__[xib1__ << 1] & MASK; \
-		(p_bl) = row1__[xib0__ << 1] & MASK; \
-		(p_br) = row1__[xib1__ << 1] & MASK; \
+		(p_tl) = b_tl__ & (mask); \
+		(p_tr) = row0__[xib1__ << 1] & (mask); \
+		(p_bl) = row1__[xib0__ << 1] & (mask); \
+		(p_br) = row1__[xib1__ << 1] & (mask); \
 	}
 
 /* Given four corner palette indices, the raw TL byte (for BG2's
    per-pixel priority bit), and fractional weights, do the
    configured Mode 7 blend (stable X-only on floor-Y, or smooth
-   4-corner bilinear) and write the result to GFX.S[Offset+out_offset]
-   / GFX.DB[Offset+out_offset] subject to the Z test. Shared between
+   4-corner bilinear) and write the result to GFX.S[offset+out_offset]
+   / GFX.DB[offset+out_offset] subject to the Z test. Shared between
    the Mode7Repeat == 0 (wrap) path and the in-range case of the
    Mode7Repeat != 0 paths.
 
@@ -1754,9 +1769,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
                     on hostile content where adjacent texel rows
                     contain dissimilar palette entries.
 
-   The raw TL byte is exposed as local 'b' so that Z1/Z2 macro
-   expansions can reference 'b & 0x80' the same way the native HR
-   path does. For BG1, Z1 is constant and 'b' is unused; the
+   The raw TL byte is exposed as local 'b' so that z1_expr / z2_expr
+   parameters can reference 'b & 0x80' the same way the native HR
+   path does. For BG1, z1_expr is constant and 'b' is unused; the
    compiler eliminates the dead read.
 
    Index 0 is the SNES universal transparency index. Native HR's
@@ -1775,8 +1790,34 @@ extern struct SLineMatrixData	LineMatrixData[240];
                        contribute zero weight; the remaining weight
                        is renormalized so texture edges fade
                        smoothly into the backdrop instead of
-                       producing a sharp seam. */
-#define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw, Xf, Yf) \
+                       producing a sharp seam.
+
+   Parameters:
+     out_offset                       offset into the scanline buffer
+                                      to write (relative to 'offset')
+     p_tl, p_tr, p_bl, p_br           4 corner palette indices
+     b_tl_raw                         raw TL byte (pre-mask)
+     Xf, Yf                           fractional weights, 0..255
+     math_selector, math_op           colour-math selector and op,
+                                      such that
+                                      math_selector(math_op, A, B, C)
+                                      yields the colour-math result.
+                                      Use NOMATH/ADD when no math
+                                      applies; otherwise one of
+                                      REGMATH, MATHF1_2, MATHS1_2
+                                      paired with ADD or SUB. Same
+                                      tokens as the level-3
+                                      template's MATH selector.
+     z1_expr, z2_expr                 Z-test value and Z-write
+                                      value. Often equal but not
+                                      always (OBJ uses different
+                                      Z1 and Z2). May reference
+                                      the local 'b'.
+     offset                           scanline base offset into the
+                                      GFX.S / GFX.DB / GFX.SubScreen
+                                      / GFX.SubZBuffer arrays. */
+#define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw, Xf, Yf, \
+                             math_selector, math_op, z1_expr, z2_expr, offset) \
 	{ \
 		uint8 b = (b_tl_raw); \
 		uint8 op_tl = ((p_tl) != 0); \
@@ -1823,10 +1864,10 @@ extern struct SLineMatrixData	LineMatrixData[240];
 					M7HR_BLEND_RGB(blended, c_tl, c_tr, (Xf)); \
 				} \
 			} \
-			if (Z1 > GFX.DB[Offset + (out_offset)]) \
+			if ((z1_expr) > GFX.DB[(offset) + (out_offset)]) \
 			{ \
-				GFX.S[Offset + (out_offset)] = MATH(blended, GFX.SubScreen[Offset + (out_offset)], GFX.SubZBuffer[Offset + (out_offset)]); \
-				GFX.DB[Offset + (out_offset)] = Z2; \
+				GFX.S[(offset) + (out_offset)] = math_selector(math_op, blended, GFX.SubScreen[(offset) + (out_offset)], GFX.SubZBuffer[(offset) + (out_offset)]); \
+				GFX.DB[(offset) + (out_offset)] = (z2_expr); \
 			} \
 		} \
 		else \
@@ -1862,10 +1903,10 @@ extern struct SLineMatrixData	LineMatrixData[240];
 					          + ( c_bl        & 0x1f) * w_bl_ \
 					          + ( c_br        & 0x1f) * w_br_; \
 					blended = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_)); \
-					if (Z1 > GFX.DB[Offset + (out_offset)]) \
+					if ((z1_expr) > GFX.DB[(offset) + (out_offset)]) \
 					{ \
-						GFX.S[Offset + (out_offset)] = MATH(blended, GFX.SubScreen[Offset + (out_offset)], GFX.SubZBuffer[Offset + (out_offset)]); \
-						GFX.DB[Offset + (out_offset)] = Z2; \
+						GFX.S[(offset) + (out_offset)] = math_selector(math_op, blended, GFX.SubScreen[(offset) + (out_offset)], GFX.SubZBuffer[(offset) + (out_offset)]); \
+						GFX.DB[(offset) + (out_offset)] = (z2_expr); \
 					} \
 				} \
 			} \
@@ -1884,17 +1925,29 @@ extern struct SLineMatrixData	LineMatrixData[240];
 					uint32 g_ = ((c_l >>  6) & 0x1f) * w_l_ + ((c_r >>  6) & 0x1f) * w_r_; \
 					uint32 b_ = ( c_l        & 0x1f) * w_l_ + ( c_r        & 0x1f) * w_r_; \
 					blended = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_)); \
-					if (Z1 > GFX.DB[Offset + (out_offset)]) \
+					if ((z1_expr) > GFX.DB[(offset) + (out_offset)]) \
 					{ \
-						GFX.S[Offset + (out_offset)] = MATH(blended, GFX.SubScreen[Offset + (out_offset)], GFX.SubZBuffer[Offset + (out_offset)]); \
-						GFX.DB[Offset + (out_offset)] = Z2; \
+						GFX.S[(offset) + (out_offset)] = math_selector(math_op, blended, GFX.SubScreen[(offset) + (out_offset)], GFX.SubZBuffer[(offset) + (out_offset)]); \
+						GFX.DB[(offset) + (out_offset)] = (z2_expr); \
 					} \
 				} \
 			} \
 		} \
 	}
 
-#define M7HR_SAMPLE_BILINEAR(out_offset, X_full, Y_full) \
+/* Wrapper: take a fractional sample position (X_full, Y_full in
+   16.8 fixed-point), look up the four bilinear corners, and blend
+   + write through M7HR_BLEND_AND_WRITE. Used by the wrap path
+   (Mode7Repeat == 0); the repeat-mode paths inline LOOKUP_4 and
+   LOOKUP_4_FILL separately because they need to choose between
+   them per-sample.
+
+   Parameters: see M7HR_LOOKUP_4 (vram1, mask) and
+   M7HR_BLEND_AND_WRITE (math_selector, math_op, z1_expr, z2_expr,
+   offset). out_offset is relative to 'offset'. */
+#define M7HR_SAMPLE_BILINEAR(out_offset, X_full, Y_full, \
+                             vram1, mask, \
+                             math_selector, math_op, z1_expr, z2_expr, offset) \
 	{ \
 		int Xi = ((X_full) >> 8) & 0x3ff; \
 		int Yi = ((Y_full) >> 8) & 0x3ff; \
@@ -1902,8 +1955,9 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		uint32 Yf = (uint32)((Y_full) & 0xff); \
 		uint8 p_tl, p_tr, p_bl, p_br; \
 		uint8 b_tl_raw_; \
-		M7HR_LOOKUP_4(Xi, Yi, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
-		M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf, Yf); \
+		M7HR_LOOKUP_4(Xi, Yi, p_tl, p_tr, p_bl, p_br, b_tl_raw_, (vram1), (mask)); \
+		M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf, Yf, \
+		                     math_selector, math_op, z1_expr, z2_expr, (offset)); \
 	}
 
 #define DRAW_TILE_NORMAL_M7HIRES_BILINEAR() \
@@ -1963,9 +2017,11 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		{ \
 			for ( x = Left; x < Right; x++) \
 			{ \
-				M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD); \
+				M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD, \
+					VRAM1, MASK, MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 				AA += aa_h; CC += cc_h; \
-				M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD); \
+				M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD, \
+					VRAM1, MASK, MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 				AA += aa - aa_h; CC += cc - cc_h; \
 			} \
 		} \
@@ -1984,13 +2040,15 @@ extern struct SLineMatrixData	LineMatrixData[240];
 				/* Sample 1 -> output 2*x */ \
 				if (((X1 | Y1) & ~0x3ff) == 0) \
 				{ \
-					M7HR_LOOKUP_4(X1, Y1, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
-					M7HR_BLEND_AND_WRITE(2 * x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1); \
+					M7HR_LOOKUP_4(X1, Y1, p_tl, p_tr, p_bl, p_br, b_tl_raw_, VRAM1, MASK); \
+					M7HR_BLEND_AND_WRITE(2 * x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1, \
+						MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 				} \
 				else if (PPU.Mode7Repeat == 3) \
 				{ \
-					M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
-					M7HR_BLEND_AND_WRITE(2 * x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1); \
+					M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br, b_tl_raw_, VRAM1, MASK); \
+					M7HR_BLEND_AND_WRITE(2 * x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1, \
+						MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 				} \
 				/* else: clip - leave pixel untouched (transparent) */ \
 				AA += aa_h; CC += cc_h; \
@@ -2001,13 +2059,15 @@ extern struct SLineMatrixData	LineMatrixData[240];
 				Yf2 = (uint32)((CC + DD) & 0xff); \
 				if (((X2 | Y2) & ~0x3ff) == 0) \
 				{ \
-					M7HR_LOOKUP_4(X2, Y2, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
-					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2); \
+					M7HR_LOOKUP_4(X2, Y2, p_tl, p_tr, p_bl, p_br, b_tl_raw_, VRAM1, MASK); \
+					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2, \
+						MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 				} \
 				else if (PPU.Mode7Repeat == 3) \
 				{ \
-					M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
-					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2); \
+					M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br, b_tl_raw_, VRAM1, MASK); \
+					M7HR_BLEND_AND_WRITE(2 * x + 1, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2, \
+						MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 				} \
 				AA += aa - aa_h; CC += cc - cc_h; \
 			} \
@@ -2078,7 +2138,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
 				int sub; \
 				for (sub = 0; sub < 4; sub++) \
 				{ \
-					M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD); \
+					M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD, \
+						VRAM1, MASK, MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 					if (sub < 3) { AA += aa_q; CC += cc_q; } \
 					else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; } \
 				} \
@@ -2099,13 +2160,15 @@ extern struct SLineMatrixData	LineMatrixData[240];
 					uint8 b_tl_raw_; \
 					if (((Xs | Ys) & ~0x3ff) == 0) \
 					{ \
-						M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
-						M7HR_BLEND_AND_WRITE(4 * x + sub, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs); \
+						M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_, VRAM1, MASK); \
+						M7HR_BLEND_AND_WRITE(4 * x + sub, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs, \
+							MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 					} \
 					else if (PPU.Mode7Repeat == 3) \
 					{ \
-						M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
-						M7HR_BLEND_AND_WRITE(4 * x + sub, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs); \
+						M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_, VRAM1, MASK); \
+						M7HR_BLEND_AND_WRITE(4 * x + sub, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs, \
+							MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 					} \
 					if (sub < 3) { AA += aa_q; CC += cc_q; } \
 					else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; } \
@@ -2174,7 +2237,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
 		{ \
 			for ( x = Left; x < Right; x++, AA += aa, CC += cc) \
 			{ \
-				M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD); \
+				M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD, \
+					VRAM1, MASK, MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 			} \
 		} \
 		else \
@@ -2189,13 +2253,15 @@ extern struct SLineMatrixData	LineMatrixData[240];
 				uint8 b_tl_raw_; \
 				if (((Xs | Ys) & ~0x3ff) == 0) \
 				{ \
-					M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
-					M7HR_BLEND_AND_WRITE(x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs); \
+					M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_, VRAM1, MASK); \
+					M7HR_BLEND_AND_WRITE(x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs, \
+						MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 				} \
 				else if (PPU.Mode7Repeat == 3) \
 				{ \
-					M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_); \
-					M7HR_BLEND_AND_WRITE(x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs); \
+					M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br, b_tl_raw_, VRAM1, MASK); \
+					M7HR_BLEND_AND_WRITE(x, p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs, \
+						MATH_SELECTOR, MATH_OP, Z1, Z2, Offset); \
 				} \
 			} \
 		} \
@@ -3055,53 +3121,100 @@ if (Z1 > GFX.DB[Offset + 2 * N] && (M)) \
 #define CONCAT3(A, B, C)	A##B##C
 #define MAKENAME(A, B, C)	CONCAT3(A, B, C)
 
+/* Each of the 7 math variants below defines three macros that
+   together describe the colour-math op for this specialisation:
+
+     MATH(A, B, C)        compose-and-return form. Used by the older
+                          DRAW_PIXEL_* plotters that write through a
+                          single MATH(...) call site.
+     MATH_SELECTOR        token: NOMATH, REGMATH, MATHF1_2, or
+                          MATHS1_2. Used by helpers that take the
+                          selector and op as separate parameters,
+                          e.g. M7HR_BLEND_AND_WRITE invokes
+                          math_selector(math_op, A, B, C).
+     MATH_OP              token: ADD or SUB (for selectors that
+                          care; NOMATH ignores it).
+
+   MATH is the compose-and-return form: MATH(A,B,C) yields the
+   colour. MATH_SELECTOR / MATH_OP are the lower-level pair that
+   the parameterised helpers consume. Both forms describe the same
+   op; pick whichever fits the caller. */
+
 static void MAKENAME(NAME1, _, NAME2) (ARGS)
 {
 #define MATH(A, B, C)	NOMATH(x, A, B, C)
+#define MATH_SELECTOR	NOMATH
+#define MATH_OP		x
 	DRAW_TILE();
 #undef MATH
+#undef MATH_SELECTOR
+#undef MATH_OP
 }
 
 static void MAKENAME(NAME1, Add_, NAME2) (ARGS)
 {
 #define MATH(A, B, C)	REGMATH(ADD, A, B, C)
+#define MATH_SELECTOR	REGMATH
+#define MATH_OP		ADD
 	DRAW_TILE();
 #undef MATH
+#undef MATH_SELECTOR
+#undef MATH_OP
 }
 
 static void MAKENAME(NAME1, AddF1_2_, NAME2) (ARGS)
 {
 #define MATH(A, B, C)	MATHF1_2(ADD, A, B, C)
+#define MATH_SELECTOR	MATHF1_2
+#define MATH_OP		ADD
 	DRAW_TILE();
 #undef MATH
+#undef MATH_SELECTOR
+#undef MATH_OP
 }
 
 static void MAKENAME(NAME1, AddS1_2_, NAME2) (ARGS)
 {
 #define MATH(A, B, C)	MATHS1_2(ADD, A, B, C)
+#define MATH_SELECTOR	MATHS1_2
+#define MATH_OP		ADD
 	DRAW_TILE();
 #undef MATH
+#undef MATH_SELECTOR
+#undef MATH_OP
 }
 
 static void MAKENAME(NAME1, Sub_, NAME2) (ARGS)
 {
 #define MATH(A, B, C)	REGMATH(SUB, A, B, C)
+#define MATH_SELECTOR	REGMATH
+#define MATH_OP		SUB
 	DRAW_TILE();
 #undef MATH
+#undef MATH_SELECTOR
+#undef MATH_OP
 }
 
 static void MAKENAME(NAME1, SubF1_2_, NAME2) (ARGS)
 {
 #define MATH(A, B, C)	MATHF1_2(SUB, A, B, C)
+#define MATH_SELECTOR	MATHF1_2
+#define MATH_OP		SUB
 	DRAW_TILE();
 #undef MATH
+#undef MATH_SELECTOR
+#undef MATH_OP
 }
 
 static void MAKENAME(NAME1, SubS1_2_, NAME2) (ARGS)
 {
 #define MATH(A, B, C)	MATHS1_2(SUB, A, B, C)
+#define MATH_SELECTOR	MATHS1_2
+#define MATH_OP		SUB
 	DRAW_TILE();
 #undef MATH
+#undef MATH_SELECTOR
+#undef MATH_OP
 }
 
 static void (*MAKENAME(Renderers_, NAME1, NAME2)[7]) (ARGS) =
