@@ -3089,8 +3089,6 @@ void NO_OPTIMIZE spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 static int16_t		*landing_buffer = NULL;
 static size_t		buffer_size = 0;
 
-static bool8		resampler      = FALSE;
-
 static int32		reference_time;
 static uint32		spc_remainder;
 
@@ -3102,20 +3100,30 @@ static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 
 /***********************************************************************************
 	RESAMPLER
+
+	Single-producer / single-consumer pipeline. The SPC writes raw 32040Hz
+	stereo samples directly into landing_buffer over the course of a frame;
+	at end of frame, S9xMixSamples reads from landing_buffer (either by
+	memcpy when the input rate matches the output rate, or by 4-tap hermite
+	interpolation when an APU speedup hack has skewed the ratio) and then
+	resets landing_buffer for the next frame.
+
+	The previous implementation copied through an intermediate ring buffer
+	(rb_buffer + resampler_push + resampler_read). With the libretro driver
+	pulling exactly once per retro_run (since the previous commit) the ring
+	is unnecessary - one producer, one consumer, no concurrent access.
+	Removing it eliminates a per-frame memcpy of the whole sample run and
+	~140 lines of bookkeeping.
+
+	Hermite history (r_left/r_right tap registers) and the fractional input
+	cursor (r_frac) still carry across frames so the speedup-hack output
+	stream remains continuous.
 ************************************************************************************/
-static int rb_size;
-static int rb_buffer_size;
-static int rb_start;
-static unsigned char *rb_buffer;
 static uint32_t r_step;
 static uint32_t r_frac;
 static int    r_left[4], r_right[4];
+static int    pending_in_samples;   /* mono samples waiting in landing_buffer */
 
-#define SPACE_EMPTY() (rb_buffer_size - rb_size)
-#define SPACE_FILLED() (rb_size)
-#define MAX_WRITE() (SPACE_EMPTY() >> 1)
-
-#define RESAMPLER_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 #define SHORT_CLAMP(n) ((short) CLAMP((n), -32768, 32767))
 
@@ -3133,16 +3141,13 @@ static INLINE int32_t hermite (int32_t mu1, int32_t a, int32_t b, int32_t c, int
 	a1 = ((mu3 - (mu2 << 1) + mu1) * m0) >> 15;
 	a2 = ((mu3 -     mu2) * m1) >> 15;
 	a3 = ((3 * mu2 - (mu3 << 1)) * c);
-	
+
 	return ((a0) + (a1) + (a2) + (a3)) >> 15;
 }
 
 static void resampler_clear(void)
 {
-	rb_start = 0;
-	rb_size = 0;
-	memset (rb_buffer,  0, rb_buffer_size);
-
+	pending_in_samples = 0;
 	r_frac = 65536;
 	r_left [0] = r_left [1] = r_left [2] = r_left [3] = 0;
 	r_right[0] = r_right[1] = r_right[2] = r_right[3] = 0;
@@ -3154,146 +3159,9 @@ static void resampler_time_ratio(double ratio)
 	resampler_clear();
 }
 
-static void resampler_read(short *data, int num_samples)
-{
-	int i_position, o_position, consumed;
-	short *internal_buffer;
-
-	if (r_step == 65536)
-	{
-		//direct copy if we are not resampling
-		int bytesUntilBufferEnd = rb_buffer_size - rb_start;
-		while (num_samples > 0)
-		{
-			int bytesToConsume = num_samples * sizeof(short);
-			if (bytesToConsume >= bytesUntilBufferEnd)
-				bytesToConsume = bytesUntilBufferEnd;
-			if (rb_start >= rb_buffer_size)
-				rb_start = 0;
-
-			memcpy(data, &rb_buffer[rb_start], bytesToConsume);
-			data += bytesToConsume / sizeof(short);
-			rb_start += bytesToConsume;
-			rb_size -= bytesToConsume;
-			num_samples -= bytesToConsume / sizeof(short);
-			if (rb_start >= rb_buffer_size)
-				rb_start = 0;
-		}
-		return;
-	}
-
-
-	i_position      = rb_start >> 1;
-	internal_buffer = (short *)rb_buffer;
-	o_position      = 0;
-	consumed        = 0;
-
-	while (o_position < num_samples && consumed < rb_buffer_size)
-	{
-		int s_left      = internal_buffer[i_position];
-		int s_right     = internal_buffer[i_position + 1];
-		int max_samples = rb_buffer_size >> 1;
-
-		while (r_frac <= 65536 && o_position < num_samples)
-		{
-			int hermite_val	   = hermite(r_frac >> 1,
-               r_left [0], r_left [1], r_left [2], r_left [3]);
-			data[o_position]     = SHORT_CLAMP (hermite_val);
-			hermite_val          = hermite(r_frac >> 1,
-               r_right[0], r_right[1], r_right[2], r_right[3]);
-			data[o_position + 1] = SHORT_CLAMP (hermite_val);
-
-			o_position          += 2;
-
-			r_frac              += r_step;
-		}
-
-		if (r_frac > 65536)
-		{
-			r_left [0] = r_left [1];
-			r_left [1] = r_left [2];
-			r_left [2] = r_left [3];
-			r_left [3] = s_left;
-
-			r_right[0] = r_right[1];
-			r_right[1] = r_right[2];
-			r_right[2] = r_right[3];
-			r_right[3] = s_right;                    
-
-			r_frac -= 65536;
-
-			i_position += 2;
-			if (i_position >= max_samples)
-				i_position -= max_samples;
-			consumed += 2;
-		}
-	}
-
-	rb_size -= consumed << 1;
-	rb_start += consumed << 1;
-	if (rb_start >= rb_buffer_size)
-		rb_start -= rb_buffer_size;
-}
-
-static uint_fast8_t resampler_new(void)
-{
-	rb_buffer_size = buffer_size;
-	rb_buffer = malloc(rb_buffer_size);
-	if(rb_buffer == NULL)
-		return 1;
-
-	resampler_clear();
-	return 0;
-}
-
-static INLINE bool8 resampler_push(short *src, int num_samples)
-{
-	int bytes, end, first_write_size;
-	unsigned char *src_ring;
-
-	bytes = num_samples << 1;
-	if (MAX_WRITE() < num_samples || SPACE_EMPTY() < bytes)
-		return FALSE;
-
-	/* Ring buffer push */
-	src_ring = (unsigned char*)src; 
-	end = (rb_start + rb_size) % rb_buffer_size;
-	first_write_size = RESAMPLER_MIN(bytes, rb_buffer_size - end);
-
-	memcpy (rb_buffer + end, src_ring, first_write_size);
-
-	if (bytes > first_write_size)
-		memcpy (rb_buffer, src_ring + first_write_size, bytes - first_write_size);
-
-	rb_size += bytes;
-
-	return TRUE;
-}
-
 /***********************************************************************************
 	APU
  ***********************************************************************************/
-
-bool8 S9xMixSamples (short *buffer, unsigned sample_count)
-{
-	if (Settings.Mute)
-		return TRUE;
-
-	/* Caller is expected to have asked S9xGetSampleCount() and to be
-	   requesting no more than that. The end-of-frame libretro driver
-	   guarantees this; underrun is structurally impossible. */
-	resampler_read(buffer, sample_count);
-	return TRUE;
-}
-
-int S9xGetSampleCount (void)
-{
-	if (r_step == 65536)
-	{
-		return rb_size / sizeof(short);
-	}
-	return (((((uint32_t)rb_size) << 14) - r_frac) / r_step * 2);
-}
 
 /* Sets destination for output samples */
 
@@ -3325,13 +3193,114 @@ static void spc_set_output( short* out, int size )
 	dsp_set_output( out, out_end - out );
 }
 
+/* Snapshot the count of mono samples the SPC has written into
+   landing_buffer this frame. landing_buffer is NOT reset here - the
+   consumer (S9xMixSamples) reads directly from it and resets it after
+   consumption. The reset must happen before the next SPC tick so the
+   caller is required to call S9xMixSamples between every pair of
+   S9xFinalizeSamples calls; the libretro driver does this once per
+   frame and that ordering is guaranteed. */
 void S9xFinalizeSamples (void)
 {
-	if (!Settings.Mute)
-		resampler_push(landing_buffer, SPC_SAMPLE_COUNT());
+	pending_in_samples = Settings.Mute ? 0 : SPC_SAMPLE_COUNT();
+}
 
+/* Output sample count derivable from pending input + fractional state.
+   Bypass path: 1:1, count is just the input count. Hermite path: the
+   resampler emits floor((in_bytes << 14 - r_frac) / r_step) * 2 mono
+   samples - the same formula the ring-buffer implementation used, with
+   pending_in_samples * sizeof(short) substituted for the old rb_size. */
+int S9xGetSampleCount (void)
+{
+	uint32_t in_bytes;
+
+	if (pending_in_samples <= 0)
+		return 0;
+
+	if (r_step == 65536)
+		return pending_in_samples;
+
+	in_bytes = (uint32_t)pending_in_samples * sizeof(short);
+	return ((in_bytes << 14) - r_frac) / r_step * 2;
+}
+
+/* Drain pending samples from landing_buffer into caller's buffer, then
+   reset landing_buffer for the next frame's SPC writes.
+
+   sample_count is in mono samples and must not exceed S9xGetSampleCount().
+   Two paths:
+
+   * Bypass (input rate == output rate): one memcpy from landing_buffer.
+
+   * Hermite (APU speedup hack active): 4-tap interpolation reading
+     directly from landing_buffer. r_left/r_right tap registers and
+     r_frac carry over between calls so the output stream is
+     continuous across frames.
+
+   Always finishes by resetting m.extra_clocks's sample bits and
+   calling spc_set_output, which restarts SPC writes at the head of
+   landing_buffer (and folds in any extra_buf overflow). */
+bool8 S9xMixSamples (short *buffer, unsigned sample_count)
+{
+	if (Settings.Mute)
+	{
+		memset(buffer, 0, sample_count * sizeof(short));
+	}
+	else if (r_step == 65536)
+	{
+		memcpy(buffer, landing_buffer, sample_count * sizeof(short));
+	}
+	else
+	{
+		short *src        = landing_buffer;
+		int    in_samples = pending_in_samples;
+		int    in_pos     = 0;
+		unsigned o_pos    = 0;
+
+		/* Direct hermite over landing_buffer. The producer writes
+		   stereo pairs (L,R,L,R,...), so in_pos advances by 2 per
+		   input pair consumed. */
+		while (o_pos < sample_count && in_pos < in_samples)
+		{
+			int s_left  = src[in_pos];
+			int s_right = src[in_pos + 1];
+
+			while (r_frac <= 65536 && o_pos < sample_count)
+			{
+				int v = hermite(r_frac >> 1,
+					r_left[0], r_left[1], r_left[2], r_left[3]);
+				buffer[o_pos]     = SHORT_CLAMP(v);
+				v = hermite(r_frac >> 1,
+					r_right[0], r_right[1], r_right[2], r_right[3]);
+				buffer[o_pos + 1] = SHORT_CLAMP(v);
+
+				o_pos  += 2;
+				r_frac += r_step;
+			}
+
+			if (r_frac > 65536)
+			{
+				r_left [0] = r_left [1];
+				r_left [1] = r_left [2];
+				r_left [2] = r_left [3];
+				r_left [3] = s_left;
+
+				r_right[0] = r_right[1];
+				r_right[1] = r_right[2];
+				r_right[2] = r_right[3];
+				r_right[3] = s_right;
+
+				r_frac -= 65536;
+				in_pos += 2;
+			}
+		}
+	}
+
+	pending_in_samples = 0;
 	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	spc_set_output(landing_buffer, buffer_size);
+
+	return TRUE;
 }
 
 static void UpdatePlaybackRate (void)
@@ -3346,7 +3315,7 @@ static void UpdatePlaybackRate (void)
 
 bool8 S9xInitSound (size_t req_buff_size)
 {
-	/* req_buff_size : size of landing/ring buffer in bytes */
+	/* req_buff_size : size of landing buffer in bytes */
 	if(req_buff_size < APU_MINIMUM_BUFF_SIZE)
 	{
 		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_APU,
@@ -3363,13 +3332,7 @@ bool8 S9xInitSound (size_t req_buff_size)
 	if (!landing_buffer)
 		goto err;
 
-	/* The resampler and spc unit use samples (16-bit short) as
-	   arguments. */
-	if (!resampler)
-	{
-		resampler_new();
-		resampler = TRUE;
-	}
+	resampler_clear();
 
 	m.extra_clocks &= CLOCKS_PER_SAMPLE - 1;
 	spc_set_output(landing_buffer, buffer_size >> 1);
@@ -3464,20 +3427,13 @@ bool8 S9xInitAPU (void)
 	   stays in memory across ROM unload/reload. If S9xInitAPU is called
 	   without a preceding S9xDeinitAPU - re-init from a different code
 	   path, second ROM load on a frontend that doesn't tear down the core
-	   - the file-static landing_buffer / rb_buffer / resampler state
-	   carries over from the previous session and the assignment below
-	   would orphan the old allocations. Free them here so init is
-	   idempotent. */
+	   - the file-static landing_buffer carries over from the previous
+	   session and the assignment below would orphan the old allocation.
+	   Free it here so init is idempotent. */
 	if (landing_buffer)
 	{
 		free(landing_buffer);
 		landing_buffer = NULL;
-	}
-	if (resampler)
-	{
-		free(rb_buffer);
-		rb_buffer = NULL;
-		resampler = FALSE;
 	}
 
 	return TRUE;
@@ -3485,13 +3441,6 @@ bool8 S9xInitAPU (void)
 
 void S9xDeinitAPU (void)
 {
-	if (resampler)
-	{
-		free(rb_buffer);
-		rb_buffer = NULL;
-		resampler = FALSE;
-	}
-
 	if (landing_buffer)
 	{
 		free(landing_buffer);
