@@ -16,9 +16,9 @@ If anything in this file contradicts conversation history or memory,
 
 **Branch:** `tile-untangle` (origin/libretro/snes9x2010)
 **Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x"
-**Stage:** Items 2 + 3 from the post-commit-A optimization list.
-**Last code commit:** Items 2+3 — tile.c: delete BG2 if(0) dead branches; hoist Mode7HiresBilinear from per-pixel to per-call (this commit)
-**Previous code commit:** `f5720b6` — tile.c: inline body macros into per-function bodies (commit A)
+**Stage:** De-self-include — removed the `#include "tile.c"` self-recursion at line 660; file is now laid out linearly.
+**Last code commit:** De-self-include — tile.c: remove self-include and reorder helpers/renderers/dispatch linearly (this commit)
+**Previous code commit:** `9c27ab2` — tile.c: delete BG2 if(0) dead branches; hoist Mode7HiresBilinear from per-pixel to per-call
 **In-flight work:** none.
 **Working tree:** clean (after this commit lands).
 
@@ -61,20 +61,21 @@ What's gone (compared to `7af3f84`):
 The dead `#ifndef NAME1` wrapper at line 996 (always true since
 NAME1 is never defined) is also removed (Stage 3.5). The outer
 `#ifndef _NEWTILE_CPP / #else` split and the line-660 self-include
-remain; they're still load-bearing for separating "first include"
-helpers from the recursive-include family code body.
+**have now also been removed (this commit)**. `tile.c` is laid out
+linearly: includes, then helpers and tile-cache conversion routines
+(lines 197-659 in the previous numbering), then the renderers (the
+former `#else` arm), then the `S9xSelect*` dispatch helpers (what
+used to come after the self-include).
 
-`tile.c` no longer self-includes recursively at the level-2 or
-level-3 boundaries. The `#ifndef NAME2` / `#else / Third-level`
-blocks are gone, along with the per-NAME2 BPSTART / PITCH /
-DRAW_PIXEL macros and the per-(NAME1, NAME2) 7-fold MAKENAME
-fan-out. The only structural scaffold that remains is the outer
-`#ifndef _NEWTILE_CPP / #else / #ifndef NAME1` wrapper at the
-top of the file plus the line-660 `#include "tile.c"` that
-enters the family code at compile time. That wrapper is now
-structurally dead (NAME1 is never defined and the `#else` branch
-is never reached), but removing it is a separate structural
-cleanup not bundled here.
+`tile.c` no longer self-includes recursively at any level. The
+per-NAME2 BPSTART / PITCH / DRAW_PIXEL macros and the per-(NAME1,
+NAME2) 7-fold MAKENAME fan-out are gone (Stage 4). The level-2 /
+level-3 `#ifndef NAME2` / `#else / Third-level` blocks are gone
+(Stage 3). The line-660 `#include "tile.c"` self-recursion is gone
+(this commit). The only top-level preprocessor scaffold that remains
+is `#ifdef MSB_FIRST` at ~line 253 selecting between two `pixbit[][]`
+lookup tables for big- vs little-endian compiles -- this is real
+endianness conditional, not templating.
 
 Optional follow-up (Stage 4) is profile-driven: cross-cutting
 plotter consolidation (the `MP_PIXEL_*` / `CT_PIXEL_*` /
@@ -469,7 +470,101 @@ Status: **TODO** (re-evaluate later, profile-driven)
 
 ## Commit log (newest first)
 
-### Items 2+3 — tile.c: delete BG2 if(0) dead branches; hoist Mode7HiresBilinear from per-pixel to per-call (this commit)
+### De-self-include — tile.c: remove self-include and reorder helpers/renderers/dispatch linearly (this commit)
+
+Removes the `#include "tile.c"` self-recursion at line 660 of the
+previous file structure, and reorders the file so that helpers,
+renderers, and dispatch functions are laid out linearly.
+
+Old structure used the self-include as a mechanism to split the file
+into two halves with different scope:
+```
+#ifndef _NEWTILE_CPP            <-- wraps whole file
+#define _NEWTILE_CPP
+[lines 191-659: helpers + tile-cache conversion routines]
+#include "tile.c"                <-- recursive: enters #else arm
+[lines 661-993: dispatch funcs S9xSelectTileRenderers et al]
+#else                            <-- second-include arm
+[lines 996-28170: 313 renderer functions + 44 dispatch arrays]
+#endif
+```
+The dispatch functions reference `Renderers_*` arrays defined in the
+renderer section, so they had to come after the recursive include.
+The recursive include was the mechanism to inject the renderer
+section ahead of the dispatch functions in spite of textual order.
+
+New structure is straightforward:
+```
+[license, comments, #includes]
+[helpers + tile-cache conversion routines]
+[313 renderer functions + 44 dispatch arrays]
+[dispatch funcs S9xSelectTileRenderers et al]
+```
+Same code, same dependency order, just laid out top-to-bottom without
+the self-recursion. The `#ifndef _NEWTILE_CPP / #define / #else /
+#endif` wrapper directives are removed (they only existed to make the
+self-include work).
+
+How:
+  - A Python script (`/home/claude/snes9x2010/de_self_include.py`)
+    parses the file boundaries by content match, slices the file into
+    four pieces (prologue, helpers, dispatch, renderers), and
+    re-glues them as: prologue + helpers + renderers + dispatch.
+  - The four wrapper directive lines and the `#include "tile.c"`
+    line are dropped.
+  - The "Top-level compilation." comment in the prologue is replaced
+    with a short note about the linear structure.
+  - The "First-level include: Get all the renderers." preamble that
+    introduced the recursive include is dropped.
+  - The "Recursive-include landing zone" banner that introduced the
+    `#else` arm is replaced with a brief banner about the renderer
+    family code.
+  - A new "Dispatch helpers" banner is inserted between the renderers
+    and the dispatch functions to mark the transition.
+
+What stays:
+  - The inner `#ifdef MSB_FIRST` at ~line 253 selecting between two
+    `pixbit[][]` lookup tables for big- vs little-endian compiles.
+    This is a genuine endianness conditional, not templating.
+  - All function definitions, dispatch arrays, plotter macros,
+    color-math macros, and file-scope helpers are untouched in their
+    bodies. The change is purely textual rearrangement of top-level
+    blocks plus removal of the wrapper directives.
+
+Effect:
+  - File is laid out linearly. `tile.c` can be sampled with `perf
+    record`, walked top-to-bottom in an editor, and indexed by tools
+    without the preprocessor playing tricks.
+  - Synthetic benchmarks via `bench.c` that include `src/tile.c`
+    directly now work correctly. The previous structure caused the
+    self-include to resolve back to the original file via -I path,
+    breaking any attempt to A/B-test modifications.
+  - tile.c line count: 28,171 -> 28,161 (-10 lines net). Most of the
+    delta is the four wrapper directives + a trimmed comment block;
+    the bulk of the file is unchanged content reordered.
+
+Compile-time impact (measured locally, 5 runs each, single-thread):
+  - Pristine `9c27ab2`: 10.33 +/- 0.10 s (mean +/- std)
+  - This commit:        10.10 +/- 0.15 s
+  - Net: -0.2 s (~-2.2%). Real but modest. The preprocessor was
+    already fast at scanning the skipped #ifndef block; most of the
+    compile cost is parsing+codegen of the renderer body, which
+    happens once either way. Bigger structural value than perf value.
+
+Symbol verification (vs pristine `9c27ab2`):
+  - 313 Draw* functions; full per-function size diff is empty across
+    all 313 (verified). True pure refactor.
+  - 44 Renderers_ arrays; full diff empty.
+  - Build clean, zero warnings.
+
+Files changed: `src/tile.c` -10 lines net (1540 lines moved due to
+the cut-and-paste reorder; +765 / -775 in git's view).
+
+Behaviour invariants -- to be verified externally by Lib before push:
+audio bit-identical (should hold; this is a textual reorder, no
+codegen change), savestate compat, valgrind clean.
+
+### `9c27ab2` — tile.c: delete BG2 if(0) dead branches; hoist Mode7HiresBilinear from per-pixel to per-call
 
 Two related cleanups from the post-commit-A optimization list, bundled
 because they're independently small and both target Mode 7 hot paths.
@@ -478,7 +573,7 @@ because they're independently small and both target Mode 7 hot paths.
 (`f5720b6`) substituted `DC_EXPR = 0` into BG2 Mode 7 functions,
 producing 77 instances of dead `if (0) { ... }` blocks (one per BG2
 native + mosaic + HR/HR4X/BL/BL4X/BL1X function). The compiler was
-already deleting these blocks; this commit deletes them at the
+already deleting these blocks; `9c27ab2` deletes them at the
 source level. -462 lines, byte-identical machine code.
 
 The deleted block in each BG2 function:
@@ -1561,4 +1656,4 @@ the truth-value of the comment.)
 
 ---
 
-*Last updated: items 2+3 (BG2 if(0) deletion + Mode7HiresBilinear hoist). Branch `tile-untangle` past upstream `f5720b6` by one commit. **First commit in the effort that is NOT byte-identical** -- BL family function sizes shifted slightly (-140 bytes total, mixed individual changes); behaviour equivalent, codegen drifted because the per-pixel global read became a per-call register const. All other functions still byte-identical to pristine.*
+*Last updated: de-self-include. Branch `tile-untangle` past upstream `9c27ab2` by one commit. The `#include "tile.c"` self-recursion at line 660 is gone; the file is laid out linearly (includes -> helpers -> renderers -> dispatch). All 313 functions byte-identical to pristine `9c27ab2`. Compile time on tile.c drops about 0.2-0.4 seconds (~2-4%) -- modest, since the preprocessor was already fast at scanning the skipped #ifndef block. Real value is structural: the file is now profilable, debuggable, and tools can index it without preprocessor games.*

@@ -183,10 +183,13 @@
 
    Look for the following marker to find where the divisions are. */
 
-/* Top-level compilation. */
+/* tile.c is laid out linearly: includes, then helpers and tile-cache
+ * conversion routines, then the 313 explicit renderer functions and
+ * their dispatch arrays, then the S9xSelect* dispatch helpers that
+ * pick which renderer goes where. There used to be a self-include at
+ * the boundary between helpers and renderers ([the now-removed
+ * `#include "tile.c"`); that's gone. */
 
-#ifndef _NEWTILE_CPP
-#define _NEWTILE_CPP
 
 #include <retro_inline.h>
 
@@ -655,365 +658,14 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
 
 #undef DOBIT
 
-/* First-level include: Get all the renderers. */
 
-#include "tile.c"
-
-/* Functions to select which converter and renderer to use. */
-
-void S9xSelectTileRenderers_SFXSpeedup (void)
-{
-	int i;
-	GFX.LinesPerTile = 8;
-
-	GFX.DrawTileNomath        = Renderers_DrawTile16Normal1x1[0];
-	GFX.DrawClippedTileNomath = Renderers_DrawClippedTile16Normal1x1[0];
-	GFX.DrawBackdropNomath    = Renderers_DrawBackdrop16Normal1x1[0];
-
-	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
-	if (Memory.FillRAM[0x2131] & 0x40)
-	{
-		i++;
-		if (Memory.FillRAM[0x2130] & 2)
-			i++;
-	}
-
-	GFX.DrawTileMath        = Renderers_DrawTile16Normal1x1[i];
-	GFX.DrawClippedTileMath = Renderers_DrawClippedTile16Normal1x1[i];
-	GFX.DrawBackdropMath    = Renderers_DrawBackdrop16Normal1x1[i];
-}
-
-void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
-{
-	void	(**DT)		(uint32, uint32, uint32, uint32);
-	void	(**DCT)		(uint32, uint32, uint32, uint32, uint32, uint32);
-	void	(**DMP)		(uint32, uint32, uint32, uint32, uint32, uint32);
-	void	(**DB)		(uint32, uint32, uint32);
-	void	(**DM7BG1)	(uint32, uint32, int);
-	void	(**DM7BG2)	(uint32, uint32, int);
-	int i;
-	bool8	M7M1, M7M2, interlace, hires;
-
-	M7M1 = PPU.BGMosaic[0] && PPU.Mosaic > 1;
-	M7M2 = PPU.BGMosaic[1] && PPU.Mosaic > 1;
-
-	interlace = obj ? FALSE : IPPU.Interlace;
-	hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
-
-	if (IPPU.QuadWidthPixels)		/* quad width (Mode 7 hires 4x) */
-	{
-		DT     = Renderers_DrawTile16Normal4x1;
-		DCT    = Renderers_DrawClippedTile16Normal4x1;
-		DMP    = Renderers_DrawMosaicPixel16Normal4x1;
-		DB     = Renderers_DrawBackdrop16Normal4x1;
-		/* M7-mosaic 4x not implemented; mosaic is meaningless under
-		   sub-pixel refinement. Fall through to 2x mosaic, which
-		   replicates each native pixel twice -- the buffer is 4x
-		   wide, so half the columns will be unfilled. Mode 7 mosaic
-		   is rare; this is a graceful-degrade rather than a hard
-		   failure. */
-		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Normal2x1 : Renderers_DrawMode7BG1Normal2x1;
-		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal2x1 : Renderers_DrawMode7BG2Normal2x1;
-		GFX.LinesPerTile = 8;
-	}
-	else if (!IPPU.DoubleWidthPixels)	/* normal width */
-	{
-		DT     = Renderers_DrawTile16Normal1x1;
-		DCT    = Renderers_DrawClippedTile16Normal1x1;
-		DMP    = Renderers_DrawMosaicPixel16Normal1x1;
-		DB     = Renderers_DrawBackdrop16Normal1x1;
-		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Normal1x1 : Renderers_DrawMode7BG1Normal1x1;
-		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal1x1 : Renderers_DrawMode7BG2Normal1x1;
-		GFX.LinesPerTile = 8;
-	}
-	else if (hires)			/* hires double width */
-	{
-		DB     = Renderers_DrawBackdrop16Hires;
-		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Hires : Renderers_DrawMode7BG1Hires;
-		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Hires : Renderers_DrawMode7BG2Hires;
-
-		if (interlace)
-		{
-			DT     = Renderers_DrawTile16HiresInterlace;
-			DCT    = Renderers_DrawClippedTile16HiresInterlace;
-			DMP    = Renderers_DrawMosaicPixel16HiresInterlace;
-			GFX.LinesPerTile = 4;
-		}
-		else
-		{
-			DT     = Renderers_DrawTile16Hires;
-			DCT    = Renderers_DrawClippedTile16Hires;
-			DMP    = Renderers_DrawMosaicPixel16Hires;
-			GFX.LinesPerTile = 8;
-		}
-	}
-	else				/* normal2x1 - DoubleWidthPixels but not hires */
-	{
-		DB     = Renderers_DrawBackdrop16Normal2x1;
-		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Normal2x1 : Renderers_DrawMode7BG1Normal2x1;
-		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal2x1 : Renderers_DrawMode7BG2Normal2x1;
-
-		if (interlace)
-		{
-			DT     = Renderers_DrawTile16Interlace;
-			DCT    = Renderers_DrawClippedTile16Interlace;
-			DMP    = Renderers_DrawMosaicPixel16Interlace;
-			GFX.LinesPerTile = 4;
-		}
-		else
-		{
-			DT     = Renderers_DrawTile16Normal2x1;
-			DCT    = Renderers_DrawClippedTile16Normal2x1;
-			DMP    = Renderers_DrawMosaicPixel16Normal2x1;
-			GFX.LinesPerTile = 8;
-		}
-	}
-
-	/* Mode 7 hires / bilinear dispatch.
-
-	   Two orthogonal options drive the choice:
-	     Settings.Mode7Hires:         0 (off), 2 (2x), 4 (4x)
-	     Settings.Mode7HiresBilinear: 0 (off), 1 (stable), 2 (smooth)
-
-	   The stable/smooth distinction is an internal runtime flag
-	   inside M7HR_BLEND_AND_WRITE, so a single BL renderer body
-	   handles both filter modes. Stable does X-only blending with
-	   floor-Y nearest-neighbor (matches HD-no-BL's Y sampling, no
-	   one-scanline seam on hostile content). Smooth does the full
-	   4-corner bilinear blend (more aggressive smoothing, but can
-	   produce a one-scanline seam where adjacent texel rows
-	   disagree -- e.g. Tiny Toons rainbow rings).
-
-	   When BL is on at Hires=off, we need a 1x BL renderer that
-	   fills the native 256-wide buffer with bilinear samples (one
-	   sub-sample per output pixel). When BL is on at Hires=2, the
-	   existing 2x BL renderer (two sub-samples per native pixel)
-	   applies. When BL is on at Hires=4, the new 4x BL renderer
-	   (four sub-samples). HR-only variants drop the BL math
-	   entirely, just nearest-neighbor sampling at the chosen rate.
-
-	   Mosaic falls through unchanged at all hires levels -- mosaic
-	   is intentionally unrefined. Subscreen also falls through:
-	   color math composition stays at native sample rate. */
-	if (BGMode == 7 && !sub)
-	{
-		if (Settings.Mode7Hires == 4 && IPPU.QuadWidthPixels)
-		{
-			if (Settings.Mode7HiresBilinear)
-			{
-				if (!M7M1)
-					DM7BG1 = Renderers_DrawMode7BG1BL4XNormal1x1;
-				if (!M7M2)
-					DM7BG2 = Renderers_DrawMode7BG2BL4XNormal1x1;
-			}
-			else
-			{
-				if (!M7M1)
-					DM7BG1 = Renderers_DrawMode7BG1HR4XNormal1x1;
-				if (!M7M2)
-					DM7BG2 = Renderers_DrawMode7BG2HR4XNormal1x1;
-			}
-		}
-		else if (Settings.Mode7Hires == 2 && IPPU.DoubleWidthPixels)
-		{
-			if (Settings.Mode7HiresBilinear)
-			{
-				if (!M7M1)
-					DM7BG1 = Renderers_DrawMode7BG1BLNormal1x1;
-				if (!M7M2)
-					DM7BG2 = Renderers_DrawMode7BG2BLNormal1x1;
-			}
-			else
-			{
-				if (!M7M1)
-					DM7BG1 = Renderers_DrawMode7BG1HRNormal1x1;
-				if (!M7M2)
-					DM7BG2 = Renderers_DrawMode7BG2HRNormal1x1;
-			}
-		}
-		else if (Settings.Mode7HiresBilinear && !IPPU.DoubleWidthPixels)
-		{
-			/* BL on at Hires=off: bilinear at native 1x width. */
-			if (!M7M1)
-				DM7BG1 = Renderers_DrawMode7BG1BL1XNormal1x1;
-			if (!M7M2)
-				DM7BG2 = Renderers_DrawMode7BG2BL1XNormal1x1;
-		}
-	}
-
-	GFX.DrawTileNomath        = DT[0];
-	GFX.DrawClippedTileNomath = DCT[0];
-	GFX.DrawMosaicPixelNomath = DMP[0];
-	GFX.DrawBackdropNomath    = DB[0];
-	GFX.DrawMode7BG1Nomath    = DM7BG1[0];
-	GFX.DrawMode7BG2Nomath    = DM7BG2[0];
-
-	if (!Settings.Transparency)
-		i = 0;
-	else
-	{
-		i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
-		if (Memory.FillRAM[0x2131] & 0x40)
-		{
-			i++;
-			if (Memory.FillRAM[0x2130] & 2)
-				i++;
-		}
-	}
-
-	GFX.DrawTileMath        = DT[i];
-	GFX.DrawClippedTileMath = DCT[i];
-	GFX.DrawMosaicPixelMath = DMP[i];
-	GFX.DrawBackdropMath    = DB[i];
-	GFX.DrawMode7BG1Math    = DM7BG1[i];
-	GFX.DrawMode7BG2Math    = DM7BG2[i];
-}
-
-void S9xSelectTileConverter_Depth4 (void)
-{
-	BG.ConvertTile = BG.ConvertTileFlip = ConvertTile4;
-	BG.Buffer      = BG.BufferFlip      = IPPU.TileCache[TILE_4BIT];
-	BG.Buffered    = BG.BufferedFlip    = IPPU.TileCached[TILE_4BIT];
-	BG.TileShift        = 5;
-	BG.PaletteShift     = 10 - 4;
-	BG.PaletteMask      = 7 << 4;
-	BG.DirectColourMode = FALSE;
-}
-
-void S9xSelectTileConverter_Depth2 (void)
-{
-	BG.ConvertTile = BG.ConvertTileFlip = ConvertTile2;
-	BG.Buffer      = BG.BufferFlip      = IPPU.TileCache[TILE_2BIT];
-	BG.Buffered    = BG.BufferedFlip    = IPPU.TileCached[TILE_2BIT];
-	BG.TileShift        = 4;
-	BG.PaletteShift     = 10 - 2;
-	BG.PaletteMask      = 7 << 2;
-	BG.DirectColourMode = FALSE;
-}
-
-void S9xSelectTileConverter_Depth8 (void)
-{
-	BG.ConvertTile      = BG.ConvertTileFlip = ConvertTile8;
-	BG.Buffer           = BG.BufferFlip      = IPPU.TileCache[TILE_8BIT];
-	BG.Buffered         = BG.BufferedFlip    = IPPU.TileCached[TILE_8BIT];
-	BG.TileShift        = 6;
-	BG.PaletteShift     = 0;
-	BG.PaletteMask      = 0;
-	BG.DirectColourMode = Memory.FillRAM[0x2130] & 1;
-}
-
-void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
-{
-	switch (depth)
-	{
-		case 8:
-			BG.ConvertTile      = BG.ConvertTileFlip = ConvertTile8;
-			BG.Buffer           = BG.BufferFlip      = IPPU.TileCache[TILE_8BIT];
-			BG.Buffered         = BG.BufferedFlip    = IPPU.TileCached[TILE_8BIT];
-			BG.TileShift        = 6;
-			BG.PaletteShift     = 0;
-			BG.PaletteMask      = 0;
-			BG.DirectColourMode = Memory.FillRAM[0x2130] & 1;
-
-			break;
-
-		case 4:
-			if (hires)
-			{
-				if (sub || mosaic)
-				{
-					BG.ConvertTile     = ConvertTile4h_even;
-					BG.Buffer          = IPPU.TileCache[TILE_4BIT_EVEN];
-					BG.Buffered        = IPPU.TileCached[TILE_4BIT_EVEN];
-					BG.ConvertTileFlip = ConvertTile4h_odd;
-					BG.BufferFlip      = IPPU.TileCache[TILE_4BIT_ODD];
-					BG.BufferedFlip    = IPPU.TileCached[TILE_4BIT_ODD];
-				}
-				else
-				{
-					BG.ConvertTile     = ConvertTile4h_odd;
-					BG.Buffer          = IPPU.TileCache[TILE_4BIT_ODD];
-					BG.Buffered        = IPPU.TileCached[TILE_4BIT_ODD];
-					BG.ConvertTileFlip = ConvertTile4h_even;
-					BG.BufferFlip      = IPPU.TileCache[TILE_4BIT_EVEN];
-					BG.BufferedFlip    = IPPU.TileCached[TILE_4BIT_EVEN];
-				}
-			}
-			else
-			{
-				BG.ConvertTile = BG.ConvertTileFlip = ConvertTile4;
-				BG.Buffer      = BG.BufferFlip      = IPPU.TileCache[TILE_4BIT];
-				BG.Buffered    = BG.BufferedFlip    = IPPU.TileCached[TILE_4BIT];
-			}
-
-			BG.TileShift        = 5;
-			BG.PaletteShift     = 10 - 4;
-			BG.PaletteMask      = 7 << 4;
-			BG.DirectColourMode = FALSE;
-
-			break;
-
-		case 2:
-			if (hires)
-			{
-				if (sub || mosaic)
-				{
-					BG.ConvertTile     = ConvertTile2h_even;
-					BG.Buffer          = IPPU.TileCache[TILE_2BIT_EVEN];
-					BG.Buffered        = IPPU.TileCached[TILE_2BIT_EVEN];
-					BG.ConvertTileFlip = ConvertTile2h_odd;
-					BG.BufferFlip      = IPPU.TileCache[TILE_2BIT_ODD];
-					BG.BufferedFlip    = IPPU.TileCached[TILE_2BIT_ODD];
-				}
-				else
-				{
-					BG.ConvertTile     = ConvertTile2h_odd;
-					BG.Buffer          = IPPU.TileCache[TILE_2BIT_ODD];
-					BG.Buffered        = IPPU.TileCached[TILE_2BIT_ODD];
-					BG.ConvertTileFlip = ConvertTile2h_even;
-					BG.BufferFlip      = IPPU.TileCache[TILE_2BIT_EVEN];
-					BG.BufferedFlip    = IPPU.TileCached[TILE_2BIT_EVEN];
-				}
-			}
-			else
-			{
-				BG.ConvertTile = BG.ConvertTileFlip = ConvertTile2;
-				BG.Buffer      = BG.BufferFlip      = IPPU.TileCache[TILE_2BIT];
-				BG.Buffered    = BG.BufferedFlip    = IPPU.TileCached[TILE_2BIT];
-			}
-
-			BG.TileShift        = 4;
-			BG.PaletteShift     = 10 - 2;
-			BG.PaletteMask      = 7 << 2;
-			BG.DirectColourMode = FALSE;
-
-			break;
-	}
-}
-
-/*****************************************************************************/
-#else
-/*****************************************************************************/
-
-/* Recursive-include landing zone for the renderer families.
- *
- * The line-660 `#include "tile.c"` enters this branch (the second arm
- * of the `#ifndef _NEWTILE_CPP / #else` split at the top of the file).
- * On that recursive pass, `_NEWTILE_CPP` is already defined, so the
- * top-of-file helpers (ConvertTile_*, etc.) are skipped and execution
- * lands here. The de-templated family code emits all 313 renderer
- * functions plus their 44 dispatch arrays before the recursive include
- * returns.
- *
- * Historically this branch was further wrapped in `#ifndef NAME1` to
- * differentiate the "level-1" pass (emit per-NAME1 outer scaffolding)
- * from the "level-2" pass (emit per-NAME2 inner instantiations) and
- * a "level-3" pass for the per-math-variant function bodies. Stages
- * 1-3 of the tile-untangle effort de-templated all renderer families
- * and removed the level-2/3 dispatch entirely; Stage 3.5 (this commit)
- * removes the now-dead `#ifndef NAME1` wrapper since NAME1 is never
- * defined. Result: this branch runs unconditionally on the recursive
- * include. */
+/* Renderer family code: 313 explicit static-void functions plus
+ * 44 dispatch arrays. Definitions only -- no #include or fan-out
+ * macros. Functions are grouped by family (DrawTile16,
+ * DrawClippedTile16, DrawMosaicPixel16, DrawBackdrop16, native
+ * Mode 7, mosaic Mode 7, then the five Mode 7 hires variants).
+ * Each family has a section banner that describes its math
+ * variants and any per-BG bake-ins. */
 
 #define GET_CACHED_TILE() \
 	uint32	TileNumber, TileAddr; \
@@ -28168,4 +27820,342 @@ static void (*Renderers_DrawMode7BG2BL1XNormal1x1[7]) (uint32, uint32, int) =
 /* End of BL1X de-templated section.
  * ==================================================================== */
 
-#endif /* close: #ifndef _NEWTILE_CPP at top of file */
+/* ====================================================================
+ * Dispatch helpers: select renderer pointers based on PPU state
+ * ==================================================================== */
+
+
+/* Functions to select which converter and renderer to use. */
+
+void S9xSelectTileRenderers_SFXSpeedup (void)
+{
+	int i;
+	GFX.LinesPerTile = 8;
+
+	GFX.DrawTileNomath        = Renderers_DrawTile16Normal1x1[0];
+	GFX.DrawClippedTileNomath = Renderers_DrawClippedTile16Normal1x1[0];
+	GFX.DrawBackdropNomath    = Renderers_DrawBackdrop16Normal1x1[0];
+
+	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
+	if (Memory.FillRAM[0x2131] & 0x40)
+	{
+		i++;
+		if (Memory.FillRAM[0x2130] & 2)
+			i++;
+	}
+
+	GFX.DrawTileMath        = Renderers_DrawTile16Normal1x1[i];
+	GFX.DrawClippedTileMath = Renderers_DrawClippedTile16Normal1x1[i];
+	GFX.DrawBackdropMath    = Renderers_DrawBackdrop16Normal1x1[i];
+}
+
+void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
+{
+	void	(**DT)		(uint32, uint32, uint32, uint32);
+	void	(**DCT)		(uint32, uint32, uint32, uint32, uint32, uint32);
+	void	(**DMP)		(uint32, uint32, uint32, uint32, uint32, uint32);
+	void	(**DB)		(uint32, uint32, uint32);
+	void	(**DM7BG1)	(uint32, uint32, int);
+	void	(**DM7BG2)	(uint32, uint32, int);
+	int i;
+	bool8	M7M1, M7M2, interlace, hires;
+
+	M7M1 = PPU.BGMosaic[0] && PPU.Mosaic > 1;
+	M7M2 = PPU.BGMosaic[1] && PPU.Mosaic > 1;
+
+	interlace = obj ? FALSE : IPPU.Interlace;
+	hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
+
+	if (IPPU.QuadWidthPixels)		/* quad width (Mode 7 hires 4x) */
+	{
+		DT     = Renderers_DrawTile16Normal4x1;
+		DCT    = Renderers_DrawClippedTile16Normal4x1;
+		DMP    = Renderers_DrawMosaicPixel16Normal4x1;
+		DB     = Renderers_DrawBackdrop16Normal4x1;
+		/* M7-mosaic 4x not implemented; mosaic is meaningless under
+		   sub-pixel refinement. Fall through to 2x mosaic, which
+		   replicates each native pixel twice -- the buffer is 4x
+		   wide, so half the columns will be unfilled. Mode 7 mosaic
+		   is rare; this is a graceful-degrade rather than a hard
+		   failure. */
+		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Normal2x1 : Renderers_DrawMode7BG1Normal2x1;
+		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal2x1 : Renderers_DrawMode7BG2Normal2x1;
+		GFX.LinesPerTile = 8;
+	}
+	else if (!IPPU.DoubleWidthPixels)	/* normal width */
+	{
+		DT     = Renderers_DrawTile16Normal1x1;
+		DCT    = Renderers_DrawClippedTile16Normal1x1;
+		DMP    = Renderers_DrawMosaicPixel16Normal1x1;
+		DB     = Renderers_DrawBackdrop16Normal1x1;
+		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Normal1x1 : Renderers_DrawMode7BG1Normal1x1;
+		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal1x1 : Renderers_DrawMode7BG2Normal1x1;
+		GFX.LinesPerTile = 8;
+	}
+	else if (hires)			/* hires double width */
+	{
+		DB     = Renderers_DrawBackdrop16Hires;
+		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Hires : Renderers_DrawMode7BG1Hires;
+		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Hires : Renderers_DrawMode7BG2Hires;
+
+		if (interlace)
+		{
+			DT     = Renderers_DrawTile16HiresInterlace;
+			DCT    = Renderers_DrawClippedTile16HiresInterlace;
+			DMP    = Renderers_DrawMosaicPixel16HiresInterlace;
+			GFX.LinesPerTile = 4;
+		}
+		else
+		{
+			DT     = Renderers_DrawTile16Hires;
+			DCT    = Renderers_DrawClippedTile16Hires;
+			DMP    = Renderers_DrawMosaicPixel16Hires;
+			GFX.LinesPerTile = 8;
+		}
+	}
+	else				/* normal2x1 - DoubleWidthPixels but not hires */
+	{
+		DB     = Renderers_DrawBackdrop16Normal2x1;
+		DM7BG1 = M7M1 ? Renderers_DrawMode7MosaicBG1Normal2x1 : Renderers_DrawMode7BG1Normal2x1;
+		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal2x1 : Renderers_DrawMode7BG2Normal2x1;
+
+		if (interlace)
+		{
+			DT     = Renderers_DrawTile16Interlace;
+			DCT    = Renderers_DrawClippedTile16Interlace;
+			DMP    = Renderers_DrawMosaicPixel16Interlace;
+			GFX.LinesPerTile = 4;
+		}
+		else
+		{
+			DT     = Renderers_DrawTile16Normal2x1;
+			DCT    = Renderers_DrawClippedTile16Normal2x1;
+			DMP    = Renderers_DrawMosaicPixel16Normal2x1;
+			GFX.LinesPerTile = 8;
+		}
+	}
+
+	/* Mode 7 hires / bilinear dispatch.
+
+	   Two orthogonal options drive the choice:
+	     Settings.Mode7Hires:         0 (off), 2 (2x), 4 (4x)
+	     Settings.Mode7HiresBilinear: 0 (off), 1 (stable), 2 (smooth)
+
+	   The stable/smooth distinction is an internal runtime flag
+	   inside M7HR_BLEND_AND_WRITE, so a single BL renderer body
+	   handles both filter modes. Stable does X-only blending with
+	   floor-Y nearest-neighbor (matches HD-no-BL's Y sampling, no
+	   one-scanline seam on hostile content). Smooth does the full
+	   4-corner bilinear blend (more aggressive smoothing, but can
+	   produce a one-scanline seam where adjacent texel rows
+	   disagree -- e.g. Tiny Toons rainbow rings).
+
+	   When BL is on at Hires=off, we need a 1x BL renderer that
+	   fills the native 256-wide buffer with bilinear samples (one
+	   sub-sample per output pixel). When BL is on at Hires=2, the
+	   existing 2x BL renderer (two sub-samples per native pixel)
+	   applies. When BL is on at Hires=4, the new 4x BL renderer
+	   (four sub-samples). HR-only variants drop the BL math
+	   entirely, just nearest-neighbor sampling at the chosen rate.
+
+	   Mosaic falls through unchanged at all hires levels -- mosaic
+	   is intentionally unrefined. Subscreen also falls through:
+	   color math composition stays at native sample rate. */
+	if (BGMode == 7 && !sub)
+	{
+		if (Settings.Mode7Hires == 4 && IPPU.QuadWidthPixels)
+		{
+			if (Settings.Mode7HiresBilinear)
+			{
+				if (!M7M1)
+					DM7BG1 = Renderers_DrawMode7BG1BL4XNormal1x1;
+				if (!M7M2)
+					DM7BG2 = Renderers_DrawMode7BG2BL4XNormal1x1;
+			}
+			else
+			{
+				if (!M7M1)
+					DM7BG1 = Renderers_DrawMode7BG1HR4XNormal1x1;
+				if (!M7M2)
+					DM7BG2 = Renderers_DrawMode7BG2HR4XNormal1x1;
+			}
+		}
+		else if (Settings.Mode7Hires == 2 && IPPU.DoubleWidthPixels)
+		{
+			if (Settings.Mode7HiresBilinear)
+			{
+				if (!M7M1)
+					DM7BG1 = Renderers_DrawMode7BG1BLNormal1x1;
+				if (!M7M2)
+					DM7BG2 = Renderers_DrawMode7BG2BLNormal1x1;
+			}
+			else
+			{
+				if (!M7M1)
+					DM7BG1 = Renderers_DrawMode7BG1HRNormal1x1;
+				if (!M7M2)
+					DM7BG2 = Renderers_DrawMode7BG2HRNormal1x1;
+			}
+		}
+		else if (Settings.Mode7HiresBilinear && !IPPU.DoubleWidthPixels)
+		{
+			/* BL on at Hires=off: bilinear at native 1x width. */
+			if (!M7M1)
+				DM7BG1 = Renderers_DrawMode7BG1BL1XNormal1x1;
+			if (!M7M2)
+				DM7BG2 = Renderers_DrawMode7BG2BL1XNormal1x1;
+		}
+	}
+
+	GFX.DrawTileNomath        = DT[0];
+	GFX.DrawClippedTileNomath = DCT[0];
+	GFX.DrawMosaicPixelNomath = DMP[0];
+	GFX.DrawBackdropNomath    = DB[0];
+	GFX.DrawMode7BG1Nomath    = DM7BG1[0];
+	GFX.DrawMode7BG2Nomath    = DM7BG2[0];
+
+	if (!Settings.Transparency)
+		i = 0;
+	else
+	{
+		i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
+		if (Memory.FillRAM[0x2131] & 0x40)
+		{
+			i++;
+			if (Memory.FillRAM[0x2130] & 2)
+				i++;
+		}
+	}
+
+	GFX.DrawTileMath        = DT[i];
+	GFX.DrawClippedTileMath = DCT[i];
+	GFX.DrawMosaicPixelMath = DMP[i];
+	GFX.DrawBackdropMath    = DB[i];
+	GFX.DrawMode7BG1Math    = DM7BG1[i];
+	GFX.DrawMode7BG2Math    = DM7BG2[i];
+}
+
+void S9xSelectTileConverter_Depth4 (void)
+{
+	BG.ConvertTile = BG.ConvertTileFlip = ConvertTile4;
+	BG.Buffer      = BG.BufferFlip      = IPPU.TileCache[TILE_4BIT];
+	BG.Buffered    = BG.BufferedFlip    = IPPU.TileCached[TILE_4BIT];
+	BG.TileShift        = 5;
+	BG.PaletteShift     = 10 - 4;
+	BG.PaletteMask      = 7 << 4;
+	BG.DirectColourMode = FALSE;
+}
+
+void S9xSelectTileConverter_Depth2 (void)
+{
+	BG.ConvertTile = BG.ConvertTileFlip = ConvertTile2;
+	BG.Buffer      = BG.BufferFlip      = IPPU.TileCache[TILE_2BIT];
+	BG.Buffered    = BG.BufferedFlip    = IPPU.TileCached[TILE_2BIT];
+	BG.TileShift        = 4;
+	BG.PaletteShift     = 10 - 2;
+	BG.PaletteMask      = 7 << 2;
+	BG.DirectColourMode = FALSE;
+}
+
+void S9xSelectTileConverter_Depth8 (void)
+{
+	BG.ConvertTile      = BG.ConvertTileFlip = ConvertTile8;
+	BG.Buffer           = BG.BufferFlip      = IPPU.TileCache[TILE_8BIT];
+	BG.Buffered         = BG.BufferedFlip    = IPPU.TileCached[TILE_8BIT];
+	BG.TileShift        = 6;
+	BG.PaletteShift     = 0;
+	BG.PaletteMask      = 0;
+	BG.DirectColourMode = Memory.FillRAM[0x2130] & 1;
+}
+
+void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
+{
+	switch (depth)
+	{
+		case 8:
+			BG.ConvertTile      = BG.ConvertTileFlip = ConvertTile8;
+			BG.Buffer           = BG.BufferFlip      = IPPU.TileCache[TILE_8BIT];
+			BG.Buffered         = BG.BufferedFlip    = IPPU.TileCached[TILE_8BIT];
+			BG.TileShift        = 6;
+			BG.PaletteShift     = 0;
+			BG.PaletteMask      = 0;
+			BG.DirectColourMode = Memory.FillRAM[0x2130] & 1;
+
+			break;
+
+		case 4:
+			if (hires)
+			{
+				if (sub || mosaic)
+				{
+					BG.ConvertTile     = ConvertTile4h_even;
+					BG.Buffer          = IPPU.TileCache[TILE_4BIT_EVEN];
+					BG.Buffered        = IPPU.TileCached[TILE_4BIT_EVEN];
+					BG.ConvertTileFlip = ConvertTile4h_odd;
+					BG.BufferFlip      = IPPU.TileCache[TILE_4BIT_ODD];
+					BG.BufferedFlip    = IPPU.TileCached[TILE_4BIT_ODD];
+				}
+				else
+				{
+					BG.ConvertTile     = ConvertTile4h_odd;
+					BG.Buffer          = IPPU.TileCache[TILE_4BIT_ODD];
+					BG.Buffered        = IPPU.TileCached[TILE_4BIT_ODD];
+					BG.ConvertTileFlip = ConvertTile4h_even;
+					BG.BufferFlip      = IPPU.TileCache[TILE_4BIT_EVEN];
+					BG.BufferedFlip    = IPPU.TileCached[TILE_4BIT_EVEN];
+				}
+			}
+			else
+			{
+				BG.ConvertTile = BG.ConvertTileFlip = ConvertTile4;
+				BG.Buffer      = BG.BufferFlip      = IPPU.TileCache[TILE_4BIT];
+				BG.Buffered    = BG.BufferedFlip    = IPPU.TileCached[TILE_4BIT];
+			}
+
+			BG.TileShift        = 5;
+			BG.PaletteShift     = 10 - 4;
+			BG.PaletteMask      = 7 << 4;
+			BG.DirectColourMode = FALSE;
+
+			break;
+
+		case 2:
+			if (hires)
+			{
+				if (sub || mosaic)
+				{
+					BG.ConvertTile     = ConvertTile2h_even;
+					BG.Buffer          = IPPU.TileCache[TILE_2BIT_EVEN];
+					BG.Buffered        = IPPU.TileCached[TILE_2BIT_EVEN];
+					BG.ConvertTileFlip = ConvertTile2h_odd;
+					BG.BufferFlip      = IPPU.TileCache[TILE_2BIT_ODD];
+					BG.BufferedFlip    = IPPU.TileCached[TILE_2BIT_ODD];
+				}
+				else
+				{
+					BG.ConvertTile     = ConvertTile2h_odd;
+					BG.Buffer          = IPPU.TileCache[TILE_2BIT_ODD];
+					BG.Buffered        = IPPU.TileCached[TILE_2BIT_ODD];
+					BG.ConvertTileFlip = ConvertTile2h_even;
+					BG.BufferFlip      = IPPU.TileCache[TILE_2BIT_EVEN];
+					BG.BufferedFlip    = IPPU.TileCached[TILE_2BIT_EVEN];
+				}
+			}
+			else
+			{
+				BG.ConvertTile = BG.ConvertTileFlip = ConvertTile2;
+				BG.Buffer      = BG.BufferFlip      = IPPU.TileCache[TILE_2BIT];
+				BG.Buffered    = BG.BufferedFlip    = IPPU.TileCached[TILE_2BIT];
+			}
+
+			BG.TileShift        = 4;
+			BG.PaletteShift     = 10 - 2;
+			BG.PaletteMask      = 7 << 2;
+			BG.DirectColourMode = FALSE;
+
+			break;
+	}
+}
+
+/*****************************************************************************/
+
