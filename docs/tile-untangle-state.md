@@ -16,9 +16,9 @@ If anything in this file contradicts conversation history or memory,
 
 **Branch:** `tile-untangle` (origin/libretro/snes9x2010)
 **Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x"
-**Stage:** Stage 2.4 complete (BL2X de-templated); ready to start Stage 2.5 (HR2X)
-**Last code commit:** Stage 2.4 — tile.c: de-template Mode 7 BL renderers (this commit)
-**Previous code commit:** `0e147ff` — tile.c: de-template Mode 7 BL1X renderers (Stage 2.3)
+**Stage:** Stage 2.5 complete (HR2X de-templated); ready to start Stage 2.6 (native Mode 7)
+**Last code commit:** Stage 2.5 — tile.c: de-template Mode 7 HR renderers (this commit)
+**Previous code commit:** `6fde805` — tile.c: de-template Mode 7 BL renderers (Stage 2.4)
 **In-flight work:** none
 **Working tree:** clean
 
@@ -26,12 +26,12 @@ State file lives in-tree at `docs/tile-untangle-state.md`. Updates
 ride along in the relevant commit (no separate "Update doc"
 commits going forward).
 
-Four M7 hires families are now fully de-templated: HR4X
-(`0cbca9e`), BL4X (`69f75a1`), BL1X (`0e147ff`), BL (this commit).
-The remaining bilinear/HR families to convert: HR2X (Stage 2.5)
-and the native Mode 7 (Stage 2.6). After that, the larger
-non-Mode-7 families (mosaic, backdrop, mosaic-pixel, clipped-tile,
-tile).
+All five M7 hires families are now fully de-templated: HR4X
+(`0cbca9e`), BL4X (`69f75a1`), BL1X (`0e147ff`), BL (`6fde805`),
+HR (this commit). Stage 2.6 (native Mode 7) is next; that's a
+larger job since native has the full NAME2 set (Normal1x1,
+Normal2x1, Normal4x1, Hires). After that, the larger non-Mode-7
+families (mosaic, backdrop, mosaic-pixel, clipped-tile, tile).
 
 ## Invariants — must hold at every commit
 
@@ -174,16 +174,22 @@ Order (small/safe first, large/risky last):
    without sub-pixel division. Single commit since helpers were
    already parameterized.
 4. ~~`DrawMode7BG1BL` and `DrawMode7BG2BL` (the existing 2x BL)~~
-   — **done** (Stage 2.4, this commit). Same fan-out pattern as
+   — **done** (Stage 2.4, `6fde805`). Same fan-out pattern as
    BL4X but with half-step (aa_h = aa/2) sub-pixel division.
    Removed the `DRAW_TILE_NORMAL_M7HIRES_BILINEAR` macro (no
    longer referenced) and the `ARGS / M7HIRES_ONLY` scope
    scaffolding for the BL block (BL was the last user).
-5. `DrawMode7BG1HR` and `DrawMode7BG2HR` (the existing 2x HR) —
-   **next**. Same shape as BL but with nearest-neighbour DRAW_PIXEL.
-6. `DrawMode7BG1` and `DrawMode7BG2` (native Mode 7) — full
-   NAME2 set (Normal1x1, Normal2x1, Normal4x1, Hires, Interlace,
-   HiresInterlace).
+5. ~~`DrawMode7BG1HR` and `DrawMode7BG2HR` (the existing 2x HR)~~
+   — **done** (Stage 2.5, this commit). Same fan-out pattern as
+   BL but with inline nearest-neighbour DRAW_PIXEL writes
+   (assignment-and-test in single expression matching the
+   original macro shape) instead of bilinear blending. Removed
+   the `DRAW_TILE_NORMAL_M7HIRES` macro (no longer referenced).
+   This was the last user of the level-1 Mode 7 hires templating
+   scaffold.
+6. `DrawMode7BG1` and `DrawMode7BG2` (native Mode 7) — **next**.
+   Full NAME2 set (Normal1x1, Normal2x1, Normal4x1, Hires,
+   Interlace, HiresInterlace).
 7. `DrawMode7MosaicBG1` and `DrawMode7MosaicBG2`.
 8. `DrawBackdrop16` — full NAME2 set.
 9. `DrawMosaicPixel16` — full NAME2 set.
@@ -264,7 +270,85 @@ Status: **TODO** (re-evaluate later)
 
 ## Commit log (newest first)
 
-### Stage 2.4 — tile.c: de-template Mode 7 BL renderers (this commit)
+### Stage 2.5 — tile.c: de-template Mode 7 HR renderers (this commit)
+
+Stage 2.5. Same fan-out pattern as BL (Stage 2.4) but with inline
+nearest-neighbour DRAW_PIXEL writes instead of bilinear blending.
+A local `DEFINE_M7_HR_FAMILY` macro materializes 14 functions (7
+math variants x 2 BGs).
+
+HR is the original 2x nearest-neighbour Mode 7 path: two samples
+per native pixel using half-step (aa_h = aa/2), each written
+through the standard Z-test + MATH pixel write. Same overall
+structure as BL but inline of the per-pixel write instead of
+helper invocation.
+
+The per-pixel write inlines the original Normal1x1 DRAW_PIXEL
+shape exactly: `if (Z_EXPR > GFX.DB[...] && (Pix = (b & MASK)))`
+-- single assignment-and-test expression, no separate Pix
+assignment, no idx local. This matches the original templated
+codegen byte-for-byte. (An earlier draft separated the assignment
+and used an idx local; that produced ~+58 bytes per BG2 function
+and ~18 extra instructions because the compiler couldn't exploit
+the Z-test short-circuit to skip the AND-with-MASK on
+non-drawing pixels. Restoring the original shape brought the
+codegen back to byte-identical.)
+
+Files changed: `src/tile.c`, +280/-195, +85 net.
+
+Removed:
+  - templated `DrawMode7BG{1,2}HR` instantiation block
+  - `DRAW_TILE_NORMAL_M7HIRES` macro definition (~140 lines, no
+    longer referenced -- HR was the only user)
+  - `ARGS / M7HIRES_ONLY` scope `#define`s and `#undef`s (HR was
+    the last user inside that scope)
+  - dangling `#undef DRAW_TILE_NORMAL_M7HIRES`
+
+Added:
+  - de-templated section with banner comment explaining the family
+  - `DEFINE_M7_HR_FAMILY` fan-out macro with parameter docs
+  - 14 explicit `DrawMode7BG{1,2}HR*_Normal1x1` functions
+  - 2 explicit `Renderers_DrawMode7BG{1,2}HRNormal1x1` arrays
+
+Bundled stale-comment fixes (replaced as part of the section
+banner rewrite):
+  - "These functions are scaffolded but not yet referenced by any
+    dispatcher. The wiring lands in a follow-up patch." This was
+    true at one point, but the dispatcher in `S9xSelectTileRenderers`
+    references `Renderers_DrawMode7BG{1,2}HRNormal1x1` already.
+    Banner now describes the actual wiring.
+  - The cross-reference in the BL helper section header
+    ("same output rate as DRAW_TILE_NORMAL_M7HIRES") was updated
+    to point to the de-templated HR family below, since the
+    macro it referenced no longer exists.
+
+Symbol verification (vs pristine `6fde805`):
+  - 14 HR functions present, byte-identical machine code.
+    Per-function sizes verified for all 14 -- diff of size lists
+    is empty:
+
+      DrawMode7BG1HR_Normal1x1        0x5a9
+      DrawMode7BG1HRAdd_Normal1x1     0x8a1
+      DrawMode7BG1HRAddF1_2_Normal1x1 0x7b1
+      DrawMode7BG2HR_Normal1x1        0x607
+      DrawMode7BG2HRSubS1_2_Normal1x1 0xb60
+      (all match pristine exactly)
+
+  - 2 Renderers_ arrays present
+  - Total Draw* count unchanged: 313
+  - Total Renderers_* count unchanged: 45
+  - No new warnings
+
+Five M7 hires families are now fully de-templated: HR4X
+(0cbca9e), BL4X (69f75a1), BL1X (0e147ff), BL (6fde805), HR
+(this commit). The Mode 7 hires templating scaffold is gone:
+the second `M7HIRES_ONLY` scope was the last consumer, and it's
+now removed. Stage 2.6 (native Mode 7) is next.
+
+This commit also updates docs/tile-untangle-state.md (in-tree)
+to reflect Stage 2.5 completion.
+
+### `6fde805` — tile.c: de-template Mode 7 BL renderers (Stage 2.4)
 
 Stage 2.4. Same fan-out pattern as BL4X / BL1X: a local
 `DEFINE_M7_BL_FAMILY` macro materializes 14 functions (7 math
@@ -519,4 +603,4 @@ the truth-value of the comment.)
 
 ---
 
-*Last updated: Stage 2.4 commit (de-template Mode 7 BL2X). Branch `tile-untangle` past upstream `0e147ff` by one commit. Four M7 hires families are now fully de-templated (HR4X, BL4X, BL1X, BL). Stage 2.5 (HR2X) is next; that's the existing 2x nearest-neighbour path.*
+*Last updated: Stage 2.5 commit (de-template Mode 7 HR2X). Branch `tile-untangle` past upstream `6fde805` by one commit. Five M7 hires families are now fully de-templated (HR4X, BL4X, BL1X, BL, HR). The level-1 Mode 7 hires templating scaffold is gone -- the second `M7HIRES_ONLY` scope had no remaining consumers and was removed with this commit. Stage 2.6 (native Mode 7) is next.*
