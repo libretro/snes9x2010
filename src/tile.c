@@ -993,8 +993,27 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 
 /*****************************************************************************/
 #else
-#ifndef NAME1 /* First-level: Get all the renderers. */
 /*****************************************************************************/
+
+/* Recursive-include landing zone for the renderer families.
+ *
+ * The line-660 `#include "tile.c"` enters this branch (the second arm
+ * of the `#ifndef _NEWTILE_CPP / #else` split at the top of the file).
+ * On that recursive pass, `_NEWTILE_CPP` is already defined, so the
+ * top-of-file helpers (ConvertTile_*, etc.) are skipped and execution
+ * lands here. The de-templated family code emits all 313 renderer
+ * functions plus their 44 dispatch arrays before the recursive include
+ * returns.
+ *
+ * Historically this branch was further wrapped in `#ifndef NAME1` to
+ * differentiate the "level-1" pass (emit per-NAME1 outer scaffolding)
+ * from the "level-2" pass (emit per-NAME2 inner instantiations) and
+ * a "level-3" pass for the per-math-variant function bodies. Stages
+ * 1-3 of the tile-untangle effort de-templated all renderer families
+ * and removed the level-2/3 dispatch entirely; Stage 3.5 (this commit)
+ * removes the now-dead `#ifndef NAME1` wrapper since NAME1 is never
+ * defined. Result: this branch runs unconditionally on the recursive
+ * include. */
 
 #define GET_CACHED_TILE() \
 	uint32	TileNumber, TileAddr; \
@@ -1209,45 +1228,211 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
     } \
 }
 
-/* ---- Outer fan-out ------------------------------------------------- */
-#define DEFINE_DT_FN(suffix, MATH_SELECTOR, MATH_OP, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-static void DrawTile16##suffix##NAME2_TAG \
-    (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount) \
-TILE_BODY_UNCLIPPED(BPSTART_EXPR, BP_STEP_EXPR, MATH_SELECTOR, MATH_OP, PIXEL_PLOT)
+/* ---- Outer fan-out: explicit functions and dispatch arrays --------
+ *
+ * Each NAME2 emits 7 functions (one per math variant) plus a 7-entry
+ * dispatch array indexed by the math op code. Body lives in
+ * TILE_BODY_UNCLIPPED above. */
 
-/* Per-NAME2 7-fold math fan-out plus dispatch array. */
-#define DEFINE_DT_NAME2(NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_DT_FN(_,        NOMATH,   ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_DT_FN(Add_,     REGMATH,  ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_DT_FN(AddF1_2_, MATHF1_2, ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_DT_FN(AddS1_2_, MATHS1_2, ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_DT_FN(Sub_,     REGMATH,  SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_DT_FN(SubF1_2_, MATHF1_2, SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_DT_FN(SubS1_2_, MATHS1_2, SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-static void (*Renderers_DrawTile16##NAME2_TAG[7]) (uint32, uint32, uint32, uint32) = \
-{ \
-    DrawTile16_##NAME2_TAG, \
-    DrawTile16Add_##NAME2_TAG, \
-    DrawTile16AddF1_2_##NAME2_TAG, \
-    DrawTile16AddS1_2_##NAME2_TAG, \
-    DrawTile16Sub_##NAME2_TAG, \
-    DrawTile16SubF1_2_##NAME2_TAG, \
-    DrawTile16SubS1_2_##NAME2_TAG, \
+/* DrawTile16 NAME2 = Normal1x1: 7 math variants. */
+static void DrawTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, NOMATH, ADD, DT_PIXEL_N1x1)
+
+static void DrawTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, REGMATH, ADD, DT_PIXEL_N1x1)
+
+static void DrawTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHF1_2, ADD, DT_PIXEL_N1x1)
+
+static void DrawTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHS1_2, ADD, DT_PIXEL_N1x1)
+
+static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, REGMATH, SUB, DT_PIXEL_N1x1)
+
+static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHF1_2, SUB, DT_PIXEL_N1x1)
+
+static void DrawTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHS1_2, SUB, DT_PIXEL_N1x1)
+
+static void (*Renderers_DrawTile16Normal1x1[7]) (uint32, uint32, uint32, uint32) =
+{
+    DrawTile16_Normal1x1,
+    DrawTile16Add_Normal1x1,
+    DrawTile16AddF1_2_Normal1x1,
+    DrawTile16AddS1_2_Normal1x1,
+    DrawTile16Sub_Normal1x1,
+    DrawTile16SubF1_2_Normal1x1,
+    DrawTile16SubS1_2_Normal1x1,
 };
 
-/* Non-interlace NAME2 variants: BPSTART = StartLine, BP_STEP = 8. */
-DEFINE_DT_NAME2(Normal1x1, StartLine,  8, DT_PIXEL_N1x1)
-DEFINE_DT_NAME2(Normal2x1, StartLine,  8, DT_PIXEL_N2x1)
-DEFINE_DT_NAME2(Normal4x1, StartLine,  8, DT_PIXEL_N4x1)
-DEFINE_DT_NAME2(Hires,     StartLine,  8, DT_PIXEL_H2x1)
+/* DrawTile16 NAME2 = Normal2x1: 7 math variants. */
+static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, NOMATH, ADD, DT_PIXEL_N2x1)
 
-/* Interlace NAME2 variants: BPSTART = StartLine * 2 + BG.InterlaceLine,
- * BP_STEP = 16. */
-DEFINE_DT_NAME2(Interlace,      (StartLine * 2 + BG.InterlaceLine), 16, DT_PIXEL_N2x1)
-DEFINE_DT_NAME2(HiresInterlace, (StartLine * 2 + BG.InterlaceLine), 16, DT_PIXEL_H2x1)
+static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, REGMATH, ADD, DT_PIXEL_N2x1)
 
-#undef DEFINE_DT_NAME2
-#undef DEFINE_DT_FN
+static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHF1_2, ADD, DT_PIXEL_N2x1)
+
+static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHS1_2, ADD, DT_PIXEL_N2x1)
+
+static void DrawTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, REGMATH, SUB, DT_PIXEL_N2x1)
+
+static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHF1_2, SUB, DT_PIXEL_N2x1)
+
+static void DrawTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHS1_2, SUB, DT_PIXEL_N2x1)
+
+static void (*Renderers_DrawTile16Normal2x1[7]) (uint32, uint32, uint32, uint32) =
+{
+    DrawTile16_Normal2x1,
+    DrawTile16Add_Normal2x1,
+    DrawTile16AddF1_2_Normal2x1,
+    DrawTile16AddS1_2_Normal2x1,
+    DrawTile16Sub_Normal2x1,
+    DrawTile16SubF1_2_Normal2x1,
+    DrawTile16SubS1_2_Normal2x1,
+};
+
+/* DrawTile16 NAME2 = Normal4x1: 7 math variants. */
+static void DrawTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, NOMATH, ADD, DT_PIXEL_N4x1)
+
+static void DrawTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, REGMATH, ADD, DT_PIXEL_N4x1)
+
+static void DrawTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHF1_2, ADD, DT_PIXEL_N4x1)
+
+static void DrawTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHS1_2, ADD, DT_PIXEL_N4x1)
+
+static void DrawTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, REGMATH, SUB, DT_PIXEL_N4x1)
+
+static void DrawTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHF1_2, SUB, DT_PIXEL_N4x1)
+
+static void DrawTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHS1_2, SUB, DT_PIXEL_N4x1)
+
+static void (*Renderers_DrawTile16Normal4x1[7]) (uint32, uint32, uint32, uint32) =
+{
+    DrawTile16_Normal4x1,
+    DrawTile16Add_Normal4x1,
+    DrawTile16AddF1_2_Normal4x1,
+    DrawTile16AddS1_2_Normal4x1,
+    DrawTile16Sub_Normal4x1,
+    DrawTile16SubF1_2_Normal4x1,
+    DrawTile16SubS1_2_Normal4x1,
+};
+
+/* DrawTile16 NAME2 = Hires: 7 math variants. */
+static void DrawTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, NOMATH, ADD, DT_PIXEL_H2x1)
+
+static void DrawTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, REGMATH, ADD, DT_PIXEL_H2x1)
+
+static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHF1_2, ADD, DT_PIXEL_H2x1)
+
+static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHS1_2, ADD, DT_PIXEL_H2x1)
+
+static void DrawTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, REGMATH, SUB, DT_PIXEL_H2x1)
+
+static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHF1_2, SUB, DT_PIXEL_H2x1)
+
+static void DrawTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED(StartLine, 8, MATHS1_2, SUB, DT_PIXEL_H2x1)
+
+static void (*Renderers_DrawTile16Hires[7]) (uint32, uint32, uint32, uint32) =
+{
+    DrawTile16_Hires,
+    DrawTile16Add_Hires,
+    DrawTile16AddF1_2_Hires,
+    DrawTile16AddS1_2_Hires,
+    DrawTile16Sub_Hires,
+    DrawTile16SubF1_2_Hires,
+    DrawTile16SubS1_2_Hires,
+};
+
+/* DrawTile16 NAME2 = Interlace: 7 math variants. */
+static void DrawTile16_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, NOMATH, ADD, DT_PIXEL_N2x1)
+
+static void DrawTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, REGMATH, ADD, DT_PIXEL_N2x1)
+
+static void DrawTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHF1_2, ADD, DT_PIXEL_N2x1)
+
+static void DrawTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHS1_2, ADD, DT_PIXEL_N2x1)
+
+static void DrawTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, REGMATH, SUB, DT_PIXEL_N2x1)
+
+static void DrawTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHF1_2, SUB, DT_PIXEL_N2x1)
+
+static void DrawTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHS1_2, SUB, DT_PIXEL_N2x1)
+
+static void (*Renderers_DrawTile16Interlace[7]) (uint32, uint32, uint32, uint32) =
+{
+    DrawTile16_Interlace,
+    DrawTile16Add_Interlace,
+    DrawTile16AddF1_2_Interlace,
+    DrawTile16AddS1_2_Interlace,
+    DrawTile16Sub_Interlace,
+    DrawTile16SubF1_2_Interlace,
+    DrawTile16SubS1_2_Interlace,
+};
+
+/* DrawTile16 NAME2 = HiresInterlace: 7 math variants. */
+static void DrawTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, NOMATH, ADD, DT_PIXEL_H2x1)
+
+static void DrawTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, REGMATH, ADD, DT_PIXEL_H2x1)
+
+static void DrawTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHF1_2, ADD, DT_PIXEL_H2x1)
+
+static void DrawTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHS1_2, ADD, DT_PIXEL_H2x1)
+
+static void DrawTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, REGMATH, SUB, DT_PIXEL_H2x1)
+
+static void DrawTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHF1_2, SUB, DT_PIXEL_H2x1)
+
+static void DrawTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount)
+TILE_BODY_UNCLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHS1_2, SUB, DT_PIXEL_H2x1)
+
+static void (*Renderers_DrawTile16HiresInterlace[7]) (uint32, uint32, uint32, uint32) =
+{
+    DrawTile16_HiresInterlace,
+    DrawTile16Add_HiresInterlace,
+    DrawTile16AddF1_2_HiresInterlace,
+    DrawTile16AddS1_2_HiresInterlace,
+    DrawTile16Sub_HiresInterlace,
+    DrawTile16SubF1_2_HiresInterlace,
+    DrawTile16SubS1_2_HiresInterlace,
+};
+
+
 #undef TILE_BODY_UNCLIPPED
 #undef DT_PIXEL_H2x1
 #undef DT_PIXEL_N4x1
@@ -1450,45 +1635,211 @@ DEFINE_DT_NAME2(HiresInterlace, (StartLine * 2 + BG.InterlaceLine), 16, DT_PIXEL
     } \
 }
 
-/* ---- Outer fan-out ------------------------------------------------- */
-#define DEFINE_CT_FN(suffix, MATH_SELECTOR, MATH_OP, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-static void DrawClippedTile16##suffix##NAME2_TAG \
-    (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount) \
-TILE_BODY_CLIPPED(BPSTART_EXPR, BP_STEP_EXPR, MATH_SELECTOR, MATH_OP, PIXEL_PLOT)
+/* ---- Outer fan-out: explicit functions and dispatch arrays --------
+ *
+ * Each NAME2 emits 7 functions (one per math variant) plus a 7-entry
+ * dispatch array indexed by the math op code. Body lives in
+ * TILE_BODY_CLIPPED above. */
 
-/* Per-NAME2 7-fold math fan-out plus dispatch array. */
-#define DEFINE_CT_NAME2(NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_CT_FN(_,        NOMATH,   ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_CT_FN(Add_,     REGMATH,  ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_CT_FN(AddF1_2_, MATHF1_2, ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_CT_FN(AddS1_2_, MATHS1_2, ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_CT_FN(Sub_,     REGMATH,  SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_CT_FN(SubF1_2_, MATHF1_2, SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-DEFINE_CT_FN(SubS1_2_, MATHS1_2, SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
-static void (*Renderers_DrawClippedTile16##NAME2_TAG[7]) (uint32, uint32, uint32, uint32, uint32, uint32) = \
-{ \
-    DrawClippedTile16_##NAME2_TAG, \
-    DrawClippedTile16Add_##NAME2_TAG, \
-    DrawClippedTile16AddF1_2_##NAME2_TAG, \
-    DrawClippedTile16AddS1_2_##NAME2_TAG, \
-    DrawClippedTile16Sub_##NAME2_TAG, \
-    DrawClippedTile16SubF1_2_##NAME2_TAG, \
-    DrawClippedTile16SubS1_2_##NAME2_TAG, \
+/* DrawClippedTile16 NAME2 = Normal1x1: 7 math variants. */
+static void DrawClippedTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, NOMATH, ADD, CT_PIXEL_N1x1)
+
+static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, REGMATH, ADD, CT_PIXEL_N1x1)
+
+static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHF1_2, ADD, CT_PIXEL_N1x1)
+
+static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHS1_2, ADD, CT_PIXEL_N1x1)
+
+static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, REGMATH, SUB, CT_PIXEL_N1x1)
+
+static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHF1_2, SUB, CT_PIXEL_N1x1)
+
+static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHS1_2, SUB, CT_PIXEL_N1x1)
+
+static void (*Renderers_DrawClippedTile16Normal1x1[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawClippedTile16_Normal1x1,
+    DrawClippedTile16Add_Normal1x1,
+    DrawClippedTile16AddF1_2_Normal1x1,
+    DrawClippedTile16AddS1_2_Normal1x1,
+    DrawClippedTile16Sub_Normal1x1,
+    DrawClippedTile16SubF1_2_Normal1x1,
+    DrawClippedTile16SubS1_2_Normal1x1,
 };
 
-/* Non-interlace NAME2 variants: BPSTART = StartLine, BP_STEP = 8. */
-DEFINE_CT_NAME2(Normal1x1, StartLine,  8, CT_PIXEL_N1x1)
-DEFINE_CT_NAME2(Normal2x1, StartLine,  8, CT_PIXEL_N2x1)
-DEFINE_CT_NAME2(Normal4x1, StartLine,  8, CT_PIXEL_N4x1)
-DEFINE_CT_NAME2(Hires,     StartLine,  8, CT_PIXEL_H2x1)
+/* DrawClippedTile16 NAME2 = Normal2x1: 7 math variants. */
+static void DrawClippedTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, NOMATH, ADD, CT_PIXEL_N2x1)
 
-/* Interlace NAME2 variants: BPSTART = StartLine * 2 + BG.InterlaceLine,
- * BP_STEP = 16 (PITCH = 2). */
-DEFINE_CT_NAME2(Interlace,      (StartLine * 2 + BG.InterlaceLine), 16, CT_PIXEL_N2x1)
-DEFINE_CT_NAME2(HiresInterlace, (StartLine * 2 + BG.InterlaceLine), 16, CT_PIXEL_H2x1)
+static void DrawClippedTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, REGMATH, ADD, CT_PIXEL_N2x1)
 
-#undef DEFINE_CT_NAME2
-#undef DEFINE_CT_FN
+static void DrawClippedTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHF1_2, ADD, CT_PIXEL_N2x1)
+
+static void DrawClippedTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHS1_2, ADD, CT_PIXEL_N2x1)
+
+static void DrawClippedTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, REGMATH, SUB, CT_PIXEL_N2x1)
+
+static void DrawClippedTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHF1_2, SUB, CT_PIXEL_N2x1)
+
+static void DrawClippedTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHS1_2, SUB, CT_PIXEL_N2x1)
+
+static void (*Renderers_DrawClippedTile16Normal2x1[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawClippedTile16_Normal2x1,
+    DrawClippedTile16Add_Normal2x1,
+    DrawClippedTile16AddF1_2_Normal2x1,
+    DrawClippedTile16AddS1_2_Normal2x1,
+    DrawClippedTile16Sub_Normal2x1,
+    DrawClippedTile16SubF1_2_Normal2x1,
+    DrawClippedTile16SubS1_2_Normal2x1,
+};
+
+/* DrawClippedTile16 NAME2 = Normal4x1: 7 math variants. */
+static void DrawClippedTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, NOMATH, ADD, CT_PIXEL_N4x1)
+
+static void DrawClippedTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, REGMATH, ADD, CT_PIXEL_N4x1)
+
+static void DrawClippedTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHF1_2, ADD, CT_PIXEL_N4x1)
+
+static void DrawClippedTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHS1_2, ADD, CT_PIXEL_N4x1)
+
+static void DrawClippedTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, REGMATH, SUB, CT_PIXEL_N4x1)
+
+static void DrawClippedTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHF1_2, SUB, CT_PIXEL_N4x1)
+
+static void DrawClippedTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHS1_2, SUB, CT_PIXEL_N4x1)
+
+static void (*Renderers_DrawClippedTile16Normal4x1[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawClippedTile16_Normal4x1,
+    DrawClippedTile16Add_Normal4x1,
+    DrawClippedTile16AddF1_2_Normal4x1,
+    DrawClippedTile16AddS1_2_Normal4x1,
+    DrawClippedTile16Sub_Normal4x1,
+    DrawClippedTile16SubF1_2_Normal4x1,
+    DrawClippedTile16SubS1_2_Normal4x1,
+};
+
+/* DrawClippedTile16 NAME2 = Hires: 7 math variants. */
+static void DrawClippedTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, NOMATH, ADD, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, REGMATH, ADD, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHF1_2, ADD, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHS1_2, ADD, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, REGMATH, SUB, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHF1_2, SUB, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED(StartLine, 8, MATHS1_2, SUB, CT_PIXEL_H2x1)
+
+static void (*Renderers_DrawClippedTile16Hires[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawClippedTile16_Hires,
+    DrawClippedTile16Add_Hires,
+    DrawClippedTile16AddF1_2_Hires,
+    DrawClippedTile16AddS1_2_Hires,
+    DrawClippedTile16Sub_Hires,
+    DrawClippedTile16SubF1_2_Hires,
+    DrawClippedTile16SubS1_2_Hires,
+};
+
+/* DrawClippedTile16 NAME2 = Interlace: 7 math variants. */
+static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, NOMATH, ADD, CT_PIXEL_N2x1)
+
+static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, REGMATH, ADD, CT_PIXEL_N2x1)
+
+static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHF1_2, ADD, CT_PIXEL_N2x1)
+
+static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHS1_2, ADD, CT_PIXEL_N2x1)
+
+static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, REGMATH, SUB, CT_PIXEL_N2x1)
+
+static void DrawClippedTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHF1_2, SUB, CT_PIXEL_N2x1)
+
+static void DrawClippedTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHS1_2, SUB, CT_PIXEL_N2x1)
+
+static void (*Renderers_DrawClippedTile16Interlace[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawClippedTile16_Interlace,
+    DrawClippedTile16Add_Interlace,
+    DrawClippedTile16AddF1_2_Interlace,
+    DrawClippedTile16AddS1_2_Interlace,
+    DrawClippedTile16Sub_Interlace,
+    DrawClippedTile16SubF1_2_Interlace,
+    DrawClippedTile16SubS1_2_Interlace,
+};
+
+/* DrawClippedTile16 NAME2 = HiresInterlace: 7 math variants. */
+static void DrawClippedTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, NOMATH, ADD, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, REGMATH, ADD, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHF1_2, ADD, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHS1_2, ADD, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, REGMATH, SUB, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHF1_2, SUB, CT_PIXEL_H2x1)
+
+static void DrawClippedTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
+TILE_BODY_CLIPPED((StartLine * 2 + BG.InterlaceLine), 16, MATHS1_2, SUB, CT_PIXEL_H2x1)
+
+static void (*Renderers_DrawClippedTile16HiresInterlace[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawClippedTile16_HiresInterlace,
+    DrawClippedTile16Add_HiresInterlace,
+    DrawClippedTile16AddF1_2_HiresInterlace,
+    DrawClippedTile16AddS1_2_HiresInterlace,
+    DrawClippedTile16Sub_HiresInterlace,
+    DrawClippedTile16SubF1_2_HiresInterlace,
+    DrawClippedTile16SubS1_2_HiresInterlace,
+};
+
+
 #undef TILE_BODY_CLIPPED
 #undef CT_PIXEL_H2x1
 #undef CT_PIXEL_N4x1
@@ -1621,46 +1972,211 @@ DEFINE_CT_NAME2(HiresInterlace, (StartLine * 2 + BG.InterlaceLine), 16, CT_PIXEL
     } \
 }
 
-/* ---- Outer fan-out ------------------------------------------------- */
-#define DEFINE_MP_FN(suffix, MATH_SELECTOR, MATH_OP, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
-static void DrawMosaicPixel16##suffix##NAME2_TAG \
-    (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount) \
-TILE_BODY_MOSAIC_PIXEL(BPSTART_EXPR, MATH_SELECTOR, MATH_OP, PIXEL_PLOT)
+/* ---- Outer fan-out: explicit functions and dispatch arrays --------
+ *
+ * Each NAME2 emits 7 functions (one per math variant) plus a 7-entry
+ * dispatch array indexed by the math op code. Body lives in
+ * TILE_BODY_MOSAIC_PIXEL above. */
 
-/* Per-NAME2 7-fold math fan-out plus dispatch array. */
-#define DEFINE_MP_NAME2(NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
-DEFINE_MP_FN(_,        NOMATH,   ADD, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
-DEFINE_MP_FN(Add_,     REGMATH,  ADD, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
-DEFINE_MP_FN(AddF1_2_, MATHF1_2, ADD, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
-DEFINE_MP_FN(AddS1_2_, MATHS1_2, ADD, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
-DEFINE_MP_FN(Sub_,     REGMATH,  SUB, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
-DEFINE_MP_FN(SubF1_2_, MATHF1_2, SUB, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
-DEFINE_MP_FN(SubS1_2_, MATHS1_2, SUB, NAME2_TAG, BPSTART_EXPR, PIXEL_PLOT) \
-static void (*Renderers_DrawMosaicPixel16##NAME2_TAG[7]) (uint32, uint32, uint32, uint32, uint32, uint32) = \
-{ \
-    DrawMosaicPixel16_##NAME2_TAG, \
-    DrawMosaicPixel16Add_##NAME2_TAG, \
-    DrawMosaicPixel16AddF1_2_##NAME2_TAG, \
-    DrawMosaicPixel16AddS1_2_##NAME2_TAG, \
-    DrawMosaicPixel16Sub_##NAME2_TAG, \
-    DrawMosaicPixel16SubF1_2_##NAME2_TAG, \
-    DrawMosaicPixel16SubS1_2_##NAME2_TAG, \
+/* DrawMosaicPixel16 NAME2 = Normal1x1: 7 math variants. */
+static void DrawMosaicPixel16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, NOMATH, ADD, MP_PIXEL_N1x1)
+
+static void DrawMosaicPixel16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, REGMATH, ADD, MP_PIXEL_N1x1)
+
+static void DrawMosaicPixel16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHF1_2, ADD, MP_PIXEL_N1x1)
+
+static void DrawMosaicPixel16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHS1_2, ADD, MP_PIXEL_N1x1)
+
+static void DrawMosaicPixel16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, REGMATH, SUB, MP_PIXEL_N1x1)
+
+static void DrawMosaicPixel16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHF1_2, SUB, MP_PIXEL_N1x1)
+
+static void DrawMosaicPixel16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHS1_2, SUB, MP_PIXEL_N1x1)
+
+static void (*Renderers_DrawMosaicPixel16Normal1x1[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawMosaicPixel16_Normal1x1,
+    DrawMosaicPixel16Add_Normal1x1,
+    DrawMosaicPixel16AddF1_2_Normal1x1,
+    DrawMosaicPixel16AddS1_2_Normal1x1,
+    DrawMosaicPixel16Sub_Normal1x1,
+    DrawMosaicPixel16SubF1_2_Normal1x1,
+    DrawMosaicPixel16SubS1_2_Normal1x1,
 };
 
-/* Non-interlace NAME2 variants: BPSTART = StartLine. */
-DEFINE_MP_NAME2(Normal1x1, StartLine, MP_PIXEL_N1x1)
-DEFINE_MP_NAME2(Normal2x1, StartLine, MP_PIXEL_N2x1)
-DEFINE_MP_NAME2(Normal4x1, StartLine, MP_PIXEL_N4x1)
-DEFINE_MP_NAME2(Hires,     StartLine, MP_PIXEL_H2x1)
+/* DrawMosaicPixel16 NAME2 = Normal2x1: 7 math variants. */
+static void DrawMosaicPixel16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, NOMATH, ADD, MP_PIXEL_N2x1)
 
-/* Interlace NAME2 variants: BPSTART = StartLine * 2 + BG.InterlaceLine.
- * PITCH (which is 2 in interlace) is not used by mosaic-pixel --
- * the body iterates l = LineCount lines without skipping. */
-DEFINE_MP_NAME2(Interlace,      (StartLine * 2 + BG.InterlaceLine), MP_PIXEL_N2x1)
-DEFINE_MP_NAME2(HiresInterlace, (StartLine * 2 + BG.InterlaceLine), MP_PIXEL_H2x1)
+static void DrawMosaicPixel16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, REGMATH, ADD, MP_PIXEL_N2x1)
 
-#undef DEFINE_MP_NAME2
-#undef DEFINE_MP_FN
+static void DrawMosaicPixel16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHF1_2, ADD, MP_PIXEL_N2x1)
+
+static void DrawMosaicPixel16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHS1_2, ADD, MP_PIXEL_N2x1)
+
+static void DrawMosaicPixel16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, REGMATH, SUB, MP_PIXEL_N2x1)
+
+static void DrawMosaicPixel16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHF1_2, SUB, MP_PIXEL_N2x1)
+
+static void DrawMosaicPixel16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHS1_2, SUB, MP_PIXEL_N2x1)
+
+static void (*Renderers_DrawMosaicPixel16Normal2x1[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawMosaicPixel16_Normal2x1,
+    DrawMosaicPixel16Add_Normal2x1,
+    DrawMosaicPixel16AddF1_2_Normal2x1,
+    DrawMosaicPixel16AddS1_2_Normal2x1,
+    DrawMosaicPixel16Sub_Normal2x1,
+    DrawMosaicPixel16SubF1_2_Normal2x1,
+    DrawMosaicPixel16SubS1_2_Normal2x1,
+};
+
+/* DrawMosaicPixel16 NAME2 = Normal4x1: 7 math variants. */
+static void DrawMosaicPixel16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, NOMATH, ADD, MP_PIXEL_N4x1)
+
+static void DrawMosaicPixel16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, REGMATH, ADD, MP_PIXEL_N4x1)
+
+static void DrawMosaicPixel16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHF1_2, ADD, MP_PIXEL_N4x1)
+
+static void DrawMosaicPixel16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHS1_2, ADD, MP_PIXEL_N4x1)
+
+static void DrawMosaicPixel16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, REGMATH, SUB, MP_PIXEL_N4x1)
+
+static void DrawMosaicPixel16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHF1_2, SUB, MP_PIXEL_N4x1)
+
+static void DrawMosaicPixel16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHS1_2, SUB, MP_PIXEL_N4x1)
+
+static void (*Renderers_DrawMosaicPixel16Normal4x1[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawMosaicPixel16_Normal4x1,
+    DrawMosaicPixel16Add_Normal4x1,
+    DrawMosaicPixel16AddF1_2_Normal4x1,
+    DrawMosaicPixel16AddS1_2_Normal4x1,
+    DrawMosaicPixel16Sub_Normal4x1,
+    DrawMosaicPixel16SubF1_2_Normal4x1,
+    DrawMosaicPixel16SubS1_2_Normal4x1,
+};
+
+/* DrawMosaicPixel16 NAME2 = Hires: 7 math variants. */
+static void DrawMosaicPixel16_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, NOMATH, ADD, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, REGMATH, ADD, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHF1_2, ADD, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHS1_2, ADD, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, REGMATH, SUB, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHF1_2, SUB, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL(StartLine, MATHS1_2, SUB, MP_PIXEL_H2x1)
+
+static void (*Renderers_DrawMosaicPixel16Hires[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawMosaicPixel16_Hires,
+    DrawMosaicPixel16Add_Hires,
+    DrawMosaicPixel16AddF1_2_Hires,
+    DrawMosaicPixel16AddS1_2_Hires,
+    DrawMosaicPixel16Sub_Hires,
+    DrawMosaicPixel16SubF1_2_Hires,
+    DrawMosaicPixel16SubS1_2_Hires,
+};
+
+/* DrawMosaicPixel16 NAME2 = Interlace: 7 math variants. */
+static void DrawMosaicPixel16_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), NOMATH, ADD, MP_PIXEL_N2x1)
+
+static void DrawMosaicPixel16Add_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), REGMATH, ADD, MP_PIXEL_N2x1)
+
+static void DrawMosaicPixel16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), MATHF1_2, ADD, MP_PIXEL_N2x1)
+
+static void DrawMosaicPixel16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), MATHS1_2, ADD, MP_PIXEL_N2x1)
+
+static void DrawMosaicPixel16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), REGMATH, SUB, MP_PIXEL_N2x1)
+
+static void DrawMosaicPixel16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), MATHF1_2, SUB, MP_PIXEL_N2x1)
+
+static void DrawMosaicPixel16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), MATHS1_2, SUB, MP_PIXEL_N2x1)
+
+static void (*Renderers_DrawMosaicPixel16Interlace[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawMosaicPixel16_Interlace,
+    DrawMosaicPixel16Add_Interlace,
+    DrawMosaicPixel16AddF1_2_Interlace,
+    DrawMosaicPixel16AddS1_2_Interlace,
+    DrawMosaicPixel16Sub_Interlace,
+    DrawMosaicPixel16SubF1_2_Interlace,
+    DrawMosaicPixel16SubS1_2_Interlace,
+};
+
+/* DrawMosaicPixel16 NAME2 = HiresInterlace: 7 math variants. */
+static void DrawMosaicPixel16_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), NOMATH, ADD, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16Add_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), REGMATH, ADD, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), MATHF1_2, ADD, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), MATHS1_2, ADD, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), REGMATH, SUB, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), MATHF1_2, SUB, MP_PIXEL_H2x1)
+
+static void DrawMosaicPixel16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 StartPixel, uint32 Width, uint32 LineCount)
+TILE_BODY_MOSAIC_PIXEL((StartLine * 2 + BG.InterlaceLine), MATHS1_2, SUB, MP_PIXEL_H2x1)
+
+static void (*Renderers_DrawMosaicPixel16HiresInterlace[7]) (uint32, uint32, uint32, uint32, uint32, uint32) =
+{
+    DrawMosaicPixel16_HiresInterlace,
+    DrawMosaicPixel16Add_HiresInterlace,
+    DrawMosaicPixel16AddF1_2_HiresInterlace,
+    DrawMosaicPixel16AddS1_2_HiresInterlace,
+    DrawMosaicPixel16Sub_HiresInterlace,
+    DrawMosaicPixel16SubF1_2_HiresInterlace,
+    DrawMosaicPixel16SubS1_2_HiresInterlace,
+};
+
+
 #undef TILE_BODY_MOSAIC_PIXEL
 #undef MP_PIXEL_H2x1
 #undef MP_PIXEL_N4x1
@@ -1778,39 +2294,145 @@ DEFINE_MP_NAME2(HiresInterlace, (StartLine * 2 + BG.InterlaceLine), MP_PIXEL_H2x
     } \
 }
 
-/* ---- Outer fan-out ------------------------------------------------- */
-#define DEFINE_BACKDROP_FN(suffix, MATH_SELECTOR, MATH_OP, NAME2_TAG, PIXEL_PLOT) \
-static void DrawBackdrop16##suffix##NAME2_TAG (uint32 Offset, uint32 Left, uint32 Right) \
-TILE_BODY_BACKDROP(MATH_SELECTOR, MATH_OP, PIXEL_PLOT)
+/* ---- Outer fan-out: explicit functions and dispatch arrays --------
+ *
+ * Each NAME2 emits 7 functions (one per math variant) plus a 7-entry
+ * dispatch array indexed by the math op code. Body lives in
+ * TILE_BODY_BACKDROP above. */
 
-/* Per-NAME2 7-fold math fan-out plus dispatch array. */
-#define DEFINE_BACKDROP_NAME2(NAME2_TAG, PIXEL_PLOT) \
-DEFINE_BACKDROP_FN(_,        NOMATH,   ADD, NAME2_TAG, PIXEL_PLOT) \
-DEFINE_BACKDROP_FN(Add_,     REGMATH,  ADD, NAME2_TAG, PIXEL_PLOT) \
-DEFINE_BACKDROP_FN(AddF1_2_, MATHF1_2, ADD, NAME2_TAG, PIXEL_PLOT) \
-DEFINE_BACKDROP_FN(AddS1_2_, MATHS1_2, ADD, NAME2_TAG, PIXEL_PLOT) \
-DEFINE_BACKDROP_FN(Sub_,     REGMATH,  SUB, NAME2_TAG, PIXEL_PLOT) \
-DEFINE_BACKDROP_FN(SubF1_2_, MATHF1_2, SUB, NAME2_TAG, PIXEL_PLOT) \
-DEFINE_BACKDROP_FN(SubS1_2_, MATHS1_2, SUB, NAME2_TAG, PIXEL_PLOT) \
-static void (*Renderers_DrawBackdrop16##NAME2_TAG[7]) (uint32, uint32, uint32) = \
-{ \
-    DrawBackdrop16_##NAME2_TAG, \
-    DrawBackdrop16Add_##NAME2_TAG, \
-    DrawBackdrop16AddF1_2_##NAME2_TAG, \
-    DrawBackdrop16AddS1_2_##NAME2_TAG, \
-    DrawBackdrop16Sub_##NAME2_TAG, \
-    DrawBackdrop16SubF1_2_##NAME2_TAG, \
-    DrawBackdrop16SubS1_2_##NAME2_TAG, \
+/* DrawBackdrop16 NAME2 = Normal1x1: 7 math variants. */
+static void DrawBackdrop16_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(NOMATH, ADD, BACKDROP_PIXEL_N1x1)
+
+static void DrawBackdrop16Add_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(REGMATH, ADD, BACKDROP_PIXEL_N1x1)
+
+static void DrawBackdrop16AddF1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHF1_2, ADD, BACKDROP_PIXEL_N1x1)
+
+static void DrawBackdrop16AddS1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHS1_2, ADD, BACKDROP_PIXEL_N1x1)
+
+static void DrawBackdrop16Sub_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(REGMATH, SUB, BACKDROP_PIXEL_N1x1)
+
+static void DrawBackdrop16SubF1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHF1_2, SUB, BACKDROP_PIXEL_N1x1)
+
+static void DrawBackdrop16SubS1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHS1_2, SUB, BACKDROP_PIXEL_N1x1)
+
+static void (*Renderers_DrawBackdrop16Normal1x1[7]) (uint32, uint32, uint32) =
+{
+    DrawBackdrop16_Normal1x1,
+    DrawBackdrop16Add_Normal1x1,
+    DrawBackdrop16AddF1_2_Normal1x1,
+    DrawBackdrop16AddS1_2_Normal1x1,
+    DrawBackdrop16Sub_Normal1x1,
+    DrawBackdrop16SubF1_2_Normal1x1,
+    DrawBackdrop16SubS1_2_Normal1x1,
 };
 
-/* Emit the four NAME2 variants the dispatcher uses. */
-DEFINE_BACKDROP_NAME2(Normal1x1, BACKDROP_PIXEL_N1x1)
-DEFINE_BACKDROP_NAME2(Normal2x1, BACKDROP_PIXEL_N2x1)
-DEFINE_BACKDROP_NAME2(Normal4x1, BACKDROP_PIXEL_N4x1)
-DEFINE_BACKDROP_NAME2(Hires,     BACKDROP_PIXEL_H2x1)
+/* DrawBackdrop16 NAME2 = Normal2x1: 7 math variants. */
+static void DrawBackdrop16_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(NOMATH, ADD, BACKDROP_PIXEL_N2x1)
 
-#undef DEFINE_BACKDROP_NAME2
-#undef DEFINE_BACKDROP_FN
+static void DrawBackdrop16Add_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(REGMATH, ADD, BACKDROP_PIXEL_N2x1)
+
+static void DrawBackdrop16AddF1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHF1_2, ADD, BACKDROP_PIXEL_N2x1)
+
+static void DrawBackdrop16AddS1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHS1_2, ADD, BACKDROP_PIXEL_N2x1)
+
+static void DrawBackdrop16Sub_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(REGMATH, SUB, BACKDROP_PIXEL_N2x1)
+
+static void DrawBackdrop16SubF1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHF1_2, SUB, BACKDROP_PIXEL_N2x1)
+
+static void DrawBackdrop16SubS1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHS1_2, SUB, BACKDROP_PIXEL_N2x1)
+
+static void (*Renderers_DrawBackdrop16Normal2x1[7]) (uint32, uint32, uint32) =
+{
+    DrawBackdrop16_Normal2x1,
+    DrawBackdrop16Add_Normal2x1,
+    DrawBackdrop16AddF1_2_Normal2x1,
+    DrawBackdrop16AddS1_2_Normal2x1,
+    DrawBackdrop16Sub_Normal2x1,
+    DrawBackdrop16SubF1_2_Normal2x1,
+    DrawBackdrop16SubS1_2_Normal2x1,
+};
+
+/* DrawBackdrop16 NAME2 = Normal4x1: 7 math variants. */
+static void DrawBackdrop16_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(NOMATH, ADD, BACKDROP_PIXEL_N4x1)
+
+static void DrawBackdrop16Add_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(REGMATH, ADD, BACKDROP_PIXEL_N4x1)
+
+static void DrawBackdrop16AddF1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHF1_2, ADD, BACKDROP_PIXEL_N4x1)
+
+static void DrawBackdrop16AddS1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHS1_2, ADD, BACKDROP_PIXEL_N4x1)
+
+static void DrawBackdrop16Sub_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(REGMATH, SUB, BACKDROP_PIXEL_N4x1)
+
+static void DrawBackdrop16SubF1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHF1_2, SUB, BACKDROP_PIXEL_N4x1)
+
+static void DrawBackdrop16SubS1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHS1_2, SUB, BACKDROP_PIXEL_N4x1)
+
+static void (*Renderers_DrawBackdrop16Normal4x1[7]) (uint32, uint32, uint32) =
+{
+    DrawBackdrop16_Normal4x1,
+    DrawBackdrop16Add_Normal4x1,
+    DrawBackdrop16AddF1_2_Normal4x1,
+    DrawBackdrop16AddS1_2_Normal4x1,
+    DrawBackdrop16Sub_Normal4x1,
+    DrawBackdrop16SubF1_2_Normal4x1,
+    DrawBackdrop16SubS1_2_Normal4x1,
+};
+
+/* DrawBackdrop16 NAME2 = Hires: 7 math variants. */
+static void DrawBackdrop16_Hires (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(NOMATH, ADD, BACKDROP_PIXEL_H2x1)
+
+static void DrawBackdrop16Add_Hires (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(REGMATH, ADD, BACKDROP_PIXEL_H2x1)
+
+static void DrawBackdrop16AddF1_2_Hires (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHF1_2, ADD, BACKDROP_PIXEL_H2x1)
+
+static void DrawBackdrop16AddS1_2_Hires (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHS1_2, ADD, BACKDROP_PIXEL_H2x1)
+
+static void DrawBackdrop16Sub_Hires (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(REGMATH, SUB, BACKDROP_PIXEL_H2x1)
+
+static void DrawBackdrop16SubF1_2_Hires (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHF1_2, SUB, BACKDROP_PIXEL_H2x1)
+
+static void DrawBackdrop16SubS1_2_Hires (uint32 Offset, uint32 Left, uint32 Right)
+TILE_BODY_BACKDROP(MATHS1_2, SUB, BACKDROP_PIXEL_H2x1)
+
+static void (*Renderers_DrawBackdrop16Hires[7]) (uint32, uint32, uint32) =
+{
+    DrawBackdrop16_Hires,
+    DrawBackdrop16Add_Hires,
+    DrawBackdrop16AddF1_2_Hires,
+    DrawBackdrop16AddS1_2_Hires,
+    DrawBackdrop16Sub_Hires,
+    DrawBackdrop16SubF1_2_Hires,
+    DrawBackdrop16SubS1_2_Hires,
+};
+
+
 #undef TILE_BODY_BACKDROP
 #undef BACKDROP_PIXEL_H2x1
 #undef BACKDROP_PIXEL_N4x1
@@ -2402,61 +3024,214 @@ extern struct SLineMatrixData	LineMatrixData[240];
     } \
 }
 
-/* ---- Outer fan-out: emit one function per (math, NAME2) ------------
+/* ---- Outer fan-out: explicit functions and dispatch arrays --------
  *
- * Materializes one DrawMode7BG{N}{suffix}{NAME2_TAG} function
- * with the chosen math op and pixel plotter. */
-#define DEFINE_M7_FN(suffix, MATH_SELECTOR, MATH_OP, BG_NAME, NAME2_TAG, \
-                     Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
-static void BG_NAME##suffix##NAME2_TAG (uint32 Left, uint32 Right, int D) \
-TILE_BODY_NORMAL_M7(MATH_SELECTOR, MATH_OP, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT)
+ * For both BG1 (DrawMode7BG1) and BG2 (DrawMode7BG2), we emit 3 NAME2
+ * variants (Normal1x1, Normal2x1, Hires) -- the three the dispatcher
+ * actually selects -- with 7 math variants each. Body lives in
+ * TILE_BODY_NORMAL_M7 above.
+ *
+ * BG1: Z = D + 7, MASK = 0xff, DCMODE follows $2130 bit 0.
+ * BG2: Z = D + ((b & 0x80) ? 11 : 3), MASK = 0x7f, DCMODE = 0. */
 
-/* Per-NAME2 7-fold math fan-out, plus the dispatcher array. The
- * 4-stage interlace pattern (Normal2x1 / Hires / Interlace /
- * HiresInterlace) of the templated form is preserved here: in
- * the templated code Interlace/HiresInterlace differ from
- * Normal2x1/Hires only via BPSTART/PITCH which the Mode 7 body
- * doesn't reference, so the bodies are identical and LTO folds
- * them. We emit the same set of functions; the same LTO folding
- * applies. */
-#define DEFINE_M7_NAME2(BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
-DEFINE_M7_FN(_,        NOMATH,   ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
-DEFINE_M7_FN(Add_,     REGMATH,  ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
-DEFINE_M7_FN(AddF1_2_, MATHF1_2, ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
-DEFINE_M7_FN(AddS1_2_, MATHS1_2, ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
-DEFINE_M7_FN(Sub_,     REGMATH,  SUB, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
-DEFINE_M7_FN(SubF1_2_, MATHF1_2, SUB, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
-DEFINE_M7_FN(SubS1_2_, MATHS1_2, SUB, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, PIXEL_PLOT) \
-static void (*Renderers_##BG_NAME##NAME2_TAG[7]) (uint32, uint32, int) = \
-{ \
-    BG_NAME##_##NAME2_TAG, \
-    BG_NAME##Add_##NAME2_TAG, \
-    BG_NAME##AddF1_2_##NAME2_TAG, \
-    BG_NAME##AddS1_2_##NAME2_TAG, \
-    BG_NAME##Sub_##NAME2_TAG, \
-    BG_NAME##SubF1_2_##NAME2_TAG, \
-    BG_NAME##SubS1_2_##NAME2_TAG, \
+/* DrawMode7BG1 NAME2 = Normal1x1: 7 math variants. */
+static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N1x1)
+
+static void DrawMode7BG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N1x1)
+
+static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N1x1)
+
+static void DrawMode7BG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N1x1)
+
+static void DrawMode7BG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N1x1)
+
+static void DrawMode7BG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N1x1)
+
+static void DrawMode7BG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N1x1)
+
+static void (*Renderers_DrawMode7BG1Normal1x1[7]) (uint32, uint32, int) =
+{
+    DrawMode7BG1_Normal1x1,
+    DrawMode7BG1Add_Normal1x1,
+    DrawMode7BG1AddF1_2_Normal1x1,
+    DrawMode7BG1AddS1_2_Normal1x1,
+    DrawMode7BG1Sub_Normal1x1,
+    DrawMode7BG1SubF1_2_Normal1x1,
+    DrawMode7BG1SubS1_2_Normal1x1,
 };
 
-/* Per-NAME1 NAME2 fan-out: emit only the NAME2 variants the
- * dispatcher actually selects (S9xSelectTileRenderers in this
- * file). The templated form previously emitted Normal4x1,
- * Interlace, and HiresInterlace too, but they were never
- * referenced by the dispatcher and the linker (LTO) stripped
- * them. They are no longer emitted here. */
-#define DEFINE_M7_BG(BG_NAME, Z_EXPR, MASK_VAL, DC_EXPR) \
-DEFINE_M7_NAME2(BG_NAME, Normal1x1,      Z_EXPR, MASK_VAL, DC_EXPR, M7N_PIXEL_N1x1) \
-DEFINE_M7_NAME2(BG_NAME, Normal2x1,      Z_EXPR, MASK_VAL, DC_EXPR, M7N_PIXEL_N2x1) \
-DEFINE_M7_NAME2(BG_NAME, Hires,          Z_EXPR, MASK_VAL, DC_EXPR, M7N_PIXEL_H2x1)
+/* DrawMode7BG1 NAME2 = Normal2x1: 7 math variants. */
+static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N2x1)
 
-/* BG1 fan-out (native). */
-DEFINE_M7_BG(DrawMode7BG1, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+static void DrawMode7BG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N2x1)
 
-/* BG2 fan-out (native). The Z_EXPR references the local 'b' (the raw
- * sampled byte) for the EXTBG per-pixel priority bit. 'b' is
- * declared inside TILE_BODY_NORMAL_M7's per-pixel scope and is
- * in scope at the PIXEL_PLOT call site. */
-DEFINE_M7_BG(DrawMode7BG2, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+static void DrawMode7BG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N2x1)
+
+static void DrawMode7BG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N2x1)
+
+static void DrawMode7BG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N2x1)
+
+static void DrawMode7BG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N2x1)
+
+static void DrawMode7BG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_N2x1)
+
+static void (*Renderers_DrawMode7BG1Normal2x1[7]) (uint32, uint32, int) =
+{
+    DrawMode7BG1_Normal2x1,
+    DrawMode7BG1Add_Normal2x1,
+    DrawMode7BG1AddF1_2_Normal2x1,
+    DrawMode7BG1AddS1_2_Normal2x1,
+    DrawMode7BG1Sub_Normal2x1,
+    DrawMode7BG1SubF1_2_Normal2x1,
+    DrawMode7BG1SubS1_2_Normal2x1,
+};
+
+/* DrawMode7BG1 NAME2 = Hires: 7 math variants. */
+static void DrawMode7BG1_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_H2x1)
+
+static void DrawMode7BG1Add_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_H2x1)
+
+static void DrawMode7BG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_H2x1)
+
+static void DrawMode7BG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_H2x1)
+
+static void DrawMode7BG1Sub_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_H2x1)
+
+static void DrawMode7BG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_H2x1)
+
+static void DrawMode7BG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), M7N_PIXEL_H2x1)
+
+static void (*Renderers_DrawMode7BG1Hires[7]) (uint32, uint32, int) =
+{
+    DrawMode7BG1_Hires,
+    DrawMode7BG1Add_Hires,
+    DrawMode7BG1AddF1_2_Hires,
+    DrawMode7BG1AddS1_2_Hires,
+    DrawMode7BG1Sub_Hires,
+    DrawMode7BG1SubF1_2_Hires,
+    DrawMode7BG1SubS1_2_Hires,
+};
+
+/* DrawMode7BG2 NAME2 = Normal1x1: 7 math variants. */
+static void DrawMode7BG2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7BG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7BG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7BG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7BG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7BG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7BG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N1x1)
+
+static void (*Renderers_DrawMode7BG2Normal1x1[7]) (uint32, uint32, int) =
+{
+    DrawMode7BG2_Normal1x1,
+    DrawMode7BG2Add_Normal1x1,
+    DrawMode7BG2AddF1_2_Normal1x1,
+    DrawMode7BG2AddS1_2_Normal1x1,
+    DrawMode7BG2Sub_Normal1x1,
+    DrawMode7BG2SubF1_2_Normal1x1,
+    DrawMode7BG2SubS1_2_Normal1x1,
+};
+
+/* DrawMode7BG2 NAME2 = Normal2x1: 7 math variants. */
+static void DrawMode7BG2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N2x1)
+
+static void DrawMode7BG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N2x1)
+
+static void DrawMode7BG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N2x1)
+
+static void DrawMode7BG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N2x1)
+
+static void DrawMode7BG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N2x1)
+
+static void DrawMode7BG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N2x1)
+
+static void DrawMode7BG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_N2x1)
+
+static void (*Renderers_DrawMode7BG2Normal2x1[7]) (uint32, uint32, int) =
+{
+    DrawMode7BG2_Normal2x1,
+    DrawMode7BG2Add_Normal2x1,
+    DrawMode7BG2AddF1_2_Normal2x1,
+    DrawMode7BG2AddS1_2_Normal2x1,
+    DrawMode7BG2Sub_Normal2x1,
+    DrawMode7BG2SubF1_2_Normal2x1,
+    DrawMode7BG2SubS1_2_Normal2x1,
+};
+
+/* DrawMode7BG2 NAME2 = Hires: 7 math variants. */
+static void DrawMode7BG2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7BG2Add_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7BG2Sub_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7BG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7BG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_NORMAL_M7(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, M7N_PIXEL_H2x1)
+
+static void (*Renderers_DrawMode7BG2Hires[7]) (uint32, uint32, int) =
+{
+    DrawMode7BG2_Hires,
+    DrawMode7BG2Add_Hires,
+    DrawMode7BG2AddF1_2_Hires,
+    DrawMode7BG2AddS1_2_Hires,
+    DrawMode7BG2Sub_Hires,
+    DrawMode7BG2SubF1_2_Hires,
+    DrawMode7BG2SubS1_2_Hires,
+};
+
 
 /* ---- Section-internal mosaic tile body ----------------------------
  *
@@ -2598,54 +3373,213 @@ DEFINE_M7_BG(DrawMode7BG2, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
     } \
 }
 
-/* ---- Mosaic outer fan-out: emit one function per (math, NAME2) ----- */
-#define DEFINE_M7_MOSAIC_FN(suffix, MATH_SELECTOR, MATH_OP, BG_NAME, NAME2_TAG, \
-                            Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, PIXEL_PLOT) \
-static void BG_NAME##suffix##NAME2_TAG (uint32 Left, uint32 Right, int D) \
-TILE_BODY_MOSAIC_M7(MATH_SELECTOR, MATH_OP, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, PIXEL_PLOT)
+/* ---- Outer fan-out: explicit functions and dispatch arrays --------
+ *
+ * Same as native Mode 7 but using TILE_BODY_MOSAIC_M7 (which adds
+ * mosaic block-replication around each sample) and threading BG_INDEX
+ * (0 for BG1, 1 for BG2) for PPU.BGMosaic[] selection. */
 
-/* Mosaic per-NAME2 7-fold math fan-out, plus the dispatcher array. */
-#define DEFINE_M7_MOSAIC_NAME2(BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, PIXEL_PLOT) \
-DEFINE_M7_MOSAIC_FN(_,        NOMATH,   ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, PIXEL_PLOT) \
-DEFINE_M7_MOSAIC_FN(Add_,     REGMATH,  ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, PIXEL_PLOT) \
-DEFINE_M7_MOSAIC_FN(AddF1_2_, MATHF1_2, ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, PIXEL_PLOT) \
-DEFINE_M7_MOSAIC_FN(AddS1_2_, MATHS1_2, ADD, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, PIXEL_PLOT) \
-DEFINE_M7_MOSAIC_FN(Sub_,     REGMATH,  SUB, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, PIXEL_PLOT) \
-DEFINE_M7_MOSAIC_FN(SubF1_2_, MATHF1_2, SUB, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, PIXEL_PLOT) \
-DEFINE_M7_MOSAIC_FN(SubS1_2_, MATHS1_2, SUB, BG_NAME, NAME2_TAG, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, PIXEL_PLOT) \
-static void (*Renderers_##BG_NAME##NAME2_TAG[7]) (uint32, uint32, int) = \
-{ \
-    BG_NAME##_##NAME2_TAG, \
-    BG_NAME##Add_##NAME2_TAG, \
-    BG_NAME##AddF1_2_##NAME2_TAG, \
-    BG_NAME##AddS1_2_##NAME2_TAG, \
-    BG_NAME##Sub_##NAME2_TAG, \
-    BG_NAME##SubF1_2_##NAME2_TAG, \
-    BG_NAME##SubS1_2_##NAME2_TAG, \
+/* DrawMode7MosaicBG1 NAME2 = Normal1x1: 7 math variants. */
+static void DrawMode7MosaicBG1_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N1x1)
+
+static void (*Renderers_DrawMode7MosaicBG1Normal1x1[7]) (uint32, uint32, int) =
+{
+    DrawMode7MosaicBG1_Normal1x1,
+    DrawMode7MosaicBG1Add_Normal1x1,
+    DrawMode7MosaicBG1AddF1_2_Normal1x1,
+    DrawMode7MosaicBG1AddS1_2_Normal1x1,
+    DrawMode7MosaicBG1Sub_Normal1x1,
+    DrawMode7MosaicBG1SubF1_2_Normal1x1,
+    DrawMode7MosaicBG1SubS1_2_Normal1x1,
 };
 
-/* Per-NAME1 NAME2 fan-out for mosaic: Normal1x1, Normal2x1, Hires
- * (same set as native -- the dispatcher uses these three). */
-#define DEFINE_M7_MOSAIC_BG(BG_NAME, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX) \
-DEFINE_M7_MOSAIC_NAME2(BG_NAME, Normal1x1, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, M7N_PIXEL_N1x1) \
-DEFINE_M7_MOSAIC_NAME2(BG_NAME, Normal2x1, Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, M7N_PIXEL_N2x1) \
-DEFINE_M7_MOSAIC_NAME2(BG_NAME, Hires,     Z_EXPR, MASK_VAL, DC_EXPR, BG_INDEX, M7N_PIXEL_H2x1)
+/* DrawMode7MosaicBG1 NAME2 = Normal2x1: 7 math variants. */
+static void DrawMode7MosaicBG1_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N2x1)
 
-/* MosaicBG1 fan-out. BG_INDEX = 0. */
-DEFINE_M7_MOSAIC_BG(DrawMode7MosaicBG1, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0)
+static void DrawMode7MosaicBG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N2x1)
 
-/* MosaicBG2 fan-out. BG_INDEX = 1. Z_EXPR references the local 'b'
- * (raw byte) for the EXTBG per-pixel priority bit. */
-DEFINE_M7_MOSAIC_BG(DrawMode7MosaicBG2, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1)
+static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N2x1)
 
-#undef DEFINE_M7_MOSAIC_BG
-#undef DEFINE_M7_MOSAIC_NAME2
-#undef DEFINE_M7_MOSAIC_FN
+static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N2x1)
+
+static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N2x1)
+
+static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N2x1)
+
+static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_N2x1)
+
+static void (*Renderers_DrawMode7MosaicBG1Normal2x1[7]) (uint32, uint32, int) =
+{
+    DrawMode7MosaicBG1_Normal2x1,
+    DrawMode7MosaicBG1Add_Normal2x1,
+    DrawMode7MosaicBG1AddF1_2_Normal2x1,
+    DrawMode7MosaicBG1AddS1_2_Normal2x1,
+    DrawMode7MosaicBG1Sub_Normal2x1,
+    DrawMode7MosaicBG1SubF1_2_Normal2x1,
+    DrawMode7MosaicBG1SubS1_2_Normal2x1,
+};
+
+/* DrawMode7MosaicBG1 NAME2 = Hires: 7 math variants. */
+static void DrawMode7MosaicBG1_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG1Add_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG1Sub_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1), 0, M7N_PIXEL_H2x1)
+
+static void (*Renderers_DrawMode7MosaicBG1Hires[7]) (uint32, uint32, int) =
+{
+    DrawMode7MosaicBG1_Hires,
+    DrawMode7MosaicBG1Add_Hires,
+    DrawMode7MosaicBG1AddF1_2_Hires,
+    DrawMode7MosaicBG1AddS1_2_Hires,
+    DrawMode7MosaicBG1Sub_Hires,
+    DrawMode7MosaicBG1SubF1_2_Hires,
+    DrawMode7MosaicBG1SubS1_2_Hires,
+};
+
+/* DrawMode7MosaicBG2 NAME2 = Normal1x1: 7 math variants. */
+static void DrawMode7MosaicBG2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N1x1)
+
+static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N1x1)
+
+static void (*Renderers_DrawMode7MosaicBG2Normal1x1[7]) (uint32, uint32, int) =
+{
+    DrawMode7MosaicBG2_Normal1x1,
+    DrawMode7MosaicBG2Add_Normal1x1,
+    DrawMode7MosaicBG2AddF1_2_Normal1x1,
+    DrawMode7MosaicBG2AddS1_2_Normal1x1,
+    DrawMode7MosaicBG2Sub_Normal1x1,
+    DrawMode7MosaicBG2SubF1_2_Normal1x1,
+    DrawMode7MosaicBG2SubS1_2_Normal1x1,
+};
+
+/* DrawMode7MosaicBG2 NAME2 = Normal2x1: 7 math variants. */
+static void DrawMode7MosaicBG2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N2x1)
+
+static void DrawMode7MosaicBG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N2x1)
+
+static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N2x1)
+
+static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N2x1)
+
+static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N2x1)
+
+static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N2x1)
+
+static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_N2x1)
+
+static void (*Renderers_DrawMode7MosaicBG2Normal2x1[7]) (uint32, uint32, int) =
+{
+    DrawMode7MosaicBG2_Normal2x1,
+    DrawMode7MosaicBG2Add_Normal2x1,
+    DrawMode7MosaicBG2AddF1_2_Normal2x1,
+    DrawMode7MosaicBG2AddS1_2_Normal2x1,
+    DrawMode7MosaicBG2Sub_Normal2x1,
+    DrawMode7MosaicBG2SubF1_2_Normal2x1,
+    DrawMode7MosaicBG2SubS1_2_Normal2x1,
+};
+
+/* DrawMode7MosaicBG2 NAME2 = Hires: 7 math variants. */
+static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG2Sub_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_H2x1)
+
+static void DrawMode7MosaicBG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
+TILE_BODY_MOSAIC_M7(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1, M7N_PIXEL_H2x1)
+
+static void (*Renderers_DrawMode7MosaicBG2Hires[7]) (uint32, uint32, int) =
+{
+    DrawMode7MosaicBG2_Hires,
+    DrawMode7MosaicBG2Add_Hires,
+    DrawMode7MosaicBG2AddF1_2_Hires,
+    DrawMode7MosaicBG2AddS1_2_Hires,
+    DrawMode7MosaicBG2Sub_Hires,
+    DrawMode7MosaicBG2SubF1_2_Hires,
+    DrawMode7MosaicBG2SubS1_2_Hires,
+};
+
+
 #undef TILE_BODY_MOSAIC_M7
 
-#undef DEFINE_M7_BG
-#undef DEFINE_M7_NAME2
-#undef DEFINE_M7_FN
 #undef TILE_BODY_NORMAL_M7
 #undef M7N_PIXEL_H2x1
 #undef M7N_PIXEL_N2x1
@@ -2705,9 +3639,7 @@ DEFINE_M7_MOSAIC_BG(DrawMode7MosaicBG2, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0, 1)
  *       GFX.DB[Offset + idx] = Z_EXPR
  * BG2's Z_EXPR references 'b' so the EXTBG priority bit
  * propagates correctly. */
-#define DEFINE_M7_HR_FAMILY(suffix, MATH_SELECTOR, MATH_OP,                    \
-                            BG_NAME, Z_EXPR, MASK_VAL, DC_EXPR)                \
-static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
+#define TILE_BODY_M7_HR(MATH_SELECTOR, MATH_OP, Z_EXPR, MASK_VAL, DC_EXPR) \
 {                                                                              \
     struct SLineMatrixData *l;                                                 \
     uint32 x, Line, Offset;                                                    \
@@ -2884,20 +3816,26 @@ static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
 
 /* BG1 fan-out: 7 math variants. Z = D + 7 const. MASK = 0xff.
  * DCMODE follows $2130 bit 0 (Direct Colour Mode). */
-DEFINE_M7_HR_FAMILY(_,        NOMATH,   ADD, DrawMode7BG1HR,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG1HR,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG1HR,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG1HR,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG1HR,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG1HR,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG1HR,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+static void DrawMode7BG1HR_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
 
 static void (*Renderers_DrawMode7BG1HRNormal1x1[7]) (uint32, uint32, int) =
 {
@@ -2912,20 +3850,26 @@ static void (*Renderers_DrawMode7BG1HRNormal1x1[7]) (uint32, uint32, int) =
 
 /* BG2 fan-out: see HR4X / BL4X for the EXTBG priority bit
  * explanation. */
-DEFINE_M7_HR_FAMILY(_,        NOMATH,   ADD, DrawMode7BG2HR,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG2HR,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG2HR,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG2HR,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG2HR,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG2HR,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG2HR,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+static void DrawMode7BG2HR_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
 
 static void (*Renderers_DrawMode7BG2HRNormal1x1[7]) (uint32, uint32, int) =
 {
@@ -2938,7 +3882,7 @@ static void (*Renderers_DrawMode7BG2HRNormal1x1[7]) (uint32, uint32, int) =
     DrawMode7BG2HRSubS1_2_Normal1x1,
 };
 
-#undef DEFINE_M7_HR_FAMILY
+#undef TILE_BODY_M7_HR
 
 /* End of HR (2x nearest-neighbour) de-templated section.
  * ==================================================================== */
@@ -3012,9 +3956,7 @@ static void (*Renderers_DrawMode7BG2HRNormal1x1[7]) (uint32, uint32, int) =
  *     no clipping) and PPU.Mode7Repeat != 0 (clip out-of-range, or
  *     fill with tile 0 in mode 3).
  */
-#define DEFINE_M7_HR4X_FAMILY(suffix, MATH_SELECTOR, MATH_OP,                  \
-                              BG_NAME, Z_EXPR, MASK_VAL, DC_EXPR)              \
-static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
+#define TILE_BODY_M7_HR4X(MATH_SELECTOR, MATH_OP, Z_EXPR, MASK_VAL, DC_EXPR) \
 {                                                                              \
     struct SLineMatrixData *l;                                                 \
     uint32 x, Line, Offset;                                                    \
@@ -3170,20 +4112,26 @@ static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
 
 /* BG1 fan-out: 7 math variants. Z = D + 7 constant. MASK = 0xff.
  * DCMODE follows $2130 bit 0 (Direct Colour Mode). */
-DEFINE_M7_HR4X_FAMILY(_,        NOMATH,   ADD, DrawMode7BG1HR4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR4X_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG1HR4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR4X_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG1HR4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR4X_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG1HR4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR4X_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG1HR4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR4X_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG1HR4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_HR4X_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG1HR4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+static void DrawMode7BG1HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
 
 static void (*Renderers_DrawMode7BG1HR4XNormal1x1[7]) (uint32, uint32, int) =
 {
@@ -3202,20 +4150,26 @@ static void (*Renderers_DrawMode7BG1HR4XNormal1x1[7]) (uint32, uint32, int) =
  * body exposes 'b' as a local so Z_EXPR can reach it. MASK = 0x7f
  * (the priority bit is excluded from the palette index). DCMODE is
  * always off for BG2 EXTBG. */
-DEFINE_M7_HR4X_FAMILY(_,        NOMATH,   ADD, DrawMode7BG2HR4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR4X_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG2HR4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR4X_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG2HR4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR4X_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG2HR4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR4X_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG2HR4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR4X_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG2HR4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_HR4X_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG2HR4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+static void DrawMode7BG2HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_HR4X(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
 
 static void (*Renderers_DrawMode7BG2HR4XNormal1x1[7]) (uint32, uint32, int) =
 {
@@ -3228,7 +4182,7 @@ static void (*Renderers_DrawMode7BG2HR4XNormal1x1[7]) (uint32, uint32, int) =
     DrawMode7BG2HR4XSubS1_2_Normal1x1,
 };
 
-#undef DEFINE_M7_HR4X_FAMILY
+#undef TILE_BODY_M7_HR4X
 
 /* End of HR4X de-templated section.
  * ==================================================================== */
@@ -3285,9 +4239,7 @@ static void (*Renderers_DrawMode7BG2HR4XNormal1x1[7]) (uint32, uint32, int) =
  * pixel using half-step (aa_h = aa/2) advance. The wrap path
  * uses M7HR_SAMPLE_BILINEAR; the repeat path inlines the
  * LOOKUP_4 / LOOKUP_4_FILL split for per-sample range checking. */
-#define DEFINE_M7_BL_FAMILY(suffix, MATH_SELECTOR, MATH_OP,                    \
-                            BG_NAME, Z_EXPR, MASK_VAL, DC_EXPR)                \
-static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
+#define TILE_BODY_M7_BL(MATH_SELECTOR, MATH_OP, Z_EXPR, MASK_VAL, DC_EXPR) \
 {                                                                              \
     struct SLineMatrixData *l;                                                 \
     uint32 x, Line, Offset;                                                    \
@@ -3426,20 +4378,26 @@ static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
 
 /* BG1 fan-out: 7 math variants. Z = D + 7 const. MASK = 0xff.
  * DCMODE follows $2130 bit 0 (Direct Colour Mode). */
-DEFINE_M7_BL_FAMILY(_,        NOMATH,   ADD, DrawMode7BG1BL,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG1BL,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG1BL,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG1BL,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG1BL,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG1BL,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG1BL,
-                    (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+static void DrawMode7BG1BL_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
 
 static void (*Renderers_DrawMode7BG1BLNormal1x1[7]) (uint32, uint32, int) =
 {
@@ -3454,20 +4412,26 @@ static void (*Renderers_DrawMode7BG1BLNormal1x1[7]) (uint32, uint32, int) =
 
 /* BG2 fan-out: see HR4X / BL4X for the EXTBG priority bit
  * explanation. */
-DEFINE_M7_BL_FAMILY(_,        NOMATH,   ADD, DrawMode7BG2BL,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG2BL,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG2BL,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG2BL,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG2BL,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG2BL,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG2BL,
-                    (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+static void DrawMode7BG2BL_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
 
 static void (*Renderers_DrawMode7BG2BLNormal1x1[7]) (uint32, uint32, int) =
 {
@@ -3480,7 +4444,7 @@ static void (*Renderers_DrawMode7BG2BLNormal1x1[7]) (uint32, uint32, int) =
     DrawMode7BG2BLSubS1_2_Normal1x1,
 };
 
-#undef DEFINE_M7_BL_FAMILY
+#undef TILE_BODY_M7_BL
 
 /* End of BL (2x bilinear) de-templated section.
  * ==================================================================== */
@@ -3531,9 +4495,7 @@ static void (*Renderers_DrawMode7BG2BLNormal1x1[7]) (uint32, uint32, int) =
  * arithmetic, wrap vs repeat-mode split). The only difference
  * from HR4X: each sub-sample writes through bilinear blending
  * instead of nearest-neighbour. */
-#define DEFINE_M7_BL4X_FAMILY(suffix, MATH_SELECTOR, MATH_OP,                  \
-                              BG_NAME, Z_EXPR, MASK_VAL, DC_EXPR)              \
-static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
+#define TILE_BODY_M7_BL4X(MATH_SELECTOR, MATH_OP, Z_EXPR, MASK_VAL, DC_EXPR) \
 {                                                                              \
     struct SLineMatrixData *l;                                                 \
     uint32 x, Line, Offset;                                                    \
@@ -3649,20 +4611,26 @@ static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
 
 /* BG1 fan-out: 7 math variants. Z = D + 7 const. MASK = 0xff.
  * DCMODE follows $2130 bit 0 (Direct Colour Mode). */
-DEFINE_M7_BL4X_FAMILY(_,        NOMATH,   ADD, DrawMode7BG1BL4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL4X_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG1BL4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL4X_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG1BL4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL4X_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG1BL4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL4X_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG1BL4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL4X_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG1BL4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL4X_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG1BL4X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+static void DrawMode7BG1BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
 
 static void (*Renderers_DrawMode7BG1BL4XNormal1x1[7]) (uint32, uint32, int) =
 {
@@ -3678,20 +4646,26 @@ static void (*Renderers_DrawMode7BG1BL4XNormal1x1[7]) (uint32, uint32, int) =
 /* BG2 fan-out: see HR4X for the EXTBG priority bit explanation.
  * Same Z_EXPR shape (references the local 'b' declared inside
  * M7HR_BLEND_AND_WRITE). */
-DEFINE_M7_BL4X_FAMILY(_,        NOMATH,   ADD, DrawMode7BG2BL4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL4X_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG2BL4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL4X_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG2BL4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL4X_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG2BL4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL4X_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG2BL4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL4X_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG2BL4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL4X_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG2BL4X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+static void DrawMode7BG2BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL4X(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
 
 static void (*Renderers_DrawMode7BG2BL4XNormal1x1[7]) (uint32, uint32, int) =
 {
@@ -3704,7 +4678,7 @@ static void (*Renderers_DrawMode7BG2BL4XNormal1x1[7]) (uint32, uint32, int) =
     DrawMode7BG2BL4XSubS1_2_Normal1x1,
 };
 
-#undef DEFINE_M7_BL4X_FAMILY
+#undef TILE_BODY_M7_BL4X
 
 /* End of BL4X de-templated section.
  * ==================================================================== */
@@ -3753,9 +4727,7 @@ static void (*Renderers_DrawMode7BG2BL4XNormal1x1[7]) (uint32, uint32, int) =
  * The wrap path uses M7HR_SAMPLE_BILINEAR; the repeat path
  * inlines the LOOKUP_4 / LOOKUP_4_FILL split because it needs
  * per-sample range checking. */
-#define DEFINE_M7_BL1X_FAMILY(suffix, MATH_SELECTOR, MATH_OP,                  \
-                              BG_NAME, Z_EXPR, MASK_VAL, DC_EXPR)              \
-static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
+#define TILE_BODY_M7_BL1X(MATH_SELECTOR, MATH_OP, Z_EXPR, MASK_VAL, DC_EXPR) \
 {                                                                              \
     struct SLineMatrixData *l;                                                 \
     uint32 x, Line, Offset;                                                    \
@@ -3857,20 +4829,26 @@ static void BG_NAME##suffix##Normal1x1 (uint32 Left, uint32 Right, int D)      \
 
 /* BG1 fan-out: 7 math variants. Z = D + 7 const. MASK = 0xff.
  * DCMODE follows $2130 bit 0 (Direct Colour Mode). */
-DEFINE_M7_BL1X_FAMILY(_,        NOMATH,   ADD, DrawMode7BG1BL1X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL1X_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG1BL1X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL1X_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG1BL1X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL1X_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG1BL1X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL1X_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG1BL1X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL1X_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG1BL1X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
-DEFINE_M7_BL1X_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG1BL1X,
-                      (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+static void DrawMode7BG1BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(NOMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(REGMATH, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(MATHF1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(MATHS1_2, ADD, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(REGMATH, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(MATHF1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
+
+static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(MATHS1_2, SUB, (D + 7), 0xff, (Memory.FillRAM[0x2130] & 1))
 
 static void (*Renderers_DrawMode7BG1BL1XNormal1x1[7]) (uint32, uint32, int) =
 {
@@ -3885,20 +4863,26 @@ static void (*Renderers_DrawMode7BG1BL1XNormal1x1[7]) (uint32, uint32, int) =
 
 /* BG2 fan-out: see HR4X / BL4X for the EXTBG priority bit
  * explanation. */
-DEFINE_M7_BL1X_FAMILY(_,        NOMATH,   ADD, DrawMode7BG2BL1X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL1X_FAMILY(Add_,     REGMATH,  ADD, DrawMode7BG2BL1X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL1X_FAMILY(AddF1_2_, MATHF1_2, ADD, DrawMode7BG2BL1X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL1X_FAMILY(AddS1_2_, MATHS1_2, ADD, DrawMode7BG2BL1X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL1X_FAMILY(Sub_,     REGMATH,  SUB, DrawMode7BG2BL1X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL1X_FAMILY(SubF1_2_, MATHF1_2, SUB, DrawMode7BG2BL1X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
-DEFINE_M7_BL1X_FAMILY(SubS1_2_, MATHS1_2, SUB, DrawMode7BG2BL1X,
-                      (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+static void DrawMode7BG2BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(NOMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(REGMATH, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(MATHF1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(MATHS1_2, ADD, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(REGMATH, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(MATHF1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
+
+static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
+TILE_BODY_M7_BL1X(MATHS1_2, SUB, (D + ((b & 0x80) ? 11 : 3)), 0x7f, 0)
 
 static void (*Renderers_DrawMode7BG2BL1XNormal1x1[7]) (uint32, uint32, int) =
 {
@@ -3911,10 +4895,9 @@ static void (*Renderers_DrawMode7BG2BL1XNormal1x1[7]) (uint32, uint32, int) =
     DrawMode7BG2BL1XSubS1_2_Normal1x1,
 };
 
-#undef DEFINE_M7_BL1X_FAMILY
+#undef TILE_BODY_M7_BL1X
 
 /* End of BL1X de-templated section.
  * ==================================================================== */
 
-#endif
-#endif
+#endif /* close: #ifndef _NEWTILE_CPP at top of file */

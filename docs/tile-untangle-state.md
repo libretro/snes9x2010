@@ -16,9 +16,9 @@ If anything in this file contradicts conversation history or memory,
 
 **Branch:** `tile-untangle` (origin/libretro/snes9x2010)
 **Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x"
-**Stage:** Stage 2.11 + Stage 3 complete (DrawTile16 de-templated; level-2/3 dispatch scaffold removed). **The tile-untangle effort proper is done.**
-**Last code commit:** Stage 2.11 + Stage 3 — tile.c: de-template DrawTile16 + remove dispatch scaffold (this commit)
-**Previous code commit:** `8906302` — tile.c: de-template DrawClippedTile16 (Stage 2.10)
+**Stage:** Stage 3.5 + Stage 4 complete (structural cleanup + fan-out unrolling).
+**Last code commit:** Stage 3.5 + Stage 4 — tile.c: unroll fan-out macros + structural cleanup (this commit)
+**Previous code commit:** `a40fa37` — tile.c: de-template DrawTile16 + remove dispatch scaffold (Stage 2.11 + Stage 3)
 **In-flight work:** none
 **Working tree:** clean
 
@@ -31,7 +31,25 @@ BL1X (`0e147ff`), BL (`6fde805`), HR (`624492c`), native BG
 (`f5894be`), mosaic + dead-array cleanup (`3c7ad4f`). The non-Mode-7
 families: DrawBackdrop16 (`9ac00cb`), DrawMosaicPixel16
 (`bb3cacf`), DrawClippedTile16 (`8906302`), DrawTile16 + scaffold
-removal (this commit).
+removal (`a40fa37`).
+
+**Stage 3.5 (structural cleanup) and Stage 4 (fan-out unrolling)
+landed together in this commit.** All 313 renderer function
+definitions are now written explicitly with `static void NAME(args)
+TILE_BODY_*(args)` — no more `DEFINE_*_FN` / `DEFINE_*_NAME2` /
+`DEFINE_*_BG` / `DEFINE_*_FAMILY` macros generating function
+definitions. Body macros (`TILE_BODY_*`), pixel plotters
+(`DT_PIXEL_*`, `CT_PIXEL_*`, etc.), color-math ops (`NOMATH`,
+`REGMATH`, `MATHF1_2`, `MATHS1_2`, `COLOR_ADD*` / `COLOR_SUB*`)
+and helpers (`GET_CACHED_TILE`, `IS_BLANK_TILE`, `SELECT_PALETTE`,
+`H_FLIP`, `V_FLIP`, `CLIP_10_BIT_SIGNED`, `M7HR_LOOKUP_4`,
+`M7HR_BLEND_AND_WRITE`, `M7HR_SAMPLE_BILINEAR`) all stay as macros.
+
+The dead `#ifndef NAME1` wrapper at line 996 (always true since
+NAME1 is never defined) is also removed (Stage 3.5). The outer
+`#ifndef _NEWTILE_CPP / #else` split and the line-660 self-include
+remain; they're still load-bearing for separating "first include"
+helpers from the recursive-include family code body.
 
 `tile.c` no longer self-includes recursively at the level-2 or
 level-3 boundaries. The `#ifndef NAME2` / `#else / Third-level`
@@ -256,7 +274,7 @@ Order (small/safe first, large/risky last):
     verbatim in `TILE_BODY_CLIPPED`. Section-local `CT_PIXEL_*`
     plotters with the same shape as `MP_PIXEL_*`.
 11. ~~`DrawTile16` — full NAME2 set.~~ — **done** (Stage 2.11,
-    this commit). The hot-path renderer for unclipped 8-pixel
+    `a40fa37`). The hot-path renderer for unclipped 8-pixel
     BG tiles. All six NAME2 variants emitted. Same plotter shape
     as DrawMosaicPixel16 / DrawClippedTile16 (`DT_PIXEL_*`,
     Z = GFX.Z1/Z2, runtime Pix). Body simpler than ClippedTile
@@ -266,7 +284,7 @@ Order (small/safe first, large/risky last):
     (Tile, Offset, StartLine, LineCount). Threads BPSTART and
     BP_STEP per NAME2 same as ClippedTile.
 
-    Bundled with Stage 3 (this commit): once DrawTile16 was
+    Bundled with Stage 3 (`a40fa37`): once DrawTile16 was
     de-templated, no `#include "tile.c"` self-recursion remained
     inside the `#ifndef NAME1` branch. The level-2/3 dispatch
     scaffold became dead code and was removed.
@@ -301,33 +319,116 @@ of `#ifndef _NEWTILE_CPP` is only reached during the recursive
 include. Removing the wrapper is a separate structural cleanup
 not bundled here.
 
-Status: **DONE** (this commit, bundled with Stage 2.11).
+Status: **DONE** (`a40fa37`, bundled with Stage 2.11).
 
-### Stage 4 — Folding optimizations
+### Stage 3.5 — Structural cleanup
 
-Goal: with explicit code, look for cross-cutting optimizations that
-the macro abstraction was hiding. Candidates (each its own commit
-with profile data):
+Goal: remove the now-dead `#ifndef NAME1` wrapper at `src/tile.c`
+line 996. With Stage 3 complete, NAME1 is never defined; the
+wrapper's body always runs and the `#else` branch is dead code.
+
+**Done** (this commit). The `#ifndef NAME1 / #endif` pair has been
+collapsed; the family-code block now runs unconditionally on the
+recursive include. Replaced with an explanatory banner comment
+describing the recursive-include landing-zone purpose. The outer
+`#ifndef _NEWTILE_CPP / #else` split and the line-660 self-include
+remain; they're still load-bearing for separating "first include"
+code (helpers, ConvertTile_*, etc.) from "recursive include"
+code (family bodies).
+
+Bundled with Stage 4.
+
+Status: **DONE** (this commit, bundled with Stage 4).
+
+### Stage 4 — Unroll function-emitting fan-out macros
+
+Goal: convert all `DEFINE_*_FN` / `DEFINE_*_NAME2` / `DEFINE_*_BG`
+/ `DEFINE_*_FAMILY` macros (which emit function definitions through
+token-pasting) into explicit `static void NAME(args) TILE_BODY_*(...)`
+forms. The user's stated motivation: "It will allow us to optimize
+the code later better for all the various modes" -- per-function
+optimization opportunities (different inlining hints, different
+attributes on hot vs cold variants, function-level diff diagnostics)
+are easier to apply when each function is a separate textual unit
+instead of one row in a fan-out macro.
+
+**Done** (this commit). All 313 renderer functions are now written
+explicitly. No macros emit function definitions. The 11 fan-out
+macros that previously did so are gone:
+
+  - `DEFINE_DT_FN` / `DEFINE_DT_NAME2` (DrawTile16)
+  - `DEFINE_CT_FN` / `DEFINE_CT_NAME2` (DrawClippedTile16)
+  - `DEFINE_MP_FN` / `DEFINE_MP_NAME2` (DrawMosaicPixel16)
+  - `DEFINE_BACKDROP_FN` / `DEFINE_BACKDROP_NAME2` (DrawBackdrop16)
+  - `DEFINE_M7_FN` / `DEFINE_M7_NAME2` / `DEFINE_M7_BG` (native M7)
+  - `DEFINE_M7_MOSAIC_FN` / `DEFINE_M7_MOSAIC_NAME2`
+    / `DEFINE_M7_MOSAIC_BG` (mosaic M7)
+  - `DEFINE_M7_HR_FAMILY` (M7 HR2X)
+  - `DEFINE_M7_HR4X_FAMILY` (M7 HR4X)
+  - `DEFINE_M7_BL_FAMILY` (M7 BL2X)
+  - `DEFINE_M7_BL4X_FAMILY` (M7 BL4X)
+  - `DEFINE_M7_BL1X_FAMILY` (M7 BL1X)
+
+The 5 M7 hires families (HR/HR4X/BL/BL4X/BL1X) had the function
+definition inside their `DEFINE_*_FAMILY` macro body. For each
+of those, the macro was converted from a function-emitter to a
+body-only `TILE_BODY_M7_<X>` macro: the `static void
+BG_NAME##suffix##Normal1x1 (...)` line was removed from the macro
+body, the macro's parameter list was reduced (suffix and BG_NAME
+moved to the call site), and each invocation was rewritten as
+explicit `static void NAME(args) TILE_BODY_M7_<X>(...)`.
+
+What stays as macros (per the user's instruction):
+  - All body macros: `TILE_BODY_NORMAL_M7`, `TILE_BODY_MOSAIC_M7`,
+    `TILE_BODY_CLIPPED`, `TILE_BODY_UNCLIPPED`, `TILE_BODY_BACKDROP`,
+    `TILE_BODY_MOSAIC_PIXEL`, `TILE_BODY_M7_HR`, `TILE_BODY_M7_HR4X`,
+    `TILE_BODY_M7_BL`, `TILE_BODY_M7_BL4X`, `TILE_BODY_M7_BL1X`.
+  - All pixel plotters: `DT_PIXEL_*`, `CT_PIXEL_*`, `MP_PIXEL_*`,
+    `BACKDROP_PIXEL_*`, `M7N_PIXEL_*`, `M7HR_LOOKUP_4`,
+    `M7HR_BLEND_AND_WRITE`, `M7HR_SAMPLE_BILINEAR`.
+  - All color-math: `NOMATH`, `REGMATH`, `MATHF1_2`, `MATHS1_2`,
+    `COLOR_ADD*`, `COLOR_SUB*`.
+  - All file-scope helpers: `GET_CACHED_TILE`, `IS_BLANK_TILE`,
+    `SELECT_PALETTE`, `H_FLIP`, `V_FLIP`, `CLIP_10_BIT_SIGNED`.
+
+Symbol verification (vs pristine `a40fa37`):
+  - 313 Draw* functions; full per-function size diff is empty
+    across all 313 (verified). True pure refactor.
+  - 44 Renderers_ arrays; full diff empty.
+  - Build clean, zero warnings.
+
+Files changed: `src/tile.c` +1383 / -400 (+983 net). The unrolled
+form is significantly larger than the macro-driven form -- 313
+function definitions written by hand take more text than 11 fan-out
+macros. The trade-off the user accepted: more lines now, but
+per-function flexibility for future optimization.
+
+Comments: each section has a banner comment describing what it
+does, and each NAME2 group within a section has a banner like
+`/* DrawTile16 NAME2 = Normal1x1: 7 math variants. */` to make
+it easy to find the function block for a given variant. Section
+banners and section-end markers preserve the original structural
+documentation.
+
+Status: **DONE** (this commit).
+
+### Stage 5 — Folding optimizations (future)
+
+Goal: with all functions explicit, look for per-mode optimizations
+that the macro abstraction was hiding. Candidates (each its own
+commit with profile data):
 
 - Hoist `Settings.Mode7HiresBilinear == 2` from per-pixel to
   per-frame in M7BL renderers.
 - Hoist Mode 7 matrix recompute that's invariant within a tile.
-- Collapse the 7 math variants to one function with a `MathOp`
-  switch in the inner loop (LTO may re-specialize anyway, in
-  which case this is a code-volume win without runtime cost).
 - Eliminate redundant Z-tests across sub-pixel positions in 4x
   / 2x plotters.
 - Mosaic per-block hoist of pixel-replicate.
+- Consolidate `MP_PIXEL_*` / `CT_PIXEL_*` / `DT_PIXEL_*`
+  cross-cutting plotter shapes (they're nearly identical) into
+  shared `TILE_PIXEL_*` macros.
 
-Status: **TODO** (waiting on Stages 1–3)
-
-### Stage 5 — Optional cross-cutting cleanups
-
-Goal: with everything explicit, look for shared structure that
-wasn't visible through the macros. May or may not be worth doing;
-re-evaluate after Stage 4.
-
-Status: **TODO** (re-evaluate later)
+Status: **TODO** (re-evaluate later, profile-driven)
 
 ## What to do at the start of each session
 
@@ -355,7 +456,85 @@ Status: **TODO** (re-evaluate later)
 
 ## Commit log (newest first)
 
-### Stage 2.11 + Stage 3 — tile.c: de-template DrawTile16 + remove dispatch scaffold (this commit)
+### Stage 3.5 + Stage 4 — tile.c: unroll fan-out macros + structural cleanup (this commit)
+
+Removes the now-dead `#ifndef NAME1` wrapper (Stage 3.5) and unrolls
+all 11 function-emitting fan-out macros into explicit `static void
+NAME(args) TILE_BODY_*(args)` definitions (Stage 4).
+
+User-stated motivation for Stage 4: "It will allow us to optimize
+the code later better for all the various modes." Per-function
+optimization opportunities (different inlining hints, different
+attributes on hot vs cold variants, function-level diff diagnostics)
+are easier to apply when each function is a separate textual unit
+instead of one row in a fan-out macro.
+
+**Stage 3.5 part:** removes the `#ifndef NAME1 / #endif` wrapper
+at `src/tile.c` line 996. With Stage 3 complete, NAME1 is never
+defined; the wrapper's body always runs. The `#endif` at end-of-file
+that closed it is also removed. Replaced with an explanatory banner
+comment describing the recursive-include landing-zone.
+
+**Stage 4 part:** all 313 renderer function definitions are now
+written explicitly. The 11 fan-out macros are gone:
+  - DrawTile16: `DEFINE_DT_FN`, `DEFINE_DT_NAME2`
+  - DrawClippedTile16: `DEFINE_CT_FN`, `DEFINE_CT_NAME2`
+  - DrawMosaicPixel16: `DEFINE_MP_FN`, `DEFINE_MP_NAME2`
+  - DrawBackdrop16: `DEFINE_BACKDROP_FN`, `DEFINE_BACKDROP_NAME2`
+  - native Mode 7: `DEFINE_M7_FN`, `DEFINE_M7_NAME2`, `DEFINE_M7_BG`
+  - mosaic Mode 7: `DEFINE_M7_MOSAIC_FN`, `DEFINE_M7_MOSAIC_NAME2`,
+    `DEFINE_M7_MOSAIC_BG`
+  - M7 HR2X: `DEFINE_M7_HR_FAMILY`
+  - M7 HR4X: `DEFINE_M7_HR4X_FAMILY`
+  - M7 BL2X: `DEFINE_M7_BL_FAMILY`
+  - M7 BL4X: `DEFINE_M7_BL4X_FAMILY`
+  - M7 BL1X: `DEFINE_M7_BL1X_FAMILY`
+
+The 5 M7 hires `DEFINE_M7_*_FAMILY` macros previously embedded the
+function definition inside the macro body. For each of those, the
+macro was converted from function-emitter to body-only `TILE_BODY_M7_<X>`:
+the `static void BG_NAME##suffix##Normal1x1 (...)` line was removed,
+the parameter list was reduced from 7 params to 5 (suffix and
+BG_NAME moved to the call site), and each of the 14 invocations
+(7 BG1 + 7 BG2) was rewritten as explicit
+`static void NAME(args) TILE_BODY_M7_<X>(sel, op, z_expr, mask, dc)`.
+
+Comments: per-NAME2 banner comments (e.g.
+`/* DrawTile16 NAME2 = Normal1x1: 7 math variants. */`) added for
+each NAME2 group across all sections. Section banners and
+section-end markers preserve the original structural documentation.
+Each unrolled section also has an "Outer fan-out: explicit functions
+and dispatch arrays" preamble describing what changed.
+
+What stays as macros (per the user's instruction):
+  - All body macros: `TILE_BODY_NORMAL_M7`, `TILE_BODY_MOSAIC_M7`,
+    `TILE_BODY_CLIPPED`, `TILE_BODY_UNCLIPPED`, `TILE_BODY_BACKDROP`,
+    `TILE_BODY_MOSAIC_PIXEL`, `TILE_BODY_M7_HR`, `TILE_BODY_M7_HR4X`,
+    `TILE_BODY_M7_BL`, `TILE_BODY_M7_BL4X`, `TILE_BODY_M7_BL1X`.
+  - All pixel plotters: `DT_PIXEL_*`, `CT_PIXEL_*`, `MP_PIXEL_*`,
+    `BACKDROP_PIXEL_*`, `M7N_PIXEL_*`, `M7HR_LOOKUP_4`,
+    `M7HR_BLEND_AND_WRITE`, `M7HR_SAMPLE_BILINEAR`.
+  - All color-math: `NOMATH`, `REGMATH`, `MATHF1_2`, `MATHS1_2`,
+    `COLOR_ADD*`, `COLOR_SUB*`.
+  - All file-scope helpers: `GET_CACHED_TILE`, `IS_BLANK_TILE`,
+    `SELECT_PALETTE`, `H_FLIP`, `V_FLIP`, `CLIP_10_BIT_SIGNED`.
+
+Symbol verification (vs pristine `a40fa37`):
+  - 313 Draw* functions; full per-function size diff is empty
+    across all 313 (verified). True pure refactor.
+  - 44 Renderers_ arrays; full diff empty.
+  - Build clean, zero warnings.
+
+Files changed: `src/tile.c` +1383 / -400 (+983 net). The unrolled
+form is significantly larger than the macro-driven form -- 313
+function definitions written by hand take more text than 11 fan-out
+macros. The trade-off the user accepted: more lines now, but
+per-function flexibility for future optimization.
+
+Behaviour invariants -- to be verified externally by Lib before
+push: audio bit-identical, savestate compat, valgrind clean.
+
+### `a40fa37` — tile.c: de-template DrawTile16 + remove dispatch scaffold (Stage 2.11 + Stage 3)
 
 **Final commit of the tile-untangle effort.** De-templates the
 last templated family (DrawTile16) and removes the now-dead
@@ -1201,4 +1380,4 @@ the truth-value of the comment.)
 
 ---
 
-*Last updated: Stage 2.11 + Stage 3 commit (de-template DrawTile16, remove dispatch scaffold). Branch `tile-untangle` past upstream `8906302` by one commit. **The tile-untangle effort proper is done.** All 11 renderer families de-templated, level-2/3 dispatch scaffold gone, Mode 7 file-scope macros gone. Optional Stage 4 (folding optimizations) and structural cleanup of the now-dead `#ifndef NAME1` wrapper are separate concerns.*
+*Last updated: Stage 3.5 + Stage 4 commit (structural cleanup + fan-out unrolling). Branch `tile-untangle` past upstream `a40fa37` by one commit. All 313 renderer functions now written explicitly; no macros emit function definitions. Body macros, plotters, color-math, and helpers all remain as macros. Optional Stage 5 (folding optimizations) is profile-driven future work.*
