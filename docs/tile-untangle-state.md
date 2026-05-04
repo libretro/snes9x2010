@@ -16,16 +16,22 @@ If anything in this file contradicts conversation history or memory,
 
 **Branch:** `tile-untangle` (origin/libretro/snes9x2010)
 **Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x"
-**Stage:** Stage 2.3 complete (BL1X de-templated); ready to start Stage 2.4 (BL2X)
-**Last code commit:** Stage 2.3 — tile.c: de-template Mode 7 BL1X renderers (this commit)
-**Previous code commit:** `69f75a1` — tile.c: de-template Mode 7 BL4X renderers (Stage 2.2)
-**Penultimate code commit:** `54c9153` — tile.c: parameterize Mode 7 bilinear helper macros (Stage 2.2 prep)
+**Stage:** Stage 2.4 complete (BL2X de-templated); ready to start Stage 2.5 (HR2X)
+**Last code commit:** Stage 2.4 — tile.c: de-template Mode 7 BL renderers (this commit)
+**Previous code commit:** `0e147ff` — tile.c: de-template Mode 7 BL1X renderers (Stage 2.3)
 **In-flight work:** none
 **Working tree:** clean
 
 State file lives in-tree at `docs/tile-untangle-state.md`. Updates
 ride along in the relevant commit (no separate "Update doc"
 commits going forward).
+
+Four M7 hires families are now fully de-templated: HR4X
+(`0cbca9e`), BL4X (`69f75a1`), BL1X (`0e147ff`), BL (this commit).
+The remaining bilinear/HR families to convert: HR2X (Stage 2.5)
+and the native Mode 7 (Stage 2.6). After that, the larger
+non-Mode-7 families (mosaic, backdrop, mosaic-pixel, clipped-tile,
+tile).
 
 ## Invariants — must hold at every commit
 
@@ -164,12 +170,17 @@ Order (small/safe first, large/risky last):
    de-template BL4X). The parameterization commit is shared with
    subsequent BL stages.
 3. ~~`DrawMode7BG1BL1X` and `DrawMode7BG2BL1X`~~ — **done**
-   (Stage 2.3, this commit). Same fan-out pattern as BL4X but
+   (Stage 2.3, `0e147ff`). Same fan-out pattern as BL4X but
    without sub-pixel division. Single commit since helpers were
    already parameterized.
-4. `DrawMode7BG1BL` and `DrawMode7BG2BL` (the existing 2x BL) —
-   **next**.
-5. `DrawMode7BG1HR` and `DrawMode7BG2HR` (the existing 2x HR).
+4. ~~`DrawMode7BG1BL` and `DrawMode7BG2BL` (the existing 2x BL)~~
+   — **done** (Stage 2.4, this commit). Same fan-out pattern as
+   BL4X but with half-step (aa_h = aa/2) sub-pixel division.
+   Removed the `DRAW_TILE_NORMAL_M7HIRES_BILINEAR` macro (no
+   longer referenced) and the `ARGS / M7HIRES_ONLY` scope
+   scaffolding for the BL block (BL was the last user).
+5. `DrawMode7BG1HR` and `DrawMode7BG2HR` (the existing 2x HR) —
+   **next**. Same shape as BL but with nearest-neighbour DRAW_PIXEL.
 6. `DrawMode7BG1` and `DrawMode7BG2` (native Mode 7) — full
    NAME2 set (Normal1x1, Normal2x1, Normal4x1, Hires, Interlace,
    HiresInterlace).
@@ -253,7 +264,67 @@ Status: **TODO** (re-evaluate later)
 
 ## Commit log (newest first)
 
-### Stage 2.3 — tile.c: de-template Mode 7 BL1X renderers (this commit)
+### Stage 2.4 — tile.c: de-template Mode 7 BL renderers (this commit)
+
+Stage 2.4. Same fan-out pattern as BL4X / BL1X: a local
+`DEFINE_M7_BL_FAMILY` macro materializes 14 functions (7 math
+variants x 2 BGs) using the parameterized helpers from `54c9153`.
+
+BL is the original 2x bilinear-filtered Mode 7 path: two samples
+per native pixel using half-step (aa_h = aa/2) sub-pixel division,
+each blended through M7HR_SAMPLE_BILINEAR / M7HR_BLEND_AND_WRITE.
+Differs from BL4X in step factor (1/2 instead of 1/4) and output
+indexing (2*x and 2*x+1 instead of 4*x..4*x+3).
+
+Files changed: `src/tile.c`, +250/-180, +70 net.
+
+Removed:
+  - templated `DrawMode7BG{1,2}BL` instantiation block
+  - `DRAW_TILE_NORMAL_M7HIRES_BILINEAR` macro definition (~110
+    lines, no longer referenced)
+  - `ARGS / M7HIRES_ONLY` scope `#define`s (the BL block was the
+    last user; HR4X / BL4X / BL1X / BL2X are now all de-templated)
+  - dangling `#undef ARGS / #undef M7HIRES_ONLY / #undef
+    DRAW_TILE_NORMAL_M7HIRES_BILINEAR`
+
+Added:
+  - de-templated section with banner comment explaining the family
+  - `DEFINE_M7_BL_FAMILY` fan-out macro with parameter docs
+  - 14 explicit `DrawMode7BG{1,2}BL*_Normal1x1` functions
+  - 2 explicit `Renderers_DrawMode7BG{1,2}BLNormal1x1` arrays
+
+Bundled stale-comment fixes (replaced as part of the section
+banner rewrite):
+  - The "BG2BL pins to low priority tier" claim at the head of
+    the BL block was wrong post-`51b05ee` (the actual code uses
+    the EXTBG per-pixel priority bit just like the other BG2
+    paths). Banner now accurately describes the priority handling.
+  - The "colour math is bypassed" claim was a duplicate of the
+    one fixed in `54c9153`; deleted with the rest of the old
+    header.
+
+Symbol verification (vs pristine `0e147ff`):
+  - 14 BL functions present, byte-identical machine code:
+
+      DrawMode7BG1BLAdd_Normal1x1     0x32d1
+      DrawMode7BG1BLAddF1_2_Normal1x1 0x2f81
+      DrawMode7BG2BL_Normal1x1        0x2d0a
+      DrawMode7BG2BLSubS1_2_Normal1x1 0x3db2
+      (all match pristine exactly; same offsets too)
+
+  - 2 Renderers_ arrays present
+  - Total Draw* count unchanged: 313
+  - Total Renderers_* count unchanged: 45
+  - No new warnings
+
+Behaviour invariants — to be verified externally by Lib before
+push: audio bit-identical, savestate compat, valgrind clean,
+7-distinct-math-variants on BL.
+
+This commit also updates docs/tile-untangle-state.md (in-tree)
+to reflect Stage 2.4 completion.
+
+### `0e147ff` — tile.c: de-template Mode 7 BL1X renderers (Stage 2.3)
 
 Stage 2.3. Same fan-out pattern as HR4X / BL4X: a local
 `DEFINE_M7_BL1X_FAMILY` macro materializes 14 functions (7 math
@@ -448,4 +519,4 @@ the truth-value of the comment.)
 
 ---
 
-*Last updated: Stage 2.3 commit (de-template Mode 7 BL1X). Branch `tile-untangle` past upstream `bc47509` by one commit. Three M7 hires families are now fully de-templated (HR4X, BL4X, BL1X). Stage 2.4 (BL2X) is next; that's the existing 2x bilinear path.*
+*Last updated: Stage 2.4 commit (de-template Mode 7 BL2X). Branch `tile-untangle` past upstream `0e147ff` by one commit. Four M7 hires families are now fully de-templated (HR4X, BL4X, BL1X, BL). Stage 2.5 (HR2X) is next; that's the existing 2x nearest-neighbour path.*
