@@ -3049,15 +3049,22 @@ void NO_OPTIMIZE spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
  APU
 ***********************************************************************************/
 
-#define APU_MINIMUM_SAMPLE_COUNT	(512)
-#define APU_MINIMUM_BUFF_SIZE		(APU_MINIMUM_SAMPLE_COUNT * 2 * 2)
 #define APU_NUMERATOR_NTSC		15664
 #define APU_DENOMINATOR_NTSC		328125
 #define APU_NUMERATOR_PAL		34176
 #define APU_DENOMINATOR_PAL		709379
 
-static int16_t		*landing_buffer = NULL;
-static size_t		buffer_size = 0;
+/* SPC landing buffer.
+
+   Sized for the worst-case PAL frame at the highest effective SPC rate
+   (ticks=4 speedup, ~651 stereo = 1302 mono); 4096 mono shorts gives
+   ~3x headroom. Static so there's no malloc bookkeeping, no err path
+   on init, and the pointer is never NULL - which lets every other
+   audio path drop its NULL guards. The DSP writes here all frame; at
+   end of frame S9xDrainAudio hands the libretro driver a pointer
+   straight into this buffer (zero-copy delivery). */
+#define LANDING_BUFFER_FRAMES	2048
+static int16_t		landing_buffer[LANDING_BUFFER_FRAMES * 2];
 
 static int32		reference_time;
 static uint32		spc_remainder;
@@ -3072,39 +3079,48 @@ static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
 	APU AUDIO PATH
 
 	bsnes-style: SPC's DSP writes stereo pairs into landing_buffer over the
-	frame; at end of frame, S9xMixSamples delivers everything DSP wrote
-	(dsp_m.out - landing_buffer mono samples) and resets the DSP cursor for
-	the next frame's writes. The frontend's resampler handles conversion
-	from the SPC's native rate (declared via retro_get_system_av_info,
-	using S9xGetAudioSampleRate below) to the host audio rate.
+	frame; at end of frame, S9xDrainAudio hands the caller a pointer to
+	those samples and resets the DSP cursor for the next frame's writes.
+	The frontend's resampler handles conversion from the SPC's native rate
+	(declared via retro_get_system_av_info, using S9xGetAudioSampleRate
+	below) to the host audio rate.
+
+	Zero-copy delivery: the libretro driver passes the returned pointer
+	straight into audio_batch_cb. RetroArch's audio_batch_cb is documented
+	as synchronous - it queues into the frontend's own buffer before
+	returning - so the pointer only needs to remain valid for the duration
+	of that call. Since the DSP never runs between S9xDrainAudio's cursor
+	reset and audio_batch_cb's read (DSP catch-up only happens inside
+	S9xAPUExecute, which the libretro driver does not call during
+	audio_upload_samples), the data stays intact.
 
 	No internal resampler. No per-frame integer-sample alignment, no
 	"extra_buf" overflow carry, no SPC_SAMPLE_COUNT bookkeeping. Whatever
 	count of samples DSP produced this frame, that count goes to the
 	frontend, which absorbs the per-frame variation via Dynamic Rate
 	Control (which is exactly what DRC is for).
+
+	Mute handling lives in the libretro driver: when muted it sends a
+	pre-zeroed silence buffer of the appropriate size instead of calling
+	S9xDrainAudio - keeping the frontend's audio clock fed without
+	requiring apu.c to know about mute.
  ***********************************************************************************/
 
-int S9xMixSamples (short *buffer, int max_samples)
+const short *S9xDrainAudio (int *count_out)
 {
-	/* DSP has been writing into landing_buffer at dsp_m.out throughout the
-	   frame. The count of mono samples produced this frame is the cursor's
-	   distance from the start of the buffer. */
 	int written = (int)(dsp_m.out - landing_buffer);
 	if (written < 0)
 		written = 0;
-	if (written > max_samples)
-		written = max_samples;
 
-	if (Settings.Mute)
-		memset(buffer, 0, written * sizeof(short));
-	else
-		memcpy(buffer, landing_buffer, written * sizeof(short));
+	*count_out = written;
 
-	/* Reset DSP cursor to the head of landing_buffer for the next frame. */
-	dsp_set_output(landing_buffer, buffer_size >> 1);
+	/* Reset DSP cursor to the head of landing_buffer for the next frame.
+	   The caller still holds a valid pointer to the just-produced samples;
+	   audio_batch_cb consumes them synchronously and the DSP doesn't run
+	   again until the next retro_run, so there's no aliasing concern. */
+	dsp_set_output(landing_buffer, LANDING_BUFFER_FRAMES * 2);
 
-	return written;
+	return landing_buffer;
 }
 
 /* SPC's natural audio output rate.
@@ -3131,41 +3147,16 @@ unsigned S9xGetAudioSampleRate (void)
 	return (unsigned)(SNES_AUDIO_FREQ * TEMPO_UNIT / timing_hack_denominator + 0.5);
 }
 
-bool8 S9xInitSound (size_t req_buff_size)
+bool8 S9xInitSound (void)
 {
-	/* req_buff_size : size of landing buffer in bytes */
-	if(req_buff_size < APU_MINIMUM_BUFF_SIZE)
-	{
-		S9xMessage(S9X_MSG_ERROR, S9X_CATEGORY_APU,
-			   "The requested buffer size was too small");
-		goto err;
-	}
-
-	buffer_size = req_buff_size;
-
-	if (landing_buffer)
-		free(landing_buffer);
-
-	landing_buffer = (short*)malloc(req_buff_size);
-	if (!landing_buffer)
-		goto err;
-
-	dsp_set_output(landing_buffer, buffer_size >> 1);
-
+	/* landing_buffer is a static array; nothing to allocate. Just hand
+	   the DSP its initial cursor pointing at the start. */
+	dsp_set_output(landing_buffer, LANDING_BUFFER_FRAMES * 2);
 	return TRUE;
-
-err:
-	Settings.Mute = 1;
-	S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_APU,
-			   "Audio output is disabled due to an error");
-	return FALSE;
 }
 
 void S9xSetSoundMute(bool8 mute)
 {
-	if(landing_buffer == NULL)
-		return;
-
 	Settings.Mute = mute;
 }
 
@@ -3236,29 +3227,16 @@ bool8 S9xInitAPU (void)
 
 	memcpy( m.rom, APUROM, sizeof m.rom );
 
-	/* On statically linked platforms (consoles, mobile) the libretro core
-	   stays in memory across ROM unload/reload. If S9xInitAPU is called
-	   without a preceding S9xDeinitAPU - re-init from a different code
-	   path, second ROM load on a frontend that doesn't tear down the core
-	   - the file-static landing_buffer carries over from the previous
-	   session and the assignment below would orphan the old allocation.
-	   Free it here so init is idempotent. */
-	if (landing_buffer)
-	{
-		free(landing_buffer);
-		landing_buffer = NULL;
-	}
-
 	return TRUE;
 }
 
 void S9xDeinitAPU (void)
 {
-	if (landing_buffer)
-	{
-		free(landing_buffer);
-		landing_buffer = NULL;
-	}
+	/* No dynamic state to release. landing_buffer is a static array;
+	   APU CPU/timer/DSP state lives in the file-static `m` and `dsp_m`
+	   structs which are reset on the next S9xInitAPU. Kept as a function
+	   for symmetry with S9xInitAPU and so external callers (the libretro
+	   driver's teardown paths) don't need to change. */
 }
 
 #define S9X_APU_GET_CLOCK(cpucycles)		((ratio_numerator * (cpucycles - reference_time) + spc_remainder) / ratio_denominator)
@@ -3326,7 +3304,7 @@ void S9xResetAPU (void)
 	spc_remainder = 0;
 	spc_reset();
 
-	dsp_set_output(landing_buffer, buffer_size >> 1);
+	dsp_set_output(landing_buffer, LANDING_BUFFER_FRAMES * 2);
 }
 
 void S9xSoftResetAPU (void)
@@ -3335,7 +3313,7 @@ void S9xSoftResetAPU (void)
 	spc_remainder = 0;
 	spc_soft_reset();
 
-	dsp_set_output(landing_buffer, buffer_size >> 1);
+	dsp_set_output(landing_buffer, LANDING_BUFFER_FRAMES * 2);
 }
 
 static void NO_OPTIMIZE from_apu_to_state (uint8 **buf, void *var, size_t size)

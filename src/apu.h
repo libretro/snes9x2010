@@ -463,9 +463,9 @@ void S9xAPUAllowTimeOverflow (bool8 allow);
 void S9xAPULoadState (uint8 * block);
 void S9xAPUSaveState (uint8 * block);
 
-bool8 S9xInitSound (size_t buffer_size);
+bool8 S9xInitSound (void);
 
-int  S9xMixSamples (short *buffer, int max_samples);
+const short *S9xDrainAudio (int *count_out);
 void S9xSetSoundMute (bool8 mute);
 unsigned S9xGetAudioSampleRate (void);
 

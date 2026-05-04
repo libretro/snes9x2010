@@ -221,22 +221,20 @@ void linearFree(void* mem);
 #define CORE_VERSION	"1.52.4"
 #define LIBRETRO_LIB_NAME "Snes9x 2010"
 
-/* APU_BUF_SIZE sizes the SPC's landing buffer.
-
-   The drain buffer (audio_out_buffer) holds one frame's worth of stereo
-   samples on the way out to audio_batch_cb. Worst case is one PAL frame
-   at the SPC's effective rate: ~32550 / 50.007 ~= 651 stereo frames
-   for a ticks=4 speedup-hack cart in PAL (the absolute worst case).
-   AUDIO_OUT_FRAMES_MAX = 768 covers that with margin in 3 KB.
-   One pull per retro_run, no chunking, no growth. */
-#define APU_BUF_FRAMES        (2048 * 2)
-#define APU_BUF_SIZE          (APU_BUF_FRAMES * sizeof(int16_t))
-#define AUDIO_OUT_FRAMES_MAX  768
-
 #define VIDEO_REFRESH_RATE_PAL  (PAL_MASTER_CLOCK / (double)(SNES_CYCLES_PER_SCANLINE * SNES_MAX_PAL_VCOUNTER))
 #define VIDEO_REFRESH_RATE_NTSC (NTSC_MASTER_CLOCK / (double)(SNES_CYCLES_PER_SCANLINE * SNES_MAX_NTSC_VCOUNTER))
 
-static int16_t audio_out_buffer[AUDIO_OUT_FRAMES_MAX * 2];
+/* Pre-zeroed silence buffer used in place of real SPC output when
+   Settings.Mute is set. Sized for one worst-case PAL frame at the
+   highest effective SPC rate (ticks=4 speedup, ~651 stereo). The
+   '+ a bit' rounds up to a tidy power of two. RetroArch's audio_batch_cb
+   only reads (frame_count * 2) shorts, so over-sizing is harmless and
+   keeps the math simple if rates change.
+
+   Declared non-const so it lives in BSS (zero file footprint, zero
+   initialized at startup) rather than .rodata; we never write to it. */
+#define MUTE_BUFFER_FRAMES 768
+static int16_t mute_buffer[MUTE_BUFFER_FRAMES * 2];
 
 enum
 {
@@ -731,8 +729,10 @@ void retro_get_system_info(struct retro_system_info *info)
 	info->block_extract    = false;
 }
 
-/* Drain one frame of audio from the resampler and hand it to the frontend
- * in a single audio_batch_cb call.
+/* Drain one frame of audio from the SPC and hand it to the frontend in a
+ * single audio_batch_cb call. Zero-copy: S9xDrainAudio returns a pointer
+ * directly into the SPC's landing_buffer, which RetroArch reads
+ * synchronously inside audio_batch_cb.
  *
  * libretro pulls audio exactly once per retro_run via the batch callback.
  * The mid-frame "samples available" hook (S9xSetSamplesAvailableCallback)
@@ -744,16 +744,25 @@ void retro_get_system_info(struct retro_system_info *info)
  * 1.6% more on speedup-hack carts (the SPC produces samples at
  * TEMPO_UNIT / timing_hack_denominator times its normal rate and we
  * report that higher rate to the frontend - see S9xGetAudioSampleRate).
- * AUDIO_OUT_FRAMES_MAX = 768 covers the worst case with margin.
  *
- * S9xMixSamples returns silence when Settings.Mute is set; we still emit
- * the silence to keep the frontend's audio clock aligned with video. */
+ * On mute, send silence at the same cadence to keep the frontend's
+ * audio clock fed. Skipping the call would let RetroArch's audio ring
+ * drain and pull DRC out of its steady-state tracking. */
 static void audio_upload_samples(void)
 {
-	int n = S9xMixSamples(audio_out_buffer,
-		(int)(sizeof(audio_out_buffer) / sizeof(audio_out_buffer[0])));
-	if (n > 0)
-		audio_batch_cb(audio_out_buffer, (size_t)n >> 1);
+	int n;
+	const int16_t *src = S9xDrainAudio(&n);
+	if (n <= 0)
+		return;
+
+	if (Settings.Mute)
+	{
+		src = mute_buffer;
+		if (n > MUTE_BUFFER_FRAMES * 2)
+			n = MUTE_BUFFER_FRAMES * 2;
+	}
+
+	audio_batch_cb(src, (size_t)n >> 1);
 }
 
 void retro_set_controller_port_device(unsigned in_port, unsigned device)
@@ -1006,7 +1015,7 @@ void retro_init(void)
 		exit(1);
 	}
 
-	if (S9xInitSound(APU_BUF_SIZE) != true)
+	if (S9xInitSound() != true)
 	{
 		const char *const aud_err = "Audio output is disabled due to an internal error";
 		struct retro_message msg = { aud_err, 360 };
