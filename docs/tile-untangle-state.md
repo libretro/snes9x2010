@@ -16,19 +16,28 @@ If anything in this file contradicts conversation history or memory,
 
 **Branch:** `tile-untangle` (origin/libretro/snes9x2010)
 **Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x"
-**Stage:** Stage 2.6a complete (native Mode 7 BG1/BG2 de-templated); 2.6b (drop unreferenced NAME2 arrays) is next
-**Last code commit:** Stage 2.6a — tile.c: de-template native Mode 7 BG renderers (this commit)
-**Previous code commit:** `624492c` — tile.c: de-template Mode 7 HR renderers (Stage 2.5)
+**Stage:** Stages 2.6b + 2.7 complete (mosaic Mode 7 de-templated; dead native NAME2 variants dropped); ready for Stage 2.8 (DrawBackdrop16)
+**Last code commit:** Stage 2.6b/2.7 — tile.c: de-template mosaic Mode 7 + drop dead NAME2 variants (this commit)
+**Previous code commit:** `f5894be` — tile.c: de-template native Mode 7 BG renderers (Stage 2.6a)
 **In-flight work:** none
 **Working tree:** clean
 
 State file lives in-tree at `docs/tile-untangle-state.md`. Updates
 ride along in the relevant commit.
 
-Six families fully de-templated: HR4X (`0cbca9e`), BL4X (`69f75a1`),
-BL1X (`0e147ff`), BL (`6fde805`), HR (`624492c`), and native
-Mode 7 BG (this commit). The mosaic variants (DrawMode7MosaicBG{1,2})
-remain templated; Stage 2.7 takes them.
+All Mode 7 renderer families are now fully de-templated:
+HR4X (`0cbca9e`), BL4X (`69f75a1`), BL1X (`0e147ff`), BL (`6fde805`),
+HR (`624492c`), native BG (`f5894be`), mosaic + dead-array cleanup
+(this commit). The Mode 7 group is done. Stage 2.8 starts the
+non-Mode-7 families: DrawBackdrop16 first, then DrawMosaicPixel16,
+DrawClippedTile16, DrawTile16.
+
+The level-1 Mode 7 templating scaffold is gone: file-scope
+`Z1`/`Z2`/`MASK`/`DCMODE`/`BG`/`NO_INTERLACE` `#define`s for Mode 7
+removed. The `DRAW_TILE_NORMAL` and `DRAW_TILE_MOSAIC` macros are
+deleted. The level-2 dispatch in `tile.c` is still alive because
+the non-Mode-7 templated families (DrawBackdrop16,
+DrawMosaicPixel16, DrawClippedTile16, DrawTile16) still use it.
 
 ## Invariants — must hold at every commit
 
@@ -185,23 +194,24 @@ Order (small/safe first, large/risky last):
    This was the last user of the level-1 Mode 7 hires templating
    scaffold.
 6. ~~`DrawMode7BG1` and `DrawMode7BG2` (native Mode 7)~~ — **done**
-   (Stage 2.6a, this commit). Full NAME2 set emitted (Normal1x1,
-   Normal2x1, Normal4x1, Hires, Interlace, HiresInterlace), with
-   Normal4x1/Interlace/HiresInterlace LTO-stripped just like the
-   templated form. Two-level fan-out: outer DEFINE_M7_BG over BG
-   names, inner DEFINE_M7_NAME2 over the 6 NAME2 variants, each
-   parameterized by a per-NAME2 pixel plotter (M7N_PIXEL_*).
-   The DRAW_TILE_NORMAL macro is gone.
+   (Stage 2.6a, `f5894be`). Full NAME2 set emitted in 2.6a; dead
+   variants dropped in 2.6b/2.7 below.
 
-   Stage 2.6b (next, small): drop the never-referenced NAME2
-   variants (Normal4x1, Interlace, HiresInterlace) for the
-   de-templated families. Cleans up the 8 unused-Renderers
-   warnings.
+   Stage 2.6b folded into Stage 2.7 (this commit): drop the
+   never-referenced NAME2 variants (Normal4x1, Interlace,
+   HiresInterlace) for the de-templated families. Cleans up all
+   the unused-Renderers warnings.
 
-7. `DrawMode7MosaicBG1` and `DrawMode7MosaicBG2` (Stage 2.7) —
-   the mosaic variants of native Mode 7. Still templated;
-   uses DRAW_TILE_MOSAIC which stays alive until then.
-8. `DrawBackdrop16` — full NAME2 set.
+7. ~~`DrawMode7MosaicBG1` and `DrawMode7MosaicBG2` (Stage 2.7)~~ —
+   **done** (this commit). Mosaic Mode 7 de-templated using a
+   `TILE_BODY_MOSAIC_M7` body macro plus `DEFINE_M7_MOSAIC_*`
+   fan-out, mirroring the native machinery. Combined with 2.6b
+   (drop dead NAME2 variants for both native and mosaic) into
+   one commit. The `DRAW_TILE_MOSAIC` macro is gone, and the
+   file-scope `Z1`/`Z2`/`MASK`/`DCMODE`/`BG`/`NO_INTERLACE`
+   `#define`s for Mode 7 are gone.
+8. `DrawBackdrop16` — full NAME2 set. **Next.** First non-Mode-7
+   family.
 9. `DrawMosaicPixel16` — full NAME2 set.
 10. `DrawClippedTile16` — full NAME2 set.
 11. `DrawTile16` — full NAME2 set. Largest; convert last.
@@ -280,7 +290,94 @@ Status: **TODO** (re-evaluate later)
 
 ## Commit log (newest first)
 
-### Stage 2.6a — tile.c: de-template native Mode 7 BG renderers (this commit)
+### Stage 2.6b/2.7 — tile.c: de-template mosaic Mode 7 + drop dead NAME2 variants (this commit)
+
+Combines Stage 2.6b (drop unused NAME2 variants for de-templated
+native Mode 7 BG families) and Stage 2.7 (de-template the mosaic
+Mode 7 NAME1 families) into one commit.
+
+Stage 2.7 part: de-templates DrawMode7MosaicBG1 and DrawMode7MosaicBG2.
+Same approach as native: a `TILE_BODY_MOSAIC_M7` body macro
+mirrors the structure of the previously-templated DRAW_TILE_MOSAIC,
+parameterized for explicit MATH_SELECTOR/MATH_OP/Z_EXPR/MASK_VAL/
+DC_EXPR/BG_INDEX/PIXEL_PLOT. The `BG_INDEX` parameter (0 or 1)
+selects which `PPU.BGMosaic[]` entry to read for the per-BG
+mosaic-enable bit; this is the only structural difference from
+the native body. New fan-out macros `DEFINE_M7_MOSAIC_FN`,
+`DEFINE_M7_MOSAIC_NAME2`, `DEFINE_M7_MOSAIC_BG` mirror the native
+ones. 42 functions emitted (2 BGs x 3 NAME2 x 7 math) plus 6
+arrays.
+
+Stage 2.6b part: Drop Normal4x1, Interlace, HiresInterlace from
+both native and mosaic Mode 7 BG families. The dispatcher only
+selects Normal1x1, Normal2x1, and Hires (LTO had been stripping
+the others all along). The `M7N_PIXEL_N4x1` macro is also
+dropped since no surviving variant uses it.
+
+Together: 84 native + 42 mosaic = 126 native+mosaic Mode 7
+functions emitted explicitly. Down from 168+168 = 336 in the
+templated form before LTO (LTO stripped half on both sides).
+
+Pure refactor confirmed via byte-identical machine code:
+  - 313 Draw* functions, full per-function size diff vs pristine
+    `f5894be` is empty across all 313.
+  - 44 Renderers_ arrays, full diff empty.
+
+Codegen-correctness lesson learned: my first draft of
+`M7N_PIXEL_*` plotter macros parenthesized the N parameter
+(`Offset + 2 * (N)`). For native Mode 7 this was byte-identical
+because the call site passes `N = x` (a simple loop variable)
+and `2 * x` == `2 * (x)`. For mosaic the call site passes
+`N = w + h * GFX.PPL` (a compound expression), and the original
+templated `DRAW_PIXEL_*` macros used unparenthesized N, so the
+substitution was `2 * w + h * GFX.PPL` not `2 * (w + h * GFX.PPL)`
+-- semantically different memory locations. I changed the
+plotter macros to use unparenthesized N to match the original;
+this restored byte-identical mosaic codegen and (incidentally)
+preserves whatever buffer-offset semantics the original assumed.
+
+Bundled cleanups:
+  - `DRAW_TILE_MOSAIC` macro definition deleted (~135 lines)
+  - file-scope `Z1`/`Z2`/`MASK`/`DCMODE`/`BG`/`NO_INTERLACE`
+    `#define`s for Mode 7 deleted
+  - `M7N_PIXEL_N4x1` definition deleted
+  - dangling `#undef DRAW_TILE_MOSAIC` and `#undef NO_INTERLACE`
+    deleted
+
+Removed:
+  - templated DrawMode7MosaicBG{1,2} instantiation block
+  - DRAW_TILE_MOSAIC macro definition
+  - file-scope Mode 7 #defines (Z1, Z2, MASK, DCMODE, BG,
+    NO_INTERLACE)
+  - M7N_PIXEL_N4x1 macro
+  - 3 dead NAME2 variants per BG (Normal4x1, Interlace,
+    HiresInterlace) -- previously LTO-stripped but visible in
+    the source
+
+Added:
+  - TILE_BODY_MOSAIC_M7 body macro
+  - DEFINE_M7_MOSAIC_FN / DEFINE_M7_MOSAIC_NAME2 /
+    DEFINE_M7_MOSAIC_BG fan-out macros
+  - 42 explicit DrawMode7MosaicBG{1,2}* functions
+  - 6 explicit Renderers_DrawMode7MosaicBG{1,2}* arrays
+
+Files changed: `src/tile.c`, +251/-269, -18 net (the ~135-line
+DRAW_TILE_MOSAIC definition and the dead-NAME2 boilerplate
+together outweigh the new mosaic body and fan-out).
+
+The Mode 7 group is now complete. Stage 2.8 (DrawBackdrop16)
+starts the non-Mode-7 families.
+
+This commit also updates docs/tile-untangle-state.md to reflect
+Stage 2.6b/2.7 completion. Bundled SHA refresh from the previous
+rebase (Stage 2.6a entry switching from "(this commit)"
+placeholder to its real upstream SHA `f5894be`).
+
+Behaviour invariants -- to be verified externally by Lib before
+push: audio bit-identical, savestate compat, valgrind clean,
+7-distinct-math-variants on the new mosaic functions.
+
+### `f5894be` — tile.c: de-template native Mode 7 BG renderers (Stage 2.6a)
 
 Stage 2.6a. De-templates the two non-mosaic native Mode 7 NAME1
 families: `DrawMode7BG1` and `DrawMode7BG2`. Their mosaic
@@ -687,4 +784,4 @@ the truth-value of the comment.)
 
 ---
 
-*Last updated: Stage 2.6a commit (de-template native Mode 7 BG1/BG2). Branch `tile-untangle` past upstream `624492c` by one commit. Six families fully de-templated (HR4X, BL4X, BL1X, BL, HR, native Mode 7 BG). Stage 2.6b (drop dead arrays) and Stage 2.7 (mosaic) remain in the Mode 7 group.*
+*Last updated: combined Stage 2.6b + 2.7 commit (de-template mosaic Mode 7, drop dead NAME2 variants for native+mosaic). Branch `tile-untangle` past upstream `f5894be` by one commit. The Mode 7 group is complete: HR4X, BL4X, BL1X, BL, HR, native BG, mosaic BG all de-templated. Stage 2.8 (DrawBackdrop16) starts the non-Mode-7 families.*
