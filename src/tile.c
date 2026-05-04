@@ -1057,77 +1057,205 @@ void S9xSelectTileConverter (int depth, bool8 hires, bool8 sub, bool8 mosaic)
 
    Pix is the pixel to draw. */
 
-#define Z1	GFX.Z1
-#define Z2	GFX.Z2
+/* ====================================================================
+ * DrawTile16 renderers
+ * ====================================================================
+ *
+ * One NAME1 family: DrawTile16. Renders an unclipped 8-pixel-wide
+ * tile. The hot path of the BG-tile renderer -- this is what gets
+ * called for every fully-visible non-Mode-7 BG tile.
+ *
+ * Body shape: simpler than DrawClippedTile16 (no per-pixel switch
+ * over StartPixel, no Width clamp), but same 4 flip-case structure.
+ * Each scanline runs `for (n = 0; n < 8; n++) DRAW_PIXEL(n, Pix =
+ * bp[idx])` where idx selects from bp directly or from
+ * bp[7 - n] for H_FLIP.
+ *
+ * Z values are runtime: GFX.Z1 / GFX.Z2.
+ *
+ * ARGS shape: (uint32 Tile, uint32 Offset, uint32 StartLine,
+ * uint32 LineCount). Four parameters -- the smallest of any tile
+ * family, since unclipped tiles don't need StartPixel or Width.
+ *
+ * Six NAME2 variants emitted: Normal1x1, Normal2x1, Normal4x1,
+ * Hires, Interlace, HiresInterlace. Per NAME2:
+ *   BPSTART = StartLine                               (non-interlace)
+ *           = (StartLine * 2 + BG.InterlaceLine)      (interlace)
+ *   BP_STEP = 8                                       (PITCH = 1)
+ *           = 16                                      (PITCH = 2)
+ *
+ * 7 math variants per NAME2, 6 NAME2 = 42 functions + 6 dispatch
+ * arrays.
+ *
+ * This is the last templated family to be de-templated. Once this
+ * commit lands, no `#include "tile.c"` self-recursion remains
+ * inside the `#ifndef NAME1` branch -- so the level-2 and level-3
+ * dispatch (the `#else` branches that handled `NAME1` defined and
+ * `NAME1 + NAME2` defined) becomes dead code. This commit also
+ * removes that scaffold (Stage 3 of the tile-untangle plan).
+ */
 
-#define DRAW_TILE() \
-	uint8	*pCache, *bp, Pix, n; \
-	int32	l; \
-	\
-	GET_CACHED_TILE(); \
-	if (IS_BLANK_TILE()) \
-		return; \
-	SELECT_PALETTE(); \
-	\
-	if (!(Tile & (V_FLIP | H_FLIP))) \
-	{ \
-		bp = pCache + BPSTART; \
-		for (l = LineCount; l > 0; l--, bp += 8 * PITCH, Offset += GFX.PPL) \
-		{ \
-         for (n = 0; n < 8; n++) \
-         { \
-            DRAW_PIXEL(n, Pix = bp[n]); \
-         } \
-		} \
-	} \
-	else \
-	if (!(Tile & V_FLIP)) \
-	{ \
-		bp = pCache + BPSTART; \
-		for (l = LineCount; l > 0; l--, bp += 8 * PITCH, Offset += GFX.PPL) \
-      { \
-         for (n = 0; n < 8; n++) \
-         { \
-            DRAW_PIXEL(n, Pix = bp[7 - n]); \
-         } \
-      } \
-	} \
-	else \
-	if (!(Tile & H_FLIP)) \
-	{ \
-		bp = pCache + 56 - BPSTART; \
-		for (l = LineCount; l > 0; l--, bp -= 8 * PITCH, Offset += GFX.PPL) \
-      { \
-         for (n = 0; n < 8; n++) \
-         { \
-            DRAW_PIXEL(n, Pix = bp[n]); \
-         } \
-      } \
-	} \
-	else \
-	{ \
-		bp = pCache + 56 - BPSTART; \
-		for (l = LineCount; l > 0; l--, bp -= 8 * PITCH, Offset += GFX.PPL) \
-      { \
-         for (n = 0; n < 8; n++) \
-         { \
-            DRAW_PIXEL(n, Pix = bp[7 - n]); \
-         } \
-      } \
-	}
+/* ---- Section-internal pixel plotters -------------------------------
+ *
+ * Same shape as DrawMosaicPixel16 / DrawClippedTile16: Z1 = GFX.Z1,
+ * Z2 = GFX.Z2 baked in, Pix is a runtime variable, N is
+ * unparenthesized. Locally named DT_PIXEL_*. */
 
-#define NAME1	DrawTile16
-#define ARGS	uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount
+#define DT_PIXEL_N1x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + N] && (M)) \
+    { \
+        GFX.S[Offset + N] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + N], \
+            GFX.SubZBuffer[Offset + N]); \
+        GFX.DB[Offset + N] = GFX.Z2; \
+    }
 
-/* Second-level include: Get the DrawTile16 renderers. */
+#define DT_PIXEL_N2x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
+    { \
+        GFX.S[Offset + 2 * N] = GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 2 * N], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
+    }
 
-#include "tile.c"
+#define DT_PIXEL_N4x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + 4 * N] && (M)) \
+    { \
+        uint16 cc__ = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 4 * N], \
+            GFX.SubZBuffer[Offset + 4 * N]); \
+        GFX.S[Offset + 4 * N] = GFX.S[Offset + 4 * N + 1] = GFX.S[Offset + 4 * N + 2] = GFX.S[Offset + 4 * N + 3] = cc__; \
+        GFX.DB[Offset + 4 * N] = GFX.DB[Offset + 4 * N + 1] = GFX.DB[Offset + 4 * N + 2] = GFX.DB[Offset + 4 * N + 3] = GFX.Z2; \
+    }
 
-#undef NAME1
-#undef ARGS
-#undef DRAW_TILE
-#undef Z1
-#undef Z2
+#define DT_PIXEL_H2x1(N, M, MATH_SELECTOR, MATH_OP) \
+    if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
+    { \
+        GFX.S[Offset + 2 * N] = MATH_SELECTOR(MATH_OP, \
+            GFX.ScreenColors[Pix], \
+            GFX.SubScreen[Offset + 2 * N], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
+            (GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * N + 2]), \
+            GFX.RealScreenColors[Pix], \
+            GFX.SubZBuffer[Offset + 2 * N]); \
+        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
+    }
+
+/* ---- Section-internal tile body ------------------------------------
+ *
+ * Body identical to the previously-templated DRAW_TILE() macro for
+ * unclipped tile (now deleted), parameterized for explicit
+ * BPSTART_EXPR / BP_STEP_EXPR / MATH_SELECTOR / MATH_OP / PIXEL_PLOT.
+ * Four flip-case branches, each with a per-line for-loop over the
+ * 8 source pixels. */
+#define TILE_BODY_UNCLIPPED(BPSTART_EXPR, BP_STEP_EXPR, MATH_SELECTOR, MATH_OP, PIXEL_PLOT) \
+{ \
+    uint8 *pCache, *bp, Pix, n; \
+    int32 l; \
+    GET_CACHED_TILE(); \
+    if (IS_BLANK_TILE()) \
+        return; \
+    SELECT_PALETTE(); \
+    if (!(Tile & (V_FLIP | H_FLIP))) \
+    { \
+        bp = pCache + (BPSTART_EXPR); \
+        for (l = LineCount; l > 0; l--, bp += (BP_STEP_EXPR), Offset += GFX.PPL) \
+        { \
+            for (n = 0; n < 8; n++) \
+            { \
+                PIXEL_PLOT(n, Pix = bp[n], MATH_SELECTOR, MATH_OP) \
+            } \
+        } \
+    } \
+    else \
+    if (!(Tile & V_FLIP)) \
+    { \
+        bp = pCache + (BPSTART_EXPR); \
+        for (l = LineCount; l > 0; l--, bp += (BP_STEP_EXPR), Offset += GFX.PPL) \
+        { \
+            for (n = 0; n < 8; n++) \
+            { \
+                PIXEL_PLOT(n, Pix = bp[7 - n], MATH_SELECTOR, MATH_OP) \
+            } \
+        } \
+    } \
+    else \
+    if (!(Tile & H_FLIP)) \
+    { \
+        bp = pCache + 56 - (BPSTART_EXPR); \
+        for (l = LineCount; l > 0; l--, bp -= (BP_STEP_EXPR), Offset += GFX.PPL) \
+        { \
+            for (n = 0; n < 8; n++) \
+            { \
+                PIXEL_PLOT(n, Pix = bp[n], MATH_SELECTOR, MATH_OP) \
+            } \
+        } \
+    } \
+    else \
+    { \
+        bp = pCache + 56 - (BPSTART_EXPR); \
+        for (l = LineCount; l > 0; l--, bp -= (BP_STEP_EXPR), Offset += GFX.PPL) \
+        { \
+            for (n = 0; n < 8; n++) \
+            { \
+                PIXEL_PLOT(n, Pix = bp[7 - n], MATH_SELECTOR, MATH_OP) \
+            } \
+        } \
+    } \
+}
+
+/* ---- Outer fan-out ------------------------------------------------- */
+#define DEFINE_DT_FN(suffix, MATH_SELECTOR, MATH_OP, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+static void DrawTile16##suffix##NAME2_TAG \
+    (uint32 Tile, uint32 Offset, uint32 StartLine, uint32 LineCount) \
+TILE_BODY_UNCLIPPED(BPSTART_EXPR, BP_STEP_EXPR, MATH_SELECTOR, MATH_OP, PIXEL_PLOT)
+
+/* Per-NAME2 7-fold math fan-out plus dispatch array. */
+#define DEFINE_DT_NAME2(NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_DT_FN(_,        NOMATH,   ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_DT_FN(Add_,     REGMATH,  ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_DT_FN(AddF1_2_, MATHF1_2, ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_DT_FN(AddS1_2_, MATHS1_2, ADD, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_DT_FN(Sub_,     REGMATH,  SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_DT_FN(SubF1_2_, MATHF1_2, SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+DEFINE_DT_FN(SubS1_2_, MATHS1_2, SUB, NAME2_TAG, BPSTART_EXPR, BP_STEP_EXPR, PIXEL_PLOT) \
+static void (*Renderers_DrawTile16##NAME2_TAG[7]) (uint32, uint32, uint32, uint32) = \
+{ \
+    DrawTile16_##NAME2_TAG, \
+    DrawTile16Add_##NAME2_TAG, \
+    DrawTile16AddF1_2_##NAME2_TAG, \
+    DrawTile16AddS1_2_##NAME2_TAG, \
+    DrawTile16Sub_##NAME2_TAG, \
+    DrawTile16SubF1_2_##NAME2_TAG, \
+    DrawTile16SubS1_2_##NAME2_TAG, \
+};
+
+/* Non-interlace NAME2 variants: BPSTART = StartLine, BP_STEP = 8. */
+DEFINE_DT_NAME2(Normal1x1, StartLine,  8, DT_PIXEL_N1x1)
+DEFINE_DT_NAME2(Normal2x1, StartLine,  8, DT_PIXEL_N2x1)
+DEFINE_DT_NAME2(Normal4x1, StartLine,  8, DT_PIXEL_N4x1)
+DEFINE_DT_NAME2(Hires,     StartLine,  8, DT_PIXEL_H2x1)
+
+/* Interlace NAME2 variants: BPSTART = StartLine * 2 + BG.InterlaceLine,
+ * BP_STEP = 16. */
+DEFINE_DT_NAME2(Interlace,      (StartLine * 2 + BG.InterlaceLine), 16, DT_PIXEL_N2x1)
+DEFINE_DT_NAME2(HiresInterlace, (StartLine * 2 + BG.InterlaceLine), 16, DT_PIXEL_H2x1)
+
+#undef DEFINE_DT_NAME2
+#undef DEFINE_DT_FN
+#undef TILE_BODY_UNCLIPPED
+#undef DT_PIXEL_H2x1
+#undef DT_PIXEL_N4x1
+#undef DT_PIXEL_N2x1
+#undef DT_PIXEL_N1x1
+
+/* End of DrawTile16 de-templated section.
+ * ==================================================================== */
 
 /* ====================================================================
  * DrawClippedTile16 renderers
@@ -3788,269 +3916,5 @@ static void (*Renderers_DrawMode7BG2BL1XNormal1x1[7]) (uint32, uint32, int) =
 /* End of BL1X de-templated section.
  * ==================================================================== */
 
-/*****************************************************************************/
-#else
-#ifndef NAME2 /* Second-level: Get all the NAME1 renderers. */
-/*****************************************************************************/
-
-#define BPSTART	StartLine
-#define PITCH	1
-
-/* The 1x1 pixel plotter, for speedhacking modes. */
-
-#define DRAW_PIXEL(N, M) \
-	if (Z1 > GFX.DB[Offset + N] && (M)) \
-	{ \
-		GFX.S[Offset + N] = MATH(GFX.ScreenColors[Pix], GFX.SubScreen[Offset + N], GFX.SubZBuffer[Offset + N]); \
-		GFX.DB[Offset + N] = Z2; \
-	}
-
-#define NAME2	Normal1x1
-
-/* Third-level include: Get the Normal1x1 renderers. */
-
-#include "tile.c"
-
-#undef NAME2
-#undef DRAW_PIXEL
-
-/* The remaining NAME2 variants (Normal2x1, Hires, Interlace,
-   HiresInterlace) are not used by the M7Hires Mode 7 renderers - the
-   M7Hires DRAW_TILE body emits to 2x output indices itself, so it pairs
-   with the Normal1x1 DRAW_PIXEL above. The M7HIRES_ONLY guard lets
-   those NAME1 instantiations skip these blocks and emit only the
-   Normal1x1 variant. All other NAME1 instantiations leave M7HIRES_ONLY
-   undefined, so the existing set of variants is generated unchanged. */
-#ifndef M7HIRES_ONLY
-
-/* The 2x1 pixel plotter, for normal rendering when we've used hires/interlace already this frame. */
-
-#define DRAW_PIXEL_N2x1(N, M) \
-	if (Z1 > GFX.DB[Offset + 2 * N] && (M)) \
-	{ \
-		GFX.S[Offset + 2 * N] = GFX.S[Offset + 2 * N + 1] = MATH(GFX.ScreenColors[Pix], GFX.SubScreen[Offset + 2 * N], GFX.SubZBuffer[Offset + 2 * N]); \
-		GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = Z2; \
-	}
-
-#define DRAW_PIXEL(N, M)	DRAW_PIXEL_N2x1(N, M)
-#define NAME2				Normal2x1
-
-/* Third-level include: Get the Normal2x1 renderers. */
-
-#include "tile.c"
-
-#undef NAME2
-#undef DRAW_PIXEL
-
-/* The 4x1 pixel plotter, for Mode 7 hires 4x rendering. Each native
-   pixel writes to four buffer pixels at Offset + 4*N, +4*N+1,
-   +4*N+2, +4*N+3. Used for non-Mode7 BG layers and sprites/HUD when
-   the frame is in 4x Mode 7 hires; the Mode 7 BGs themselves use
-   the M7HR_4X / M7BL_4X tile bodies which write to the same indices
-   directly. */
-
-#define DRAW_PIXEL_N4x1(N, M) \
-	if (Z1 > GFX.DB[Offset + 4 * N] && (M)) \
-	{ \
-		uint16 cc__ = MATH(GFX.ScreenColors[Pix], GFX.SubScreen[Offset + 4 * N], GFX.SubZBuffer[Offset + 4 * N]); \
-		GFX.S[Offset + 4 * N] = GFX.S[Offset + 4 * N + 1] = GFX.S[Offset + 4 * N + 2] = GFX.S[Offset + 4 * N + 3] = cc__; \
-		GFX.DB[Offset + 4 * N] = GFX.DB[Offset + 4 * N + 1] = GFX.DB[Offset + 4 * N + 2] = GFX.DB[Offset + 4 * N + 3] = Z2; \
-	}
-
-#define DRAW_PIXEL(N, M)	DRAW_PIXEL_N4x1(N, M)
-#define NAME2				Normal4x1
-
-/* Third-level include: Get the Normal4x1 renderers. */
-
-#include "tile.c"
-
-#undef NAME2
-#undef DRAW_PIXEL
-
-/* Hires pixel plotter, this combines the main and subscreen pixels as appropriate to render hires or pseudo-hires images.*/
-/* Use it only on the main screen, subscreen should use Normal2x1 instead.*/
-/* Hires math:*/
-/*     Main pixel is mathed as normal: Main(x, y) * Sub(x, y).*/
-/*     Sub pixel is mathed somewhat weird: Basically, for Sub(x + 1, y) we apply the same operation we applied to Main(x, y)*/
-/*     (e.g. no math, add fixed, add1/2 subscreen) using Main(x, y) as the "corresponding subscreen pixel".*/
-/*     Also, color window clipping clips Sub(x + 1, y) if Main(x, y) is clipped, not Main(x + 1, y).*/
-/*     We don't know how Sub(0, y) is handled.*/
-
-#define DRAW_PIXEL_H2x1(N, M) \
-if (Z1 > GFX.DB[Offset + 2 * N] && (M)) \
-    { \
-        GFX.S[Offset + 2 * N] = MATH(GFX.ScreenColors[Pix], GFX.SubScreen[Offset + 2 * N], GFX.SubZBuffer[Offset + 2 * N]); \
-        GFX.S[Offset + 2 * N + 1] = MATH((GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * N + 2]), GFX.RealScreenColors[Pix], GFX.SubZBuffer[Offset + 2 * N]); \
-        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = Z2; \
-    }
-
-#define DRAW_PIXEL(N, M)	DRAW_PIXEL_H2x1(N, M)
-#define NAME2				Hires
-
-/* Third-level include: Get the Hires renderers. */
-
-#include "tile.c"
-
-#undef NAME2
-#undef DRAW_PIXEL
-
-/* Interlace: Only draw every other line, so we'll redefine BPSTART and
-   PITCH to do so.
-
-   Otherwise, it's the same as Normal2x1/Hires2x1. */
-
-#undef BPSTART
-#undef PITCH
-
-#define BPSTART	(StartLine * 2 + BG.InterlaceLine)
-#define PITCH	2
-
-#ifndef NO_INTERLACE
-
-#define DRAW_PIXEL(N, M)	DRAW_PIXEL_N2x1(N, M)
-#define NAME2				Interlace
-
-/* Third-level include: Get the double width Interlace renderers. */
-
-#include "tile.c"
-
-#undef NAME2
-#undef DRAW_PIXEL
-
-#define DRAW_PIXEL(N, M)	DRAW_PIXEL_H2x1(N, M)
-#define NAME2				HiresInterlace
-
-/* Third-level include: Get the HiresInterlace renderers. */
-
-#include "tile.c"
-
-#undef NAME2
-#undef DRAW_PIXEL
-
-#endif
-
-#endif /* !M7HIRES_ONLY */
-
-#undef BPSTART
-#undef PITCH
-
-/*****************************************************************************/
-#else /* Third-level: Renderers for each math mode for NAME1 + NAME2. */
-/*****************************************************************************/
-
-#define CONCAT3(A, B, C)	A##B##C
-#define MAKENAME(A, B, C)	CONCAT3(A, B, C)
-
-/* Each of the 7 math variants below defines three macros that
-   together describe the colour-math op for this specialisation:
-
-     MATH(A, B, C)        compose-and-return form. Used by the older
-                          DRAW_PIXEL_* plotters that write through a
-                          single MATH(...) call site.
-     MATH_SELECTOR        token: NOMATH, REGMATH, MATHF1_2, or
-                          MATHS1_2. Used by helpers that take the
-                          selector and op as separate parameters,
-                          e.g. M7HR_BLEND_AND_WRITE invokes
-                          math_selector(math_op, A, B, C).
-     MATH_OP              token: ADD or SUB (for selectors that
-                          care; NOMATH ignores it).
-
-   MATH is the compose-and-return form: MATH(A,B,C) yields the
-   colour. MATH_SELECTOR / MATH_OP are the lower-level pair that
-   the parameterised helpers consume. Both forms describe the same
-   op; pick whichever fits the caller. */
-
-static void MAKENAME(NAME1, _, NAME2) (ARGS)
-{
-#define MATH(A, B, C)	NOMATH(x, A, B, C)
-#define MATH_SELECTOR	NOMATH
-#define MATH_OP		x
-	DRAW_TILE();
-#undef MATH
-#undef MATH_SELECTOR
-#undef MATH_OP
-}
-
-static void MAKENAME(NAME1, Add_, NAME2) (ARGS)
-{
-#define MATH(A, B, C)	REGMATH(ADD, A, B, C)
-#define MATH_SELECTOR	REGMATH
-#define MATH_OP		ADD
-	DRAW_TILE();
-#undef MATH
-#undef MATH_SELECTOR
-#undef MATH_OP
-}
-
-static void MAKENAME(NAME1, AddF1_2_, NAME2) (ARGS)
-{
-#define MATH(A, B, C)	MATHF1_2(ADD, A, B, C)
-#define MATH_SELECTOR	MATHF1_2
-#define MATH_OP		ADD
-	DRAW_TILE();
-#undef MATH
-#undef MATH_SELECTOR
-#undef MATH_OP
-}
-
-static void MAKENAME(NAME1, AddS1_2_, NAME2) (ARGS)
-{
-#define MATH(A, B, C)	MATHS1_2(ADD, A, B, C)
-#define MATH_SELECTOR	MATHS1_2
-#define MATH_OP		ADD
-	DRAW_TILE();
-#undef MATH
-#undef MATH_SELECTOR
-#undef MATH_OP
-}
-
-static void MAKENAME(NAME1, Sub_, NAME2) (ARGS)
-{
-#define MATH(A, B, C)	REGMATH(SUB, A, B, C)
-#define MATH_SELECTOR	REGMATH
-#define MATH_OP		SUB
-	DRAW_TILE();
-#undef MATH
-#undef MATH_SELECTOR
-#undef MATH_OP
-}
-
-static void MAKENAME(NAME1, SubF1_2_, NAME2) (ARGS)
-{
-#define MATH(A, B, C)	MATHF1_2(SUB, A, B, C)
-#define MATH_SELECTOR	MATHF1_2
-#define MATH_OP		SUB
-	DRAW_TILE();
-#undef MATH
-#undef MATH_SELECTOR
-#undef MATH_OP
-}
-
-static void MAKENAME(NAME1, SubS1_2_, NAME2) (ARGS)
-{
-#define MATH(A, B, C)	MATHS1_2(SUB, A, B, C)
-#define MATH_SELECTOR	MATHS1_2
-#define MATH_OP		SUB
-	DRAW_TILE();
-#undef MATH
-#undef MATH_SELECTOR
-#undef MATH_OP
-}
-
-static void (*MAKENAME(Renderers_, NAME1, NAME2)[7]) (ARGS) =
-{
-	MAKENAME(NAME1, _, NAME2),
-	MAKENAME(NAME1, Add_, NAME2),
-	MAKENAME(NAME1, AddF1_2_, NAME2),
-	MAKENAME(NAME1, AddS1_2_, NAME2),
-	MAKENAME(NAME1, Sub_, NAME2),
-	MAKENAME(NAME1, SubF1_2_, NAME2),
-	MAKENAME(NAME1, SubS1_2_, NAME2)
-};
-
-#undef MAKENAME
-#undef CONCAT3
-
-#endif
 #endif
 #endif
