@@ -3384,29 +3384,22 @@ static void (*Renderers_DrawTile16HiresInterlace[7]) (uint32, uint32, uint32, ui
 /* DrawClippedTile16 NAME2 = Normal1x1: 7 math variants. */
 static void DrawClippedTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -3415,18 +3408,9 @@ static void DrawClippedTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -3435,18 +3419,9 @@ static void DrawClippedTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -3454,47 +3429,31 @@ static void DrawClippedTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -3503,18 +3462,9 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -3523,18 +3473,9 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -3542,47 +3483,31 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -3591,18 +3516,9 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -3611,18 +3527,9 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -3630,47 +3537,31 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -3679,18 +3570,9 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -3699,18 +3581,9 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -3718,47 +3591,31 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -3767,18 +3624,9 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -3787,18 +3635,9 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -3806,47 +3645,31 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -3855,18 +3678,9 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -3875,18 +3689,9 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -3894,47 +3699,31 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -3943,18 +3732,9 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -3963,18 +3743,9 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -3982,18 +3753,9 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N1x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N1x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N1x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N1x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N1x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N1x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N1x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N1x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -4012,29 +3774,22 @@ static void (*Renderers_DrawClippedTile16Normal1x1[7]) (uint32, uint32, uint32, 
 /* DrawClippedTile16 NAME2 = Normal2x1: 7 math variants. */
 static void DrawClippedTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -4043,18 +3798,9 @@ static void DrawClippedTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -4063,18 +3809,9 @@ static void DrawClippedTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -4082,47 +3819,31 @@ static void DrawClippedTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -4131,18 +3852,9 @@ static void DrawClippedTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -4151,18 +3863,9 @@ static void DrawClippedTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -4170,47 +3873,31 @@ static void DrawClippedTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -4219,18 +3906,9 @@ static void DrawClippedTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -4239,18 +3917,9 @@ static void DrawClippedTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -4258,47 +3927,31 @@ static void DrawClippedTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -4307,18 +3960,9 @@ static void DrawClippedTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -4327,18 +3971,9 @@ static void DrawClippedTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -4346,47 +3981,31 @@ static void DrawClippedTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -4395,18 +4014,9 @@ static void DrawClippedTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -4415,18 +4025,9 @@ static void DrawClippedTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -4434,47 +4035,31 @@ static void DrawClippedTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -4483,18 +4068,9 @@ static void DrawClippedTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -4503,18 +4079,9 @@ static void DrawClippedTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -4522,47 +4089,31 @@ static void DrawClippedTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -4571,18 +4122,9 @@ static void DrawClippedTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -4591,18 +4133,9 @@ static void DrawClippedTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -4610,18 +4143,9 @@ static void DrawClippedTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -4640,29 +4164,22 @@ static void (*Renderers_DrawClippedTile16Normal2x1[7]) (uint32, uint32, uint32, 
 /* DrawClippedTile16 NAME2 = Normal4x1: 7 math variants. */
 static void DrawClippedTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -4671,18 +4188,9 @@ static void DrawClippedTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -4691,18 +4199,9 @@ static void DrawClippedTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -4710,47 +4209,31 @@ static void DrawClippedTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -4759,18 +4242,9 @@ static void DrawClippedTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -4779,18 +4253,9 @@ static void DrawClippedTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -4798,47 +4263,31 @@ static void DrawClippedTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -4847,18 +4296,9 @@ static void DrawClippedTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -4867,18 +4307,9 @@ static void DrawClippedTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -4886,47 +4317,31 @@ static void DrawClippedTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -4935,18 +4350,9 @@ static void DrawClippedTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -4955,18 +4361,9 @@ static void DrawClippedTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -4974,47 +4371,31 @@ static void DrawClippedTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -5023,18 +4404,9 @@ static void DrawClippedTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -5043,18 +4415,9 @@ static void DrawClippedTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -5062,47 +4425,31 @@ static void DrawClippedTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -5111,18 +4458,9 @@ static void DrawClippedTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -5131,18 +4469,9 @@ static void DrawClippedTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -5150,47 +4479,31 @@ static void DrawClippedTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -5199,18 +4512,9 @@ static void DrawClippedTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -5219,18 +4523,9 @@ static void DrawClippedTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -5238,18 +4533,9 @@ static void DrawClippedTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N4x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N4x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N4x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N4x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N4x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N4x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N4x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N4x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -5268,29 +4554,22 @@ static void (*Renderers_DrawClippedTile16Normal4x1[7]) (uint32, uint32, uint32, 
 /* DrawClippedTile16 NAME2 = Hires: 7 math variants. */
 static void DrawClippedTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -5299,18 +4578,9 @@ static void DrawClippedTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartPix
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -5319,18 +4589,9 @@ static void DrawClippedTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartPix
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -5338,47 +4599,31 @@ static void DrawClippedTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartPix
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -5387,18 +4632,9 @@ static void DrawClippedTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 Start
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -5407,18 +4643,9 @@ static void DrawClippedTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 Start
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -5426,47 +4653,31 @@ static void DrawClippedTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 Start
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -5475,18 +4686,9 @@ static void DrawClippedTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -5495,18 +4697,9 @@ static void DrawClippedTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -5514,47 +4707,31 @@ static void DrawClippedTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -5563,18 +4740,9 @@ static void DrawClippedTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -5583,18 +4751,9 @@ static void DrawClippedTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -5602,47 +4761,31 @@ static void DrawClippedTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -5651,18 +4794,9 @@ static void DrawClippedTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 Start
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -5671,18 +4805,9 @@ static void DrawClippedTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 Start
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -5690,47 +4815,31 @@ static void DrawClippedTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 Start
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -5739,18 +4848,9 @@ static void DrawClippedTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -5759,18 +4859,9 @@ static void DrawClippedTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -5778,47 +4869,31 @@ static void DrawClippedTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -5827,18 +4902,9 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + (StartLine);
         for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -5847,18 +4913,9 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -5866,18 +4923,9 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - (StartLine);
         for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -5896,29 +4944,22 @@ static void (*Renderers_DrawClippedTile16Hires[7]) (uint32, uint32, uint32, uint
 /* DrawClippedTile16 NAME2 = Interlace: 7 math variants. */
 static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -5927,18 +4968,9 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -5947,18 +4979,9 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -5966,47 +4989,31 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -6015,18 +5022,9 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -6035,18 +5033,9 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -6054,47 +5043,31 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -6103,18 +5076,9 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -6123,18 +5087,9 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -6142,47 +5097,31 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -6191,18 +5130,9 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -6211,18 +5141,9 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -6230,47 +5151,31 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -6279,18 +5184,9 @@ static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -6299,18 +5195,9 @@ static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -6318,47 +5205,31 @@ static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -6367,18 +5238,9 @@ static void DrawClippedTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -6387,18 +5249,9 @@ static void DrawClippedTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -6406,47 +5259,31 @@ static void DrawClippedTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -6455,18 +5292,9 @@ static void DrawClippedTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -6475,18 +5303,9 @@ static void DrawClippedTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -6494,18 +5313,9 @@ static void DrawClippedTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_N2x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_N2x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_N2x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_N2x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_N2x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_N2x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_N2x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_N2x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -6524,29 +5334,22 @@ static void (*Renderers_DrawClippedTile16Interlace[7]) (uint32, uint32, uint32, 
 /* DrawClippedTile16 NAME2 = HiresInterlace: 7 math variants. */
 static void DrawClippedTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -6555,18 +5358,9 @@ static void DrawClippedTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -6575,18 +5369,9 @@ static void DrawClippedTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -6594,47 +5379,31 @@ static void DrawClippedTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], NOMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], NOMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -6643,18 +5412,9 @@ static void DrawClippedTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uin
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -6663,18 +5423,9 @@ static void DrawClippedTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uin
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -6682,47 +5433,31 @@ static void DrawClippedTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uin
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], REGMATH, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], REGMATH, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -6731,18 +5466,9 @@ static void DrawClippedTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -6751,18 +5477,9 @@ static void DrawClippedTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -6770,47 +5487,31 @@ static void DrawClippedTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHF1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHF1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -6819,18 +5520,9 @@ static void DrawClippedTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -6839,18 +5531,9 @@ static void DrawClippedTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -6858,47 +5541,31 @@ static void DrawClippedTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHS1_2, ADD) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHS1_2, ADD) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
 
 static void DrawClippedTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -6907,18 +5574,9 @@ static void DrawClippedTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uin
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -6927,18 +5585,9 @@ static void DrawClippedTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uin
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -6946,47 +5595,31 @@ static void DrawClippedTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uin
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], REGMATH, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], REGMATH, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -6995,18 +5628,9 @@ static void DrawClippedTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -7015,18 +5639,9 @@ static void DrawClippedTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -7034,47 +5649,31 @@ static void DrawClippedTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHF1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHF1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
 
 static void DrawClippedTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartPixel, uint32 Width, uint32 StartLine, uint32 LineCount)
 {
-    uint8 *pCache, *bp, Pix, w;
+    uint8 *pCache, *bp, Pix;
     int32 l;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+    uint32 endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -7083,18 +5682,9 @@ static void DrawClippedTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -7103,18 +5693,9 @@ static void DrawClippedTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[0], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[7], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -7122,18 +5703,9 @@ static void DrawClippedTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
         for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
         {
-            w = Width;
-            switch (StartPixel)
-            {
-                case 0: CT_PIXEL_H2x1(0, Pix = bp[7], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 1: CT_PIXEL_H2x1(1, Pix = bp[6], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 2: CT_PIXEL_H2x1(2, Pix = bp[5], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 3: CT_PIXEL_H2x1(3, Pix = bp[4], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 4: CT_PIXEL_H2x1(4, Pix = bp[3], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 5: CT_PIXEL_H2x1(5, Pix = bp[2], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 6: CT_PIXEL_H2x1(6, Pix = bp[1], MATHS1_2, SUB) if (!--w) break; /* Fall through */
-                case 7: CT_PIXEL_H2x1(7, Pix = bp[0], MATHS1_2, SUB) break;
-            }
+            uint32 i;
+            for (i = StartPixel; i < endpix; i++)
+                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -9368,7 +7940,8 @@ static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -9417,7 +7990,7 @@ static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), NOMATH, ADD, ((D + 7)))
             }
@@ -9432,7 +8005,7 @@ static void DrawMode7BG1_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -9450,7 +8023,8 @@ static void DrawMode7BG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -9499,7 +8073,7 @@ static void DrawMode7BG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), REGMATH, ADD, ((D + 7)))
             }
@@ -9514,7 +8088,7 @@ static void DrawMode7BG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -9532,7 +8106,8 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -9581,7 +8156,7 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHF1_2, ADD, ((D + 7)))
             }
@@ -9596,7 +8171,7 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -9614,7 +8189,8 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -9663,7 +8239,7 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
             }
@@ -9678,7 +8254,7 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -9696,7 +8272,8 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -9745,7 +8322,7 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), REGMATH, SUB, ((D + 7)))
             }
@@ -9760,7 +8337,7 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -9778,7 +8355,8 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -9827,7 +8405,7 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHF1_2, SUB, ((D + 7)))
             }
@@ -9842,7 +8420,7 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -9860,7 +8438,8 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -9909,7 +8488,7 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHS1_2, SUB, ((D + 7)))
             }
@@ -9924,7 +8503,7 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -9954,7 +8533,8 @@ static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10003,7 +8583,7 @@ static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), NOMATH, ADD, ((D + 7)))
             }
@@ -10018,7 +8598,7 @@ static void DrawMode7BG1_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10036,7 +8616,8 @@ static void DrawMode7BG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10085,7 +8666,7 @@ static void DrawMode7BG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), REGMATH, ADD, ((D + 7)))
             }
@@ -10100,7 +8681,7 @@ static void DrawMode7BG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10118,7 +8699,8 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10167,7 +8749,7 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHF1_2, ADD, ((D + 7)))
             }
@@ -10182,7 +8764,7 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10200,7 +8782,8 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10249,7 +8832,7 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
             }
@@ -10264,7 +8847,7 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10282,7 +8865,8 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10331,7 +8915,7 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), REGMATH, SUB, ((D + 7)))
             }
@@ -10346,7 +8930,7 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10364,7 +8948,8 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10413,7 +8998,7 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHF1_2, SUB, ((D + 7)))
             }
@@ -10428,7 +9013,7 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10446,7 +9031,8 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10495,7 +9081,7 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHS1_2, SUB, ((D + 7)))
             }
@@ -10510,7 +9096,7 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10540,7 +9126,8 @@ static void DrawMode7BG1_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10589,7 +9176,7 @@ static void DrawMode7BG1_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), NOMATH, ADD, ((D + 7)))
             }
@@ -10604,7 +9191,7 @@ static void DrawMode7BG1_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10622,7 +9209,8 @@ static void DrawMode7BG1Add_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10671,7 +9259,7 @@ static void DrawMode7BG1Add_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), REGMATH, ADD, ((D + 7)))
             }
@@ -10686,7 +9274,7 @@ static void DrawMode7BG1Add_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10704,7 +9292,8 @@ static void DrawMode7BG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10753,7 +9342,7 @@ static void DrawMode7BG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHF1_2, ADD, ((D + 7)))
             }
@@ -10768,7 +9357,7 @@ static void DrawMode7BG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10786,7 +9375,8 @@ static void DrawMode7BG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10835,7 +9425,7 @@ static void DrawMode7BG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
             }
@@ -10850,7 +9440,7 @@ static void DrawMode7BG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10868,7 +9458,8 @@ static void DrawMode7BG1Sub_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10917,7 +9508,7 @@ static void DrawMode7BG1Sub_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), REGMATH, SUB, ((D + 7)))
             }
@@ -10932,7 +9523,7 @@ static void DrawMode7BG1Sub_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -10950,7 +9541,8 @@ static void DrawMode7BG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10999,7 +9591,7 @@ static void DrawMode7BG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHF1_2, SUB, ((D + 7)))
             }
@@ -11014,7 +9606,7 @@ static void DrawMode7BG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11032,7 +9624,8 @@ static void DrawMode7BG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11081,7 +9674,7 @@ static void DrawMode7BG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHS1_2, SUB, ((D + 7)))
             }
@@ -11096,7 +9689,7 @@ static void DrawMode7BG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11126,7 +9719,8 @@ static void DrawMode7BG2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11169,7 +9763,7 @@ static void DrawMode7BG2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), NOMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11184,7 +9778,7 @@ static void DrawMode7BG2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11202,7 +9796,8 @@ static void DrawMode7BG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11245,7 +9840,7 @@ static void DrawMode7BG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), REGMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11260,7 +9855,7 @@ static void DrawMode7BG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11278,7 +9873,8 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11321,7 +9917,7 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHF1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11336,7 +9932,7 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11354,7 +9950,8 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11397,7 +9994,7 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11412,7 +10009,7 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11430,7 +10027,8 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11473,7 +10071,7 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), REGMATH, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11488,7 +10086,7 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11506,7 +10104,8 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11549,7 +10148,7 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHF1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11564,7 +10163,7 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11582,7 +10181,8 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11625,7 +10225,7 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHS1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11640,7 +10240,7 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11670,7 +10270,8 @@ static void DrawMode7BG2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11713,7 +10314,7 @@ static void DrawMode7BG2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), NOMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11728,7 +10329,7 @@ static void DrawMode7BG2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11746,7 +10347,8 @@ static void DrawMode7BG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11789,7 +10391,7 @@ static void DrawMode7BG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), REGMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11804,7 +10406,7 @@ static void DrawMode7BG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11822,7 +10424,8 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11865,7 +10468,7 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHF1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11880,7 +10483,7 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11898,7 +10501,8 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11941,7 +10545,7 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -11956,7 +10560,7 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -11974,7 +10578,8 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12017,7 +10622,7 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), REGMATH, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -12032,7 +10637,7 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12050,7 +10655,8 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12093,7 +10699,7 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHF1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -12108,7 +10714,7 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12126,7 +10732,8 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12169,7 +10776,7 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHS1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -12184,7 +10791,7 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12214,7 +10821,8 @@ static void DrawMode7BG2_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12257,7 +10865,7 @@ static void DrawMode7BG2_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), NOMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -12272,7 +10880,7 @@ static void DrawMode7BG2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12290,7 +10898,8 @@ static void DrawMode7BG2Add_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12333,7 +10942,7 @@ static void DrawMode7BG2Add_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), REGMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -12348,7 +10957,7 @@ static void DrawMode7BG2Add_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12366,7 +10975,8 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12409,7 +11019,7 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHF1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -12424,7 +11034,7 @@ static void DrawMode7BG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12442,7 +11052,8 @@ static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12485,7 +11096,7 @@ static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -12500,7 +11111,7 @@ static void DrawMode7BG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12518,7 +11129,8 @@ static void DrawMode7BG2Sub_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12561,7 +11173,7 @@ static void DrawMode7BG2Sub_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), REGMATH, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -12576,7 +11188,7 @@ static void DrawMode7BG2Sub_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12594,7 +11206,8 @@ static void DrawMode7BG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12637,7 +11250,7 @@ static void DrawMode7BG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHF1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -12652,7 +11265,7 @@ static void DrawMode7BG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12670,7 +11283,8 @@ static void DrawMode7BG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12713,7 +11327,7 @@ static void DrawMode7BG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
                 uint8 *TileData, b;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHS1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
@@ -12728,7 +11342,7 @@ static void DrawMode7BG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12775,7 +11389,8 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -12849,7 +11464,7 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -12874,7 +11489,7 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -12902,7 +11517,8 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -12976,7 +11592,7 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -13001,7 +11617,7 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -13029,7 +11645,8 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -13103,7 +11720,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -13128,7 +11745,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -13156,7 +11773,8 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -13230,7 +11848,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -13255,7 +11873,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -13283,7 +11901,8 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -13357,7 +11976,7 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -13382,7 +12001,7 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -13410,7 +12029,8 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -13484,7 +12104,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -13509,7 +12129,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -13537,7 +12157,8 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -13611,7 +12232,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -13636,7 +12257,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -13676,7 +12297,8 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -13750,7 +12372,7 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -13775,7 +12397,7 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -13803,7 +12425,8 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -13877,7 +12500,7 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -13902,7 +12525,7 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -13930,7 +12553,8 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14004,7 +12628,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -14029,7 +12653,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -14057,7 +12681,8 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14131,7 +12756,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -14156,7 +12781,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -14184,7 +12809,8 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14258,7 +12884,7 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -14283,7 +12909,7 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -14311,7 +12937,8 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14385,7 +13012,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -14410,7 +13037,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -14438,7 +13065,8 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14512,7 +13140,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -14537,7 +13165,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -14577,7 +13205,8 @@ static void DrawMode7MosaicBG1_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14651,7 +13280,7 @@ static void DrawMode7MosaicBG1_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -14676,7 +13305,7 @@ static void DrawMode7MosaicBG1_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -14704,7 +13333,8 @@ static void DrawMode7MosaicBG1Add_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14778,7 +13408,7 @@ static void DrawMode7MosaicBG1Add_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -14803,7 +13433,7 @@ static void DrawMode7MosaicBG1Add_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -14831,7 +13461,8 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14905,7 +13536,7 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -14930,7 +13561,7 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -14958,7 +13589,8 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15032,7 +13664,7 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -15057,7 +13689,7 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -15085,7 +13717,8 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15159,7 +13792,7 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -15184,7 +13817,7 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -15212,7 +13845,8 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15286,7 +13920,7 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -15311,7 +13945,7 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -15339,7 +13973,8 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15413,7 +14048,7 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0xff)))
                 {
@@ -15438,7 +14073,7 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -15478,7 +14113,8 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -15546,7 +14182,7 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -15571,7 +14207,7 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -15599,7 +14235,8 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -15667,7 +14304,7 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -15692,7 +14329,7 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -15720,7 +14357,8 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -15788,7 +14426,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -15813,7 +14451,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -15841,7 +14479,8 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -15909,7 +14548,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -15934,7 +14573,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -15962,7 +14601,8 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16030,7 +14670,7 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -16055,7 +14695,7 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -16083,7 +14723,8 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16151,7 +14792,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -16176,7 +14817,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -16204,7 +14845,8 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16272,7 +14914,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -16297,7 +14939,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -16337,7 +14979,8 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16405,7 +15048,7 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -16430,7 +15073,7 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -16458,7 +15101,8 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16526,7 +15170,7 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -16551,7 +15195,7 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -16579,7 +15223,8 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16647,7 +15292,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -16672,7 +15317,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -16700,7 +15345,8 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16768,7 +15414,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -16793,7 +15439,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -16821,7 +15467,8 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16889,7 +15536,7 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -16914,7 +15561,7 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -16942,7 +15589,8 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17010,7 +15658,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -17035,7 +15683,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -17063,7 +15711,8 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17131,7 +15780,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -17156,7 +15805,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32 Left, uint32 Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -17196,7 +15845,8 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17264,7 +15914,7 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -17289,7 +15939,7 @@ static void DrawMode7MosaicBG2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -17317,7 +15967,8 @@ static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17385,7 +16036,7 @@ static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -17410,7 +16061,7 @@ static void DrawMode7MosaicBG2Add_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -17438,7 +16089,8 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17506,7 +16158,7 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -17531,7 +16183,7 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -17559,7 +16211,8 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17627,7 +16280,7 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -17652,7 +16305,7 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -17680,7 +16333,8 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17748,7 +16402,7 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -17773,7 +16427,7 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -17801,7 +16455,8 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17869,7 +16524,7 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -17894,7 +16549,7 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -17922,7 +16577,8 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
     uint32 Line, Offset;
     int32 h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17990,7 +16646,7 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if ((Pix = (b & 0x7f)))
                 {
@@ -18015,7 +16671,7 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32 Left, uint32 Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
                 else
@@ -18102,7 +16758,8 @@ static void DrawMode7BG1HR_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -18164,7 +16821,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
@@ -18182,7 +16839,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
@@ -18214,7 +16871,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -18244,7 +16901,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -18275,7 +16932,8 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -18337,7 +16995,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
@@ -18355,7 +17013,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
@@ -18387,7 +17045,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -18417,7 +17075,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -18448,7 +17106,8 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -18510,7 +17169,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
@@ -18528,7 +17187,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
@@ -18560,7 +17219,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -18590,7 +17249,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -18621,7 +17280,8 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -18683,7 +17343,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
@@ -18701,7 +17361,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
@@ -18733,7 +17393,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -18763,7 +17423,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -18794,7 +17454,8 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -18856,7 +17517,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
@@ -18874,7 +17535,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
@@ -18906,7 +17567,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -18936,7 +17597,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -18967,7 +17628,8 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19029,7 +17691,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
@@ -19047,7 +17709,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
@@ -19079,7 +17741,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19109,7 +17771,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19140,7 +17802,8 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19202,7 +17865,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
@@ -19220,7 +17883,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
@@ -19252,7 +17915,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19282,7 +17945,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19326,7 +17989,8 @@ static void DrawMode7BG2HR_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19382,7 +18046,7 @@ static void DrawMode7BG2HR_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
@@ -19400,7 +18064,7 @@ static void DrawMode7BG2HR_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
@@ -19432,7 +18096,7 @@ static void DrawMode7BG2HR_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19462,7 +18126,7 @@ static void DrawMode7BG2HR_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19493,7 +18157,8 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19549,7 +18214,7 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
@@ -19567,7 +18232,7 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
@@ -19599,7 +18264,7 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19629,7 +18294,7 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19660,7 +18325,8 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19716,7 +18382,7 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
@@ -19734,7 +18400,7 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
@@ -19766,7 +18432,7 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19796,7 +18462,7 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19827,7 +18493,8 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19883,7 +18550,7 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
@@ -19901,7 +18568,7 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
@@ -19933,7 +18600,7 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19963,7 +18630,7 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -19994,7 +18661,8 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20050,7 +18718,7 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
@@ -20068,7 +18736,7 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
@@ -20100,7 +18768,7 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -20130,7 +18798,7 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -20161,7 +18829,8 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20217,7 +18886,7 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
@@ -20235,7 +18904,7 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
@@ -20267,7 +18936,7 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -20297,7 +18966,7 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -20328,7 +18997,8 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20384,7 +19054,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
@@ -20402,7 +19072,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
                 TileData = VRAM1 +
-                    (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                 b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
@@ -20434,7 +19104,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -20464,7 +19134,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                 if (((X | Y) & ~0x3ff) == 0)
                 {
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5)
+                        (VRAM[((Y & ~7) << 5)
                                    + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                 }
@@ -20554,7 +19224,8 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20616,7 +19287,7 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
@@ -20664,7 +19335,7 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -20706,7 +19377,8 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20768,7 +19440,7 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
@@ -20816,7 +19488,7 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -20858,7 +19530,8 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20920,7 +19593,7 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
@@ -20968,7 +19641,7 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -21010,7 +19683,8 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21072,7 +19746,7 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
@@ -21120,7 +19794,7 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -21162,7 +19836,8 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21224,7 +19899,7 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
@@ -21272,7 +19947,7 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -21314,7 +19989,8 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21376,7 +20052,7 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
@@ -21424,7 +20100,7 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -21466,7 +20142,8 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21528,7 +20205,7 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
@@ -21576,7 +20253,7 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -21635,7 +20312,8 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21691,7 +20369,7 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
@@ -21739,7 +20417,7 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -21781,7 +20459,8 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21837,7 +20516,7 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
@@ -21885,7 +20564,7 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -21927,7 +20606,8 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21983,7 +20663,7 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
@@ -22031,7 +20711,7 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -22073,7 +20753,8 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -22129,7 +20810,7 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
@@ -22177,7 +20858,7 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -22219,7 +20900,8 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -22275,7 +20957,7 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
@@ -22323,7 +21005,7 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -22365,7 +21047,8 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -22421,7 +21104,7 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
@@ -22469,7 +21152,7 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -22511,7 +21194,8 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -22567,7 +21251,7 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
                     TileData = VRAM1 +
-                        (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
                     b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
@@ -22615,7 +21299,7 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
                     if (((X | Y) & ~0x3ff) == 0)
                     {
                         TileData = VRAM1 +
-                            (Memory.VRAM[((Y & ~7) << 5)
+                            (VRAM[((Y & ~7) << 5)
                                        + ((X >> 2) & ~1)] << 7);
                         b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
                     }
@@ -22728,7 +21412,8 @@ static void DrawMode7BG1BL_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -22863,7 +21548,8 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -22998,7 +21684,8 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -23133,7 +21820,8 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -23268,7 +21956,8 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -23403,7 +22092,8 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -23538,7 +22228,8 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -23686,7 +22377,8 @@ static void DrawMode7BG2BL_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -23815,7 +22507,8 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -23944,7 +22637,8 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -24073,7 +22767,8 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -24202,7 +22897,8 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -24331,7 +23027,8 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -24460,7 +23157,8 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -24646,7 +23344,8 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -24758,7 +23457,8 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -24870,7 +23570,8 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -24982,7 +23683,8 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -25094,7 +23796,8 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -25206,7 +23909,8 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -25318,7 +24022,8 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -25444,7 +24149,8 @@ static void DrawMode7BG2BL4X_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -25550,7 +24256,8 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -25656,7 +24363,8 @@ static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -25762,7 +24470,8 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -25868,7 +24577,8 @@ static void DrawMode7BG2BL4XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -25974,7 +24684,8 @@ static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -26080,7 +24791,8 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -26242,7 +24954,8 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -26340,7 +25053,8 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -26438,7 +25152,8 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -26536,7 +25251,8 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -26634,7 +25350,8 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -26732,7 +25449,8 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -26830,7 +25548,8 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -26941,7 +25660,8 @@ static void DrawMode7BG2BL1X_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -27033,7 +25753,8 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -27125,7 +25846,8 @@ static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -27217,7 +25939,8 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -27309,7 +26032,8 @@ static void DrawMode7BG2BL1XSub_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -27401,7 +26125,8 @@ static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 
@@ -27493,7 +26218,8 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32 Left, uint32 Right, int D)
 {
     struct SLineMatrixData *l;
     uint32 x, Line, Offset;
-    uint8 *VRAM1 = Memory.VRAM + 1;
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     uint8 smooth = (Settings.Mode7HiresBilinear == 2);
 

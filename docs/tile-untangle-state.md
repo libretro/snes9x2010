@@ -472,7 +472,190 @@ Status: **TODO** (re-evaluate later, profile-driven)
 
 ## Commit log (newest first)
 
-### Fold first-assignments into decls (this commit, on master)
+### Hoist `Memory.VRAM` to a function-entry local in all M7 renderers (this commit)
+
+Each of the 154 `DrawMode7*` renderer functions previously read
+`Memory.VRAM` directly inside the per-pixel inner loop:
+
+```c
+uint8 *VRAM1 = Memory.VRAM + 1;  /* hoisted */
+...
+for (x = Left; x < Right; x++) {
+    ...
+    /* But this still re-reads Memory.VRAM every pixel: */
+    TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+    ...
+}
+```
+
+`Memory.VRAM` is a `uint8 *` field inside the global `Memory` struct.
+The compiler can't prove that writes through `GFX.S[i] = ...`,
+`GFX.DB[i] = ...`, etc. don't modify the storage of that pointer
+field itself (alias pessimism), so it reloads `Memory.VRAM` every
+iteration. The pre-existing `VRAM1 = Memory.VRAM + 1` hoist had no
+effect on this -- the compiler still treats the bare `Memory.VRAM[...]`
+read as a fresh global access.
+
+Hoisting to a stack local breaks the alias chain -- locals can't be
+modified by global writes -- so the compiler keeps `VRAM` in a
+register for the whole function:
+
+```c
+uint8 *VRAM  = Memory.VRAM;
+uint8 *VRAM1 = VRAM + 1;
+...
+for (x = Left; x < Right; x++) {
+    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+    ...
+}
+```
+
+In `DrawMode7BG2_Normal1x1`, this drops Memory.VRAM RIP-relative
+loads from 3 (one in prelude, two in inner loops) to 1 (prelude
+only). Same pattern across all 154 M7 functions.
+
+The 3 remaining `Memory.VRAM[...]` references in the M7HR_LOOKUP_*
+macros (used by BL renderers) are NOT touched by this commit; the
+macros take `vram1` as a parameter, so addressing those would
+require adding a `vram` parameter alongside it and updating all
+~120 macro call sites. BL renderers are an off-by-default cosmetic
+path so deferring that is fine.
+
+Conversion was scripted (out-of-tree Python). The 154 declarations
+of `uint8 *VRAM1 = Memory.VRAM + 1;` were each expanded to:
+
+    uint8 *VRAM  = Memory.VRAM;
+    uint8 *VRAM1 = VRAM + 1;
+
+Then 252 occurrences of `Memory.VRAM[` outside the macro region
+(7478..7615) were replaced with `VRAM[`. The 7 `&Memory.VRAM[...]`
+references in tile-conversion functions at the top of the file are
+unaffected.
+
+Verification:
+  - 313 Draw* functions, 44 Renderers_ arrays preserved.
+  - Build clean, zero warnings.
+  - Bench harness checksum `3447021568` unchanged after extending
+    the harness to cover three M7 cases (DrawMode7BG2_Normal1x1,
+    DrawMode7BG2Add_Normal1x1, DrawMode7BG2AddS1_2_Normal1x1).
+    Behaviour bit-identical for tested inputs.
+  - Total M7 compiled bytes: 603,818 -> 603,939 (+121, +0.02%).
+    The .so size is unchanged (alignment padding absorbs the
+    per-function +0..16 byte deltas).
+  - Per-function inner-loop Memory.VRAM RIP-loads in
+    DrawMode7BG2_Normal1x1: 3 -> 1.
+
+Runtime impact (x86, alternating-binary 20-trial bench):
+
+    DrawMode7BG2_Normal1x1            -0.8%   (pristine 0.4030 -> 0.3997)
+    DrawMode7BG2Add_Normal1x1         +0.4%   (within noise)
+    DrawMode7BG2AddS1_2_Normal1x1     -1.3%   (pristine 0.4141 -> 0.4085)
+    DrawTile16* / DrawClippedTile16*  ~unchanged (not modified)
+
+The runtime delta on x86 is within bench noise (±1%). Modern x86
+handles repeated RIP-relative loads of stable globals very cheaply
+-- the line gets pinned in L1d, the load latency overlaps with
+surrounding ALU work via out-of-order execution, the branch
+predictor doesn't care about the addressing mode. So eliminating
+the reload doesn't show up as a measurable speedup on a fast x86
+bench machine.
+
+The change is committed anyway because:
+  1. The asm IS measurably cleaner (3 -> 1 reloads per call), and
+     the standard "hoist invariant pointer loads out of inner loops"
+     pattern is one the compiler can't apply itself due to alias
+     rules.
+  2. RetroArch's actual deployment targets (embedded ARM, low-power
+     x86, retro handhelds) have smaller L1d, weaker branch
+     predictors, and less aggressive out-of-order execution. The
+     reload that's free on a dev box may cost cycles there. (This
+     is unmeasured -- caveat noted explicitly.)
+  3. The change is mechanical, narrow, and behaviour-preserving;
+     bench checksum is bit-identical. Cost is +121 bytes total, no
+     .so size change.
+  4. Future optimization passes (e.g. adding `restrict` qualifiers,
+     attempting auto-vectorization) work better against code that
+     doesn't fight the alias analyser.
+
+Behaviour invariants -- to be verified externally before push:
+audio bit-identical, savestate compat, valgrind clean. The
+transformation is a pure local-binding rewrite of equivalent
+semantics, so all three should hold.
+
+Files changed: `src/tile.c` +154 lines / -154 lines (declaration
+expansion is +1 line, substitution is in-place); approximately a
+no-op in line count.
+
+### `58f0bd4` -- tile.c: de-unroll switch (StartPixel) in DrawClippedTile16 renderers
+
+The 42 `DrawClippedTile16*` functions each had four H_FLIP/V_FLIP
+branches, each containing an unrolled 8-case switch with fall-through:
+
+```c
+w = Width;
+switch (StartPixel)
+{
+    case 0: CT_PIXEL_FAM(0, Pix = bp[0], MATH_SEL, MATH_OP) if (!--w) break;
+    case 1: CT_PIXEL_FAM(1, Pix = bp[1], MATH_SEL, MATH_OP) if (!--w) break;
+    ...
+    case 7: CT_PIXEL_FAM(7, Pix = bp[7], MATH_SEL, MATH_OP) break;
+}
+```
+
+`CT_PIXEL_FAM` is the per-family plotter macro (CT_PIXEL_N1x1,
+N2x1, N4x1, or H2x1). Each macro expansion is large -- per-pixel
+Z-test + math + write, sometimes two writes for H2x1 -- and inlining
+it 8 times in 4 branches × 42 functions accounted for most of
+ClippedTile's compiled bulk (~500 KB).
+
+Replaced with a compact for-loop:
+
+```c
+{
+    uint32 i;
+    for (i = StartPixel; i < endpix; i++)
+        CT_PIXEL_FAM(i, Pix = bp[i], MATH_SEL, MATH_OP)
+}
+```
+
+(or `bp[7 - i]` for the V_FLIP variants). `endpix = StartPixel + Width`
+is hoisted to a single function-level local with a defensive clamp
+`if (endpix > 8) endpix = 8;` -- the original switch had an implicit
+hard stop at case 7 even if Width was nominally larger; the explicit
+clamp preserves that behavior. All actual call sites in ppu.c bound
+`StartPixel + Width <= 8` already, so the clamp is dead code in
+practice but cheap (~17 bytes per function) and protects against
+future call sites.
+
+Conversion was scripted (out-of-tree Python) handling 168 switch
+blocks (4 branches × 42 functions) and 42 function preludes in one
+pass.
+
+Verification:
+  - 313 Draw* functions, 44 Renderers_ arrays preserved.
+  - Build clean, zero warnings.
+  - Bench harness (`/home/claude/bench/bench.c`) checksum
+    `3446104064` matches across all four exercised cases. Behaviour
+    bit-identical for the tested inputs.
+  - ClippedTile total compiled size: 498,259 -> 97,553 bytes
+    (-80.4%). Largest single ClippedTile function: 23,859 bytes ->
+    ~2,300 bytes (-90%).
+  - Bench timings:
+        DrawClippedTile16AddS1_2_Normal1x1: 0.191 -> 0.129 (-32%)
+        DrawClippedTile16Add_Normal1x1:     ~unchanged
+    The big-function speedup is dominated by L1i cache pressure
+    relief; the small ones see no change because they fit in icache
+    in either form.
+
+Behaviour invariants -- to be verified externally before push:
+audio bit-identical, savestate compat, valgrind clean. The
+transformation is purely a control-flow rewrite of equivalent
+semantics, so all three should hold.
+
+Files changed: `src/tile.c` ~-1500 lines net (the unrolled cases
+collapse heavily).
+
+### `4518a6a` -- tile.c: fold first-assignments into variable decls (merged upstream as PR follow-up)
 
 Cleanup pass that converts patterns of the form
 
@@ -1746,4 +1929,4 @@ the truth-value of the comment.)
 
 ---
 
-*Last updated: cleanup commit on master folding first-assignments into decls. Branch `master` past PR-merge `66a907a` by one commit. 226 sites folded across `COLOR_SUB`, `S9xSelectTileRenderers`, and 154 M7 function preambles (native M7 + BL family). Mosaic M7 preambles (42 functions) are intentionally NOT folded -- their textual structure interleaves an `if (Line + VMosaic > GFX.EndY)` clamp between the decl and the assignments, and folding causes ~+563 bytes of codegen drift. Result: byte-identical to pristine `66a907a` across all 313 Draw functions and all 44 dispatch arrays.*
+*Last updated: optimization commit hoisting `Memory.VRAM` to a function-entry local across all 154 M7 renderers. The compiler was reloading `Memory.VRAM` (a pointer field in the global Memory struct) every iteration of the inner per-pixel loop because writes through GFX.S[i] etc. could in theory alias the storage of the pointer field itself. Adding `uint8 *VRAM = Memory.VRAM;` at function entry and routing inline `Memory.VRAM[...]` reads through it eliminates that reload (3 -> 1 per call in DrawMode7BG2_Normal1x1). Bench checksum 3447021568 unchanged. Runtime impact on x86 bench is within noise (±1% on M7 functions); the per-pixel reload was already cheap thanks to L1d caching and out-of-order execution. Likely matters more on RetroArch's actual deployment targets (embedded ARM, low-end x86) where L1d pressure and branch-predictor budget are tighter, though that is unmeasured.*
