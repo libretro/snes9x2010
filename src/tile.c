@@ -6969,7 +6969,6 @@ static void (*Renderers_DrawMosaicPixel16HiresInterlace[7]) (uint32, uint32, uin
 static void DrawBackdrop16_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -6981,7 +6980,6 @@ static void DrawBackdrop16_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
 static void DrawBackdrop16Add_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -6993,7 +6991,6 @@ static void DrawBackdrop16Add_Normal1x1 (uint32 Offset, uint32 Left, uint32 Righ
 static void DrawBackdrop16AddF1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7005,7 +7002,6 @@ static void DrawBackdrop16AddF1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 
 static void DrawBackdrop16AddS1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7017,7 +7013,6 @@ static void DrawBackdrop16AddS1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 
 static void DrawBackdrop16Sub_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7029,7 +7024,6 @@ static void DrawBackdrop16Sub_Normal1x1 (uint32 Offset, uint32 Left, uint32 Righ
 static void DrawBackdrop16SubF1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7041,7 +7035,6 @@ static void DrawBackdrop16SubF1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 
 static void DrawBackdrop16SubS1_2_Normal1x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7065,7 +7058,6 @@ static void (*Renderers_DrawBackdrop16Normal1x1[7]) (uint32, uint32, uint32) =
 static void DrawBackdrop16_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7077,7 +7069,6 @@ static void DrawBackdrop16_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
 static void DrawBackdrop16Add_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7089,7 +7080,6 @@ static void DrawBackdrop16Add_Normal2x1 (uint32 Offset, uint32 Left, uint32 Righ
 static void DrawBackdrop16AddF1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7101,7 +7091,6 @@ static void DrawBackdrop16AddF1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 
 static void DrawBackdrop16AddS1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7113,7 +7102,6 @@ static void DrawBackdrop16AddS1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 
 static void DrawBackdrop16Sub_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7125,7 +7113,6 @@ static void DrawBackdrop16Sub_Normal2x1 (uint32 Offset, uint32 Left, uint32 Righ
 static void DrawBackdrop16SubF1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7137,7 +7124,6 @@ static void DrawBackdrop16SubF1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 
 static void DrawBackdrop16SubS1_2_Normal2x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7161,7 +7147,6 @@ static void (*Renderers_DrawBackdrop16Normal2x1[7]) (uint32, uint32, uint32) =
 static void DrawBackdrop16_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7173,7 +7158,6 @@ static void DrawBackdrop16_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
 static void DrawBackdrop16Add_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7185,7 +7169,6 @@ static void DrawBackdrop16Add_Normal4x1 (uint32 Offset, uint32 Left, uint32 Righ
 static void DrawBackdrop16AddF1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7197,7 +7180,6 @@ static void DrawBackdrop16AddF1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 
 static void DrawBackdrop16AddS1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7209,7 +7191,6 @@ static void DrawBackdrop16AddS1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 
 static void DrawBackdrop16Sub_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7221,7 +7202,6 @@ static void DrawBackdrop16Sub_Normal4x1 (uint32 Offset, uint32 Left, uint32 Righ
 static void DrawBackdrop16SubF1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7233,7 +7213,6 @@ static void DrawBackdrop16SubF1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 
 static void DrawBackdrop16SubS1_2_Normal4x1 (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7257,7 +7236,6 @@ static void (*Renderers_DrawBackdrop16Normal4x1[7]) (uint32, uint32, uint32) =
 static void DrawBackdrop16_Hires (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7269,7 +7247,6 @@ static void DrawBackdrop16_Hires (uint32 Offset, uint32 Left, uint32 Right)
 static void DrawBackdrop16Add_Hires (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7281,7 +7258,6 @@ static void DrawBackdrop16Add_Hires (uint32 Offset, uint32 Left, uint32 Right)
 static void DrawBackdrop16AddF1_2_Hires (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7293,7 +7269,6 @@ static void DrawBackdrop16AddF1_2_Hires (uint32 Offset, uint32 Left, uint32 Righ
 static void DrawBackdrop16AddS1_2_Hires (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7305,7 +7280,6 @@ static void DrawBackdrop16AddS1_2_Hires (uint32 Offset, uint32 Left, uint32 Righ
 static void DrawBackdrop16Sub_Hires (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7317,7 +7291,6 @@ static void DrawBackdrop16Sub_Hires (uint32 Offset, uint32 Left, uint32 Right)
 static void DrawBackdrop16SubF1_2_Hires (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
@@ -7329,7 +7302,6 @@ static void DrawBackdrop16SubF1_2_Hires (uint32 Offset, uint32 Left, uint32 Righ
 static void DrawBackdrop16SubS1_2_Hires (uint32 Offset, uint32 Left, uint32 Right)
 {
     uint32 l, x;
-    GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {

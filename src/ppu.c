@@ -871,8 +871,16 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 	}
 }
 
+/* RealScreenColors invariant across the whole backdrop pass: backdrop
+ * has no per-tile palette slice (unlike SELECT_PALETTE for regular
+ * tiles) and no Direct Colour Mode (unlike Mode 7), so it's always
+ * IPPU.ScreenColors. Hoist out of the per-clip-region loop and out
+ * of the 28 individual backdrop renderers. The renderers still pick
+ * ScreenColors per-call via ClipColors ? BlackColourMap :
+ * RealScreenColors, since BlackColourMap is private to tile.c. */
 #define DRAW_BACKDROP_NO_MATH() \
 	Offset = GFX.StartY * GFX.PPL; \
+	GFX.RealScreenColors = IPPU.ScreenColors; \
 	for ( clip = 0; clip < GFX.Clip[5].Count; clip++) \
 	{ \
 		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1); \
@@ -881,6 +889,7 @@ static void DrawBackground (int bg, uint8 Zh, uint8 Zl)
 
 #define DrawBackdrop() \
 	Offset = GFX.StartY * GFX.PPL; \
+	GFX.RealScreenColors = IPPU.ScreenColors; \
 	for ( clip = 0; clip < GFX.Clip[5].Count; clip++) \
 	{ \
 		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1); \
