@@ -7760,9 +7760,26 @@ static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 				else if (top_match && bot_match)
 				{
 					/* Horizontal edge: rows agree internally but
-					 * disagree across. Snap Y, blend X. */
-					uint16 c_l = (Yf < 128) ? c_tl : c_bl;
-					uint16 c_r = (Yf < 128) ? c_tr : c_br;
+					 * disagree across. Snap Y, blend X.
+					 *
+					 * The Yf<=128 (rather than <) snap-to-top is load-
+					 * bearing: when MatrixD scales to ~0.5 source rows
+					 * per output line, every other output line samples
+					 * with Yf exactly 128 -- geometrically equidistant
+					 * between the two source rows. Using strict
+					 * less-than would push *every* such pixel to the
+					 * bottom row, which on hostile content (Tiny Toons
+					 * "Buster Busts Loose" rainbow ring intersecting
+					 * a one-row-tall artistic band of unrelated palette
+					 * indices) produces a visible 1-scanline seam:
+					 * the entire output line jumps to a row whose
+					 * content is artistically far from the surrounding
+					 * output lines. Snapping to top at the boundary
+					 * matches what stable mode does (always uses the
+					 * floor-Y row) and removes the seam without
+					 * affecting non-boundary pixels. */
+					uint16 c_l = (Yf <= 128) ? c_tl : c_bl;
+					uint16 c_r = (Yf <= 128) ? c_tr : c_br;
 					if (c_l == c_r)
 						blended = c_l;
 					else
@@ -7771,9 +7788,11 @@ static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 				else if (left_match && right_match)
 				{
 					/* Vertical edge: columns agree internally but
-					 * disagree across. Snap X, blend Y. */
-					uint16 c_t = (Xf < 128) ? c_tl : c_tr;
-					uint16 c_b = (Xf < 128) ? c_bl : c_br;
+					 * disagree across. Snap X, blend Y. Symmetric
+					 * to HEDGE: use <= so Xf=128 snaps to left, for
+					 * the same reason. */
+					uint16 c_t = (Xf <= 128) ? c_tl : c_tr;
+					uint16 c_b = (Xf <= 128) ? c_bl : c_br;
 					if (c_t == c_b)
 						blended = c_t;
 					else
@@ -7788,10 +7807,15 @@ static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 					 * diagonal-aliasing regressions vs old smooth,
 					 * a "diagonal-axis blend" branch can be added
 					 * here (test c_tl ~= c_br && c_tr ~= c_bl,
-					 * blend along (Xf+Yf)/2). */
-					if      (Xf <  128 && Yf <  128) blended = c_tl;
-					else if (Xf >= 128 && Yf <  128) blended = c_tr;
-					else if (Xf <  128 && Yf >= 128) blended = c_bl;
+					 * blend along (Xf+Yf)/2).
+					 *
+					 * The <=/> partition (rather than </>=) matches
+					 * HEDGE/VEDGE: at Xf=128 / Yf=128 we snap to the
+					 * floor side, not the ceiling. See HEDGE comment
+					 * above for the rationale. */
+					if      (Xf <= 128 && Yf <= 128) blended = c_tl;
+					else if (Xf >  128 && Yf <= 128) blended = c_tr;
+					else if (Xf <= 128 && Yf >  128) blended = c_bl;
 					else                              blended = c_br;
 				}
 			}
