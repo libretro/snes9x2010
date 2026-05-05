@@ -2289,9 +2289,6 @@ void S9xUpdateScreen (void)
 		}
 		}
 
-		if ((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2131] & 0x3f))
-			GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed], IPPU.XB[PPU.FixedColourGreen], IPPU.XB[PPU.FixedColourBlue]);
-
 		if(!PPU.SFXSpeedupHack)
 		{
 			if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
@@ -2689,6 +2686,14 @@ void S9xFixColourBrightness (void)
 			 IPPU.XB[(PPU.CGDATA[i] >> 10) & 0x1f]
 			);
 	}
+
+	/* GFX.FixedColour depends on IPPU.XB; rebuild to keep it in sync.
+	 * Covers reset, snapshot unfreeze, and INIDISP brightness changes
+	 * that all call this function. COLDATA writes rebuild it directly
+	 * (see $2132 handler in S9xSetPPU). */
+	GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed],
+	                              IPPU.XB[PPU.FixedColourGreen],
+	                              IPPU.XB[PPU.FixedColourBlue]);
 }
 
 static INLINE void REGISTER_2122 (uint8 Byte)
@@ -3514,6 +3519,16 @@ void S9xSetPPU (uint8 Byte, uint16 Address)
 						PPU.FixedColourGreen = Byte & 0x1f;
 					if (Byte & 0x20)
 						PPU.FixedColourRed   = Byte & 0x1f;
+
+					/* Rebuild packed RGB565 fixed colour eagerly. Used to
+					 * happen once per S9xUpdateScreen flush; doing it here
+					 * instead means it's only rebuilt when the inputs
+					 * actually change, not every flush. Brightness changes
+					 * (which also affect IPPU.XB) rebuild via
+					 * S9xFixColourBrightness. */
+					GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed],
+					                              IPPU.XB[PPU.FixedColourGreen],
+					                              IPPU.XB[PPU.FixedColourBlue]);
 				}
 
 				break;
