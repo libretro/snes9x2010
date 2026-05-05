@@ -396,6 +396,12 @@ static void S9xEndScreenRefresh (void)
 	if (IPPU.RenderThisFrame)
 	{
 		FLUSH_REDRAW();
+		/* M7 vertical-2x post-pass: if armed by frame-start setup or
+		 * the mid-frame mode-switch hook in ppu.c, expand the 224-row
+		 * frame in place to 448 rows. Bumps IPPU.RenderedScreenHeight
+		 * to PPU.ScreenHeight*2 so the next call to S9xDeinitUpdate
+		 * picks up the new size. No-op if M7VertStartY is -1. */
+		S9xMode7VertResample();
 	}
 
 	if (!(GFX.DoInterlace && GFX.InterlaceFrame == 0))
@@ -1112,6 +1118,19 @@ void S9xDoHEventProcessing (void)
 
 						GFX.PPL = GFX.RealPPL << cond_2;
 						GFX.DoInterlace += cond_2;
+
+						/* M7 vertical-2x post-pass: arm if the user opted
+						 * in and the frame begins in BG mode 7 with hires
+						 * enabled. M7VertStartY = 0 means the entire
+						 * 0..PPU.ScreenHeight range gets bilinear-Y
+						 * interpolation at end-of-frame. Frames that
+						 * switch to mode 7 mid-frame are armed by the
+						 * mode-switch hook in ppu.c. */
+						IPPU.M7VertStartY = -1;
+						if (cond_1
+						 && PPU.BGMode == 7
+						 && Settings.Mode7HiresVertical)
+							IPPU.M7VertStartY = 0;
 
 						/* Backend hook: try to redirect GFX.Screen at the
 						   frontend's swapchain buffer for zero-copy

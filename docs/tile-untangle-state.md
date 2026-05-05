@@ -2277,6 +2277,96 @@ loop (42 renderer functions worth of duplicated loop bodies).
 That bigger surgery is parked unless a further perf gap
 warrants it.
 
+### `<TBD>` — Mode 7 hires vertical doubling (2x_hv / 4x_hv option values)
+
+Adds vertical doubling to the M7 hires render path. New libretro
+option values `"2x_hv"` (512×448) and `"4x_hv"` (1024×448) extend
+the existing `"2x"` / `"4x"` horizontal-only modes. New
+`Settings.Mode7HiresVertical` field stores the flag.
+
+**Approach: end-of-frame post-pass.** All renderers (M7 BG, sprites,
+HUD, BG2, color math) keep running normally at 224 rows. After the
+final FLUSH_REDRAW, `S9xMode7VertResample` walks the buffer
+bottom-up and expands it in place to 448 rows. Two regions:
+
+  * Rows `[0, M7VertStartY)`: HUD / Mode 1 area. Each input row is
+    duplicated to two output rows (chunky 2x upscale of HUD text).
+  * Rows `[M7VertStartY, ScreenHeight)`: M7 plane area. Output row
+    `2y` copies input row `y` verbatim; output row `2y+1` is the
+    per-channel average of input rows `y` and `y+1` (RGB565 packed
+    blend via `((a & 0xF7DE) >> 1) + ((b & 0xF7DE) >> 1)`).
+
+Bottom-up walk ensures source rows aren't overwritten before they're
+read: for source row `y`, output addresses `2y` and `2y+1` are both
+≥ `y`; source `y+1` (read for the blend) sits at offset `y+1` which
+is < `2y+2` for all `y >= 0`, so earlier iterations don't touch it.
+
+`M7VertStartY` is set by two hooks: cpuexec.c frame-start setup
+(when frame begins in BG mode 7 with hires) sets it to 0; ppu.c
+mid-frame mode-switch hook (the existing width-promotion path) sets
+it to `GFX.StartY` for split-screen frames where frame starts in
+Mode 1 and switches to 7 mid-frame. Reset to -1 every frame so the
+post-pass is a no-op when not armed.
+
+**Why a post-pass instead of in-renderer vert-2x.** The earlier
+attempt modified the 28 BL/BL4X renderers to write two output rows
+per source line. This worked for the M7 plane but broke every other
+renderer in the pipeline: sprites, HUD, BG2, OBJ, and color math
+all wrote to 224-row Y coordinates while the buffer was 448 rows
+tall. Sprites landed at half their expected height; HUD got covered
+by stale buffer content as the depth test failed against
+uninitialized Z values in rows 224..447. The post-pass approach
+keeps the entire pipeline at 224 rows and only expands at the very
+end, so nothing else needs to know about the doubling.
+
+**Visual cost vs. in-renderer interpolation.** A "real" vertical
+upscale (e.g. bsnes HD) re-runs the M7 perspective transform per
+output line at sub-source-Y positions, producing per-line samples
+that are geometrically correct and have new detail between source
+rows. The post-pass instead averages two adjacent rendered rows
+(each produced by integer-Y sampling). Result: row-to-row
+transitions get smoothed (finish-line stripes, track-edge tiles),
+but the M7 plane still samples at 224 source rows so per-line
+texture detail isn't added. Visibly lower quality than a true
+re-render approach, but ships correctly and doesn't disturb the
+rest of the render pipeline. The first shipped attempt did go in
+the in-renderer direction (28 BL/BL4X renderers modified to write
+two output rows per source line) and broke when the non-M7 layers
+(sprites, HUD, BG2, OBJ, color math) wrote to 224-row Y
+coordinates while the buffer was 448 rows tall — sprites at half
+their expected height, HUD covered by stale buffer content, etc.
+Resolving that properly would require deferring the M7 BG to a
+separate post-FLUSH_REDRAW pass with its own depth handling,
+which is a larger restructuring than this commit attempts.
+
+**Effective regardless of bilinear setting.** Stable, smooth, or HR
+(no-bilinear) all benefit: the post-pass interpolates whatever the
+renderer wrote. Smoothing along the Y axis applies on top of
+whatever X-axis treatment the bilinear setting selects.
+
+**.o-level cost (-O2):**
+  * ppu.o: +992 bytes (S9xMode7VertResample is ~373 bytes; the rest
+    is the new IPPU.M7VertStartY field touches and the mid-frame
+    arm hook).
+  * cpuexec.o: +408 bytes (frame-start arm + post-pass call).
+  * tile.o: unchanged (no renderer modifications in this approach).
+
+Total binary cost ~+1.4KB. About 7× smaller than the earlier
+in-renderer approach (~+10KB).
+
+**Per-frame perf cost.** ~225K pixel writes for the bilinear region
+(224 rows × 1024 cols, RGB565 averaging) plus ~450K for the row-
+replication regions. On weak hardware, under 1ms per frame. The
+in-renderer approach roughly doubled the M7 renderer's per-frame
+work, so this is roughly 3-5× cheaper.
+
+**Open question:** the `2x_hv` and `4x_hv` option values are still
+"silent no-ops" when `Mode7Hires` is 0 (off). That's not a hazard
+since the option is `Mode 7 - Hires` and selecting `2x_hv` does
+imply Mode7Hires = 2. The libretro parser sets both fields atomic
+so this is consistent. The combined-option-string refactor
+discussed elsewhere would simplify this further.
+
 ## In-flight notes
 
 ### Performance claw-back — followups, prioritized

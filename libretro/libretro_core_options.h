@@ -242,13 +242,15 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "snes9x_2010_mode7_hires",
       "Mode 7 - Hires (Restart)",
       NULL,
-      "Render Mode 7 backgrounds at higher horizontal resolution. 2x renders at 512 px (smoother diagonals); 4x renders at 1024 px (smoothest, more expensive). Affects only Mode 7 (driving / racing / overhead-rotation games). Other modes are unchanged. Default off.",
+      "Render Mode 7 backgrounds at higher resolution. 2x renders at 512 px (smoother diagonals); 4x renders at 1024 px (smoothest, more expensive). The 2x_hv / 4x_hv variants additionally double the output vertically (448 rows) via an end-of-frame bilinear-Y average of adjacent rendered rows; HUD / sprites / non-M7 layers are row-duplicated. Smooths row-to-row transitions on Mode 7 ground textures but does not add per-line detail (the M7 plane still samples at 224 source rows). Affects only Mode 7 (driving / racing / overhead-rotation games). Other modes are unchanged. Default off.",
       NULL,
       "hacks",
       {
          { "disabled", NULL },
          { "2x",       NULL },
          { "4x",       NULL },
+         { "2x_hv",    NULL },
+         { "4x_hv",    NULL },
          { NULL, NULL},
       },
       "disabled"

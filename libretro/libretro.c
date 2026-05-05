@@ -576,12 +576,36 @@ static void check_variables(bool first_run)
 	var.value = NULL;
 	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
-		if (strcmp(var.value, "4x") == 0)
+		/* Order matters: the *_hv suffixes must be checked before the
+		 * unsuffixed forms so that strcmp("4x_hv", "4x") doesn't match
+		 * the wrong branch via strncmp logic if the parsing ever
+		 * changes. We use full strcmp here so it's not actually a hazard
+		 * today, but the order also makes the intent clear. */
+		if (strcmp(var.value, "4x_hv") == 0)
+		{
 			Settings.Mode7Hires = 4;
-		else if (strcmp(var.value, "2x") == 0 || strcmp(var.value, "enabled") == 0)
+			Settings.Mode7HiresVertical = 1;
+		}
+		else if (strcmp(var.value, "2x_hv") == 0)
+		{
 			Settings.Mode7Hires = 2;
+			Settings.Mode7HiresVertical = 1;
+		}
+		else if (strcmp(var.value, "4x") == 0)
+		{
+			Settings.Mode7Hires = 4;
+			Settings.Mode7HiresVertical = 0;
+		}
+		else if (strcmp(var.value, "2x") == 0 || strcmp(var.value, "enabled") == 0)
+		{
+			Settings.Mode7Hires = 2;
+			Settings.Mode7HiresVertical = 0;
+		}
 		else
+		{
 			Settings.Mode7Hires = 0;
+			Settings.Mode7HiresVertical = 0;
+		}
 	}
 
 	var.key = "snes9x_2010_mode7_hires_bilinear";

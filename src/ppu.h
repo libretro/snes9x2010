@@ -304,6 +304,17 @@ struct InternalPPU
 	   keep checking DoubleWidthPixels alone. */
 	bool8	QuadWidthPixels;
 	bool8	DoubleHeightPixels;
+	/* Mode 7 vertical-2x post-pass control. Set to a non-negative value
+	   when the current frame should be expanded to 2x vertical at end-
+	   of-frame: the value is the source-Y row at which the M7 plane
+	   begins (rows below this are HUD/Mode 1 and get row-replicated;
+	   rows from this index onward are M7 and get bilinear-Y-interpolated
+	   between adjacent source rows). Set to -1 to disable the post-pass
+	   for this frame. Reset at frame start; set by the frame-start setup
+	   in cpuexec.c (when the frame begins in M7) or by the mid-frame
+	   mode-switch hook in ppu.c (when the frame switches into M7
+	   mid-frame). */
+	int32	M7VertStartY;
 	bool8 RenderThisFrame;
 };
 
@@ -578,6 +589,7 @@ extern struct SGFX	GFX;
 	((C2) & RGB_REMOVE_LOW_BITS_MASK)) >> 1]
 
 void S9xUpdateScreen (void);
+void S9xMode7VertResample (void);
 
 /* external port interface which must be initialised for each port */
 

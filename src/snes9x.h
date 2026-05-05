@@ -402,6 +402,19 @@ struct SSettings
 	   horizontal (512), 4 = 4x horizontal (1024). Buffer width is
 	   promoted accordingly when in Mode 7. */
 	int32		Mode7Hires;
+	/* Mode 7 hires vertical doubling: 0 = off, 1 = on (output buffer
+	   is 2x tall, 224 -> 448 rows). Effective only when Mode7Hires is
+	   2 or 4 AND Mode7HiresBilinear is 2 (smooth) -- the smooth
+	   bilinear renderer family produces genuinely-new bilinear samples
+	   between the native source rows for the doubled output. With any
+	   other combination the option is a no-op (stable bilinear's
+	   X-only blend would just duplicate rows; HR mode has no
+	   interpolation either). When effective, M7 BG renders at 2x
+	   vertical resolution; non-M7 layers (sprites, HUD, BG2 if used
+	   under M7) get duplicated to 2 output rows by the buffer
+	   promotion path, which keeps the overall layout correct at the
+	   cost of doubled-pixel HUD text. */
+	int32		Mode7HiresVertical;
 	/* Mode 7 bilinear filter mode: 0 = off, 1 = stable (X-only blend
 	   with floor-Y), 2 = smooth (4-corner bilinear with a row-contrast
 	   guard that falls back to stable's blend on dissimilar row pairs,

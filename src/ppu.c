@@ -194,6 +194,7 @@
 #include "spc7110emu.h"
 #include "ppu.h"
 #include "tile.h"
+#include "cpuexec.h"
 
 extern uint8	*HDMAMemPointers[8];
 
@@ -2259,6 +2260,15 @@ void S9xUpdateScreen (void)
 			IPPU.DoubleWidthPixels = TRUE;
 			IPPU.QuadWidthPixels = (factor == 4);
 			IPPU.RenderedScreenWidth = SNES_WIDTH * factor;
+
+			/* M7 vert-2x post-pass: arm now if entering Mode 7 mid-
+			 * frame with hires + vertical-2x option enabled. The
+			 * already-rendered top-of-frame rows (HUD/Mode 1) below
+			 * GFX.StartY get row-replicated; rows from GFX.StartY
+			 * onward (where M7 will be drawn) get bilinear-Y blended
+			 * at end-of-frame. */
+			if (PPU.BGMode == 7 && Settings.Mode7HiresVertical)
+				IPPU.M7VertStartY = (int32)GFX.StartY;
 		}
 
 		if (!IPPU.DoubleHeightPixels && IPPU.Interlace && (PPU.BGMode == 5 || PPU.BGMode == 6))
@@ -2339,6 +2349,92 @@ static uint16 get_crosshair_color (uint8 color)
 	}
 
 	return (0);
+}
+
+/* Mode 7 vertical-2x post-pass.
+ *
+ * Called from S9xEndScreenRefresh after all renderers have finished,
+ * before the buffer is handed to the frontend. Expands a 224-row
+ * (PPU.ScreenHeight) frame in GFX.Screen to 448 rows in place, with
+ * two regions:
+ *
+ *   - Rows [0, IPPU.M7VertStartY): HUD / Mode 1 area. Each input row
+ *     is duplicated to two output rows. Looks like a chunky 2x
+ *     upscale of the HUD; this is the documented cosmetic tradeoff
+ *     for the M7 plane improvement.
+ *   - Rows [IPPU.M7VertStartY, PPU.ScreenHeight): M7 plane area.
+ *     Output row 2y copies input row y verbatim; output row 2y+1 is
+ *     the per-channel average of input rows y and y+1, producing a
+ *     genuinely-new bilinear-Y intermediate row. Final M7 row's odd
+ *     output is just a copy (no row to interpolate with).
+ *
+ * Walks bottom-up so source rows aren't overwritten before they're
+ * read. For source row y, output is written at offsets 2y and 2y+1
+ * which are >= y for all y >= 0; source row y+1 (needed for the
+ * blend) sits at offset y+1 < 2y+2, so it isn't touched by earlier
+ * iterations either.
+ *
+ * Updates IPPU.RenderedScreenHeight to PPU.ScreenHeight * 2 so the
+ * frontend gets the doubled dimensions. */
+void S9xMode7VertResample (void)
+{
+	int32 y, m7_start;
+	uint32 ppl;
+	uint32 width;
+
+	if (IPPU.M7VertStartY < 0)
+		return;
+
+	/* The sw_fb hook may have given us a 224-row frontend buffer at
+	 * frame start. We need to write rows 224..447, which would overrun
+	 * a 224-row buffer. Abort sw_fb so GFX.Screen points back at the
+	 * persistent buffer (sized for max width * max height, ~478 rows). */
+	S9xLibretroSwFbAbort();
+
+	m7_start = IPPU.M7VertStartY;
+	ppl      = GFX.PPL;
+	width    = IPPU.RenderedScreenWidth;
+
+	/* Bottom-up walk over the original PPU.ScreenHeight rows. */
+	for (y = (int32)PPU.ScreenHeight - 1; y >= 0; y--)
+	{
+		uint16 *src      = GFX.Screen + (uint32)y * ppl;
+		uint16 *dst_even = GFX.Screen + (uint32)(2 * y    ) * ppl;
+		uint16 *dst_odd  = GFX.Screen + (uint32)(2 * y + 1) * ppl;
+
+		if (y >= m7_start && y + 1 < (int32)PPU.ScreenHeight)
+		{
+			/* M7 plane: bilinear-Y. dst_even = src; dst_odd =
+			 * (src + src_below) / 2 per channel. RGB565 is unpacked
+			 * with a fast trick: average packed values by taking the
+			 * low bits separately to avoid cross-channel carry. */
+			uint16 *src_below = GFX.Screen + (uint32)(y + 1) * ppl;
+			uint32 x;
+			for (x = 0; x < width; x++)
+			{
+				uint16 a = src[x];
+				uint16 b = src_below[x];
+				/* Blend each channel of RGB565 independently.
+				 * (a & 0xF7DE) >> 1 + (b & 0xF7DE) >> 1 averages
+				 * the high bits of each channel; the masked low
+				 * bit drops out (acceptable LSB rounding). */
+				uint16 blend = ((a & 0xF7DE) >> 1) + ((b & 0xF7DE) >> 1);
+				dst_odd[x]  = blend;
+			}
+			memmove(dst_even, src, width * sizeof(uint16));
+		}
+		else
+		{
+			/* HUD region or last M7 row: row replication. memcpy is
+			 * safe for dst_odd (no overlap with src for y >= 1; for
+			 * y = 0 dst_odd row 1 doesn't overlap src row 0). memmove
+			 * for dst_even because dst_even == src when y == 0. */
+			memcpy (dst_odd,  src, width * sizeof(uint16));
+			memmove(dst_even, src, width * sizeof(uint16));
+		}
+	}
+
+	IPPU.RenderedScreenHeight = PPU.ScreenHeight * 2;
 }
 
 void S9xDrawCrosshair (const char *crosshair, uint8 fgcolor, uint8 bgcolor, int16 x, int16 y)
