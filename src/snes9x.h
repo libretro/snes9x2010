@@ -403,11 +403,11 @@ struct SSettings
 	   promoted accordingly when in Mode 7. */
 	int32		Mode7Hires;
 	/* Mode 7 bilinear filter mode: 0 = off, 1 = stable (X-only blend
-	   with floor-Y), 2 = smooth (full 4-corner bilinear). The smooth
-	   mode is more aggressive but exposes a one-scanline seam on
-	   content with abrupt vertical texel changes (e.g. Tiny Toons
-	   rainbow rings). Stable matches HD-no-BL's Y-axis sampling and
-	   only smooths X, so it cannot produce that seam. */
+	   with floor-Y), 2 = smooth (4-corner bilinear with a row-contrast
+	   guard that falls back to stable's blend on dissimilar row pairs,
+	   so it doesn't produce muddy averaged seams on content like Tiny
+	   Toons rainbow rings). Stable matches HD-no-BL's Y-axis sampling
+	   and only smooths X. */
 	int32		Mode7HiresBilinear;
 	bool8		Transparency;
    float    SuperFXSpeedPerLine;

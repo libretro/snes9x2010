@@ -2112,13 +2112,175 @@ LTO-eliminated arrays, and a worked expansion of
 No code changes. Build verified clean. Audio/savestate/valgrind
 invariants unaffected by definition.
 
+### `5741db1` — tile.c: M7HR snap branches use floor (<=) at fractional 128 boundary
+
+Fixes the Tiny Toons "Buster Busts Loose" title-screen 1-scanline seam
+in smooth bilinear mode (Mode7HiresBilinear == 2). 4-character code
+change in `m7hr_blend()`'s HEDGE/VEDGE/NEAREST branches: strict
+less-than (`<`) flipped to floor (`<=`), with `>=` flipped to `>` to
+keep the partition disjoint.
+
+**Mechanism.** When MatrixD scales to ~0.5 source-rows-per-output-line
+(common for 1x SNES content rendered at 4x output), every other output
+line samples Yf exactly 128. The disconaware classifier's HEDGE/VEDGE/
+NEAREST branches snapped to ceiling at this midpoint via strict-less-
+than. On the Tiny Toons rainbow ring, the ceiling row at y=156 contains
+artistically-unrelated palette content (one-row band of cyan/white
+mid-rainbow), so the entire output line jumped to a wrong-colour row.
+Floor-snap matches what stable mode does (always uses floor-Y) and
+removes the seam without affecting non-boundary pixels.
+
+**Verification.** Per-pixel ground-truth dumps from BG1BL4X via the
+debug-dump infrastructure (separate, never committed). At y=156 (357
+M7-only pixels), L1 vs stable dropped from 37,961 (pre-fix) to 4,776
+(post-fix) — equivalent to "no seam visible". Benign-row L1 cost ~2
+per pixel-channel summed over non-seam rows, below visual
+discrimination. Lib visually verified on real hardware.
+
+**Diagnostic infrastructure produced during this investigation,
+NOT committed:**
+  * `m7-debug-dump.patch` — gated by `-DM7HR_DEBUG_DUMP`, captures
+    per-output-pixel records (line, out_x, four palette indices, four
+    resolved RGB565 colours, Xf, Yf, classifier branch ID) from the
+    BG1BL4X wrap-path renderer. Triggered by creating `m7-dump-now`
+    in `M7HR_DUMP_DIR` (env, defaults `/tmp` POSIX or `.` Windows).
+    Portable, MinGW-clean. Debug release `.o` byte-identical to
+    pristine.
+  * `dump_reader.py` decodes the binary format. Reusable for any
+    future M7 BL bug.
+
+Both kept on Lib's side as tools, not in-tree.
+
 ## In-flight notes
 
-(none — clean state)
+### Smooth M7HR row-contrast guard — patch ready, awaiting commit
+
+**Patch:** `/mnt/user-data/outputs/m7-smooth-row-contrast.patch`. Net
+-75 lines across src/tile.c, src/snes9x.h,
+libretro/libretro_core_options.h. tile.c -520 bytes vs master at
+-O2. Compiles -Wall -Wextra -Werror clean. Suggested commit subject:
+*"tile.c: replace M7HR smooth classifier with vertical-row-contrast
+guard"*.
+
+**Mechanism.** Previously the smooth M7HR path ran a 4-way
+discontinuity-aware classifier per opaque pixel (4 SAD evaluations
+plus a HEDGE/VEDGE/NEAREST/4C decision tree) at ~+2.25 ms/frame on
+top of stable. Real-hardware A/B testing on Contra III "Choose Your
+Starting Point" and gameplay scenes showed the classifier's visible
+output was nearly indistinguishable from nearest-neighbor on busy
+pixel-art content -- paying full cost to produce output users couldn't
+distinguish from off mode. Replacement: plain 4-corner bilinear with
+a single vertical-row-contrast guard. When the sum of two vertical
+SAD pairs (TL<->BL, TR<->BR) exceeds M7HR_VROW_THRESHOLD=24, fall
+back to stable's X-only blend on the top row instead of producing a
+muddy averaged scanline. Otherwise full 4C bilinear.
+
+**Real-hardware verification on the test scenes:**
+
+  * Contra III Choose Your Starting Point smooth: 5.75ms (master) →
+    **5.03ms** (-0.72ms, -12%). Plan B [unguarded plain 4C, rejected]
+    measured 4.06ms here, so the guard adds ~1ms back over plain 4C
+    while staying ~0.7ms below master.
+  * Contra III gameplay smooth: 4.74ms (master) → not directly
+    re-measured but Plan B was 1.19ms faster on master and Plan C
+    is ~half Plan B's gain → estimated ~3.5-4.0ms.
+  * Tiny Toons title screen smooth: seam gone, perf 3.75ms (frame-
+    rate-locked at 60Hz, so the headline number is "no frame drops"
+    rather than a delta).
+  * Stable mode unchanged across scenes (within run-to-run variance).
+  * Visual look on Tiny Toons title smooth: rainbow rings continuous
+    across y=156, no muddy seam (Plan B regressed here), no
+    wrong-colour seam (master regressed here).
+  * Visual look on Contra: Plan B already established that plain 4C
+    is indistinguishable from master's classifier on this content;
+    Plan C is plain 4C on the common case, so no regression.
+
+**Offline rig prediction matched real hardware.** With the existing
+Tiny Toons dump and a 24 threshold, the rig predicted 96.7% of seam-
+row pixels would route to stable fallback; benign rows (y=80, 100,
+120) would route only 8-15% to fallback, preserving smooth look.
+Real hardware confirmed both predictions. The dump rig is now
+established as a credible tool for threshold/strategy decisions on
+this code path.
+
+**Cleanup completed in same patch:**
+
+  * M7HR_NEAR and M7HR_NEAR_THRESHOLD macros removed (dead code
+    after classifier replacement).
+  * Updated stale comment on m7hr_blend()'s preamble that still
+    claimed always_inline (dropped during the disconaware iteration,
+    not yet restored).
+  * Updated user-facing core-option description, snes9x.h
+    Mode7HiresBilinear field doc, M7HR_BLEND_RGB_4C macro doc, and
+    HR4X dispatch comment to describe the guarded smooth path
+    rather than the prior "may produce one-scanline seam" caveat.
+
+**Investigation artifacts (not committed):** `m7-debug-dump.patch`,
+`dump_reader.py`, the offline render rig, the four-candidate
+threshold sensitivity sweep that informed picking 24. All kept on
+Lib's side for the next round.
+
+## In-flight notes
+
+### Performance claw-back — followups, prioritized
+
+Plan C left ~0.7ms on the table vs Plan B's unguarded 4C. The guard
+itself (2 SAD pairs + 1 add + 1 compare + 1 branch per opaque pixel)
+is the cost. Several options for clawing back more, ordered by
+expected effort vs payoff:
+
+**1. Restore always_inline on m7hr_blend (cheap, plausible win).**
+   The disconaware-era doc comment claimed +124KB binary growth if
+   inlined; with the body now small (4-corner blend + 2-SAD guard,
+   or stable's X-only blend), inlining ~196 copies might be net
+   positive again. The original always_inline rationale (~+10% on
+   BL fast paths from per-pixel call overhead) still applies in
+   principle. Concrete measure: build with `static __inline__
+   __attribute__((always_inline))`, check binary size and Contra
+   smooth ms. Low-risk experiment; one-token change.
+
+**2. Skip the SAD evaluation when palette indices already prove the
+rows match (cheap, content-dependent win).** If `p_tl == p_bl &&
+   p_tr == p_br`, the source rows are *byte-identical* in this
+   tile, so c_tl == c_bl and c_tr == c_br by definition. row_dist
+   is then provably 0 and the guard would always pass. Detecting
+   this with a 2-byte palette equality test (no GFX.ScreenColors
+   lookups, no SAD math) is essentially free. Saves the row-contrast
+   cost on flat-content pixels which are the majority of the
+   benign frame. Expected: small per-pixel saving × many pixels =
+   maybe 0.2-0.3 ms on Contra-style scenes.
+
+**3. Pack RGB565 for SIMD-style SAD (real work, harder to verify).**
+   M7HR_COLOR_DIST does 3 IABS+sums on 5-bit-extracted channels.
+   On x86 with SSE2, packed-byte saturated subtraction can compute
+   absolute differences in parallel. Worth ~2-3x speedup on the SAD
+   itself. But snes9x2010 targets weak hardware where this kind of
+   intrinsic isn't always available, and getting it right portably
+   is fiddly. Defer until threshold of pain warrants it.
+
+**4. Tune M7HR_VROW_THRESHOLD against multi-game dumps (real work,
+real payoff).** Lower threshold = more pixels route to cheap stable
+   fallback, fewer pay 4C math cost (8 multiplies → 2 multiplies).
+   Higher threshold = smoother look on borderline content. Currently
+   set to 24 based on one Tiny Toons dump. With dumps from F-Zero,
+   Pilotwings, Mario Kart, the threshold could be tuned across
+   scenes for an optimal "smoothness preserved + perf maximized"
+   point. Expected: tuned threshold could land smooth perf within
+   ~0.3ms of stable on most content.
+
+**Suggested order:** (1) first because it's a one-line change with
+a credible win and zero design risk. (2) if a flat-content scene
+shows perf still mattering. (3) is a SIMD project, defer indefinitely.
+(4) when Lib has the time + interest to capture multi-game dumps.
 
 ## Open questions for Lib
 
-(none currently)
+  - **Always_inline restoration: try it now or defer?** Cheapest
+    perf experiment we have, but a separate session keeps it cleanly
+    measurable. Either is fine.
+  - **Multi-game dump capture:** which 2-3 M7 games would you pick
+    as representative? F-Zero / Pilotwings / Mario Kart are
+    suggestions but you know your test rotation better.
 
 ## Open followups (deferred from in-flight work, not bundled)
 

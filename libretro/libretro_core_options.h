@@ -257,7 +257,7 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "snes9x_2010_mode7_hires_bilinear",
       "Mode 7 - Bilinear Filter",
       NULL,
-      "Apply bilinear filtering to Mode 7 backgrounds. Stable: blends along the X axis only with floor-Y sampling. Robust against high-contrast horizontal banding (rainbow rings, palette-rotation effects); recommended default. Smooth: full 4-corner bilinear, more aggressive smoothing along both axes, but can produce a one-scanline seam where adjacent texel rows contain dissimilar palette entries (e.g. Tiny Toons title). Independent of the Hires option; works at native, 2x and 4x.",
+      "Apply bilinear filtering to Mode 7 backgrounds. Stable: blends along the X axis only with floor-Y sampling. Robust against high-contrast horizontal banding (rainbow rings, palette-rotation effects); recommended default. Smooth: 4-corner bilinear with a row-contrast guard that falls back to stable behaviour on high-contrast row pairs (avoids muddy seams on content like the Tiny Toons title screen). More aggressive smoothing along both axes; somewhat more expensive than stable. Independent of the Hires option; works at native, 2x and 4x.",
       NULL,
       "hacks",
       {

@@ -7506,10 +7506,11 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 /* Smooth (4-corner) blend. Full bilinear interpolation across all
    four texels surrounding the fractional sample position. More
-   aggressive smoothing than stable, particularly along the Y axis,
-   but can produce a one-scanline seam where adjacent texel rows
-   differ abruptly (the blend lands far from both rows -- a "muddy"
-   average that doesn't match either neighbour). */
+   aggressive smoothing than stable, particularly along the Y axis.
+   Plain 4C across two artistically-unrelated source rows would
+   produce a "muddy" averaged colour visually unlike either neighbour;
+   the smooth path in m7hr_blend() guards against this with a vertical-
+   row-contrast check (see M7HR_VROW_THRESHOLD). */
 #define M7HR_BLEND_RGB_4C(out, TL, TR, BL, BR, Xf, Yf) \
 	{ \
 		uint32 wx1 = (Xf), wx0 = 256 - wx1; \
@@ -7564,10 +7565,11 @@ extern struct SLineMatrixData	LineMatrixData[240];
                     Mode 7's sampling). X is interpolated between
                     the row's two corners. Cannot produce one-line
                     Y seams.
-     == 2 (smooth)  Full 4-corner bilinear. Smoother on gradient
-                    content, but can produce a one-scanline seam
-                    on hostile content where adjacent texel rows
-                    contain dissimilar palette entries.
+     == 2 (smooth)  4-corner bilinear with a vertical-row-contrast
+                    guard: when the two source rows hold dissimilar
+                    palette entries, fall back to stable's X-only
+                    blend on the top row to avoid producing a muddy
+                    averaged scanline.
 
    The raw TL byte is exposed as local 'b' so that z1_expr / z2_expr
    parameters can reference 'b & 0x80' the same way the native HR
@@ -7624,52 +7626,57 @@ extern struct SLineMatrixData	LineMatrixData[240];
  * transparent and the pixel should be skipped (so that
  * DrawBackdrop() can fill it later).
  *
- * Marked always_inline because letting GCC's heuristics decide
- * produces an out-of-line function and a per-pixel `call` per
- * BL invocation, which is a measurable bench regression on x86
- * (~+10% on the BL fast paths, since the call overhead doesn't
- * amortize across the relatively cheap per-pixel work). With
- * always_inline the code-shape inlines as before, and the
- * source-level reduction still pays off in:
- *   - smaller per-BL-function compiled bodies (-20% on the BL
- *     family) thanks to the helper's clean by-value parameter
- *     binding giving the compiler better register allocation;
- *   - one canonical compute body to maintain instead of having
- *     it textually inlined into 196 expansion sites.
+ * Out-of-line by design: the BL family has ~196 call sites. An
+ * earlier iteration of this helper carried a bigger decision tree
+ * and tens of KB of inlining cost; the current body is small enough
+ * (4-corner blend with vertical-contrast guard, or stable's X-only
+ * blend) that restoring always_inline could plausibly be a net win,
+ * but unmeasured -- left as a separate followup. The current call
+ * overhead is well-amortized against the per-pixel blend math.
  *
  * smooth_local selects the filter:
  *   0 (stable)  X-only on floor-Y row
- *   1 (smooth)  Full 4-corner bilinear
+ *   1 (smooth)  4-corner bilinear, with vertical-row-contrast
+ *               guard that falls back to stable's X-only blend
+ *               when the two source rows hold dissimilar palette
+ *               entries (see M7HR_VROW_THRESHOLD).
  *
  * The op_mask logic, weight renormalization, and same-index early-
  * outs are unchanged from the prior inline form.
  */
-/* Threshold for the discontinuity-aware smooth path's "are these two
- * colors close enough to blend continuously" test.
+/* M7HR_VROW_THRESHOLD: vertical-row-contrast threshold for the smooth
+ * path's seam guard.
  *
- * Metric: sum of absolute differences across the three 5-bit RGB565
- * channels (range 0..93). Two colors are "near" if SAD <= threshold.
+ * Plain 4-corner bilinear blending across two source rows holding
+ * artistically-unrelated palette content produces a 1-output-line muddy
+ * average that doesn't match either neighbour row -- the canonical
+ * Tiny Toons "Buster Busts Loose" title screen seam at y=156, where
+ * the rainbow ring crosses a one-row band of cyan/white tiles. The
+ * smooth path detects this case by summing the two vertical SAD pairs
+ * (TL<->BL, TR<->BR) per pixel and falls back to stable's X-only blend
+ * on the top row when the sum exceeds this threshold.
  *
- * Tuning rationale:
- *   - Adjacent gradient entries in a hand-drawn palette typically
- *     differ by 1-4 per channel -> SAD 3..12.
- *   - Intentional hard edges (text vs background, sprite vs sky)
- *     typically jump by 8+ in at least one channel -> SAD 15+.
- *   - 8 sits between these populations and was the starting point
- *     for the conditional-bilinear discussion. It treats "small
- *     gradient steps" as continuous and "obvious palette jumps"
- *     as edges.
+ * Metric range: 0..186 (each M7HR_COLOR_DIST is 0..93, sum of three
+ * 5-bit channel diffs; two pairs added).
  *
- * If real-game testing shows mis-classification (e.g. visible
- * Tiny Toons seam returning, or unwanted nearest-neighbor
- * pixelation on smooth content), tune this. Lower = more strict
- * (more pixels classified as edges, more nearest-neighbor
- * fallback, less smooth). Higher = more permissive (more pixels
- * classified as continuous, smoother but seams may return).
+ * Tuning rationale at the chosen value (24):
+ *   - Adjacent gradient steps differ ~1-4 per channel per pair,
+ *     summed ~6..24 across two pairs. These pixels stay below the
+ *     threshold and get plain 4C bilinear (smooth look preserved).
+ *   - Hostile content (Tiny Toons rainbow vs cyan band, sprite-vs-
+ *     background row pairs) shows row_dist 60..150 in dump data.
+ *     These pixels exceed the threshold and route to stable fallback
+ *     (no muddy seam).
+ *   - 24 sits comfortably between these populations.
+ *
+ * If a real game shows mis-classification (visible seam returning, or
+ * unwanted pixelation on smooth content), tune this. Lower = stricter
+ * guard (more stable fallback, less smooth-look). Higher = more
+ * permissive (smoother, more risk of muddy seams).
  */
-#define M7HR_NEAR_THRESHOLD 8
+#define M7HR_VROW_THRESHOLD 24
 
-/* SAD distance between two RGB565 colors. ~6 ALU ops.
+/* SAD distance between two RGB565 colors, range 0..93. ~6 ALU ops.
  *
  * Uses a local IABS rather than libc's abs() because tile.c does not
  * (and historically should not) pull in <stdlib.h>; avoids surprising
@@ -7683,19 +7690,6 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	 + M7HR_IABS(((int)((c1) >>  6) & 0x1f) - ((int)((c2) >>  6) & 0x1f)) \
 	 + M7HR_IABS(((int)((c1)      ) & 0x1f) - ((int)((c2)      ) & 0x1f)))
 
-#define M7HR_NEAR(c1, c2) (M7HR_COLOR_DIST((c1), (c2)) <= M7HR_NEAR_THRESHOLD)
-
-/* The helper used to be always_inline -- when its body was just the
- * straight bilinear blend, inlining ~196 copies into BL call sites
- * was a wash on size (the body was small) and a small win on
- * per-pixel cost (avoided the call overhead). Now that the helper
- * carries the discontinuity-aware decision tree, its inlined size
- * grows the BL family by ~124 KB if forced inline. Drop
- * always_inline and let the compiler emit it out-of-line: one
- * shared helper, one call per pixel, much smaller binary, and the
- * call overhead is well-amortized against the helper's own work
- * (resolving 4 RGB565 colors + 4 SAD distances + branched blend).
- */
 static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
                       uint32 Xf, uint32 Yf, uint8 smooth_local,
                       uint16 *out)
@@ -7715,30 +7709,14 @@ static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 		/* All opaque: fast path. */
 		if (smooth_local)
 		{
-			/* Discontinuity-aware smooth path. The classic 4-corner
-			 * bilinear blend produces 1-scanline-tall seams when
-			 * adjacent texel rows in the source contain artistically-
-			 * unrelated palette entries (canonical example: the Tiny
-			 * Toons title screen, where text rows abut background
-			 * rows in the M7 character data). Detect the edge
-			 * topology from the four corners and route to a blend
-			 * rule that respects the discontinuity:
-			 *
-			 *   all four near each other  -> 4-corner bilinear (same
-			 *                                as old 'smooth')
-			 *   horizontal edge           -> X-only blend on the row
-			 *                                Yf rounds to (no Y bleed)
-			 *   vertical edge             -> Y-only blend on the col
-			 *                                Xf rounds to (no X bleed)
-			 *   diagonal / dense / 3+1    -> nearest spatial corner
-			 *
-			 * Cheap same-index early-out comes first (palette-equal
-			 * corners need no comparison). The general path resolves
-			 * RGB once and runs four SAD comparisons.
-			 */
+			/* Smooth: 4-corner bilinear, with a vertical-row-contrast
+			 * guard to avoid the muddy-average seam that plain 4C
+			 * produces when the two source rows hold artistically-
+			 * unrelated palette content. See M7HR_VROW_THRESHOLD above. */
 			if (p_tl == p_tr && p_tl == p_bl && p_tl == p_br)
 			{
-				/* All four palette-equal: trivially smooth. */
+				/* All four palette-equal: trivially smooth. Cheap
+				 * early-out for flat regions; saves all blend math. */
 				blended = GFX.ScreenColors[p_tl];
 			}
 			else
@@ -7747,76 +7725,24 @@ static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 				uint16 c_tr = GFX.ScreenColors[p_tr];
 				uint16 c_bl = GFX.ScreenColors[p_bl];
 				uint16 c_br = GFX.ScreenColors[p_br];
-				int top_match    = M7HR_NEAR(c_tl, c_tr);
-				int bot_match    = M7HR_NEAR(c_bl, c_br);
-				int left_match   = M7HR_NEAR(c_tl, c_bl);
-				int right_match  = M7HR_NEAR(c_tr, c_br);
-
-				if (top_match && bot_match && left_match && right_match)
+				int row_dist = M7HR_COLOR_DIST(c_tl, c_bl)
+				             + M7HR_COLOR_DIST(c_tr, c_br);
+				if (row_dist <= M7HR_VROW_THRESHOLD)
 				{
-					/* Continuous region: full 4-corner bilinear. */
+					/* Rows similar enough: full 4-corner bilinear. */
 					M7HR_BLEND_RGB_4C(blended, c_tl, c_tr, c_bl, c_br, Xf, Yf);
-				}
-				else if (top_match && bot_match)
-				{
-					/* Horizontal edge: rows agree internally but
-					 * disagree across. Snap Y, blend X.
-					 *
-					 * The Yf<=128 (rather than <) snap-to-top is load-
-					 * bearing: when MatrixD scales to ~0.5 source rows
-					 * per output line, every other output line samples
-					 * with Yf exactly 128 -- geometrically equidistant
-					 * between the two source rows. Using strict
-					 * less-than would push *every* such pixel to the
-					 * bottom row, which on hostile content (Tiny Toons
-					 * "Buster Busts Loose" rainbow ring intersecting
-					 * a one-row-tall artistic band of unrelated palette
-					 * indices) produces a visible 1-scanline seam:
-					 * the entire output line jumps to a row whose
-					 * content is artistically far from the surrounding
-					 * output lines. Snapping to top at the boundary
-					 * matches what stable mode does (always uses the
-					 * floor-Y row) and removes the seam without
-					 * affecting non-boundary pixels. */
-					uint16 c_l = (Yf <= 128) ? c_tl : c_bl;
-					uint16 c_r = (Yf <= 128) ? c_tr : c_br;
-					if (c_l == c_r)
-						blended = c_l;
-					else
-						M7HR_BLEND_RGB(blended, c_l, c_r, Xf);
-				}
-				else if (left_match && right_match)
-				{
-					/* Vertical edge: columns agree internally but
-					 * disagree across. Snap X, blend Y. Symmetric
-					 * to HEDGE: use <= so Xf=128 snaps to left, for
-					 * the same reason. */
-					uint16 c_t = (Xf <= 128) ? c_tl : c_tr;
-					uint16 c_b = (Xf <= 128) ? c_bl : c_br;
-					if (c_t == c_b)
-						blended = c_t;
-					else
-						M7HR_BLEND_RGB(blended, c_t, c_b, Yf);
 				}
 				else
 				{
-					/* Diagonal, sparse, or 3+1 detail: nearest
-					 * spatial corner. Loses smoothness on diagonal
-					 * gradients but avoids creating wrong-color
-					 * pixels at hard edges. If real content shows
-					 * diagonal-aliasing regressions vs old smooth,
-					 * a "diagonal-axis blend" branch can be added
-					 * here (test c_tl ~= c_br && c_tr ~= c_bl,
-					 * blend along (Xf+Yf)/2).
-					 *
-					 * The <=/> partition (rather than </>=) matches
-					 * HEDGE/VEDGE: at Xf=128 / Yf=128 we snap to the
-					 * floor side, not the ceiling. See HEDGE comment
-					 * above for the rationale. */
-					if      (Xf <= 128 && Yf <= 128) blended = c_tl;
-					else if (Xf >  128 && Yf <= 128) blended = c_tr;
-					else if (Xf <= 128 && Yf >  128) blended = c_bl;
-					else                              blended = c_br;
+					/* Rows too different: blending across them would
+					 * produce a muddy averaged colour visually unlike
+					 * either neighbour. Fall back to stable's behaviour
+					 * (X-only blend on the floor-Y row); same code as
+					 * the stable path below. */
+					if (p_tl == p_tr)
+						blended = c_tl;
+					else
+						M7HR_BLEND_RGB(blended, c_tl, c_tr, Xf);
 				}
 			}
 		}
@@ -26553,11 +26479,10 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	   The stable/smooth distinction is an internal runtime flag
 	   inside M7HR_BLEND_AND_WRITE, so a single BL renderer body
 	   handles both filter modes. Stable does X-only blending with
-	   floor-Y nearest-neighbor (matches HD-no-BL's Y sampling, no
-	   one-scanline seam on hostile content). Smooth does the full
-	   4-corner bilinear blend (more aggressive smoothing, but can
-	   produce a one-scanline seam where adjacent texel rows
-	   disagree -- e.g. Tiny Toons rainbow rings).
+	   floor-Y nearest-neighbor (matches HD-no-BL's Y sampling). Smooth
+	   does 4-corner bilinear with a vertical-row-contrast guard that
+	   falls back to stable's blend on high-contrast row pairs (avoids
+	   muddy seams on content like Tiny Toons rainbow rings).
 
 	   When BL is on at Hires=off, we need a 1x BL renderer that
 	   fills the native 256-wide buffer with bilinear samples (one
