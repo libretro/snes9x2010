@@ -769,9 +769,9 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
  *
  * Same shape as DrawMosaicPixel16 / DrawClippedTile16: Z1 = GFX.Z1,
  * Z2 = GFX.Z2 baked in, Pix is a runtime variable, N is
- * unparenthesized. Locally named DT_PIXEL_*. */
+ * unparenthesized. Locally named DRAW_PIXEL_*. */
 
-#define DT_PIXEL_N1x1(N, M, MATH_SELECTOR, MATH_OP) \
+#define DRAW_PIXEL_N1x1(N, M, MATH_SELECTOR, MATH_OP) \
     if (GFX.Z1 > GFX.DB[Offset + N] && (M)) \
     { \
         GFX.S[Offset + N] = MATH_SELECTOR(MATH_OP, \
@@ -781,7 +781,7 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
         GFX.DB[Offset + N] = GFX.Z2; \
     }
 
-#define DT_PIXEL_N2x1(N, M, MATH_SELECTOR, MATH_OP) \
+#define DRAW_PIXEL_N2x1(N, M, MATH_SELECTOR, MATH_OP) \
     if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
     { \
         GFX.S[Offset + 2 * N] = GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
@@ -791,7 +791,7 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
         GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
     }
 
-#define DT_PIXEL_N4x1(N, M, MATH_SELECTOR, MATH_OP) \
+#define DRAW_PIXEL_N4x1(N, M, MATH_SELECTOR, MATH_OP) \
     if (GFX.Z1 > GFX.DB[Offset + 4 * N] && (M)) \
     { \
         uint16 cc__ = MATH_SELECTOR(MATH_OP, \
@@ -802,7 +802,7 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
         GFX.DB[Offset + 4 * N] = GFX.DB[Offset + 4 * N + 1] = GFX.DB[Offset + 4 * N + 2] = GFX.DB[Offset + 4 * N + 3] = GFX.Z2; \
     }
 
-#define DT_PIXEL_H2x1(N, M, MATH_SELECTOR, MATH_OP) \
+#define DRAW_PIXEL_H2x1(N, M, MATH_SELECTOR, MATH_OP) \
     if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
     { \
         GFX.S[Offset + 2 * N] = MATH_SELECTOR(MATH_OP, \
@@ -822,7 +822,7 @@ static uint8 ConvertTile4h_even (uint8 *pCache, uint32 TileAddr, uint32 Tile)
  * one (NAME2, math) combination. The body is the four flip-case
  * branches (no flip / V-flip / H-flip / V+H flip), each running
  * a per-line for-loop that calls the section's pixel plotter
- * (DT_PIXEL_*) for each of the 8 source pixels.
+ * (DRAW_PIXEL_*) for each of the 8 source pixels.
  *
  * BPSTART (the offset into the 8x8 cached tile) and BP_STEP (the
  * per-line stride) are per-NAME2: non-interlace uses
@@ -852,7 +852,7 @@ static void DrawTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -864,7 +864,7 @@ static void DrawTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -876,7 +876,7 @@ static void DrawTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -887,7 +887,7 @@ static void DrawTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -908,7 +908,7 @@ static void DrawTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -920,7 +920,7 @@ static void DrawTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -932,7 +932,7 @@ static void DrawTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -943,7 +943,7 @@ static void DrawTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -964,7 +964,7 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -976,7 +976,7 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -988,7 +988,7 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -999,7 +999,7 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -1020,7 +1020,7 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -1032,7 +1032,7 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -1044,7 +1044,7 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -1055,7 +1055,7 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -1076,7 +1076,7 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -1088,7 +1088,7 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -1100,7 +1100,7 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -1111,7 +1111,7 @@ static void DrawTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -1132,7 +1132,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -1144,7 +1144,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -1156,7 +1156,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -1167,7 +1167,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -1188,7 +1188,7 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -1200,7 +1200,7 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -1212,7 +1212,7 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -1223,7 +1223,7 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -1256,7 +1256,7 @@ static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -1268,7 +1268,7 @@ static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -1280,7 +1280,7 @@ static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -1291,7 +1291,7 @@ static void DrawTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -1312,7 +1312,7 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -1324,7 +1324,7 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -1336,7 +1336,7 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -1347,7 +1347,7 @@ static void DrawTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -1368,7 +1368,7 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -1380,7 +1380,7 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -1392,7 +1392,7 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -1403,7 +1403,7 @@ static void DrawTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -1424,7 +1424,7 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -1436,7 +1436,7 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -1448,7 +1448,7 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -1459,7 +1459,7 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -1480,7 +1480,7 @@ static void DrawTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -1492,7 +1492,7 @@ static void DrawTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -1504,7 +1504,7 @@ static void DrawTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -1515,7 +1515,7 @@ static void DrawTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -1536,7 +1536,7 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -1548,7 +1548,7 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -1560,7 +1560,7 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -1571,7 +1571,7 @@ static void DrawTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -1592,7 +1592,7 @@ static void DrawTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -1604,7 +1604,7 @@ static void DrawTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -1616,7 +1616,7 @@ static void DrawTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -1627,7 +1627,7 @@ static void DrawTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -1660,7 +1660,7 @@ static void DrawTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -1672,7 +1672,7 @@ static void DrawTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -1684,7 +1684,7 @@ static void DrawTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -1695,7 +1695,7 @@ static void DrawTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -1716,7 +1716,7 @@ static void DrawTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -1728,7 +1728,7 @@ static void DrawTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -1740,7 +1740,7 @@ static void DrawTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -1751,7 +1751,7 @@ static void DrawTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -1772,7 +1772,7 @@ static void DrawTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -1784,7 +1784,7 @@ static void DrawTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -1796,7 +1796,7 @@ static void DrawTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -1807,7 +1807,7 @@ static void DrawTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -1828,7 +1828,7 @@ static void DrawTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -1840,7 +1840,7 @@ static void DrawTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -1852,7 +1852,7 @@ static void DrawTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -1863,7 +1863,7 @@ static void DrawTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -1884,7 +1884,7 @@ static void DrawTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -1896,7 +1896,7 @@ static void DrawTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -1908,7 +1908,7 @@ static void DrawTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -1919,7 +1919,7 @@ static void DrawTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -1940,7 +1940,7 @@ static void DrawTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -1952,7 +1952,7 @@ static void DrawTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -1964,7 +1964,7 @@ static void DrawTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -1975,7 +1975,7 @@ static void DrawTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -1996,7 +1996,7 @@ static void DrawTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -2008,7 +2008,7 @@ static void DrawTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -2020,7 +2020,7 @@ static void DrawTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -2031,7 +2031,7 @@ static void DrawTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -2064,7 +2064,7 @@ static void DrawTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -2076,7 +2076,7 @@ static void DrawTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -2088,7 +2088,7 @@ static void DrawTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -2099,7 +2099,7 @@ static void DrawTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, uint
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -2120,7 +2120,7 @@ static void DrawTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -2132,7 +2132,7 @@ static void DrawTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -2144,7 +2144,7 @@ static void DrawTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -2155,7 +2155,7 @@ static void DrawTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -2176,7 +2176,7 @@ static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -2188,7 +2188,7 @@ static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -2200,7 +2200,7 @@ static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -2211,7 +2211,7 @@ static void DrawTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -2232,7 +2232,7 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -2244,7 +2244,7 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -2256,7 +2256,7 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -2267,7 +2267,7 @@ static void DrawTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -2288,7 +2288,7 @@ static void DrawTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -2300,7 +2300,7 @@ static void DrawTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -2312,7 +2312,7 @@ static void DrawTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -2323,7 +2323,7 @@ static void DrawTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 StartLine, u
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -2344,7 +2344,7 @@ static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -2356,7 +2356,7 @@ static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -2368,7 +2368,7 @@ static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -2379,7 +2379,7 @@ static void DrawTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -2400,7 +2400,7 @@ static void DrawTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -2412,7 +2412,7 @@ static void DrawTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -2424,7 +2424,7 @@ static void DrawTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -2435,7 +2435,7 @@ static void DrawTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -2468,7 +2468,7 @@ static void DrawTile16_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -2480,7 +2480,7 @@ static void DrawTile16_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -2492,7 +2492,7 @@ static void DrawTile16_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -2503,7 +2503,7 @@ static void DrawTile16_Interlace (uint32 Tile, uint32 Offset, uint32 StartLine, 
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -2524,7 +2524,7 @@ static void DrawTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -2536,7 +2536,7 @@ static void DrawTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -2548,7 +2548,7 @@ static void DrawTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -2559,7 +2559,7 @@ static void DrawTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -2580,7 +2580,7 @@ static void DrawTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -2592,7 +2592,7 @@ static void DrawTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -2604,7 +2604,7 @@ static void DrawTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -2615,7 +2615,7 @@ static void DrawTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -2636,7 +2636,7 @@ static void DrawTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -2648,7 +2648,7 @@ static void DrawTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -2660,7 +2660,7 @@ static void DrawTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -2671,7 +2671,7 @@ static void DrawTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -2692,7 +2692,7 @@ static void DrawTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -2704,7 +2704,7 @@ static void DrawTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -2716,7 +2716,7 @@ static void DrawTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -2727,7 +2727,7 @@ static void DrawTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 StartLin
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -2748,7 +2748,7 @@ static void DrawTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -2760,7 +2760,7 @@ static void DrawTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -2772,7 +2772,7 @@ static void DrawTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -2783,7 +2783,7 @@ static void DrawTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -2804,7 +2804,7 @@ static void DrawTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -2816,7 +2816,7 @@ static void DrawTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -2828,7 +2828,7 @@ static void DrawTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -2839,7 +2839,7 @@ static void DrawTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -2872,7 +2872,7 @@ static void DrawTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartL
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -2884,7 +2884,7 @@ static void DrawTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartL
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -2896,7 +2896,7 @@ static void DrawTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartL
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], NOMATH, ADD)
             }
         }
     }
@@ -2907,7 +2907,7 @@ static void DrawTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32 StartL
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], NOMATH, ADD)
             }
         }
     }
@@ -2928,7 +2928,7 @@ static void DrawTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uint32 Sta
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -2940,7 +2940,7 @@ static void DrawTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uint32 Sta
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -2952,7 +2952,7 @@ static void DrawTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uint32 Sta
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD)
             }
         }
     }
@@ -2963,7 +2963,7 @@ static void DrawTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uint32 Sta
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD)
             }
         }
     }
@@ -2984,7 +2984,7 @@ static void DrawTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -2996,7 +2996,7 @@ static void DrawTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -3008,7 +3008,7 @@ static void DrawTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, ADD)
             }
         }
     }
@@ -3019,7 +3019,7 @@ static void DrawTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, ADD)
             }
         }
     }
@@ -3040,7 +3040,7 @@ static void DrawTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -3052,7 +3052,7 @@ static void DrawTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -3064,7 +3064,7 @@ static void DrawTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD)
             }
         }
     }
@@ -3075,7 +3075,7 @@ static void DrawTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
             }
         }
     }
@@ -3096,7 +3096,7 @@ static void DrawTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uint32 Sta
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -3108,7 +3108,7 @@ static void DrawTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uint32 Sta
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -3120,7 +3120,7 @@ static void DrawTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uint32 Sta
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, SUB)
             }
         }
     }
@@ -3131,7 +3131,7 @@ static void DrawTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uint32 Sta
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, SUB)
             }
         }
     }
@@ -3152,7 +3152,7 @@ static void DrawTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -3164,7 +3164,7 @@ static void DrawTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -3176,7 +3176,7 @@ static void DrawTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHF1_2, SUB)
             }
         }
     }
@@ -3187,7 +3187,7 @@ static void DrawTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHF1_2, SUB)
             }
         }
     }
@@ -3208,7 +3208,7 @@ static void DrawTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -3220,7 +3220,7 @@ static void DrawTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -3232,7 +3232,7 @@ static void DrawTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, SUB)
             }
         }
     }
@@ -3243,7 +3243,7 @@ static void DrawTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             for (n = 0; n < 8; n++)
             {
-                DT_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, SUB)
             }
         }
     }
@@ -3260,11 +3260,6 @@ static void (*Renderers_DrawTile16HiresInterlace[7]) (uint32, uint32, uint32, ui
     DrawTile16SubS1_2_HiresInterlace,
 };
 
-
-#undef DT_PIXEL_H2x1
-#undef DT_PIXEL_N4x1
-#undef DT_PIXEL_N2x1
-#undef DT_PIXEL_N1x1
 
 /* End of DrawTile16 de-templated section.
  * ==================================================================== */
@@ -3315,56 +3310,11 @@ static void (*Renderers_DrawTile16HiresInterlace[7]) (uint32, uint32, uint32, ui
 
 /* ---- Section-internal pixel plotters -------------------------------
  *
- * Same shape as DrawMosaicPixel16's MP_PIXEL_*: Z1 = GFX.Z1,
+ * Same shape as DrawMosaicPixel16's DRAW_PIXEL_*: Z1 = GFX.Z1,
  * Z2 = GFX.Z2 baked in, Pix is a runtime variable, N is
  * unparenthesized to match original DRAW_PIXEL_* substitution
- * semantics. Locally named CT_PIXEL_* per the section-local
+ * semantics. Locally named DRAW_PIXEL_* per the section-local
  * pattern. */
-
-#define CT_PIXEL_N1x1(N, M, MATH_SELECTOR, MATH_OP) \
-    if (GFX.Z1 > GFX.DB[Offset + N] && (M)) \
-    { \
-        GFX.S[Offset + N] = MATH_SELECTOR(MATH_OP, \
-            GFX.ScreenColors[Pix], \
-            GFX.SubScreen[Offset + N], \
-            GFX.SubZBuffer[Offset + N]); \
-        GFX.DB[Offset + N] = GFX.Z2; \
-    }
-
-#define CT_PIXEL_N2x1(N, M, MATH_SELECTOR, MATH_OP) \
-    if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
-    { \
-        GFX.S[Offset + 2 * N] = GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
-            GFX.ScreenColors[Pix], \
-            GFX.SubScreen[Offset + 2 * N], \
-            GFX.SubZBuffer[Offset + 2 * N]); \
-        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
-    }
-
-#define CT_PIXEL_N4x1(N, M, MATH_SELECTOR, MATH_OP) \
-    if (GFX.Z1 > GFX.DB[Offset + 4 * N] && (M)) \
-    { \
-        uint16 cc__ = MATH_SELECTOR(MATH_OP, \
-            GFX.ScreenColors[Pix], \
-            GFX.SubScreen[Offset + 4 * N], \
-            GFX.SubZBuffer[Offset + 4 * N]); \
-        GFX.S[Offset + 4 * N] = GFX.S[Offset + 4 * N + 1] = GFX.S[Offset + 4 * N + 2] = GFX.S[Offset + 4 * N + 3] = cc__; \
-        GFX.DB[Offset + 4 * N] = GFX.DB[Offset + 4 * N + 1] = GFX.DB[Offset + 4 * N + 2] = GFX.DB[Offset + 4 * N + 3] = GFX.Z2; \
-    }
-
-#define CT_PIXEL_H2x1(N, M, MATH_SELECTOR, MATH_OP) \
-    if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
-    { \
-        GFX.S[Offset + 2 * N] = MATH_SELECTOR(MATH_OP, \
-            GFX.ScreenColors[Pix], \
-            GFX.SubScreen[Offset + 2 * N], \
-            GFX.SubZBuffer[Offset + 2 * N]); \
-        GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
-            (GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * N + 2]), \
-            GFX.RealScreenColors[Pix], \
-            GFX.SubZBuffer[Offset + 2 * N]); \
-        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
-    }
 
 /* Per-function bodies: explicit, fully inlined ----------------
  *
@@ -3386,11 +3336,12 @@ static void DrawClippedTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3399,7 +3350,7 @@ static void DrawClippedTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -3410,7 +3361,7 @@ static void DrawClippedTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -3421,7 +3372,7 @@ static void DrawClippedTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -3431,7 +3382,7 @@ static void DrawClippedTile16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
@@ -3440,11 +3391,12 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3453,7 +3405,7 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -3464,7 +3416,7 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -3475,7 +3427,7 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -3485,7 +3437,7 @@ static void DrawClippedTile16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
@@ -3494,11 +3446,12 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3507,7 +3460,7 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -3518,7 +3471,7 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -3529,7 +3482,7 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -3539,7 +3492,7 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
@@ -3548,11 +3501,12 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3561,7 +3515,7 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -3572,7 +3526,7 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -3583,7 +3537,7 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -3593,7 +3547,7 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
@@ -3602,11 +3556,12 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3615,7 +3570,7 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -3626,7 +3581,7 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -3637,7 +3592,7 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -3647,7 +3602,7 @@ static void DrawClippedTile16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
@@ -3656,11 +3611,12 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3669,7 +3625,7 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -3680,7 +3636,7 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -3691,7 +3647,7 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -3701,7 +3657,7 @@ static void DrawClippedTile16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
@@ -3710,11 +3666,12 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3723,7 +3680,7 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -3734,7 +3691,7 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -3745,7 +3702,7 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -3755,7 +3712,7 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -3776,11 +3733,12 @@ static void DrawClippedTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3789,7 +3747,7 @@ static void DrawClippedTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -3800,7 +3758,7 @@ static void DrawClippedTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -3811,7 +3769,7 @@ static void DrawClippedTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -3821,7 +3779,7 @@ static void DrawClippedTile16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
@@ -3830,11 +3788,12 @@ static void DrawClippedTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3843,7 +3802,7 @@ static void DrawClippedTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -3854,7 +3813,7 @@ static void DrawClippedTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -3865,7 +3824,7 @@ static void DrawClippedTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -3875,7 +3834,7 @@ static void DrawClippedTile16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
@@ -3884,11 +3843,12 @@ static void DrawClippedTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3897,7 +3857,7 @@ static void DrawClippedTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -3908,7 +3868,7 @@ static void DrawClippedTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -3919,7 +3879,7 @@ static void DrawClippedTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -3929,7 +3889,7 @@ static void DrawClippedTile16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
@@ -3938,11 +3898,12 @@ static void DrawClippedTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -3951,7 +3912,7 @@ static void DrawClippedTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -3962,7 +3923,7 @@ static void DrawClippedTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -3973,7 +3934,7 @@ static void DrawClippedTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -3983,7 +3944,7 @@ static void DrawClippedTile16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
@@ -3992,11 +3953,12 @@ static void DrawClippedTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4005,7 +3967,7 @@ static void DrawClippedTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -4016,7 +3978,7 @@ static void DrawClippedTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -4027,7 +3989,7 @@ static void DrawClippedTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -4037,7 +3999,7 @@ static void DrawClippedTile16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
@@ -4046,11 +4008,12 @@ static void DrawClippedTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4059,7 +4022,7 @@ static void DrawClippedTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -4070,7 +4033,7 @@ static void DrawClippedTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -4081,7 +4044,7 @@ static void DrawClippedTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -4091,7 +4054,7 @@ static void DrawClippedTile16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
@@ -4100,11 +4063,12 @@ static void DrawClippedTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4113,7 +4077,7 @@ static void DrawClippedTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -4124,7 +4088,7 @@ static void DrawClippedTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -4135,7 +4099,7 @@ static void DrawClippedTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -4145,7 +4109,7 @@ static void DrawClippedTile16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -4166,11 +4130,12 @@ static void DrawClippedTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4179,7 +4144,7 @@ static void DrawClippedTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -4190,7 +4155,7 @@ static void DrawClippedTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -4201,7 +4166,7 @@ static void DrawClippedTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -4211,7 +4176,7 @@ static void DrawClippedTile16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
@@ -4220,11 +4185,12 @@ static void DrawClippedTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4233,7 +4199,7 @@ static void DrawClippedTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -4244,7 +4210,7 @@ static void DrawClippedTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -4255,7 +4221,7 @@ static void DrawClippedTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -4265,7 +4231,7 @@ static void DrawClippedTile16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
@@ -4274,11 +4240,12 @@ static void DrawClippedTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4287,7 +4254,7 @@ static void DrawClippedTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -4298,7 +4265,7 @@ static void DrawClippedTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -4309,7 +4276,7 @@ static void DrawClippedTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -4319,7 +4286,7 @@ static void DrawClippedTile16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
@@ -4328,11 +4295,12 @@ static void DrawClippedTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4341,7 +4309,7 @@ static void DrawClippedTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -4352,7 +4320,7 @@ static void DrawClippedTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -4363,7 +4331,7 @@ static void DrawClippedTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -4373,7 +4341,7 @@ static void DrawClippedTile16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
@@ -4382,11 +4350,12 @@ static void DrawClippedTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4395,7 +4364,7 @@ static void DrawClippedTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -4406,7 +4375,7 @@ static void DrawClippedTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -4417,7 +4386,7 @@ static void DrawClippedTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -4427,7 +4396,7 @@ static void DrawClippedTile16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
@@ -4436,11 +4405,12 @@ static void DrawClippedTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4449,7 +4419,7 @@ static void DrawClippedTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -4460,7 +4430,7 @@ static void DrawClippedTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -4471,7 +4441,7 @@ static void DrawClippedTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -4481,7 +4451,7 @@ static void DrawClippedTile16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
@@ -4490,11 +4460,12 @@ static void DrawClippedTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4503,7 +4474,7 @@ static void DrawClippedTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -4514,7 +4485,7 @@ static void DrawClippedTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -4525,7 +4496,7 @@ static void DrawClippedTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -4535,7 +4506,7 @@ static void DrawClippedTile16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -4556,11 +4527,12 @@ static void DrawClippedTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartPix
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4569,7 +4541,7 @@ static void DrawClippedTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartPix
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -4580,7 +4552,7 @@ static void DrawClippedTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartPix
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -4591,7 +4563,7 @@ static void DrawClippedTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartPix
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -4601,7 +4573,7 @@ static void DrawClippedTile16_Hires (uint32 Tile, uint32 Offset, uint32 StartPix
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
@@ -4610,11 +4582,12 @@ static void DrawClippedTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 Start
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4623,7 +4596,7 @@ static void DrawClippedTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 Start
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -4634,7 +4607,7 @@ static void DrawClippedTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 Start
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -4645,7 +4618,7 @@ static void DrawClippedTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 Start
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -4655,7 +4628,7 @@ static void DrawClippedTile16Add_Hires (uint32 Tile, uint32 Offset, uint32 Start
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
@@ -4664,11 +4637,12 @@ static void DrawClippedTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4677,7 +4651,7 @@ static void DrawClippedTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -4688,7 +4662,7 @@ static void DrawClippedTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -4699,7 +4673,7 @@ static void DrawClippedTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -4709,7 +4683,7 @@ static void DrawClippedTile16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
@@ -4718,11 +4692,12 @@ static void DrawClippedTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4731,7 +4706,7 @@ static void DrawClippedTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -4742,7 +4717,7 @@ static void DrawClippedTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -4753,7 +4728,7 @@ static void DrawClippedTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -4763,7 +4738,7 @@ static void DrawClippedTile16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
@@ -4772,11 +4747,12 @@ static void DrawClippedTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 Start
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4785,7 +4761,7 @@ static void DrawClippedTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 Start
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -4796,7 +4772,7 @@ static void DrawClippedTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 Start
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -4807,7 +4783,7 @@ static void DrawClippedTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 Start
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -4817,7 +4793,7 @@ static void DrawClippedTile16Sub_Hires (uint32 Tile, uint32 Offset, uint32 Start
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
@@ -4826,11 +4802,12 @@ static void DrawClippedTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4839,7 +4816,7 @@ static void DrawClippedTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -4850,7 +4827,7 @@ static void DrawClippedTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -4861,7 +4838,7 @@ static void DrawClippedTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -4871,7 +4848,7 @@ static void DrawClippedTile16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
@@ -4880,11 +4857,12 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4893,7 +4871,7 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -4904,7 +4882,7 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -4915,7 +4893,7 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -4925,7 +4903,7 @@ static void DrawClippedTile16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -4946,11 +4924,12 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -4959,7 +4938,7 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -4970,7 +4949,7 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -4981,7 +4960,7 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -4991,7 +4970,7 @@ static void DrawClippedTile16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
@@ -5000,11 +4979,12 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5013,7 +4993,7 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -5024,7 +5004,7 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -5035,7 +5015,7 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -5045,7 +5025,7 @@ static void DrawClippedTile16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
@@ -5054,11 +5034,12 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5067,7 +5048,7 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -5078,7 +5059,7 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -5089,7 +5070,7 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -5099,7 +5080,7 @@ static void DrawClippedTile16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
@@ -5108,11 +5089,12 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5121,7 +5103,7 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -5132,7 +5114,7 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -5143,7 +5125,7 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -5153,7 +5135,7 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
@@ -5162,11 +5144,12 @@ static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5175,7 +5158,7 @@ static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -5186,7 +5169,7 @@ static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -5197,7 +5180,7 @@ static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -5207,7 +5190,7 @@ static void DrawClippedTile16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
@@ -5216,11 +5199,12 @@ static void DrawClippedTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5229,7 +5213,7 @@ static void DrawClippedTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -5240,7 +5224,7 @@ static void DrawClippedTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -5251,7 +5235,7 @@ static void DrawClippedTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -5261,7 +5245,7 @@ static void DrawClippedTile16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
@@ -5270,11 +5254,12 @@ static void DrawClippedTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5283,7 +5268,7 @@ static void DrawClippedTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -5294,7 +5279,7 @@ static void DrawClippedTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -5305,7 +5290,7 @@ static void DrawClippedTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -5315,7 +5300,7 @@ static void DrawClippedTile16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -5336,11 +5321,12 @@ static void DrawClippedTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5349,7 +5335,7 @@ static void DrawClippedTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -5360,7 +5346,7 @@ static void DrawClippedTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
     else
@@ -5371,7 +5357,7 @@ static void DrawClippedTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], NOMATH, ADD)
         }
     }
     else
@@ -5381,7 +5367,7 @@ static void DrawClippedTile16_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], NOMATH, ADD)
         }
     }
 }
@@ -5390,11 +5376,12 @@ static void DrawClippedTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uin
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5403,7 +5390,7 @@ static void DrawClippedTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uin
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -5414,7 +5401,7 @@ static void DrawClippedTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uin
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
     else
@@ -5425,7 +5412,7 @@ static void DrawClippedTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uin
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD)
         }
     }
     else
@@ -5435,7 +5422,7 @@ static void DrawClippedTile16Add_HiresInterlace (uint32 Tile, uint32 Offset, uin
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD)
         }
     }
 }
@@ -5444,11 +5431,12 @@ static void DrawClippedTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5457,7 +5445,7 @@ static void DrawClippedTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -5468,7 +5456,7 @@ static void DrawClippedTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
     else
@@ -5479,7 +5467,7 @@ static void DrawClippedTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, ADD)
         }
     }
     else
@@ -5489,7 +5477,7 @@ static void DrawClippedTile16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, ADD)
         }
     }
 }
@@ -5498,11 +5486,12 @@ static void DrawClippedTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5511,7 +5500,7 @@ static void DrawClippedTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -5522,7 +5511,7 @@ static void DrawClippedTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
     else
@@ -5533,7 +5522,7 @@ static void DrawClippedTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD)
         }
     }
     else
@@ -5543,7 +5532,7 @@ static void DrawClippedTile16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
         }
     }
 }
@@ -5552,11 +5541,12 @@ static void DrawClippedTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uin
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5565,7 +5555,7 @@ static void DrawClippedTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uin
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -5576,7 +5566,7 @@ static void DrawClippedTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uin
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
     else
@@ -5587,7 +5577,7 @@ static void DrawClippedTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uin
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, SUB)
         }
     }
     else
@@ -5597,7 +5587,7 @@ static void DrawClippedTile16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uin
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, SUB)
         }
     }
 }
@@ -5606,11 +5596,12 @@ static void DrawClippedTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5619,7 +5610,7 @@ static void DrawClippedTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -5630,7 +5621,7 @@ static void DrawClippedTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
     else
@@ -5641,7 +5632,7 @@ static void DrawClippedTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHF1_2, SUB)
         }
     }
     else
@@ -5651,7 +5642,7 @@ static void DrawClippedTile16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHF1_2, SUB)
         }
     }
 }
@@ -5660,11 +5651,12 @@ static void DrawClippedTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
 {
     uint8 *pCache, *bp, Pix;
     int32 l;
+    uint32 endpix;
     GET_CACHED_TILE();
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
-    uint32 endpix = StartPixel + Width;
+    endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
@@ -5673,7 +5665,7 @@ static void DrawClippedTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -5684,7 +5676,7 @@ static void DrawClippedTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
     else
@@ -5695,7 +5687,7 @@ static void DrawClippedTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, SUB)
         }
     }
     else
@@ -5705,7 +5697,7 @@ static void DrawClippedTile16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         {
             uint32 i;
             for (i = StartPixel; i < endpix; i++)
-                CT_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, SUB)
         }
     }
 }
@@ -5721,11 +5713,6 @@ static void (*Renderers_DrawClippedTile16HiresInterlace[7]) (uint32, uint32, uin
     DrawClippedTile16SubS1_2_HiresInterlace,
 };
 
-
-#undef CT_PIXEL_H2x1
-#undef CT_PIXEL_N4x1
-#undef CT_PIXEL_N2x1
-#undef CT_PIXEL_N1x1
 
 /* End of DrawClippedTile16 de-templated section.
  * ==================================================================== */
@@ -5779,51 +5766,6 @@ static void (*Renderers_DrawClippedTile16HiresInterlace[7]) (uint32, uint32, uin
  * N is unparenthesized to match the original DRAW_PIXEL_*
  * substitution semantics (Stage 2.6b/2.7 lesson). */
 
-#define MP_PIXEL_N1x1(N, M, MATH_SELECTOR, MATH_OP) \
-    if (GFX.Z1 > GFX.DB[Offset + N] && (M)) \
-    { \
-        GFX.S[Offset + N] = MATH_SELECTOR(MATH_OP, \
-            GFX.ScreenColors[Pix], \
-            GFX.SubScreen[Offset + N], \
-            GFX.SubZBuffer[Offset + N]); \
-        GFX.DB[Offset + N] = GFX.Z2; \
-    }
-
-#define MP_PIXEL_N2x1(N, M, MATH_SELECTOR, MATH_OP) \
-    if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
-    { \
-        GFX.S[Offset + 2 * N] = GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
-            GFX.ScreenColors[Pix], \
-            GFX.SubScreen[Offset + 2 * N], \
-            GFX.SubZBuffer[Offset + 2 * N]); \
-        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
-    }
-
-#define MP_PIXEL_N4x1(N, M, MATH_SELECTOR, MATH_OP) \
-    if (GFX.Z1 > GFX.DB[Offset + 4 * N] && (M)) \
-    { \
-        uint16 cc__ = MATH_SELECTOR(MATH_OP, \
-            GFX.ScreenColors[Pix], \
-            GFX.SubScreen[Offset + 4 * N], \
-            GFX.SubZBuffer[Offset + 4 * N]); \
-        GFX.S[Offset + 4 * N] = GFX.S[Offset + 4 * N + 1] = GFX.S[Offset + 4 * N + 2] = GFX.S[Offset + 4 * N + 3] = cc__; \
-        GFX.DB[Offset + 4 * N] = GFX.DB[Offset + 4 * N + 1] = GFX.DB[Offset + 4 * N + 2] = GFX.DB[Offset + 4 * N + 3] = GFX.Z2; \
-    }
-
-#define MP_PIXEL_H2x1(N, M, MATH_SELECTOR, MATH_OP) \
-    if (GFX.Z1 > GFX.DB[Offset + 2 * N] && (M)) \
-    { \
-        GFX.S[Offset + 2 * N] = MATH_SELECTOR(MATH_OP, \
-            GFX.ScreenColors[Pix], \
-            GFX.SubScreen[Offset + 2 * N], \
-            GFX.SubZBuffer[Offset + 2 * N]); \
-        GFX.S[Offset + 2 * N + 1] = MATH_SELECTOR(MATH_OP, \
-            (GFX.ClipColors ? 0 : GFX.SubScreen[Offset + 2 * N + 2]), \
-            GFX.RealScreenColors[Pix], \
-            GFX.SubZBuffer[Offset + 2 * N]); \
-        GFX.DB[Offset + 2 * N] = GFX.DB[Offset + 2 * N + 1] = GFX.Z2; \
-    }
-
 /* Per-function bodies: explicit, fully inlined ----------------
  *
  * Each function below renders one mosaic 'pixel' for one
@@ -5856,7 +5798,7 @@ static void DrawMosaicPixel16_Normal1x1 (uint32 Tile, uint32 Offset, uint32 Star
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N1x1(w, 1, NOMATH, ADD)
+                DRAW_PIXEL_N1x1(w, 1, NOMATH, ADD)
         }
     }
 }
@@ -5880,7 +5822,7 @@ static void DrawMosaicPixel16Add_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N1x1(w, 1, REGMATH, ADD)
+                DRAW_PIXEL_N1x1(w, 1, REGMATH, ADD)
         }
     }
 }
@@ -5904,7 +5846,7 @@ static void DrawMosaicPixel16AddF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N1x1(w, 1, MATHF1_2, ADD)
+                DRAW_PIXEL_N1x1(w, 1, MATHF1_2, ADD)
         }
     }
 }
@@ -5928,7 +5870,7 @@ static void DrawMosaicPixel16AddS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N1x1(w, 1, MATHS1_2, ADD)
+                DRAW_PIXEL_N1x1(w, 1, MATHS1_2, ADD)
         }
     }
 }
@@ -5952,7 +5894,7 @@ static void DrawMosaicPixel16Sub_Normal1x1 (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N1x1(w, 1, REGMATH, SUB)
+                DRAW_PIXEL_N1x1(w, 1, REGMATH, SUB)
         }
     }
 }
@@ -5976,7 +5918,7 @@ static void DrawMosaicPixel16SubF1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N1x1(w, 1, MATHF1_2, SUB)
+                DRAW_PIXEL_N1x1(w, 1, MATHF1_2, SUB)
         }
     }
 }
@@ -6000,7 +5942,7 @@ static void DrawMosaicPixel16SubS1_2_Normal1x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N1x1(w, 1, MATHS1_2, SUB)
+                DRAW_PIXEL_N1x1(w, 1, MATHS1_2, SUB)
         }
     }
 }
@@ -6036,7 +5978,7 @@ static void DrawMosaicPixel16_Normal2x1 (uint32 Tile, uint32 Offset, uint32 Star
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, NOMATH, ADD)
+                DRAW_PIXEL_N2x1(w, 1, NOMATH, ADD)
         }
     }
 }
@@ -6060,7 +6002,7 @@ static void DrawMosaicPixel16Add_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, REGMATH, ADD)
+                DRAW_PIXEL_N2x1(w, 1, REGMATH, ADD)
         }
     }
 }
@@ -6084,7 +6026,7 @@ static void DrawMosaicPixel16AddF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(w, 1, MATHF1_2, ADD)
         }
     }
 }
@@ -6108,7 +6050,7 @@ static void DrawMosaicPixel16AddS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(w, 1, MATHS1_2, ADD)
         }
     }
 }
@@ -6132,7 +6074,7 @@ static void DrawMosaicPixel16Sub_Normal2x1 (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, REGMATH, SUB)
+                DRAW_PIXEL_N2x1(w, 1, REGMATH, SUB)
         }
     }
 }
@@ -6156,7 +6098,7 @@ static void DrawMosaicPixel16SubF1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(w, 1, MATHF1_2, SUB)
         }
     }
 }
@@ -6180,7 +6122,7 @@ static void DrawMosaicPixel16SubS1_2_Normal2x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(w, 1, MATHS1_2, SUB)
         }
     }
 }
@@ -6216,7 +6158,7 @@ static void DrawMosaicPixel16_Normal4x1 (uint32 Tile, uint32 Offset, uint32 Star
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N4x1(w, 1, NOMATH, ADD)
+                DRAW_PIXEL_N4x1(w, 1, NOMATH, ADD)
         }
     }
 }
@@ -6240,7 +6182,7 @@ static void DrawMosaicPixel16Add_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N4x1(w, 1, REGMATH, ADD)
+                DRAW_PIXEL_N4x1(w, 1, REGMATH, ADD)
         }
     }
 }
@@ -6264,7 +6206,7 @@ static void DrawMosaicPixel16AddF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N4x1(w, 1, MATHF1_2, ADD)
+                DRAW_PIXEL_N4x1(w, 1, MATHF1_2, ADD)
         }
     }
 }
@@ -6288,7 +6230,7 @@ static void DrawMosaicPixel16AddS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N4x1(w, 1, MATHS1_2, ADD)
+                DRAW_PIXEL_N4x1(w, 1, MATHS1_2, ADD)
         }
     }
 }
@@ -6312,7 +6254,7 @@ static void DrawMosaicPixel16Sub_Normal4x1 (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N4x1(w, 1, REGMATH, SUB)
+                DRAW_PIXEL_N4x1(w, 1, REGMATH, SUB)
         }
     }
 }
@@ -6336,7 +6278,7 @@ static void DrawMosaicPixel16SubF1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N4x1(w, 1, MATHF1_2, SUB)
+                DRAW_PIXEL_N4x1(w, 1, MATHF1_2, SUB)
         }
     }
 }
@@ -6360,7 +6302,7 @@ static void DrawMosaicPixel16SubS1_2_Normal4x1 (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N4x1(w, 1, MATHS1_2, SUB)
+                DRAW_PIXEL_N4x1(w, 1, MATHS1_2, SUB)
         }
     }
 }
@@ -6396,7 +6338,7 @@ static void DrawMosaicPixel16_Hires (uint32 Tile, uint32 Offset, uint32 StartLin
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, NOMATH, ADD)
+                DRAW_PIXEL_H2x1(w, 1, NOMATH, ADD)
         }
     }
 }
@@ -6420,7 +6362,7 @@ static void DrawMosaicPixel16Add_Hires (uint32 Tile, uint32 Offset, uint32 Start
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, REGMATH, ADD)
+                DRAW_PIXEL_H2x1(w, 1, REGMATH, ADD)
         }
     }
 }
@@ -6444,7 +6386,7 @@ static void DrawMosaicPixel16AddF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(w, 1, MATHF1_2, ADD)
         }
     }
 }
@@ -6468,7 +6410,7 @@ static void DrawMosaicPixel16AddS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(w, 1, MATHS1_2, ADD)
         }
     }
 }
@@ -6492,7 +6434,7 @@ static void DrawMosaicPixel16Sub_Hires (uint32 Tile, uint32 Offset, uint32 Start
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, REGMATH, SUB)
+                DRAW_PIXEL_H2x1(w, 1, REGMATH, SUB)
         }
     }
 }
@@ -6516,7 +6458,7 @@ static void DrawMosaicPixel16SubF1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(w, 1, MATHF1_2, SUB)
         }
     }
 }
@@ -6540,7 +6482,7 @@ static void DrawMosaicPixel16SubS1_2_Hires (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(w, 1, MATHS1_2, SUB)
         }
     }
 }
@@ -6576,7 +6518,7 @@ static void DrawMosaicPixel16_Interlace (uint32 Tile, uint32 Offset, uint32 Star
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, NOMATH, ADD)
+                DRAW_PIXEL_N2x1(w, 1, NOMATH, ADD)
         }
     }
 }
@@ -6600,7 +6542,7 @@ static void DrawMosaicPixel16Add_Interlace (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, REGMATH, ADD)
+                DRAW_PIXEL_N2x1(w, 1, REGMATH, ADD)
         }
     }
 }
@@ -6624,7 +6566,7 @@ static void DrawMosaicPixel16AddF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, MATHF1_2, ADD)
+                DRAW_PIXEL_N2x1(w, 1, MATHF1_2, ADD)
         }
     }
 }
@@ -6648,7 +6590,7 @@ static void DrawMosaicPixel16AddS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, MATHS1_2, ADD)
+                DRAW_PIXEL_N2x1(w, 1, MATHS1_2, ADD)
         }
     }
 }
@@ -6672,7 +6614,7 @@ static void DrawMosaicPixel16Sub_Interlace (uint32 Tile, uint32 Offset, uint32 S
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, REGMATH, SUB)
+                DRAW_PIXEL_N2x1(w, 1, REGMATH, SUB)
         }
     }
 }
@@ -6696,7 +6638,7 @@ static void DrawMosaicPixel16SubF1_2_Interlace (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, MATHF1_2, SUB)
+                DRAW_PIXEL_N2x1(w, 1, MATHF1_2, SUB)
         }
     }
 }
@@ -6720,7 +6662,7 @@ static void DrawMosaicPixel16SubS1_2_Interlace (uint32 Tile, uint32 Offset, uint
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_N2x1(w, 1, MATHS1_2, SUB)
+                DRAW_PIXEL_N2x1(w, 1, MATHS1_2, SUB)
         }
     }
 }
@@ -6756,7 +6698,7 @@ static void DrawMosaicPixel16_HiresInterlace (uint32 Tile, uint32 Offset, uint32
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, NOMATH, ADD)
+                DRAW_PIXEL_H2x1(w, 1, NOMATH, ADD)
         }
     }
 }
@@ -6780,7 +6722,7 @@ static void DrawMosaicPixel16Add_HiresInterlace (uint32 Tile, uint32 Offset, uin
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, REGMATH, ADD)
+                DRAW_PIXEL_H2x1(w, 1, REGMATH, ADD)
         }
     }
 }
@@ -6804,7 +6746,7 @@ static void DrawMosaicPixel16AddF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, MATHF1_2, ADD)
+                DRAW_PIXEL_H2x1(w, 1, MATHF1_2, ADD)
         }
     }
 }
@@ -6828,7 +6770,7 @@ static void DrawMosaicPixel16AddS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, MATHS1_2, ADD)
+                DRAW_PIXEL_H2x1(w, 1, MATHS1_2, ADD)
         }
     }
 }
@@ -6852,7 +6794,7 @@ static void DrawMosaicPixel16Sub_HiresInterlace (uint32 Tile, uint32 Offset, uin
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, REGMATH, SUB)
+                DRAW_PIXEL_H2x1(w, 1, REGMATH, SUB)
         }
     }
 }
@@ -6876,7 +6818,7 @@ static void DrawMosaicPixel16SubF1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, MATHF1_2, SUB)
+                DRAW_PIXEL_H2x1(w, 1, MATHF1_2, SUB)
         }
     }
 }
@@ -6900,7 +6842,7 @@ static void DrawMosaicPixel16SubS1_2_HiresInterlace (uint32 Tile, uint32 Offset,
         for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
         {
             for (w = Width - 1; w >= 0; w--)
-                MP_PIXEL_H2x1(w, 1, MATHS1_2, SUB)
+                DRAW_PIXEL_H2x1(w, 1, MATHS1_2, SUB)
         }
     }
 }
@@ -6916,11 +6858,6 @@ static void (*Renderers_DrawMosaicPixel16HiresInterlace[7]) (uint32, uint32, uin
     DrawMosaicPixel16SubS1_2_HiresInterlace,
 };
 
-
-#undef MP_PIXEL_H2x1
-#undef MP_PIXEL_N4x1
-#undef MP_PIXEL_N2x1
-#undef MP_PIXEL_N1x1
 
 /* End of DrawMosaicPixel16 de-templated section.
  * ==================================================================== */
@@ -7679,121 +7616,152 @@ extern struct SLineMatrixData	LineMatrixData[240];
      offset                           scanline base offset into the
                                       GFX.S / GFX.DB / GFX.SubScreen
                                       / GFX.SubZBuffer arrays. */
+/* Compute helper for M7HR_BLEND_AND_WRITE.
+ *
+ * Performs the blend portion of the BL plotter -- everything that
+ * doesn't depend on the math/Z/write parameters. Returns 1 if a
+ * pixel was produced (in *out), 0 if all four corners are
+ * transparent and the pixel should be skipped (so that
+ * DrawBackdrop() can fill it later).
+ *
+ * Marked always_inline because letting GCC's heuristics decide
+ * produces an out-of-line function and a per-pixel `call` per
+ * BL invocation, which is a measurable bench regression on x86
+ * (~+10% on the BL fast paths, since the call overhead doesn't
+ * amortize across the relatively cheap per-pixel work). With
+ * always_inline the code-shape inlines as before, and the
+ * source-level reduction still pays off in:
+ *   - smaller per-BL-function compiled bodies (-20% on the BL
+ *     family) thanks to the helper's clean by-value parameter
+ *     binding giving the compiler better register allocation;
+ *   - one canonical compute body to maintain instead of having
+ *     it textually inlined into 196 expansion sites.
+ *
+ * smooth_local selects the filter:
+ *   0 (stable)  X-only on floor-Y row
+ *   1 (smooth)  Full 4-corner bilinear
+ *
+ * The op_mask logic, weight renormalization, and same-index early-
+ * outs are unchanged from the prior inline form.
+ */
+static INLINE int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
+                             uint32 Xf, uint32 Yf, uint8 smooth_local,
+                             uint16 *out) __attribute__((always_inline));
+static INLINE int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
+                             uint32 Xf, uint32 Yf, uint8 smooth_local,
+                             uint16 *out)
+{
+	uint8 op_tl = (p_tl != 0);
+	uint8 op_tr = (p_tr != 0);
+	uint8 op_bl = (p_bl != 0);
+	uint8 op_br = (p_br != 0);
+	uint8 op_mask = op_tl | (op_tr << 1) | (op_bl << 2) | (op_br << 3);
+	uint16 blended;
+
+	if (op_mask == 0)
+		return 0; /* All transparent: skip. */
+
+	if (op_mask == 0xF)
+	{
+		/* All opaque: fast path. */
+		if (smooth_local)
+		{
+			if (p_tl == p_tr && p_tl == p_bl && p_tl == p_br)
+				blended = GFX.ScreenColors[p_tl];
+			else
+			{
+				uint16 c_tl = GFX.ScreenColors[p_tl];
+				uint16 c_tr = GFX.ScreenColors[p_tr];
+				uint16 c_bl = GFX.ScreenColors[p_bl];
+				uint16 c_br = GFX.ScreenColors[p_br];
+				M7HR_BLEND_RGB_4C(blended, c_tl, c_tr, c_bl, c_br, Xf, Yf);
+			}
+		}
+		else
+		{
+			/* Stable: X-only on floor-Y row. */
+			if (p_tl == p_tr)
+				blended = GFX.ScreenColors[p_tl];
+			else
+			{
+				uint16 c_tl = GFX.ScreenColors[p_tl];
+				uint16 c_tr = GFX.ScreenColors[p_tr];
+				M7HR_BLEND_RGB(blended, c_tl, c_tr, Xf);
+			}
+		}
+		*out = blended;
+		return 1;
+	}
+
+	/* Mixed transparency: alpha-aware blend. */
+	if (smooth_local)
+	{
+		/* 4-corner alpha-aware blend. Zero-index corners contribute
+		   zero weight; renormalize via division. */
+		uint32 wx1_ = Xf, wx0_ = 256 - wx1_;
+		uint32 wy1_ = Yf, wy0_ = 256 - wy1_;
+		uint32 w_tl_ = op_tl ? wx0_ * wy0_ : 0;
+		uint32 w_tr_ = op_tr ? wx1_ * wy0_ : 0;
+		uint32 w_bl_ = op_bl ? wx0_ * wy1_ : 0;
+		uint32 w_br_ = op_br ? wx1_ * wy1_ : 0;
+		uint32 wsum_ = w_tl_ + w_tr_ + w_bl_ + w_br_;
+		uint16 c_tl, c_tr, c_bl, c_br;
+		uint32 r_, g_, b_;
+		if (wsum_ == 0)
+			return 0;
+		c_tl = op_tl ? GFX.ScreenColors[p_tl] : 0;
+		c_tr = op_tr ? GFX.ScreenColors[p_tr] : 0;
+		c_bl = op_bl ? GFX.ScreenColors[p_bl] : 0;
+		c_br = op_br ? GFX.ScreenColors[p_br] : 0;
+		r_ = ((c_tl >> 11) & 0x1f) * w_tl_
+		   + ((c_tr >> 11) & 0x1f) * w_tr_
+		   + ((c_bl >> 11) & 0x1f) * w_bl_
+		   + ((c_br >> 11) & 0x1f) * w_br_;
+		g_ = ((c_tl >>  6) & 0x1f) * w_tl_
+		   + ((c_tr >>  6) & 0x1f) * w_tr_
+		   + ((c_bl >>  6) & 0x1f) * w_bl_
+		   + ((c_br >>  6) & 0x1f) * w_br_;
+		b_ = ( c_tl        & 0x1f) * w_tl_
+		   + ( c_tr        & 0x1f) * w_tr_
+		   + ( c_bl        & 0x1f) * w_bl_
+		   + ( c_br        & 0x1f) * w_br_;
+		*out = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_));
+		return 1;
+	}
+	else
+	{
+		/* Stable: alpha-aware horizontal blend on top row only. */
+		uint32 wx1_ = Xf, wx0_ = 256 - wx1_;
+		uint32 w_l_ = op_tl ? wx0_ : 0;
+		uint32 w_r_ = op_tr ? wx1_ : 0;
+		uint32 wsum_ = w_l_ + w_r_;
+		uint16 c_l, c_r;
+		uint32 r_, g_, b_;
+		if (wsum_ == 0)
+			return 0;
+		c_l = op_tl ? GFX.ScreenColors[p_tl] : 0;
+		c_r = op_tr ? GFX.ScreenColors[p_tr] : 0;
+		r_ = ((c_l >> 11) & 0x1f) * w_l_ + ((c_r >> 11) & 0x1f) * w_r_;
+		g_ = ((c_l >>  6) & 0x1f) * w_l_ + ((c_r >>  6) & 0x1f) * w_r_;
+		b_ = ( c_l        & 0x1f) * w_l_ + ( c_r        & 0x1f) * w_r_;
+		*out = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_));
+		return 1;
+	}
+}
+
 #define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw, Xf, Yf, \
                              math_selector, math_op, z1_expr, z2_expr, offset, smooth_arg) \
 	{ \
 		uint8 b = (b_tl_raw); \
-		uint8 op_tl = ((p_tl) != 0); \
-		uint8 op_tr = ((p_tr) != 0); \
-		uint8 op_bl = ((p_bl) != 0); \
-		uint8 op_br = ((p_br) != 0); \
-		uint8 op_mask = op_tl | (op_tr << 1) | (op_bl << 2) | (op_br << 3); \
-		uint8 smooth_local = (smooth_arg); \
-		uint16 blended; \
+		uint16 _blended_; \
 		(void)b; \
-		if (op_mask == 0) \
+		if (m7hr_blend((p_tl), (p_tr), (p_bl), (p_br), \
+		               (Xf), (Yf), (smooth_arg), &_blended_)) \
 		{ \
-			/* All transparent: skip. Backdrop fills via DrawBackdrop. */ \
-		} \
-		else if (op_mask == 0xF) \
-		{ \
-			/* All opaque: fast path. */ \
-			if (smooth_local) \
-			{ \
-				if ((p_tl) == (p_tr) && (p_tl) == (p_bl) && (p_tl) == (p_br)) \
-				{ \
-					blended = GFX.ScreenColors[(p_tl)]; \
-				} \
-				else \
-				{ \
-					uint16 c_tl = GFX.ScreenColors[(p_tl)]; \
-					uint16 c_tr = GFX.ScreenColors[(p_tr)]; \
-					uint16 c_bl = GFX.ScreenColors[(p_bl)]; \
-					uint16 c_br = GFX.ScreenColors[(p_br)]; \
-					M7HR_BLEND_RGB_4C(blended, c_tl, c_tr, c_bl, c_br, (Xf), (Yf)); \
-				} \
-			} \
-			else \
-			{ \
-				/* Stable: X-only on floor-Y row. */ \
-				if ((p_tl) == (p_tr)) \
-				{ \
-					blended = GFX.ScreenColors[(p_tl)]; \
-				} \
-				else \
-				{ \
-					uint16 c_tl = GFX.ScreenColors[(p_tl)]; \
-					uint16 c_tr = GFX.ScreenColors[(p_tr)]; \
-					M7HR_BLEND_RGB(blended, c_tl, c_tr, (Xf)); \
-				} \
-			} \
 			if ((z1_expr) > GFX.DB[(offset) + (out_offset)]) \
 			{ \
-				GFX.S[(offset) + (out_offset)] = math_selector(math_op, blended, GFX.SubScreen[(offset) + (out_offset)], GFX.SubZBuffer[(offset) + (out_offset)]); \
+				GFX.S[(offset) + (out_offset)] = math_selector(math_op, _blended_, GFX.SubScreen[(offset) + (out_offset)], GFX.SubZBuffer[(offset) + (out_offset)]); \
 				GFX.DB[(offset) + (out_offset)] = (z2_expr); \
-			} \
-		} \
-		else \
-		{ \
-			/* Mixed transparency: alpha-aware blend. */ \
-			if (smooth_local) \
-			{ \
-				/* 4-corner alpha-aware blend. Zero-index corners \
-				   contribute zero weight; renormalize via division. */ \
-				uint32 wx1_ = (Xf), wx0_ = 256 - wx1_; \
-				uint32 wy1_ = (Yf), wy0_ = 256 - wy1_; \
-				uint32 w_tl_ = op_tl ? wx0_ * wy0_ : 0; \
-				uint32 w_tr_ = op_tr ? wx1_ * wy0_ : 0; \
-				uint32 w_bl_ = op_bl ? wx0_ * wy1_ : 0; \
-				uint32 w_br_ = op_br ? wx1_ * wy1_ : 0; \
-				uint32 wsum_ = w_tl_ + w_tr_ + w_bl_ + w_br_; \
-				if (wsum_ != 0) \
-				{ \
-					uint16 c_tl = op_tl ? GFX.ScreenColors[(p_tl)] : 0; \
-					uint16 c_tr = op_tr ? GFX.ScreenColors[(p_tr)] : 0; \
-					uint16 c_bl = op_bl ? GFX.ScreenColors[(p_bl)] : 0; \
-					uint16 c_br = op_br ? GFX.ScreenColors[(p_br)] : 0; \
-					uint32 r_ = ((c_tl >> 11) & 0x1f) * w_tl_ \
-					          + ((c_tr >> 11) & 0x1f) * w_tr_ \
-					          + ((c_bl >> 11) & 0x1f) * w_bl_ \
-					          + ((c_br >> 11) & 0x1f) * w_br_; \
-					uint32 g_ = ((c_tl >>  6) & 0x1f) * w_tl_ \
-					          + ((c_tr >>  6) & 0x1f) * w_tr_ \
-					          + ((c_bl >>  6) & 0x1f) * w_bl_ \
-					          + ((c_br >>  6) & 0x1f) * w_br_; \
-					uint32 b_ = ( c_tl        & 0x1f) * w_tl_ \
-					          + ( c_tr        & 0x1f) * w_tr_ \
-					          + ( c_bl        & 0x1f) * w_bl_ \
-					          + ( c_br        & 0x1f) * w_br_; \
-					blended = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_)); \
-					if ((z1_expr) > GFX.DB[(offset) + (out_offset)]) \
-					{ \
-						GFX.S[(offset) + (out_offset)] = math_selector(math_op, blended, GFX.SubScreen[(offset) + (out_offset)], GFX.SubZBuffer[(offset) + (out_offset)]); \
-						GFX.DB[(offset) + (out_offset)] = (z2_expr); \
-					} \
-				} \
-			} \
-			else \
-			{ \
-				/* Stable: alpha-aware horizontal blend on top row only. */ \
-				uint32 wx1_ = (Xf), wx0_ = 256 - wx1_; \
-				uint32 w_l_ = op_tl ? wx0_ : 0; \
-				uint32 w_r_ = op_tr ? wx1_ : 0; \
-				uint32 wsum_ = w_l_ + w_r_; \
-				if (wsum_ != 0) \
-				{ \
-					uint16 c_l = op_tl ? GFX.ScreenColors[(p_tl)] : 0; \
-					uint16 c_r = op_tr ? GFX.ScreenColors[(p_tr)] : 0; \
-					uint32 r_ = ((c_l >> 11) & 0x1f) * w_l_ + ((c_r >> 11) & 0x1f) * w_r_; \
-					uint32 g_ = ((c_l >>  6) & 0x1f) * w_l_ + ((c_r >>  6) & 0x1f) * w_r_; \
-					uint32 b_ = ( c_l        & 0x1f) * w_l_ + ( c_r        & 0x1f) * w_r_; \
-					blended = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_)); \
-					if ((z1_expr) > GFX.DB[(offset) + (out_offset)]) \
-					{ \
-						GFX.S[(offset) + (out_offset)] = math_selector(math_op, blended, GFX.SubScreen[(offset) + (out_offset)], GFX.SubZBuffer[(offset) + (out_offset)]); \
-						GFX.DB[(offset) + (out_offset)] = (z2_expr); \
-					} \
-				} \
 			} \
 		} \
 	}

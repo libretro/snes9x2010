@@ -16,9 +16,29 @@ If anything in this file contradicts conversation history or memory,
 
 **Branch:** `master` (the `tile-untangle` work is merged).
 **Base:** `7fb5b58` — "Mode 7 hires: 4x horizontal mode, bilinear stable/smooth modes, BL at 1x" (merge-base of the tile-untangle branch with master).
-**Status:** Tile-untangle effort merged to master via PR #167 (`66a907a`). The 18 commits that made up the work are preserved as connected history under the merge commit. tile.c is no longer a templating engine: 313 explicit renderer functions, 44 dispatch arrays, all bodies inlined, no self-recursion.
-**Last code commit on this effort:** `af28f95` — tile.c: remove self-include; lay out file linearly.
+**Status:** Tile-untangle effort merged to master via PR #167 (`66a907a`). Subsequent post-merge work has been: de-unroll, VRAM hoist, plotter-macro consolidation, and BL helper extraction. tile.c is no longer a templating engine: 313 explicit renderer functions, 44 dispatch arrays, all bodies inlined, no self-recursion.
+**Last code commit on this effort:** `3752ba0` — tile.c: hoist endpix decl in DrawClippedTile16 for C89/MSVC 2010 compat.
 **Working tree:** dirty (this state-file update pending; will ride along with the next code commit on master).
+
+**Recent post-merge commits** (newest first):
+
+| SHA       | Subject                                                  |
+|-----------|----------------------------------------------------------|
+| `3752ba0` | hoist endpix decl in DrawClippedTile16 for C89 compat    |
+| `4ff591a` | extract m7hr_blend helper from M7HR_BLEND_AND_WRITE      |
+| `d56a8eb` | consolidate DT/CT/MP_PIXEL pixel-plotter macros          |
+| `5acc09d` | hoist Memory.VRAM to a function-entry local in M7        |
+| `58f0bd4` | de-unroll switch (StartPixel) in DrawClippedTile16       |
+| `beb6437` | apu: collapse Finalize/GetSampleCount/MixSamples         |
+
+**.so size trajectory** (Linux x86-64, `-O2 -flto`):
+
+| Build                                  | .so size        |
+|----------------------------------------|-----------------|
+| Pristine `7fb5b58` (pre-untangle)      | (not measured)  |
+| After de-unroll + VRAM hoist (e3a1550) | 2,317,152 bytes |
+| After plotter consolidation (d56a8eb)  | 2,317,152 bytes (no change — byte-identical compiled output) |
+| After BL helper refactor (4ff591a)     | 2,239,424 bytes (−77,728 / −3.4%) |
 
 State file lives in-tree at `docs/tile-untangle-state.md`. It served
 as a scratchpad during the de-templating effort (continuity across
@@ -43,8 +63,8 @@ lines to ~28,600 lines as a result. Plotters, color-math, and
 file-scope helpers stay as macros per the user's instruction.
 
 What stays as macros:
-- Pixel plotters (`DT_PIXEL_*`, `CT_PIXEL_*`, `MP_PIXEL_*`,
-  `BACKDROP_PIXEL_*`, `M7N_PIXEL_*`).
+- Pixel plotters (`DRAW_PIXEL_*` for tile/clipped/mosaic;
+  `BACKDROP_PIXEL_*`; `M7N_PIXEL_*`).
 - Color-math (`NOMATH`, `REGMATH`, `MATHF1_2`, `MATHS1_2`,
   `COLOR_ADD*` / `COLOR_SUB*`).
 - File-scope helpers (`GET_CACHED_TILE`, `IS_BLANK_TILE`,
@@ -428,23 +448,71 @@ documentation.
 
 Status: **DONE** (`7af3f84`).
 
-### Stage 5 — Folding optimizations (future)
+### Stage 5 — Folding optimizations (in progress)
 
 Goal: with all functions explicit, look for per-mode optimizations
 that the macro abstraction was hiding. Candidates (each its own
 commit with profile data):
 
-- Hoist `Settings.Mode7HiresBilinear == 2` from per-pixel to
-  per-frame in M7BL renderers.
-- Hoist Mode 7 matrix recompute that's invariant within a tile.
-- Eliminate redundant Z-tests across sub-pixel positions in 4x
-  / 2x plotters.
-- Mosaic per-block hoist of pixel-replicate.
-- Consolidate `MP_PIXEL_*` / `CT_PIXEL_*` / `DT_PIXEL_*`
-  cross-cutting plotter shapes (they're nearly identical) into
-  shared `TILE_PIXEL_*` macros.
+**Done:**
 
-Status: **TODO** (re-evaluate later, profile-driven)
+- ✅ De-unroll `switch (StartPixel)` in `DrawClippedTile16` renderers
+  (`58f0bd4`) — −80% on ClippedTile family, −32% on heavy variants.
+- ✅ Hoist `Memory.VRAM` to function-entry local in M7 renderers
+  (`5acc09d`) — alias-pessimism break, x86 noise-floor on bench
+  but cleaner asm; expected non-trivial on weak hardware.
+- ✅ Consolidate `DT/CT/MP_PIXEL_*` plotter macros into `DRAW_PIXEL_*`
+  (`d56a8eb`) — byte-identical compiled output, source-level cleanup
+  only, removes drift risk for future plotter edits.
+- ✅ Extract `m7hr_blend()` helper from `M7HR_BLEND_AND_WRITE` macro
+  (`4ff591a`) — −20% on M7-BL family (78 KB), bench within noise.
+
+**Open (from latest tile.c audit; numbered by descending impact):**
+
+1. **`MATHF1_2` / `MATHS1_2` re-test `GFX.ClipColors` per pixel.** Could
+   specialise at function entry (one-time branch on `ClipColors`
+   inside each affected math variant). Estimate ~30-40% smaller per
+   function for the 4 affected math families. Modest runtime gain.
+   Bounded scope (~50 functions × 2 paths each).
+
+2. **GFX field reload pattern** (`Z1`, `DB`, `S`, `ScreenColors` reloaded
+   per pixel due to alias pessimism with writes through `GFX.S`).
+   Same class as the M7-VRAM hoist that already showed x86-noise.
+   Could be addressed surgically per-renderer or via `restrict`
+   qualifiers on the GFX struct fields themselves. NOT recommended
+   without weak-hardware testing path — bench impact on x86 is
+   below detectable.
+
+3. **GFX struct cache layout reorder.** `SubScreen` lives at offset
+   0x3ff0 while the rest of the hot pointer fields are 0x4000+; per
+   pixel, math paths touch two cache lines instead of one. One-line
+   ppu.h change, no API break, but needs save-state binary-compat
+   audit if SGFX is ever serialised.
+
+4. **VRAM-write tile-cache invalidation in ppu.c.** 11 invalidation
+   writes per VRAM byte across scattered `IPPU.TileCached[*]` arrays.
+   Could be tightened. **Out of scope for tile.c** — flagged here
+   for visibility.
+
+Status: **In progress** — items 1–4 still open.
+
+### Stage 5-pre — Earlier "future work" (now mostly done or
+                    superseded)
+
+Original ideas from before the latest audit, kept here for history:
+
+- Hoist `Settings.Mode7HiresBilinear == 2` from per-pixel to per-frame
+  in M7BL renderers — **done implicitly** as part of the BL refactor;
+  `smooth` is now a function-entry local in each BL function (was
+  already hoisted but the relationship to the helper is clearer).
+- Hoist Mode 7 matrix recompute that's invariant within a tile —
+  not yet evaluated; matrix recompute is per-line not per-tile in
+  the current code, so the hoist target isn't well-defined.
+- Eliminate redundant Z-tests across sub-pixel positions in 4x
+  / 2x plotters — not yet evaluated.
+- Mosaic per-block hoist of pixel-replicate — not yet evaluated.
+- Consolidate `MP_PIXEL_*` / `CT_PIXEL_*` / `DT_PIXEL_*` plotter
+  shapes — **done** (`d56a8eb`, consolidated into `DRAW_PIXEL_*`).
 
 ## What to do at the start of each session
 
@@ -471,6 +539,137 @@ Status: **TODO** (re-evaluate later, profile-driven)
 4. Save the file via the create_file or str_replace tool.
 
 ## Commit log (newest first)
+
+### `3752ba0` — tile.c: hoist endpix decl in DrawClippedTile16 for C89/MSVC 2010 compat
+
+The de-unroll commit (`58f0bd4`) introduced
+
+```c
+SELECT_PALETTE();
+uint32 endpix = StartPixel + Width;     /* <-- mid-block decl */
+if (endpix > 8) endpix = 8;
+```
+
+in each of the 42 `DrawClippedTile16` functions. C89 (which MSVC 2010
+enforces) requires all declarations at the top of a block, before any
+executable statements. `SELECT_PALETTE()` expands to executable
+statements, so `uint32 endpix = ...;` after it is a C99-only construct
+and triggers MSVC error C2275 "illegal use of this type as an
+expression."
+
+GCC accepts it without warning by default, which is why this slipped
+past the Linux x86-64 build; `gcc -Wdeclaration-after-statement` flags
+it. Reported via libretro CI's MSVC 2010 build (errors C2275, C2146,
+C2065 cascading from line 3393, 3447, 3501, … — one per ClippedTile
+function).
+
+Fixed by hoisting the declaration into the function-top decl block;
+the assignment stays where it was. Purely syntactic move, semantic
+behaviour unchanged.
+
+42 functions touched. Linux x86-64 `.so` size 2,239,424 (unchanged
+from `4ff591a`). Bench-harness checksum 3447889920 unchanged.
+
+Standalone variant of this fix (applies directly against
+`e3a1550`/`5acc09d` without requiring the consolidation/refactor
+commits) saved as `0001-tile-c89-fix-standalone.patch`. Useful if the
+fix needs to ship to upstream urgently before the other commits are
+ready.
+
+### `4ff591a` — tile.c: extract m7hr_blend helper from M7HR_BLEND_AND_WRITE macro
+
+The 118-line `M7HR_BLEND_AND_WRITE` macro was inline-expanded ~196
+times across the BL renderer family (42 plain BL + 28 BL1X + 28 BL4X
+functions, 4–6 expansions each). M7-BL was the largest single source
+of compiled-text bulk in tile.c at 389 KB / 46% of all `Draw*` code.
+
+The macro's compute work — `op_mask` handling, same-index early-outs,
+weight renormalisation, smooth/stable filter selection, final RGB
+blend — doesn't depend on the math/Z/write parameters. Only the
+trailing `if (z1 > DB) { S = math(...); DB = z2; }` tail does.
+Extracted the compute into a `static inline` helper `m7hr_blend()`
+that takes `(p_tl, p_tr, p_bl, p_br, Xf, Yf, smooth)` and returns
+`1` + `*out = blended` or `0` (skip pixel). The macro reduces to a
+~10-line wrapper around the helper plus the Z-test/math/write tail.
+
+Helper marked `__attribute__((always_inline))`. Without it, GCC's
+heuristics produce an out-of-line function and a per-pixel `call`
+per BL invocation — measurable bench regression (~+10% on BL fast
+paths) since the call overhead doesn't amortize across the relatively
+cheap per-pixel work. With `always_inline`, codegen is equivalent to
+the prior inline form but the helper's clean by-value parameter
+binding gives the compiler better register allocation and visibly
+shorter compiled bodies.
+
+**Results:**
+
+| Metric          | Before    | After     | Delta              |
+|-----------------|-----------|-----------|--------------------|
+| `.so` total     | 2,317,152 | 2,239,424 | −77,728 / −3.4%    |
+| M7-BL family    |   388,921 |   310,628 | −78,293 / −20.1%   |
+| Largest BL fn   |    15,848 |    11,936 | −3,912 / −24.7%    |
+
+Only the 42 BL functions changed size; no other function affected.
+
+**Verification:**
+
+- 313 `Draw*` functions and 44 `Renderers_*` dispatch arrays preserved.
+- Build clean, zero warnings.
+- Extended `bench.c` to cover BL stable / smooth / S1_2 paths.
+- Bench-harness checksum **3447889920** unchanged across all ten
+  exercised cases. Behaviour bit-identical for tested inputs.
+- Bench timings on Ryzen 9 9950X3D: stable ~0% (noise), smooth +1.6%,
+  S1_2 smooth +0.7%. All within bench noise floor.
+
+**Caveat:** The icache pressure relief from a 78 KB smaller M7-BL
+family is the main motivation. On weak hardware (embedded ARM,
+low-power x86, retro handhelds), L1i is much tighter than on x86
+dev boxes, so the win there should exceed the bench numbers above.
+Unmeasured.
+
+src/tile.c −19 lines net (107 ins / 126 del); helper occupies ~110
+lines of new code, displacing ~130 lines of macro body.
+
+### `d56a8eb` — tile.c: consolidate DT/CT/MP_PIXEL pixel-plotter macros into DRAW_PIXEL_*
+
+Three macro families had byte-identical bodies:
+
+```
+DT_PIXEL_{N1x1,N2x1,N4x1,H2x1}   -- DrawTile16 family
+CT_PIXEL_{N1x1,N2x1,N4x1,H2x1}   -- DrawClippedTile16 family
+MP_PIXEL_{N1x1,N2x1,N4x1,H2x1}   -- DrawMosaicPixel family
+```
+
+These were section-local renames introduced during the de-templating
+work, when each section wanted its own macro storage and the locality
+invariant was that no macro crossed section boundaries. The locality
+justification has lapsed now that all three sections share a single
+`.c` file — three byte-identical copies just means future plotter
+edits have to be replicated three times, with drift risk.
+
+Consolidated into a single `DRAW_PIXEL_*` family used file-wide:
+
+- 8 redundant macro definitions removed (`CT_PIXEL_*`, `MP_PIXEL_*`).
+- 4 surviving `DT_PIXEL_*` definitions renamed to `DRAW_PIXEL_*`.
+- 378 invocation sites mechanically updated.
+- 12 stale `#undef` lines removed (they enforced the section-local
+  naming and would now actively break the later sections).
+- 3 stale comment-block headers updated.
+
+**Verification:**
+
+- 313 `Draw*` functions and 44 `Renderers_*` arrays preserved.
+- Build clean, zero warnings.
+- `.so` size **unchanged**: 2,317,152 bytes. All 313 `Draw*` functions
+  have identical compiled sizes pre and post.
+- Disassembly diff: 4 lines (just the binary path in the objdump
+  header). **Code is BYTE-IDENTICAL to baseline** — LTO was already
+  inlining all three macro families to the same code, so the
+  consolidation is purely a source-level cleanup.
+- Bench-harness checksum 3447021568 unchanged across all seven
+  exercised cases (pre BL-bench-extension).
+
+src/tile.c −105 lines net (386 ins / 491 del).
 
 ### Hoist `Memory.VRAM` to a function-entry local in all M7 renderers (this commit)
 
