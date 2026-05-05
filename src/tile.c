@@ -7509,8 +7509,8 @@ extern struct SLineMatrixData	LineMatrixData[240];
    aggressive smoothing than stable, particularly along the Y axis.
    Plain 4C across two artistically-unrelated source rows would
    produce a "muddy" averaged colour visually unlike either neighbour;
-   the smooth path in m7hr_blend() guards against this with a vertical-
-   row-contrast check (see M7HR_VROW_THRESHOLD). */
+   m7hr_blend_smooth() guards against this with a vertical-row-contrast
+   check (see M7HR_VROW_THRESHOLD). */
 #define M7HR_BLEND_RGB_4C(out, TL, TR, BL, BR, Xf, Yf) \
 	{ \
 		uint32 wx1 = (Xf), wx0 = 256 - wx1; \
@@ -7618,32 +7618,6 @@ extern struct SLineMatrixData	LineMatrixData[240];
      offset                           scanline base offset into the
                                       GFX.S / GFX.DB / GFX.SubScreen
                                       / GFX.SubZBuffer arrays. */
-/* Compute helper for M7HR_BLEND_AND_WRITE.
- *
- * Performs the blend portion of the BL plotter -- everything that
- * doesn't depend on the math/Z/write parameters. Returns 1 if a
- * pixel was produced (in *out), 0 if all four corners are
- * transparent and the pixel should be skipped (so that
- * DrawBackdrop() can fill it later).
- *
- * Out-of-line by design: the BL family has ~196 call sites. An
- * earlier iteration of this helper carried a bigger decision tree
- * and tens of KB of inlining cost; the current body is small enough
- * (4-corner blend with vertical-contrast guard, or stable's X-only
- * blend) that restoring always_inline could plausibly be a net win,
- * but unmeasured -- left as a separate followup. The current call
- * overhead is well-amortized against the per-pixel blend math.
- *
- * smooth_local selects the filter:
- *   0 (stable)  X-only on floor-Y row
- *   1 (smooth)  4-corner bilinear, with vertical-row-contrast
- *               guard that falls back to stable's X-only blend
- *               when the two source rows hold dissimilar palette
- *               entries (see M7HR_VROW_THRESHOLD).
- *
- * The op_mask logic, weight renormalization, and same-index early-
- * outs are unchanged from the prior inline form.
- */
 /* M7HR_VROW_THRESHOLD: vertical-row-contrast threshold for the smooth
  * path's seam guard.
  *
@@ -7690,9 +7664,31 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	 + M7HR_IABS(((int)((c1) >>  6) & 0x1f) - ((int)((c2) >>  6) & 0x1f)) \
 	 + M7HR_IABS(((int)((c1)      ) & 0x1f) - ((int)((c2)      ) & 0x1f)))
 
-static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
-                      uint32 Xf, uint32 Yf, uint8 smooth_local,
-                      uint16 *out)
+/* Split helpers for the M7HR BL plotter, one per filter mode.
+ *
+ * `Settings.Mode7HiresBilinear` is loop-invariant across an entire
+ * renderer function -- it's read once into a local `smooth` and passed
+ * through unchanged for every pixel. Splitting the dispatch into two
+ * specialized helpers lets each helper be smaller and lets the
+ * compiler avoid the per-pixel runtime branch on the filter mode.
+ *
+ * The macro (M7HR_BLEND_AND_WRITE) does a single dispatch per pixel
+ * on the loop-invariant `smooth` value. The branch is well-predicted
+ * (always taken the same way for an entire renderer invocation) so
+ * its cost is essentially one cycle per pixel; in practice the
+ * compiler often hoists it across enough of the surrounding code
+ * that it disappears.
+ *
+ * Both helpers return 1 if a pixel was produced (in *out), 0 if all
+ * four corners are transparent and the pixel should be skipped (so
+ * that DrawBackdrop() can fill it later). The op_mask logic and
+ * same-index early-outs are shared between them.
+ */
+
+/* Smooth path: 4-corner bilinear with vertical-row-contrast guard.
+ * See M7HR_VROW_THRESHOLD above for the guard's tuning rationale. */
+static int m7hr_blend_smooth(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
+                             uint32 Xf, uint32 Yf, uint16 *out)
 {
 	uint8 op_tl = (p_tl != 0);
 	uint8 op_tr = (p_tr != 0);
@@ -7706,72 +7702,15 @@ static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 
 	if (op_mask == 0xF)
 	{
-		/* All opaque: fast path. */
-		if (smooth_local)
+		/* All opaque: fast path. The palette-row-equality short-circuit
+		 * (p_tl == p_bl && p_tr == p_br) is correctness-equivalent to
+		 * 4C when the rows are byte-identical -- detect with a 2-byte
+		 * palette compare and route to X-only blend on the top row,
+		 * skipping two GFX.ScreenColors lookups, the row-contrast SAD
+		 * math, and six of eight multiplies. Subsumes the prior
+		 * all-four-equal early-out. */
+		if (p_tl == p_bl && p_tr == p_br)
 		{
-			/* Smooth: 4-corner bilinear, with a vertical-row-contrast
-			 * guard to avoid the muddy-average seam that plain 4C
-			 * produces when the two source rows hold artistically-
-			 * unrelated palette content. See M7HR_VROW_THRESHOLD above.
-			 *
-			 * The palette-row-equality short-circuit (p_tl == p_bl &&
-			 * p_tr == p_br) is correctness-equivalent fast path: when
-			 * the two source rows hold byte-identical palette indices,
-			 * c_tl == c_bl and c_tr == c_br, so 4C blending reduces
-			 * algebraically to X-only blend on the top row. Detecting
-			 * this with a 2-byte palette comparison saves two
-			 * GFX.ScreenColors lookups, the row-contrast SAD math, and
-			 * the 4C blend's six multiplies (8 multiplies in 4C vs 2
-			 * in X-only). On varied content (Tiny Toons title screen)
-			 * this fires for ~26% of opaque pixels; on flat-content
-			 * scenes (M7 sky, large flat regions) it fires more often.
-			 * Subsumes the prior all-four-equal early-out (every
-			 * all-four-equal pixel also satisfies row-equality, so the
-			 * inner p_tl==p_tr check below collapses it to a single
-			 * GFX.ScreenColors lookup with no blend math). */
-			if (p_tl == p_bl && p_tr == p_br)
-			{
-				/* Rows palette-identical: X-only blend on top row
-				 * (mathematically identical to 4C blend in this case). */
-				if (p_tl == p_tr)
-					blended = GFX.ScreenColors[p_tl];
-				else
-				{
-					uint16 c_tl = GFX.ScreenColors[p_tl];
-					uint16 c_tr = GFX.ScreenColors[p_tr];
-					M7HR_BLEND_RGB(blended, c_tl, c_tr, Xf);
-				}
-			}
-			else
-			{
-				uint16 c_tl = GFX.ScreenColors[p_tl];
-				uint16 c_tr = GFX.ScreenColors[p_tr];
-				uint16 c_bl = GFX.ScreenColors[p_bl];
-				uint16 c_br = GFX.ScreenColors[p_br];
-				int row_dist = M7HR_COLOR_DIST(c_tl, c_bl)
-				             + M7HR_COLOR_DIST(c_tr, c_br);
-				if (row_dist <= M7HR_VROW_THRESHOLD)
-				{
-					/* Rows similar enough: full 4-corner bilinear. */
-					M7HR_BLEND_RGB_4C(blended, c_tl, c_tr, c_bl, c_br, Xf, Yf);
-				}
-				else
-				{
-					/* Rows too different: blending across them would
-					 * produce a muddy averaged colour visually unlike
-					 * either neighbour. Fall back to stable's behaviour
-					 * (X-only blend on the floor-Y row); same code as
-					 * the stable path below. */
-					if (p_tl == p_tr)
-						blended = c_tl;
-					else
-						M7HR_BLEND_RGB(blended, c_tl, c_tr, Xf);
-				}
-			}
-		}
-		else
-		{
-			/* Stable: X-only on floor-Y row. */
 			if (p_tl == p_tr)
 				blended = GFX.ScreenColors[p_tl];
 			else
@@ -7781,15 +7720,37 @@ static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 				M7HR_BLEND_RGB(blended, c_tl, c_tr, Xf);
 			}
 		}
+		else
+		{
+			uint16 c_tl = GFX.ScreenColors[p_tl];
+			uint16 c_tr = GFX.ScreenColors[p_tr];
+			uint16 c_bl = GFX.ScreenColors[p_bl];
+			uint16 c_br = GFX.ScreenColors[p_br];
+			int row_dist = M7HR_COLOR_DIST(c_tl, c_bl)
+			             + M7HR_COLOR_DIST(c_tr, c_br);
+			if (row_dist <= M7HR_VROW_THRESHOLD)
+			{
+				M7HR_BLEND_RGB_4C(blended, c_tl, c_tr, c_bl, c_br, Xf, Yf);
+			}
+			else
+			{
+				/* Rows too different: blending across them would
+				 * produce a muddy averaged colour visually unlike
+				 * either neighbour. Fall back to stable's behaviour
+				 * (X-only blend on the floor-Y row). */
+				if (p_tl == p_tr)
+					blended = c_tl;
+				else
+					M7HR_BLEND_RGB(blended, c_tl, c_tr, Xf);
+			}
+		}
 		*out = blended;
 		return 1;
 	}
 
-	/* Mixed transparency: alpha-aware blend. */
-	if (smooth_local)
+	/* Mixed transparency: 4-corner alpha-aware blend. Zero-index
+	 * corners contribute zero weight; renormalize via division. */
 	{
-		/* 4-corner alpha-aware blend. Zero-index corners contribute
-		   zero weight; renormalize via division. */
 		uint32 wx1_ = Xf, wx0_ = 256 - wx1_;
 		uint32 wy1_ = Yf, wy0_ = 256 - wy1_;
 		uint32 w_tl_ = op_tl ? wx0_ * wy0_ : 0;
@@ -7820,9 +7781,42 @@ static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 		*out = (uint16)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_));
 		return 1;
 	}
-	else
+}
+
+/* Stable path: X-only blend on the floor-Y row. Yf is unused. */
+static int m7hr_blend_stable(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
+                             uint32 Xf, uint16 *out)
+{
+	uint8 op_tl = (p_tl != 0);
+	uint8 op_tr = (p_tr != 0);
+	uint8 op_bl = (p_bl != 0);
+	uint8 op_br = (p_br != 0);
+	uint8 op_mask = op_tl | (op_tr << 1) | (op_bl << 2) | (op_br << 3);
+
+	(void)p_bl; (void)p_br;
+	(void)op_bl; (void)op_br;
+
+	if (op_mask == 0)
+		return 0; /* All transparent: skip. */
+
+	if (op_mask == 0xF)
 	{
-		/* Stable: alpha-aware horizontal blend on top row only. */
+		/* All opaque: X-only blend on top row. Same-index early-out. */
+		if (p_tl == p_tr)
+			*out = GFX.ScreenColors[p_tl];
+		else
+		{
+			uint16 c_tl = GFX.ScreenColors[p_tl];
+			uint16 c_tr = GFX.ScreenColors[p_tr];
+			uint16 blended;
+			M7HR_BLEND_RGB(blended, c_tl, c_tr, Xf);
+			*out = blended;
+		}
+		return 1;
+	}
+
+	/* Mixed transparency: alpha-aware horizontal blend on top row. */
+	{
 		uint32 wx1_ = Xf, wx0_ = 256 - wx1_;
 		uint32 w_l_ = op_tl ? wx0_ : 0;
 		uint32 w_r_ = op_tr ? wx1_ : 0;
@@ -7846,9 +7840,15 @@ static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 	{ \
 		uint8 b = (b_tl_raw); \
 		uint16 _blended_; \
+		int _produced_; \
 		(void)b; \
-		if (m7hr_blend((p_tl), (p_tr), (p_bl), (p_br), \
-		               (Xf), (Yf), (smooth_arg), &_blended_)) \
+		if (smooth_arg) \
+			_produced_ = m7hr_blend_smooth((p_tl), (p_tr), (p_bl), (p_br), \
+			                               (Xf), (Yf), &_blended_); \
+		else \
+			_produced_ = m7hr_blend_stable((p_tl), (p_tr), (p_bl), (p_br), \
+			                               (Xf), &_blended_); \
+		if (_produced_) \
 		{ \
 			if ((z1_expr) > GFX.DB[(offset) + (out_offset)]) \
 			{ \
