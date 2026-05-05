@@ -7712,12 +7712,35 @@ static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 			/* Smooth: 4-corner bilinear, with a vertical-row-contrast
 			 * guard to avoid the muddy-average seam that plain 4C
 			 * produces when the two source rows hold artistically-
-			 * unrelated palette content. See M7HR_VROW_THRESHOLD above. */
-			if (p_tl == p_tr && p_tl == p_bl && p_tl == p_br)
+			 * unrelated palette content. See M7HR_VROW_THRESHOLD above.
+			 *
+			 * The palette-row-equality short-circuit (p_tl == p_bl &&
+			 * p_tr == p_br) is correctness-equivalent fast path: when
+			 * the two source rows hold byte-identical palette indices,
+			 * c_tl == c_bl and c_tr == c_br, so 4C blending reduces
+			 * algebraically to X-only blend on the top row. Detecting
+			 * this with a 2-byte palette comparison saves two
+			 * GFX.ScreenColors lookups, the row-contrast SAD math, and
+			 * the 4C blend's six multiplies (8 multiplies in 4C vs 2
+			 * in X-only). On varied content (Tiny Toons title screen)
+			 * this fires for ~26% of opaque pixels; on flat-content
+			 * scenes (M7 sky, large flat regions) it fires more often.
+			 * Subsumes the prior all-four-equal early-out (every
+			 * all-four-equal pixel also satisfies row-equality, so the
+			 * inner p_tl==p_tr check below collapses it to a single
+			 * GFX.ScreenColors lookup with no blend math). */
+			if (p_tl == p_bl && p_tr == p_br)
 			{
-				/* All four palette-equal: trivially smooth. Cheap
-				 * early-out for flat regions; saves all blend math. */
-				blended = GFX.ScreenColors[p_tl];
+				/* Rows palette-identical: X-only blend on top row
+				 * (mathematically identical to 4C blend in this case). */
+				if (p_tl == p_tr)
+					blended = GFX.ScreenColors[p_tl];
+				else
+				{
+					uint16 c_tl = GFX.ScreenColors[p_tl];
+					uint16 c_tr = GFX.ScreenColors[p_tr];
+					M7HR_BLEND_RGB(blended, c_tl, c_tr, Xf);
+				}
 			}
 			else
 			{
