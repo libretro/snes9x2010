@@ -40,12 +40,15 @@ If anything in this file contradicts conversation history or memory,
 | After plotter consolidation (d56a8eb)  | 2,317,152 bytes (no change — byte-identical compiled output) |
 | After BL helper refactor (4ff591a)     | 2,239,424 bytes (−77,728 / −3.4%) |
 
-State file lives in-tree at `docs/tile-untangle-state.md`. It served
-as a scratchpad during the de-templating effort (continuity across
-multiple sessions, intent-of-each-commit doc, byte-identical anchor
-record). Now that the work is merged it functions as a written
-record of what was done and why. Future tile.c optimization work
-can append to it but doesn't have to be planned in it.
+State file lives in-tree at `docs/tile-renderer-state.md` (originally
+`tile-untangle-state.md`, renamed once the de-templating effort
+finished and the doc became a general tile.c / M7 renderer state
+file). It served as a scratchpad during the de-templating effort
+(continuity across multiple sessions, intent-of-each-commit doc,
+byte-identical anchor record). Now that work is merged the doc
+functions as a written record of what was done and why, and as the
+in-flight scratchpad for ongoing M7HR / vert-2x / renderer-touch
+work.
 
 **All renderer families are de-templated and the dispatch scaffold
 is gone.** The Mode 7 group: HR4X (`0cbca9e`), BL4X (`69f75a1`),
@@ -2277,7 +2280,7 @@ loop (42 renderer functions worth of duplicated loop bodies).
 That bigger surgery is parked unless a further perf gap
 warrants it.
 
-### `<TBD>` — Mode 7 hires vertical doubling (2x_hv / 4x_hv option values)
+### `145be5a` — Mode 7 hires vertical doubling (2x_hv / 4x_hv option values)
 
 Adds vertical doubling to the M7 hires render path. New libretro
 option values `"2x_hv"` (512×448) and `"4x_hv"` (1024×448) extend
@@ -2360,13 +2363,6 @@ replication regions. On weak hardware, under 1ms per frame. The
 in-renderer approach roughly doubled the M7 renderer's per-frame
 work, so this is roughly 3-5× cheaper.
 
-**Open question:** the `2x_hv` and `4x_hv` option values are still
-"silent no-ops" when `Mode7Hires` is 0 (off). That's not a hazard
-since the option is `Mode 7 - Hires` and selecting `2x_hv` does
-imply Mode7Hires = 2. The libretro parser sets both fields atomic
-so this is consistent. The combined-option-string refactor
-discussed elsewhere would simplify this further.
-
 ## In-flight notes
 
 ### Performance claw-back — followups, prioritized
@@ -2405,10 +2401,39 @@ The originally-scoped options 1 and 2 are both shipped. Remaining:
 
 ## Open followups (deferred from in-flight work, not bundled)
 
-(none currently — the BL color-math stale comment was fixed as
-part of `54c9153` since the macro refactor in that commit changed
-the truth-value of the comment.)
+**Combined Mode 7 option-string refactor.** The current setup has
+two independent options — `snes9x_2010_mode7_hires` (off/2x/4x/
+2x_hv/4x_hv) and `snes9x_2010_mode7_hires_bilinear` (off/stable/
+smooth) — that the user has to set in tandem. Some combinations
+are more meaningful than others (e.g. `4x_hv + smooth` vs.
+`disabled + smooth`), and the implicit "this combo does X, that
+combo does Y" relationships aren't visible in the menu. Lib
+proposed collapsing them into one option with explicit combined
+values: `off`, `2x`, `2x + bilinear stable`, `2x + bilinear smooth`,
+`4x + bilinear smooth`, `2x_hv + bilinear smooth`, `4x_hv +
+bilinear smooth`, etc. Roughly 9-12 distinct values. Needs back-
+compat migration for users with existing `.opt` files (read both
+old keys on startup, combine into new value, write new key once).
+Deferred until someone has the appetite for the migration code.
+
+**Higher-quality in-renderer vert-2x.** The post-pass approach in
+`145be5a` averages two adjacent rendered rows, which smooths
+row-to-row transitions but does not add per-line texture detail.
+A bsnes-HD-style approach — re-running the M7 perspective
+transform per output line at sub-source-Y positions — would
+produce per-line samples with new detail between source rows. The
+first attempt at this broke when non-M7 layers (sprites, HUD, BG2,
+OBJ, color math) wrote to 224-row Y coordinates while the M7 plane
+was writing into a 448-row buffer. Resolving it cleanly requires
+deferring the M7 BG renderer to a separate post-FLUSH_REDRAW pass
+with its own depth buffer and layered-composite step; substantial
+restructuring. Parked unless a user case warrants the visual
+upgrade vs. the implementation cost.
+
+(Earlier note: the BL color-math stale comment was fixed as part
+of `54c9153` since the macro refactor in that commit changed the
+truth-value of the comment.)
 
 ---
 
-*Last updated: optimization commit hoisting `Memory.VRAM` to a function-entry local across all 154 M7 renderers. The compiler was reloading `Memory.VRAM` (a pointer field in the global Memory struct) every iteration of the inner per-pixel loop because writes through GFX.S[i] etc. could in theory alias the storage of the pointer field itself. Adding `uint8 *VRAM = Memory.VRAM;` at function entry and routing inline `Memory.VRAM[...]` reads through it eliminates that reload (3 -> 1 per call in DrawMode7BG2_Normal1x1). Bench checksum 3447021568 unchanged. Runtime impact on x86 bench is within noise (±1% on M7 functions); the per-pixel reload was already cheap thanks to L1d caching and out-of-order execution. Likely matters more on RetroArch's actual deployment targets (embedded ARM, low-end x86) where L1d pressure and branch-predictor budget are tighter, though that is unmeasured.*
+*Last updated: rebase converting the `<TBD>` entry for `145be5a` (Mode 7 hires vertical doubling, 2x_hv / 4x_hv option values) into a finalized history entry, and adding two Open followups: the combined-option-string refactor (collapsing `mode7_hires` + `mode7_hires_bilinear` into one option with explicit combined values) and the higher-quality in-renderer vert-2x (deferred until a user case warrants the substantial restructuring it would need).*
