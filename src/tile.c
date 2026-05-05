@@ -26571,17 +26571,16 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	GFX.DrawMode7BG1Nomath    = DM7BG1[0];
 	GFX.DrawMode7BG2Nomath    = DM7BG2[0];
 
-	if (!Settings.Transparency)
-		i = 0;
-	else
+	/* Color math op selector. Indices into the per-renderer function
+	 * tables: 0 = no math, 1 = Add, 2 = AddF1_2, 3 = AddS1_2,
+	 * 4 = Sub, 5 = SubF1_2, 6 = SubS1_2. CGADSUB ($2131) bits decide
+	 * which op is active this frame. */
+	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
+	if (Memory.FillRAM[0x2131] & 0x40)
 	{
-		i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
-		if (Memory.FillRAM[0x2131] & 0x40)
-		{
+		i++;
+		if (Memory.FillRAM[0x2130] & 2)
 			i++;
-			if (Memory.FillRAM[0x2130] & 2)
-				i++;
-		}
 	}
 
 	GFX.DrawTileMath        = DT[i];

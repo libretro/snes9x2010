@@ -2824,16 +2824,15 @@ static bool8 InitROM (void)
 		const struct {
 			const char *fmt;
 			int val;
-		} fmt_val[6] = {
+		} fmt_val[5] = {
 			{ "PPU.RenderSub = %d", PPU.RenderSub },
 			{ "PPU.FullClipping = %d", PPU.FullClipping },
-			{ "Settings.Transparency = %d", Settings.Transparency },
 			{ "Settings.SpeedhackGameID = %d", Settings.SpeedhackGameID },
 			{ "PPU.SFXSpeedupHack = %d", PPU.SFXSpeedupHack },
 			{ "coldata_update_screen = %d", coldata_update_screen }
 		};
 
-		for (i = 0; i < 6; i++)
+		for (i = 0; i < 5; i++)
 		{
 			snprintf(String, sizeof(String), fmt_val[i].fmt, fmt_val[i].val);
 			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_MAP, String);

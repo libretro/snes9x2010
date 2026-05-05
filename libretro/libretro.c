@@ -1023,7 +1023,6 @@ void retro_init(void)
 	memset(&Settings, 0, sizeof(Settings));
 
 	Settings.SpeedhackGameID = SPEEDHACK_NONE;
-	Settings.Transparency = TRUE;
 	Settings.FrameTimePAL = 20000;
 	Settings.FrameTimeNTSC = 16667;
 	Settings.HDMATimingHack = 100;

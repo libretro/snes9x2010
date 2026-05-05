@@ -422,7 +422,6 @@ struct SSettings
 	   Toons rainbow rings). Stable matches HD-no-BL's Y-axis sampling
 	   and only smooths X. */
 	int32		Mode7HiresBilinear;
-	bool8		Transparency;
    float    SuperFXSpeedPerLine;
    bool8	FastSavestates;
    bool8	HardDisableAudio;
