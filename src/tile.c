@@ -7644,12 +7644,61 @@ extern struct SLineMatrixData	LineMatrixData[240];
  * The op_mask logic, weight renormalization, and same-index early-
  * outs are unchanged from the prior inline form.
  */
-static INLINE int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
-                             uint32 Xf, uint32 Yf, uint8 smooth_local,
-                             uint16 *out) __attribute__((always_inline));
-static INLINE int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
-                             uint32 Xf, uint32 Yf, uint8 smooth_local,
-                             uint16 *out)
+/* Threshold for the discontinuity-aware smooth path's "are these two
+ * colors close enough to blend continuously" test.
+ *
+ * Metric: sum of absolute differences across the three 5-bit RGB565
+ * channels (range 0..93). Two colors are "near" if SAD <= threshold.
+ *
+ * Tuning rationale:
+ *   - Adjacent gradient entries in a hand-drawn palette typically
+ *     differ by 1-4 per channel -> SAD 3..12.
+ *   - Intentional hard edges (text vs background, sprite vs sky)
+ *     typically jump by 8+ in at least one channel -> SAD 15+.
+ *   - 8 sits between these populations and was the starting point
+ *     for the conditional-bilinear discussion. It treats "small
+ *     gradient steps" as continuous and "obvious palette jumps"
+ *     as edges.
+ *
+ * If real-game testing shows mis-classification (e.g. visible
+ * Tiny Toons seam returning, or unwanted nearest-neighbor
+ * pixelation on smooth content), tune this. Lower = more strict
+ * (more pixels classified as edges, more nearest-neighbor
+ * fallback, less smooth). Higher = more permissive (more pixels
+ * classified as continuous, smoother but seams may return).
+ */
+#define M7HR_NEAR_THRESHOLD 8
+
+/* SAD distance between two RGB565 colors. ~6 ALU ops.
+ *
+ * Uses a local IABS rather than libc's abs() because tile.c does not
+ * (and historically should not) pull in <stdlib.h>; avoids surprising
+ * any platform that has lighter-weight headers. The argument is
+ * always evaluated twice but it's a stack-local int by construction
+ * here, so no side effects. */
+#define M7HR_IABS(x) ((x) < 0 ? -(x) : (x))
+
+#define M7HR_COLOR_DIST(c1, c2) \
+	(  M7HR_IABS(((int)((c1) >> 11) & 0x1f) - ((int)((c2) >> 11) & 0x1f)) \
+	 + M7HR_IABS(((int)((c1) >>  6) & 0x1f) - ((int)((c2) >>  6) & 0x1f)) \
+	 + M7HR_IABS(((int)((c1)      ) & 0x1f) - ((int)((c2)      ) & 0x1f)))
+
+#define M7HR_NEAR(c1, c2) (M7HR_COLOR_DIST((c1), (c2)) <= M7HR_NEAR_THRESHOLD)
+
+/* The helper used to be always_inline -- when its body was just the
+ * straight bilinear blend, inlining ~196 copies into BL call sites
+ * was a wash on size (the body was small) and a small win on
+ * per-pixel cost (avoided the call overhead). Now that the helper
+ * carries the discontinuity-aware decision tree, its inlined size
+ * grows the BL family by ~124 KB if forced inline. Drop
+ * always_inline and let the compiler emit it out-of-line: one
+ * shared helper, one call per pixel, much smaller binary, and the
+ * call overhead is well-amortized against the helper's own work
+ * (resolving 4 RGB565 colors + 4 SAD distances + branched blend).
+ */
+static int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
+                      uint32 Xf, uint32 Yf, uint8 smooth_local,
+                      uint16 *out)
 {
 	uint8 op_tl = (p_tl != 0);
 	uint8 op_tr = (p_tr != 0);
@@ -7666,15 +7715,85 @@ static INLINE int m7hr_blend(uint8 p_tl, uint8 p_tr, uint8 p_bl, uint8 p_br,
 		/* All opaque: fast path. */
 		if (smooth_local)
 		{
+			/* Discontinuity-aware smooth path. The classic 4-corner
+			 * bilinear blend produces 1-scanline-tall seams when
+			 * adjacent texel rows in the source contain artistically-
+			 * unrelated palette entries (canonical example: the Tiny
+			 * Toons title screen, where text rows abut background
+			 * rows in the M7 character data). Detect the edge
+			 * topology from the four corners and route to a blend
+			 * rule that respects the discontinuity:
+			 *
+			 *   all four near each other  -> 4-corner bilinear (same
+			 *                                as old 'smooth')
+			 *   horizontal edge           -> X-only blend on the row
+			 *                                Yf rounds to (no Y bleed)
+			 *   vertical edge             -> Y-only blend on the col
+			 *                                Xf rounds to (no X bleed)
+			 *   diagonal / dense / 3+1    -> nearest spatial corner
+			 *
+			 * Cheap same-index early-out comes first (palette-equal
+			 * corners need no comparison). The general path resolves
+			 * RGB once and runs four SAD comparisons.
+			 */
 			if (p_tl == p_tr && p_tl == p_bl && p_tl == p_br)
+			{
+				/* All four palette-equal: trivially smooth. */
 				blended = GFX.ScreenColors[p_tl];
+			}
 			else
 			{
 				uint16 c_tl = GFX.ScreenColors[p_tl];
 				uint16 c_tr = GFX.ScreenColors[p_tr];
 				uint16 c_bl = GFX.ScreenColors[p_bl];
 				uint16 c_br = GFX.ScreenColors[p_br];
-				M7HR_BLEND_RGB_4C(blended, c_tl, c_tr, c_bl, c_br, Xf, Yf);
+				int top_match    = M7HR_NEAR(c_tl, c_tr);
+				int bot_match    = M7HR_NEAR(c_bl, c_br);
+				int left_match   = M7HR_NEAR(c_tl, c_bl);
+				int right_match  = M7HR_NEAR(c_tr, c_br);
+
+				if (top_match && bot_match && left_match && right_match)
+				{
+					/* Continuous region: full 4-corner bilinear. */
+					M7HR_BLEND_RGB_4C(blended, c_tl, c_tr, c_bl, c_br, Xf, Yf);
+				}
+				else if (top_match && bot_match)
+				{
+					/* Horizontal edge: rows agree internally but
+					 * disagree across. Snap Y, blend X. */
+					uint16 c_l = (Yf < 128) ? c_tl : c_bl;
+					uint16 c_r = (Yf < 128) ? c_tr : c_br;
+					if (c_l == c_r)
+						blended = c_l;
+					else
+						M7HR_BLEND_RGB(blended, c_l, c_r, Xf);
+				}
+				else if (left_match && right_match)
+				{
+					/* Vertical edge: columns agree internally but
+					 * disagree across. Snap X, blend Y. */
+					uint16 c_t = (Xf < 128) ? c_tl : c_tr;
+					uint16 c_b = (Xf < 128) ? c_bl : c_br;
+					if (c_t == c_b)
+						blended = c_t;
+					else
+						M7HR_BLEND_RGB(blended, c_t, c_b, Yf);
+				}
+				else
+				{
+					/* Diagonal, sparse, or 3+1 detail: nearest
+					 * spatial corner. Loses smoothness on diagonal
+					 * gradients but avoids creating wrong-color
+					 * pixels at hard edges. If real content shows
+					 * diagonal-aliasing regressions vs old smooth,
+					 * a "diagonal-axis blend" branch can be added
+					 * here (test c_tl ~= c_br && c_tr ~= c_bl,
+					 * blend along (Xf+Yf)/2). */
+					if      (Xf <  128 && Yf <  128) blended = c_tl;
+					else if (Xf >= 128 && Yf <  128) blended = c_tr;
+					else if (Xf <  128 && Yf >= 128) blended = c_bl;
+					else                              blended = c_br;
+				}
 			}
 		}
 		else

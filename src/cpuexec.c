@@ -1127,8 +1127,47 @@ void S9xDoHEventProcessing (void)
 					PPU.RecomputeClipWindows = TRUE;
 					IPPU.PreviousLine = IPPU.CurrentLine = 0;
 
-					memset(GFX.ZBuffer, 0, GFX.ScreenSize);
-					memset(GFX.SubZBuffer, 0, GFX.ScreenSize);
+					/* Clear only the byte range the renderer actually touches.
+
+					   Every render path in ppu.c / tile.c iterates
+					   `for (Y = StartY; Y <= EndY; Y++) Offset = Y * GFX.PPL`,
+					   with EndY clamped to PPU.ScreenHeight - 1, so the
+					   number of scanlines the renderer writes to the
+					   Z-buffers is IPPU.RenderedScreenHeight (which equals
+					   PPU.ScreenHeight in non-interlaced modes and twice
+					   that with interlace, because the interlaced renderer
+					   writes twice as many scanlines into the same buffer).
+					   Each scanline is RealPPL bytes (the buffer's true row
+					   stride, before the interlace PPL doubling).
+
+					   For non-interlaced 224-line NTSC content this is
+					   ~229 KB instead of GFX.ScreenSize's ~489 KB - a ~53%
+					   reduction. Doubled because we clear two buffers (Z
+					   and SubZ), so ~520 KB / frame avoided. At 60 fps
+					   that's ~31 MB/sec less zero-writing on weak hardware.
+					   Interlaced and ticks=4 hires modes hit the buffer's
+					   full extent, so the savings shrink to a few percent
+					   in those cases - the optimization just gracefully
+					   degrades to the full clear.
+
+					   high_water tracks the running max over the session
+					   so a transition from a wider footprint (interlace,
+					   bigger sw_fb pitch) to a narrower one still clears
+					   any stale Z values at byte positions that were
+					   written by the wider footprint. Never decreases;
+					   in pathological cases this means we keep clearing
+					   the high-water size after a one-time hires frame,
+					   which matches the behavior before this change. */
+					{
+						static size_t high_water = 0;
+						size_t footprint = (size_t)IPPU.RenderedScreenHeight * GFX.RealPPL;
+						if (footprint > high_water)
+							high_water = footprint;
+						if (high_water > GFX.ScreenSize)
+							high_water = GFX.ScreenSize;
+						memset(GFX.ZBuffer,    0, high_water);
+						memset(GFX.SubZBuffer, 0, high_water);
+					}
 				}
 			}
 
