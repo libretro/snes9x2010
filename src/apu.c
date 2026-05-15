@@ -268,10 +268,6 @@
 
 #endif /* MSB_FIRST */
 
-#define GET_LE16SA(addr)	((int16_t) GET_LE16(addr))
-#define GET_LE16A(addr)		GET_LE16(addr)
-#define SET_LE16A(addr, data)	SET_LE16(addr, data)
-
 /***********************************************************************************
 	SPC DSP
 ***********************************************************************************/
@@ -427,10 +423,9 @@ static unsigned const counter_offsets [32] =
 
 static INLINE void dsp_run_envelope( dsp_voice_t* v )
 {
-	int env, rate, env_data;
-
-	env = v->env;
-	env_data = v->regs[V_ADSR1];
+	int rate;
+	int env      = v->env;
+	int env_data = v->regs[V_ADSR1];
 
 	if ( dsp_m.t_adsr0 & 0x80 ) /* 99% ADSR */
 	{
@@ -462,9 +457,7 @@ static INLINE void dsp_run_envelope( dsp_voice_t* v )
 		{
 			rate = env_data & 0x1F;
 			if ( mode == 4 ) /* 4: linear decrease */
-			{
 				env -= 0x20;
-			}
 			else if ( mode < 6 ) /* 5: exponential decrease */
 			{
 				env--;
@@ -507,8 +500,8 @@ static INLINE void dsp_decode_brr( dsp_voice_t* v )
 	int nybbles = dsp_m.t_brr_byte * 0x100 + dsp_m.ram [(v->brr_addr + v->brr_offset + 1) & 0xFFFF];
 	
 	int header = dsp_m.t_brr_header;
-   int filter = header & 0x0C;
-   int shift  = header >> 4;             /* Shift sample based on header */
+	int filter = header & 0x0C;
+	int shift  = header >> 4;             /* Shift sample based on header */
 	
 	/* Write to next four samples in circular buffer */
 	int *pos = (int*)&v->buf [v->buf_pos];
@@ -520,8 +513,8 @@ static INLINE void dsp_decode_brr( dsp_voice_t* v )
 	for ( end = pos + 4; pos < end; pos++)
 	{
 		int s     = (int16_t) nybbles >> 12; /* Extract nybble and sign-extend */
-      int p1    = pos [BRR_BUF_SIZE - 1];
-      int p2    = pos [BRR_BUF_SIZE - 2] >> 1;
+		int p1    = pos [BRR_BUF_SIZE - 1];
+		int p2    = pos [BRR_BUF_SIZE - 2] >> 1;
 
 		s = (s << shift) >> 1;
 		if (shift >= 0xD) /* handle invalid range */
@@ -564,19 +557,6 @@ static INLINE void dsp_decode_brr( dsp_voice_t* v )
 
 /* Misc */
 
-/* voice 0 doesn't support PMON */
-
-#define MISC_27() dsp_m.t_pmon = dsp_m.regs[R_PMON] & 0xFE;
-
-#define MISC_28() \
-	dsp_m.t_non = dsp_m.regs[R_NON]; \
-	dsp_m.t_eon = dsp_m.regs[R_EON]; \
-	dsp_m.t_dir = dsp_m.regs[R_DIR];
-
-#define MISC_29() \
-	if ( (dsp_m.every_other_sample ^= 1) != 0 ) \
-		dsp_m.new_kon &= ~dsp_m.kon; /* clears KON 63 clocks after it was last read */
-
 static INLINE void dsp_misc_30 (void)
 {
 	if ( dsp_m.every_other_sample )
@@ -611,8 +591,6 @@ static INLINE void dsp_misc_30 (void)
 	dsp_m.t_adsr0 = v->regs [V_ADSR0]; \
 	dsp_m.t_pitch = v->regs [V_PITCHL]; \
 }
-
-#define dsp_voice_V3a(v) (dsp_m.t_pitch += (v->regs [V_PITCHH] & 0x3F) << 8)
 
 #define dsp_voice_V3b(v) \
 	dsp_m.t_brr_byte = dsp_m.ram [(v->brr_addr + v->brr_offset) & 0xffff]; \
@@ -760,23 +738,10 @@ static INLINE void dsp_voice_V4( dsp_voice_t* v )
 	dsp_m.endx_buf = (uint8_t) endx_buf; \
 }
 
-#define dsp_voice_V6(v) (dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8))
-
-#define dsp_voice_V7(v) \
-	dsp_m.regs[R_ENDX] = dsp_m.endx_buf; \
-	dsp_m.envx_buf = v->t_envx_out
-
-#define dsp_voice_V8(v) v->regs [V_OUTX] = dsp_m.outx_buf
-
-#define dsp_voice_V9(v) v->regs [V_ENVX] = dsp_m.envx_buf
-
 /* Echo */
 
 /* Current echo buffer pointer for left/right channel */
 #define ECHO_PTR( ch )      (&dsp_m.ram [dsp_m.t_echo_ptr + ch * 2])
-
-/* Calculate FIR point for left/right channel */
-#define CALC_FIR( i, ch )   ((dsp_m.echo_hist_pos[i + 1][ch] * (int8_t) REG(FIR + i * 0x10)) >> 6)
 
 #define ECHO_READ(ch) \
 { \
@@ -784,7 +749,7 @@ static INLINE void dsp_voice_V4( dsp_voice_t* v )
 	if ( dsp_m.t_echo_ptr >= 0xffc0 && dsp_m.rom_enabled ) \
 		ptr = (uint8_t*)&dsp_m.hi_ram [dsp_m.t_echo_ptr + ch * 2 - 0xffc0]; \
 	/* second copy simplifies wrap-around handling */ \
-	dsp_m.echo_hist_pos[0][ch] = dsp_m.echo_hist_pos[8][ch] = (GET_LE16SA(ptr)) >> 1; \
+	dsp_m.echo_hist_pos[0][ch] = dsp_m.echo_hist_pos[8][ch] = ((int16_t)GET_LE16(ptr)) >> 1; \
 }
 
 static INLINE void dsp_echo_22 (void)
@@ -820,8 +785,8 @@ static INLINE void dsp_echo_25 (void)
    CLAMP16(l);
    CLAMP16(r);
 
-	dsp_m.t_echo_in [0] = l & ~1;
-	dsp_m.t_echo_in [1] = r & ~1;
+   dsp_m.t_echo_in [0] = l & ~1;
+   dsp_m.t_echo_in [1] = r & ~1;
 }
 
 #define ECHO_OUTPUT(var, ch) \
@@ -874,12 +839,12 @@ static INLINE void dsp_echo_27 (void)
 #define ECHO_WRITE(ch) \
 	if ( !(dsp_m.t_echo_enabled & 0x20) ) \
 	{ \
-		SET_LE16A( ECHO_PTR( ch ), dsp_m.t_echo_out [ch] ); \
+		SET_LE16( ECHO_PTR( ch ), dsp_m.t_echo_out [ch] ); \
 		if ( dsp_m.t_echo_ptr >= 0xffc0 ) \
 		{ \
-			SET_LE16A( &dsp_m.hi_ram [dsp_m.t_echo_ptr + ch * 2 - 0xffc0], dsp_m.t_echo_out [ch] ); \
+			SET_LE16( &dsp_m.hi_ram [dsp_m.t_echo_ptr + ch * 2 - 0xffc0], dsp_m.t_echo_out [ch] ); \
 			if ( dsp_m.rom_enabled ) \
-				SET_LE16A( ECHO_PTR( ch ), GET_LE16A( &dsp_m.rom [dsp_m.t_echo_ptr + ch * 2 - 0xffc0] ) ); \
+				SET_LE16( ECHO_PTR( ch ), GET_LE16( &dsp_m.rom [dsp_m.t_echo_ptr + ch * 2 - 0xffc0] ) ); \
 		} \
 	} \
 	dsp_m.t_echo_out [ch] = 0;
@@ -978,123 +943,128 @@ static void dsp_run( int clocks_remain )
          case 1:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
          v1 = (dsp_voice_t*)(v0 + 1);
-         dsp_voice_V6(v0);
-         dsp_voice_V3a(v1);
+         dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
+         dsp_m.t_pitch += (v1->regs [V_PITCHH] & 0x3F) << 8;
          dsp_voice_V3b(v1);
          dsp_voice_V3c(v1);
          case 2:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 3);
-         dsp_voice_V7(v0);
+	 dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
+	 dsp_m.envx_buf = v0->t_envx_out;
          dsp_voice_V1(v2);
          dsp_voice_V4(v1);
          case 3:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V8(v0);
+         v0->regs [V_OUTX] = dsp_m.outx_buf;
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
          case 4:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V9(v0);
-         dsp_voice_V6(v1);
-         dsp_voice_V3a(v2);
+         v0->regs [V_ENVX] = dsp_m.envx_buf;
+         dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
+         dsp_m.t_pitch += (v2->regs [V_PITCHH] & 0x3F) << 8;
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
          case 5:
          v0 = (dsp_voice_t*)&dsp_m.voices[1];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 3);
-         dsp_voice_V7(v0);
+	 dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
+	 dsp_m.envx_buf = v0->t_envx_out;
          dsp_voice_V1(v2);
          dsp_voice_V4(v1);
          case 6:
          v0 = (dsp_voice_t*)&dsp_m.voices[1];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V8(v0);
+         v0->regs [V_OUTX] = dsp_m.outx_buf;
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
          case 7:
          v0 = (dsp_voice_t*)&dsp_m.voices[1];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V9(v0);
-         dsp_voice_V6(v1);
-         dsp_voice_V3a(v2);
+         v0->regs [V_ENVX] = dsp_m.envx_buf;
+         dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
+         dsp_m.t_pitch += (v2->regs [V_PITCHH] & 0x3F) << 8;
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
          case 8:
          v0 = (dsp_voice_t*)&dsp_m.voices[2];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 3);
-         dsp_voice_V7(v0);
+	 dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
+	 dsp_m.envx_buf = v0->t_envx_out;
          dsp_voice_V1(v2);
          dsp_voice_V4(v1);
          case 9:
          v0 = (dsp_voice_t*)&dsp_m.voices[2];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V8(v0);
+         v0->regs [V_OUTX] = dsp_m.outx_buf;
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
          case 10:
          v0 = (dsp_voice_t*)&dsp_m.voices[2];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V9(v0);
-         dsp_voice_V6(v1);
-         dsp_voice_V3a(v2);
+         v0->regs [V_ENVX] = dsp_m.envx_buf;
+         dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
+         dsp_m.t_pitch += (v2->regs [V_PITCHH] & 0x3F) << 8;
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
          case 11:
          v0 = (dsp_voice_t*)&dsp_m.voices[3];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 3);
-         dsp_voice_V7(v0);
+	 dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
+	 dsp_m.envx_buf = v0->t_envx_out;
          dsp_voice_V1(v2);
          dsp_voice_V4(v1);
          case 12:
          v0 = (dsp_voice_t*)&dsp_m.voices[3];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V8(v0);
+         v0->regs [V_OUTX] = dsp_m.outx_buf;
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
          case 13:
          v0 = (dsp_voice_t*)&dsp_m.voices[3];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V9(v0);
-         dsp_voice_V6(v1);
-         dsp_voice_V3a(v2);
+         v0->regs [V_ENVX] = dsp_m.envx_buf;
+         dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
+         dsp_m.t_pitch += (v2->regs [V_PITCHH] & 0x3F) << 8;
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
          case 14:
          v0 = (dsp_voice_t*)&dsp_m.voices[4];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 3);
-         dsp_voice_V7(v0);
+	 dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
+	 dsp_m.envx_buf = v0->t_envx_out;
          dsp_voice_V1(v2);
          dsp_voice_V4(v1);
          case 15:
          v0 = (dsp_voice_t*)&dsp_m.voices[4];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V8(v0);
+         v0->regs [V_OUTX] = dsp_m.outx_buf;
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
          case 16:
          v0 = (dsp_voice_t*)&dsp_m.voices[4];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V9(v0);
-         dsp_voice_V6(v1);
-         dsp_voice_V3a(v2);
+         v0->regs [V_ENVX] = dsp_m.envx_buf;
+         dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
+         dsp_m.t_pitch += (v2->regs [V_PITCHH] & 0x3F) << 8;
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
          case 17:
@@ -1102,22 +1072,23 @@ static void dsp_run( int clocks_remain )
          v1 = (dsp_voice_t*)(v0 + 5);
          v2 = (dsp_voice_t*)(v0 + 6);
          dsp_voice_V1(v0);
-         dsp_voice_V7(v1);
+	 dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
+	 dsp_m.envx_buf = v1->t_envx_out;
          dsp_voice_V4(v2);
          case 18:
          v0 = (dsp_voice_t*)&dsp_m.voices[5];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V8(v0);
+         v0->regs [V_OUTX] = dsp_m.outx_buf;
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
          case 19:
          v0 = (dsp_voice_t*)&dsp_m.voices[5];
          v1 = (dsp_voice_t*)(v0 + 1);
          v2 = (dsp_voice_t*)(v0 + 2);
-         dsp_voice_V9(v0);
-         dsp_voice_V6(v1);
-         dsp_voice_V3a(v2);
+         v0->regs [V_ENVX] = dsp_m.envx_buf;
+         dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
+         dsp_m.t_pitch += (v2->regs [V_PITCHH] & 0x3F) << 8;
          dsp_voice_V3b(v2);
          dsp_voice_V3c(v2);
          case 20:
@@ -1125,47 +1096,53 @@ static void dsp_run( int clocks_remain )
          v1 = (dsp_voice_t*)(v0 + 5);
          v2 = (dsp_voice_t*)(v0 + 6);
          dsp_voice_V1(v0);
-         dsp_voice_V7(v1);
+	 dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
+	 dsp_m.envx_buf = v1->t_envx_out;
          dsp_voice_V4(v2);
          case 21:
          v2 = (dsp_voice_t*)&dsp_m.voices[0];
          v0 = (dsp_voice_t*)(v2 + 6);
          v1 = (dsp_voice_t*)(v2 + 7);
-         dsp_voice_V8(v0);
+         v0->regs [V_OUTX] = dsp_m.outx_buf;
          dsp_voice_V5(v1);
          dsp_voice_V2(v2);
          case 22:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
          v1 = (dsp_voice_t*)(v0 + 6);
          v2 = (dsp_voice_t*)(v0 + 7);
-         dsp_voice_V3a(v0);
-         dsp_voice_V9(v1);
-         dsp_voice_V6(v2);
+         dsp_m.t_pitch += (v0->regs [V_PITCHH] & 0x3F) << 8;
+         v1->regs [V_ENVX] = dsp_m.envx_buf;
+         dsp_m.outx_buf = (uint8_t) (dsp_m.t_output >> 8);
          dsp_echo_22();
          case 23:
          v0 = (dsp_voice_t*)&dsp_m.voices[7];
-         dsp_voice_V7(v0);
+	 dsp_m.regs[R_ENDX] = dsp_m.endx_buf;
+	 dsp_m.envx_buf = v0->t_envx_out;
          dsp_echo_23();
          case 24:
          v0 = (dsp_voice_t*)&dsp_m.voices[7];
-         dsp_voice_V8(v0);
+         v0->regs [V_OUTX] = dsp_m.outx_buf;
          dsp_echo_24();
          case 25:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
          v1 = (dsp_voice_t*)(v0 + 7);
          dsp_voice_V3b(v0);
-         dsp_voice_V9(v1);
+         v1->regs [V_ENVX] = dsp_m.envx_buf;
          dsp_echo_25();
          case 26:
          dsp_echo_26();
          case 27:
-         MISC_27();
+         dsp_m.t_pmon = dsp_m.regs[R_PMON] & 0xFE;
          dsp_echo_27();
          case 28:
-         MISC_28();
+	 dsp_m.t_non = dsp_m.regs[R_NON];
+	 dsp_m.t_eon = dsp_m.regs[R_EON];
+	 dsp_m.t_dir = dsp_m.regs[R_DIR];
          ECHO_28();
          case 29:
-         MISC_29();
+	 /* voice 0 doesn't support PMON */
+	 if ( (dsp_m.every_other_sample ^= 1) != 0 )
+		 dsp_m.new_kon &= ~dsp_m.kon; /* clears KON 63 clocks after it was last read */
          dsp_echo_29();
          case 30:
          v0 = (dsp_voice_t*)&dsp_m.voices[0];
