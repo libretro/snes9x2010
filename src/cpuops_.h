@@ -1824,6 +1824,47 @@ static void OpEA (void)
 #define PushB(b) \
 	S9xSetByte(b, Registers.S.W--);
 
+/* PushB_E1_JSL: byte push for JSL / RTL in EMULATION mode. Like
+ * PushB it decrements the full 16-bit Registers.S.W after the
+ * write (unlike PushBE which only touches SL and so wraps within
+ * page); this matches the 65C816's "new instruction" rule where
+ * JSL/JSR-long don't honour the SH=$01 emulation-mode bound during
+ * the push and the byte can legitimately land at \$00FE-\$00FF
+ * when SP crosses the page boundary mid-push.
+ *
+ * With Registers.S.W in \$0100-\$01FF on entry and at most three
+ * pushes per JSL, the byte addresses are always within
+ * \$00FD-\$01FF — bank 0 WRAM low half, which maps directly to
+ * Memory.RAM. Skip the WriteMap[] dispatch as in PushBE. */
+#ifdef SA1_OPCODES
+#define PushB_E1_JSL(b) \
+	S9xSetByte((b), Registers.S.W--);
+#else
+#define PushB_E1_JSL(b) do { \
+	int32_t speed = SLOW_ONE_CYCLE; \
+	Memory.RAM[Registers.S.W] = (b); \
+	addCyclesInMemoryAccess; \
+	Registers.S.W--; \
+} while (0)
+#endif
+
+/* PullB_E1_JSL: byte pull counterpart of PushB_E1_JSL, for RTL E1.
+ * Pre-increments the full 16-bit Registers.S.W and reads — same
+ * page-cross semantics as the original PullB / PullW combination
+ * that RTL uses. Address always in \$00FE-\$0100 (or higher up to
+ * \$01FF) which is WRAM bank 0 low half. */
+#ifdef SA1_OPCODES
+#define PullB_E1_JSL(b) \
+	(b) = S9xGetByte(++Registers.S.W);
+#else
+#define PullB_E1_JSL(b) do { \
+	int32_t speed = SLOW_ONE_CYCLE; \
+	Registers.S.W++; \
+	(b) = Memory.RAM[Registers.S.W]; \
+	addCyclesInMemoryAccess; \
+} while (0)
+#endif
+
 /* PushBE: 8-bit push in EMULATION mode. SH is hardware-forced to
  * $01 in emulation mode, so the write address is always $0100-$01FF
  * — which bank 0 maps directly to Memory.RAM with no offset (see
@@ -3018,8 +3059,11 @@ static void Op22E1 (void)
 	/* Note: JSL is a new instruction,*/
 	/* and so doesn't respect the emu-mode stack bounds.*/
 	uint32_t	addr = AbsoluteLong_JSR();
-	PushB(Registers.PB);
-	PushW(Registers.PCw - 1);
+	uint16_t	pcw_minus_1 = Registers.PCw - 1;
+
+	PushB_E1_JSL(Registers.PB);                          /* PB at S.W,    S.W-- */
+	PushB_E1_JSL((uint8_t) (pcw_minus_1 >> 8));          /* PCH at S.W-1, S.W-- */
+	PushB_E1_JSL((uint8_t)  pcw_minus_1);                /* PCL at S.W-2, S.W-- */
 	Registers.SH = 1;
 	S9xSetPCBase(addr);
 }
@@ -3046,9 +3090,13 @@ static void Op6BE1 (void)
 {
 	/* Note: RTL is a new instruction,*/
 	/* and so doesn't respect the emu-mode stack bounds.*/
+	uint8_t pcw_lo, pcw_hi;
+
 	AddCycles(TWO_CYCLES);
-	PullW(Registers.PCw);
-	PullB(Registers.PB);
+	PullB_E1_JSL(pcw_lo);                                /* ++S.W; PCL */
+	PullB_E1_JSL(pcw_hi);                                /* ++S.W; PCH */
+	Registers.PCw = (uint16_t) pcw_lo | ((uint16_t) pcw_hi << 8);
+	PullB_E1_JSL(Registers.PB);                          /* ++S.W; PB */
 	Registers.SH = 1;
 	Registers.PCw++;
 	S9xSetPCBase(Registers.PBPC);
