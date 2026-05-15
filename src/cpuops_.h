@@ -1766,9 +1766,39 @@ static void OpEA (void)
 
 /* PUSH Instructions ******************************************************* */
 
+/* PushW: native-mode 16-bit push. The original dispatched form
+ * (via S9xSetWord_Write1 with WRAP_BANK) is preserved for the
+ * SA1 instantiation - the WRAM-direct fast path can't be used
+ * there because addCyclesInMemoryAccess references CPU.Cycles
+ * and CPU.InDMAorHDMA, neither of which belong to the SA1
+ * struct (see the analogous PushBE / PushWE comments).
+ *
+ * For the main CPU, gate on a runtime bounds check covering
+ * both bytes of the word: S.W-1 and S.W must lie in $0000-$1FFF
+ * (the bank-0 WRAM mirror). Since S.W is uint16_t, S.W=0 would
+ * make S.W-1 wrap to $FFFF and address bank-0 WRAM byte $FFFF
+ * via Memory.RAM[] - which is in-range for the array but is NOT
+ * where the SNES would have written, so the lower bound S.W>=1
+ * is mandatory. The hit rate is ~100% in practice: native-mode
+ * games keep S in page 1 ($0100-$01FF) by convention. */
+#ifdef SA1_OPCODES
 #define PushW(w) \
-	S9xSetWord_Write1(w, Registers.S.W - 1, WRAP_BANK); \
+	S9xSetWord_Write1((w), Registers.S.W - 1, WRAP_BANK); \
 	Registers.S.W -= 2;
+#else
+#define PushW(w) do { \
+	uint16_t _pw_val = (uint16_t)(w); \
+	if (Registers.S.W >= 1 && Registers.S.W <= 0x1FFF) { \
+		int32_t speed = SLOW_ONE_CYCLE; \
+		WRITE_WORD(Memory.RAM + (Registers.S.W - 1), _pw_val); \
+		addCyclesInMemoryAccess_x2; \
+		Registers.S.W -= 2; \
+	} else { \
+		S9xSetWord_Write1(_pw_val, Registers.S.W - 1, WRAP_BANK); \
+		Registers.S.W -= 2; \
+	} \
+} while (0)
+#endif
 
 /* PushWE: 16-bit push in EMULATION mode. With SH hardware-forced
  * to $01, both bytes always land in $0100-$01FF and the WRAP_PAGE
@@ -1821,8 +1851,27 @@ static void OpEA (void)
 } while (0)
 #endif
 
+/* PushB: native-mode 1-byte push. SA1 instantiation keeps the
+ * dispatched form (same justification as PushW). For the main
+ * CPU, runtime-check S.W <= $1FFF and bypass straight to
+ * Memory.RAM. Falls back to S9xSetByte for any non-WRAM stack
+ * pointer, which in practice never happens during gameplay. */
+#ifdef SA1_OPCODES
 #define PushB(b) \
-	S9xSetByte(b, Registers.S.W--);
+	S9xSetByte((b), Registers.S.W--);
+#else
+#define PushB(b) do { \
+	uint8_t _pb_val = (b); \
+	if (Registers.S.W <= 0x1FFF) { \
+		int32_t speed = SLOW_ONE_CYCLE; \
+		Memory.RAM[Registers.S.W] = _pb_val; \
+		addCyclesInMemoryAccess; \
+		Registers.S.W--; \
+	} else { \
+		S9xSetByte(_pb_val, Registers.S.W--); \
+	} \
+} while (0)
+#endif
 
 /* PushB_E1_JSL: byte push for JSL / RTL in EMULATION mode. Like
  * PushB it decrements the full 16-bit Registers.S.W after the
@@ -2232,9 +2281,30 @@ static void Op5ASlow (void)
 
 /* PULL Instructions ******************************************************* */
 
+/* PullW: native-mode 16-bit pull. SA1 instantiation keeps the
+ * dispatched form. For the main CPU, runtime-check that both
+ * read bytes (at S.W+1 low and S.W+2 high) land in WRAM by
+ * gating on S.W <= $1FFD. The original S9xGetWord call uses
+ * WRAP_BANK, which means an S.W near $FFFE would wrap into
+ * bank 0 - the bypass check intentionally rejects those rare
+ * cases, falling through to the dispatched form. */
+#ifdef SA1_OPCODES
 #define PullW(w) \
-	w = S9xGetWord(Registers.S.W + 1, WRAP_BANK); \
+	(w) = S9xGetWord(Registers.S.W + 1, WRAP_BANK); \
 	Registers.S.W += 2;
+#else
+#define PullW(w) do { \
+	if (Registers.S.W <= 0x1FFD) { \
+		int32_t speed = SLOW_ONE_CYCLE; \
+		(w) = READ_WORD(Memory.RAM + Registers.S.W + 1); \
+		addCyclesInMemoryAccess_x2; \
+		Registers.S.W += 2; \
+	} else { \
+		(w) = S9xGetWord(Registers.S.W + 1, WRAP_BANK); \
+		Registers.S.W += 2; \
+	} \
+} while (0)
+#endif
 
 /* PullWE: 16-bit pull in EMULATION mode. Same justification as
  * PushWE: two consecutive PullBE invocations reproduce the
@@ -2254,8 +2324,26 @@ static void Op5ASlow (void)
 } while (0)
 #endif
 
+/* PullB: native-mode 1-byte pull. SA1 instantiation keeps the
+ * dispatched form. For the main CPU, pre-increment S.W (matching
+ * the original ++S.W semantics: pull from the byte ABOVE the
+ * current SP), then runtime-check S.W <= $1FFF for the WRAM
+ * bypass. */
+#ifdef SA1_OPCODES
 #define PullB(b) \
-	b = S9xGetByte(++Registers.S.W);
+	(b) = S9xGetByte(++Registers.S.W);
+#else
+#define PullB(b) do { \
+	Registers.S.W++; \
+	if (Registers.S.W <= 0x1FFF) { \
+		int32_t speed = SLOW_ONE_CYCLE; \
+		(b) = Memory.RAM[Registers.S.W]; \
+		addCyclesInMemoryAccess; \
+	} else { \
+		(b) = S9xGetByte(Registers.S.W); \
+	} \
+} while (0)
+#endif
 
 /* PullBE: emulation-mode pull, same justification as PushBE.
  * Address is $0100-$01FF, maps directly to Memory.RAM. */
