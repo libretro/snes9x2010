@@ -1791,6 +1791,36 @@ static void OpEA (void)
 } while (0)
 #endif
 
+/* PushW_E1_PEA: 16-bit push variant used by PEA/PEI/PER in
+ * EMULATION mode (E=1). The 65C816 manual specifies that these
+ * three "new" instructions (added with the 65C816) don't enforce
+ * the SH=$01 wrap during the push — they use the native-mode
+ * WRAP_BANK word write, then each opcode re-asserts SH=$01
+ * afterwards. In practice S.W is in $0100-$01FF on entry, so
+ * S.W-1 is in $00FF-$01FE and the two byte writes always land in
+ * bank 0 WRAM low half. Same WRAM-direct fold as PushBE: skip the
+ * Map[] dispatch, write directly to Memory.RAM, use SLOW_ONE_CYCLE
+ * as a literal.
+ *
+ * SH is NOT reset here — the caller does \`Registers.SH = 1\` after
+ * using this macro, matching the original structure. */
+#ifdef SA1_OPCODES
+#define PushW_E1_PEA(val) \
+	S9xSetWord_Write1((val), Registers.S.W - 1, WRAP_BANK); \
+	Registers.S.W -= 2;
+#else
+#define PushW_E1_PEA(val) do { \
+	uint16_t _pea_val = (uint16_t) (val); \
+	int32_t  speed = SLOW_ONE_CYCLE; \
+	uint16_t _pea_addr = Registers.S.W - 1; \
+	Memory.RAM[(_pea_addr + 1) & 0xFFFF] = (uint8_t) (_pea_val >> 8); /* high */ \
+	addCyclesInMemoryAccess; \
+	Memory.RAM[_pea_addr]               = (uint8_t)  _pea_val;        /* low */ \
+	addCyclesInMemoryAccess; \
+	Registers.S.W -= 2; \
+} while (0)
+#endif
+
 #define PushB(b) \
 	S9xSetByte(b, Registers.S.W--);
 
@@ -1839,7 +1869,7 @@ static void OpF4E1 (void)
 	/* Note: PEA is a new instruction,*/
 	/* and so doesn't respect the emu-mode stack bounds.*/
 	uint16_t	val = (uint16_t) ABSOLUTE_MACRO(N);
-	PushW(val);
+	PushW_E1_PEA(val);
 	OpenBus = val & 0xff;
 	Registers.SH = 1;
 }
@@ -1866,7 +1896,7 @@ static void OpD4E1 (void)
 	/* Note: PEI is a new instruction,*/
 	/* and so doesn't respect the emu-mode stack bounds.*/
 	uint16_t	val = (uint16_t) DirectIndirectE1_N();
-	PushW(val);
+	PushW_E1_PEA(val);
 	OpenBus = val & 0xff;
 	Registers.SH = 1;
 }
@@ -1893,7 +1923,7 @@ static void Op62E1 (void)
 	/* Note: PER is a new instruction,*/
 	/* and so doesn't respect the emu-mode stack bounds.*/
 	uint16_t	val = (uint16_t) RelativeLong_N();
-	PushW(val);
+	PushW_E1_PEA(val);
 	OpenBus = val & 0xff;
 	Registers.SH = 1;
 }
