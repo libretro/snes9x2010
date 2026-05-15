@@ -180,17 +180,23 @@
 #ifndef _CPUMACRO_H_
 #define _CPUMACRO_H_
 
+/* The OP-family templates instantiate one static function per opcode.
+ * Every call below threads the access mode as a *token* suffix on the
+ * addressing-function name (e.g. ADDR##_R, ADDR##_W, ADDR##_M) so that
+ * the per-mode arms of the former `if (a & READ)` etc. tests inside
+ * the addressing functions are stripped at preprocess time instead of
+ * relying on the optimiser's constant propagation. See cpuaddr.h. */
 #define rOP8(OP, ADDR, WRAP, FUNC) \
 static void Op##OP (void) \
 { \
-	uint8_t	val = OpenBus = S9xGetByte(ADDR(READ)); \
+	uint8_t	val = OpenBus = S9xGetByte(ADDR##_R()); \
 	FUNC##8(val); \
 }
 
 #define rOP16(OP, ADDR, WRAP, FUNC) \
 static void Op##OP (void) \
 { \
-	uint16_t	val = S9xGetWord(ADDR(READ), WRAP); \
+	uint16_t	val = S9xGetWord(ADDR##_R(), WRAP); \
 	OpenBus = (uint8_t) (val >> 8); \
 	FUNC(val); \
 }
@@ -200,12 +206,12 @@ static void Op##OP (void) \
 { \
 	if (Check##COND()) \
 	{ \
-		uint8_t	val = OpenBus = S9xGetByte(ADDR(READ)); \
+		uint8_t	val = OpenBus = S9xGetByte(ADDR##_R()); \
 		FUNC##8(val); \
 	} \
 	else \
 	{ \
-		uint16_t	val = S9xGetWord(ADDR(READ), WRAP); \
+		uint16_t	val = S9xGetWord(ADDR##_R(), WRAP); \
 		OpenBus = (uint8_t) (val >> 8); \
 		FUNC##16(val); \
 	} \
@@ -220,22 +226,22 @@ rOPC(OP, Index, ADDR, WRAP, FUNC)
 #define wOP8(OP, ADDR, WRAP, FUNC) \
 static void Op##OP (void) \
 { \
-	FUNC##8(ADDR(WRITE)); \
+	FUNC##8(ADDR##_W()); \
 }
 
 #define wOP16(OP, ADDR, WRAP, FUNC) \
 static void Op##OP (void) \
 { \
-	FUNC##16(ADDR(WRITE), WRAP); \
+	FUNC##16(ADDR##_W(), WRAP); \
 }
 
 #define wOPC(OP, COND, ADDR, WRAP, FUNC) \
 static void Op##OP (void) \
 { \
 	if (Check##COND()) \
-		FUNC##8(ADDR(WRITE)); \
+		FUNC##8(ADDR##_W()); \
 	else \
-		FUNC##16(ADDR(WRITE), WRAP); \
+		FUNC##16(ADDR##_W(), WRAP); \
 }
 
 #define wOPM(OP, ADDR, WRAP, FUNC) \
@@ -247,36 +253,65 @@ wOPC(OP, Index, ADDR, WRAP, FUNC)
 #define mOP8(OP, ADDR, WRAP, FUNC) \
 static void Op##OP (void) \
 { \
-	FUNC##8(ADDR(MODIFY)); \
+	FUNC##8(ADDR##_M()); \
 }
 
 #define mOP16(OP, ADDR, WRAP, FUNC) \
 static void Op##OP (void) \
 { \
-	FUNC##16(ADDR(MODIFY), WRAP); \
+	FUNC##16(ADDR##_M(), WRAP); \
 }
 
 #define mOPC(OP, COND, ADDR, WRAP, FUNC) \
 static void Op##OP (void) \
 { \
 	if (Check##COND()) \
-		FUNC##8(ADDR(MODIFY)); \
+		FUNC##8(ADDR##_M()); \
 	else \
-		FUNC##16(ADDR(MODIFY), WRAP); \
+		FUNC##16(ADDR##_M(), WRAP); \
 }
 
 #define mOPM(OP, ADDR, WRAP, FUNC) \
 mOPC(OP, Memory, ADDR, WRAP, FUNC)
 
+/* bOP's `E` argument is a literal 0 or 1 at the fast call sites and
+ * only controls whether the page-cross extra cycle test fires. Token
+ * paste to either emit the test or strip it entirely so that
+ * `if (E && ...)` never survives as `if (0 && ...)` in the output.
+ *
+ * The Slow variants pass `CheckEmulation()` for E (a real runtime
+ * check), so they get their own macro that keeps the test runtime. */
+#define BRANCH_PCH_CHECK_0(newPC)
+#define BRANCH_PCH_CHECK_1(newPC) \
+	if (Registers.PCh != newPC.B.h) \
+		AddCycles(ONE_CYCLE);
+#define BRANCH_PCH_CHECK(E, newPC) BRANCH_PCH_CHECK_##E(newPC)
+
 #define bOP(OP, REL, COND, CHK, E) \
 static void Op##OP (void) \
 { \
 	pair	newPC; \
-	newPC.W = REL(JUMP); \
+	newPC.W = REL##_J(); \
 	if (COND) \
 	{ \
 		AddCycles(ONE_CYCLE); \
-		if (E && Registers.PCh != newPC.B.h) \
+		BRANCH_PCH_CHECK(E, newPC) \
+		if ((Registers.PCw & ~MEMMAP_MASK) != (newPC.W & ~MEMMAP_MASK)) \
+			S9xSetPCBase(ICPU.ShiftedPB + newPC.W); \
+		else \
+			Registers.PCw = newPC.W; \
+	} \
+}
+
+#define bOPSlow(OP, REL, COND, CHK, E) \
+static void Op##OP (void) \
+{ \
+	pair	newPC; \
+	newPC.W = REL##_J(); \
+	if (COND) \
+	{ \
+		AddCycles(ONE_CYCLE); \
+		if ((E) && Registers.PCh != newPC.B.h) \
 			AddCycles(ONE_CYCLE); \
 		if ((Registers.PCw & ~MEMMAP_MASK) != (newPC.W & ~MEMMAP_MASK)) \
 			S9xSetPCBase(ICPU.ShiftedPB + newPC.W); \
