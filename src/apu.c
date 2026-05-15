@@ -1575,48 +1575,83 @@ static void spc_cpu_write_smp_reg_( unsigned data, int time, int addr )
    }
 }
 
-static void spc_cpu_write( unsigned data, uint16_t addr, int32_t time )
+/* Out-of-line slow path: SPC700 hardware-register write
+ * ($F0-$FF) and IPL-ROM area shadow ($FFC0-$FFFF). The fast
+ * path — plain RAM write for the other ~65,440 addresses — runs
+ * inline in the spc_cpu_write macro below, which calls this
+ * function only when the address falls in one of the two slow
+ * regions.
+ *
+ * RAM is written by the macro before this is invoked; this body
+ * only handles the side-effects (DSP / timer / IPL-ROM shadow). */
+#ifdef __GNUC__
+__attribute__((noinline))
+#endif
+static void spc_cpu_write_io( unsigned data, uint16_t addr, int32_t time )
 {
-	int32_t reg;
-	/* RAM */
-	m.ram.ram[addr] = (uint8_t) data;
-	reg = addr - 0xF0;
-	if ( reg >= 0 ) /* 64% */
+	int32_t reg = addr - 0xF0;
+	if ( reg < REG_COUNT ) /* 87%: $F0-$FF hardware registers */
 	{
-		/* $F0-$FF */
-		if ( reg < REG_COUNT ) /* 87% */
-		{
-			m.smp_regs[0][reg] = (uint8_t) data;
-			
-			/* Registers other than $F2 and $F4-$F7
-			   if ( reg != 2 && reg != 4 && reg != 5 && reg != 6 && reg != 7 )
-			   TODO: this is a bit on the fragile side */
+		m.smp_regs[0][reg] = (uint8_t) data;
+
+		/* Registers other than $F2 and $F4-$F7
+		   if ( reg != 2 && reg != 4 && reg != 5 && reg != 6 && reg != 7 )
+		   TODO: this is a bit on the fragile side */
 
          if ( (0x2F00 & (1 << (15 - reg))) == 0 ) /* 36% */
-			{
-				if ( reg == R_DSPDATA ) /* 99% */
-				{
-					RUN_DSP(time, reg_times [m.smp_regs[0][R_DSPADDR]] );
-					if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
-						spc_dsp_write( data );
-				}
-				else
-					spc_cpu_write_smp_reg_( data, time, reg);
-			}
-		}
-		/* High mem/address wrap-around */
-		else
 		{
-			reg -= ROM_ADDR - 0xF0;
-			if ( reg >= 0 ) /* 1% in IPL ROM area or address wrapped around */
+			if ( reg == R_DSPDATA ) /* 99% */
 			{
-				m.hi_ram [reg] = (uint8_t) data;
-				if ( m.rom_enabled )
-					m.ram.ram[reg + ROM_ADDR] = m.rom [reg]; /* restore overwritten ROM */
+				RUN_DSP(time, reg_times [m.smp_regs[0][R_DSPADDR]] );
+				if (m.smp_regs[0][R_DSPADDR] <= 0x7F )
+					spc_dsp_write( data );
 			}
+			else
+				spc_cpu_write_smp_reg_( data, time, reg);
+		}
+	}
+	/* IPL-ROM area shadow ($FFC0-$FFFF). The else branch from the
+	 * original function: the macro gates the middle range
+	 * ($0100-$FFBF) out so it is never reached here. */
+	else
+	{
+		reg -= ROM_ADDR - 0xF0;
+		if ( reg >= 0 ) /* IPL ROM area or address wrapped around */
+		{
+			m.hi_ram [reg] = (uint8_t) data;
+			if ( m.rom_enabled )
+				m.ram.ram[reg + ROM_ADDR] = m.rom [reg]; /* restore overwritten ROM */
 		}
 	}
 }
+
+/* SPC700 memory write fast path.
+ *
+ * Folded to a do-while-0 macro (no return value, so plain C, no
+ * GCC statement-expression extension needed). The preprocessor
+ * splices the body at every use site, bypassing the inline cost
+ * model the way memory_speed and spc_cpu_read are.
+ *
+ * The slow regions are $00F0-$00FF (hardware registers) and
+ * $FFC0-$FFFF (IPL-ROM shadow). The middle range $0100-$FFBF was a
+ * no-op in the original function: \`reg < REG_COUNT\` was false and
+ * the else branch's \`reg -= ROM_ADDR - 0xF0; if (reg >= 0)\` was
+ * also false. The macro tests both slow regions inline and only
+ * tail-calls spc_cpu_write_io when one is hit, so direct-page
+ * writes with DP=1 ($0100-$01FF) — which the original would have
+ * called through but then short-circuited — stay fully inline.
+ *
+ * Each argument is captured into a local so a side-effecting call
+ * site is safe; no current site does that, but the same trap that
+ * bit spc_cpu_read with READ_PC(++pc) is easy to fall into. */
+#define spc_cpu_write(data, addr, time) do { \
+	unsigned _spcw_data = (data); \
+	uint16_t _spcw_addr = (addr); \
+	int32_t  _spcw_time = (time); \
+	m.ram.ram[_spcw_addr] = (uint8_t) _spcw_data; \
+	if ((unsigned) (_spcw_addr - 0xF0) < 0x10 || _spcw_addr >= ROM_ADDR) \
+		spc_cpu_write_io(_spcw_data, _spcw_addr, _spcw_time); \
+} while (0)
 
 /* CPU read */
 
