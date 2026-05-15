@@ -189,25 +189,6 @@
 
 extern uint8_t	OpenBus;
 
-int32_t memory_speed (uint32_t address)
-{
-	if (address & 0x408000)
-	{
-		if (address & 0x800000)
-			return (CPU.FastROMSpeed);
-
-		return (SLOW_ONE_CYCLE);
-	}
-
-	if ((address + 0x6000) & 0x4000)
-		return (SLOW_ONE_CYCLE);
-
-	if ((address - 0x4000) & 0x7e00)
-		return (ONE_CYCLE);
-
-	return (TWO_CYCLES);
-}
-
 uint8_t S9xGetByteFromRegister(uint8_t *GetAddress, uint32_t Address)
 {
    uint8_t	byte;

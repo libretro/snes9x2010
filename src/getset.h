@@ -194,8 +194,6 @@ extern uint8_t	OpenBus;
 
 uint8_t S9xGetByteFromRegister(uint8_t *GetAddress, uint32_t Address);
 
-int32_t memory_speed (uint32_t address);
-
 static INLINE uint8_t S9xGetByte (uint32_t Address)
 {
    int		block    = (Address & 0xffffff) >> MEMMAP_SHIFT;

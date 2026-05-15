@@ -308,6 +308,4 @@
 
 #endif
 
-int32_t memory_speed (uint32_t address);
-
 #endif
