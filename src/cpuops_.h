@@ -1579,15 +1579,8 @@ bOP(70E1,   Relative,      CheckOverflow(), 0, 1)
 bOPSlow(70Slow, RelativeSlow,  CheckOverflow(), 0, CheckEmulation())
 
 /* BRL*/
-static void Op82 (void)
-{
-	S9xSetPCBase(ICPU.ShiftedPB + RelativeLong_J());
-}
-
-static void Op82Slow (void)
-{
-	S9xSetPCBase(ICPU.ShiftedPB + RelativeLongSlow_J());
-}
+jOP(82,     RelativeLong)
+jOP(82Slow, RelativeLongSlow)
 
 /* Flag Instructions ******************************************************* */
 
@@ -2906,57 +2899,19 @@ static void Op02 (void)
 
 /* JML ********************************************************************* */
 
-static void OpDC (void)
-{
-	S9xSetPCBase(AbsoluteIndirectLong_J());
-}
-
-static void OpDCSlow (void)
-{
-	S9xSetPCBase(AbsoluteIndirectLongSlow_J());
-}
-
-static void Op5C (void)
-{
-	S9xSetPCBase(AbsoluteLong_J());
-}
-
-static void Op5CSlow (void)
-{
-	S9xSetPCBase(AbsoluteLongSlow_J());
-}
+jOPL(DC,     AbsoluteIndirectLong)
+jOPL(DCSlow, AbsoluteIndirectLongSlow)
+jOPL(5C,     AbsoluteLong)
+jOPL(5CSlow, AbsoluteLongSlow)
 
 /* JMP ********************************************************************* */
 
-static void Op4C (void)
-{
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) ABSOLUTE_MACRO(J)));
-}
-
-static void Op4CSlow (void)
-{
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) ABSOLUTESLOW_MACRO(J)));
-}
-
-static void Op6C (void)
-{
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndirect_J()));
-}
-
-static void Op6CSlow (void)
-{
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndirectSlow_J()));
-}
-
-static void Op7C (void)
-{
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndexedIndirect_J()));
-}
-
-static void Op7CSlow (void)
-{
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndexedIndirectSlow_J()));
-}
+jOP(4C,     Absolute)
+jOP(4CSlow, AbsoluteSlow)
+jOP(6C,     AbsoluteIndirect)
+jOP(6CSlow, AbsoluteIndirectSlow)
+jOP(7C,     AbsoluteIndexedIndirect)
+jOP(7CSlow, AbsoluteIndexedIndirectSlow)
 
 /* JSL/RTL ***************************************************************** */
 

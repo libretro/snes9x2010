@@ -418,6 +418,7 @@ DEFINE_AbsoluteSlow(N)
 DEFINE_AbsoluteSlow(R)
 DEFINE_AbsoluteSlow(W)
 DEFINE_AbsoluteSlow(M)
+DEFINE_AbsoluteSlow(J)
 #undef DEFINE_AbsoluteSlow
 
 #define DEFINE_Absolute(m) \
@@ -429,6 +430,7 @@ DEFINE_Absolute(N)
 DEFINE_Absolute(R)
 DEFINE_Absolute(W)
 DEFINE_Absolute(M)
+DEFINE_Absolute(J)
 #undef DEFINE_Absolute
 
 #define ABSOLUTESLOW_MACRO(m) (ICPU.ShiftedDB | Immediate16Slow_##m())

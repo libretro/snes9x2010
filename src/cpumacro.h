@@ -320,6 +320,21 @@ static void Op##OP (void) \
 	} \
 }
 
+/* JMP-family templates. The 16-bit form (jOP) keeps the existing PB
+ * and OR's in a 16-bit destination. The long form (jOPL) takes a
+ * 24-bit destination that already encodes the new bank. */
+#define jOP(OP, ADDR) \
+static void Op##OP (void) \
+{ \
+	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) ADDR##_J())); \
+}
+
+#define jOPL(OP, ADDR) \
+static void Op##OP (void) \
+{ \
+	S9xSetPCBase(ADDR##_J()); \
+}
+
 
 #define SetZN16(Work16) \
 	ICPU._Zero = Work16 != 0; \
