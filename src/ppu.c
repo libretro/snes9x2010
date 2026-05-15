@@ -3941,27 +3941,27 @@ uint8_t S9xGetPPU (uint16_t Address)
 
 static uint8_t	sdd1_decode_buffer[0x10000];
 
-static INLINE uint8_t addCyclesInDMA (uint8_t dma_channel)
-{
-	uint8_t retval = TRUE;
-
-	/* Add 8 cycles per byte, sync APU, and do HC related events.*/
-	/* If HDMA was done in S9xDoHEventProcessing(), check if it used the same channel as DMA.*/
-	CPU.Cycles += SLOW_ONE_CYCLE;
-
-	while (CPU.Cycles >= CPU.NextEvent)
-		S9xDoHEventProcessing();
-
-	if (CPU.HDMARanInDMA & (1 << dma_channel))
-	{
-		/* If HDMA triggers in the middle of DMA transfer and it uses the same channel,*/
-		/* it kills the DMA transfer immediately. $43x2 and $43x5 stop updating.*/
-		retval = FALSE;
-	}
-
-	CPU.HDMARanInDMA = 0;
-	return retval;
-}
+/* Fold to a statement-expression macro for the same reason
+ * memory_speed was folded (see cpuexec.h): this is called inside
+ * the per-byte DMA / HDMA transfer loops in S9xDoDMA, and at -O2
+ * -flto GCC kept emitting a real \`call addCyclesInDMA\` at 31 of
+ * those sites despite the static INLINE hint. The body is small
+ * enough to inline at every use, and macro expansion sidesteps the
+ * inliner's cost model entirely.
+ *
+ * Returns TRUE if the DMA should continue, FALSE if HDMA fired in
+ * the middle on the same channel and killed it. */
+#define addCyclesInDMA(dma_channel) __extension__ ({ \
+	uint8_t _adma_ret = TRUE; \
+	uint8_t _adma_ch  = (dma_channel); \
+	CPU.Cycles += SLOW_ONE_CYCLE; \
+	while (CPU.Cycles >= CPU.NextEvent) \
+		S9xDoHEventProcessing(); \
+	if (CPU.HDMARanInDMA & (1 << _adma_ch)) \
+		_adma_ret = FALSE; \
+	CPU.HDMARanInDMA = 0; \
+	_adma_ret; \
+})
 
 static uint8_t dma_channels_to_be_used[8] = {0};
 static uint8_t special_chips_active = FALSE;
