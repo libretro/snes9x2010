@@ -29,11 +29,6 @@
   (c) Copyright 2005 - 2006  Dreamer Nom,
                              zones
 
-  C4 x86 assembler and some C emulation code
-  (c) Copyright 2000 - 2003  _Demo_ (_demo_@zsnes.com),
-                             Nach,
-                             zsKnight (zsknight@zsnes.com)
-
   C4 C++ code
   (c) Copyright 2003 - 2006  Brad Jorsch,
                              Nach
@@ -100,11 +95,6 @@
                              Kris Bleakley,
                              Matthew Kendora
 
-  Super FX x86 assembler emulator code
-  (c) Copyright 1998 - 2003  _Demo_,
-                             pagefault,
-                             zsKnight
-
   Super FX C emulator code
   (c) Copyright 1997 - 1999  Ivar,
                              Gary Henderson,
@@ -117,32 +107,10 @@
   Sound emulator code used in 1.52+
   (c) Copyright 2004 - 2007  Shay Green (gblargg@gmail.com)
 
-  SH assembler code partly based on x86 assembler code
-  (c) Copyright 2002 - 2004  Marcus Comstedt (marcus@mc.pp.se)
-
-  2xSaI filter
-  (c) Copyright 1999 - 2001  Derek Liauw Kie Fa
-
-  HQ2x, HQ3x, HQ4x filters
-  (c) Copyright 2003         Maxim Stepin (maxim@hiend3d.com)
-
   NTSC filter
   (c) Copyright 2006 - 2007  Shay Green
 
-  GTK+ GUI code
-  (c) Copyright 2004 - 2010  BearOso
-
-  Win32 GUI code
-  (c) Copyright 2003 - 2006  blip,
-                             funkyass,
-                             Matthew Kendora,
-                             Nach,
-                             nitsuja
   (c) Copyright 2009 - 2010  OV2
-
-  Mac OS GUI code
-  (c) Copyright 1998 - 2001  John Stiles
-  (c) Copyright 2001 - 2010  zones
 
   (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE 
   WILL COMMERCIAL RIGHTS EVER BE APPROPRIATED TO ANY PARTY)
@@ -184,13 +152,13 @@
 
 struct FxInfo_s
 {
-	uint32_t	vFlags;
+	uint32_t vFlags;
 	uint8_t	*pvRegisters;	/* 768 bytes located in the memory at address 0x3000 */
-	uint32_t	nRamBanks;	/* Number of 64kb-banks in GSU-RAM/BackupRAM (banks 0x70-0x73) */
+	uint32_t nRamBanks;	/* Number of 64kb-banks in GSU-RAM/BackupRAM (banks 0x70-0x73) */
 	uint8_t	*pvRam;		/* Pointer to GSU-RAM */
-	uint32_t	nRomBanks;	/* Number of 32kb-banks in Cart-ROM */
+	uint32_t nRomBanks;	/* Number of 32kb-banks in Cart-ROM */
 	uint8_t	*pvRom;		/* Pointer to Cart-ROM */
-	uint32_t	speedPerLine;
+	uint32_t speedPerLine;
 	uint8_t	oneLineDone;
 };
 

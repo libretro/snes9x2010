@@ -29,11 +29,6 @@
   (c) Copyright 2005 - 2006  Dreamer Nom,
                              zones
 
-  C4 x86 assembler and some C emulation code
-  (c) Copyright 2000 - 2003  _Demo_ (_demo_@zsnes.com),
-                             Nach,
-                             zsKnight (zsknight@zsnes.com)
-
   C4 C++ code
   (c) Copyright 2003 - 2006  Brad Jorsch,
                              Nach
@@ -100,11 +95,6 @@
                              Kris Bleakley,
                              Matthew Kendora
 
-  Super FX x86 assembler emulator code
-  (c) Copyright 1998 - 2003  _Demo_,
-                             pagefault,
-                             zsKnight
-
   Super FX C emulator code
   (c) Copyright 1997 - 1999  Ivar,
                              Gary Henderson,
@@ -117,32 +107,10 @@
   Sound emulator code used in 1.52+
   (c) Copyright 2004 - 2007  Shay Green (gblargg@gmail.com)
 
-  SH assembler code partly based on x86 assembler code
-  (c) Copyright 2002 - 2004  Marcus Comstedt (marcus@mc.pp.se)
-
-  2xSaI filter
-  (c) Copyright 1999 - 2001  Derek Liauw Kie Fa
-
-  HQ2x, HQ3x, HQ4x filters
-  (c) Copyright 2003         Maxim Stepin (maxim@hiend3d.com)
-
   NTSC filter
   (c) Copyright 2006 - 2007  Shay Green
 
-  GTK+ GUI code
-  (c) Copyright 2004 - 2010  BearOso
-
-  Win32 GUI code
-  (c) Copyright 2003 - 2006  blip,
-                             funkyass,
-                             Matthew Kendora,
-                             Nach,
-                             nitsuja
   (c) Copyright 2009 - 2010  OV2
-
-  Mac OS GUI code
-  (c) Copyright 1998 - 2001  John Stiles
-  (c) Copyright 2001 - 2010  zones
 
   (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE 
   WILL COMMERCIAL RIGHTS EVER BE APPROPRIATED TO ANY PARTY)
@@ -183,8 +151,50 @@
 #include "fxinst.h"
 #include "fxemu.h"
 
-/* Set this define if you wish the plot instruction to check for y-pos limits (I don't think it's nessecary)*/
-/* #define CHECK_LIMITS*/
+/* Sign extend from 8 bit to 32 bit */
+#define SEX8(a)	((int32_t)  ((int8_t)   (a)))
+/* Sign extend from 16 bit to 32 bit */
+#define FX_SEX16(a) ((int32_t)  ((int16_t)  (a)))
+
+/* Unsign extend from 8/16 bit to 32 bit */
+#define USEX8(a)		((uint32_t) ((uint8_t)  (a)))
+#define USEX16(a)		((uint32_t) ((uint16_t) (a)))
+#define SUSEX16(a)		((int32_t)  ((uint16_t) (a)))
+
+/* Clear flags */
+#define CLRFLAGS		GSU.vStatusReg &= ~(FLG_ALT1 | FLG_ALT2 | FLG_B); GSU.pvDreg = GSU.pvSreg = &R0
+
+/* Read current RAM-Bank */
+#define RAM(adr)		GSU.pvRamBank[USEX16(adr)]
+
+/* Read current ROM-Bank */
+#define ROM(idx)		GSU.pvRomBank[USEX16(idx)]
+
+/* Access source register */
+#define SREG			(*GSU.pvSreg)
+
+/* Access destination register */
+#define DREG			(*GSU.pvDreg)
+
+
+/* Test flag */
+#define TF(a)			(GSU.vStatusReg &   FLG_##a)
+#define CF(a)			(GSU.vStatusReg &= ~FLG_##a)
+#define SF(a)			(GSU.vStatusReg |=  FLG_##a)
+
+/* Testing ALT1 & ALT2 bits */
+#define ALT1			( TF(ALT1) && !TF(ALT2))
+#define ALT2			(!TF(ALT1) &&  TF(ALT2))
+#define ALT3			( TF(ALT1) &&  TF(ALT2))
+
+/* Access the current value in the pipe */
+#define PIPE			GSU.vPipe
+
+/* Update pipe from ROM */
+#define FETCHPIPE		{ GSU.vPipe = PRGBANK(R15); }
+
+/* Access data in the current program bank */
+#define PRGBANK(idx)	GSU.pvPrgBank[USEX16(idx)]
 
 /*
  Codes used:
@@ -869,11 +879,6 @@ static void fx_plot_2bit (void)
 	CLRFLAGS;
 	R1++;
 
-#ifdef CHECK_LIMITS
-	if (y >= GSU.vScreenHeight)
-		return;
-#endif
-
 	if (!(GSU.vPlotOptionReg & 0x01) && !(COLR & 0xf))
 		return;
 
@@ -906,11 +911,6 @@ static void fx_rpix_2bit (void)
 	R15++;
 	CLRFLAGS;
 
-#ifdef CHECK_LIMITS
-	if (y >= GSU.vScreenHeight)
-		return;
-#endif
-
 	a = GSU.apvScreen[y >> 3] + GSU.x[x >> 3] + ((y & 7) << 1);
 	v = 128 >> (x & 7);
 
@@ -930,11 +930,6 @@ static void fx_plot_4bit (void)
 	R15++;
 	CLRFLAGS;
 	R1++;
-
-#ifdef CHECK_LIMITS
-	if (y >= GSU.vScreenHeight)
-		return;
-#endif
 
 	if (!(GSU.vPlotOptionReg & 0x01) && !(COLR & 0xf))
 		return;
@@ -979,11 +974,6 @@ static void fx_rpix_4bit (void)
 	R15++;
 	CLRFLAGS;
 
-#ifdef CHECK_LIMITS
-	if (y >= GSU.vScreenHeight)
-		return;
-#endif
-
 	a = GSU.apvScreen[y >> 3] + GSU.x[x >> 3] + ((y & 7) << 1);
 	v = 128 >> (x & 7);
 
@@ -1006,11 +996,6 @@ static void fx_plot_8bit (void)
 	R15++;
 	CLRFLAGS;
 	R1++;
-
-#ifdef CHECK_LIMITS
-	if (y >= GSU.vScreenHeight)
-		return;
-#endif
 
 	c = (uint8_t) GSU.vColorReg;
 	if (!(GSU.vPlotOptionReg & 0x10))
@@ -1071,15 +1056,10 @@ static void fx_rpix_8bit (void)
 {
 	uint32_t x = USEX8(R1);
 	uint32_t y = USEX8(R2);
-   uint8_t *a, v;
+	uint8_t *a, v;
 
 	R15++;
 	CLRFLAGS;
-
-#ifdef CHECK_LIMITS
-	if (y >= GSU.vScreenHeight)
-		return;
-#endif
 
 	a = GSU.apvScreen[y >> 3] + GSU.x[x >> 3] + ((y & 7) << 1);
 	v = 128 >> (x & 7);

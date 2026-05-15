@@ -29,11 +29,6 @@
   (c) Copyright 2005 - 2006  Dreamer Nom,
                              zones
 
-  C4 x86 assembler and some C emulation code
-  (c) Copyright 2000 - 2003  _Demo_ (_demo_@zsnes.com),
-                             Nach,
-                             zsKnight (zsknight@zsnes.com)
-
   C4 C++ code
   (c) Copyright 2003 - 2006  Brad Jorsch,
                              Nach
@@ -100,11 +95,6 @@
                              Kris Bleakley,
                              Matthew Kendora
 
-  Super FX x86 assembler emulator code
-  (c) Copyright 1998 - 2003  _Demo_,
-                             pagefault,
-                             zsKnight
-
   Super FX C emulator code
   (c) Copyright 1997 - 1999  Ivar,
                              Gary Henderson,
@@ -117,32 +107,10 @@
   Sound emulator code used in 1.52+
   (c) Copyright 2004 - 2007  Shay Green (gblargg@gmail.com)
 
-  SH assembler code partly based on x86 assembler code
-  (c) Copyright 2002 - 2004  Marcus Comstedt (marcus@mc.pp.se)
-
-  2xSaI filter
-  (c) Copyright 1999 - 2001  Derek Liauw Kie Fa
-
-  HQ2x, HQ3x, HQ4x filters
-  (c) Copyright 2003         Maxim Stepin (maxim@hiend3d.com)
-
   NTSC filter
   (c) Copyright 2006 - 2007  Shay Green
 
-  GTK+ GUI code
-  (c) Copyright 2004 - 2010  BearOso
-
-  Win32 GUI code
-  (c) Copyright 2003 - 2006  blip,
-                             funkyass,
-                             Matthew Kendora,
-                             Nach,
-                             nitsuja
   (c) Copyright 2009 - 2010  OV2
-
-  Mac OS GUI code
-  (c) Copyright 1998 - 2001  John Stiles
-  (c) Copyright 2001 - 2010  zones
 
   (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE 
   WILL COMMERCIAL RIGHTS EVER BE APPROPRIATED TO ANY PARTY)
@@ -298,15 +266,56 @@
  *
  */
 
+/* GSU registers */
+#define GSU_R0			0x000
+#define GSU_R1			0x002
+#define GSU_R2			0x004
+#define GSU_R3			0x006
+#define GSU_R4			0x008
+#define GSU_R5			0x00a
+#define GSU_R6			0x00c
+#define GSU_R7			0x00e
+#define GSU_R8			0x010
+#define GSU_R9			0x012
+#define GSU_R10			0x014
+#define GSU_R11			0x016
+#define GSU_R12			0x018
+#define GSU_R13			0x01a
+#define GSU_R14			0x01c
+#define GSU_R15			0x01e
+#define GSU_SFR			0x030
+#define GSU_BRAMR		0x033
+#define GSU_PBR			0x034
+#define GSU_ROMBR		0x036
+#define GSU_CFGR		0x037
+#define GSU_SCBR		0x038
+#define GSU_CLSR		0x039
+#define GSU_SCMR		0x03a
+#define GSU_VCR			0x03b
+#define GSU_RAMBR		0x03c
+#define GSU_CBR			0x03e
+#define GSU_CACHERAM		0x100
+
+/* SFR flags */
+#define FLG_Z			2
+#define FLG_CY			4
+#define FLG_S			8
+#define FLG_OV			16
+#define FLG_G			32
+#define FLG_R			64
+#define FLG_ALT1		256
+#define FLG_ALT2		512
+#define FLG_IL			1024
+#define FLG_IH			2048
+#define FLG_B			4096
+#define FLG_IRQ			32768
+
 /* Number of banks in GSU RAM */
 #define FX_RAM_BANKS	4
 
 /* Emulate proper R14 ROM access (slower, but safer)
    Without this, Doom has garbled graphics */
 #define FX_DO_ROMBUFFER
-
-/* Address checking (definately slow) */
-/* #define FX_ADDRESS_CHECK */
 
 struct FxRegs_s
 {
@@ -376,119 +385,16 @@ struct FxRegs_s
 
 extern struct FxRegs_s	GSU;
 
-/* GSU registers */
-#define GSU_R0			0x000
-#define GSU_R1			0x002
-#define GSU_R2			0x004
-#define GSU_R3			0x006
-#define GSU_R4			0x008
-#define GSU_R5			0x00a
-#define GSU_R6			0x00c
-#define GSU_R7			0x00e
-#define GSU_R8			0x010
-#define GSU_R9			0x012
-#define GSU_R10			0x014
-#define GSU_R11			0x016
-#define GSU_R12			0x018
-#define GSU_R13			0x01a
-#define GSU_R14			0x01c
-#define GSU_R15			0x01e
-#define GSU_SFR			0x030
-#define GSU_BRAMR		0x033
-#define GSU_PBR			0x034
-#define GSU_ROMBR		0x036
-#define GSU_CFGR		0x037
-#define GSU_SCBR		0x038
-#define GSU_CLSR		0x039
-#define GSU_SCMR		0x03a
-#define GSU_VCR			0x03b
-#define GSU_RAMBR		0x03c
-#define GSU_CBR			0x03e
-#define GSU_CACHERAM		0x100
-
-/* SFR flags */
-#define FLG_Z			2
-#define FLG_CY			4
-#define FLG_S			8
-#define FLG_OV			16
-#define FLG_G			32
-#define FLG_R			64
-#define FLG_ALT1		256
-#define FLG_ALT2		512
-#define FLG_IL			1024
-#define FLG_IH			2048
-#define FLG_B			4096
-#define FLG_IRQ			32768
-
-/* Test flag */
-#define TF(a)			(GSU.vStatusReg &   FLG_##a)
-#define CF(a)			(GSU.vStatusReg &= ~FLG_##a)
-#define SF(a)			(GSU.vStatusReg |=  FLG_##a)
-
-/* Test and set flag if condition, clear if not */
-#define TS(a, b)		GSU.vStatusReg = ((GSU.vStatusReg & (~FLG_##a)) | ((!!(##b)) * FLG_##a))
-
-/* Testing ALT1 & ALT2 bits */
-#define ALT0			(!TF(ALT1) && !TF(ALT2))
-#define ALT1			( TF(ALT1) && !TF(ALT2))
-#define ALT2			(!TF(ALT1) &&  TF(ALT2))
-#define ALT3			( TF(ALT1) &&  TF(ALT2))
-
-/* Sign extend from 8/16 bit to 32 bit */
-#define SEX8(a)			((int32_t)  ((int8_t)   (a)))
-#define FX_SEX16(a)		((int32_t)  ((int16_t)  (a)))
-
-/* Unsign extend from 8/16 bit to 32 bit */
-#define USEX8(a)		((uint32_t) ((uint8_t)  (a)))
-#define USEX16(a)		((uint32_t) ((uint16_t) (a)))
-#define SUSEX16(a)		((int32_t)  ((uint16_t) (a)))
-
-/* Set/Clr Sign and Zero flag */
-#define TSZ(num)		TS(S, ((num) & 0x8000)); TS(Z, (!USEX16(num)))
-
-/* Clear flags */
-#define CLRFLAGS		GSU.vStatusReg &= ~(FLG_ALT1 | FLG_ALT2 | FLG_B); GSU.pvDreg = GSU.pvSreg = &R0
-
-/* Read current RAM-Bank */
-#define RAM(adr)		GSU.pvRamBank[USEX16(adr)]
-
-/* Read current ROM-Bank */
-#define ROM(idx)		GSU.pvRomBank[USEX16(idx)]
-
-/* Access the current value in the pipe */
-#define PIPE			GSU.vPipe
-
-/* Access data in the current program bank */
-#define PRGBANK(idx)	GSU.pvPrgBank[USEX16(idx)]
-
-/* Update pipe from ROM */
-#define FETCHPIPE		{ PIPE = PRGBANK(R15); }
-
-/* ABS */
-#define ABS(x)			((x) < 0 ? -(x) : (x))
-
-/* Access source register */
-#define SREG			(*GSU.pvSreg)
-
-/* Access destination register */
-#define DREG			(*GSU.pvDreg)
-
-#ifndef FX_DO_ROMBUFFER
-
-/* Don't read R14 */
-#define READR14
-
-/* Don't test and/or read R14 */
-#define TESTR14
-
-#else
-
+#ifdef FX_DO_ROMBUFFER
 /* Read R14 */
 #define READR14			GSU.vRomBuffer = ROM(R14)
-
 /* Test and/or read R14 */
 #define TESTR14			if (GSU.pvDreg == &R14) READR14
-
+#else
+/* Don't read R14 */
+#define READR14
+/* Don't test and/or read R14 */
+#define TESTR14
 #endif
 
 /* Access to registers */
