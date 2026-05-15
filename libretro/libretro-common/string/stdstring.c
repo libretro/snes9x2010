@@ -132,7 +132,7 @@ char *string_replace_substring(const char *in,
       inat += pattern_len;
       inprev = inat;
    }
-   strcpy(outat, inprev);
+   strlcpy(outat, inprev, outlen + 1);
 
    return out;
 }
@@ -203,7 +203,7 @@ void word_wrap(char *dst, size_t dst_size, const char *src, int line_width, int 
     * than line width */
    if (src_len < line_width)
    {
-      strcpy(dst, src);
+      strlcpy(dst, src, dst_size);
       return;
    }
 
@@ -227,7 +227,7 @@ void word_wrap(char *dst, size_t dst_size, const char *src, int line_width, int 
           * length is less than line width */
          if (src_end - src <= line_width)
          {
-            strcpy(dst, src);
+            strlcpy(dst, src, dst_size);
             return;
          }
      }
@@ -254,7 +254,7 @@ void word_wrap(char *dst, size_t dst_size, const char *src, int line_width, int 
              * length is less than line width */
             if (src_end - src < line_width)
             {
-               strcpy(dst, src);
+               strlcpy(dst, src, dst_size);
                return;
             }
          }
@@ -435,7 +435,7 @@ char* string_tokenize(char **str, const char *delim)
       token_len = strlen(str_ptr);
 
    /* Allocate token string */
-   token = (char *)malloc((token_len + 1) * sizeof(char));
+   token = (char *)malloc(token_len + 1);
 
    if (!token)
       return NULL;
