@@ -197,23 +197,38 @@
 #include "ppu.h"
 #include "tile.h"
 
-static INLINE uint16_t COLOR_SUB (uint16_t C1, uint16_t C2)
-{
-	uint16_t	v   = ALPHA_BITS_MASK;
-	uint16_t	mC1 = C1 & FIRST_COLOR_MASK;
-	uint16_t	mC2 = C2 & FIRST_COLOR_MASK;
-	if (mC1 > mC2) v += (mC1 - mC2);
-
-	mC1 = C1 & SECOND_COLOR_MASK;
-	mC2 = C2 & SECOND_COLOR_MASK;
-	if (mC1 > mC2) v += (mC1 - mC2);
-
-	mC1 = C1 & THIRD_COLOR_MASK;
-	mC2 = C2 & THIRD_COLOR_MASK;
-	if (mC1 > mC2) v += (mC1 - mC2);
-
-	return (v);
-}
+/* Per-channel saturating RGB subtraction used by the PPU
+ * subtractive-color-math path (translucent windows, fade-out
+ * effects, half-intensity sub-screen blends). Same shape as the
+ * sibling COLOR_ADD / COLOR_ADD1_2 / COLOR_SUB1_2 macros in ppu.h
+ * — those are simple per-channel expressions and were already
+ * macros; this one needs per-channel control flow (saturate at 0
+ * if subtrahend > minuend) so it was previously a static INLINE
+ * function and got skipped by GCC's inliner at 74 of its call
+ * sites in the per-pixel blending loops.
+ *
+ * Folded to a statement-expression macro for the same reason as
+ * memory_speed, spc_cpu_read, m7hr_blend_smooth and the rest of
+ * the series: the inliner cost model is unreliable; reach for
+ * the preprocessor when force-inlining is what we actually want.
+ * C1 and C2 are captured into locals once for multi-evaluation
+ * safety. */
+#define COLOR_SUB(C1, C2) __extension__ ({ \
+	uint16_t _csub_c1 = (C1); \
+	uint16_t _csub_c2 = (C2); \
+	uint16_t _csub_v  = ALPHA_BITS_MASK; \
+	uint16_t _csub_m1, _csub_m2; \
+	_csub_m1 = _csub_c1 & FIRST_COLOR_MASK; \
+	_csub_m2 = _csub_c2 & FIRST_COLOR_MASK; \
+	if (_csub_m1 > _csub_m2) _csub_v += (_csub_m1 - _csub_m2); \
+	_csub_m1 = _csub_c1 & SECOND_COLOR_MASK; \
+	_csub_m2 = _csub_c2 & SECOND_COLOR_MASK; \
+	if (_csub_m1 > _csub_m2) _csub_v += (_csub_m1 - _csub_m2); \
+	_csub_m1 = _csub_c1 & THIRD_COLOR_MASK; \
+	_csub_m2 = _csub_c2 & THIRD_COLOR_MASK; \
+	if (_csub_m1 > _csub_m2) _csub_v += (_csub_m1 - _csub_m2); \
+	_csub_v; \
+})
 
 static uint16_t	DirectColourMaps[8][256];
 static const uint16_t BlackColourMap[256] = {0};
