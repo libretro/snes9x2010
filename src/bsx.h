@@ -182,30 +182,30 @@
 
 struct SBSX
 {
-	bool8	dirty;		/* Changed register values */
-	bool8	dirty2;		/* Changed register values */
-	bool8	bootup;		/* Start in bios mapping */
-	bool8	flash_enable;	/* Flash state */
-	bool8	write_enable;	/* ROM write protection */
-	bool8	read_enable;	/* Allow card vendor reading */
-	uint32	flash_command;	/* Flash command */
-	uint32	old_write;	/* Previous flash write address */
-	uint32	new_write;	/* Current flash write address */
-	uint8	out_index;
-	uint8	output[32];
-	uint8	PPU[32];
-	uint8	MMC[16];
-	uint8	prevMMC[16];
-	uint8	test2192[32];
+	uint8_t	dirty;		/* Changed register values */
+	uint8_t	dirty2;		/* Changed register values */
+	uint8_t	bootup;		/* Start in bios mapping */
+	uint8_t	flash_enable;	/* Flash state */
+	uint8_t	write_enable;	/* ROM write protection */
+	uint8_t	read_enable;	/* Allow card vendor reading */
+	uint32_t	flash_command;	/* Flash command */
+	uint32_t	old_write;	/* Previous flash write address */
+	uint32_t	new_write;	/* Current flash write address */
+	uint8_t	out_index;
+	uint8_t	output[32];
+	uint8_t	PPU[32];
+	uint8_t	MMC[16];
+	uint8_t	prevMMC[16];
+	uint8_t	test2192[32];
 };
 
 extern struct SBSX	BSX;
 
-uint8 S9xGetBSX (uint32);
-void S9xSetBSX (uint8, uint32);
-uint8 S9xGetBSXPPU (uint16);
-void S9xSetBSXPPU (uint8, uint16);
-uint8 * S9xGetBasePointerBSX (uint32);
+uint8_t S9xGetBSX (uint32_t);
+void S9xSetBSX (uint8_t, uint32_t);
+uint8_t S9xGetBSXPPU (uint16_t);
+void S9xSetBSXPPU (uint8_t, uint16_t);
+uint8_t * S9xGetBasePointerBSX (uint32_t);
 void S9xInitBSX (void);
 void S9xResetBSX (void);
 void S9xBSXPostLoadState (void);

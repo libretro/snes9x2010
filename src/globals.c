@@ -221,10 +221,10 @@ struct FxRegs_s			GSU;
 struct FxInfo_s			SuperFX;
 CMemory				Memory;
 
-uint8	OpenBus = 0;
-uint8	*HDMAMemPointers[8];
+uint8_t	OpenBus = 0;
+uint8_t	*HDMAMemPointers[8];
 
-const uint8 mul_brightness[16][32] =
+const uint8_t mul_brightness[16][32] =
 {
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
@@ -260,7 +260,7 @@ const uint8 mul_brightness[16][32] =
 	  0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f }
 };
 
-const uint8 S9xOpLengthsM0X0[256] =
+const uint8_t S9xOpLengthsM0X0[256] =
 {
 /*  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F*/
 	2, 2, 2, 2, 2, 2, 2, 2, 1, 3, 1, 1, 3, 3, 3, 4, /* 0*/
@@ -281,7 +281,7 @@ const uint8 S9xOpLengthsM0X0[256] =
 	2, 2, 2, 2, 3, 2, 2, 2, 1, 3, 1, 1, 3, 3, 3, 4  /* F*/
 };
 
-const uint8 S9xOpLengthsM0X1[256] =
+const uint8_t S9xOpLengthsM0X1[256] =
 {
 /*  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F*/
 	2, 2, 2, 2, 2, 2, 2, 2, 1, 3, 1, 1, 3, 3, 3, 4, /* 0*/
@@ -302,7 +302,7 @@ const uint8 S9xOpLengthsM0X1[256] =
 	2, 2, 2, 2, 3, 2, 2, 2, 1, 3, 1, 1, 3, 3, 3, 4  /* F*/
 };
 
-const uint8 S9xOpLengthsM1X0[256] =
+const uint8_t S9xOpLengthsM1X0[256] =
 {
 /*  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F*/
 	2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 1, 3, 3, 3, 4, /* 0*/
@@ -323,7 +323,7 @@ const uint8 S9xOpLengthsM1X0[256] =
 	2, 2, 2, 2, 3, 2, 2, 2, 1, 3, 1, 1, 3, 3, 3, 4  /* F*/
 };
 
-const uint8 S9xOpLengthsM1X1[256] =
+const uint8_t S9xOpLengthsM1X1[256] =
 {
 	/*  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
 	2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 1, 1, 3, 3, 3, 4, /* 0*/

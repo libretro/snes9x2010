@@ -192,14 +192,14 @@ struct SOpcodes
 struct SICPU
 {
 	struct SOpcodes	*S9xOpcodes;
-	const uint8	*S9xOpLengths;
-	uint8	_Carry;
-	uint8	_Zero;
-	uint8	_Negative;
-	uint8	_Overflow;
-	uint32	ShiftedPB;
-	uint32	ShiftedDB;
-	uint32	Frame;
+	const uint8_t	*S9xOpLengths;
+	uint8_t	_Carry;
+	uint8_t	_Zero;
+	uint8_t	_Negative;
+	uint8_t	_Overflow;
+	uint32_t	ShiftedPB;
+	uint32_t	ShiftedDB;
+	uint32_t	Frame;
 };
 
 extern struct SICPU		ICPU;
@@ -210,10 +210,10 @@ extern struct SOpcodes	S9xOpcodesM1X0[256];
 extern struct SOpcodes	S9xOpcodesM0X1[256];
 extern struct SOpcodes	S9xOpcodesM0X0[256];
 extern struct SOpcodes	S9xOpcodesSlow[256];
-extern const uint8 S9xOpLengthsM1X1[256];
-extern const uint8 S9xOpLengthsM1X0[256];
-extern const uint8 S9xOpLengthsM0X1[256];
-extern const uint8 S9xOpLengthsM0X0[256];
+extern const uint8_t S9xOpLengthsM1X1[256];
+extern const uint8_t S9xOpLengthsM1X0[256];
+extern const uint8_t S9xOpLengthsM0X1[256];
+extern const uint8_t S9xOpLengthsM0X0[256];
 
 void S9xMainLoop (void);
 void S9xReset (void);

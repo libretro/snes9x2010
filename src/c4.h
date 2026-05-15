@@ -180,10 +180,10 @@
 #define _C4_H_
 
 void S9xInitC4 (void);
-void S9xSetC4 (uint8, uint16);
-uint8 S9xGetC4 (uint16);
+void S9xSetC4 (uint8_t, uint16_t);
+uint8_t S9xGetC4 (uint16_t);
 
-uint8 * S9xGetBasePointerC4 (uint16);
-uint8 * S9xGetMemPointerC4 (uint16);
+uint8_t * S9xGetBasePointerC4 (uint16_t);
+uint8_t * S9xGetMemPointerC4 (uint16_t);
 
 #endif

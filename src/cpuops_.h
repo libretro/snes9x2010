@@ -473,35 +473,35 @@ rOPM (3CSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, BIT)
 
 static void OpC9M1 (void)
 {
-	int16 Int16;
+	int16_t Int16;
 
-	Int16 = (int16) Registers.AL - (int16) Immediate8(READ);
+	Int16 = (int16_t) Registers.AL - (int16_t) Immediate8(READ);
 	ICPU._Carry = Int16 >= 0;
-	SetZN8((uint8) Int16);
+	SetZN8((uint8_t) Int16);
 }
 
 static void OpC9M0 (void)
 {
-	int32 Int32;
+	int32_t Int32;
 
-	Int32 = (int32) Registers.A.W - (int32) Immediate16(READ);
+	Int32 = (int32_t) Registers.A.W - (int32_t) Immediate16(READ);
 	ICPU._Carry = Int32 >= 0;
-	SetZN16((uint16) Int32);
+	SetZN16((uint16_t) Int32);
 }
 
 static void OpC9Slow (void)
 {
 	if (CheckMemory())
 	{
-		int16	Int16 = (int16) Registers.AL - (int16) Immediate8Slow(READ);
+		int16_t	Int16 = (int16_t) Registers.AL - (int16_t) Immediate8Slow(READ);
 		ICPU._Carry = Int16 >= 0;
-		SetZN8((uint8) Int16);
+		SetZN8((uint8_t) Int16);
 	}
 	else
 	{
-		int32	Int32 = (int32) Registers.A.W - (int32) Immediate16Slow(READ);
+		int32_t	Int32 = (int32_t) Registers.A.W - (int32_t) Immediate16Slow(READ);
 		ICPU._Carry = Int32 >= 0;
-		SetZN16((uint16) Int32);
+		SetZN16((uint16_t) Int32);
 	}
 }
 
@@ -575,31 +575,31 @@ rOPM (D3Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, CMP)
 
 static void OpE0X1 (void)
 {
-	int16	Int16 = (int16) Registers.XL - (int16) Immediate8(READ);
+	int16_t	Int16 = (int16_t) Registers.XL - (int16_t) Immediate8(READ);
 	ICPU._Carry = Int16 >= 0;
-	SetZN8((uint8) Int16);
+	SetZN8((uint8_t) Int16);
 }
 
 static void OpE0X0 (void)
 {
-	int32	Int32 = (int32) Registers.X.W - (int32) Immediate16(READ);
+	int32_t	Int32 = (int32_t) Registers.X.W - (int32_t) Immediate16(READ);
 	ICPU._Carry = Int32 >= 0;
-	SetZN16((uint16) Int32);
+	SetZN16((uint16_t) Int32);
 }
 
 static void OpE0Slow (void)
 {
 	if (CheckIndex())
 	{
-		int16	Int16 = (int16) Registers.XL - (int16) Immediate8Slow(READ);
+		int16_t	Int16 = (int16_t) Registers.XL - (int16_t) Immediate8Slow(READ);
 		ICPU._Carry = Int16 >= 0;
-		SetZN8((uint8) Int16);
+		SetZN8((uint8_t) Int16);
 	}
 	else
 	{
-		int32	Int32 = (int32) Registers.X.W - (int32) Immediate16Slow(READ);
+		int32_t	Int32 = (int32_t) Registers.X.W - (int32_t) Immediate16Slow(READ);
 		ICPU._Carry = Int32 >= 0;
-		SetZN16((uint16) Int32);
+		SetZN16((uint16_t) Int32);
 	}
 }
 
@@ -615,31 +615,31 @@ rOPX (ECSlow,   AbsoluteSlow,                     WRAP_NONE, CPX)
 
 static void OpC0X1 (void)
 {
-	int16	Int16 = (int16) Registers.YL - (int16) Immediate8(READ);
+	int16_t	Int16 = (int16_t) Registers.YL - (int16_t) Immediate8(READ);
 	ICPU._Carry = Int16 >= 0;
-	SetZN8((uint8) Int16);
+	SetZN8((uint8_t) Int16);
 }
 
 static void OpC0X0 (void)
 {
-	int32	Int32 = (int32) Registers.Y.W - (int32) Immediate16(READ);
+	int32_t	Int32 = (int32_t) Registers.Y.W - (int32_t) Immediate16(READ);
 	ICPU._Carry = Int32 >= 0;
-	SetZN16((uint16) Int32);
+	SetZN16((uint16_t) Int32);
 }
 
 static void OpC0Slow (void)
 {
 	if (CheckIndex())
 	{
-		int16	Int16 = (int16) Registers.YL - (int16) Immediate8Slow(READ);
+		int16_t	Int16 = (int16_t) Registers.YL - (int16_t) Immediate8Slow(READ);
 		ICPU._Carry = Int16 >= 0;
-		SetZN8((uint8) Int16);
+		SetZN8((uint8_t) Int16);
 	}
 	else
 	{
-		int32	Int32 = (int32) Registers.Y.W - (int32) Immediate16Slow(READ);
+		int32_t	Int32 = (int32_t) Registers.Y.W - (int32_t) Immediate16Slow(READ);
 		ICPU._Carry = Int32 >= 0;
-		SetZN16((uint16) Int32);
+		SetZN16((uint16_t) Int32);
 	}
 }
 
@@ -1184,21 +1184,21 @@ rOPM (13Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, ORA)
 
 static void Op2AM1 (void)
 {
-	uint16 w;
+	uint16_t w;
 	AddCycles(ONE_CYCLE);
-	w = (((uint16) Registers.AL) << 1) | CheckCarry();
+	w = (((uint16_t) Registers.AL) << 1) | CheckCarry();
 	ICPU._Carry = w >= 0x100;
-	Registers.AL = (uint8) w;
+	Registers.AL = (uint8_t) w;
 	SetZN8(Registers.AL);
 }
 
 static void Op2AM0 (void)
 {
-	uint32 w;
+	uint32_t w;
 	AddCycles(ONE_CYCLE);
-	w = (((uint32) Registers.A.W) << 1) | CheckCarry();
+	w = (((uint32_t) Registers.A.W) << 1) | CheckCarry();
 	ICPU._Carry = w >= 0x10000;
-	Registers.A.W = (uint16) w;
+	Registers.A.W = (uint16_t) w;
 	SetZN16(Registers.A.W);
 }
 
@@ -1208,16 +1208,16 @@ static void Op2ASlow (void)
 
 	if (CheckMemory())
 	{
-		uint16	w = (((uint16) Registers.AL) << 1) | CheckCarry();
+		uint16_t	w = (((uint16_t) Registers.AL) << 1) | CheckCarry();
 		ICPU._Carry = w >= 0x100;
-		Registers.AL = (uint8) w;
+		Registers.AL = (uint8_t) w;
 		SetZN8(Registers.AL);
 	}
 	else
 	{
-		uint32	w = (((uint32) Registers.A.W) << 1) | CheckCarry();
+		uint32_t	w = (((uint32_t) Registers.A.W) << 1) | CheckCarry();
 		ICPU._Carry = w >= 0x10000;
-		Registers.A.W = (uint16) w;
+		Registers.A.W = (uint16_t) w;
 		SetZN16(Registers.A.W);
 	}
 }
@@ -1245,23 +1245,23 @@ mOPM (3ESlow,   AbsoluteIndexedXSlow,             WRAP_NONE, ROL)
 
 static void Op6AM1 (void)
 {
-	uint16 w;
+	uint16_t w;
 	AddCycles(ONE_CYCLE);
-	w = ((uint16) Registers.AL) | (((uint16) CheckCarry()) << 8);
+	w = ((uint16_t) Registers.AL) | (((uint16_t) CheckCarry()) << 8);
 	ICPU._Carry = w & 1;
 	w >>= 1;
-	Registers.AL = (uint8) w;
+	Registers.AL = (uint8_t) w;
 	SetZN8(Registers.AL);
 }
 
 static void Op6AM0 (void)
 {
-	uint32 w;
+	uint32_t w;
 	AddCycles(ONE_CYCLE);
-	w = ((uint32) Registers.A.W) | (((uint32) CheckCarry()) << 16);
+	w = ((uint32_t) Registers.A.W) | (((uint32_t) CheckCarry()) << 16);
 	ICPU._Carry = w & 1;
 	w >>= 1;
-	Registers.A.W = (uint16) w;
+	Registers.A.W = (uint16_t) w;
 	SetZN16(Registers.A.W);
 }
 
@@ -1271,18 +1271,18 @@ static void Op6ASlow (void)
 
 	if (CheckMemory())
 	{
-		uint16	w = ((uint16) Registers.AL) | (((uint16) CheckCarry()) << 8);
+		uint16_t	w = ((uint16_t) Registers.AL) | (((uint16_t) CheckCarry()) << 8);
 		ICPU._Carry = w & 1;
 		w >>= 1;
-		Registers.AL = (uint8) w;
+		Registers.AL = (uint8_t) w;
 		SetZN8(Registers.AL);
 	}
 	else
 	{
-		uint32	w = ((uint32) Registers.A.W) | (((uint32) CheckCarry()) << 16);
+		uint32_t	w = ((uint32_t) Registers.A.W) | (((uint32_t) CheckCarry()) << 16);
 		ICPU._Carry = w & 1;
 		w >>= 1;
-		Registers.A.W = (uint16) w;
+		Registers.A.W = (uint16_t) w;
 		SetZN16(Registers.A.W);
 	}
 }
@@ -1792,7 +1792,7 @@ static void OpEA (void)
 /* PEA*/
 static void OpF4E0 (void)
 {
-	uint16	val = (uint16) ABSOLUTE_MACRO(NONE);
+	uint16_t	val = (uint16_t) ABSOLUTE_MACRO(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 }
@@ -1801,7 +1801,7 @@ static void OpF4E1 (void)
 {
 	/* Note: PEA is a new instruction,*/
 	/* and so doesn't respect the emu-mode stack bounds.*/
-	uint16	val = (uint16) ABSOLUTE_MACRO(NONE);
+	uint16_t	val = (uint16_t) ABSOLUTE_MACRO(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 	Registers.SH = 1;
@@ -1809,7 +1809,7 @@ static void OpF4E1 (void)
 
 static void OpF4Slow (void)
 {
-	uint16	val = (uint16) ABSOLUTESLOW_MACRO(NONE);
+	uint16_t	val = (uint16_t) ABSOLUTESLOW_MACRO(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 	if (CheckEmulation())
@@ -1819,7 +1819,7 @@ static void OpF4Slow (void)
 /* PEI*/
 static void OpD4E0 (void)
 {
-	uint16	val = (uint16) DirectIndirectE0(NONE);
+	uint16_t	val = (uint16_t) DirectIndirectE0(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 }
@@ -1828,7 +1828,7 @@ static void OpD4E1 (void)
 {
 	/* Note: PEI is a new instruction,*/
 	/* and so doesn't respect the emu-mode stack bounds.*/
-	uint16	val = (uint16) DirectIndirectE1(NONE);
+	uint16_t	val = (uint16_t) DirectIndirectE1(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 	Registers.SH = 1;
@@ -1836,7 +1836,7 @@ static void OpD4E1 (void)
 
 static void OpD4Slow (void)
 {
-	uint16	val = (uint16) DirectIndirectSlow(NONE);
+	uint16_t	val = (uint16_t) DirectIndirectSlow(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 	if (CheckEmulation())
@@ -1846,7 +1846,7 @@ static void OpD4Slow (void)
 /* PER*/
 static void Op62E0 (void)
 {
-	uint16	val = (uint16) RelativeLong(NONE);
+	uint16_t	val = (uint16_t) RelativeLong(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 }
@@ -1855,7 +1855,7 @@ static void Op62E1 (void)
 {
 	/* Note: PER is a new instruction,*/
 	/* and so doesn't respect the emu-mode stack bounds.*/
-	uint16	val = (uint16) RelativeLong(NONE);
+	uint16_t	val = (uint16_t) RelativeLong(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 	Registers.SH = 1;
@@ -1863,7 +1863,7 @@ static void Op62E1 (void)
 
 static void Op62Slow (void)
 {
-	uint16	val = (uint16) RelativeLongSlow(NONE);
+	uint16_t	val = (uint16_t) RelativeLongSlow(NONE);
 	PushW(val);
 	OpenBus = val & 0xff;
 	if (CheckEmulation())
@@ -2676,7 +2676,7 @@ static void OpBBSlow (void)
 
 static void OpFB (void)
 {
-	uint8 A1, A2;
+	uint8_t A1, A2;
 	AddCycles(ONE_CYCLE);
 
 	A1 = ICPU._Carry;
@@ -2704,7 +2704,7 @@ static void OpFB (void)
 
 static void Op00 (void)
 {
-	uint16 addr;
+	uint16_t addr;
 	AddCycles(CPU.MemSpeed);
 
 	if (!CheckEmulation())
@@ -2766,7 +2766,7 @@ void S9xOpcode_IRQ (void)
 		}
 		else
 		{
-			uint16	addr = S9xGetWord(0xFFEE, WRAP_NONE);
+			uint16_t	addr = S9xGetWord(0xFFEE, WRAP_NONE);
 			OpenBus = addr >> 8;
 			S9xSetPCBase(addr);
 		}
@@ -2794,7 +2794,7 @@ void S9xOpcode_IRQ (void)
 		}
 		else
 		{
-			uint16	addr = S9xGetWord(0xFFFE, WRAP_NONE);
+			uint16_t	addr = S9xGetWord(0xFFFE, WRAP_NONE);
 			OpenBus = addr >> 8;
 			S9xSetPCBase(addr);
 		}
@@ -2833,7 +2833,7 @@ void S9xOpcode_NMI (void)
 		}
 		else
 		{
-			uint16	addr = S9xGetWord(0xFFEA, WRAP_NONE);
+			uint16_t	addr = S9xGetWord(0xFFEA, WRAP_NONE);
 			OpenBus = addr >> 8;
 			S9xSetPCBase(addr);
 		}
@@ -2861,7 +2861,7 @@ void S9xOpcode_NMI (void)
 		}
 		else
 		{
-			uint16	addr = S9xGetWord(0xFFFA, WRAP_NONE);
+			uint16_t	addr = S9xGetWord(0xFFFA, WRAP_NONE);
 			OpenBus = addr >> 8;
 			S9xSetPCBase(addr);
 		}
@@ -2873,7 +2873,7 @@ void S9xOpcode_NMI (void)
 
 static void Op02 (void)
 {
-	uint16 addr;
+	uint16_t addr;
 	AddCycles(CPU.MemSpeed);
 
 	if (!CheckEmulation())
@@ -2930,32 +2930,32 @@ static void Op5CSlow (void)
 
 static void Op4C (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) ABSOLUTE_MACRO(JUMP)));
+	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) ABSOLUTE_MACRO(JUMP)));
 }
 
 static void Op4CSlow (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) ABSOLUTESLOW_MACRO(JUMP)));
+	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) ABSOLUTESLOW_MACRO(JUMP)));
 }
 
 static void Op6C (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteIndirect(JUMP)));
+	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndirect(JUMP)));
 }
 
 static void Op6CSlow (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteIndirectSlow(JUMP)));
+	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndirectSlow(JUMP)));
 }
 
 static void Op7C (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteIndexedIndirect(JUMP)));
+	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndexedIndirect(JUMP)));
 }
 
 static void Op7CSlow (void)
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16) AbsoluteIndexedIndirectSlow(JUMP)));
+	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndexedIndirectSlow(JUMP)));
 }
 
 /* JSL/RTL ***************************************************************** */
@@ -2964,7 +2964,7 @@ static void Op22E1 (void)
 {
 	/* Note: JSL is a new instruction,*/
 	/* and so doesn't respect the emu-mode stack bounds.*/
-	uint32	addr = AbsoluteLong(JSR);
+	uint32_t	addr = AbsoluteLong(JSR);
 	PushB(Registers.PB);
 	PushW(Registers.PCw - 1);
 	Registers.SH = 1;
@@ -2973,7 +2973,7 @@ static void Op22E1 (void)
 
 static void Op22E0 (void)
 {
-	uint32	addr = AbsoluteLong(JSR);
+	uint32_t	addr = AbsoluteLong(JSR);
 	PushB(Registers.PB);
 	PushW(Registers.PCw - 1);
 	S9xSetPCBase(addr);
@@ -2981,7 +2981,7 @@ static void Op22E0 (void)
 
 static void Op22Slow (void)
 {
-	uint32	addr = AbsoluteLongSlow(JSR);
+	uint32_t	addr = AbsoluteLongSlow(JSR);
 	PushB(Registers.PB);
 	PushW(Registers.PCw - 1);
 	if (CheckEmulation())
@@ -3025,7 +3025,7 @@ static void Op6BSlow (void)
 
 static void Op20E1 (void)
 {
-	uint16	addr = ABSOLUTE_MACRO(JSR);
+	uint16_t	addr = ABSOLUTE_MACRO(JSR);
 	AddCycles(ONE_CYCLE);
 	PushWE(Registers.PCw - 1);
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
@@ -3033,7 +3033,7 @@ static void Op20E1 (void)
 
 static void Op20E0 (void)
 {
-	uint16	addr = ABSOLUTE_MACRO(JSR);
+	uint16_t	addr = ABSOLUTE_MACRO(JSR);
 	AddCycles(ONE_CYCLE);
 	PushW(Registers.PCw - 1);
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
@@ -3041,7 +3041,7 @@ static void Op20E0 (void)
 
 static void Op20Slow (void)
 {
-	uint16	addr = ABSOLUTESLOW_MACRO(JSR);
+	uint16_t	addr = ABSOLUTESLOW_MACRO(JSR);
 
 	AddCycles(ONE_CYCLE);
 
@@ -3061,7 +3061,7 @@ static void OpFCE1 (void)
 {
 	/* Note: JSR (a,X) is a new instruction,*/
 	/* and so doesn't respect the emu-mode stack bounds.*/
-	uint16	addr = AbsoluteIndexedIndirect(JSR);
+	uint16_t	addr = AbsoluteIndexedIndirect(JSR);
 	PushW(Registers.PCw - 1);
 	Registers.SH = 1;
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
@@ -3069,14 +3069,14 @@ static void OpFCE1 (void)
 
 static void OpFCE0 (void)
 {
-	uint16	addr = AbsoluteIndexedIndirect(JSR);
+	uint16_t	addr = AbsoluteIndexedIndirect(JSR);
 	PushW(Registers.PCw - 1);
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
 }
 
 static void OpFCSlow (void)
 {
-	uint16	addr = AbsoluteIndexedIndirectSlow(JSR);
+	uint16_t	addr = AbsoluteIndexedIndirectSlow(JSR);
 	PushW(Registers.PCw - 1);
 	if (CheckEmulation())
 		Registers.SH = 1;
@@ -3123,7 +3123,7 @@ static void Op60Slow (void)
 
 static void Op54X1 (void)
 {
-	uint32	SrcBank;
+	uint32_t	SrcBank;
 
 	Registers.DB = Immediate8(NONE);
 	ICPU.ShiftedDB = Registers.DB << 16;
@@ -3142,7 +3142,7 @@ static void Op54X1 (void)
 
 static void Op54X0 (void)
 {
-	uint32	SrcBank;
+	uint32_t	SrcBank;
 
 	Registers.DB = Immediate8(NONE);
 	ICPU.ShiftedDB = Registers.DB << 16;
@@ -3161,7 +3161,7 @@ static void Op54X0 (void)
 
 static void Op54Slow (void)
 {
-	uint32	SrcBank;
+	uint32_t	SrcBank;
 
 	OpenBus = Registers.DB = Immediate8Slow(NONE);
 	ICPU.ShiftedDB = Registers.DB << 16;
@@ -3189,7 +3189,7 @@ static void Op54Slow (void)
 
 static void Op44X1 (void)
 {
-	uint32	SrcBank;
+	uint32_t	SrcBank;
 
 	Registers.DB = Immediate8(NONE);
 	ICPU.ShiftedDB = Registers.DB << 16;
@@ -3208,7 +3208,7 @@ static void Op44X1 (void)
 
 static void Op44X0 (void)
 {
-	uint32	SrcBank;
+	uint32_t	SrcBank;
 
 	Registers.DB = Immediate8(NONE);
 	ICPU.ShiftedDB = Registers.DB << 16;
@@ -3227,7 +3227,7 @@ static void Op44X0 (void)
 
 static void Op44Slow (void)
 {
-	uint32	SrcBank;
+	uint32_t	SrcBank;
 
 	OpenBus = Registers.DB = Immediate8Slow(NONE);
 	ICPU.ShiftedDB = Registers.DB << 16;
@@ -3257,7 +3257,7 @@ static void Op44Slow (void)
 
 static void OpC2 (void)
 {
-	uint8	Work8 = ~Immediate8(READ);
+	uint8_t	Work8 = ~Immediate8(READ);
 	Registers.PL &= Work8;
 	ICPU._Carry &= Work8;
 	ICPU._Overflow &= (Work8 >> 6);
@@ -3282,7 +3282,7 @@ static void OpC2 (void)
 
 static void OpC2Slow (void)
 {
-	uint8	Work8 = ~Immediate8Slow(READ);
+	uint8_t	Work8 = ~Immediate8Slow(READ);
 	Registers.PL &= Work8;
 	ICPU._Carry &= Work8;
 	ICPU._Overflow &= (Work8 >> 6);
@@ -3307,7 +3307,7 @@ static void OpC2Slow (void)
 
 static void OpE2 (void)
 {
-	uint8	Work8 = Immediate8(READ);
+	uint8_t	Work8 = Immediate8(READ);
 	Registers.PL |= Work8;
 	ICPU._Carry |= Work8 & 1;
 	ICPU._Overflow |= (Work8 >> 6) & 1;
@@ -3333,7 +3333,7 @@ static void OpE2 (void)
 
 static void OpE2Slow (void)
 {
-	uint8	Work8 = Immediate8Slow(READ);
+	uint8_t	Work8 = Immediate8Slow(READ);
 	Registers.PL |= Work8;
 	ICPU._Carry |= Work8 & 1;
 	ICPU._Overflow |= (Work8 >> 6) & 1;
@@ -3361,7 +3361,7 @@ static void OpE2Slow (void)
 
 static void OpEB (void)
 {
-	uint8	Work8 = Registers.AL;
+	uint8_t	Work8 = Registers.AL;
 	Registers.AL = Registers.AH;
 	Registers.AH = Work8;
 	SetZN8(Registers.AL);

@@ -182,17 +182,17 @@
 
 struct SOBC1
 {
-	uint16	address;
-	uint16	basePtr;
-	uint16	shift;
+	uint16_t	address;
+	uint16_t	basePtr;
+	uint16_t	shift;
 };
 
 extern struct SOBC1	OBC1;
 
-void S9xSetOBC1 (uint8, uint16);
-uint8 S9xGetOBC1 (uint16);
+void S9xSetOBC1 (uint8_t, uint16_t);
+uint8_t S9xGetOBC1 (uint16_t);
 void S9xResetOBC1 (void);
-uint8 * S9xGetBasePointerOBC1 (uint16);
-uint8 * S9xGetMemPointerOBC1 (uint16);
+uint8_t * S9xGetBasePointerOBC1 (uint16_t);
+uint8_t * S9xGetMemPointerOBC1 (uint16_t);
 
 #endif

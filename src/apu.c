@@ -1373,7 +1373,7 @@ static const signed char reg_times [256] =
         29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
         29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
 };
-static bool8 allow_time_overflow;
+static uint8_t allow_time_overflow;
 
 /* Copyright (C) 2004-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -3043,14 +3043,14 @@ void NO_OPTIMIZE spc_copy_state( unsigned char** io, dsp_copy_func_t copy )
 #define LANDING_BUFFER_FRAMES	2048
 static int16_t		landing_buffer[LANDING_BUFFER_FRAMES * 2];
 
-static int32		reference_time;
-static uint32		spc_remainder;
+static int32_t		reference_time;
+static uint32_t		spc_remainder;
 
 static int		timing_hack_denominator = TEMPO_UNIT;
 /* Set these to NTSC for now. Will change to PAL in S9xAPUTimingSetSpeedup
    if necessary on game load. */
-static uint32		ratio_numerator = APU_NUMERATOR_NTSC;
-static uint32		ratio_denominator = APU_DENOMINATOR_NTSC;
+static uint32_t		ratio_numerator = APU_NUMERATOR_NTSC;
+static uint32_t		ratio_denominator = APU_DENOMINATOR_NTSC;
 
 /***********************************************************************************
 	APU AUDIO PATH
@@ -3131,7 +3131,7 @@ void S9xInitSound (void)
 	dsp_set_output(landing_buffer, LANDING_BUFFER_FRAMES * 2);
 }
 
-bool8 S9xInitAPU (void)
+uint8_t S9xInitAPU (void)
 {
     unsigned i;
 
@@ -3206,17 +3206,17 @@ bool8 S9xInitAPU (void)
 
 /* Emulated port read at specified time */
 
-uint8 S9xAPUReadPort (int port)	{ return ((uint8) spc_run_until_(S9X_APU_GET_CLOCK(CPU.Cycles))[port]); }
+uint8_t S9xAPUReadPort (int port)	{ return ((uint8_t) spc_run_until_(S9X_APU_GET_CLOCK(CPU.Cycles))[port]); }
 
 /* Emulated port write at specified time */
 
-void S9xAPUWritePort (int port, uint8 byte)
+void S9xAPUWritePort (int port, uint8_t byte)
 {
 	spc_run_until_( S9X_APU_GET_CLOCK(CPU.Cycles) ) [0x10 + port] = byte;
 	m.ram.ram [0xF4 + port] = byte;
 }
 
-void S9xAPUSetReferenceTime (int32 cpucycles)
+void S9xAPUSetReferenceTime (int32_t cpucycles)
 {
 	reference_time = cpucycles;
 }
@@ -3228,7 +3228,7 @@ void S9xAPUExecute (void)
 	   to current cycle, but this is also the only path that advances the
 	   SPC when a game has no port traffic for many lines. The reference-
 	   time reset that follows keeps the multiply in S9X_APU_GET_CLOCK
-	   from overflowing uint32 (per-frame products would). The libretro
+	   from overflowing uint32_t (per-frame products would). The libretro
 	   driver is the sole caller path; sample drainage happens once at
 	   end-of-frame in retro_run, not from inside this function. */
 	spc_end_frame(S9X_APU_GET_CLOCK(CPU.Cycles));
@@ -3255,7 +3255,7 @@ void S9xAPUTimingSetSpeedup (int ticks)
 	ratio_denominator = ratio_denominator * timing_hack_denominator / TEMPO_UNIT;
 }
 
-void S9xAPUAllowTimeOverflow (bool8 allow)
+void S9xAPUAllowTimeOverflow (uint8_t allow)
 {
 	allow_time_overflow = allow;
 }
@@ -3278,13 +3278,13 @@ void S9xSoftResetAPU (void)
 	dsp_set_output(landing_buffer, LANDING_BUFFER_FRAMES * 2);
 }
 
-static void NO_OPTIMIZE from_apu_to_state (uint8 **buf, void *var, size_t size)
+static void NO_OPTIMIZE from_apu_to_state (uint8_t **buf, void *var, size_t size)
 {
 	memcpy(*buf, var, size);
 	*buf += size;
 }
 
-static void NO_OPTIMIZE to_apu_from_state (uint8 **buf, void *var, size_t size)
+static void NO_OPTIMIZE to_apu_from_state (uint8_t **buf, void *var, size_t size)
 {
 	memcpy(var, *buf, size);
 	*buf += size;
@@ -3293,38 +3293,38 @@ static void NO_OPTIMIZE to_apu_from_state (uint8 **buf, void *var, size_t size)
 // work around optimization bug in android GCC
 // similar to this: http://jeffq.com/blog/over-aggressive-gcc-optimization-can-cause-sigbus-crash-when-using-memcpy-with-the-android-ndk/
 #if defined(ANDROID) || defined(__QNX__)
-void __attribute__((optimize(0))) S9xAPUSaveState (uint8 *block)
+void __attribute__((optimize(0))) S9xAPUSaveState (uint8_t *block)
 #else
-void S9xAPUSaveState (uint8 *block)
+void S9xAPUSaveState (uint8_t *block)
 #endif
 {
-	uint8 *ptr = block;
+	uint8_t *ptr = block;
 
 	spc_copy_state(&ptr, from_apu_to_state);
 
 	SET_LE32(ptr, reference_time);
-	ptr += sizeof(int32);
+	ptr += sizeof(int32_t);
 	SET_LE32(ptr, spc_remainder);
-	ptr += sizeof(int32);
+	ptr += sizeof(int32_t);
 
 	//zero out the rest of the save state block
 	memset(ptr, 0, SPC_SAVE_STATE_BLOCK_SIZE - (ptr - block));
 }
 
 #if defined(ANDROID) || defined(__QNX__)
-void __attribute__((optimize(0))) S9xAPULoadState (uint8 *block)
+void __attribute__((optimize(0))) S9xAPULoadState (uint8_t *block)
 #else
-void S9xAPULoadState (uint8 *block)
+void S9xAPULoadState (uint8_t *block)
 #endif
 {
-	uint8 *ptr = block;
+	uint8_t *ptr = block;
 
 	S9xResetAPU();
 
 	spc_copy_state(&ptr, to_apu_from_state);
 
 	reference_time = GET_LE32(ptr);
-	ptr += sizeof(int32);
+	ptr += sizeof(int32_t);
 	spc_remainder = GET_LE32(ptr);
-	ptr += sizeof(int32);
+	ptr += sizeof(int32_t);
 }

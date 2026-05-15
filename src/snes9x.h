@@ -289,25 +289,25 @@ extern int one_c, slow_one_c, two_c;
 
 struct SCPUState
 {
-	int32	Cycles;
-	int32	PrevCycles;
-	int32	V_Counter;
-	uint32	Flags;
-	uint8	*PCBase;
-	bool8	IRQActive;
-	int32	IRQPending;
-	int32	MemSpeed;
-	int32	MemSpeedx2;
-	int32	FastROMSpeed;
-	bool8	InDMA;
-	bool8	InHDMA;
-	bool8	InDMAorHDMA;
-	bool8	InWRAMDMAorHDMA;
-	uint8	HDMARanInDMA;
-	int32	CurrentDMAorHDMAChannel;
-	uint8	WhichEvent;
-	int32	NextEvent;
-	bool8	WaitingForInterrupt;
+	int32_t	Cycles;
+	int32_t	PrevCycles;
+	int32_t	V_Counter;
+	uint32_t	Flags;
+	uint8_t	*PCBase;
+	uint8_t	IRQActive;
+	int32_t	IRQPending;
+	int32_t	MemSpeed;
+	int32_t	MemSpeedx2;
+	int32_t	FastROMSpeed;
+	uint8_t	InDMA;
+	uint8_t	InHDMA;
+	uint8_t	InDMAorHDMA;
+	uint8_t	InWRAMDMAorHDMA;
+	uint8_t	HDMARanInDMA;
+	int32_t	CurrentDMAorHDMAChannel;
+	uint8_t	WhichEvent;
+	int32_t	NextEvent;
+	uint8_t	WaitingForInterrupt;
 };
 
 #define HC_HBLANK_START_EVENT	1
@@ -325,83 +325,83 @@ struct SCPUState
 
 struct STimings
 {
-	int32	H_Max_Master;
-	int32	H_Max;
-	int32	V_Max_Master;
-	int32	V_Max;
-	int32	HBlankStart;
-	int32	HBlankEnd;
-	int32	HDMAInit;
-	int32	HDMAStart;
-	int32	NMITriggerPos;
-	int32	WRAMRefreshPos;
-	int32	RenderPos;
-	bool8	InterlaceField;
-	int32	DMACPUSync;	/* The cycles to synchronize DMA and CPU. Snes9x cannot emulate correctly. */
-	int32	NMIDMADelay;	/* The delay of NMI trigger after DMA transfers. Snes9x cannot emulate correctly. */
-	int32	IRQPendCount;	/* This value is just a hack, because Snes9x cannot emulate any events in an opcode. */
-	int32	APUSpeedup;
-	bool8	APUAllowTimeOverflow;
+	int32_t	H_Max_Master;
+	int32_t	H_Max;
+	int32_t	V_Max_Master;
+	int32_t	V_Max;
+	int32_t	HBlankStart;
+	int32_t	HBlankEnd;
+	int32_t	HDMAInit;
+	int32_t	HDMAStart;
+	int32_t	NMITriggerPos;
+	int32_t	WRAMRefreshPos;
+	int32_t	RenderPos;
+	uint8_t	InterlaceField;
+	int32_t	DMACPUSync;	/* The cycles to synchronize DMA and CPU. Snes9x cannot emulate correctly. */
+	int32_t	NMIDMADelay;	/* The delay of NMI trigger after DMA transfers. Snes9x cannot emulate correctly. */
+	int32_t	IRQPendCount;	/* This value is just a hack, because Snes9x cannot emulate any events in an opcode. */
+	int32_t	APUSpeedup;
+	uint8_t	APUAllowTimeOverflow;
 };
 
 struct SSettings
 {
-	bool8	SuperFX;
-	uint8	DSP;
-	bool8	SA1;
-	bool8	C4;
-	bool8	SDD1;
-	bool8	SPC7110;
-	bool8	SPC7110RTC;
-	bool8	OBC1;
-	uint8	SETA;
-	bool8	SRTC;
-	bool8	BS;
-	bool8	BSXItself;
-	bool8	BSXBootup;
+	uint8_t	SuperFX;
+	uint8_t	DSP;
+	uint8_t	SA1;
+	uint8_t	C4;
+	uint8_t	SDD1;
+	uint8_t	SPC7110;
+	uint8_t	SPC7110RTC;
+	uint8_t	OBC1;
+	uint8_t	SETA;
+	uint8_t	SRTC;
+	uint8_t	BS;
+	uint8_t	BSXItself;
+	uint8_t	BSXBootup;
 
-	bool8	ForceLoROM;
-	bool8	ForceHiROM;
-	bool8	ForceHeader;
-	bool8	ForceNoHeader;
-	bool8	ForceInterleaved;
-	bool8	ForceInterleaved2;
-	bool8	ForceInterleaveGD24;
-	bool8	ForceNotInterleaved;
-	bool8	ForcePAL;
-	bool8	ForceNTSC;
-	bool8	ApplyCheats;
-	bool8	NoPatch;
-	bool8	PAL;
-	uint32	FrameTimePAL;
-	uint32	FrameTimeNTSC;
+	uint8_t	ForceLoROM;
+	uint8_t	ForceHiROM;
+	uint8_t	ForceHeader;
+	uint8_t	ForceNoHeader;
+	uint8_t	ForceInterleaved;
+	uint8_t	ForceInterleaved2;
+	uint8_t	ForceInterleaveGD24;
+	uint8_t	ForceNotInterleaved;
+	uint8_t	ForcePAL;
+	uint8_t	ForceNTSC;
+	uint8_t	ApplyCheats;
+	uint8_t	NoPatch;
+	uint8_t	PAL;
+	uint32_t	FrameTimePAL;
+	uint32_t	FrameTimeNTSC;
 
-	uint32  SpeedhackGameID;
+	uint32_t  SpeedhackGameID;
 
-	bool8	Multi;
+	uint8_t	Multi;
 	char	CartAName[PATH_MAX + 1];
 	char	CartBName[PATH_MAX + 1];
 
-	bool8	DisableGameSpecificHacks;
-	bool8	BlockInvalidVRAMAccessMaster;
-	bool8	BlockInvalidVRAMAccess;
-	int32	HDMATimingHack;
+	uint8_t	DisableGameSpecificHacks;
+	uint8_t	BlockInvalidVRAMAccessMaster;
+	uint8_t	BlockInvalidVRAMAccess;
+	int32_t	HDMATimingHack;
 
-	uint32	Throttled;
+	uint32_t	Throttled;
 	int32_t	Crosshair;
 
-	uint32	AccessoryType;
-	int32		AccessoryAutoDetection;
-	bool8		CurrentROMisMultitapCompatible;
-	bool8		CurrentROMisMouseCompatible;
-	bool8		CurrentROMisSuperScopeCompatible;
-	bool8		CurrentROMisJustifierCompatible;
-   bool8    NormalControls;
-	bool8		SupportHiRes;
+	uint32_t	AccessoryType;
+	int32_t		AccessoryAutoDetection;
+	uint8_t		CurrentROMisMultitapCompatible;
+	uint8_t		CurrentROMisMouseCompatible;
+	uint8_t		CurrentROMisSuperScopeCompatible;
+	uint8_t		CurrentROMisJustifierCompatible;
+   uint8_t    NormalControls;
+	uint8_t		SupportHiRes;
 	/* Mode 7 hires upsample factor: 0 = off (native 256), 2 = 2x
 	   horizontal (512), 4 = 4x horizontal (1024). Buffer width is
 	   promoted accordingly when in Mode 7. */
-	int32		Mode7Hires;
+	int32_t		Mode7Hires;
 	/* Mode 7 hires vertical doubling: 0 = off, 1 = on (output buffer
 	   is 2x tall, 224 -> 448 rows). Effective only when Mode7Hires is
 	   2 or 4 AND Mode7HiresBilinear is 2 (smooth) -- the smooth
@@ -414,23 +414,23 @@ struct SSettings
 	   under M7) get duplicated to 2 output rows by the buffer
 	   promotion path, which keeps the overall layout correct at the
 	   cost of doubled-pixel HUD text. */
-	int32		Mode7HiresVertical;
+	int32_t		Mode7HiresVertical;
 	/* Mode 7 bilinear filter mode: 0 = off, 1 = stable (X-only blend
 	   with floor-Y), 2 = smooth (4-corner bilinear with a row-contrast
 	   guard that falls back to stable's blend on dissimilar row pairs,
 	   so it doesn't produce muddy averaged seams on content like Tiny
 	   Toons rainbow rings). Stable matches HD-no-BL's Y-axis sampling
 	   and only smooths X. */
-	int32		Mode7HiresBilinear;
+	int32_t		Mode7HiresBilinear;
    float    SuperFXSpeedPerLine;
-   bool8	FastSavestates;
-   bool8	HardDisableAudio;
+   uint8_t	FastSavestates;
+   uint8_t	HardDisableAudio;
 };
 
 struct SSNESGameFixes
 {
-	uint8	SRAMInitialValue;
-	uint8	Uniracers;
+	uint8_t	SRAMInitialValue;
+	uint8_t	Uniracers;
 };
 
 void S9xMessage (S9xMessagePriority p, S9xMessageCategory c, const char *msg);
@@ -441,12 +441,12 @@ extern struct STimings			Timings;
 extern struct SSNESGameFixes	SNESGameFixes;
 
 /* Use when writing to $4016. */
-extern void S9xSetJoypadLatch (bool8 latch);
+extern void S9xSetJoypadLatch (uint8_t latch);
 
 /* Use when reading $4016/7 (JOYSER0 and JOYSER1). */
-extern uint8 S9xReadJOYSERn (int n);
+extern uint8_t S9xReadJOYSERn (int n);
 
-extern bool8 pad_read;
+extern uint8_t pad_read;
 
 #ifdef __cplusplus
 }

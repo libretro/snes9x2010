@@ -186,55 +186,55 @@
 
 struct SST010
 {
-	uint8	input_params[16];
-	uint8	output_params[16];
-	uint8	op_reg;
-	uint8	execute;
-	bool8	control_enable;
+	uint8_t	input_params[16];
+	uint8_t	output_params[16];
+	uint8_t	op_reg;
+	uint8_t	execute;
+	uint8_t	control_enable;
 };
 
 struct SST011
 {
-	bool8	waiting4command;
-	uint8	status;
-	uint8	command;
-	uint32	in_count;
-	uint32	in_index;
-	uint32	out_count;
-	uint32	out_index;
-	uint8	parameters[512];
-	uint8	output[512];
+	uint8_t	waiting4command;
+	uint8_t	status;
+	uint8_t	command;
+	uint32_t	in_count;
+	uint32_t	in_index;
+	uint32_t	out_count;
+	uint32_t	out_index;
+	uint8_t	parameters[512];
+	uint8_t	output[512];
 };
 
 struct SST018
 {
-	bool8	waiting4command;
-	uint8	status;
-	uint8	part_command;
-	uint8	pass;
-	uint32	command;
-	uint32	in_count;
-	uint32	in_index;
-	uint32	out_count;
-	uint32	out_index;
-	uint8	parameters[512];
-	uint8	output[512];
+	uint8_t	waiting4command;
+	uint8_t	status;
+	uint8_t	part_command;
+	uint8_t	pass;
+	uint32_t	command;
+	uint32_t	in_count;
+	uint32_t	in_index;
+	uint32_t	out_count;
+	uint32_t	out_index;
+	uint8_t	parameters[512];
+	uint8_t	output[512];
 };
 
 extern struct SST010	ST010;
 extern struct SST011	ST011;
 extern struct SST018	ST018;
 
-uint8 S9xGetST010 (uint32 Address);
-void S9xSetST010 (uint32 Address, uint8 Byte);
-uint8 S9xGetST011 (uint32 Address);
-void S9xSetST011 (uint32 Address, uint8 Byte);
-uint8 S9xGetST018 (uint32 Address);
-void S9xSetST018 (uint8 Byte, uint32 Address);
-uint8 S9xGetSetaDSP (uint32 Address);
-void S9xSetSetaDSP (uint8 Byte, uint32 Address);
+uint8_t S9xGetST010 (uint32_t Address);
+void S9xSetST010 (uint32_t Address, uint8_t Byte);
+uint8_t S9xGetST011 (uint32_t Address);
+void S9xSetST011 (uint32_t Address, uint8_t Byte);
+uint8_t S9xGetST018 (uint32_t Address);
+void S9xSetST018 (uint8_t Byte, uint32_t Address);
+uint8_t S9xGetSetaDSP (uint32_t Address);
+void S9xSetSetaDSP (uint8_t Byte, uint32_t Address);
 
-extern uint8 (*GetSETA) (uint32 Address);
-extern void (*SetSETA) (uint32 Address, uint8 Byte);
+extern uint8_t (*GetSETA) (uint32_t Address);
+extern void (*SetSETA) (uint32_t Address, uint8_t Byte);
 
 #endif

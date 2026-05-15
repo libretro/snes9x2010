@@ -181,8 +181,8 @@
 #include "memmap.h"
 #include "getset.h"
 
-uint8	(*GetDSP) (uint16)        = NULL;
-void	(*SetDSP) (uint8, uint16) = NULL;
+uint8_t	(*GetDSP) (uint16_t)        = NULL;
+void	(*SetDSP) (uint8_t, uint16_t) = NULL;
 
 
 void S9xResetDSP (void)
@@ -201,12 +201,12 @@ void S9xResetDSP (void)
 	DSP4.waiting4command = TRUE;
 }
 
-uint8 S9xGetDSP (uint16 address)
+uint8_t S9xGetDSP (uint16_t address)
 {
 	return ((*GetDSP)(address));
 }
 
-void S9xSetDSP (uint8 byte, uint16 address)
+void S9xSetDSP (uint8_t byte, uint16_t address)
 {
 
 	(*SetDSP)(byte, address);
@@ -216,7 +216,7 @@ void S9xSetDSP (uint8 byte, uint16 address)
  DSP1
 ***********************************************************************************/
 
-static const uint16	DSP1ROM[1024] =
+static const uint16_t	DSP1ROM[1024] =
 {
 	 0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000,
 	 0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000,  0x0000,
@@ -348,7 +348,7 @@ static const uint16	DSP1ROM[1024] =
 	 0xffff,  0xffff,  0xffff,  0xffff,  0xffff,  0xffff,  0xffff,  0xffff
 };
 
-static const int16	DSP1_MulTable[256] =
+static const int16_t	DSP1_MulTable[256] =
 {
 	 0x0000,  0x0003,  0x0006,  0x0009,  0x000c,  0x000f,  0x0012,  0x0015,
 	 0x0019,  0x001c,  0x001f,  0x0022,  0x0025,  0x0028,  0x002b,  0x002f,
@@ -384,7 +384,7 @@ static const int16	DSP1_MulTable[256] =
 	 0x030b,  0x030e,  0x0311,  0x0314,  0x0317,  0x031a,  0x031d,  0x0321
 };
 
-static const int16	DSP1_SinTable[256] =
+static const int16_t	DSP1_SinTable[256] =
 {
 	 0x0000,  0x0324,  0x0647,  0x096a,  0x0c8b,  0x0fab,  0x12c8,  0x15e2,
 	 0x18f8,  0x1c0b,  0x1f19,  0x2223,  0x2528,  0x2826,  0x2b1f,  0x2e11,
@@ -434,7 +434,7 @@ static void DSP1_Op20 (void)
 
 }
 
-static void DSP1_Inverse (int16 Coefficient, int16 Exponent, int16 *iCoefficient, int16 *iExponent)
+static void DSP1_Inverse (int16_t Coefficient, int16_t Exponent, int16_t *iCoefficient, int16_t *iExponent)
 {
 	/* Step One: Division by Zero */
 	if (Coefficient == 0x0000)
@@ -444,7 +444,7 @@ static void DSP1_Inverse (int16 Coefficient, int16 Exponent, int16 *iCoefficient
 	}
 	else
 	{
-		int16	Sign = 1;
+		int16_t	Sign = 1;
 
 		/* Step Two: Remove Sign */
 		if (Coefficient < 0)
@@ -484,7 +484,7 @@ static void DSP1_Inverse (int16 Coefficient, int16 Exponent, int16 *iCoefficient
 		else
 		{
 			/* Step Five: Initial Guess*/
-			int16	i = DSP1ROM[((Coefficient - 0x4000) >> 7) + 0x0065];
+			int16_t	i = DSP1ROM[((Coefficient - 0x4000) >> 7) + 0x0065];
 
 			/* Step Six: Iterate "estimated" Newton's Method*/
 			i = (i + (-i * (Coefficient * i >> 15) >> 15)) << 1;
@@ -503,9 +503,9 @@ static void DSP1_Op10 (void)
 
 }
 
-static int16 DSP1_Sin (int16 Angle)
+static int16_t DSP1_Sin (int16_t Angle)
 {
-	int32	S;
+	int32_t	S;
 
 	if (Angle < 0)
 	{
@@ -519,12 +519,12 @@ static int16 DSP1_Sin (int16 Angle)
 	if (S > 32767)
 		S = 32767;
 
-	return ((int16) S);
+	return ((int16_t) S);
 }
 
-static int16 DSP1_Cos (int16 Angle)
+static int16_t DSP1_Cos (int16_t Angle)
 {
-	int32	S;
+	int32_t	S;
 
 	if (Angle < 0)
 	{
@@ -538,12 +538,12 @@ static int16 DSP1_Cos (int16 Angle)
 	if (S < -32768)
 		S = -32767;
 
-	return ((int16) S);
+	return ((int16_t) S);
 }
 
-static void DSP1_Normalize (int16 m, int16 *Coefficient, int16 *Exponent)
+static void DSP1_Normalize (int16_t m, int16_t *Coefficient, int16_t *Exponent)
 {
-	int16 i, e;
+	int16_t i, e;
 
 	e = 0;
 
@@ -583,9 +583,9 @@ static void DSP1_Normalize (int16 m, int16 *Coefficient, int16 *Exponent)
 	*Exponent -= e;
 }
 
-static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Exponent)
+static void DSP1_NormalizeDouble (int32_t Product, int16_t *Coefficient, int16_t *Exponent)
 {
-	int16 n, m, i,e;
+	int16_t n, m, i,e;
 
 	n = Product & 0x7fff;
 	m = Product >> 15;
@@ -667,7 +667,7 @@ static void DSP1_NormalizeDouble (int32 Product, int16 *Coefficient, int16 *Expo
 	*Exponent = e;
 }
 
-static int16 DSP1_Truncate (int16 C, int16 E)
+static int16_t DSP1_Truncate (int16_t C, int16_t E)
 {
 	if (E > 0)
 	{
@@ -698,18 +698,18 @@ static void DSP1_Op0C (void)
 	DSP1.Op0CY2 = (DSP1.Op0CY1 * DSP1_Cos(DSP1.Op0CA) >> 15) - (DSP1.Op0CX1 * DSP1_Sin(DSP1.Op0CA) >> 15);
 }
 
-static void DSP1_Parameter (int16 Fx, int16 Fy, int16 Fz, int16 Lfe, int16 Les, int16 Aas, int16 Azs, int16 *Vof, int16 *Vva, int16 *Cx, int16 *Cy)
+static void DSP1_Parameter (int16_t Fx, int16_t Fy, int16_t Fz, int16_t Lfe, int16_t Les, int16_t Aas, int16_t Azs, int16_t *Vof, int16_t *Vva, int16_t *Cx, int16_t *Cy)
 {
-	static const int16	MaxAZS_Exp[16] =
+	static const int16_t	MaxAZS_Exp[16] =
 	{
 		0x38b4, 0x38b7, 0x38ba, 0x38be, 0x38c0, 0x38c4, 0x38c7, 0x38ca,
 		0x38ce,	0x38d0, 0x38d4, 0x38d7, 0x38da, 0x38dd, 0x38e0, 0x38e4
 	};
 
-	int16	CSec, C, E, MaxAZS, Aux;
-	int16	LfeNx, LfeNy, LfeNz;
-	int16	LesNx, LesNy, LesNz;
-	int16	CentreZ, AZS;
+	int16_t	CSec, C, E, MaxAZS, Aux;
+	int16_t	LfeNx, LfeNy, LfeNz;
+	int16_t	LesNx, LesNy, LesNz;
+	int16_t	CentreZ, AZS;
 
 	/* Copy Zenith angle for clipping*/
 	AZS = Azs;
@@ -822,9 +822,9 @@ static void DSP1_Parameter (int16 Fx, int16 Fy, int16 Fz, int16 Lfe, int16 Les, 
 	DSP1_Inverse(DSP1.CosAZS, 0, &DSP1.SecAZS_C2, &DSP1.SecAZS_E2);
 }
 
-static void DSP1_Raster (int16 Vs, int16 *An, int16 *Bn, int16 *Cn, int16 *Dn)
+static void DSP1_Raster (int16_t Vs, int16_t *An, int16_t *Bn, int16_t *Cn, int16_t *Dn)
 {
-	int16	C, E, C1, E1;
+	int16_t	C, E, C1, E1;
 
 	DSP1_Inverse((Vs * DSP1.SinAzs >> 15) + DSP1.VOffset, 7, &C, &E);
 	E += DSP1.VPlane_E;
@@ -858,23 +858,23 @@ static void DSP1_Op0A (void)
 	DSP1.Op0AVS++;
 }
 
-static int16 DSP1_ShiftR (int16 C, int16 E)
+static int16_t DSP1_ShiftR (int16_t C, int16_t E)
 {
 	return (C * DSP1ROM[0x0031 + E] >> 15);
 }
 
-static void DSP1_Project (int16 X, int16 Y, int16 Z, int16 *H, int16 *V, int16 *M)
+static void DSP1_Project (int16_t X, int16_t Y, int16_t Z, int16_t *H, int16_t *V, int16_t *M)
 {
-	int32	aux, aux4;
-	int16	E, E2, E3, E4, E5, refE, E6, E7;
-	int16	C2, C4, C6, C8, C9, C10, C11, C12, C16, C17, C18, C19, C20, C21, C22, C23, C24, C25, C26;
-	int16	Px, Py, Pz;
+	int32_t	aux, aux4;
+	int16_t	E, E2, E3, E4, E5, refE, E6, E7;
+	int16_t	C2, C4, C6, C8, C9, C10, C11, C12, C16, C17, C18, C19, C20, C21, C22, C23, C24, C25, C26;
+	int16_t	Px, Py, Pz;
 
 	E4 = E3 = E2 = E = E5 = 0;
 
-	DSP1_NormalizeDouble((int32) X - DSP1.Gx, &Px, &E4);
-	DSP1_NormalizeDouble((int32) Y - DSP1.Gy, &Py, &E );
-	DSP1_NormalizeDouble((int32) Z - DSP1.Gz, &Pz, &E3);
+	DSP1_NormalizeDouble((int32_t) X - DSP1.Gx, &Px, &E4);
+	DSP1_NormalizeDouble((int32_t) Y - DSP1.Gy, &Py, &E );
+	DSP1_NormalizeDouble((int32_t) Z - DSP1.Gz, &Pz, &E3);
 	Px >>= 1; /* to avoid overflows when calculating the scalar products*/
 	E4--;
 	Py >>= 1;
@@ -904,7 +904,7 @@ static void DSP1_Project (int16 X, int16 Y, int16 Z, int16 *H, int16 *V, int16 *
 		aux4 = 0; /* why?*/
 	aux4 >>= 1;
 
-	aux = ((uint16) DSP1.G_Les) + aux4; /* Les - the scalar product of P with the normal vector of the screen*/
+	aux = ((uint16_t) DSP1.G_Les) + aux4; /* Les - the scalar product of P with the normal vector of the screen*/
 	DSP1_NormalizeDouble(aux, &C10, &E2);
 	E2 = 15 - E2;
 
@@ -944,7 +944,7 @@ static void DSP1_Op06 (void)
 
 static void DSP1_Op01 (void)
 {
-	int16 SinAz, CosAz, SinAy, CosAy, SinAx, CosAx;
+	int16_t SinAz, CosAz, SinAy, CosAy, SinAx, CosAx;
 
 	SinAz = DSP1_Sin(DSP1.Op01Zr);
 	CosAz = DSP1_Cos(DSP1.Op01Zr);
@@ -970,7 +970,7 @@ static void DSP1_Op01 (void)
 
 static void DSP1_Op11 (void)
 {
-	int16 SinAz, CosAz, SinAy, CosAy, SinAx, CosAx;
+	int16_t SinAz, CosAz, SinAy, CosAy, SinAx, CosAx;
 
 	SinAz = DSP1_Sin(DSP1.Op11Zr);
 	CosAz = DSP1_Cos(DSP1.Op11Zr);
@@ -996,7 +996,7 @@ static void DSP1_Op11 (void)
 
 static void DSP1_Op21 (void)
 {
-	int16 SinAz, CosAz, SinAy, CosAy, SinAx, CosAx;
+	int16_t SinAz, CosAz, SinAy, CosAy, SinAx, CosAx;
 
 	SinAz = DSP1_Sin(DSP1.Op21Zr);
 	CosAz = DSP1_Cos(DSP1.Op21Zr);
@@ -1070,7 +1070,7 @@ static void DSP1_Op23 (void)
 
 static void DSP1_Op14 (void)
 {
-	int16	CSec, ESec, CTan, CSin, C, E;
+	int16_t	CSec, ESec, CTan, CSin, C, E;
 
 	DSP1_Inverse(DSP1_Cos(DSP1.Op14Xr), 0, &CSec, &ESec);
 
@@ -1100,9 +1100,9 @@ static void DSP1_Op14 (void)
 	DSP1.Op14Yrr = DSP1.Op14Yr + DSP1_Truncate(C, E) + DSP1.Op14L;
 }
 
-static void DSP1_Target (int16 H, int16 V, int16 *X, int16 *Y)
+static void DSP1_Target (int16_t H, int16_t V, int16_t *X, int16_t *Y)
 {
-	int16	C, E, C1, E1;
+	int16_t	C, E, C1, E1;
 
 	DSP1_Inverse((V * DSP1.SinAzs >> 15) + DSP1.VOffset, 8, &C, &E);
 	E += DSP1.VPlane_E;
@@ -1154,7 +1154,7 @@ static void DSP1_Op2B (void)
 
 static void DSP1_Op08 (void)
 {
-	int32	op08Size = (DSP1.Op08X * DSP1.Op08X + DSP1.Op08Y * DSP1.Op08Y + DSP1.Op08Z * DSP1.Op08Z) << 1;
+	int32_t	op08Size = (DSP1.Op08X * DSP1.Op08X + DSP1.Op08Y * DSP1.Op08Y + DSP1.Op08Z * DSP1.Op08Z) << 1;
 	DSP1.Op08Ll =  op08Size        & 0xffff;
 	DSP1.Op08Lh = (op08Size >> 16) & 0xffff;
 
@@ -1175,13 +1175,13 @@ static void DSP1_Op38 (void)
 
 static void DSP1_Op28 (void)
 {
-	int32	Radius = DSP1.Op28X * DSP1.Op28X + DSP1.Op28Y * DSP1.Op28Y + DSP1.Op28Z * DSP1.Op28Z;
+	int32_t	Radius = DSP1.Op28X * DSP1.Op28X + DSP1.Op28Y * DSP1.Op28Y + DSP1.Op28Z * DSP1.Op28Z;
 
 	if (Radius == 0)
 		DSP1.Op28R = 0;
 	else
 	{
-		int16	C, E, Pos, Node1, Node2;
+		int16_t	C, E, Pos, Node1, Node2;
 
 		DSP1_NormalizeDouble(Radius, &C, &E);
 		if (E & 1)
@@ -1231,7 +1231,7 @@ static void DSP1_Op2F (void)
 	DSP1.Op2FSize = 0x100;
 }
 
-void DSP1SetByte (uint8 byte, uint16 address)
+void DSP1SetByte (uint8_t byte, uint16_t address)
 {
 	if (address < DSP0.boundary)
 	{
@@ -1362,8 +1362,8 @@ void DSP1SetByte (uint8 byte, uint16 address)
 							break;
 
 						case 0x00: /* Multiple*/
-							DSP1.Op00Multiplicand = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op00Multiplier   = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op00Multiplicand = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op00Multiplier   = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
 
 							DSP1_Op00();
 
@@ -1373,8 +1373,8 @@ void DSP1SetByte (uint8 byte, uint16 address)
 							break;
 
 						case 0x20: /* Multiple*/
-							DSP1.Op20Multiplicand = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op20Multiplier   = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op20Multiplicand = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op20Multiplier   = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
 
 							DSP1_Op20();
 
@@ -1385,99 +1385,99 @@ void DSP1SetByte (uint8 byte, uint16 address)
 
 						case 0x30:
 						case 0x10: /* Inverse*/
-							DSP1.Op10Coefficient = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op10Exponent    = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op10Coefficient = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op10Exponent    = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
 
 							DSP1_Op10();
 
 							DSP1.out_count = 4;
-							DSP1.output[0] = (uint8) ( ((int16) DSP1.Op10CoefficientR)       & 0xFF);
-							DSP1.output[1] = (uint8) ((((int16) DSP1.Op10CoefficientR) >> 8) & 0xFF);
-							DSP1.output[2] = (uint8) ( ((int16) DSP1.Op10ExponentR   )       & 0xFF);
-							DSP1.output[3] = (uint8) ((((int16) DSP1.Op10ExponentR   ) >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t) ( ((int16_t) DSP1.Op10CoefficientR)       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((((int16_t) DSP1.Op10CoefficientR) >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t) ( ((int16_t) DSP1.Op10ExponentR   )       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((((int16_t) DSP1.Op10ExponentR   ) >> 8) & 0xFF);
 							break;
 
 						case 0x24:
 						case 0x04: /* Sin and Cos of angle*/
-							DSP1.Op04Angle  = (int16)  (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op04Radius = (uint16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op04Angle  = (int16_t)  (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op04Radius = (uint16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
 
 							DSP1_Op04();
 
 							DSP1.out_count = 4;
-							DSP1.output[0] = (uint8)  (DSP1.Op04Sin       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op04Sin >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op04Cos       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op04Cos >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op04Sin       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op04Sin >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op04Cos       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op04Cos >> 8) & 0xFF);
 							break;
 
 						case 0x08: /* Radius*/
-							DSP1.Op08X = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op08Y = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op08Z = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op08X = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op08Y = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op08Z = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op08();
 
 							DSP1.out_count = 4;
-							DSP1.output[0] = (uint8) ( ((int16) DSP1.Op08Ll)       & 0xFF);
-							DSP1.output[1] = (uint8) ((((int16) DSP1.Op08Ll) >> 8) & 0xFF);
-							DSP1.output[2] = (uint8) ( ((int16) DSP1.Op08Lh)       & 0xFF);
-							DSP1.output[3] = (uint8) ((((int16) DSP1.Op08Lh) >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t) ( ((int16_t) DSP1.Op08Ll)       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((((int16_t) DSP1.Op08Ll) >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t) ( ((int16_t) DSP1.Op08Lh)       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((((int16_t) DSP1.Op08Lh) >> 8) & 0xFF);
 							break;
 
 						case 0x18: /* Range*/
 
-							DSP1.Op18X = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op18Y = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op18Z = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
-							DSP1.Op18R = (int16) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
+							DSP1.Op18X = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op18Y = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op18Z = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op18R = (int16_t) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
 
 							DSP1_Op18();
 
 							DSP1.out_count = 2;
-							DSP1.output[0] = (uint8)  (DSP1.Op18D       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op18D >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op18D       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op18D >> 8) & 0xFF);
 							break;
 
 						case 0x38: /* Range*/
 
-							DSP1.Op38X = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op38Y = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op38Z = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
-							DSP1.Op38R = (int16) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
+							DSP1.Op38X = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op38Y = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op38Z = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op38R = (int16_t) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
 
 							DSP1_Op38();
 
 							DSP1.out_count = 2;
-							DSP1.output[0] = (uint8)  (DSP1.Op38D       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op38D >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op38D       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op38D >> 8) & 0xFF);
 							break;
 
 						case 0x28: /* Distance (vector length)*/
-							DSP1.Op28X = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op28Y = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op28Z = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op28X = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op28Y = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op28Z = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op28();
 
 							DSP1.out_count = 2;
-							DSP1.output[0] = (uint8)  (DSP1.Op28R       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op28R >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op28R       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op28R >> 8) & 0xFF);
 							break;
 
 						case 0x2c:
 						case 0x0c: /* Rotate (2D rotate)*/
-							DSP1.Op0CA  = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op0CX1 = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op0CY1 = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op0CA  = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op0CX1 = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op0CY1 = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op0C();
 
 							DSP1.out_count = 4;
-							DSP1.output[0] = (uint8)  (DSP1.Op0CX2       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op0CX2 >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op0CY2       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op0CY2 >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op0CX2       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op0CX2 >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op0CY2       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op0CY2 >> 8) & 0xFF);
 							break;
 
 						case 0x3c:
@@ -1493,56 +1493,56 @@ void DSP1SetByte (uint8 byte, uint16 address)
 							DSP1_Op1C();
 
 							DSP1.out_count = 6;
-							DSP1.output[0] = (uint8)  (DSP1.Op1CXAR       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op1CXAR >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op1CYAR       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op1CYAR >> 8) & 0xFF);
-							DSP1.output[4] = (uint8)  (DSP1.Op1CZAR       & 0xFF);
-							DSP1.output[5] = (uint8) ((DSP1.Op1CZAR >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op1CXAR       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op1CXAR >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op1CYAR       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op1CYAR >> 8) & 0xFF);
+							DSP1.output[4] = (uint8_t)  (DSP1.Op1CZAR       & 0xFF);
+							DSP1.output[5] = (uint8_t) ((DSP1.Op1CZAR >> 8) & 0xFF);
 							break;
 
 						case 0x32:
 						case 0x22:
 						case 0x12:
 						case 0x02: /* Parameter (Projection)*/
-							DSP1.Op02FX  = (int16)  (DSP1.parameters[ 0] | (DSP1.parameters[ 1] << 8));
-							DSP1.Op02FY  = (int16)  (DSP1.parameters[ 2] | (DSP1.parameters[ 3] << 8));
-							DSP1.Op02FZ  = (int16)  (DSP1.parameters[ 4] | (DSP1.parameters[ 5] << 8));
-							DSP1.Op02LFE = (int16)  (DSP1.parameters[ 6] | (DSP1.parameters[ 7] << 8));
-							DSP1.Op02LES = (int16)  (DSP1.parameters[ 8] | (DSP1.parameters[ 9] << 8));
-							DSP1.Op02AAS = (uint16) (DSP1.parameters[10] | (DSP1.parameters[11] << 8));
-							DSP1.Op02AZS = (uint16) (DSP1.parameters[12] | (DSP1.parameters[13] << 8));
+							DSP1.Op02FX  = (int16_t)  (DSP1.parameters[ 0] | (DSP1.parameters[ 1] << 8));
+							DSP1.Op02FY  = (int16_t)  (DSP1.parameters[ 2] | (DSP1.parameters[ 3] << 8));
+							DSP1.Op02FZ  = (int16_t)  (DSP1.parameters[ 4] | (DSP1.parameters[ 5] << 8));
+							DSP1.Op02LFE = (int16_t)  (DSP1.parameters[ 6] | (DSP1.parameters[ 7] << 8));
+							DSP1.Op02LES = (int16_t)  (DSP1.parameters[ 8] | (DSP1.parameters[ 9] << 8));
+							DSP1.Op02AAS = (uint16_t) (DSP1.parameters[10] | (DSP1.parameters[11] << 8));
+							DSP1.Op02AZS = (uint16_t) (DSP1.parameters[12] | (DSP1.parameters[13] << 8));
 
 							DSP1_Op02();
 
 							DSP1.out_count = 8;
-							DSP1.output[0] = (uint8)  (DSP1.Op02VOF       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op02VOF >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op02VVA       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op02VVA >> 8) & 0xFF);
-							DSP1.output[4] = (uint8)  (DSP1.Op02CX        & 0xFF);
-							DSP1.output[5] = (uint8) ((DSP1.Op02CX  >> 8) & 0xFF);
-							DSP1.output[6] = (uint8)  (DSP1.Op02CY        & 0xFF);
-							DSP1.output[7] = (uint8) ((DSP1.Op02CY  >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op02VOF       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op02VOF >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op02VVA       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op02VVA >> 8) & 0xFF);
+							DSP1.output[4] = (uint8_t)  (DSP1.Op02CX        & 0xFF);
+							DSP1.output[5] = (uint8_t) ((DSP1.Op02CX  >> 8) & 0xFF);
+							DSP1.output[6] = (uint8_t)  (DSP1.Op02CY        & 0xFF);
+							DSP1.output[7] = (uint8_t) ((DSP1.Op02CY  >> 8) & 0xFF);
 							break;
 
 						case 0x3a:
 						case 0x2a:
 						case 0x1a: /* Raster mode 7 matrix data*/
 						case 0x0a:
-							DSP1.Op0AVS = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op0AVS = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
 
 							DSP1_Op0A();
 
 							DSP1.out_count = 8;
-							DSP1.output[0] = (uint8)  (DSP1.Op0AA       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op0AA >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op0AB       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op0AB >> 8) & 0xFF);
-							DSP1.output[4] = (uint8)  (DSP1.Op0AC       & 0xFF);
-							DSP1.output[5] = (uint8) ((DSP1.Op0AC >> 8) & 0xFF);
-							DSP1.output[6] = (uint8)  (DSP1.Op0AD       & 0xFF);
-							DSP1.output[7] = (uint8) ((DSP1.Op0AD >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op0AA       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op0AA >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op0AB       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op0AB >> 8) & 0xFF);
+							DSP1.output[4] = (uint8_t)  (DSP1.Op0AC       & 0xFF);
+							DSP1.output[5] = (uint8_t) ((DSP1.Op0AC >> 8) & 0xFF);
+							DSP1.output[6] = (uint8_t)  (DSP1.Op0AD       & 0xFF);
+							DSP1.output[7] = (uint8_t) ((DSP1.Op0AD >> 8) & 0xFF);
 							DSP1.in_index  = 0;
 							break;
 
@@ -1550,35 +1550,35 @@ void DSP1SetByte (uint8 byte, uint16 address)
 						case 0x26:
 						case 0x36:
 						case 0x06: /* Project object*/
-							DSP1.Op06X = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op06Y = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op06Z = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op06X = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op06Y = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op06Z = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op06();
 
 							DSP1.out_count = 6;
-							DSP1.output[0] = (uint8)  (DSP1.Op06H       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op06H >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op06V       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op06V >> 8) & 0xFF);
-							DSP1.output[4] = (uint8)  (DSP1.Op06M       & 0xFF);
-							DSP1.output[5] = (uint8) ((DSP1.Op06M >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op06H       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op06H >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op06V       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op06V >> 8) & 0xFF);
+							DSP1.output[4] = (uint8_t)  (DSP1.Op06M       & 0xFF);
+							DSP1.output[5] = (uint8_t) ((DSP1.Op06M >> 8) & 0xFF);
 							break;
 
 						case 0x1e:
 						case 0x2e:
 						case 0x3e:
 						case 0x0e: /* Target*/
-							DSP1.Op0EH = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op0EV = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op0EH = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op0EV = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
 
 							DSP1_Op0E();
 
 							DSP1.out_count = 4;
-							DSP1.output[0] = (uint8)  (DSP1.Op0EX       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op0EX >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op0EY       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op0EY >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op0EX       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op0EX >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op0EY       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op0EY >> 8) & 0xFF);
 							break;
 
 							/* Extra commands used by Pilot Wings*/
@@ -1586,30 +1586,30 @@ void DSP1SetByte (uint8 byte, uint16 address)
 						case 0x35:
 						case 0x31:
 						case 0x01: /* Set attitude matrix A*/
-							DSP1.Op01m  = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op01Zr = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op01Yr = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
-							DSP1.Op01Xr = (int16) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
+							DSP1.Op01m  = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op01Zr = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op01Yr = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op01Xr = (int16_t) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
 
 							DSP1_Op01();
 							break;
 
 						case 0x15:
 						case 0x11: /* Set attitude matrix B*/
-							DSP1.Op11m  = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op11Zr = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op11Yr = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
-							DSP1.Op11Xr = (int16) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
+							DSP1.Op11m  = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op11Zr = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op11Yr = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op11Xr = (int16_t) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
 
 							DSP1_Op11();
 							break;
 
 						case 0x25:
 						case 0x21: /* Set attitude matrix C*/
-							DSP1.Op21m  = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op21Zr = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op21Yr = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
-							DSP1.Op21Xr = (int16) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
+							DSP1.Op21m  = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op21Zr = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op21Yr = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op21Xr = (int16_t) (DSP1.parameters[6] | (DSP1.parameters[7] << 8));
 
 							DSP1_Op21();
 							break;
@@ -1618,182 +1618,182 @@ void DSP1SetByte (uint8 byte, uint16 address)
 						case 0x39:
 						case 0x3d:
 						case 0x0d: /* Objective matrix A*/
-							DSP1.Op0DX = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op0DY = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op0DZ = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op0DX = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op0DY = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op0DZ = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op0D();
 
 							DSP1.out_count = 6;
-							DSP1.output [0] = (uint8)  (DSP1.Op0DF       & 0xFF);
-							DSP1.output [1] = (uint8) ((DSP1.Op0DF >> 8) & 0xFF);
-							DSP1.output [2] = (uint8)  (DSP1.Op0DL       & 0xFF);
-							DSP1.output [3] = (uint8) ((DSP1.Op0DL >> 8) & 0xFF);
-							DSP1.output [4] = (uint8)  (DSP1.Op0DU       & 0xFF);
-							DSP1.output [5] = (uint8) ((DSP1.Op0DU >> 8) & 0xFF);
+							DSP1.output [0] = (uint8_t)  (DSP1.Op0DF       & 0xFF);
+							DSP1.output [1] = (uint8_t) ((DSP1.Op0DF >> 8) & 0xFF);
+							DSP1.output [2] = (uint8_t)  (DSP1.Op0DL       & 0xFF);
+							DSP1.output [3] = (uint8_t) ((DSP1.Op0DL >> 8) & 0xFF);
+							DSP1.output [4] = (uint8_t)  (DSP1.Op0DU       & 0xFF);
+							DSP1.output [5] = (uint8_t) ((DSP1.Op0DU >> 8) & 0xFF);
 							break;
 
 						case 0x19:
 						case 0x1d: /* Objective matrix B*/
-							DSP1.Op1DX = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op1DY = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op1DZ = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op1DX = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op1DY = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op1DZ = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op1D();
 
 							DSP1.out_count = 6;
-							DSP1.output[0] = (uint8)  (DSP1.Op1DF       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op1DF >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op1DL       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op1DL >> 8) & 0xFF);
-							DSP1.output[4] = (uint8)  (DSP1.Op1DU       & 0xFF);
-							DSP1.output[5] = (uint8) ((DSP1.Op1DU >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op1DF       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op1DF >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op1DL       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op1DL >> 8) & 0xFF);
+							DSP1.output[4] = (uint8_t)  (DSP1.Op1DU       & 0xFF);
+							DSP1.output[5] = (uint8_t) ((DSP1.Op1DU >> 8) & 0xFF);
 							break;
 
 						case 0x29:
 						case 0x2d: /* Objective matrix C*/
-							DSP1.Op2DX = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op2DY = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op2DZ = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op2DX = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op2DY = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op2DZ = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op2D();
 
 							DSP1.out_count = 6;
-							DSP1.output[0] = (uint8)  (DSP1.Op2DF       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op2DF >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op2DL       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op2DL >> 8) & 0xFF);
-							DSP1.output[4] = (uint8)  (DSP1.Op2DU       & 0xFF);
-							DSP1.output[5] = (uint8) ((DSP1.Op2DU >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op2DF       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op2DF >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op2DL       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op2DL >> 8) & 0xFF);
+							DSP1.output[4] = (uint8_t)  (DSP1.Op2DU       & 0xFF);
+							DSP1.output[5] = (uint8_t) ((DSP1.Op2DU >> 8) & 0xFF);
 							break;
 
 						case 0x33:
 						case 0x03: /* Subjective matrix A*/
-							DSP1.Op03F = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op03L = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op03U = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op03F = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op03L = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op03U = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op03();
 
 							DSP1.out_count = 6;
-							DSP1.output[0] = (uint8)  (DSP1.Op03X       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op03X >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op03Y       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op03Y >> 8) & 0xFF);
-							DSP1.output[4] = (uint8)  (DSP1.Op03Z       & 0xFF);
-							DSP1.output[5] = (uint8) ((DSP1.Op03Z >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op03X       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op03X >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op03Y       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op03Y >> 8) & 0xFF);
+							DSP1.output[4] = (uint8_t)  (DSP1.Op03Z       & 0xFF);
+							DSP1.output[5] = (uint8_t) ((DSP1.Op03Z >> 8) & 0xFF);
 							break;
 
 						case 0x13: /* Subjective matrix B*/
-							DSP1.Op13F = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op13L = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op13U = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op13F = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op13L = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op13U = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op13();
 
 							DSP1.out_count = 6;
-							DSP1.output[0] = (uint8)  (DSP1.Op13X       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op13X >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op13Y       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op13Y >> 8) & 0xFF);
-							DSP1.output[4] = (uint8)  (DSP1.Op13Z       & 0xFF);
-							DSP1.output[5] = (uint8) ((DSP1.Op13Z >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op13X       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op13X >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op13Y       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op13Y >> 8) & 0xFF);
+							DSP1.output[4] = (uint8_t)  (DSP1.Op13Z       & 0xFF);
+							DSP1.output[5] = (uint8_t) ((DSP1.Op13Z >> 8) & 0xFF);
 							break;
 
 						case 0x23: /* Subjective matrix C*/
-							DSP1.Op23F = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op23L = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op23U = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op23F = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op23L = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op23U = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op23();
 
 							DSP1.out_count = 6;
-							DSP1.output[0] = (uint8)  (DSP1.Op23X       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op23X >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op23Y       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op23Y >> 8) & 0xFF);
-							DSP1.output[4] = (uint8)  (DSP1.Op23Z       & 0xFF);
-							DSP1.output[5] = (uint8) ((DSP1.Op23Z >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op23X       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op23X >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op23Y       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op23Y >> 8) & 0xFF);
+							DSP1.output[4] = (uint8_t)  (DSP1.Op23Z       & 0xFF);
+							DSP1.output[5] = (uint8_t) ((DSP1.Op23Z >> 8) & 0xFF);
 							break;
 
 						case 0x3b:
 						case 0x0b:
-							DSP1.Op0BX = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op0BY = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op0BZ = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op0BX = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op0BY = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op0BZ = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op0B();
 
 							DSP1.out_count = 2;
-							DSP1.output[0] = (uint8)  (DSP1.Op0BS       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op0BS >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op0BS       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op0BS >> 8) & 0xFF);
 							break;
 
 						case 0x1b:
-							DSP1.Op1BX = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op1BY = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op1BZ = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op1BX = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op1BY = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op1BZ = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op1B();
 
 							DSP1.out_count = 2;
-							DSP1.output[0] = (uint8)  (DSP1.Op1BS       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op1BS >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op1BS       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op1BS >> 8) & 0xFF);
 							break;
 
 						case 0x2b:
-							DSP1.Op2BX = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
-							DSP1.Op2BY = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
-							DSP1.Op2BZ = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
+							DSP1.Op2BX = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op2BY = (int16_t) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
+							DSP1.Op2BZ = (int16_t) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
 
 							DSP1_Op2B();
 
 							DSP1.out_count = 2;
-							DSP1.output[0] = (uint8)  (DSP1.Op2BS       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op2BS >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op2BS       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op2BS >> 8) & 0xFF);
 							break;
 
 						case 0x34:
 						case 0x14:
-							DSP1.Op14Zr = (int16) (DSP1.parameters[ 0] | (DSP1.parameters[ 1] << 8));
-							DSP1.Op14Xr = (int16) (DSP1.parameters[ 2] | (DSP1.parameters[ 3] << 8));
-							DSP1.Op14Yr = (int16) (DSP1.parameters[ 4] | (DSP1.parameters[ 5] << 8));
-							DSP1.Op14U  = (int16) (DSP1.parameters[ 6] | (DSP1.parameters[ 7] << 8));
-							DSP1.Op14F  = (int16) (DSP1.parameters[ 8] | (DSP1.parameters[ 9] << 8));
-							DSP1.Op14L  = (int16) (DSP1.parameters[10] | (DSP1.parameters[11] << 8));
+							DSP1.Op14Zr = (int16_t) (DSP1.parameters[ 0] | (DSP1.parameters[ 1] << 8));
+							DSP1.Op14Xr = (int16_t) (DSP1.parameters[ 2] | (DSP1.parameters[ 3] << 8));
+							DSP1.Op14Yr = (int16_t) (DSP1.parameters[ 4] | (DSP1.parameters[ 5] << 8));
+							DSP1.Op14U  = (int16_t) (DSP1.parameters[ 6] | (DSP1.parameters[ 7] << 8));
+							DSP1.Op14F  = (int16_t) (DSP1.parameters[ 8] | (DSP1.parameters[ 9] << 8));
+							DSP1.Op14L  = (int16_t) (DSP1.parameters[10] | (DSP1.parameters[11] << 8));
 
 							DSP1_Op14();
 
 							DSP1.out_count = 6;
-							DSP1.output[0] = (uint8)  (DSP1.Op14Zrr       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op14Zrr >> 8) & 0xFF);
-							DSP1.output[2] = (uint8)  (DSP1.Op14Xrr       & 0xFF);
-							DSP1.output[3] = (uint8) ((DSP1.Op14Xrr >> 8) & 0xFF);
-							DSP1.output[4] = (uint8)  (DSP1.Op14Yrr       & 0xFF);
-							DSP1.output[5] = (uint8) ((DSP1.Op14Yrr >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op14Zrr       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op14Zrr >> 8) & 0xFF);
+							DSP1.output[2] = (uint8_t)  (DSP1.Op14Xrr       & 0xFF);
+							DSP1.output[3] = (uint8_t) ((DSP1.Op14Xrr >> 8) & 0xFF);
+							DSP1.output[4] = (uint8_t)  (DSP1.Op14Yrr       & 0xFF);
+							DSP1.output[5] = (uint8_t) ((DSP1.Op14Yrr >> 8) & 0xFF);
 							break;
 
 						case 0x27:
 						case 0x2F:
-							DSP1.Op2FUnknown = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op2FUnknown = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
 
 							DSP1_Op2F();
 
 							DSP1.out_count = 2;
-							DSP1.output[0] = (uint8)  (DSP1.Op2FSize       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op2FSize >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op2FSize       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op2FSize >> 8) & 0xFF);
 							break;
 
 
 						case 0x07:
 						case 0x0F:
-							DSP1.Op0FRamsize = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
+							DSP1.Op0FRamsize = (int16_t) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
 
 							DSP1_Op0F();
 
 							DSP1.out_count = 2;
-							DSP1.output[0] = (uint8)  (DSP1.Op0FPass       & 0xFF);
-							DSP1.output[1] = (uint8) ((DSP1.Op0FPass >> 8) & 0xFF);
+							DSP1.output[0] = (uint8_t)  (DSP1.Op0FPass       & 0xFF);
+							DSP1.output[1] = (uint8_t) ((DSP1.Op0FPass >> 8) & 0xFF);
 							break;
 
 						default:
@@ -1805,15 +1805,15 @@ void DSP1SetByte (uint8 byte, uint16 address)
 	}
 }
 
-uint8 DSP1GetByte (uint16 address)
+uint8_t DSP1GetByte (uint16_t address)
 {
-	uint8	t;
+	uint8_t	t;
 
 	if (address < DSP0.boundary)
 	{
 		if (DSP1.out_count)
 		{
-			t = (uint8) DSP1.output[DSP1.out_index];
+			t = (uint8_t) DSP1.output[DSP1.out_index];
 
 			DSP1.out_index++;
 
@@ -1837,7 +1837,7 @@ uint8 DSP1GetByte (uint16 address)
 				if (DSP1.command == 0x1f)
 				{
 					if ((DSP1.out_index % 2) != 0)
-						t = (uint8) DSP1ROM[DSP1.out_index >> 1];
+						t = (uint8_t) DSP1ROM[DSP1.out_index >> 1];
 					else
 						t = DSP1ROM[DSP1.out_index >> 1] >> 8;
 				}
@@ -1864,8 +1864,8 @@ static void DSP2_Op01 (void)
 	/* Op01 size is always 32 bytes input and output*/
 	/* The hardware does strange things if you vary the size*/
 	int j;
-	uint8	c0, c1, c2, c3;
-	uint8 *p1, *p2a, *p2b;
+	uint8_t	c0, c1, c2, c3;
+	uint8_t *p1, *p2a, *p2b;
 
 	p1  = DSP2.parameters;
 	p2a = DSP2.output;
@@ -1927,7 +1927,7 @@ static void DSP2_Op03 (void)
 /* replace bitmap using transparent color*/
 static void DSP2_Op05 (void)
 {
-	int32 n;
+	int32_t n;
 	/* Overlay bitmap with transparency.
 	/ Input:
 	//
@@ -1953,9 +1953,9 @@ static void DSP2_Op05 (void)
 	// size = 0.  I don't think it's worth implementing this quirk unless it's
 	// proven necessary. */
 
-	uint8	color;
-	uint8	c1, c2;
-	uint8 *p1, *p2, *p3;
+	uint8_t	color;
+	uint8_t	c1, c2;
+	uint8_t *p1, *p2, *p3;
 
 	p1 = DSP2.parameters;
 	p2 = DSP2.parameters + DSP2.Op05Len;
@@ -1974,7 +1974,7 @@ static void DSP2_Op05 (void)
 /* reverse bitmap*/
 static void DSP2_Op06 (void)
 {
-	int32 i, j;
+	int32_t i, j;
 	/* Input:
 	//    size
 	//    bitmap */
@@ -1986,7 +1986,7 @@ static void DSP2_Op06 (void)
 /* multiply*/
 static void DSP2_Op09 (void)
 {
-	uint32 temp;
+	uint32_t temp;
 	DSP2.Op09Word1 = DSP2.parameters[0] | (DSP2.parameters[1] << 8);
 	DSP2.Op09Word2 = DSP2.parameters[2] | (DSP2.parameters[3] << 8);
 
@@ -2000,7 +2000,7 @@ static void DSP2_Op09 (void)
 /* scale bitmap*/
 static void DSP2_Op0D (void)
 {
-	int32 i;
+	int32_t i;
 	/* Bit accurate hardware algorithm - uses fixed point math
 	// This should match the DSP2 Op0D output exactly
 	// I wouldn't recommend using this unless you're doing hardware debug.
@@ -2015,9 +2015,9 @@ static void DSP2_Op0D (void)
 	// So far I haven't seen Dungeon Master use it.
 	// If it does we can adjust the parameters and code to work with it */
 
-	uint32	multiplier; /* Any size int >= 32-bits*/
-	uint32	pixloc;	    /* match size of multiplier*/
-	uint8	pixelarray[512];
+	uint32_t	multiplier; /* Any size int >= 32-bits*/
+	uint32_t	pixloc;	    /* match size of multiplier*/
+	uint8_t	pixelarray[512];
 
 	if (DSP2.Op0DInLen <= DSP2.Op0DOutLen)
 		multiplier = 0x10000; /* In our self defined fixed point 0x10000 == 1*/
@@ -2028,7 +2028,7 @@ static void DSP2_Op0D (void)
 
 	for ( i = 0; i < DSP2.Op0DOutLen * 2; i++)
 	{
-		int32	j = pixloc >> 16;
+		int32_t	j = pixloc >> 16;
 
 		if (j & 1)
 			pixelarray[i] =  DSP2.parameters[j >> 1] & 0x0f;
@@ -2053,10 +2053,10 @@ static void DSP2_Op0D (void)
 	// So far I haven't seen Dungeon Master use it.
 	// If it does we can adjust the parameters and code to work with it
 
-	int32	pixel_offset;
-	uint8	pixelarray[512];
+	int32_t	pixel_offset;
+	uint8_t	pixelarray[512];
 
-	for (int32 i = 0; i < DSP2.Op0DOutLen * 2; i++)
+	for (int32_t i = 0; i < DSP2.Op0DOutLen * 2; i++)
 	{
 		pixel_offset = (i * DSP2.Op0DInLen) / DSP2.Op0DOutLen;
 
@@ -2066,12 +2066,12 @@ static void DSP2_Op0D (void)
 			pixelarray[i] = DSP2.parameters[pixel_offset >> 1] & 0x0f;
 	}
 
-	for (int32 i = 0; i < DSP2.Op0DOutLen; i++)
+	for (int32_t i = 0; i < DSP2.Op0DOutLen; i++)
 		DSP2.output[i] = (pixelarray[i << 1] << 4) | pixelarray[(i << 1) + 1];
 }
 */
 
-void DSP2SetByte (uint8 byte, uint16 address)
+void DSP2SetByte (uint8_t byte, uint16_t address)
 {
 	if ((address & 0xf000) == 0x6000 || (address >= 0x8000 && address < 0xc000))
 	{
@@ -2186,15 +2186,15 @@ void DSP2SetByte (uint8 byte, uint16 address)
 	}
 }
 
-uint8 DSP2GetByte (uint16 address)
+uint8_t DSP2GetByte (uint16_t address)
 {
-	uint8	t;
+	uint8_t	t;
 
 	if ((address & 0xf000) == 0x6000 || (address >= 0x8000 && address < 0xc000))
 	{
 		if (DSP2.out_count)
 		{
-			t = (uint8) DSP2.output[DSP2.out_index];
+			t = (uint8_t) DSP2.output[DSP2.out_index];
 			DSP2.out_index++;
 			if (DSP2.out_count == DSP2.out_index)
 				DSP2.out_count = 0;
@@ -2214,7 +2214,7 @@ uint8 DSP2GetByte (uint16 address)
 
 static void (*SetDSP3) (void);
 
-static const uint16	DSP3_DataROM[1024] =
+static const uint16_t	DSP3_DataROM[1024] =
 {
 	0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200, 0x0100,
 	0x0080, 0x0040, 0x0020, 0x0010, 0x0008, 0x0004, 0x0002, 0x0001,
@@ -2377,8 +2377,8 @@ static void DSP3_OP1E_B2 (void);
 static void DSP3_OP1E_C (void);
 static void DSP3_OP1E_C1 (void);
 static void DSP3_OP1E_C2 (void);
-static void DSP3_OP1E_D (int16, int16 *, int16 *);
-static void DSP3_OP1E_D1 (int16, int16 *, int16 *);
+static void DSP3_OP1E_D (int16_t, int16_t *, int16_t *);
+static void DSP3_OP1E_D1 (int16_t, int16_t *, int16_t *);
 static void DSP3_OP3E (void);
 
 
@@ -2411,17 +2411,17 @@ static void DSP3_MemoryDump (void)
 
 static void DSP3_OP06 (void)
 {
-	DSP3.WinLo = (uint8) (DSP3.DR);
-	DSP3.WinHi = (uint8) (DSP3.DR >> 8);
+	DSP3.WinLo = (uint8_t) (DSP3.DR);
+	DSP3.WinHi = (uint8_t) (DSP3.DR >> 8);
 	DSP3_Reset();
 }
 
 static void DSP3_OP03 (void)
 {
-	int16 Lo, Hi, Ofs;
+	int16_t Lo, Hi, Ofs;
 
-	Lo  = (uint8) (DSP3.DR);
-	Hi  = (uint8) (DSP3.DR >> 8);
+	Lo  = (uint8_t) (DSP3.DR);
+	Hi  = (uint8_t) (DSP3.DR >> 8);
 	Ofs = (DSP3.WinLo * Hi << 1) + (Lo << 1);
 
 	DSP3.DR = Ofs >> 1;
@@ -2430,7 +2430,7 @@ static void DSP3_OP03 (void)
 
 static void DSP3_OP07_B (void)
 {
-	int16 Ofs;
+	int16_t Ofs;
 
 	Ofs = (DSP3.WinLo * DSP3.AddHi << 1) + (DSP3.AddLo << 1);
 
@@ -2440,10 +2440,10 @@ static void DSP3_OP07_B (void)
 
 static void DSP3_OP07_A (void)
 {
-	int16 Lo, Hi;
+	int16_t Lo, Hi;
 
-	Lo = (uint8) (DSP3.DR);
-	Hi = (uint8) (DSP3.DR >> 8);
+	Lo = (uint8_t) (DSP3.DR);
+	Hi = (uint8_t) (DSP3.DR >> 8);
 
 	if (Lo & 1)
 		Hi += (DSP3.AddLo & 1);
@@ -2469,7 +2469,7 @@ static void DSP3_OP07_A (void)
 
 static void DSP3_OP07 (void)
 {
-	uint32 dataOfs;
+	uint32_t dataOfs;
 
 	dataOfs = ((DSP3.DR << 1) + 0x03b2) & 0x03ff;
 
@@ -2516,8 +2516,8 @@ static void DSP3_Convert_A (void)
 	int i, j;
 	if (DSP3.BMIndex < 8)
 	{
-		DSP3.Bitmap[DSP3.BMIndex++] = (uint8) (DSP3.DR);
-		DSP3.Bitmap[DSP3.BMIndex++] = (uint8) (DSP3.DR >> 8);
+		DSP3.Bitmap[DSP3.BMIndex++] = (uint8_t) (DSP3.DR);
+		DSP3.Bitmap[DSP3.BMIndex++] = (uint8_t) (DSP3.DR >> 8);
 
 		if (DSP3.BMIndex == 8)
 		{
@@ -2559,7 +2559,7 @@ static void DSP3_Convert (void)
 	SetDSP3 = &DSP3_Convert_A;
 }
 
-static bool8 DSP3_GetBits (uint8 Count)
+static uint8_t DSP3_GetBits (uint8_t Count)
 {
 	if (!DSP3.BitsLeft)
 	{
@@ -2694,7 +2694,7 @@ static void DSP3_Decode_Tree (void)
 
 		DSP3.ReqBits++;
 
-		DSP3.CodeLengths[DSP3.Index] = (uint8) DSP3.ReqBits;
+		DSP3.CodeLengths[DSP3.Index] = (uint8_t) DSP3.ReqBits;
 		DSP3.CodeOffsets[DSP3.Index] = DSP3.Symbol;
 		DSP3.Index++;
 
@@ -2790,8 +2790,8 @@ static void DSP3_Decode (void)
 
 static void DSP3_OP3E (void)
 {
-	DSP3. op3e_x = (uint8)  (DSP3.DR & 0x00ff);
-	DSP3. op3e_y = (uint8) ((DSP3.DR & 0xff00) >> 8);
+	DSP3. op3e_x = (uint8_t)  (DSP3.DR & 0x00ff);
+	DSP3. op3e_y = (uint8_t) ((DSP3.DR & 0xff00) >> 8);
 
 	DSP3_OP03();
 
@@ -2806,8 +2806,8 @@ static void DSP3_OP3E (void)
 static void DSP3_OP1E (void)
 {
 	int lcv;
-	DSP3.op1e_min_radius = (uint8)  (DSP3.DR & 0x00ff);
-	DSP3.op1e_max_radius = (uint8) ((DSP3.DR & 0xff00) >> 8);
+	DSP3.op1e_min_radius = (uint8_t)  (DSP3.DR & 0x00ff);
+	DSP3.op1e_max_radius = (uint8_t) ((DSP3.DR & 0xff00) >> 8);
 
 	if (DSP3.op1e_min_radius == 0)
 		DSP3.op1e_min_radius++;
@@ -2872,7 +2872,7 @@ static void DSP3_OP1E_A (void)
 		return;
 	}
 
-	DSP3.DR = (uint8) (DSP3.op1e_x) | ((uint8) (DSP3.op1e_y) << 8);
+	DSP3.DR = (uint8_t) (DSP3.op1e_x) | ((uint8_t) (DSP3.op1e_y) << 8);
 	DSP3_OP03();
 
 	DSP3.op1e_cell = DSP3.DR;
@@ -2889,7 +2889,7 @@ static void DSP3_OP1E_A1 (void)
 
 static void DSP3_OP1E_A2 (void)
 {
-	DSP3.op1e_terrain[DSP3.op1e_cell] = (uint8) (DSP3.DR & 0x00ff);
+	DSP3.op1e_terrain[DSP3.op1e_cell] = (uint8_t) (DSP3.DR & 0x00ff);
 
 	DSP3.SR = 0x0084;
 	SetDSP3 = &DSP3_OP1E_A3;
@@ -2897,7 +2897,7 @@ static void DSP3_OP1E_A2 (void)
 
 static void DSP3_OP1E_A3 (void)
 {
-	DSP3.op1e_cost[DSP3.op1e_cell] = (uint8) (DSP3.DR & 0x00ff);
+	DSP3.op1e_cost[DSP3.op1e_cell] = (uint8_t) (DSP3.DR & 0x00ff);
 
 	if (DSP3.op1e_lcv_radius == 1)
 	{
@@ -2909,7 +2909,7 @@ static void DSP3_OP1E_A3 (void)
 	else
 		DSP3.op1e_weight[DSP3.op1e_cell] = 0xff;
 
-	DSP3_OP1E_D((int16) (DSP3.op1e_turn + 2), &DSP3.op1e_x, &DSP3.op1e_y);
+	DSP3_OP1E_D((int16_t) (DSP3.op1e_turn + 2), &DSP3.op1e_x, &DSP3.op1e_y);
 	DSP3.op1e_lcv_steps--;
 
 	DSP3.SR = 0x0080;
@@ -2948,7 +2948,7 @@ static void DSP3_OP1E_B1 (void)
 
 				if (0 <= DSP3.op1e_y && DSP3.op1e_y < DSP3.WinHi && 0 <= DSP3.op1e_x && DSP3.op1e_x < DSP3.WinLo)
 				{
-					DSP3.DR = (uint8) (DSP3.op1e_x) | ((uint8) (DSP3.op1e_y) << 8);
+					DSP3.DR = (uint8_t) (DSP3.op1e_x) | ((uint8_t) (DSP3.op1e_y) << 8);
 					DSP3_OP03();
 
 					DSP3.op1e_cell = DSP3.DR;
@@ -2972,7 +2972,7 @@ static void DSP3_OP1E_B1 (void)
 
 static void DSP3_OP1E_B2 (void)
 {
-	int16	cell, path, x, y, lcv_turns;
+	int16_t	cell, path, x, y, lcv_turns;
 
 	path = 0xff;
 	lcv_turns = 6;
@@ -2984,7 +2984,7 @@ static void DSP3_OP1E_B2 (void)
 
 		DSP3_OP1E_D1(lcv_turns, &x, &y);
 
-		DSP3.DR = (uint8) (x) | ((uint8) (y) << 8);
+		DSP3.DR = (uint8_t) (x) | ((uint8_t) (y) << 8);
 		DSP3_OP03();
 
 		cell = DSP3.DR;
@@ -3008,8 +3008,8 @@ static void DSP3_OP1E_B2 (void)
 static void DSP3_OP1E_C (void)
 {
 	int lcv;
-	DSP3.op1e_min_radius = (uint8)  (DSP3.DR & 0x00ff);
-	DSP3.op1e_max_radius = (uint8) ((DSP3.DR & 0xff00) >> 8);
+	DSP3.op1e_min_radius = (uint8_t)  (DSP3.DR & 0x00ff);
+	DSP3.op1e_max_radius = (uint8_t) ((DSP3.DR & 0xff00) >> 8);
 
 	if (DSP3.op1e_min_radius == 0)
 		DSP3.op1e_min_radius = 1;
@@ -3074,7 +3074,7 @@ static void DSP3_OP1E_C1 (void)
 		return;
 	}
 
-	DSP3.DR = (uint8) (DSP3.op1e_x) | ((uint8) (DSP3.op1e_y) << 8);
+	DSP3.DR = (uint8_t) (DSP3.op1e_x) | ((uint8_t) (DSP3.op1e_y) << 8);
 	DSP3_OP03();
 
 	DSP3.op1e_cell = DSP3.DR;
@@ -3087,26 +3087,26 @@ static void DSP3_OP1E_C2 (void)
 {
 	DSP3.DR = DSP3.op1e_weight[DSP3.op1e_cell];
 
-	DSP3_OP1E_D((int16) (DSP3.op1e_turn + 2), &DSP3.op1e_x, &DSP3.op1e_y);
+	DSP3_OP1E_D((int16_t) (DSP3.op1e_turn + 2), &DSP3.op1e_x, &DSP3.op1e_y);
 	DSP3.op1e_lcv_steps--;
 
 	DSP3.SR = 0x0084;
 	SetDSP3 = &DSP3_OP1E_C1;
 }
 
-static void DSP3_OP1E_D (int16 move, int16 *lo, int16 *hi)
+static void DSP3_OP1E_D (int16_t move, int16_t *lo, int16_t *hi)
 {
-	uint32 dataOfs;
-	int16	Lo;
-	int16	Hi;
+	uint32_t dataOfs;
+	int16_t	Lo;
+	int16_t	Hi;
 
 	dataOfs = ((move << 1) + 0x03b2) & 0x03ff;
 
 	DSP3.AddHi = DSP3_DataROM[dataOfs];
 	DSP3.AddLo = DSP3_DataROM[dataOfs + 1];
 
-	Lo = (uint8) (*lo);
-	Hi = (uint8) (*hi);
+	Lo = (uint8_t) (*lo);
+	Hi = (uint8_t) (*hi);
 
 	if (Lo & 1)
 		Hi += (DSP3.AddLo & 1);
@@ -3130,19 +3130,19 @@ static void DSP3_OP1E_D (int16 move, int16 *lo, int16 *hi)
 	*hi = DSP3.AddHi;
 }
 
-static void DSP3_OP1E_D1 (int16 move, int16 *lo, int16 *hi)
+static void DSP3_OP1E_D1 (int16_t move, int16_t *lo, int16_t *hi)
 {
-	static const uint16	HiAdd[] =
+	static const uint16_t	HiAdd[] =
 	{
 		0x00, 0xFF, 0x00, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x01, 0x00, 0xFF, 0x00
 	};
 
-	static const uint16	LoAdd[] =
+	static const uint16_t	LoAdd[] =
 	{
 		0x00, 0x00, 0x01, 0x01, 0x00, 0xFF, 0xFF, 0x00
 	};
 
-	int16	Lo, Hi;
+	int16_t	Lo, Hi;
 
 	if ((*lo) & 1)
 		DSP3.AddHi = HiAdd[move + 8];
@@ -3151,8 +3151,8 @@ static void DSP3_OP1E_D1 (int16 move, int16 *lo, int16 *hi)
 
 	DSP3.AddLo = LoAdd[move];
 
-	Lo = (uint8) (*lo);
-	Hi = (uint8) (*hi);
+	Lo = (uint8_t) (*lo);
+	Hi = (uint8_t) (*hi);
 
 	if (Lo & 1)
 		Hi += (DSP3.AddLo & 1);
@@ -3243,7 +3243,7 @@ static void DSP3_Command (void)
 	}
 }
 
-void DSP3SetByte (uint8 byte, uint16 address)
+void DSP3SetByte (uint8_t byte, uint16_t address)
 {
 	if (address < DSP0.boundary)
 	{
@@ -3267,15 +3267,15 @@ void DSP3SetByte (uint8 byte, uint16 address)
 	}
 }
 
-uint8 DSP3GetByte (uint16 address)
+uint8_t DSP3GetByte (uint16_t address)
 {
 	if (address < DSP0.boundary)
 	{
-		uint8	byte;
+		uint8_t	byte;
 
 		if (DSP3.SR & 0x04)
 		{
-			byte = (uint8) DSP3.DR;
+			byte = (uint8_t) DSP3.DR;
 			(*SetDSP3)();
 		}
 		else
@@ -3283,10 +3283,10 @@ uint8 DSP3GetByte (uint16 address)
 			DSP3.SR ^= 0x10;
 
 			if (DSP3.SR & 0x10)
-				byte = (uint8) (DSP3.DR);
+				byte = (uint8_t) (DSP3.DR);
 			else
 			{
-				byte = (uint8) (DSP3.DR >> 8);
+				byte = (uint8_t) (DSP3.DR >> 8);
 				(*SetDSP3)();
 			}
 		}
@@ -3294,7 +3294,7 @@ uint8 DSP3GetByte (uint16 address)
 		return (byte);
 	}
 
-	return (uint8) DSP3.SR;
+	return (uint8_t) DSP3.SR;
 }
 
 /***********************************************************************************
@@ -3333,14 +3333,14 @@ uint8 DSP3GetByte (uint16 address)
 	DSP4.in_index = 0; DSP4.Logic = (x); return
 
 /* 1.7.8 -> 1.15.16 */
-#define SEX78(a)	(((int32) ((int16) (a))) << 8)
+#define SEX78(a)	(((int32_t) ((int16_t) (a))) << 8)
 
 /* 1.15.0 -> 1.15.16 */
-#define DSP_SEX16(a)	(((int32) ((int16) (a))) << 16)
+#define DSP_SEX16(a)	(((int32_t) ((int16_t) (a))) << 16)
 
-static int16 DSP4_READ_WORD (void)
+static int16_t DSP4_READ_WORD (void)
 {
-	int16	out;
+	int16_t	out;
 
 	out = READ_WORD(DSP4.parameters + DSP4.in_index);
 	DSP4.in_index += 2;
@@ -3348,9 +3348,9 @@ static int16 DSP4_READ_WORD (void)
 	return (out);
 }
 
-static int32 DSP4_READ_DWORD (void)
+static int32_t DSP4_READ_DWORD (void)
 {
-	int32	out;
+	int32_t	out;
 
 	out = READ_DWORD(DSP4.parameters + DSP4.in_index);
 	DSP4.in_index += 4;
@@ -3358,10 +3358,10 @@ static int32 DSP4_READ_DWORD (void)
 	return (out);
 }
 
-static int16 DSP4_Inverse (int16 value)
+static int16_t DSP4_Inverse (int16_t value)
 {
 	/* Attention: This lookup table is not verified */
-	static const uint16	div_lut[64] =
+	static const uint16_t	div_lut[64] =
 	{
 		0x0000, 0x8000, 0x4000, 0x2aaa, 0x2000, 0x1999, 0x1555, 0x1249,
 		0x1000, 0x0e38, 0x0ccc, 0x0ba2, 0x0aaa, 0x09d8, 0x0924, 0x0888,
@@ -3382,7 +3382,7 @@ static int16 DSP4_Inverse (int16 value)
 	return (div_lut[value]);
 }
 
-static void DSP4_Multiply (int16 Multiplicand, int16 Multiplier, int32 *Product)
+static void DSP4_Multiply (int16_t Multiplicand, int16_t Multiplier, int32_t *Product)
 {
 	*Product = (Multiplicand * Multiplier << 1) >> 1;
 }
@@ -3484,8 +3484,8 @@ static void DSP4_OP01 (void)
 		/* scan next command if no SR check needed*/
 		if (DSP4.segments)
 		{
-			int32	px_dx, py_dy;
-			int32	x_scroll, y_scroll;
+			int32_t	px_dx, py_dy;
+			int32_t	x_scroll, y_scroll;
 
 			/* SR = 0x00*/
 
@@ -3551,7 +3551,7 @@ static void DSP4_OP01 (void)
 			break;
 
 		/* road turnoff*/
-		if ((uint16) DSP4.distance == 0x8001)
+		if ((uint16_t) DSP4.distance == 0x8001)
 		{
 			DSP4.in_count = 6;
 			DSP4_WAIT(2);
@@ -3700,8 +3700,8 @@ static void DSP4_OP07 (void)
 		/* scan next command if no SR check needed*/
 		if (DSP4.segments)
 		{
-			int32	px_dx, py_dy;
-			int32	x_scroll, y_scroll;
+			int32_t	px_dx, py_dy;
+			int32_t	x_scroll, y_scroll;
 
 			/* SR = 0x00*/
 
@@ -3775,9 +3775,9 @@ static void DSP4_OP07 (void)
 
 static void DSP4_OP08 (void)
 {
-	int16	win_left, win_right;
-	int16	view_x[2], view_y[2];
-	int16	envelope[2][2];
+	int16_t	win_left, win_right;
+	int16_t	view_x[2], view_y[2];
+	int16_t	envelope[2][2];
 
 	DSP4.waiting4command = FALSE;
 
@@ -3901,7 +3901,7 @@ static void DSP4_OP08 (void)
 
 	do
 	{
-		int16	polygon;
+		int16_t	polygon;
 
 		/* command check*/
 
@@ -3943,10 +3943,10 @@ static void DSP4_OP08 (void)
 
 		for (polygon = 0; polygon < 2; polygon++)
 		{
-			int32	left_inc, right_inc;
-			int16	x1_final, x2_final;
-			int16	env[2][2];
-			int16	poly;
+			int32_t	left_inc, right_inc;
+			int16_t	x1_final, x2_final;
+			int16_t	env[2][2];
+			int16_t	poly;
 
 			/* SR = 0x00*/
 
@@ -3984,10 +3984,10 @@ static void DSP4_OP08 (void)
 			/* scan next command if no SR check needed*/
 			if (DSP4.segments)
 			{
-				int32	w_left, w_right;
+				int32_t	w_left, w_right;
 
 				/* road turnoff selection*/
-				if ((uint16) envelope[polygon][0] == (uint16) 0xc001)
+				if ((uint16_t) envelope[polygon][0] == (uint16_t) 0xc001)
 					poly = 1;
 				else
 				if (envelope[polygon][1] == 0x3fff)
@@ -4034,7 +4034,7 @@ static void DSP4_OP08 (void)
 				/* rasterize line*/
 				for (DSP4.lcv = 0; DSP4.lcv < DSP4.segments; DSP4.lcv++)
 				{
-					int16	x_left, x_right;
+					int16_t	x_left, x_right;
 
 					/* project new coordinates*/
 					w_left  += left_inc;
@@ -4082,9 +4082,9 @@ static void DSP4_OP08 (void)
 	DSP4.waiting4command = TRUE;
 }
 
-static void DSP4_OP0B (bool8 *draw, int16 sp_x, int16 sp_y, int16 sp_attr, bool8 size, bool8 stop)
+static void DSP4_OP0B (uint8_t *draw, int16_t sp_x, int16_t sp_y, int16_t sp_attr, uint8_t size, uint8_t stop)
 {
-	int16	Row1, Row2;
+	int16_t	Row1, Row2;
 
 	/* SR = 0x00*/
 
@@ -4227,13 +4227,13 @@ static void DSP4_OP09 (void)
 		/* process projection information*/
 
 		/* vehicle sprite*/
-		if ((uint16) DSP4.distance == 0x9000)
+		if ((uint16_t) DSP4.distance == 0x9000)
 		{
-			int16	car_left, car_right, car_back;
-			int16	impact_left, impact_back;
-			int16	world_spx, world_spy;
-			int16	view_spx, view_spy;
-			uint16	energy;
+			int16_t	car_left, car_right, car_back;
+			int16_t	impact_left, impact_back;
+			int16_t	world_spx, world_spy;
+			int16_t	view_spx, view_spy;
+			uint16_t	energy;
 
 			/* we already have 4 bytes we want*/
 			DSP4.in_count = 14;
@@ -4282,8 +4282,8 @@ static void DSP4_OP09 (void)
 		/* terrain sprite*/
 		else
 		{
-			int16	world_spx, world_spy;
-			int16	view_spx, view_spy;
+			int16_t	world_spx, world_spy;
+			int16_t	view_spx, view_spy;
 
 			/* we already have 4 bytes we want*/
 			DSP4.in_count = 10;
@@ -4317,11 +4317,11 @@ static void DSP4_OP09 (void)
 
 		do
 		{
-			int16	sp_x, sp_y, sp_attr, sp_dattr;
-			int16	sp_dx, sp_dy;
-			int16	pixels;
-			uint16	header;
-			bool8	draw;
+			int16_t	sp_x, sp_y, sp_attr, sp_dattr;
+			int16_t	sp_dx, sp_dy;
+			int16_t	pixels;
+			uint16_t	header;
+			uint8_t	draw;
 
 			DSP4.in_count = 2;
 			DSP4_WAIT(5);
@@ -4404,9 +4404,9 @@ static void DSP4_OP09 (void)
 	DSP4.waiting4command = TRUE;
 }
 
-static void DSP4_OP0A (int16 n2, int16 *o1, int16 *o2, int16 *o3, int16 *o4)
+static void DSP4_OP0A (int16_t n2, int16_t *o1, int16_t *o2, int16_t *o3, int16_t *o4)
 {
-	static const uint16	OP0A_Values[16] =
+	static const uint16_t	OP0A_Values[16] =
 	{
 		0x0000, 0x0030, 0x0060, 0x0090, 0x00c0, 0x00f0, 0x0120, 0x0150,
 		0xfe80, 0xfeb0, 0xfee0, 0xff10, 0xff40, 0xff70, 0xffa0, 0xffd0
@@ -4514,8 +4514,8 @@ static void DSP4_OP0D (void)
 		/* scan next command if no SR check needed*/
 		if (DSP4.segments)
 		{
-			int32	px_dx, py_dy;
-			int32	x_scroll, y_scroll;
+			int32_t	px_dx, py_dy;
+			int32_t	x_scroll, y_scroll;
 
 			/* SR = 0x00*/
 
@@ -4705,8 +4705,8 @@ static void DSP4_OP0F (void)
 		/* scan next command if no SR check needed*/
 		if (DSP4.segments)
 		{
-			int32	px_dx, py_dy;
-			int32	x_scroll, y_scroll;
+			int32_t	px_dx, py_dy;
+			int32_t	x_scroll, y_scroll;
 
 			for (DSP4.lcv = 0; DSP4.lcv < 4; DSP4.lcv++)
 			{
@@ -4718,8 +4718,8 @@ static void DSP4_OP0F (void)
 
 				for (;;)
 				{
-					int16	dist;
-					int16	color, red, green, blue;
+					int16_t	dist;
+					int16_t	color, red, green, blue;
 
 					dist  = DSP4_READ_WORD();
 					color = DSP4_READ_WORD();
@@ -4806,7 +4806,7 @@ static void DSP4_OP0F (void)
 			break;
 
 		/* road splice*/
-		if ((uint16) DSP4.distance == 0x8001)
+		if ((uint16_t) DSP4.distance == 0x8001)
 		{
 			DSP4.in_count = 6;
 			DSP4_WAIT(3);
@@ -4948,8 +4948,8 @@ static void DSP4_OP10 (void)
 
 				for (;;)
 				{
-					int16	dist;
-					int16	color, red, green, blue;
+					int16_t	dist;
+					int16_t	color, red, green, blue;
 
 					dist  = DSP4_READ_WORD();
 					color = DSP4_READ_WORD();
@@ -4976,8 +4976,8 @@ static void DSP4_OP10 (void)
 		/* scan next command if no SR check needed*/
 		if (DSP4.segments)
 		{
-			int32	px_dx, py_dy;
-			int32	x_scroll, y_scroll;
+			int32_t	px_dx, py_dy;
+			int32_t	x_scroll, y_scroll;
 
 			/* SR = 0x00*/
 
@@ -5048,7 +5048,7 @@ static void DSP4_OP10 (void)
 	DSP4.waiting4command = TRUE;
 }
 
-static void DSP4_OP11 (int16 A, int16 B, int16 C, int16 D, int16 *M)
+static void DSP4_OP11 (int16_t A, int16_t B, int16_t C, int16_t D, int16_t *M)
 {
 	/* 0x155 = 341 = Horizontal Width of the Screen*/
 	*M = ((A * 0x0155 >> 2) & 0xf000) | ((B * 0x0155 >> 6) & 0x0f00) | ((C * 0x0155 >> 10) & 0x00f0) | ((D * 0x0155 >> 14) & 0x000f);
@@ -5122,8 +5122,8 @@ static void DSP4_SetByte (void)
 			/* 16-bit multiplication*/
 			case 0x0000:
 			{
-				int16	multiplier, multiplicand;
-				int32	product;
+				int16_t	multiplier, multiplicand;
+				int32_t	product;
 
 				multiplier   = DSP4_READ_WORD();
 				multiplicand = DSP4_READ_WORD();
@@ -5175,7 +5175,7 @@ static void DSP4_SetByte (void)
 			/* unknown*/
 			case 0x000A:
 			{
-				int16 in2a, out1a, out2a, out3a, out4a;
+				int16_t in2a, out1a, out2a, out3a, out4a;
 
 				DSP4_READ_WORD();
 				in2a = DSP4_READ_WORD();
@@ -5195,10 +5195,10 @@ static void DSP4_SetByte (void)
 			/* set OAM*/
 			case 0x000B:
 			{
-				int16	sp_x    = DSP4_READ_WORD();
-				int16	sp_y    = DSP4_READ_WORD();
-				int16	sp_attr = DSP4_READ_WORD();
-				bool8	draw = TRUE;
+				int16_t	sp_x    = DSP4_READ_WORD();
+				int16_t	sp_y    = DSP4_READ_WORD();
+				int16_t	sp_attr = DSP4_READ_WORD();
+				uint8_t	draw = TRUE;
 
 				DSP4_CLEAR_OUT();
 				DSP4_OP0B(&draw, sp_x, sp_y, sp_attr, 0, 1);
@@ -5229,7 +5229,7 @@ static void DSP4_SetByte (void)
 			/* unknown: horizontal mapping command*/
 			case 0x0011:
 			{
-				int16	a, b, c, d, m;
+				int16_t	a, b, c, d, m;
 
 				d = DSP4_READ_WORD();
 				c = DSP4_READ_WORD();
@@ -5254,7 +5254,7 @@ static void DSP4_GetByte (void)
 {
 	if (DSP4.out_count)
 	{
-		DSP4.byte = (uint8) DSP4.output[DSP4.out_index & 0x1FF];
+		DSP4.byte = (uint8_t) DSP4.output[DSP4.out_index & 0x1FF];
 
 		DSP4.out_index++;
 		if (DSP4.out_count == DSP4.out_index)
@@ -5264,7 +5264,7 @@ static void DSP4_GetByte (void)
 		DSP4.byte = 0xff;
 }
 
-void DSP4SetByte (uint8 byte, uint16 address)
+void DSP4SetByte (uint8_t byte, uint16_t address)
 {
 	if (address < DSP0.boundary)
 	{
@@ -5274,7 +5274,7 @@ void DSP4SetByte (uint8 byte, uint16 address)
 	}
 }
 
-uint8 DSP4GetByte (uint16 address)
+uint8_t DSP4GetByte (uint16_t address)
 {
 	if (address < DSP0.boundary)
 	{

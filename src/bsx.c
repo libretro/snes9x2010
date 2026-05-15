@@ -191,7 +191,7 @@
 
 #include <streams/file_stream.h>
 
-extern uint8 OpenBus;
+extern uint8_t OpenBus;
 
 #define BIOS_SIZE	0x100000
 #define FLASH_SIZE	0x200000
@@ -211,7 +211,7 @@ static struct SBSX_RTC	BSX_RTC;
 
 /* flash card vendor information */
 
-static const uint8	flashcard[20] =
+static const uint8_t	flashcard[20] =
 {
 	0x4D, 0x00, 0x50, 0x00,			/* vendor id */
 	0x00, 0x00,				/* ? */
@@ -220,7 +220,7 @@ static const uint8	flashcard[20] =
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static const uint8	init2192[32] =	/* FIXME */
+static const uint8_t	init2192[32] =	/* FIXME */
 {
 	00, 00, 00, 00, 00,		/* unknown */
 	01, 01, 00, 00, 00,
@@ -232,9 +232,9 @@ static const uint8	init2192[32] =	/* FIXME */
 	00, 00, 00, 00, 00, 00, 00, 00, 00
 };
 
-static bool8	FlashMode;
-static uint32	FlashSize;
-static uint8	*MapROM, *FlashROM;
+static uint8_t	FlashMode;
+static uint32_t	FlashSize;
+static uint8_t	*MapROM, *FlashROM;
 
 static void BSX_Map_SNES (void)
 {
@@ -250,12 +250,12 @@ static void BSX_Map_SNES (void)
 		Memory.BlockIsRAM[c + 0] = Memory.BlockIsRAM[c + 0x800] = TRUE;
 		Memory.BlockIsRAM[c + 1] = Memory.BlockIsRAM[c + 0x801] = TRUE;
 
-		Memory.Map[c + 2] = Memory.Map[c + 0x802] = (uint8 *) MAP_PPU;
-		Memory.Map[c + 3] = Memory.Map[c + 0x803] = (uint8 *) MAP_PPU;
-		Memory.Map[c + 4] = Memory.Map[c + 0x804] = (uint8 *) MAP_CPU;
-		Memory.Map[c + 5] = Memory.Map[c + 0x805] = (uint8 *) MAP_CPU;
-		Memory.Map[c + 6] = Memory.Map[c + 0x806] = (uint8 *) MAP_NONE;
-		Memory.Map[c + 7] = Memory.Map[c + 0x807] = (uint8 *) MAP_NONE;
+		Memory.Map[c + 2] = Memory.Map[c + 0x802] = (uint8_t *) MAP_PPU;
+		Memory.Map[c + 3] = Memory.Map[c + 0x803] = (uint8_t *) MAP_PPU;
+		Memory.Map[c + 4] = Memory.Map[c + 0x804] = (uint8_t *) MAP_CPU;
+		Memory.Map[c + 5] = Memory.Map[c + 0x805] = (uint8_t *) MAP_CPU;
+		Memory.Map[c + 6] = Memory.Map[c + 0x806] = (uint8_t *) MAP_NONE;
+		Memory.Map[c + 7] = Memory.Map[c + 0x807] = (uint8_t *) MAP_NONE;
 	}
 }
 
@@ -329,7 +329,7 @@ static void BSX_Map_MMC (void)
 	/* Banks 01->0E:5000-5FFF */
 	for (c = 0x010; c < 0x0F0; c += 16)
 	{
-		Memory.Map[c + 5] = (uint8 *) MAP_BSX;
+		Memory.Map[c + 5] = (uint8_t *) MAP_BSX;
 		Memory.BlockIsRAM[c + 5] = Memory.BlockIsROM[c + 5] = FALSE;
 	}
 }
@@ -343,7 +343,7 @@ static void BSX_Map_FlashIO (void)
 		/* Bank C0:0000, 2AAA, 5555, FF00-FF1F */
 		for (c = 0; c < 16; c++)
 		{
-			Memory.Map[c + 0xC00] = (uint8 *) MAP_BSX;
+			Memory.Map[c + 0xC00] = (uint8_t *) MAP_BSX;
 			Memory.BlockIsRAM[c + 0xC00] = TRUE;
 			Memory.BlockIsROM[c + 0xC00] = FALSE;
 		}
@@ -357,13 +357,13 @@ static void BSX_Map_SRAM (void)
 	/* Banks 10->17:5000-5FFF */
 	for (c = 0x100; c < 0x180; c += 16)
 	{
-		Memory.Map[c + 5] = (uint8 *) Memory.SRAM + ((c & 0x70) << 8) - 0x5000;
+		Memory.Map[c + 5] = (uint8_t *) Memory.SRAM + ((c & 0x70) << 8) - 0x5000;
 		Memory.BlockIsRAM[c + 5] = TRUE;
 		Memory.BlockIsROM[c + 5] = FALSE;
 	}
 }
 
-static void map_psram_mirror_sub (uint32 bank)
+static void map_psram_mirror_sub (uint32_t bank)
 {
 	int	i, c;
 
@@ -569,7 +569,7 @@ static void BSX_Map (void)
 	map_WriteProtectROM();
 }
 
-static uint8 BSX_Get_Bypass_FlashIO (uint16 offset)
+static uint8_t BSX_Get_Bypass_FlashIO (uint16_t offset)
 {
 	if (BSX.MMC[0x02])
 		return (MapROM[offset]);
@@ -582,7 +582,7 @@ static uint8 BSX_Get_Bypass_FlashIO (uint16 offset)
 	}
 }
 
-static void BSX_Set_Bypass_FlashIO (uint16 offset, uint8 byte)
+static void BSX_Set_Bypass_FlashIO (uint16_t offset, uint8_t byte)
 {
 	if (BSX.MMC[0x02])
 		MapROM[offset] = byte;
@@ -595,11 +595,11 @@ static void BSX_Set_Bypass_FlashIO (uint16 offset, uint8 byte)
 	}
 }
 
-uint8 S9xGetBSX (uint32 address)
+uint8_t S9xGetBSX (uint32_t address)
 {
-	uint8	bank = (address >> 16) & 0xFF;
-	uint16	offset = address & 0xFFFF;
-	uint8	t = 0;
+	uint8_t	bank = (address >> 16) & 0xFF;
+	uint16_t	offset = address & 0xFFFF;
+	uint8_t	t = 0;
 
 	/* MMC */
 	if ((bank >= 0x01 && bank <= 0x0E) && (offset == 0x5000))
@@ -644,10 +644,10 @@ uint8 S9xGetBSX (uint32 address)
 	return (t);
 }
 
-void S9xSetBSX (uint8 byte, uint32 address)
+void S9xSetBSX (uint8_t byte, uint32_t address)
 {
-	uint8	bank = (address >> 16) & 0xFF;
-	uint16	offset = address & 0xFFFF;
+	uint8_t	bank = (address >> 16) & 0xFF;
+	uint16_t	offset = address & 0xFFFF;
 
 	/* MMC */
 	if ((bank >= 0x01 && bank <= 0x0E) && (offset == 0x5000))
@@ -762,9 +762,9 @@ void S9xSetBSX (uint8 byte, uint32 address)
 	}
 }
 
-uint8 S9xGetBSXPPU (uint16 address)
+uint8_t S9xGetBSXPPU (uint16_t address)
 {
-	uint8	t;
+	uint8_t	t;
 
 	/* known read registers */
 	switch (address)
@@ -870,7 +870,7 @@ uint8 S9xGetBSXPPU (uint16 address)
 	return (t);
 }
 
-void S9xSetBSXPPU (uint8 byte, uint16 address)
+void S9xSetBSXPPU (uint8_t byte, uint16_t address)
 {
 	/* known write registers */
 	switch (address)
@@ -951,16 +951,16 @@ void S9xSetBSXPPU (uint8 byte, uint16 address)
 	}
 }
 
-uint8 * S9xGetBasePointerBSX (uint32 address)
+uint8_t * S9xGetBasePointerBSX (uint32_t address)
 {
 	return (MapROM);
 }
 
-static bool8 BSX_LoadBIOS (void)
+static uint8_t BSX_LoadBIOS (void)
 {
 	RFILE	*fp = NULL;
 	char	path[PATH_MAX + 1], name[PATH_MAX + 1];
-	bool8	r = FALSE;
+	uint8_t	r = FALSE;
 
 	strcpy(path, S9xGetDirectory(BIOS_DIR));
 	strcat(path, SLASH_STR);
@@ -993,7 +993,7 @@ static bool8 BSX_LoadBIOS (void)
 	return (r);
 }
 
-static bool8 valid_normal_bank (unsigned char bankbyte)
+static uint8_t valid_normal_bank (unsigned char bankbyte)
 {
 	if(bankbyte == 32 || bankbyte == 33 || bankbyte == 48 || bankbyte == 49)
 		return TRUE;
@@ -1020,7 +1020,7 @@ static int is_bsx (unsigned char *p)
 void S9xInitBSX (void)
 {
 	int r1, r2;
-	uint8 *header;
+	uint8_t *header;
 	time_t		t;
 	struct tm	*tmr;
 
@@ -1144,8 +1144,8 @@ void S9xResetBSX (void)
 
 void S9xBSXPostLoadState (void)
 {
-	uint8	temp[16];
-	bool8	pd1, pd2;
+	uint8_t	temp[16];
+	uint8_t	pd1, pd2;
 
 	pd1 = BSX.dirty;
 	pd2 = BSX.dirty2;

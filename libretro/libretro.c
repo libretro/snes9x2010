@@ -310,7 +310,7 @@ static void     *sw_fb_data          = NULL;
 static unsigned  sw_fb_width         = 0;
 static unsigned  sw_fb_height        = 0;
 static size_t    sw_fb_pitch         = 0;
-static uint16   *sw_fb_saved_screen  = NULL;
+static uint16_t   *sw_fb_saved_screen  = NULL;
 static int       sw_fb_saved_pitch   = 0;
 
 /* Persistent buffer pointers. GFX.Screen is allowed to be temporarily
@@ -1073,7 +1073,7 @@ void retro_init(void)
 
 #if defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && !defined(GEKKO) && !defined(_3DS) && !defined(__SWITCH__) && !defined(VITA)
 	/* GFX.Pitch is already in bytes (= MAX_BUFFER_WIDTH * sizeof(uint16_t));
-	   buffer size is Pitch * lines, not Pitch * lines * sizeof(uint16) again.
+	   buffer size is Pitch * lines, not Pitch * lines * sizeof(uint16_t) again.
 	   request 128-bit alignment here if possible.
 	   posix_memalign output goes through void* temporaries to avoid the
 	   strict-aliasing violation that '(void**)&GFX.Screen' would create. */
@@ -1084,14 +1084,14 @@ void retro_init(void)
 			tmp_screen = NULL;
 		if (posix_memalign(&tmp_ntsc, 16, GFX.Pitch * MAX_SNES_HEIGHT) != 0)
 			tmp_ntsc = NULL;
-		GFX.Screen         = (uint16 *)tmp_screen;
+		GFX.Screen         = (uint16_t *)tmp_screen;
 		ntsc_screen_buffer = (uint16_t *)tmp_ntsc;
 	}
 #elif defined(_3DS)
-	GFX.Screen = (uint16*) linearMemAlign(GFX.Pitch * 512, 0x80);
+	GFX.Screen = (uint16_t*) linearMemAlign(GFX.Pitch * 512, 0x80);
 	ntsc_screen_buffer = (uint16_t*)linearMemAlign(GFX.Pitch * MAX_SNES_HEIGHT, 0x80);
 #else
-	GFX.Screen = (uint16*) calloc(1, GFX.Pitch * 512);
+	GFX.Screen = (uint16_t*) calloc(1, GFX.Pitch * 512);
 	ntsc_screen_buffer = (uint16_t *)calloc(1, GFX.Pitch * MAX_SNES_HEIGHT);
 #endif
 	if ((!GFX.Screen || !ntsc_screen_buffer) && log_cb)
@@ -1420,13 +1420,13 @@ static void sw_fb_acquire_internal(unsigned width, unsigned height)
 	if ((int)fb.pitch > GFX.Pitch)
 		return;
 	/* Sanity: pitch must accommodate the requested width. */
-	if (fb.pitch < width * sizeof(uint16))
+	if (fb.pitch < width * sizeof(uint16_t))
 		return;
 
 	sw_fb_saved_screen = GFX.Screen;
 	sw_fb_saved_pitch  = GFX.Pitch;
 
-	GFX.Screen   = (uint16 *)fb.data;
+	GFX.Screen   = (uint16_t *)fb.data;
 	GFX.Pitch    = (int)fb.pitch;
 	GFX.RealPPL  = GFX.Pitch >> 1;
 	GFX.PPL      = GFX.RealPPL << (IPPU.DoubleHeightPixels ? 1 : 0);
@@ -1467,7 +1467,7 @@ void S9xLibretroSwFbAbort(void)
 	   when a mid-frame promotion fires. */
 	src = (const uint8_t *)sw_fb_data;
 	dst = (uint8_t *)sw_fb_saved_screen;
-	copy_bytes = sw_fb_width * sizeof(uint16);
+	copy_bytes = sw_fb_width * sizeof(uint16_t);
 	for (y = 0; y < sw_fb_height; y++)
 	{
 		memcpy(dst, src, copy_bytes);
@@ -1586,7 +1586,7 @@ void retro_run(void)
 
 size_t retro_serialize_size(void)
 {
-	int32 size = SnapshotSize();
+	int32_t size = SnapshotSize();
 
 	if (size < 0)
 		return 0;
@@ -1630,11 +1630,11 @@ void retro_cheat_reset(void)
 
 void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {
-	uint32 address;
-	uint8 val;
+	uint32_t address;
+	uint8_t val;
 
-	bool8 sram;
-	uint8 bytes[3]; /* used only by GoldFinger, ignored for now */
+	uint8_t sram;
+	uint8_t bytes[3]; /* used only by GoldFinger, ignored for now */
 
 	if (S9xGameGenieToRaw(code, &address, &val) != NULL &&
 		S9xProActionReplayToRaw(code, &address, &val) != NULL &&

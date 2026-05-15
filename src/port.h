@@ -192,17 +192,7 @@
 
 #define PIXEL_FORMAT RGB565
 
-typedef unsigned char		bool8;
-
 #include <stdint.h>
-typedef int8_t			int8;
-typedef uint8_t			uint8;
-typedef int16_t			int16;
-typedef uint16_t		uint16;
-typedef int32_t			int32;
-typedef uint32_t		uint32;
-typedef int64_t			int64;
-typedef uint64_t		uint64;
 
 #ifndef TRUE
 #define TRUE	1
@@ -231,14 +221,17 @@ typedef uint64_t		uint64;
 #define SLASH_CHAR	'/'
 #endif
 
-#if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || defined(__x86_64__) || defined(__alpha__) || defined(__MIPSEL__) || defined(_M_IX86) || defined(_M_X64) || defined(_XBOX1) || (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) || defined(ANDROID)) || defined(PSP) || defined(__BLACKBERRY_QNX__) || defined(IOS) || defined(ARM)
-#ifndef EMSCRIPTEN
-#define FAST_LSB_WORD_ACCESS
-#endif
-#else
-#ifndef MSB_FIRST
+/* Endianness is a compile-time property.
+ *
+ *   MSB_FIRST defined     -> host is big endian
+ *   MSB_FIRST not defined -> host is little endian
+ *
+ * Big-endian targets (PS3, Wii, GameCube, ...) define MSB_FIRST from
+ * their build files. As a safety net, also honour the compiler's
+ * __BYTE_ORDER__ macro when it is available so a big-endian build can
+ * never silently fall through to the little-endian fast paths. */
+#if !defined(MSB_FIRST) && defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
 #define MSB_FIRST
-#endif
 #endif
 
 #ifdef _MSC_VER
@@ -247,33 +240,40 @@ typedef uint64_t		uint64;
 #define strncasecmp _strnicmp
 #endif
 
-#if defined(FAST_LSB_WORD_ACCESS)
-#define READ_WORD(s)		(*(uint16 *) (s))
-#define WRITE_WORD(s, d)	*(uint16 *) (s) = (d)
-#elif __SNC__
+#ifndef MSB_FIRST
+/* Little-endian host: SNES memory layout matches the host, so word
+ * accesses are plain (possibly unaligned) loads and stores. */
+#define READ_WORD(s)		(*(uint16_t *) (s))
+#define WRITE_WORD(s, d)	(*(uint16_t *) (s) = (uint16_t) (d))
+#define READ_3WORD(s)		(*(uint32_t *) (s) & 0x00ffffff)
+#define READ_DWORD(s)		(*(uint32_t *) (s))
+#define WRITE_3WORD(s, d)	(*(uint16_t *) (s) = (uint16_t) (d), \
+				 *((uint8_t *) (s) + 2) = (uint8_t) ((d) >> 16))
+#else
+/* Big-endian host: SNES data is little endian, so it must be byte
+ * swapped. PowerPC has byte-reversed load/store instructions; use them
+ * where available and fall back to manual assembly otherwise. */
+#if defined(__SNC__)
 #include <ppu_intrinsics.h>
 #define READ_WORD(s)		(__builtin_lhbrx(s, 0))
 #define WRITE_WORD(s, d)	(__builtin_sthbrx(d, s, 0))
-#elif _XBOX360
+#elif defined(_XBOX360)
 #include <PPCIntrinsics.h>
-#define READ_WORD( s )        (__loadshortbytereverse(0, s))
-#define WRITE_WORD( s, d )    (__storeshortbytereverse(d, 0, s))
+#define READ_WORD(s)		(__loadshortbytereverse(0, s))
+#define WRITE_WORD(s, d)	(__storeshortbytereverse(d, 0, s))
 #elif defined(GEKKO) || defined(__PPC__) || defined(__powerpc__)
-#define READ_WORD( addr )        ({unsigned ppc_lhbrx_; asm( "lhbrx %0,0,%1" : "=r" (ppc_lhbrx_) : "r" (addr), "0" (ppc_lhbrx_) ); ppc_lhbrx_;})
-#define WRITE_WORD( addr, in )    ({asm( "sthbrx %0,0,%1" : : "r" (in), "r" (addr) );})
+#define READ_WORD(addr)		({unsigned ppc_lhbrx_; asm( "lhbrx %0,0,%1" : "=r" (ppc_lhbrx_) : "r" (addr), "0" (ppc_lhbrx_) ); ppc_lhbrx_;})
+#define WRITE_WORD(addr, in)	({asm( "sthbrx %0,0,%1" : : "r" (in), "r" (addr) );})
 #else
-#define READ_WORD(s)		(*(uint8 *) (s) | (*((uint8 *) (s) + 1) << 8))
-#define WRITE_WORD(s, d)	*(uint8 *) (s) = (uint8) (d), *((uint8 *) (s) + 1) = (uint8) ((d) >> 8)
+#define READ_WORD(s)		(*(uint8_t *) (s) | (*((uint8_t *) (s) + 1) << 8))
+#define WRITE_WORD(s, d)	(*(uint8_t *) (s) = (uint8_t) (d), \
+				 *((uint8_t *) (s) + 1) = (uint8_t) ((d) >> 8))
 #endif
-
-#if defined(FAST_LSB_WORD_ACCESS)
-#define READ_3WORD(s)		(*(uint32 *) (s) & 0x00ffffff)
-#define READ_DWORD(s)		(*(uint32 *) (s))
-#define WRITE_3WORD(s, d)	*(uint16 *) (s) = (uint16) (d), *((uint8 *) (s) + 2) = (uint8) ((d) >> 16)
-#else
-#define READ_3WORD(s)		(*(uint8 *) (s) | (*((uint8 *) (s) + 1) << 8) | (*((uint8 *) (s) + 2) << 16))
-#define READ_DWORD(s)		(*(uint8 *) (s) | (*((uint8 *) (s) + 1) << 8) | (*((uint8 *) (s) + 2) << 16) | (*((uint8 *) (s) + 3) << 24))
-#define WRITE_3WORD(s, d)	*(uint8 *) (s) = (uint8) (d), *((uint8 *) (s) + 1) = (uint8) ((d) >> 8), *((uint8 *) (s) + 2) = (uint8) ((d) >> 16)
+#define READ_3WORD(s)		(*(uint8_t *) (s) | (*((uint8_t *) (s) + 1) << 8) | (*((uint8_t *) (s) + 2) << 16))
+#define READ_DWORD(s)		(*(uint8_t *) (s) | (*((uint8_t *) (s) + 1) << 8) | (*((uint8_t *) (s) + 2) << 16) | (*((uint8_t *) (s) + 3) << 24))
+#define WRITE_3WORD(s, d)	(*(uint8_t *) (s) = (uint8_t) (d), \
+				 *((uint8_t *) (s) + 1) = (uint8_t) ((d) >> 8), \
+				 *((uint8_t *) (s) + 2) = (uint8_t) ((d) >> 16))
 #endif
 
 #include "pixform.h"
@@ -308,6 +308,6 @@ typedef uint64_t		uint64;
 
 #endif
 
-int32 memory_speed (uint32 address);
+int32_t memory_speed (uint32_t address);
 
 #endif

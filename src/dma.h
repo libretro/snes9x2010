@@ -182,22 +182,22 @@
 
 struct SDMA
 {
-	bool8	ReverseTransfer;
-	bool8	HDMAIndirectAddressing;
-	bool8	UnusedBit43x0;
-	bool8	AAddressFixed;
-	bool8	AAddressDecrement;
-	uint8	TransferMode;
-	uint8	BAddress;
-	uint16	AAddress;
-	uint8	ABank;
-	uint16	DMACount_Or_HDMAIndirectAddress;
-	uint8	IndirectBank;
-	uint16	Address;
-	uint8	Repeat;
-	uint8	LineCount;
-	uint8	UnknownByte;
-	uint8	DoTransfer;
+	uint8_t	ReverseTransfer;
+	uint8_t	HDMAIndirectAddressing;
+	uint8_t	UnusedBit43x0;
+	uint8_t	AAddressFixed;
+	uint8_t	AAddressDecrement;
+	uint8_t	TransferMode;
+	uint8_t	BAddress;
+	uint16_t	AAddress;
+	uint8_t	ABank;
+	uint16_t	DMACount_Or_HDMAIndirectAddress;
+	uint8_t	IndirectBank;
+	uint16_t	Address;
+	uint8_t	Repeat;
+	uint8_t	LineCount;
+	uint8_t	UnknownByte;
+	uint8_t	DoTransfer;
 };
 
 #define TransferBytes	DMACount_Or_HDMAIndirectAddress

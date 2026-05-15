@@ -226,31 +226,31 @@ typedef union
    struct
    {
 #ifdef MSB_FIRST
-	uint8	h;
-   uint8 l;
+	uint8_t	h;
+   uint8_t l;
 #else
-	uint8	l;
-   uint8 h;
+	uint8_t	l;
+   uint8_t h;
 #endif
    } B;
-	uint16	W;
+	uint16_t	W;
 }	pair;
 
 typedef union
 {
 #ifdef MSB_FIRST
-	struct { uint8	z, xPB, xPCh, xPCl; } B;
-	struct { uint16	d, xPC; } W;
+	struct { uint8_t	z, xPB, xPCh, xPCl; } B;
+	struct { uint16_t	d, xPC; } W;
 #else
-	struct { uint8	xPCl, xPCh, xPB, z; } B;
-	struct { uint16	xPC, d; } W;
+	struct { uint8_t	xPCl, xPCh, xPB, z; } B;
+	struct { uint16_t	xPC, d; } W;
 #endif
-    uint32	xPBPC;
+    uint32_t	xPBPC;
 }	PC_t;
 
 struct SRegisters
 {
-	uint8	DB;
+	uint8_t	DB;
 	pair	P;
 	pair	A;
 	pair	D;

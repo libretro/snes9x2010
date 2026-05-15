@@ -447,17 +447,17 @@ typedef struct
 
 #define SPC_SAVE_STATE_BLOCK_SIZE	(STATE_SIZE + 8)
 
-bool8 S9xInitAPU (void);
+uint8_t S9xInitAPU (void);
 void S9xResetAPU (void);
 void S9xSoftResetAPU (void);
-uint8 S9xAPUReadPort (int port);
-void S9xAPUWritePort (int port, uint8 byte);
+uint8_t S9xAPUReadPort (int port);
+void S9xAPUWritePort (int port, uint8_t byte);
 void S9xAPUExecute (void);
-void S9xAPUSetReferenceTime (int32 cpucycles);
+void S9xAPUSetReferenceTime (int32_t cpucycles);
 void S9xAPUTimingSetSpeedup (int ticks);
-void S9xAPUAllowTimeOverflow (bool8 allow);
-void S9xAPULoadState (uint8 * block);
-void S9xAPUSaveState (uint8 * block);
+void S9xAPUAllowTimeOverflow (uint8_t allow);
+void S9xAPULoadState (uint8_t * block);
+void S9xAPUSaveState (uint8_t * block);
 
 void S9xInitSound (void);
 

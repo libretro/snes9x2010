@@ -183,16 +183,16 @@
 #include "memmap.h"
 #include "seta.h"
 
-uint8	(*GetSETA) (uint32)        = &S9xGetST010;
-void	(*SetSETA) (uint32, uint8) = &S9xSetST010;
+uint8_t	(*GetSETA) (uint32_t)        = &S9xGetST010;
+void	(*SetSETA) (uint32_t, uint8_t) = &S9xSetST010;
 
 
-uint8 S9xGetSetaDSP (uint32 Address)
+uint8_t S9xGetSetaDSP (uint32_t Address)
 {
 	return (GetSETA(Address));
 }
 
-void S9xSetSetaDSP (uint8 Byte, uint32 Address)
+void S9xSetSetaDSP (uint8_t Byte, uint32_t Address)
 {
 	SetSETA (Address, Byte);
 }
@@ -201,7 +201,7 @@ void S9xSetSetaDSP (uint8 Byte, uint32 Address)
  Seta 010
 ***********************************************************************************/
 
-static const int16	ST010_SinTable[256] =
+static const int16_t	ST010_SinTable[256] =
 {
 	 0x0000,  0x0324,  0x0648,  0x096a,  0x0c8c,  0x0fab,  0x12c8,  0x15e2,
 	 0x18f9,  0x1c0b,  0x1f1a,  0x2223,  0x2528,  0x2826,  0x2b1f,  0x2e11,
@@ -237,7 +237,7 @@ static const int16	ST010_SinTable[256] =
 	-0x18f8, -0x15e2, -0x12c8, -0x0fab, -0x0c8b, -0x096a, -0x0647, -0x0324
 };
 
-static const uint8	ST010_ArcTan[32][32] =
+static const uint8_t	ST010_ArcTan[32][32] =
 {
 	{ 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
 	  0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 },
@@ -306,7 +306,7 @@ static const uint8	ST010_ArcTan[32][32] =
 };
 
 /* Mode 7 scaling constants for all raster lines*/
-static const int16	ST010_M7Scale[176] =
+static const int16_t	ST010_M7Scale[176] =
 {
 	0x0380, 0x0325, 0x02da, 0x029c, 0x0268, 0x023b, 0x0215, 0x01f3,
 	0x01d5, 0x01bb, 0x01a3, 0x018e, 0x017b, 0x016a, 0x015a, 0x014b,
@@ -338,17 +338,17 @@ static const int16	ST010_M7Scale[176] =
 
 #define ST010_WORD(offset)	(Memory.SRAM[offset + 1] << 8) | Memory.SRAM[offset]
 
-static int16 ST010_Sin (int16 Theta)
+static int16_t ST010_Sin (int16_t Theta)
 {
 	return (ST010_SinTable[(Theta >> 8) & 0xff]);
 }
 
-static int16 ST010_Cos (int16 Theta)
+static int16_t ST010_Cos (int16_t Theta)
 {
 	return (ST010_SinTable[((Theta + 0x4000) >> 8) & 0xff]);
 }
 
-static void ST010_OP01 (int16 x0, int16 y0, int16 * x1, int16 * y1, int16 * Quadrant, int16 * Theta)
+static void ST010_OP01 (int16_t x0, int16_t y0, int16_t * x1, int16_t * y1, int16_t * Quadrant, int16_t * Theta)
 {
 	if ((x0 < 0) && (y0 < 0))
 	{
@@ -391,28 +391,28 @@ static void ST010_OP01 (int16 x0, int16 y0, int16 * x1, int16 * y1, int16 * Quad
 	*Theta = (ST010_ArcTan[*y1][*x1] << 8) ^ *Quadrant;
 }
 
-static void ST010_Scale (int16 Multiplier, int16 X0, int16 Y0, int32 *X1, int32 * Y1)
+static void ST010_Scale (int16_t Multiplier, int16_t X0, int16_t Y0, int32_t *X1, int32_t * Y1)
 {
 	*X1 = X0 * Multiplier << 1;
 	*Y1 = Y0 * Multiplier << 1;
 }
 
-static void ST010_Multiply (int16 Multiplicand, int16 Multiplier, int32 * Product)
+static void ST010_Multiply (int16_t Multiplicand, int16_t Multiplier, int32_t * Product)
 {
 	*Product = Multiplicand * Multiplier << 1;
 }
 
-static void ST010_Rotate (int16 Theta, int16 X0, int16 Y0, int16 * X1, int16 * Y1)
+static void ST010_Rotate (int16_t Theta, int16_t X0, int16_t Y0, int16_t * X1, int16_t * Y1)
 {
 	*X1 = (Y0 * ST010_Sin(Theta) >> 15) + (X0 * ST010_Cos(Theta) >> 15);
 	*Y1 = (Y0 * ST010_Cos(Theta) >> 15) - (X0 * ST010_Sin(Theta) >> 15);
 }
 
-static void ST010_SortDrivers (uint16 Positions, uint16 Places[32], uint16 Drivers[32])
+static void ST010_SortDrivers (uint16_t Positions, uint16_t Places[32], uint16_t Drivers[32])
 {
 	int i;
-	bool8	Sorted;
-	uint16	Temp;
+	uint8_t	Sorted;
+	uint16_t	Temp;
 
 	if (Positions > 1)
 	{
@@ -442,7 +442,7 @@ static void ST010_SortDrivers (uint16 Positions, uint16 Places[32], uint16 Drive
 	}
 }
 
-uint8 S9xGetST010 (uint32 Address)
+uint8_t S9xGetST010 (uint32_t Address)
 {
 	if (!(Address & 0x80000))
 		return (0x80);
@@ -456,7 +456,7 @@ uint8 S9xGetST010 (uint32 Address)
 	return (Memory.SRAM[Address & Memory.SRAMMask]);
 }
 
-void S9xSetST010 (uint32 Address, uint8 Byte)
+void S9xSetST010 (uint32_t Address, uint8_t Byte)
 {
 	if (!(Address & 0x80000))
 	{
@@ -489,11 +489,11 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 		/*	*/
 			case 0x02:
 			{
-			#ifdef FAST_LSB_WORD_ACCESS
-				ST010_SortDrivers(*(uint16 *) (Memory.SRAM + 0x0024), (uint16 *) (Memory.SRAM + 0x0040), (uint16 *) (Memory.SRAM + 0x0080));
+			#ifndef MSB_FIRST
+				ST010_SortDrivers(*(uint16_t *) (Memory.SRAM + 0x0024), (uint16_t *) (Memory.SRAM + 0x0040), (uint16_t *) (Memory.SRAM + 0x0080));
 			#else
-				uint16	Places[32];
-				uint16	Positions = ST010_WORD(0x0024);
+				uint16_t	Places[32];
+				uint16_t	Positions = ST010_WORD(0x0024);
 				int		Pos, Offset;
 
 				Offset = 0;
@@ -504,14 +504,14 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 					Offset += 2;
 				}
 
-				ST010_SortDrivers(Positions, Places, (uint16 *) (Memory.SRAM + 0x0080));
+				ST010_SortDrivers(Positions, Places, (uint16_t *) (Memory.SRAM + 0x0080));
 
 				Offset = 0;
 
 				for (Pos = 0; Pos < Positions; Pos++)
 				{
-					Memory.SRAM[0x0040 + Offset] = (uint8) (Places[Pos]);
-					Memory.SRAM[0x0041 + Offset] = (uint8) (Places[Pos] >> 8);
+					Memory.SRAM[0x0040 + Offset] = (uint8_t) (Places[Pos]);
+					Memory.SRAM[0x0041 + Offset] = (uint8_t) (Places[Pos] >> 8);
 					Offset += 2;
 				}
 			#endif
@@ -530,23 +530,23 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 		/*	*/
 			case 0x03:
 			{
-			#ifdef FAST_LSB_WORD_ACCESS
+			#ifndef MSB_FIRST
 				ST010_Scale(*(int16_t*)&Memory.SRAM[0x0004], *(int16_t*)&Memory.SRAM[0x0000],
                         *(int16_t*)&Memory.SRAM[0x0002],  (int32_t*)&Memory.SRAM[0x0010],
                          (int32_t*)&Memory.SRAM[0x0014]);
 			#else
-				int32	x1, y1;
+				int32_t	x1, y1;
 
 				ST010_Scale(ST010_WORD(0x0004), ST010_WORD(0x0000), ST010_WORD(0x0002), &x1, &y1);
 
-				Memory.SRAM[0x0010] = (uint8) (x1);
-				Memory.SRAM[0x0011] = (uint8) (x1 >> 8);
-				Memory.SRAM[0x0012] = (uint8) (x1 >> 16);
-				Memory.SRAM[0x0013] = (uint8) (x1 >> 24);
-				Memory.SRAM[0x0014] = (uint8) (y1);
-				Memory.SRAM[0x0015] = (uint8) (y1 >> 8);
-				Memory.SRAM[0x0016] = (uint8) (y1 >> 16);
-				Memory.SRAM[0x0017] = (uint8) (y1 >> 24);
+				Memory.SRAM[0x0010] = (uint8_t) (x1);
+				Memory.SRAM[0x0011] = (uint8_t) (x1 >> 8);
+				Memory.SRAM[0x0012] = (uint8_t) (x1 >> 16);
+				Memory.SRAM[0x0013] = (uint8_t) (x1 >> 24);
+				Memory.SRAM[0x0014] = (uint8_t) (y1);
+				Memory.SRAM[0x0015] = (uint8_t) (y1 >> 8);
+				Memory.SRAM[0x0016] = (uint8_t) (y1 >> 16);
+				Memory.SRAM[0x0017] = (uint8_t) (y1 >> 24);
 			#endif
 				break;
 			}
@@ -561,18 +561,18 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 		/*	*/
 			case 0x06:
 			{
-			#ifdef FAST_LSB_WORD_ACCESS
+			#ifndef MSB_FIRST
 				ST010_Multiply(*(int16_t *)&Memory.SRAM[0x0000], *(int16_t *) &Memory.SRAM[0x0002],
                   (int32_t *)&Memory.SRAM[0x0010]);
 			#else
-				int32	Product;
+				int32_t	Product;
 
 				ST010_Multiply(ST010_WORD(0x0000), ST010_WORD(0x0002), &Product);
 
-				Memory.SRAM[0x0010] = (uint8) (Product);
-				Memory.SRAM[0x0011] = (uint8) (Product >> 8);
-				Memory.SRAM[0x0012] = (uint8) (Product >> 16);
-				Memory.SRAM[0x0013] = (uint8) (Product >> 24);
+				Memory.SRAM[0x0010] = (uint8_t) (Product);
+				Memory.SRAM[0x0011] = (uint8_t) (Product >> 8);
+				Memory.SRAM[0x0012] = (uint8_t) (Product >> 16);
+				Memory.SRAM[0x0013] = (uint8_t) (Product >> 24);
 			#endif
 				break;
 			}
@@ -589,32 +589,32 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 		/*	*/
 			case 0x07:
 			{
-				int32 line;
-				int16	data;
-				int32	offset = 0;
-				int16	Theta = ST010_WORD(0x0000);
+				int32_t line;
+				int16_t	data;
+				int32_t	offset = 0;
+				int16_t	Theta = ST010_WORD(0x0000);
 
 				for ( line = 0; line < 176; line++)
 				{
 					/* Calculate Mode 7 Matrix A/D data*/
 					data = ST010_M7Scale[line] * ST010_Cos(Theta) >> 15;
 
-					Memory.SRAM[0x00f0 + offset] = (uint8) (data);
-					Memory.SRAM[0x00f1 + offset] = (uint8) (data >> 8);
-					Memory.SRAM[0x0510 + offset] = (uint8) (data);
-					Memory.SRAM[0x0511 + offset] = (uint8) (data >> 8);
+					Memory.SRAM[0x00f0 + offset] = (uint8_t) (data);
+					Memory.SRAM[0x00f1 + offset] = (uint8_t) (data >> 8);
+					Memory.SRAM[0x0510 + offset] = (uint8_t) (data);
+					Memory.SRAM[0x0511 + offset] = (uint8_t) (data >> 8);
 
 					/* Calculate Mode 7 Matrix B/C data*/
 					data = ST010_M7Scale[line] * ST010_Sin(Theta) >> 15;
 
-					Memory.SRAM[0x0250 + offset] = (uint8) (data);
-					Memory.SRAM[0x0251 + offset] = (uint8) (data >> 8);
+					Memory.SRAM[0x0250 + offset] = (uint8_t) (data);
+					Memory.SRAM[0x0251 + offset] = (uint8_t) (data >> 8);
 
 					if (data)
 						data = ~data;
 
-					Memory.SRAM[0x03b0 + offset] = (uint8) (data);
-					Memory.SRAM[0x03b1 + offset] = (uint8) (data >> 8);
+					Memory.SRAM[0x03b0 + offset] = (uint8_t) (data);
+					Memory.SRAM[0x03b1 + offset] = (uint8_t) (data >> 8);
 
 					offset += 2;
 				}
@@ -638,19 +638,19 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 		/*	*/
 			case 0x08:
 			{
-			#ifdef FAST_LSB_WORD_ACCESS
+			#ifndef MSB_FIRST
 				ST010_Rotate(*(int16_t*)&Memory.SRAM[0x0004], *(int16_t*)&Memory.SRAM[0x0000],
                          *(int16_t*)&Memory.SRAM[0x0002],  (int16_t*)&Memory.SRAM[0x0010],
                           (int16_t*)&Memory.SRAM[0x0012]);
 			#else
-				int16	x1, y1;
+				int16_t	x1, y1;
 
 				ST010_Rotate(ST010_WORD(0x0004), ST010_WORD(0x0000), ST010_WORD(0x0002), &x1, &y1);
 
-				Memory.SRAM[0x0010] = (uint8) (x1);
-				Memory.SRAM[0x0011] = (uint8) (x1 >> 8);
-				Memory.SRAM[0x0012] = (uint8) (y1);
-				Memory.SRAM[0x0013] = (uint8) (y1 >> 8);
+				Memory.SRAM[0x0010] = (uint8_t) (x1);
+				Memory.SRAM[0x0011] = (uint8_t) (x1 >> 8);
+				Memory.SRAM[0x0012] = (uint8_t) (y1);
+				Memory.SRAM[0x0013] = (uint8_t) (y1 >> 8);
 			#endif
 				break;
 			}
@@ -663,27 +663,27 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 		/*	*/
 			case 0x01:
 			{
-#ifndef FAST_LSB_WORD_ACCESS
-				int16 x1, y1, Quadrant, Theta;
+#ifdef MSB_FIRST
+				int16_t x1, y1, Quadrant, Theta;
 #endif
 				Memory.SRAM[0x0006] = Memory.SRAM[0x0002];
 				Memory.SRAM[0x0007] = Memory.SRAM[0x0003];
 
-			#ifdef FAST_LSB_WORD_ACCESS
+			#ifndef MSB_FIRST
 				ST010_OP01(*(int16_t*)&Memory.SRAM[0x0000], *(int16_t*)&Memory.SRAM[0x0002],
                         (int16_t*)&Memory.SRAM[0x0000],  (int16_t*)&Memory.SRAM[0x0002],
                         (int16_t*)&Memory.SRAM[0x0004],  (int16_t*)&Memory.SRAM[0x0010]);
 			#else
 				ST010_OP01(ST010_WORD(0x0000), ST010_WORD(0x0002), &x1, &y1, &Quadrant, &Theta);
 
-				Memory.SRAM[0x0000] = (uint8) (x1);
-				Memory.SRAM[0x0001] = (uint8) (x1 >> 8);
-				Memory.SRAM[0x0002] = (uint8) (y1);
-				Memory.SRAM[0x0003] = (uint8) (y1 >> 8);
-				Memory.SRAM[0x0004] = (uint8) (Quadrant);
-				Memory.SRAM[0x0005] = (uint8) (Quadrant >> 8);
-				Memory.SRAM[0x0010] = (uint8) (Theta);
-				Memory.SRAM[0x0011] = (uint8) (Theta >> 8);
+				Memory.SRAM[0x0000] = (uint8_t) (x1);
+				Memory.SRAM[0x0001] = (uint8_t) (x1 >> 8);
+				Memory.SRAM[0x0002] = (uint8_t) (y1);
+				Memory.SRAM[0x0003] = (uint8_t) (y1 >> 8);
+				Memory.SRAM[0x0004] = (uint8_t) (Quadrant);
+				Memory.SRAM[0x0005] = (uint8_t) (Quadrant >> 8);
+				Memory.SRAM[0x0010] = (uint8_t) (Theta);
+				Memory.SRAM[0x0011] = (uint8_t) (Theta >> 8);
 			#endif
 				break;
 			}
@@ -691,22 +691,22 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 			/* calculate the vector length of (x, y)*/
 			case 0x04:
 			{
-				int16	square, x, y;
-			#ifdef FAST_LSB_WORD_ACCESS
-				x = *((int16 *) Memory.SRAM);
-				y = *((int16 *) &Memory.SRAM[2]);
+				int16_t	square, x, y;
+			#ifndef MSB_FIRST
+				x = *((int16_t *) Memory.SRAM);
+				y = *((int16_t *) &Memory.SRAM[2]);
 			#else
 				x = Memory.SRAM[0] | (Memory.SRAM[1] << 8);
 				y = Memory.SRAM[2] | (Memory.SRAM[3] << 8);
 			#endif
-				square = (int16) sqrt((double) (y * y + x * x));
+				square = (int16_t) sqrt((double) (y * y + x * x));
 				/*SETA_Distance(x, y, square);*/
 
-			#ifdef FAST_LSB_WORD_ACCESS
-				*((int16 *) &Memory.SRAM[0x10]) = square;
+			#ifndef MSB_FIRST
+				*((int16_t *) &Memory.SRAM[0x10]) = square;
 			#else
-				Memory.SRAM[0x10] = (uint8) (square);
-				Memory.SRAM[0x11] = (uint8) (square >> 8);
+				Memory.SRAM[0x10] = (uint8_t) (square);
+				Memory.SRAM[0x11] = (uint8_t) (square >> 8);
 			#endif
 				break;
 			}
@@ -714,32 +714,32 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 			/* calculate AI orientation based on specific guidelines*/
 			case 0x05:
 			{
-				int32	dx, dy;
-				int16	a1, b1, c1;
-				uint16	o1, old_speed;
-				bool8	wrap = FALSE;
+				int32_t	dx, dy;
+				int16_t	a1, b1, c1;
+				uint16_t	o1, old_speed;
+				uint8_t	wrap = FALSE;
 
 				/* target (x, y) coordinates*/
-				int16	ypos_max  = ST010_WORD(0x00C0);
-				int16	xpos_max  = ST010_WORD(0x00C2);
+				int16_t	ypos_max  = ST010_WORD(0x00C0);
+				int16_t	xpos_max  = ST010_WORD(0x00C2);
 
 				/* current coordinates and direction*/
-				int32	ypos = Memory.SRAM[0xC4] | (Memory.SRAM[0xC5] << 8) | (Memory.SRAM[0xC6] << 16) | (Memory.SRAM[0xC7] << 24);
-				int32	xpos = Memory.SRAM[0xC8] | (Memory.SRAM[0xC9] << 8) | (Memory.SRAM[0xCA] << 16) | (Memory.SRAM[0xCB] << 24);
-				uint16	rot  = Memory.SRAM[0xCC] | (Memory.SRAM[0xCD] << 8);
+				int32_t	ypos = Memory.SRAM[0xC4] | (Memory.SRAM[0xC5] << 8) | (Memory.SRAM[0xC6] << 16) | (Memory.SRAM[0xC7] << 24);
+				int32_t	xpos = Memory.SRAM[0xC8] | (Memory.SRAM[0xC9] << 8) | (Memory.SRAM[0xCA] << 16) | (Memory.SRAM[0xCB] << 24);
+				uint16_t	rot  = Memory.SRAM[0xCC] | (Memory.SRAM[0xCD] << 8);
 
 				/* physics*/
-				uint16	speed     = ST010_WORD(0x00D4);
-				uint16	accel     = ST010_WORD(0x00D6);
-				uint16	speed_max = ST010_WORD(0x00D8);
+				uint16_t	speed     = ST010_WORD(0x00D4);
+				uint16_t	accel     = ST010_WORD(0x00D6);
+				uint16_t	speed_max = ST010_WORD(0x00D8);
 
 				/* special condition acknowledgment*/
-				int16	system    = ST010_WORD(0x00DA);
-				int16	flags     = ST010_WORD(0x00DC);
+				int16_t	system    = ST010_WORD(0x00DA);
+				int16_t	flags     = ST010_WORD(0x00DC);
 
 				/* new target coordinates*/
-				int16	ypos_new  = ST010_WORD(0x00DE);
-				int16	xpos_new  = ST010_WORD(0x00E0);
+				int16_t	ypos_new  = ST010_WORD(0x00DE);
+				int16_t	xpos_new  = ST010_WORD(0x00E0);
 
 				/* mask upper bit*/
 				xpos_new &= 0x7FFF;
@@ -755,7 +755,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				Memory.SRAM[0xDB] = 0;
 
 				/* grab the target angle*/
-				ST010_OP01(dy, dx, &a1, &b1, &c1, (int16 *)&o1);
+				ST010_OP01(dy, dx, &a1, &b1, &c1, (int16_t *)&o1);
 
 				/* check for wrapping*/
 				/*if ((o1 < 0x6000 && rot > 0xA000) || (rot < 0x6000 && o1 > 0xA000))*/
@@ -778,7 +778,7 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				else
 				if (abs(o1 - rot) >= 0x1000)
 				{
-					uint32	slow = abs(o1 - rot);
+					uint32_t	slow = abs(o1 - rot);
 					slow >>= 4;	/* scaling*/
 					speed -= slow;
 				}
@@ -840,24 +840,24 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
 				xpos &= 0x1FFFFFFF;
 				ypos &= 0x1FFFFFFF;
 
-				Memory.SRAM[0x00C0] = (uint8) (ypos_max);
-				Memory.SRAM[0x00C1] = (uint8) (ypos_max >> 8);
-				Memory.SRAM[0x00C2] = (uint8) (xpos_max);
-				Memory.SRAM[0x00C3] = (uint8) (xpos_max >> 8);
-				Memory.SRAM[0x00C4] = (uint8) (ypos);
-				Memory.SRAM[0x00C5] = (uint8) (ypos >> 8);
-				Memory.SRAM[0x00C6] = (uint8) (ypos >> 16);
-				Memory.SRAM[0x00C7] = (uint8) (ypos >> 24);
-				Memory.SRAM[0x00C8] = (uint8) (xpos);
-				Memory.SRAM[0x00C9] = (uint8) (xpos >> 8);
-				Memory.SRAM[0x00CA] = (uint8) (xpos >> 16);
-				Memory.SRAM[0x00CB] = (uint8) (xpos >> 24);
-				Memory.SRAM[0x00CC] = (uint8) (rot);
-				Memory.SRAM[0x00CD] = (uint8) (rot >> 8);
-				Memory.SRAM[0x00D4] = (uint8) (speed);
-				Memory.SRAM[0x00D5] = (uint8) (speed >> 8);
-				Memory.SRAM[0x00DC] = (uint8) (flags);
-				Memory.SRAM[0x00DD] = (uint8) (flags >> 8);
+				Memory.SRAM[0x00C0] = (uint8_t) (ypos_max);
+				Memory.SRAM[0x00C1] = (uint8_t) (ypos_max >> 8);
+				Memory.SRAM[0x00C2] = (uint8_t) (xpos_max);
+				Memory.SRAM[0x00C3] = (uint8_t) (xpos_max >> 8);
+				Memory.SRAM[0x00C4] = (uint8_t) (ypos);
+				Memory.SRAM[0x00C5] = (uint8_t) (ypos >> 8);
+				Memory.SRAM[0x00C6] = (uint8_t) (ypos >> 16);
+				Memory.SRAM[0x00C7] = (uint8_t) (ypos >> 24);
+				Memory.SRAM[0x00C8] = (uint8_t) (xpos);
+				Memory.SRAM[0x00C9] = (uint8_t) (xpos >> 8);
+				Memory.SRAM[0x00CA] = (uint8_t) (xpos >> 16);
+				Memory.SRAM[0x00CB] = (uint8_t) (xpos >> 24);
+				Memory.SRAM[0x00CC] = (uint8_t) (rot);
+				Memory.SRAM[0x00CD] = (uint8_t) (rot >> 8);
+				Memory.SRAM[0x00D4] = (uint8_t) (speed);
+				Memory.SRAM[0x00D5] = (uint8_t) (speed >> 8);
+				Memory.SRAM[0x00DC] = (uint8_t) (flags);
+				Memory.SRAM[0x00DD] = (uint8_t) (flags >> 8);
 
 				break;
 			}
@@ -876,12 +876,12 @@ void S9xSetST010 (uint32 Address, uint8 Byte)
  Seta 011
 ***********************************************************************************/
 
-static uint8	board[9][9];	/* shougi playboard*/
+static uint8_t	board[9][9];	/* shougi playboard*/
 
-uint8 S9xGetST011 (uint32 Address)
+uint8_t S9xGetST011 (uint32_t Address)
 {
-	uint8	t;
-	uint16	address = (uint16) Address & 0xFFFF;
+	uint8_t	t;
+	uint16_t	address = (uint16_t) Address & 0xFFFF;
 
 	/* status check*/
 	if (address == 0x01)
@@ -892,10 +892,10 @@ uint8 S9xGetST011 (uint32 Address)
 	return (t);
 }
 
-void S9xSetST011 (uint32 Address, uint8 Byte)
+void S9xSetST011 (uint32_t Address, uint8_t Byte)
 {
-	static bool8	reset   = FALSE;
-	uint16		address = (uint16) Address & 0xFFFF;
+	static uint8_t	reset   = FALSE;
+	uint16_t		address = (uint16_t) Address & 0xFFFF;
 
 	if (!reset)
 	{
@@ -996,10 +996,10 @@ void S9xSetST011 (uint32 Address, uint8 Byte)
  Seta 018
 ***********************************************************************************/
 
-uint8 S9xGetST018 (uint32 Address)
+uint8_t S9xGetST018 (uint32_t Address)
 {
-	uint8	t       = 0;
-	uint16	address = (uint16) Address & 0xFFFF;
+	uint8_t	t       = 0;
+	uint16_t	address = (uint16_t) Address & 0xFFFF;
 
 	/* these roles may be flipped*/
 	/* op output*/
@@ -1007,7 +1007,7 @@ uint8 S9xGetST018 (uint32 Address)
 	{
 		if (ST018.out_count)
 		{
-			t = (uint8) ST018.output[ST018.out_index];
+			t = (uint8_t) ST018.output[ST018.out_index];
 			ST018.out_index++;
 			if (ST018.out_count == ST018.out_index)
 				ST018.out_count = 0;
@@ -1024,10 +1024,10 @@ uint8 S9xGetST018 (uint32 Address)
 	return (t);
 }
 
-void S9xSetST018 (uint8 Byte, uint32 Address)
+void S9xSetST018 (uint8_t Byte, uint32_t Address)
 {
-	static bool8	reset   = FALSE;
-	uint16		address = (uint16) Address & 0xFFFF;
+	static uint8_t	reset   = FALSE;
+	uint16_t		address = (uint16_t) Address & 0xFFFF;
 
 	if (!reset)
 	{

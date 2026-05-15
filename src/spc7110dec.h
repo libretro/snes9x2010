@@ -18,8 +18,8 @@
 #ifndef _SPC7110DEC_H_
 #define _SPC7110DEC_H_
 
-uint8 spc7110_decomp_read (void);
+uint8_t spc7110_decomp_read (void);
 void spc7110_decomp_start (void);
-void spc7110_decomp_write(uint8 data);
+void spc7110_decomp_write(uint8_t data);
 
 #endif

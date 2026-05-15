@@ -188,7 +188,7 @@
 #define S9xPointer			8
 
 #define S9xBadMapping			255
-#define InvalidControlID		((uint32) -1)
+#define InvalidControlID		((uint32_t) -1)
 
 #define CONTROLS_NONE			(-2)
 #define MP5				(-1)
@@ -209,61 +209,61 @@
 
 typedef struct
 {
-	uint8	type;
+	uint8_t	type;
 
 	union
 	{
 		union
 		{
-			uint16 joypad;	/* Which buttons to actuate. Use SNES_*_MASK constants from snes9x.h */
+			uint16_t joypad;	/* Which buttons to actuate. Use SNES_*_MASK constants from snes9x.h */
 
 			struct
 			{
-				uint8	idx:1;			/* Mouse number 0-1 */
-				uint8	left:1;			/* buttons */
-				uint8	right:1;
+				uint8_t	idx:1;			/* Mouse number 0-1 */
+				uint8_t	left:1;			/* buttons */
+				uint8_t	right:1;
 			}	mouse;
 
 			struct
 			{
-				uint8	fire:1;
-				uint8	cursor:1;
-				uint8	turbo:1;
-				uint8	pause:1;
+				uint8_t	fire:1;
+				uint8_t	cursor:1;
+				uint8_t	turbo:1;
+				uint8_t	pause:1;
 				/* Pretend we're pointing the gun offscreen (ignore the pointer)*/
-				uint8	aim_offscreen:1;
+				uint8_t	aim_offscreen:1;
 			}	scope;
 
 			struct
 			{
-				uint8	idx:3;			/* Pseudo-pointer number 0-7 */
-				uint8	speed_type:2;		/* 0=variable, 1=slow, 2=med, 3=fast */
-				int8	UD:2;			/* -1=up, 1=down, 0=no vertical motion */
-				int8	LR:2;			/* -1=left, 1=right, 0=no horizontal motion */
+				uint8_t	idx:3;			/* Pseudo-pointer number 0-7 */
+				uint8_t	speed_type:2;		/* 0=variable, 1=slow, 2=med, 3=fast */
+				int8_t	UD:2;			/* -1=up, 1=down, 0=no vertical motion */
+				int8_t	LR:2;			/* -1=left, 1=right, 0=no horizontal motion */
 			}	pointer;
 
 			struct
 			{
-				uint8	idx:1;			/* Justifier number 0-1 */
-				uint8	trigger:1;		/* buttons */
-				uint8	start:1;
+				uint8_t	idx:1;			/* Justifier number 0-1 */
+				uint8_t	trigger:1;		/* buttons */
+				uint8_t	start:1;
 				/* Pretend we're pointing the gun offscreen (ignore the pointer) */
-				uint8	aim_offscreen:1;
+				uint8_t	aim_offscreen:1;
 			}	justifier;
 
-			uint16	command;
+			uint16_t	command;
 		} button;
 
 		struct	/* Which SNES-pointers to control with this pointer */
 		{
-			uint16	aim_mouse0:1;
-			uint16	aim_mouse1:1;
-			uint16	aim_scope:1;
-			uint16	aim_justifier0:1;
-			uint16	aim_justifier1:1;
+			uint16_t	aim_mouse0:1;
+			uint16_t	aim_mouse1:1;
+			uint16_t	aim_scope:1;
+			uint16_t	aim_justifier0:1;
+			uint16_t	aim_justifier1:1;
 		}	pointer;
 
-		uint8	port[4];
+		uint8_t	port[4];
 	} commandunion;
 }	s9xcommand_t;
 
@@ -280,14 +280,14 @@ void S9xUnmapAllControls (void);
 #define CTL_JUSTIFIER 4		/* use id1: 0=one justifier, 1=two justifiers */
 #define CTL_MP5 5		/* use id1-id4 to specify pad 0-7 (or -1) */
 
-void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 id3, int8 id4); /* port=0-1 */
+void S9xSetController (int port, unsigned controller, int8_t id1, int8_t id2, int8_t id3, int8_t id4); /* port=0-1 */
 
 /* Call this when you're done with S9xSetController, or if you change any of 
    the controller Settings.*Master flags. 
 
    Returns true if something was disabled. */
 
-bool8 S9xVerifyControllers (void);
+uint8_t S9xVerifyControllers (void);
 
 /* Functions for translating s9xcommand_t's into strings, and vice versa.
    free() the returned string after you're done with it. */
@@ -302,8 +302,8 @@ s9xcommand_t S9xGetCommandT (const char *name);
    button state changes.
    S9xMapButton() will fail and return FALSE if mapping.type isn't an S9xButton* type. */
 
-bool8 S9xMapButton (uint32 id, s9xcommand_t mapping);
-void S9xReportButton (uint32 id, bool8 pressed);
+uint8_t S9xMapButton (uint32_t id, s9xcommand_t mapping);
+void S9xReportButton (uint32_t id, uint8_t pressed);
 
 /* Pointer mapping functions.
 
@@ -320,8 +320,8 @@ void S9xReportButton (uint32 id, bool8 pressed);
    so the SNES's idea of where the mouse pointer is will probably differ
    from your OS's idea. */
 
-bool8 S9xMapPointer (uint32 id, s9xcommand_t mapping);
-void S9xReportPointer (uint32 id, int16 x, int16 y);
+uint8_t S9xMapPointer (uint32_t id, s9xcommand_t mapping);
+void S9xReportPointer (uint32_t id, int16_t x, int16_t y);
 
 /* Do whatever the s9xcommand_t says to do.
    If cmd.type is a button type, data1 should be TRUE (non-0) or FALSE (0)
@@ -331,7 +331,7 @@ void S9xReportPointer (uint32 id, int16 x, int16 y);
 
    If cmd.type is a pointer, data1 and data2 are the positions of the pointer. */
 
-void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2);
+void S9xApplyCommand (s9xcommand_t cmd, int16_t data1, int16_t data2);
 
 /* These functions are called from snes9x into this subsystem. No need to use them from a port. */
 
@@ -348,16 +348,16 @@ void S9xControlEOF (void);
 
 struct SControlSnapshot
 {
-	uint8	ver;
-	uint8	port1_read_idx[2];
-	uint8	dummy1[4];		/* for future expansion */
-	uint8	port2_read_idx[2];
-	uint8	dummy2[4];
-	uint8	mouse_speed[2];
-	uint8	justifier_select;
-	uint8	dummy3[8];
-	bool8	pad_read;
-	uint8	internal[60];		/* yes, we need to save this! */
+	uint8_t	ver;
+	uint8_t	port1_read_idx[2];
+	uint8_t	dummy1[4];		/* for future expansion */
+	uint8_t	port2_read_idx[2];
+	uint8_t	dummy2[4];
+	uint8_t	mouse_speed[2];
+	uint8_t	justifier_select;
+	uint8_t	dummy3[8];
+	uint8_t	pad_read;
+	uint8_t	internal[60];		/* yes, we need to save this! */
 };
 
 void S9xControlPreSaveState (struct SControlSnapshot *s);

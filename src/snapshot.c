@@ -201,8 +201,8 @@ typedef struct
 	int		offset2;
 	int		size;
 	int		type;
-	uint16		debuted_in;
-	uint16		deleted_in;
+	uint16_t		debuted_in;
+	uint16_t		deleted_in;
 	const char	*name;
 }	FreezeData;
 
@@ -330,7 +330,7 @@ struct SDMASnapshot
 
 static struct Obsolete
 {
-	uint8	reserved;
+	uint8_t	reserved;
 }	Obsolete;
 
 #define STRUCT	struct SCPUState
@@ -1083,14 +1083,14 @@ static FreezeData	SnapBSX[] =
 	ARRAY_ENTRY(6, test2192, 32, uint8_ARRAY_V)
 };
 
-static bool8 S9xOpenSnapshotFile(STREAM *file, unsigned write)
+static uint8_t S9xOpenSnapshotFile(STREAM *file, unsigned write)
 {
    if((*file = OPEN_STREAM(write)) != 0)
       return (TRUE);
    return (FALSE);
 }
 
-static void FreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
+static void FreezeBlock (STREAM stream, const char *name, uint8_t *block, int size)
 {
 	char	buffer[20];
 
@@ -1132,10 +1132,10 @@ static int FreezeSize (int size, int type)
 
 static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeData *fields, int num_fields)
 {
-	uint8	*addr, *block, *ptr;
-	uint16	word;
-	uint32	dword;
-	int64	qaword;
+	uint8_t	*addr, *block, *ptr;
+	uint16_t	word;
+	uint32_t	dword;
+	int64_t	qaword;
 	int	len, i, j, relativeAddr;
 
 	len  = 0;
@@ -1149,7 +1149,7 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 			len += FreezeSize(fields[i].size, fields[i].type);
 	}
 
-	block = (uint8*)malloc(len);
+	block = (uint8_t*)malloc(len);
 	if (!block)
 		return;
 	ptr = block;
@@ -1159,20 +1159,20 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 		if (SNAPSHOT_VERSION >= fields[i].deleted_in || SNAPSHOT_VERSION < fields[i].debuted_in)
 			continue;
 
-		addr = (uint8 *) base + fields[i].offset;
+		addr = (uint8_t *) base + fields[i].offset;
 
 		/* determine real address of indirect-type fields*/
 		/* (where the structure contains a pointer to an array rather than the array itself)*/
 		if (fields[i].type == uint8_INDIR_ARRAY_V || fields[i].type == uint16_INDIR_ARRAY_V || fields[i].type == uint32_INDIR_ARRAY_V)
-			addr = (uint8 *) (*((intptr_t *) addr));
+			addr = (uint8_t *) (*((intptr_t *) addr));
 
 		/* convert pointer-type saves from absolute to relative pointers*/
 		if (fields[i].type == POINTER_V)
 		{
-			uint8	*pointer    = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset));
-			uint8	*relativeTo = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset2));
+			uint8_t	*pointer    = (uint8_t *) *((intptr_t *) ((uint8_t *) base + fields[i].offset));
+			uint8_t	*relativeTo = (uint8_t *) *((intptr_t *) ((uint8_t *) base + fields[i].offset2));
 			relativeAddr = pointer - relativeTo;
-			addr = (uint8 *) &relativeAddr;
+			addr = (uint8_t *) &relativeAddr;
 		}
 
 		switch (fields[i].type)
@@ -1186,29 +1186,29 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 						break;
 
 					case 2:
-						word = *((uint16 *) (addr));
-						*ptr++ = (uint8) (word >> 8);
-						*ptr++ = (uint8) word;
+						word = *((uint16_t *) (addr));
+						*ptr++ = (uint8_t) (word >> 8);
+						*ptr++ = (uint8_t) word;
 						break;
 
 					case 4:
-						dword = *((uint32 *) (addr));
-						*ptr++ = (uint8) (dword >> 24);
-						*ptr++ = (uint8) (dword >> 16);
-						*ptr++ = (uint8) (dword >> 8);
-						*ptr++ = (uint8) dword;
+						dword = *((uint32_t *) (addr));
+						*ptr++ = (uint8_t) (dword >> 24);
+						*ptr++ = (uint8_t) (dword >> 16);
+						*ptr++ = (uint8_t) (dword >> 8);
+						*ptr++ = (uint8_t) dword;
 						break;
 
 					case 8:
-						qaword = *((int64 *) (addr));
-						*ptr++ = (uint8) (qaword >> 56);
-						*ptr++ = (uint8) (qaword >> 48);
-						*ptr++ = (uint8) (qaword >> 40);
-						*ptr++ = (uint8) (qaword >> 32);
-						*ptr++ = (uint8) (qaword >> 24);
-						*ptr++ = (uint8) (qaword >> 16);
-						*ptr++ = (uint8) (qaword >> 8);
-						*ptr++ = (uint8) qaword;
+						qaword = *((int64_t *) (addr));
+						*ptr++ = (uint8_t) (qaword >> 56);
+						*ptr++ = (uint8_t) (qaword >> 48);
+						*ptr++ = (uint8_t) (qaword >> 40);
+						*ptr++ = (uint8_t) (qaword >> 32);
+						*ptr++ = (uint8_t) (qaword >> 24);
+						*ptr++ = (uint8_t) (qaword >> 16);
+						*ptr++ = (uint8_t) (qaword >> 8);
+						*ptr++ = (uint8_t) qaword;
 						break;
 				}
 
@@ -1225,9 +1225,9 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 			case uint16_INDIR_ARRAY_V:
 				for (j = 0; j < fields[i].size; j++)
 				{
-					word = *((uint16 *) (addr + j * 2));
-					*ptr++ = (uint8) (word >> 8);
-					*ptr++ = (uint8) word;
+					word = *((uint16_t *) (addr + j * 2));
+					*ptr++ = (uint8_t) (word >> 8);
+					*ptr++ = (uint8_t) word;
 				}
 
 				break;
@@ -1236,11 +1236,11 @@ static void FreezeStruct (STREAM stream, const char *name, void *base, FreezeDat
 			case uint32_INDIR_ARRAY_V:
 				for (j = 0; j < fields[i].size; j++)
 				{
-					dword = *((uint32 *) (addr + j * 4));
-					*ptr++ = (uint8) (dword >> 24);
-					*ptr++ = (uint8) (dword >> 16);
-					*ptr++ = (uint8) (dword >> 8);
-					*ptr++ = (uint8) dword;
+					dword = *((uint32_t *) (addr + j * 4));
+					*ptr++ = (uint8_t) (dword >> 24);
+					*ptr++ = (uint8_t) (dword >> 16);
+					*ptr++ = (uint8_t) (dword >> 8);
+					*ptr++ = (uint8_t) dword;
 				}
 
 				break;
@@ -1256,7 +1256,7 @@ void S9xFreezeToStream (STREAM stream)
 	struct SDMASnapshot	dma_snap;
 	struct SControlSnapshot	ctl_snap;
 	char	buffer[1024];
-	static uint8	soundsnapshot[SPC_SAVE_STATE_BLOCK_SIZE];
+	static uint8_t	soundsnapshot[SPC_SAVE_STATE_BLOCK_SIZE];
 
         S9xPackStatus();
 
@@ -1301,7 +1301,7 @@ void S9xFreezeToStream (STREAM stream)
 
 	if (Settings.SuperFX)
 	{
-		GSU.avRegAddr = (uint8 *) &GSU.avReg;
+		GSU.avRegAddr = (uint8_t *) &GSU.avReg;
 		FreezeStruct(stream, "SFX", &GSU, SnapFX, COUNT(SnapFX));
 	}
 
@@ -1352,7 +1352,7 @@ void S9xFreezeToStream (STREAM stream)
 		FreezeStruct(stream, "BSX", &BSX, SnapBSX, COUNT(SnapBSX));
 }
 
-bool8 S9xFreezeGame (void)
+uint8_t S9xFreezeGame (void)
 {
 	STREAM	stream = NULL;
 
@@ -1367,7 +1367,7 @@ bool8 S9xFreezeGame (void)
 	return (FALSE);
 }
 
-bool8 S9xUnfreezeGame (void)
+uint8_t S9xUnfreezeGame (void)
 {
 	STREAM stream = NULL;
 
@@ -1428,7 +1428,7 @@ static void SkipBlockWithName(STREAM stream, const char *name)
 	}
 }
 
-static int UnfreezeBlock (STREAM stream, const char *name, uint8 *block, int size)
+static int UnfreezeBlock (STREAM stream, const char *name, uint8_t *block, int size)
 {
 	char	buffer[20];
    uint64_t len    = 0;
@@ -1489,7 +1489,7 @@ err:
 	return (SUCCESS);
 }
 
-static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, int size)
+static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8_t **block, int size)
 {
 	int	result;
 
@@ -1500,7 +1500,7 @@ static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, in
 		return 0;
 	}
 
-	*block = (uint8*)malloc(size);
+	*block = (uint8_t*)malloc(size);
 
 	result = UnfreezeBlock(stream, name, *block, size);
 	if (result != SUCCESS)
@@ -1513,7 +1513,7 @@ static int UnfreezeBlockCopy (STREAM stream, const char *name, uint8 **block, in
 	return SUCCESS;
 }
 
-static int UnfreezeStructCopy (STREAM stream, const char *name, uint8 **block, FreezeData *fields, int num_fields, int version)
+static int UnfreezeStructCopy (STREAM stream, const char *name, uint8_t **block, FreezeData *fields, int num_fields, int version)
 {
 	int i;
 	int len = 0;
@@ -1527,13 +1527,13 @@ static int UnfreezeStructCopy (STREAM stream, const char *name, uint8 **block, F
 	return (UnfreezeBlockCopy(stream, name, block, len));
 }
 
-static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fields, uint8 *block, int version)
+static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fields, uint8_t *block, int version)
 {
-	uint8	*ptr = block;
-	uint16	word;
-	uint32	dword;
-	int64	qaword;
-	uint8	*addr, *relativeTo;
+	uint8_t	*ptr = block;
+	uint16_t	word;
+	uint32_t	dword;
+	int64_t	qaword;
+	uint8_t	*addr, *relativeTo;
 	void	*base;
 	int	relativeAddr;
 	int	i, j;
@@ -1544,10 +1544,10 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 			continue;
 
 		base = (SNAPSHOT_VERSION >= fields[i].deleted_in) ? ((void *) &Obsolete) : sbase;
-		addr = (uint8 *) base + fields[i].offset;
+		addr = (uint8_t *) base + fields[i].offset;
 
 		if (fields[i].type == uint8_INDIR_ARRAY_V || fields[i].type == uint16_INDIR_ARRAY_V || fields[i].type == uint32_INDIR_ARRAY_V)
-			addr = (uint8 *) (*((intptr_t *) addr));
+			addr = (uint8_t *) (*((intptr_t *) addr));
 
 		switch (fields[i].type)
 		{
@@ -1574,7 +1574,7 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 
 						word  = *ptr++ << 8;
 						word |= *ptr++;
-						*((uint16 *) (addr)) = word;
+						*((uint16_t *) (addr)) = word;
 						break;
 
 					case 4:
@@ -1588,7 +1588,7 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 						dword |= *ptr++ << 16;
 						dword |= *ptr++ << 8;
 						dword |= *ptr++;
-						*((uint32 *) (addr)) = dword;
+						*((uint32_t *) (addr)) = dword;
 						break;
 
 					case 8:
@@ -1598,15 +1598,15 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 							break;
 						}
 
-						qaword  = (int64) *ptr++ << 56;
-						qaword |= (int64) *ptr++ << 48;
-						qaword |= (int64) *ptr++ << 40;
-						qaword |= (int64) *ptr++ << 32;
-						qaword |= (int64) *ptr++ << 24;
-						qaword |= (int64) *ptr++ << 16;
-						qaword |= (int64) *ptr++ << 8;
-						qaword |= (int64) *ptr++;
-						*((int64 *) (addr)) = qaword;
+						qaword  = (int64_t) *ptr++ << 56;
+						qaword |= (int64_t) *ptr++ << 48;
+						qaword |= (int64_t) *ptr++ << 40;
+						qaword |= (int64_t) *ptr++ << 32;
+						qaword |= (int64_t) *ptr++ << 24;
+						qaword |= (int64_t) *ptr++ << 16;
+						qaword |= (int64_t) *ptr++ << 8;
+						qaword |= (int64_t) *ptr++;
+						*((int64_t *) (addr)) = qaword;
 						break;
 
 					default:
@@ -1635,7 +1635,7 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 				{
 					word  = *ptr++ << 8;
 					word |= *ptr++;
-					*((uint16 *) (addr + j * 2)) = word;
+					*((uint16_t *) (addr + j * 2)) = word;
 				}
 
 				break;
@@ -1654,7 +1654,7 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 					dword |= *ptr++ << 16;
 					dword |= *ptr++ << 8;
 					dword |= *ptr++;
-					*((uint32 *) (addr + j * 4)) = dword;
+					*((uint32_t *) (addr + j * 4)) = dword;
 				}
 
 				break;
@@ -1662,8 +1662,8 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 
 		if (fields[i].type == POINTER_V)
 		{
-			relativeAddr = (int) *((intptr_t *) ((uint8 *) base + fields[i].offset));
-			relativeTo = (uint8 *) *((intptr_t *) ((uint8 *) base + fields[i].offset2));
+			relativeAddr = (int) *((intptr_t *) ((uint8_t *) base + fields[i].offset));
+			relativeTo = (uint8_t *) *((intptr_t *) ((uint8_t *) base + fields[i].offset2));
 			*((intptr_t *) (addr)) = (intptr_t) (relativeTo + relativeAddr);
 		}
 	}
@@ -1671,39 +1671,39 @@ static void UnfreezeStructFromCopy (void *sbase, FreezeData *fields, int num_fie
 
 int S9xUnfreezeFromStream (STREAM stream)
 {
-	const bool8 fast = Settings.FastSavestates;
+	const uint8_t fast = Settings.FastSavestates;
 
 	struct SDMASnapshot	dma_snap;
 	struct SControlSnapshot	ctl_snap;
 	int		version;
 	char		buffer[PATH_MAX + 1];
-	uint8		hdma_byte;
+	uint8_t		hdma_byte;
 	int		result            = SUCCESS;
-	uint8 *local_cpu           = NULL;
-	uint8 *local_registers     = NULL;
-	uint8 *local_ppu           = NULL;
-	uint8 *local_dma           = NULL;
-	uint8 *local_vram          = NULL;
-	uint8 *local_ram           = NULL;
-	uint8 *local_sram          = NULL;
-	uint8 *local_fillram       = NULL;
-	uint8 *local_apu_sound     = NULL;
-	uint8 *local_control_data  = NULL;
-	uint8 *local_timing_data   = NULL;
-	uint8 *local_superfx       = NULL;
-	uint8 *local_sa1           = NULL;
-	uint8 *local_sa1_registers = NULL;
-	uint8 *local_dsp1          = NULL;
-	uint8 *local_dsp2          = NULL;
-	uint8 *local_dsp4          = NULL;
-	uint8 *local_cx4_data      = NULL;
-	uint8 *local_st010         = NULL;
-	uint8 *local_obc1          = NULL;
-	uint8 *local_obc1_data     = NULL;
-	uint8 *local_spc7110       = NULL;
-	uint8 *local_srtc          = NULL;
-	uint8 *local_rtc_data      = NULL;
-	uint8 *local_bsx_data      = NULL;
+	uint8_t *local_cpu           = NULL;
+	uint8_t *local_registers     = NULL;
+	uint8_t *local_ppu           = NULL;
+	uint8_t *local_dma           = NULL;
+	uint8_t *local_vram          = NULL;
+	uint8_t *local_ram           = NULL;
+	uint8_t *local_sram          = NULL;
+	uint8_t *local_fillram       = NULL;
+	uint8_t *local_apu_sound     = NULL;
+	uint8_t *local_control_data  = NULL;
+	uint8_t *local_timing_data   = NULL;
+	uint8_t *local_superfx       = NULL;
+	uint8_t *local_sa1           = NULL;
+	uint8_t *local_sa1_registers = NULL;
+	uint8_t *local_dsp1          = NULL;
+	uint8_t *local_dsp2          = NULL;
+	uint8_t *local_dsp4          = NULL;
+	uint8_t *local_cx4_data      = NULL;
+	uint8_t *local_st010         = NULL;
+	uint8_t *local_obc1          = NULL;
+	uint8_t *local_obc1_data     = NULL;
+	uint8_t *local_spc7110       = NULL;
+	uint8_t *local_srtc          = NULL;
+	uint8_t *local_rtc_data      = NULL;
+	uint8_t *local_bsx_data      = NULL;
 	size_t snapshot_magic_len  = strlen(SNAPSHOT_MAGIC);
 	uint64_t len               = (uint64_t)snapshot_magic_len + 1 + 4 + 1;
 
@@ -1717,7 +1717,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 	if (version > SNAPSHOT_VERSION)
 		return (WRONG_VERSION);
 
-	result = UnfreezeBlock(stream, "NAM", (uint8 *) buffer, PATH_MAX);
+	result = UnfreezeBlock(stream, "NAM", (uint8_t *) buffer, PATH_MAX);
 	if (result != SUCCESS)
 		return (result);
 
@@ -1861,8 +1861,8 @@ int S9xUnfreezeFromStream (STREAM stream)
 
 	if (result == SUCCESS)
 	{
-		uint32 old_flags     = CPU.Flags;
-		uint32 sa1_old_flags = SA1.Flags;
+		uint32_t old_flags     = CPU.Flags;
+		uint32_t sa1_old_flags = SA1.Flags;
 
 		if (fast)
 		{
@@ -1902,7 +1902,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 
 		if (local_superfx)
 		{
-			GSU.avRegAddr = (uint8 *) &GSU.avReg;
+			GSU.avRegAddr = (uint8_t *) &GSU.avReg;
 			UnfreezeStructFromCopy(&GSU, SnapFX, COUNT(SnapFX), local_superfx, version);
 		}
 
@@ -2022,13 +2022,13 @@ int S9xUnfreezeFromStream (STREAM stream)
 	return (result);
 }
 
-static int32 BlockSize (const char *name, int data_size)
+static int32_t BlockSize (const char *name, int data_size)
 {
 	(void)name;
 	return 11 + data_size;
 }
 
-static int32 StructSize (const char *name, FreezeData *fields, int num_fields)
+static int32_t StructSize (const char *name, FreezeData *fields, int num_fields)
 {
 	int	len, i;
 
@@ -2046,10 +2046,10 @@ static int32 StructSize (const char *name, FreezeData *fields, int num_fields)
 	return BlockSize(name, len);
 }
 
-int32 SnapshotSize(void)
+int32_t SnapshotSize(void)
 {
 	char	buffer[1024];
-	int32 len = 0;
+	int32_t len = 0;
 
 	snprintf(buffer, sizeof(buffer), "%s:%04d\n", SNAPSHOT_MAGIC, SNAPSHOT_VERSION);
 	len += strlen(buffer);

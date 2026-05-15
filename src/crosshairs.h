@@ -216,6 +216,6 @@ const char * S9xGetCrosshair (int idx);
   3 = 16 16 16     7 = 31 16  0   11 =  0 23 31   15 = 31  0 16
   16-31 are 50% transparent versions of 0-15. */
 
-void S9xDrawCrosshair (const char *crosshair, uint8 fgcolor, uint8 bgcolor, int16 x, int16 y);
+void S9xDrawCrosshair (const char *crosshair, uint8_t fgcolor, uint8_t bgcolor, int16_t x, int16_t y);
 
 #endif

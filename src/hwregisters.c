@@ -187,9 +187,9 @@
 #include "seta.h"
 #include "bsx.h"
 
-extern uint8	OpenBus;
+extern uint8_t	OpenBus;
 
-int32 memory_speed (uint32 address)
+int32_t memory_speed (uint32_t address)
 {
 	if (address & 0x408000)
 	{
@@ -208,10 +208,10 @@ int32 memory_speed (uint32 address)
 	return (TWO_CYCLES);
 }
 
-uint8 S9xGetByteFromRegister(uint8 *GetAddress, uint32 Address)
+uint8_t S9xGetByteFromRegister(uint8_t *GetAddress, uint32_t Address)
 {
-   uint8	byte;
-   int32    speed    = memory_speed(Address);
+   uint8_t	byte;
+   int32_t    speed    = memory_speed(Address);
 
    switch ((intptr_t) GetAddress)
    {

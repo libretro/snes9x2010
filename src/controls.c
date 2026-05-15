@@ -205,51 +205,51 @@
 #define FLAG_IOBIT1			(Memory.FillRAM[0x4213] & 0x80)
 #define FLAG_IOBIT(n)			((n) ? (FLAG_IOBIT1) : (FLAG_IOBIT0))
 
-bool8	pad_read = 0;
-uint8	read_idx[2 /* ports */][2 /* per port */];
+uint8_t	pad_read = 0;
+uint8_t	read_idx[2 /* ports */][2 /* per port */];
 
 struct crosshair
 {
-	uint8				set;
-	uint8				img;
-	uint8				fg, bg;
+	uint8_t				set;
+	uint8_t				img;
+	uint8_t				fg, bg;
 };
 
 struct
 {
-	uint8				delta_x, delta_y;
-	int16				old_x, old_y;
-	int16				cur_x, cur_y;
-	uint8				buttons;
-	uint32				ID;
+	uint8_t				delta_x, delta_y;
+	int16_t				old_x, old_y;
+	int16_t				cur_x, cur_y;
+	uint8_t				buttons;
+	uint32_t				ID;
 	struct crosshair	crosshair;
 }	mouse[2];
 
 static struct
 {
-	int16				x, y;
-	uint8				phys_buttons;
-	uint8				next_buttons;
-	uint8				read_buttons;
-	uint32				ID;
+	int16_t				x, y;
+	uint8_t				phys_buttons;
+	uint8_t				next_buttons;
+	uint8_t				read_buttons;
+	uint32_t				ID;
 	struct crosshair	crosshair;
 }	superscope;
 
 static struct
 {
-	int16				x[2], y[2];
-	uint8				buttons;
-	bool8				offscreen[2];
-	uint32				ID[2];
+	int16_t				x[2], y[2];
+	uint8_t				buttons;
+	uint8_t				offscreen[2];
+	uint32_t				ID[2];
 	struct crosshair	crosshair[2];
 }	justifier;
 
-static int8			mp5[2][4];
+static int8_t			mp5[2][4];
 s9xcommand_t			keymap[1024];
-static bool8			FLAG_LATCH = FALSE;
-static int32			curcontrollers[2] = { CONTROLS_NONE,    CONTROLS_NONE };
-static int32			newcontrollers[2] = { JOYPAD0, CONTROLS_NONE };
-uint16				joypad[8];
+static uint8_t			FLAG_LATCH = FALSE;
+static int32_t			curcontrollers[2] = { CONTROLS_NONE,    CONTROLS_NONE };
+static int32_t			newcontrollers[2] = { JOYPAD0, CONTROLS_NONE };
+uint16_t				joypad[8];
 
 static void DoGunLatch (int x, int y)
 {
@@ -265,8 +265,8 @@ static void DoGunLatch (int x, int y)
 	else if (y < 0)
 		y = 0;
 
-	PPU.GunVLatch = (uint16) (y + 1);
-	PPU.GunHLatch = (uint16) x;
+	PPU.GunVLatch = (uint16_t) (y + 1);
+	PPU.GunHLatch = (uint16_t) x;
 }
 
 static int maptype (int t)
@@ -356,7 +356,7 @@ void S9xUnmapAllControls (void)
 		superscope.crosshair.bg  = 1;
 }
 
-void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 id3, int8 id4)
+void S9xSetController (int port, unsigned controller, int8_t id1, int8_t id2, int8_t id3, int8_t id4)
 {
 	switch (controller)
 	{
@@ -416,9 +416,9 @@ void S9xSetController (int port, unsigned controller, int8 id1, int8 id2, int8 i
 	newcontrollers[port] = CONTROLS_NONE;
 }
 
-bool8 S9xVerifyControllers (void)
+uint8_t S9xVerifyControllers (void)
 {
-	bool8	ret;
+	uint8_t	ret;
 	int	port, i, used[NUMCTLS];
 	char    buf[256];
 
@@ -637,7 +637,7 @@ s9xcommand_t S9xGetCommandT (const char *name)
 	return (cmd);
 }
 
-static void S9xUnmapID (uint32 id)
+static void S9xUnmapID (uint32_t id)
 {
 	if (mouse[0].ID     == id)
 		mouse[0].ID     = InvalidControlID;
@@ -655,7 +655,7 @@ static void S9xUnmapID (uint32 id)
 		justifier.ID[1] = InvalidControlID;
 }
 
-bool8 S9xMapButton (uint32 id, s9xcommand_t mapping)
+uint8_t S9xMapButton (uint32_t id, s9xcommand_t mapping)
 {
 	int t;
 
@@ -671,7 +671,7 @@ bool8 S9xMapButton (uint32 id, s9xcommand_t mapping)
 	return TRUE;
 }
 
-bool8 S9xMapPointer (uint32 id, s9xcommand_t mapping)
+uint8_t S9xMapPointer (uint32_t id, s9xcommand_t mapping)
 {
 	int t = maptype(mapping.type);
 
@@ -729,7 +729,7 @@ bool8 S9xMapPointer (uint32 id, s9xcommand_t mapping)
 	return TRUE;
 }
 
-void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
+void S9xApplyCommand (s9xcommand_t cmd, int16_t data1, int16_t data2)
 {
 	int i = 0;
 
@@ -831,7 +831,7 @@ void S9xApplyCommand (s9xcommand_t cmd, int16 data1, int16 data2)
 
 static void UpdatePolledMouse (int i)
 {
-	int16 j = mouse[i - MOUSE0].cur_x - mouse[i - MOUSE0].old_x;
+	int16_t j = mouse[i - MOUSE0].cur_x - mouse[i - MOUSE0].old_x;
 
 	if (j < -127)
 	{
@@ -852,7 +852,7 @@ static void UpdatePolledMouse (int i)
 	}
 	else
 	{
-		mouse[i - MOUSE0].delta_x = (uint8) j;
+		mouse[i - MOUSE0].delta_x = (uint8_t) j;
 		mouse[i - MOUSE0].old_x = mouse[i - MOUSE0].cur_x;
 	}
 
@@ -877,12 +877,12 @@ static void UpdatePolledMouse (int i)
 	}
 	else
 	{
-		mouse[i - MOUSE0].delta_y = (uint8) j;
+		mouse[i - MOUSE0].delta_y = (uint8_t) j;
 		mouse[i - MOUSE0].old_y = mouse[i - MOUSE0].cur_y;
 	}
 }
 
-void S9xSetJoypadLatch (bool8 latch)
+void S9xSetJoypadLatch (uint8_t latch)
 {
 	if (!latch && FLAG_LATCH)
 	{
@@ -954,10 +954,10 @@ void S9xSetJoypadLatch (bool8 latch)
 }
 
 
-uint8 S9xReadJOYSERn (int n)
+uint8_t S9xReadJOYSERn (int n)
 {
 	int	i, j, r;
-	uint8 bits;
+	uint8_t bits;
 
 	if (n > 1)
 		n -= 0x4016;

@@ -187,9 +187,9 @@
 #define JUMP 5
 #define JSR 8
 
-static INLINE uint8 Immediate8Slow (unsigned a)
+static INLINE uint8_t Immediate8Slow (unsigned a)
 {
-	uint8	val = S9xGetByte(Registers.PBPC);
+	uint8_t	val = S9xGetByte(Registers.PBPC);
 	if (a & READ)
 		OpenBus = val;
 	Registers.PCw++;
@@ -197,9 +197,9 @@ static INLINE uint8 Immediate8Slow (unsigned a)
 	return (val);
 }
 
-static INLINE uint8 Immediate8 (unsigned a)
+static INLINE uint8_t Immediate8 (unsigned a)
 {
-	uint8	val = CPU.PCBase[Registers.PCw];
+	uint8_t	val = CPU.PCBase[Registers.PCw];
 	if (a & READ)
 		OpenBus = val;
 	AddCycles(CPU.MemSpeed);
@@ -208,58 +208,58 @@ static INLINE uint8 Immediate8 (unsigned a)
 	return (val);
 }
 
-static INLINE uint16 Immediate16Slow (unsigned a)
+static INLINE uint16_t Immediate16Slow (unsigned a)
 {
-	uint16	val = S9xGetWord(Registers.PBPC, WRAP_BANK);
+	uint16_t	val = S9xGetWord(Registers.PBPC, WRAP_BANK);
 	if (a & READ)
-		OpenBus = (uint8) (val >> 8);
+		OpenBus = (uint8_t) (val >> 8);
 	Registers.PCw += 2;
 
 	return (val);
 }
 
-static INLINE uint16 Immediate16 (unsigned a)
+static INLINE uint16_t Immediate16 (unsigned a)
 {
-	uint16	val = READ_WORD(CPU.PCBase + Registers.PCw);
+	uint16_t	val = READ_WORD(CPU.PCBase + Registers.PCw);
 	if (a & READ)
-		OpenBus = (uint8) (val >> 8);
+		OpenBus = (uint8_t) (val >> 8);
 	AddCycles(CPU.MemSpeedx2);
 	Registers.PCw += 2;
 
 	return (val);
 }
 
-static INLINE uint32 RelativeSlow (unsigned a)	/* branch $xx */
+static INLINE uint32_t RelativeSlow (unsigned a)	/* branch $xx */
 {
-	int8	offset = Immediate8Slow(a);
+	int8_t	offset = Immediate8Slow(a);
 
-	return ((int16) Registers.PCw + offset) & 0xffff;
+	return ((int16_t) Registers.PCw + offset) & 0xffff;
 }
 
-static INLINE uint32 Relative (unsigned a)	/* branch $xx */
+static INLINE uint32_t Relative (unsigned a)	/* branch $xx */
 {
-	int8	offset = Immediate8(a);
+	int8_t	offset = Immediate8(a);
 
-	return ((int16) Registers.PCw + offset) & 0xffff;
+	return ((int16_t) Registers.PCw + offset) & 0xffff;
 }
 
-static INLINE uint32 RelativeLongSlow (unsigned a)	/* BRL $xxxx */
+static INLINE uint32_t RelativeLongSlow (unsigned a)	/* BRL $xxxx */
 {
-	int16	offset = Immediate16Slow(a);
+	int16_t	offset = Immediate16Slow(a);
 
-	return ((int32) Registers.PCw + offset) & 0xffff;
+	return ((int32_t) Registers.PCw + offset) & 0xffff;
 }
 
-static INLINE uint32 RelativeLong (unsigned a)			/* BRL $xxxx */
+static INLINE uint32_t RelativeLong (unsigned a)			/* BRL $xxxx */
 {
-	int16	offset = Immediate16(a);
+	int16_t	offset = Immediate16(a);
 
-	return ((int32) Registers.PCw + offset) & 0xffff;
+	return ((int32_t) Registers.PCw + offset) & 0xffff;
 }
 
-static INLINE uint32 AbsoluteIndexedIndirectSlow (unsigned a)	/* (a,X) */
+static INLINE uint32_t AbsoluteIndexedIndirectSlow (unsigned a)	/* (a,X) */
 {
-	uint16 addr, addr2;
+	uint16_t addr, addr2;
 	
 	addr = Immediate16Slow(READ);
 
@@ -283,9 +283,9 @@ static INLINE uint32 AbsoluteIndexedIndirectSlow (unsigned a)	/* (a,X) */
 	return (addr2);
 }
 
-static INLINE uint32 AbsoluteIndexedIndirect (unsigned a)	/* (a,X) */
+static INLINE uint32_t AbsoluteIndexedIndirect (unsigned a)	/* (a,X) */
 {
-	uint16	addr, addr2;
+	uint16_t	addr, addr2;
 	addr = Immediate16Slow(READ);
 	addr += Registers.X.W;
 
@@ -296,43 +296,43 @@ static INLINE uint32 AbsoluteIndexedIndirect (unsigned a)	/* (a,X) */
 	return (addr2);
 }
 
-static INLINE uint32 AbsoluteIndirectLongSlow (unsigned a)		/* [a] */
+static INLINE uint32_t AbsoluteIndirectLongSlow (unsigned a)		/* [a] */
 {
-	uint16	addr = Immediate16Slow(READ);
+	uint16_t	addr = Immediate16Slow(READ);
 
 	/* No info on wrapping, but it doesn't matter anyway due to mirroring */
-	uint32	addr2 = S9xGetWord(addr, WRAP_NONE);
+	uint32_t	addr2 = S9xGetWord(addr, WRAP_NONE);
 	OpenBus = addr2 >> 8;
 	addr2 |= (OpenBus = S9xGetByte(addr + 2)) << 16;
 
 	return (addr2);
 }
 
-static INLINE uint32 AbsoluteIndirectLong (unsigned a)			/* [a] */
+static INLINE uint32_t AbsoluteIndirectLong (unsigned a)			/* [a] */
 {
-	uint16	addr = Immediate16(READ);
+	uint16_t	addr = Immediate16(READ);
 
 	/* No info on wrapping, but it doesn't matter anyway due to mirroring */
-	uint32	addr2 = S9xGetWord(addr, WRAP_NONE);
+	uint32_t	addr2 = S9xGetWord(addr, WRAP_NONE);
 	OpenBus = addr2 >> 8;
 	addr2 |= (OpenBus = S9xGetByte(addr + 2)) << 16;
 
 	return (addr2);
 }
 
-static INLINE uint32 AbsoluteIndirectSlow (unsigned a)			/* (a) */
+static INLINE uint32_t AbsoluteIndirectSlow (unsigned a)			/* (a) */
 {
 	/* No info on wrapping, but it doesn't matter anyway due to mirroring */
-	uint16	addr2 = S9xGetWord(Immediate16Slow(READ), WRAP_NONE);
+	uint16_t	addr2 = S9xGetWord(Immediate16Slow(READ), WRAP_NONE);
 	OpenBus = addr2 >> 8;
 
 	return (addr2);
 }
 
-static INLINE uint32 AbsoluteIndirect (unsigned a)			/* (a) */
+static INLINE uint32_t AbsoluteIndirect (unsigned a)			/* (a) */
 {
 	/* No info on wrapping, but it doesn't matter anyway due to mirroring */
-	uint16	addr2 = S9xGetWord(Immediate16(READ), WRAP_NONE);
+	uint16_t	addr2 = S9xGetWord(Immediate16(READ), WRAP_NONE);
 	OpenBus = addr2 >> 8;
 
 	return (addr2);
@@ -341,19 +341,19 @@ static INLINE uint32 AbsoluteIndirect (unsigned a)			/* (a) */
 #define ABSOLUTESLOW_MACRO(a) (ICPU.ShiftedDB | Immediate16Slow(a))
 #define ABSOLUTE_MACRO(a) (ICPU.ShiftedDB | Immediate16(a))
 
-static INLINE uint32 AbsoluteSlow (unsigned a)				/* a */
+static INLINE uint32_t AbsoluteSlow (unsigned a)				/* a */
 {
 	return (ICPU.ShiftedDB | Immediate16Slow(a));
 }
 
-static INLINE uint32 Absolute (unsigned a)				/* a */
+static INLINE uint32_t Absolute (unsigned a)				/* a */
 {
 	return (ICPU.ShiftedDB | Immediate16(a));
 }
 
-static INLINE uint32 AbsoluteLongSlow (unsigned a)			/* l */
+static INLINE uint32_t AbsoluteLongSlow (unsigned a)			/* l */
 {
-	uint32	addr = Immediate16Slow(READ);
+	uint32_t	addr = Immediate16Slow(READ);
 
 	/* JSR l pushes the old bank in the middle of loading the new.
 	   OpenBus needs to be set to account for this. */
@@ -365,9 +365,9 @@ static INLINE uint32 AbsoluteLongSlow (unsigned a)			/* l */
 	return (addr);
 }
 
-static INLINE uint32 AbsoluteLong (unsigned a)				/* l */
+static INLINE uint32_t AbsoluteLong (unsigned a)				/* l */
 {
-	uint32	addr = READ_3WORD(CPU.PCBase + Registers.PCw);
+	uint32_t	addr = READ_3WORD(CPU.PCBase + Registers.PCw);
 	AddCycles(CPU.MemSpeedx2 + CPU.MemSpeed);
 	if (a & READ)
 		OpenBus = addr >> 16;
@@ -376,120 +376,120 @@ static INLINE uint32 AbsoluteLong (unsigned a)				/* l */
 	return (addr);
 }
 
-static INLINE uint32 DirectSlow (unsigned a)				/* d */
+static INLINE uint32_t DirectSlow (unsigned a)				/* d */
 {
-	uint16	addr = Immediate8Slow(a) + Registers.D.W;
+	uint16_t	addr = Immediate8Slow(a) + Registers.D.W;
 	if (Registers.DL != 0)
 		AddCycles(ONE_CYCLE);
 
 	return (addr);
 }
 
-static INLINE uint32 Direct (unsigned a)				/* d */
+static INLINE uint32_t Direct (unsigned a)				/* d */
 {
-	uint16	addr = Immediate8(a) + Registers.D.W;
+	uint16_t	addr = Immediate8(a) + Registers.D.W;
 	if (Registers.DL != 0)
 		AddCycles(ONE_CYCLE);
 
 	return (addr);
 }
 
-static INLINE uint32 DirectIndirectSlow (unsigned a)			/* (d) */
+static INLINE uint32_t DirectIndirectSlow (unsigned a)			/* (d) */
 {
-	uint32	addr = S9xGetWord(DirectSlow(READ), (!CheckEmulation() || Registers.DL) ? WRAP_BANK : WRAP_PAGE);
+	uint32_t	addr = S9xGetWord(DirectSlow(READ), (!CheckEmulation() || Registers.DL) ? WRAP_BANK : WRAP_PAGE);
 	if (a & READ)
-		OpenBus = (uint8) (addr >> 8);
+		OpenBus = (uint8_t) (addr >> 8);
 	addr |= ICPU.ShiftedDB;
 
 	return (addr);
 }
 
-static INLINE uint32 DirectIndirectE0 (unsigned a)			/* (d) */
+static INLINE uint32_t DirectIndirectE0 (unsigned a)			/* (d) */
 {
-	uint32	addr = S9xGetWord(Direct(READ), WRAP_NONE);
+	uint32_t	addr = S9xGetWord(Direct(READ), WRAP_NONE);
 	if (a & READ)
-		OpenBus = (uint8) (addr >> 8);
+		OpenBus = (uint8_t) (addr >> 8);
 	addr |= ICPU.ShiftedDB;
 
 	return (addr);
 }
 
-static INLINE uint32 DirectIndirectE1 (unsigned a)			/* (d) */
+static INLINE uint32_t DirectIndirectE1 (unsigned a)			/* (d) */
 {
-	uint32	addr = S9xGetWord(DirectSlow(READ), Registers.DL ? WRAP_BANK : WRAP_PAGE);
+	uint32_t	addr = S9xGetWord(DirectSlow(READ), Registers.DL ? WRAP_BANK : WRAP_PAGE);
 	if (a & READ)
-		OpenBus = (uint8) (addr >> 8);
+		OpenBus = (uint8_t) (addr >> 8);
 	addr |= ICPU.ShiftedDB;
 
 	return (addr);
 }
 
-static INLINE uint32 DirectIndirectIndexedSlow (unsigned a)		/* (d),Y */
+static INLINE uint32_t DirectIndirectIndexedSlow (unsigned a)		/* (d),Y */
 {
-	uint32	addr = DirectIndirectSlow(a);
+	uint32_t	addr = DirectIndirectSlow(a);
 	if (a & WRITE || !CheckIndex() || (addr & 0xff) + Registers.YL >= 0x100)
 		AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.Y.W);
 }
 
-static INLINE uint32 DirectIndirectIndexedE0X0 (unsigned a)		/* (d),Y */
+static INLINE uint32_t DirectIndirectIndexedE0X0 (unsigned a)		/* (d),Y */
 {
-	uint32	addr = DirectIndirectE0(a);
+	uint32_t	addr = DirectIndirectE0(a);
 	AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.Y.W);
 }
 
-static INLINE uint32 DirectIndirectIndexedE0X1 (unsigned a)		/* (d),Y */
+static INLINE uint32_t DirectIndirectIndexedE0X1 (unsigned a)		/* (d),Y */
 {
-	uint32	addr = DirectIndirectE0(a);
+	uint32_t	addr = DirectIndirectE0(a);
 	if (a & WRITE || (addr & 0xff) + Registers.YL >= 0x100)
 		AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.Y.W);
 }
 
-static INLINE uint32 DirectIndirectIndexedE1 (unsigned a)		/* (d),Y */
+static INLINE uint32_t DirectIndirectIndexedE1 (unsigned a)		/* (d),Y */
 {
-	uint32	addr = DirectIndirectE1(a);
+	uint32_t	addr = DirectIndirectE1(a);
 	if (a & WRITE || (addr & 0xff) + Registers.YL >= 0x100)
 		AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.Y.W);
 }
 
-static INLINE uint32 DirectIndirectLongSlow (unsigned a)		/* [d] */
+static INLINE uint32_t DirectIndirectLongSlow (unsigned a)		/* [d] */
 {
-	uint16	addr = DirectSlow(READ);
-	uint32	addr2 = S9xGetWord(addr, WRAP_NONE);
+	uint16_t	addr = DirectSlow(READ);
+	uint32_t	addr2 = S9xGetWord(addr, WRAP_NONE);
 	OpenBus = addr2 >> 8;
 	addr2 |= (OpenBus = S9xGetByte(addr + 2)) << 16;
 
 	return (addr2);
 }
 
-static INLINE uint32 DirectIndirectLong (unsigned a)			/* [d] */
+static INLINE uint32_t DirectIndirectLong (unsigned a)			/* [d] */
 {
-	uint16	addr = Direct(READ);
-	uint32	addr2 = S9xGetWord(addr, WRAP_NONE);
+	uint16_t	addr = Direct(READ);
+	uint32_t	addr2 = S9xGetWord(addr, WRAP_NONE);
 	OpenBus = addr2 >> 8;
 	addr2 |= (OpenBus = S9xGetByte(addr + 2)) << 16;
 
 	return (addr2);
 }
 
-static INLINE uint32 DirectIndirectIndexedLongSlow (unsigned a)		/* [d],Y */
+static INLINE uint32_t DirectIndirectIndexedLongSlow (unsigned a)		/* [d],Y */
 {
 	return (DirectIndirectLongSlow(a) + Registers.Y.W);
 }
 
-static INLINE uint32 DirectIndirectIndexedLong (unsigned a)		/* [d],Y */
+static INLINE uint32_t DirectIndirectIndexedLong (unsigned a)		/* [d],Y */
 {
 	return (DirectIndirectLong(a) + Registers.Y.W);
 }
 
-static INLINE uint32 DirectIndexedXSlow (unsigned a)			/* d,X */
+static INLINE uint32_t DirectIndexedXSlow (unsigned a)			/* d,X */
 {
 	pair	addr;
 	addr.W = DirectSlow(a);
@@ -503,15 +503,15 @@ static INLINE uint32 DirectIndexedXSlow (unsigned a)			/* d,X */
 	return (addr.W);
 }
 
-static INLINE uint32 DirectIndexedXE0 (unsigned a)			/* d,X */
+static INLINE uint32_t DirectIndexedXE0 (unsigned a)			/* d,X */
 {
-	uint16	addr = Direct(a) + Registers.X.W;
+	uint16_t	addr = Direct(a) + Registers.X.W;
 	AddCycles(ONE_CYCLE);
 
 	return (addr);
 }
 
-static INLINE uint32 DirectIndexedXE1 (unsigned a)			/* d,X */
+static INLINE uint32_t DirectIndexedXE1 (unsigned a)			/* d,X */
 {
    pair	addr;
    if (Registers.DL)
@@ -524,7 +524,7 @@ static INLINE uint32 DirectIndexedXE1 (unsigned a)			/* d,X */
    return (addr.W);
 }
 
-static INLINE uint32 DirectIndexedYSlow (unsigned a)			/* d,Y */
+static INLINE uint32_t DirectIndexedYSlow (unsigned a)			/* d,Y */
 {
 	pair	addr;
 	addr.W = DirectSlow(a);
@@ -538,15 +538,15 @@ static INLINE uint32 DirectIndexedYSlow (unsigned a)			/* d,Y */
 	return (addr.W);
 }
 
-static INLINE uint32 DirectIndexedYE0 (unsigned a)			/* d,Y */
+static INLINE uint32_t DirectIndexedYE0 (unsigned a)			/* d,Y */
 {
-	uint16	addr = Direct(a) + Registers.Y.W;
+	uint16_t	addr = Direct(a) + Registers.Y.W;
 	AddCycles(ONE_CYCLE);
 
 	return (addr);
 }
 
-static INLINE uint32 DirectIndexedYE1 (unsigned a)			/* d,Y */
+static INLINE uint32_t DirectIndexedYE1 (unsigned a)			/* d,Y */
 {
    pair	addr;
 	if (Registers.DL)
@@ -559,115 +559,115 @@ static INLINE uint32 DirectIndexedYE1 (unsigned a)			/* d,Y */
    return (addr.W);
 }
 
-static INLINE uint32 DirectIndexedIndirectSlow (unsigned a)		/* (d,X) */
+static INLINE uint32_t DirectIndexedIndirectSlow (unsigned a)		/* (d,X) */
 {
-	uint32	addr = S9xGetWord(DirectIndexedXSlow(READ), (!CheckEmulation() || Registers.DL) ? WRAP_BANK : WRAP_PAGE);
+	uint32_t	addr = S9xGetWord(DirectIndexedXSlow(READ), (!CheckEmulation() || Registers.DL) ? WRAP_BANK : WRAP_PAGE);
 	if (a & READ)
-		OpenBus = (uint8) (addr >> 8);
+		OpenBus = (uint8_t) (addr >> 8);
 
 	return (ICPU.ShiftedDB | addr);
 }
 
-static INLINE uint32 DirectIndexedIndirectE0 (unsigned a)		/* (d,X) */
+static INLINE uint32_t DirectIndexedIndirectE0 (unsigned a)		/* (d,X) */
 {
-	uint32	addr = S9xGetWord(DirectIndexedXE0(READ), WRAP_NONE);
+	uint32_t	addr = S9xGetWord(DirectIndexedXE0(READ), WRAP_NONE);
 	if (a & READ)
-		OpenBus = (uint8) (addr >> 8);
+		OpenBus = (uint8_t) (addr >> 8);
 
 	return (ICPU.ShiftedDB | addr);
 }
 
-static INLINE uint32 DirectIndexedIndirectE1 (unsigned a)		/* (d,X) */
+static INLINE uint32_t DirectIndexedIndirectE1 (unsigned a)		/* (d,X) */
 {
-	uint32	addr = S9xGetWord(DirectIndexedXE1(READ), Registers.DL ? WRAP_BANK : WRAP_PAGE);
+	uint32_t	addr = S9xGetWord(DirectIndexedXE1(READ), Registers.DL ? WRAP_BANK : WRAP_PAGE);
 	if (a & READ)
-		OpenBus = (uint8) (addr >> 8);
+		OpenBus = (uint8_t) (addr >> 8);
 
 	return (ICPU.ShiftedDB | addr);
 }
 
-static INLINE uint32 AbsoluteIndexedXSlow (unsigned a)			/* a,X */
+static INLINE uint32_t AbsoluteIndexedXSlow (unsigned a)			/* a,X */
 {
-	uint32	addr = ABSOLUTESLOW_MACRO(a);
+	uint32_t	addr = ABSOLUTESLOW_MACRO(a);
 	if (a & WRITE || !CheckIndex() || (addr & 0xff) + Registers.XL >= 0x100)
 		AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.X.W);
 }
 
-static INLINE uint32 AbsoluteIndexedXX0 (unsigned a)			/* a,X */
+static INLINE uint32_t AbsoluteIndexedXX0 (unsigned a)			/* a,X */
 {
-	uint32	addr = ABSOLUTE_MACRO(a);
+	uint32_t	addr = ABSOLUTE_MACRO(a);
 	AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.X.W);
 }
 
-static INLINE uint32 AbsoluteIndexedXX1 (unsigned a)			/* a,X */
+static INLINE uint32_t AbsoluteIndexedXX1 (unsigned a)			/* a,X */
 {
-	uint32	addr = ABSOLUTE_MACRO(a);
+	uint32_t	addr = ABSOLUTE_MACRO(a);
 	if (a & WRITE || (addr & 0xff) + Registers.XL >= 0x100)
 		AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.X.W);
 }
 
-static INLINE uint32 AbsoluteIndexedYSlow (unsigned a)			/* a,Y */
+static INLINE uint32_t AbsoluteIndexedYSlow (unsigned a)			/* a,Y */
 {
-	uint32	addr = ABSOLUTESLOW_MACRO(a);
+	uint32_t	addr = ABSOLUTESLOW_MACRO(a);
 	if (a & WRITE || !CheckIndex() || (addr & 0xff) + Registers.YL >= 0x100)
 		AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.Y.W);
 }
 
-static INLINE uint32 AbsoluteIndexedYX0 (unsigned a)			/* a,Y */
+static INLINE uint32_t AbsoluteIndexedYX0 (unsigned a)			/* a,Y */
 {
-	uint32	addr = ABSOLUTE_MACRO(a);
+	uint32_t	addr = ABSOLUTE_MACRO(a);
 	AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.Y.W);
 }
 
-static INLINE uint32 AbsoluteIndexedYX1 (unsigned a)			/* a,Y */
+static INLINE uint32_t AbsoluteIndexedYX1 (unsigned a)			/* a,Y */
 {
-	uint32	addr = ABSOLUTE_MACRO(a);
+	uint32_t	addr = ABSOLUTE_MACRO(a);
 	if (a & WRITE || (addr & 0xff) + Registers.YL >= 0x100)
 		AddCycles(ONE_CYCLE);
 
 	return (addr + Registers.Y.W);
 }
 
-static INLINE uint32 AbsoluteLongIndexedXSlow (unsigned a)		/* l,X */
+static INLINE uint32_t AbsoluteLongIndexedXSlow (unsigned a)		/* l,X */
 {
 	return (AbsoluteLongSlow(a) + Registers.X.W);
 }
 
-static INLINE uint32 AbsoluteLongIndexedX (unsigned a)			/* l,X */
+static INLINE uint32_t AbsoluteLongIndexedX (unsigned a)			/* l,X */
 {
 	return (AbsoluteLong(a) + Registers.X.W);
 }
 
-static INLINE uint32 StackRelativeSlow (unsigned a)			/* d,S */
+static INLINE uint32_t StackRelativeSlow (unsigned a)			/* d,S */
 {
-	uint16	addr = Immediate8Slow(a) + Registers.S.W;
+	uint16_t	addr = Immediate8Slow(a) + Registers.S.W;
 	AddCycles(ONE_CYCLE);
 
 	return (addr);
 }
 
-static INLINE uint32 StackRelative (unsigned a)				/* d,S */
+static INLINE uint32_t StackRelative (unsigned a)				/* d,S */
 {
-	uint16	addr = Immediate8(a) + Registers.S.W;
+	uint16_t	addr = Immediate8(a) + Registers.S.W;
 	AddCycles(ONE_CYCLE);
 
 	return (addr);
 }
 
-static INLINE uint32 StackRelativeIndirectIndexedSlow (unsigned a)	/* (d,S),Y */
+static INLINE uint32_t StackRelativeIndirectIndexedSlow (unsigned a)	/* (d,S),Y */
 {
-	uint16 addr_stack_relative_slow;
-	uint32 addr;
+	uint16_t addr_stack_relative_slow;
+	uint32_t addr;
 
 	/* StackRelativeSlow */
 	addr_stack_relative_slow = Immediate8Slow(READ) + Registers.S.W;
@@ -675,24 +675,24 @@ static INLINE uint32 StackRelativeIndirectIndexedSlow (unsigned a)	/* (d,S),Y */
 	/* EOF StackRelativeSlow */
 	addr = S9xGetWord(addr_stack_relative_slow, WRAP_NONE);
 	if (a & READ)
-		OpenBus = (uint8) (addr >> 8);
+		OpenBus = (uint8_t) (addr >> 8);
 	addr = (addr + Registers.Y.W + ICPU.ShiftedDB) & 0xffffff;
 	AddCycles(ONE_CYCLE);
 
 	return (addr);
 }
 
-static INLINE uint32 StackRelativeIndirectIndexed (unsigned a)		/* (d,S),Y */
+static INLINE uint32_t StackRelativeIndirectIndexed (unsigned a)		/* (d,S),Y */
 {
-	uint16 addr_stack_relative;
-	uint32 addr;
+	uint16_t addr_stack_relative;
+	uint32_t addr;
 	/* StackRelative */
 	addr_stack_relative = Immediate8Slow(READ) + Registers.S.W;
 	AddCycles(ONE_CYCLE);
 	addr = S9xGetWord(addr_stack_relative, WRAP_NONE);
 	/* EOF StackRelative */
 	if (a & READ)
-		OpenBus = (uint8) (addr >> 8);
+		OpenBus = (uint8_t) (addr >> 8);
 	addr = (addr + Registers.Y.W + ICPU.ShiftedDB) & 0xffffff;
 	AddCycles(ONE_CYCLE);
 

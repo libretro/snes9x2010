@@ -184,83 +184,83 @@
 
 typedef struct
 {
-	uint8	index;
-	uint8	invert;
+	uint8_t	index;
+	uint8_t	invert;
 } ContextState;
 
 /* for snapshot only */
 struct SSPC7110Snapshot
 {
-	uint8	r4801;
-	uint8	r4802;
-	uint8	r4803;
-	uint8	r4804;
-	uint8	r4805;
-	uint8	r4806;
-	uint8	r4807;
-	uint8	r4808;
-	uint8	r4809;
-	uint8	r480a;
-	uint8	r480b;
-	uint8	r480c;
+	uint8_t	r4801;
+	uint8_t	r4802;
+	uint8_t	r4803;
+	uint8_t	r4804;
+	uint8_t	r4805;
+	uint8_t	r4806;
+	uint8_t	r4807;
+	uint8_t	r4808;
+	uint8_t	r4809;
+	uint8_t	r480a;
+	uint8_t	r480b;
+	uint8_t	r480c;
 
-	uint8	r4811;
-	uint8	r4812;
-	uint8	r4813;
-	uint8	r4814;
-	uint8	r4815;
-	uint8	r4816;
-	uint8	r4817;
-	uint8	r4818;
+	uint8_t	r4811;
+	uint8_t	r4812;
+	uint8_t	r4813;
+	uint8_t	r4814;
+	uint8_t	r4815;
+	uint8_t	r4816;
+	uint8_t	r4817;
+	uint8_t	r4818;
 
-	uint8	r481x;
+	uint8_t	r481x;
 
-	bool8	r4814_latch;			/* bool */
-	bool8	r4815_latch;			/* bool */
+	uint8_t	r4814_latch;			/* bool */
+	uint8_t	r4815_latch;			/* bool */
 
-	uint8	r4820;
-	uint8	r4821;
-	uint8	r4822;
-	uint8	r4823;
-	uint8	r4824;
-	uint8	r4825;
-	uint8	r4826;
-	uint8	r4827;
-	uint8	r4828;
-	uint8	r4829;
-	uint8	r482a;
-	uint8	r482b;
-	uint8	r482c;
-	uint8	r482d;
-	uint8	r482e;
-	uint8	r482f;
+	uint8_t	r4820;
+	uint8_t	r4821;
+	uint8_t	r4822;
+	uint8_t	r4823;
+	uint8_t	r4824;
+	uint8_t	r4825;
+	uint8_t	r4826;
+	uint8_t	r4827;
+	uint8_t	r4828;
+	uint8_t	r4829;
+	uint8_t	r482a;
+	uint8_t	r482b;
+	uint8_t	r482c;
+	uint8_t	r482d;
+	uint8_t	r482e;
+	uint8_t	r482f;
 
-	uint8	r4830;
-	uint8	r4831;
-	uint8	r4832;
-	uint8	r4833;
-	uint8	r4834;
+	uint8_t	r4830;
+	uint8_t	r4831;
+	uint8_t	r4832;
+	uint8_t	r4833;
+	uint8_t	r4834;
 
-	uint32	dx_offset;			/* unsigned */
-	uint32	ex_offset;			/* unsigned */
-	uint32	fx_offset;			/* unsigned */
+	uint32_t	dx_offset;			/* unsigned */
+	uint32_t	ex_offset;			/* unsigned */
+	uint32_t	fx_offset;			/* unsigned */
 
-	uint8	r4840;
-	uint8	r4841;
-	uint8	r4842;
+	uint8_t	r4840;
+	uint8_t	r4841;
+	uint8_t	r4842;
 
-	int32	rtc_state;			/* enum RTC_State */
-	int32	rtc_mode;			/* enum RTC_Mode */
-	uint32	rtc_index;			/* unsigned */
+	int32_t	rtc_state;			/* enum RTC_State */
+	int32_t	rtc_mode;			/* enum RTC_Mode */
+	uint32_t	rtc_index;			/* unsigned */
 
-	uint32	decomp_mode;			/* unsigned */
-	uint32	decomp_offset;			/* unsigned */
+	uint32_t	decomp_mode;			/* unsigned */
+	uint32_t	decomp_offset;			/* unsigned */
 
-	uint8	decomp_buffer[SPC7110_DECOMP_BUFFER_SIZE];
+	uint8_t	decomp_buffer[SPC7110_DECOMP_BUFFER_SIZE];
 
-	uint32	decomp_buffer_rdoffset;		/* unsigned */
-	uint32	decomp_buffer_wroffset;		/* unsigned */
-	uint32	decomp_buffer_length;		/* unsigned */
+	uint32_t	decomp_buffer_rdoffset;		/* unsigned */
+	uint32_t	decomp_buffer_wroffset;		/* unsigned */
+	uint32_t	decomp_buffer_length;		/* unsigned */
 
 	ContextState context[32];
 };
@@ -272,9 +272,9 @@ void S9xResetSPC7110 (void);
 void S9xFreeSPC7110 (void);
 void S9xSPC7110PreSaveState (void);
 void S9xSPC7110PostLoadState (void);
-void S9xSetSPC7110 (uint8 Byte, uint16 Address);
-uint8 S9xGetSPC7110 (uint16 address);
-uint8 S9xGetSPC7110Byte (uint32 address);
-uint8 * S9xGetBasePointerSPC7110 (uint32 address);
+void S9xSetSPC7110 (uint8_t Byte, uint16_t Address);
+uint8_t S9xGetSPC7110 (uint16_t address);
+uint8_t S9xGetSPC7110Byte (uint32_t address);
+uint8_t * S9xGetBasePointerSPC7110 (uint32_t address);
 
 #endif

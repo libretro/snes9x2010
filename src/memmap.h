@@ -236,69 +236,69 @@ enum speedhacks
 
 typedef struct
 {
-	int32	HeaderCount;
+	int32_t	HeaderCount;
 
-	uint8	*RAM;
-	uint8	*ROM;
-	uint8	*SRAM;
-	uint8	*VRAM;
-	uint8	*FillRAM;
-	uint8	*BWRAM;
-	uint8	*C4RAM;
-	uint8	*OBC1RAM;
-	uint8	*BSRAM;
-	uint8	*BIOSROM;
+	uint8_t	*RAM;
+	uint8_t	*ROM;
+	uint8_t	*SRAM;
+	uint8_t	*VRAM;
+	uint8_t	*FillRAM;
+	uint8_t	*BWRAM;
+	uint8_t	*C4RAM;
+	uint8_t	*OBC1RAM;
+	uint8_t	*BSRAM;
+	uint8_t	*BIOSROM;
 
-	uint8	*Map[MEMMAP_NUM_BLOCKS];
-	uint8	*WriteMap[MEMMAP_NUM_BLOCKS];
-	uint8	BlockIsRAM[MEMMAP_NUM_BLOCKS];
-	uint8	BlockIsROM[MEMMAP_NUM_BLOCKS];
-	uint8	ExtendedFormat;
+	uint8_t	*Map[MEMMAP_NUM_BLOCKS];
+	uint8_t	*WriteMap[MEMMAP_NUM_BLOCKS];
+	uint8_t	BlockIsRAM[MEMMAP_NUM_BLOCKS];
+	uint8_t	BlockIsROM[MEMMAP_NUM_BLOCKS];
+	uint8_t	ExtendedFormat;
 
 	char	ROMName[ROM_NAME_LEN];
 	char	RawROMName[ROM_NAME_LEN];
 	char	ROMId[5];
-	int32	CompanyId;
-	uint8	ROMRegion;
-	uint8	ROMSpeed;
-	uint8	ROMType;
-	uint8	ROMSize;
-	uint32	ROMChecksum;
-	uint32	ROMComplementChecksum;
-	uint32	ROMCRC32;
+	int32_t	CompanyId;
+	uint8_t	ROMRegion;
+	uint8_t	ROMSpeed;
+	uint8_t	ROMType;
+	uint8_t	ROMSize;
+	uint32_t	ROMChecksum;
+	uint32_t	ROMComplementChecksum;
+	uint32_t	ROMCRC32;
 
-	bool8	HiROM;
-	bool8	LoROM;
-	uint8	SRAMSize;
-	uint32	SRAMMask;
-	uint32	CalculatedSize;
-	uint32	CalculatedChecksum;
+	uint8_t	HiROM;
+	uint8_t	LoROM;
+	uint8_t	SRAMSize;
+	uint32_t	SRAMMask;
+	uint32_t	CalculatedSize;
+	uint32_t	CalculatedChecksum;
 
 } CMemory;
 
-bool8	Init (void);
+uint8_t	Init (void);
 void	Deinit (void);
 
-bool8 LoadROM (void);
-bool8 LoadMultiCart (const char *cartA, const char *cartB);
-bool8 LoadSufamiTurbo (const char *cartA, const char *cartB);
-bool8 LoadSameGame (const char *cartA, const char *cartB);
+uint8_t LoadROM (void);
+uint8_t LoadMultiCart (const char *cartA, const char *cartB);
+uint8_t LoadSufamiTurbo (const char *cartA, const char *cartB);
+uint8_t LoadSameGame (const char *cartA, const char *cartB);
 
 void	map_WriteProtectROM (void);
 
 struct SMulti
 {
 	int	cartType;
-	int32	cartSizeA;
-	int32	cartSizeB;
-	int32	sramSizeA;
-	int32	sramSizeB;
-	uint32	sramMaskA;
-	uint32	sramMaskB;
-	uint32	cartOffsetA;
-	uint32	cartOffsetB;
-	uint8	*sramA;
-	uint8	*sramB;
+	int32_t	cartSizeA;
+	int32_t	cartSizeB;
+	int32_t	sramSizeA;
+	int32_t	sramSizeB;
+	uint32_t	sramMaskA;
+	uint32_t	sramMaskB;
+	uint32_t	cartOffsetA;
+	uint32_t	cartOffsetB;
+	uint8_t	*sramA;
+	uint8_t	*sramB;
 	char	fileNameA[PATH_MAX + 1];
 	char	fileNameB[PATH_MAX + 1];
 };

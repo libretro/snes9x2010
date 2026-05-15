@@ -198,7 +198,7 @@
 void S9xAppendMapping(struct retro_memory_descriptor *desc);
 
 /* Forward declarations. */
-static bool8 InitROM (void);
+static uint8_t InitROM (void);
 
 #define MAP_LIBRETRO_RAW(flags, ptr, offset, start, select, disconnect, len) \
 	do { \
@@ -212,7 +212,7 @@ static bool8 InitROM (void);
 		disconnect, len)
 
 
-static const uint32	crc32Table[256] =
+static const uint32_t	crc32Table[256] =
 {
 	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
 	0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -261,10 +261,10 @@ static const uint32	crc32Table[256] =
 
 /* deinterleave*/
 
-static void S9xDeinterleaveType1 (int size, uint8 *base)
+static void S9xDeinterleaveType1 (int size, uint8_t *base)
 {
-	uint8 *tmp;
-	uint8	blocks[256], b;
+	uint8_t *tmp;
+	uint8_t	blocks[256], b;
 	int nblocks;
 	int	i, j;
 	
@@ -276,7 +276,7 @@ static void S9xDeinterleaveType1 (int size, uint8 *base)
 		blocks[i * 2 + 1] = i;
 	}
 
-	tmp = (uint8 *) malloc(0x8000);
+	tmp = (uint8_t *) malloc(0x8000);
 	if (tmp)
 	{
 		for ( i = 0; i < nblocks * 2; i++)
@@ -300,11 +300,11 @@ static void S9xDeinterleaveType1 (int size, uint8 *base)
 	}
 }
 
-static void S9xDeinterleaveType2 (int size, uint8 *base)
+static void S9xDeinterleaveType2 (int size, uint8_t *base)
 {
 	/* for odd Super FX images */
-	uint8 *tmp;
-	uint8	blocks[256], b;
+	uint8_t *tmp;
+	uint8_t	blocks[256], b;
 	int nblocks, step, i, j;
 
 	nblocks = size >> 16;
@@ -317,7 +317,7 @@ static void S9xDeinterleaveType2 (int size, uint8 *base)
 	for ( i = 0; i < nblocks * 2; i++)
 		blocks[i] = (i & ~0xf) | ((i & 3) << 2) | ((i & 12) >> 2);
 
-	tmp = (uint8 *) malloc(0x10000);
+	tmp = (uint8_t *) malloc(0x10000);
 	if (tmp)
 	{
 		for ( i = 0; i < nblocks * 2; i++)
@@ -341,14 +341,14 @@ static void S9xDeinterleaveType2 (int size, uint8 *base)
 	}
 }
 
-static void S9xDeinterleaveGD24 (int size, uint8 *base)
+static void S9xDeinterleaveGD24 (int size, uint8_t *base)
 {
-	uint8 *tmp;
+	uint8_t *tmp;
 	/* for 24Mbit images dumped with Game Doctor */
 	if (size != 0x300000)
 		return;
 
-	tmp = (uint8 *) malloc(0x80000);
+	tmp = (uint8_t *) malloc(0x80000);
 	if (tmp)
 	{
 		memcpy(tmp, &base[0x180000], 0x80000);
@@ -364,7 +364,7 @@ static void S9xDeinterleaveGD24 (int size, uint8 *base)
 
 /* allocation and deallocation */
 
-bool8 Init (void)
+uint8_t Init (void)
 {
 	/* Defensive teardown: if Init() is re-entered without an intervening
 	   Deinit() (statically linked frontends where retro_init can be
@@ -373,26 +373,26 @@ bool8 Init (void)
 	   9MB+ of buffers. Deinit() is idempotent. */
 	Deinit();
 
-	Memory.RAM	 = (uint8 *) calloc(1, 0x20000);
-	Memory.SRAM = (uint8 *) calloc(1, 0x80000);
-	Memory.VRAM = (uint8 *) calloc(1, 0x10000);
-	Memory.ROM  = (uint8 *) calloc(1, MAX_ROM_SIZE + 0x200 + 0x8000);
+	Memory.RAM	 = (uint8_t *) calloc(1, 0x20000);
+	Memory.SRAM = (uint8_t *) calloc(1, 0x80000);
+	Memory.VRAM = (uint8_t *) calloc(1, 0x10000);
+	Memory.ROM  = (uint8_t *) calloc(1, MAX_ROM_SIZE + 0x200 + 0x8000);
 
-	IPPU.TileCache[TILE_2BIT]       = (uint8 *) calloc(1, MAX_2BIT_TILES * 64);
-	IPPU.TileCache[TILE_4BIT]       = (uint8 *) calloc(1, MAX_4BIT_TILES * 64);
-	IPPU.TileCache[TILE_8BIT]       = (uint8 *) calloc(1, MAX_8BIT_TILES * 64);
-	IPPU.TileCache[TILE_2BIT_EVEN]  = (uint8 *) calloc(1, MAX_2BIT_TILES * 64);
-	IPPU.TileCache[TILE_2BIT_ODD]   = (uint8 *) calloc(1, MAX_2BIT_TILES * 64);
-	IPPU.TileCache[TILE_4BIT_EVEN]  = (uint8 *) calloc(1, MAX_4BIT_TILES * 64);
-	IPPU.TileCache[TILE_4BIT_ODD]   = (uint8 *) calloc(1, MAX_4BIT_TILES * 64);
+	IPPU.TileCache[TILE_2BIT]       = (uint8_t *) calloc(1, MAX_2BIT_TILES * 64);
+	IPPU.TileCache[TILE_4BIT]       = (uint8_t *) calloc(1, MAX_4BIT_TILES * 64);
+	IPPU.TileCache[TILE_8BIT]       = (uint8_t *) calloc(1, MAX_8BIT_TILES * 64);
+	IPPU.TileCache[TILE_2BIT_EVEN]  = (uint8_t *) calloc(1, MAX_2BIT_TILES * 64);
+	IPPU.TileCache[TILE_2BIT_ODD]   = (uint8_t *) calloc(1, MAX_2BIT_TILES * 64);
+	IPPU.TileCache[TILE_4BIT_EVEN]  = (uint8_t *) calloc(1, MAX_4BIT_TILES * 64);
+	IPPU.TileCache[TILE_4BIT_ODD]   = (uint8_t *) calloc(1, MAX_4BIT_TILES * 64);
 
-	IPPU.TileCached[TILE_2BIT]      = (uint8 *) calloc(1, MAX_2BIT_TILES);
-	IPPU.TileCached[TILE_4BIT]      = (uint8 *) calloc(1, MAX_4BIT_TILES);
-	IPPU.TileCached[TILE_8BIT]      = (uint8 *) calloc(1, MAX_8BIT_TILES);
-	IPPU.TileCached[TILE_2BIT_EVEN] = (uint8 *) calloc(1, MAX_2BIT_TILES);
-	IPPU.TileCached[TILE_2BIT_ODD]  = (uint8 *) calloc(1, MAX_2BIT_TILES);
-	IPPU.TileCached[TILE_4BIT_EVEN] = (uint8 *) calloc(1, MAX_4BIT_TILES);
-	IPPU.TileCached[TILE_4BIT_ODD]  = (uint8 *) calloc(1, MAX_4BIT_TILES);
+	IPPU.TileCached[TILE_2BIT]      = (uint8_t *) calloc(1, MAX_2BIT_TILES);
+	IPPU.TileCached[TILE_4BIT]      = (uint8_t *) calloc(1, MAX_4BIT_TILES);
+	IPPU.TileCached[TILE_8BIT]      = (uint8_t *) calloc(1, MAX_8BIT_TILES);
+	IPPU.TileCached[TILE_2BIT_EVEN] = (uint8_t *) calloc(1, MAX_2BIT_TILES);
+	IPPU.TileCached[TILE_2BIT_ODD]  = (uint8_t *) calloc(1, MAX_2BIT_TILES);
+	IPPU.TileCached[TILE_4BIT_EVEN] = (uint8_t *) calloc(1, MAX_4BIT_TILES);
+	IPPU.TileCached[TILE_4BIT_ODD]  = (uint8_t *) calloc(1, MAX_4BIT_TILES);
 
 
 	/* don't render subscreen speed hack - disable this by default by 
@@ -441,7 +441,7 @@ bool8 Init (void)
 	SuperFX.nRamBanks   = 2; /* Most only use 1.  1=64KB=512Mb, 2=128KB=1024Mb */
 	SuperFX.pvRam       = Memory.SRAM;
 	SuperFX.nRomBanks   = (2 * 1024 * 1024) / (32 * 1024);
-	SuperFX.pvRom       = (uint8 *) Memory.ROM;
+	SuperFX.pvRom       = (uint8_t *) Memory.ROM;
 
 	return (TRUE);
 }
@@ -486,7 +486,7 @@ static char * Safe (const char *s)
 	return (safe);
 }
 
-static char * SafeANK (uint8 ROMRegion, const char *s)
+static char * SafeANK (uint8_t ROMRegion, const char *s)
 {
 	static char	*safe = NULL;
 	static int	safe_len = 0;
@@ -518,7 +518,7 @@ static char * SafeANK (uint8 ROMRegion, const char *s)
 		if (s[i] >= 32 && s[i] < 127) /* ASCII */
 			safe [i] = s[i];
 		else
-		if (ROMRegion == 0 && ((uint8) s[i] >= 0xa0 && (uint8) s[i] < 0xe0)) /* JIS X 201 - Katakana */
+		if (ROMRegion == 0 && ((uint8_t) s[i] >= 0xa0 && (uint8_t) s[i] < 0xe0)) /* JIS X 201 - Katakana */
 			safe [i] = s[i];
 		else
 			safe [i] = '_';
@@ -583,7 +583,7 @@ void Deinit (void)
 
 /* file management and ROM detection */
 
-static bool8 allASCII (uint8 *b, int size)
+static uint8_t allASCII (uint8_t *b, int size)
 {
 	int i;
 	for ( i = 0; i < size; i++)
@@ -596,7 +596,7 @@ static bool8 allASCII (uint8 *b, int size)
 }
 
 #if SNES_SUPPORT_MULTI_CART
-static bool8 is_SufamiTurbo_BIOS (uint8 *data, uint32 size)
+static uint8_t is_SufamiTurbo_BIOS (uint8_t *data, uint32_t size)
 {
 	if (size == 0x40000 && strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0
 	&& strncmp((char * ) (data + 0x10), "SFC-ADX BACKUP", 14) == 0)
@@ -604,7 +604,7 @@ static bool8 is_SufamiTurbo_BIOS (uint8 *data, uint32 size)
    return FALSE;
 }
 
-static bool8 is_SufamiTurbo_Cart (uint8 *data, uint32 size)
+static uint8_t is_SufamiTurbo_Cart (uint8_t *data, uint32_t size)
 {
 	if (size >= 0x80000 && size <= 0x100000 && strncmp((char *) data, "BANDAI SFC-ADX", 14) == 0
 	&& strncmp((char * ) (data + 0x10), "SFC-ADX BACKUP", 14) != 0)
@@ -612,14 +612,14 @@ static bool8 is_SufamiTurbo_Cart (uint8 *data, uint32 size)
    return FALSE;
 }
 
-static bool8 is_SameGame_BIOS (uint8 *data, uint32 size)
+static uint8_t is_SameGame_BIOS (uint8_t *data, uint32_t size)
 {
 	if (size == 0x100000 && strncmp((char *) (data + 0xffc0), "Same Game Tsume Game", 20) == 0)
 		return (TRUE);
    return (FALSE);
 }
 
-static bool8 is_SameGame_Add_On (uint8 *data, uint32 size)
+static uint8_t is_SameGame_Add_On (uint8_t *data, uint32_t size)
 {
 	if (size == 0x80000)
 		return (TRUE);
@@ -627,9 +627,9 @@ static bool8 is_SameGame_Add_On (uint8 *data, uint32 size)
 }
 #endif
 
-static int ScoreHiROM (uint32 calculated_size, uint8 * rom,  bool8 skip_header, int32 romoff)
+static int ScoreHiROM (uint32_t calculated_size, uint8_t * rom,  uint8_t skip_header, int32_t romoff)
 {
-	uint8	*buf;
+	uint8_t	*buf;
 	int score;
 
 	score = 0;
@@ -679,9 +679,9 @@ static int ScoreHiROM (uint32 calculated_size, uint8 * rom,  bool8 skip_header, 
 	return (score);
 }
 
-static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, int32 romoff)
+static int ScoreLoROM (uint32_t calculated_size, uint8_t * rom, uint8_t skip_header, int32_t romoff)
 {
-	uint8	*buf;
+	uint8_t	*buf;
 	int score;
 
 	score = 0;
@@ -728,9 +728,9 @@ static int ScoreLoROM (uint32 calculated_size, uint8 * rom, bool8 skip_header, i
 	return (score);
 }
 
-static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
+static uint32_t HeaderRemove (uint32_t size, int32_t * headerCount, uint8_t *buf)
 {
-	uint32 calc_size = (size / 0x2000) * 0x2000;
+	uint32_t calc_size = (size / 0x2000) * 0x2000;
 
 	if (size - calc_size == 512)
 	{
@@ -742,13 +742,13 @@ static uint32 HeaderRemove (uint32 size, int32 * headerCount, uint8 *buf)
 	return (size);
 }
 
-static uint32 FileLoader (uint8 *buffer, int32 maxsize)
+static uint32_t FileLoader (uint8_t *buffer, int32_t maxsize)
 {
 	/* <- ROM size without header */
 	/* ** Memory.HeaderCount */
 	/* ** Memory.ROMFilename */
 
-	uint8	*ptr;
+	uint8_t	*ptr;
 	uint64_t	size      = 0;
 	STREAM fp          = OPEN_STREAM(0);
 
@@ -765,9 +765,9 @@ static uint32 FileLoader (uint8 *buffer, int32 maxsize)
    return HeaderRemove(size, &Memory.HeaderCount, ptr);
 }
 
-static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
+static uint32_t caCRC32 (uint8_t *array, uint32_t size, uint32_t crc32)
 {
-	uint32 i;
+	uint32_t i;
 
 	for ( i = 0; i < size; i++)
 		crc32 = ((crc32 >> 8) & 0x00FFFFFF) ^ crc32Table[(crc32 ^ array[i]) & 0xFF];
@@ -775,12 +775,12 @@ static uint32 caCRC32 (uint8 *array, uint32 size, uint32 crc32)
 	return (~crc32);
 }
 
-bool8 LoadROM (void)
+uint8_t LoadROM (void)
 {
 	int	hi_score, lo_score, retry_count;
-	bool8 interleaved, tales;
-	uint8 * RomHeader;
-	int32 totalFileSize;
+	uint8_t interleaved, tales;
+	uint8_t * RomHeader;
+	int32_t totalFileSize;
 
 	retry_count = 0;
 
@@ -936,7 +936,7 @@ again:
 		else
 		if (Settings.ForceInterleaveGD24 && Memory.CalculatedSize == 0x300000)
 		{
-			bool8	t = Memory.LoROM;
+			uint8_t	t = Memory.LoROM;
 			Memory.LoROM = Memory.HiROM;
 			Memory.HiROM = t;
 			S9xDeinterleaveGD24(Memory.CalculatedSize, Memory.ROM);
@@ -946,7 +946,7 @@ again:
 			S9xDeinterleaveType2(Memory.CalculatedSize, Memory.ROM);
 		else
 		{
-			bool8	t = Memory.LoROM;
+			uint8_t	t = Memory.LoROM;
 			Memory.LoROM = Memory.HiROM;
 			Memory.HiROM = t;
 			S9xDeinterleaveType1(Memory.CalculatedSize, Memory.ROM);
@@ -974,7 +974,7 @@ again:
 
 	if (tales)
 	{
-		uint8	*tmp = (uint8 *) malloc(Memory.CalculatedSize - 0x400000);
+		uint8_t	*tmp = (uint8_t *) malloc(Memory.CalculatedSize - 0x400000);
 		if (tmp)
 		{
 			S9xMessage(S9X_MSG_INFO, S9X_CATEGORY_ROM, "Fixing swapped ExHiROM...");
@@ -1000,9 +1000,9 @@ again:
 }
 
 #if SNES_SUPPORT_MULTI_CART
-bool8 LoadMultiCart (const char *cartA, const char *cartB)
+uint8_t LoadMultiCart (const char *cartA, const char *cartB)
 {
-	bool8 r;
+	uint8_t r;
 
 	r = TRUE;
 
@@ -1072,7 +1072,7 @@ bool8 LoadMultiCart (const char *cartA, const char *cartB)
 	return (TRUE);
 }
 
-bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
+uint8_t LoadSufamiTurbo (const char *cartA, const char *cartB)
 {
 	RFILE *fp = NULL;
 	int64_t	size;
@@ -1138,7 +1138,7 @@ bool8 LoadSufamiTurbo (const char *cartA, const char *cartB)
 	return (TRUE);
 }
 
-bool8 LoadSameGame (const char *cartA, const char *cartB)
+uint8_t LoadSameGame (const char *cartA, const char *cartB)
 {
 	Multi.cartOffsetA = 0;
 	Multi.cartOffsetB = 0x200000;
@@ -1176,17 +1176,17 @@ bool8 LoadSameGame (const char *cartA, const char *cartB)
 	int c; \
 	for ( c = 0; c < 0x1000; c++) \
 	{ \
-		Memory.Map[c]      = (uint8 *) MAP_NONE; \
-		Memory.WriteMap[c] = (uint8 *) MAP_NONE; \
+		Memory.Map[c]      = (uint8_t *) MAP_NONE; \
+		Memory.WriteMap[c] = (uint8_t *) MAP_NONE; \
 		Memory.BlockIsROM[c] = FALSE; \
 		Memory.BlockIsRAM[c] = FALSE; \
 	} \
 }
 
-static uint16 checksum_calc_sum (uint8 *data, uint32 length)
+static uint16_t checksum_calc_sum (uint8_t *data, uint32_t length)
 {
-	uint32 i;
-	uint16 sum;
+	uint32_t i;
+	uint16_t sum;
 
 	sum = 0;
 
@@ -1196,10 +1196,10 @@ static uint16 checksum_calc_sum (uint8 *data, uint32 length)
 	return (sum);
 }
 
-static uint16 checksum_mirror_sum (uint8 *start, uint32 * length, uint32 mask)
+static uint16_t checksum_mirror_sum (uint8_t *start, uint32_t * length, uint32_t mask)
 {
-	uint16 part1, part2;
-	uint32 next_length;
+	uint16_t part1, part2;
+	uint32_t next_length;
 
 	/* from NSRT */
 	while (!(*length & mask))
@@ -1225,9 +1225,9 @@ static uint16 checksum_mirror_sum (uint8 *start, uint32 * length, uint32 mask)
 	return (part1 + part2);
 }
 
-static uint32 map_mirror (uint32 size, uint32 pos)
+static uint32_t map_mirror (uint32_t size, uint32_t pos)
 {
-	uint32 mask;
+	uint32_t mask;
 	/* from bsnes */
 	if (size == 0)
 		return (0);
@@ -1250,13 +1250,13 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 
 #define MAP_HIROM(bank_s, bank_e, addr_s, addr_e, size, auto_export_map) \
 { \
-	uint32 i, c; \
+	uint32_t i, c; \
 	for ( c = bank_s; c <= bank_e; c++) \
 	{ \
 		for ( i = addr_s; i <= addr_e; i += 0x1000) \
 		{ \
-			uint32 p = (c << 4) | (i >> 12); \
-			uint32 addr = c << 16; \
+			uint32_t p = (c << 4) | (i >> 12); \
+			uint32_t addr = c << 16; \
 			Memory.Map[p] = Memory.ROM + map_mirror(size, addr); \
 			Memory.BlockIsROM[p] = TRUE; \
 			Memory.BlockIsRAM[p] = FALSE; \
@@ -1271,13 +1271,13 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 
 #define MAP_INDEX(bank_s, bank_e, addr_s, addr_e, index, type, auto_export_map) \
 { \
-	uint32 i, c; \
+	uint32_t i, c; \
 	for ( c = bank_s; c <= bank_e; c++) \
 	{ \
 		for ( i = addr_s; i <= addr_e; i += 0x1000) \
 		{ \
-			uint32 p = (c << 4) | (i >> 12); \
-			Memory.Map[p] = (uint8 *) index; \
+			uint32_t p = (c << 4) | (i >> 12); \
+			Memory.Map[p] = (uint8_t *) index; \
 			Memory.BlockIsROM[p] = ((type == MAP_TYPE_I_O) || (type == MAP_TYPE_RAM)) ? FALSE : TRUE; \
 			Memory.BlockIsRAM[p] = ((type == MAP_TYPE_I_O) || (type == MAP_TYPE_ROM)) ? FALSE : TRUE; \
 		} \
@@ -1295,12 +1295,12 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 
 #define MAP_SPACE(bank_s, bank_e, addr_s, addr_e, data, auto_export_map) \
 { \
-	uint32 i,x; \
+	uint32_t i,x; \
 	for ( x = bank_s; x <= bank_e; x++) \
 	{ \
 		for ( i = addr_s; i <= addr_e; i += 0x1000) \
 		{ \
-			uint32 p = (x << 4) | (i >> 12); \
+			uint32_t p = (x << 4) | (i >> 12); \
 			Memory.Map[p] = data; \
 			Memory.BlockIsROM[p] = FALSE; \
 			Memory.BlockIsRAM[p] = TRUE; \
@@ -1314,13 +1314,13 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 
 #define MAP_LOROM_OFFSET(bank_s, bank_e, addr_s, addr_e, size, offset, auto_export_map) \
 { \
-	uint32 i, c; \
+	uint32_t i, c; \
 	for ( c = bank_s; c <= bank_e; c++) \
 	{ \
 		for ( i = addr_s; i <= addr_e; i += 0x1000) \
 		{ \
-			uint32 p = (c << 4) | (i >> 12); \
-			uint32 addr = ((c - bank_s) & 0x7f) * 0x8000; \
+			uint32_t p = (c << 4) | (i >> 12); \
+			uint32_t addr = ((c - bank_s) & 0x7f) * 0x8000; \
 			Memory.Map[p] = Memory.ROM + offset + map_mirror(size, addr) - (i & 0x8000); \
 			Memory.BlockIsROM[p] = TRUE; \
 			Memory.BlockIsRAM[p] = FALSE; \
@@ -1334,13 +1334,13 @@ static uint32 map_mirror (uint32 size, uint32 pos)
 
 #define MAP_HIROM_OFFSET(bank_s, bank_e, addr_s, addr_e, size, offset, auto_export_map) \
 { \
-	uint32 i, c; \
+	uint32_t i, c; \
 	for ( c = bank_s; c <= bank_e; c++) \
 	{ \
 		for ( i = addr_s; i <= addr_e; i += 0x1000) \
 		{ \
-			uint32 p = (c << 4) | (i >> 12); \
-			uint32 addr = (c - bank_s) << 16; \
+			uint32_t p = (c << 4) | (i >> 12); \
+			uint32_t addr = (c - bank_s) << 16; \
 			Memory.Map[p] = Memory.ROM + offset + map_mirror(size, addr); \
 			Memory.BlockIsROM[p] = TRUE; \
 			Memory.BlockIsRAM[p] = FALSE; \
@@ -1378,7 +1378,7 @@ void map_WriteProtectROM (void)
 	for ( c = 0; c < 0x1000; c++)
 	{
 		if (Memory.BlockIsROM[c])
-			Memory.WriteMap[c] = (uint8 *) MAP_NONE;
+			Memory.WriteMap[c] = (uint8_t *) MAP_NONE;
 	}
 }
 
@@ -1395,13 +1395,13 @@ void map_WriteProtectROM (void)
 
 #define MAP_LOROM(bank_s, bank_e, addr_s, addr_e, size, auto_export_map) \
 { \
-	uint32 i, c; \
+	uint32_t i, c; \
 	for ( c = bank_s; c <= bank_e; c++) \
 	{ \
 		for ( i = addr_s; i <= addr_e; i += 0x1000) \
 		{ \
-			uint32 p = (c << 4) | (i >> 12); \
-			uint32 addr = (c & 0x7f) * 0x8000; \
+			uint32_t p = (c << 4) | (i >> 12); \
+			uint32_t addr = (c & 0x7f) * 0x8000; \
 			Memory.Map[p] = Memory.ROM + map_mirror(size, addr) - (i & 0x8000); \
 			Memory.BlockIsROM[p] = TRUE; \
 			Memory.BlockIsRAM[p] = FALSE; \
@@ -1518,7 +1518,7 @@ void map_WriteProtectROM (void)
 	MAP_WRAM(); \
 	map_WriteProtectROM();
 
-static const char * KartContents (uint8 ROMType)
+static const char * KartContents (uint8_t ROMType)
 {
 	static char			str[64];
 	static const char	*contents[3] = { "ROM", "ROM+RAM", "ROM+RAM+BAT" };
@@ -1770,14 +1770,14 @@ static void Map_SA1LoROMMap (void)
 	for ( c = 0x000; c < 0x400; c += 0x10)
 	{
 		SA1.Map[c + 0] = SA1.Map[c + 0x800] = Memory.FillRAM + 0x3000;
-		SA1.Map[c + 1] = SA1.Map[c + 0x801] = (uint8 *) MAP_NONE;
+		SA1.Map[c + 1] = SA1.Map[c + 0x801] = (uint8_t *) MAP_NONE;
 		SA1.WriteMap[c + 0] = SA1.WriteMap[c + 0x800] = Memory.FillRAM + 0x3000;
-		SA1.WriteMap[c + 1] = SA1.WriteMap[c + 0x801] = (uint8 *) MAP_NONE;
+		SA1.WriteMap[c + 1] = SA1.WriteMap[c + 0x801] = (uint8_t *) MAP_NONE;
 	}
 
 	/* SA-1 Banks 60->6f */
 	for ( c = 0x600; c < 0x700; c++)
-		SA1.Map[c] = SA1.WriteMap[c] = (uint8 *) MAP_BWRAM_BITMAP;
+		SA1.Map[c] = SA1.WriteMap[c] = (uint8_t *) MAP_BWRAM_BITMAP;
 
 	Memory.BWRAM = Memory.SRAM;
 }
@@ -1863,13 +1863,13 @@ static const char * Size (void)
 	return (str);
 }
 
-static bool8 InitROM (void)
+static uint8_t InitROM (void)
 {
 	int p;
-	bool8 bs, isChecksumOK;
-	uint8 *RomHeader;
-	uint16 sum;
-	uint32 identifier;
+	uint8_t bs, isChecksumOK;
+	uint8_t *RomHeader;
+	uint16_t sum;
+	uint32_t identifier;
 	char displayName[ROM_NAME_LEN], String[513];
 
 	Settings.SuperFX = FALSE;
@@ -2066,7 +2066,7 @@ static bool8 InitROM (void)
 		case 0x1520:
 		case 0x1A20:
 			Settings.SuperFX = TRUE;
-			memset((uint8 *) &GSU, 0, sizeof(struct FxRegs_s));
+			memset((uint8_t *) &GSU, 0, sizeof(struct FxRegs_s));
 			if (Memory.ROM[0x7FDA] == 0x33)
 				Memory.SRAMSize = Memory.ROM[0x7FBD];
 			else
@@ -2202,7 +2202,7 @@ static bool8 InitROM (void)
 			sum = checksum_calc_sum(Memory.ROM, Memory.CalculatedSize);
 		else
 		{
-			uint32	length = Memory.CalculatedSize;
+			uint32_t	length = Memory.CalculatedSize;
 			sum = checksum_mirror_sum(Memory.ROM, &length, 0x800000);
 		}
 	}
@@ -2221,8 +2221,8 @@ static bool8 InitROM (void)
 	{
 		int offset = Memory.HiROM ? 0xffc0 : 0x7fc0;
 		/* Backup */
-		uint8 BSMagic0 = Memory.ROM[offset + 22];
-		uint8 BSMagic1 = Memory.ROM[offset + 23];
+		uint8_t BSMagic0 = Memory.ROM[offset + 22];
+		uint8_t BSMagic1 = Memory.ROM[offset + 23];
 
 		/* uCONSRT standard */
 		Memory.ROM[offset + 22] = 0x42;
@@ -2259,7 +2259,7 @@ static bool8 InitROM (void)
 	}
 
 	/* checksum */
-	if (!isChecksumOK || ((uint32) Memory.CalculatedSize > (uint32) (((1 << (Memory.ROMSize - 7)) * 128) * 1024)))
+	if (!isChecksumOK || ((uint32_t) Memory.CalculatedSize > (uint32_t) (((1 << (Memory.ROMSize - 7)) * 128) * 1024)))
 	{
 	}
 

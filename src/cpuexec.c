@@ -193,11 +193,11 @@
 
 extern struct SLineData		LineData[240];
 extern struct SLineMatrixData	LineMatrixData[240];
-extern uint8	*HDMAMemPointers[8];
-static uint32 idle_loop_target_pc;
-static bool8 idle_loop_elimination_enable;
+extern uint8_t	*HDMAMemPointers[8];
+static uint32_t idle_loop_target_pc;
+static uint8_t idle_loop_elimination_enable;
 
-static bool8 finishedFrame = false;
+static uint8_t finishedFrame = false;
 
 void S9xMainLoop (void)
 {
@@ -205,7 +205,7 @@ void S9xMainLoop (void)
 	{
 		do
 		{
-			register uint8	Op;
+			register uint8_t	Op;
 			register struct	SOpcodes *Opcodes;
 
 			/* Speedhack - skip idle loop if exists. */
@@ -278,9 +278,9 @@ void S9xMainLoop (void)
 
 			if ((Registers.PCw & MEMMAP_MASK) + ICPU.S9xOpLengths[Op] >= MEMMAP_BLOCK_SIZE)
 			{
-				uint8	*oldPCBase = CPU.PCBase;
+				uint8_t	*oldPCBase = CPU.PCBase;
 
-				CPU.PCBase = S9xGetBasePointer(ICPU.ShiftedPB + ((uint16) (Registers.PCw + 4)));
+				CPU.PCBase = S9xGetBasePointer(ICPU.ShiftedPB + ((uint16_t) (Registers.PCw + 4)));
 				if (oldPCBase != CPU.PCBase || (Registers.PCw & ~MEMMAP_MASK) == (0xffff & ~MEMMAP_MASK))
 					Opcodes = S9xOpcodesSlow;
 			}
@@ -342,7 +342,7 @@ static void S9xCheckMissingHTimerHalt(void)
 
 static INLINE void speedhacks_manager (void)
 {
-	uint8 var_mem, var_mem2, var_mem3;
+	uint8_t var_mem, var_mem2, var_mem3;
    
    idle_loop_target_pc = 0x00;
    idle_loop_elimination_enable = FALSE;
@@ -423,7 +423,7 @@ static void S9xEndScreenRefresh (void)
 	S9xApplyCheats();
 }
 
-static void RenderLine (uint8 C)
+static void RenderLine (uint8_t C)
 {
 	if (IPPU.RenderThisFrame)
 	{
@@ -466,8 +466,8 @@ static void RenderLine (uint8 C)
 
 static INLINE void S9xReschedule (void)
 {
-	uint8 next;
-	int32 hpos;
+	uint8_t next;
+	int32_t hpos;
 
 	next = 0;
 	hpos = 0;
@@ -511,9 +511,9 @@ static INLINE void S9xReschedule (void)
 			break;
 	}
 
-	if (((int32) PPU.HTimerPosition > CPU.NextEvent) && ((int32) PPU.HTimerPosition < hpos))
+	if (((int32_t) PPU.HTimerPosition > CPU.NextEvent) && ((int32_t) PPU.HTimerPosition < hpos))
 	{
-		hpos = (int32) PPU.HTimerPosition;
+		hpos = (int32_t) PPU.HTimerPosition;
 
 		switch (next)
 		{
@@ -548,11 +548,11 @@ static INLINE void S9xReschedule (void)
 }
 
 
-static INLINE bool8 HDMAReadLineCount (int d)
+static INLINE uint8_t HDMAReadLineCount (int d)
 {
 	/* CPU.InDMA is set, so S9xGetXXX() / S9xSetXXX() incur no charges. */
 
-	uint8	line;
+	uint8_t	line;
 
 	line = S9xGetByte((DMA[d].ABank << 16) + DMA[d].Address);
 	CPU.Cycles += SLOW_ONE_CYCLE;
@@ -609,8 +609,8 @@ static INLINE bool8 HDMAReadLineCount (int d)
 
 static void S9xStartHDMA (void)
 {
-	uint8 i;
-	int32 tmpch;
+	uint8_t i;
+	int32_t tmpch;
 
 	PPU.HDMA = Memory.FillRAM[0x420c];
 	PPU.HDMAEnded = 0;
@@ -653,13 +653,13 @@ static const int HDMA_ModeByteCounts[8] =
 	1, 2, 2, 4, 4, 4, 2, 4
 };
 
-static uint8 S9xDoHDMA (uint8 byte)
+static uint8_t S9xDoHDMA (uint8_t byte)
 {
-	uint8 mask;
-	uint32	ShiftedIBank;
-	uint16	IAddr;
-	bool8	temp;
-	int32	tmpch;
+	uint8_t mask;
+	uint32_t	ShiftedIBank;
+	uint16_t	IAddr;
+	uint8_t	temp;
+	int32_t	tmpch;
 	int d;
 	struct SDMA *p;
 
@@ -717,8 +717,8 @@ static uint8 S9xDoHDMA (uint8 byte)
 
 						#define DOBYTE(Addr, RegOff) \
 							CPU.InWRAMDMAorHDMA = (ShiftedIBank == 0x7e0000 || ShiftedIBank == 0x7f0000 || \
-								(!(ShiftedIBank & 0x400000) && ((uint16) (Addr)) < 0x2000)); \
-							S9xSetPPU(S9xGetByte(ShiftedIBank + ((uint16) (Addr))), 0x2100 + p->BAddress + (RegOff));
+								(!(ShiftedIBank & 0x400000) && ((uint16_t) (Addr)) < 0x2000)); \
+							S9xSetPPU(S9xGetByte(ShiftedIBank + ((uint16_t) (Addr))), 0x2100 + p->BAddress + (RegOff));
 
 						DOBYTE(IAddr, 0);
 						CPU.Cycles += SLOW_ONE_CYCLE;
@@ -777,7 +777,7 @@ static uint8 S9xDoHDMA (uint8 byte)
 						if (!HDMAMemPointers[d])
 						{
 							/* HDMA SLOW PATH */
-							uint32	Addr = ShiftedIBank + IAddr;
+							uint32_t	Addr = ShiftedIBank + IAddr;
 
 							switch (p->TransferMode)
 							{
@@ -928,7 +928,7 @@ static uint8 S9xDoHDMA (uint8 byte)
 
 void S9xDoHEventProcessing (void)
 {
-	uint8 tmp;
+	uint8_t tmp;
 
 	switch (CPU.WhichEvent)
 	{
@@ -1083,7 +1083,7 @@ void S9xDoHEventProcessing (void)
 					if (!GFX.DoInterlace || !GFX.InterlaceFrame)
 					{
 						/* S9x Start Screen Refresh */
-						bool8 cond_1, cond_2, cond_q;
+						uint8_t cond_1, cond_2, cond_q;
 
 						GFX.DoInterlace -= (GFX.DoInterlace == TRUE);
 
@@ -1207,7 +1207,7 @@ void S9xDoHEventProcessing (void)
 
 		case HC_RENDER_EVENT:
 			if (CPU.V_Counter >= FIRST_VISIBLE_LINE && CPU.V_Counter <= PPU.ScreenHeight)
-				RenderLine((uint8) (CPU.V_Counter - FIRST_VISIBLE_LINE));
+				RenderLine((uint8_t) (CPU.V_Counter - FIRST_VISIBLE_LINE));
 
 			if (PPU.HTimerPosition == Timings.RenderPos)
 				S9xCheckMissingHTimerPosition();

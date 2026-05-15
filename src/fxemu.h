@@ -184,14 +184,14 @@
 
 struct FxInfo_s
 {
-	uint32	vFlags;
-	uint8	*pvRegisters;	/* 768 bytes located in the memory at address 0x3000 */
-	uint32	nRamBanks;	/* Number of 64kb-banks in GSU-RAM/BackupRAM (banks 0x70-0x73) */
-	uint8	*pvRam;		/* Pointer to GSU-RAM */
-	uint32	nRomBanks;	/* Number of 32kb-banks in Cart-ROM */
-	uint8	*pvRom;		/* Pointer to Cart-ROM */
-	uint32	speedPerLine;
-	bool8	oneLineDone;
+	uint32_t	vFlags;
+	uint8_t	*pvRegisters;	/* 768 bytes located in the memory at address 0x3000 */
+	uint32_t	nRamBanks;	/* Number of 64kb-banks in GSU-RAM/BackupRAM (banks 0x70-0x73) */
+	uint8_t	*pvRam;		/* Pointer to GSU-RAM */
+	uint32_t	nRomBanks;	/* Number of 32kb-banks in Cart-ROM */
+	uint8_t	*pvRom;		/* Pointer to Cart-ROM */
+	uint32_t	speedPerLine;
+	uint8_t	oneLineDone;
 };
 
 #define CHECK_EXEC_SUPERFX() ((Memory.FillRAM[0x3000 + GSU_SFR] & FLG_G) && (Memory.FillRAM[0x3000 + GSU_SCMR] & 0x18) == 0x18)

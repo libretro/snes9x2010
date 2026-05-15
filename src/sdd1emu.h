@@ -180,6 +180,6 @@
 #ifndef _SDD1EMU_H_
 #define _SDD1EMU_H_
 
-void SDD1_decompress (uint8 *, uint8 *, int);
+void SDD1_decompress (uint8_t *, uint8_t *, int);
 
 #endif

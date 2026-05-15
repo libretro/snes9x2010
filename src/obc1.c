@@ -181,7 +181,7 @@
 #include "memmap.h"
 #include "getset.h"
 
-uint8 S9xGetOBC1 (uint16 Address)
+uint8_t S9xGetOBC1 (uint16_t Address)
 {
 	switch (Address)
 	{
@@ -204,7 +204,7 @@ uint8 S9xGetOBC1 (uint16 Address)
 	return (Memory.OBC1RAM[Address - 0x6000]);
 }
 
-void S9xSetOBC1 (uint8 Byte, uint16 Address)
+void S9xSetOBC1 (uint8_t Byte, uint16_t Address)
 {
 	switch (Address)
 	{
@@ -226,7 +226,7 @@ void S9xSetOBC1 (uint8 Byte, uint16 Address)
 
 		case 0x7ff4:
 		{
-			uint8 Temp;
+			uint8_t Temp;
 			Temp = Memory.OBC1RAM[OBC1.basePtr + (OBC1.address >> 2) + 0x200];
 			Temp = (Temp & ~(3 << OBC1.shift)) | ((Byte & 3) << OBC1.shift);
 			Memory.OBC1RAM[OBC1.basePtr + (OBC1.address >> 2) + 0x200] = Temp;
@@ -264,14 +264,14 @@ void S9xResetOBC1 (void)
 	OBC1.shift = (Memory.OBC1RAM[0x1ff6] & 3) << 1;
 }
 
-uint8 * S9xGetBasePointerOBC1 (uint16 Address)
+uint8_t * S9xGetBasePointerOBC1 (uint16_t Address)
 {
 	if (Address >= 0x7ff0 && Address <= 0x7ff6)
 		return (NULL);
 	return (Memory.OBC1RAM - 0x6000);
 }
 
-uint8 * S9xGetMemPointerOBC1 (uint16 Address)
+uint8_t * S9xGetMemPointerOBC1 (uint16_t Address)
 {
 	if (Address >= 0x7ff0 && Address <= 0x7ff6)
 		return (NULL);

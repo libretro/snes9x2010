@@ -190,10 +190,10 @@
 #define SNAPSHOT_INCONSISTENT	(-6)
 
 void S9xFreezeToStream(STREAM stream);
-bool8 S9xFreezeGame (void);
-bool8 S9xUnfreezeGame (void);
+uint8_t S9xFreezeGame (void);
+uint8_t S9xUnfreezeGame (void);
 int S9xUnfreezeFromStream (STREAM stream);
 
-int32 SnapshotSize(void);
+int32_t SnapshotSize(void);
 
 #endif

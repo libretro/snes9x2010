@@ -183,7 +183,7 @@
 #include "getset.h"
 #include "cheats.h"
 
-static bool8 S9xAllHex (const char *code, int len)
+static uint8_t S9xAllHex (const char *code, int len)
 {
 	int i;
 	for ( i = 0; i < len; i++)
@@ -193,20 +193,20 @@ static bool8 S9xAllHex (const char *code, int len)
 	return (TRUE);
 }
 
-const char * S9xProActionReplayToRaw (const char *code, uint32 * address, uint8 * byte)
+const char * S9xProActionReplayToRaw (const char *code, uint32_t * address, uint8_t * byte)
 {
-	uint32	data = 0;
+	uint32_t	data = 0;
 
 	if (strlen(code) != 8 || !S9xAllHex(code, 8) || sscanf(code, "%x", &data) != 1)
 		return ("Invalid Pro Action Replay code - should be 8 hex digits in length.");
 
 	*address = data >> 8;
-	*byte = (uint8) data;
+	*byte = (uint8_t) data;
 
 	return (NULL);
 }
 
-const char * S9xGoldFingerToRaw (const char *code, uint32 * address, bool8 * sram, uint8 * num_bytes, uint8 bytes[3])
+const char * S9xGoldFingerToRaw (const char *code, uint32_t * address, uint8_t * sram, uint8_t * num_bytes, uint8_t bytes[3])
 {
 	char	tmp[15];
 	int		i;
@@ -227,7 +227,7 @@ const char * S9xGoldFingerToRaw (const char *code, uint32 * address, bool8 * sra
 		tmp[2] = 0;
 		if (sscanf(tmp, "%x", &byte) != 1)
 			break;
-		bytes[i] = (uint8) byte;
+		bytes[i] = (uint8_t) byte;
 	}
 
 	*num_bytes = i;
@@ -239,10 +239,10 @@ const char * S9xGoldFingerToRaw (const char *code, uint32 * address, bool8 * sra
 static const char	*real_hex  = "0123456789ABCDEF";
 static const char	*genie_hex = "DF4709156BC8A23E";
 
-const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte)
+const char * S9xGameGenieToRaw (const char *code, uint32_t * address, uint8_t * byte)
 {
 	int i, j;
-	uint32 data;
+	uint32_t data;
 	char	new_code[12];
 
 	if (strlen(code) != 9 || *(code + 4) != '-' || !S9xAllHex(code, 4) || !S9xAllHex(code + 5, 4))
@@ -273,7 +273,7 @@ const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte
 
 	data = 0;
 	sscanf(new_code, "%x", &data);
-	*byte = (uint8) (data >> 24);
+	*byte = (uint8_t) (data >> 24);
 	*address = data & 0xffffff;
 	*address = ((*address & 0x003c00) << 10) +
 			  ((*address & 0x00003c) << 14) +
@@ -286,10 +286,10 @@ const char * S9xGameGenieToRaw (const char *code, uint32 * address, uint8 * byte
 	return NULL;
 }
 
-static uint8 S9xGetByteFree (uint32 address)
+static uint8_t S9xGetByteFree (uint32_t address)
 {
-	uint32	Cycles = CPU.Cycles;
-	uint8	byte;
+	uint32_t	Cycles = CPU.Cycles;
+	uint8_t	byte;
 
 	byte = S9xGetByte(address);
 
@@ -298,9 +298,9 @@ static uint8 S9xGetByteFree (uint32 address)
 	return (byte);
 }
 
-static void S9xSetByteFree (uint8 byte, uint32 address)
+static void S9xSetByteFree (uint8_t byte, uint32_t address)
 {
-	uint32	Cycles = CPU.Cycles;
+	uint32_t	Cycles = CPU.Cycles;
 
 	S9xSetByte(byte, address);
 
@@ -314,7 +314,7 @@ void S9xInitCheatData (void)
 	Cheat.FillRAM = Memory.FillRAM;
 }
 
-void S9xAddCheat (bool8 enable, bool8 save_current_value, uint32 address, uint8 byte)
+void S9xAddCheat (uint8_t enable, uint8_t save_current_value, uint32_t address, uint8_t byte)
 {
 	if (Cheat.num_cheats < sizeof(Cheat.c) / sizeof(Cheat.c[0]))
 	{
@@ -332,12 +332,12 @@ void S9xAddCheat (bool8 enable, bool8 save_current_value, uint32 address, uint8 
 	}
 }
 
-const char * S9xGetCheatName(uint8 cheat_no)
+const char * S9xGetCheatName(uint8_t cheat_no)
 {
 	return Cheat.c[cheat_no].name;
 }
 
-void S9xDeleteCheat (uint32 which1)
+void S9xDeleteCheat (uint32_t which1)
 {
 	if (which1 < Cheat.num_cheats)
 	{
@@ -356,16 +356,16 @@ void S9xDeleteCheats (void)
 	Cheat.num_cheats = 0;
 }
 
-void S9xRemoveCheat (uint32 which1)
+void S9xRemoveCheat (uint32_t which1)
 {
 	if (Cheat.c[which1].saved)
 	{
-		uint32	address = Cheat.c[which1].address;
+		uint32_t	address = Cheat.c[which1].address;
 
 		int		block = (address & 0xffffff) >> MEMMAP_SHIFT;
-		uint8	*ptr = Memory.Map[block];
+		uint8_t	*ptr = Memory.Map[block];
 
-		if (ptr >= (uint8 *) MAP_LAST)
+		if (ptr >= (uint8_t *) MAP_LAST)
 			*(ptr + (address & 0xffff)) = Cheat.c[which1].saved_byte;
 		else
 			S9xSetByteFree(Cheat.c[which1].saved_byte, address);
@@ -374,13 +374,13 @@ void S9xRemoveCheat (uint32 which1)
 
 void S9xRemoveCheats (void)
 {
-	uint32 i;
+	uint32_t i;
 	for ( i = 0; i < Cheat.num_cheats; i++)
 		if (Cheat.c[i].enabled)
 			S9xRemoveCheat(i);
 }
 
-void S9xEnableCheat (uint32 which1)
+void S9xEnableCheat (uint32_t which1)
 {
 	if (which1 < Cheat.num_cheats && !Cheat.c[which1].enabled)
 	{
@@ -389,12 +389,12 @@ void S9xEnableCheat (uint32 which1)
 	}
 }
 
-bool8 S9xCheatEnabled (uint32 which1)
+uint8_t S9xCheatEnabled (uint32_t which1)
 {
 	return Cheat.c[which1].enabled;
 }
 
-void S9xDisableCheat (uint32 which1)
+void S9xDisableCheat (uint32_t which1)
 {
 	if (which1 < Cheat.num_cheats && Cheat.c[which1].enabled)
 	{
@@ -403,11 +403,11 @@ void S9xDisableCheat (uint32 which1)
 	}
 }
 
-void S9xApplyCheat (uint32 which1)
+void S9xApplyCheat (uint32_t which1)
 {
 	int block;
-	uint8 *ptr;
-	uint32	address = Cheat.c[which1].address;
+	uint8_t *ptr;
+	uint32_t	address = Cheat.c[which1].address;
 
 	if (!Cheat.c[which1].saved)
 	{
@@ -418,7 +418,7 @@ void S9xApplyCheat (uint32 which1)
 	block = (address & 0xffffff) >> MEMMAP_SHIFT;
 	ptr = Memory.Map[block];
 
-	if (ptr >= (uint8 *) MAP_LAST)
+	if (ptr >= (uint8_t *) MAP_LAST)
 		*(ptr + (address & 0xffff)) = Cheat.c[which1].byte;
 	else
 		S9xSetByteFree(Cheat.c[which1].byte, address);
@@ -428,7 +428,7 @@ void S9xApplyCheats (void)
 {
 	if (Settings.ApplyCheats)
 	{
-		uint32 i;
+		uint32_t i;
 		for ( i = 0; i < Cheat.num_cheats; i++)
 			if (Cheat.c[i].enabled)
 				S9xApplyCheat(i);

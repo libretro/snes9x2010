@@ -182,7 +182,7 @@
 
 struct SSA1Registers
 {
-	uint8	DB;
+	uint8_t	DB;
 	pair	P;
 	pair	A;
 	pair	D;
@@ -195,31 +195,31 @@ struct SSA1Registers
 struct SSA1
 {
 	struct SOpcodes	*S9xOpcodes;
-	const uint8	*S9xOpLengths;
-	uint8	_Carry;
-	uint8	_Zero;
-	uint8	_Negative;
-	uint8	_Overflow;
-	uint32	ShiftedPB;
-	uint32	ShiftedDB;
+	const uint8_t	*S9xOpLengths;
+	uint8_t	_Carry;
+	uint8_t	_Zero;
+	uint8_t	_Negative;
+	uint8_t	_Overflow;
+	uint32_t	ShiftedPB;
+	uint32_t	ShiftedDB;
 
-	uint32	Flags;
-	uint8	*PCBase;
-	bool8	IRQActive;
-	bool8	WaitingForInterrupt;
+	uint32_t	Flags;
+	uint8_t	*PCBase;
+	uint8_t	IRQActive;
+	uint8_t	WaitingForInterrupt;
 
-	uint8	*Map[MEMMAP_NUM_BLOCKS];
-	uint8	*WriteMap[MEMMAP_NUM_BLOCKS];
-	uint8	*BWRAM;
+	uint8_t	*Map[MEMMAP_NUM_BLOCKS];
+	uint8_t	*WriteMap[MEMMAP_NUM_BLOCKS];
+	uint8_t	*BWRAM;
 
-	bool8	overflow;
-	bool8	in_char_dma;
-	int16	op1;
-	int16	op2;
-	int32	arithmetic_op;
-	int64	sum;
-	uint8	VirtualBitmapFormat;
-	uint8	variable_bit_pos;
+	uint8_t	overflow;
+	uint8_t	in_char_dma;
+	int16_t	op1;
+	int16_t	op2;
+	int32_t	arithmetic_op;
+	int64_t	sum;
+	uint8_t	VirtualBitmapFormat;
+	uint8_t	variable_bit_pos;
 };
 
 #define SA1CheckCarry()		(SA1._Carry)
@@ -242,13 +242,13 @@ extern struct SOpcodes		S9xSA1OpcodesM1X1[256];
 extern struct SOpcodes		S9xSA1OpcodesM1X0[256];
 extern struct SOpcodes		S9xSA1OpcodesM0X1[256];
 extern struct SOpcodes		S9xSA1OpcodesM0X0[256];
-extern const uint8			S9xOpLengthsM1X1[256];
-extern const uint8			S9xOpLengthsM1X0[256];
-extern const uint8			S9xOpLengthsM0X1[256];
-extern const uint8			S9xOpLengthsM0X0[256];
+extern const uint8_t			S9xOpLengthsM1X1[256];
+extern const uint8_t			S9xOpLengthsM1X0[256];
+extern const uint8_t			S9xOpLengthsM0X1[256];
+extern const uint8_t			S9xOpLengthsM0X0[256];
 
-uint8 S9xGetSA1 (uint32 address);
-void S9xSetSA1 (uint8 byte, uint32 address);
+uint8_t S9xGetSA1 (uint32_t address);
+void S9xSetSA1 (uint8_t byte, uint32_t address);
 void S9xSA1Init (void);
 void S9xSA1MainLoop (void);
 void S9xSA1PostLoadState (void);

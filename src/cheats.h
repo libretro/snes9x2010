@@ -184,43 +184,43 @@
 
 struct SCheat
 {
-	uint32	address;
-	uint8	byte;
-	uint8	saved_byte;
-	bool8	enabled;
-	bool8	saved;
+	uint32_t	address;
+	uint8_t	byte;
+	uint8_t	saved_byte;
+	uint8_t	enabled;
+	uint8_t	saved;
 	char	name[22];
 };
 
 typedef struct
 {
 	struct SCheat c[MAX_CHEATS];
-	uint32	num_cheats;
-	uint8	CWRAM[0x20000];
-	uint8	CSRAM[0x10000];
-	uint8	CIRAM[0x2000];
-	uint8	*RAM;
-	uint8	*FillRAM;
-	uint8	*SRAM;
+	uint32_t	num_cheats;
+	uint8_t	CWRAM[0x20000];
+	uint8_t	CSRAM[0x10000];
+	uint8_t	CIRAM[0x2000];
+	uint8_t	*RAM;
+	uint8_t	*FillRAM;
+	uint8_t	*SRAM;
 } SCheatData;
 
 extern SCheatData	Cheat;
 
-void S9xApplyCheat (uint32);
+void S9xApplyCheat (uint32_t);
 void S9xApplyCheats (void);
-void S9xRemoveCheat (uint32);
+void S9xRemoveCheat (uint32_t);
 void S9xRemoveCheats (void);
-void S9xDeleteCheat (uint32);
+void S9xDeleteCheat (uint32_t);
 void S9xDeleteCheats (void);
-void S9xEnableCheat (uint32);
-void S9xDisableCheat (uint32);
-void S9xAddCheat (bool8, bool8, uint32, uint8);
+void S9xEnableCheat (uint32_t);
+void S9xDisableCheat (uint32_t);
+void S9xAddCheat (uint8_t, uint8_t, uint32_t, uint8_t);
 void S9xInitCheatData (void);
-bool8 S9xCheatEnabled (uint32);
-const char * S9xGetCheatName(uint8 cheat_no);
+uint8_t S9xCheatEnabled (uint32_t);
+const char * S9xGetCheatName(uint8_t cheat_no);
 
-const char * S9xGameGenieToRaw (const char * code, uint32 * address, uint8 * byte);
-const char * S9xProActionReplayToRaw (const char * code, uint32 * address, uint8 * byte);
-const char * S9xGoldFingerToRaw (const char * code, uint32 * address, bool8 * sram, uint8 * num_bytes, uint8 bytes[3]);
+const char * S9xGameGenieToRaw (const char * code, uint32_t * address, uint8_t * byte);
+const char * S9xProActionReplayToRaw (const char * code, uint32_t * address, uint8_t * byte);
+const char * S9xGoldFingerToRaw (const char * code, uint32_t * address, uint8_t * sram, uint8_t * num_bytes, uint8_t bytes[3]);
 
 #endif
