@@ -1669,18 +1669,29 @@ static int spc_cpu_read_io ( uint16_t addr, int32_t time )
 	return result;
 }
 
-#ifdef __GNUC__
-__attribute__((always_inline))
-#endif
-static INLINE int spc_cpu_read ( uint16_t addr, int32_t time )
-{
-	/* The SPC700's 16 hardware registers live at $00F0..$00FF.
-	 * Everything else is plain RAM. */
-	if ( (unsigned) (addr - 0xF0) < 0x10 )
-		return spc_cpu_read_io( addr, time );
-
-	return m.ram.ram[addr];
-}
+/* spc_cpu_read: SPC700 memory read.
+ *
+ * Folded to a statement-expression macro for the same reason
+ * memory_speed was folded (see cpuexec.h): once the slow path moved
+ * out of line, the optimizer kept declining to inline the small
+ * wrapper at the 50 call sites in the SPC700 opcode dispatch. The
+ * earlier always_inline / noinline attribute combo worked but
+ * relied on the inliner respecting the hint; a macro removes the
+ * inliner from the decision entirely.
+ *
+ * One subtle constraint: at least one call site passes
+ * READ_PC(++pc) as the address (apu.c line ~2143, the CMP dp,imm
+ * opcode). A plain ternary macro would evaluate that twice or
+ * three times and step pc multiple times per opcode. Use a GCC
+ * statement expression so each argument is captured exactly once
+ * into a local, matching the original function semantics. */
+#define spc_cpu_read(addr, time) __extension__ ({ \
+	uint16_t _spc_addr = (addr); \
+	int32_t  _spc_time = (time); \
+	((unsigned) (_spc_addr - 0xF0) < 0x10) \
+		? spc_cpu_read_io(_spc_addr, _spc_time) \
+		: (int) m.ram.ram[_spc_addr]; \
+})
 
 /***********************************************************************************
  SPC CPU
