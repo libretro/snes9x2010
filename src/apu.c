@@ -1620,49 +1620,66 @@ static void spc_cpu_write( unsigned data, uint16_t addr, int32_t time )
 
 /* CPU read */
 
-static int spc_cpu_read( uint16_t addr, int32_t time )
+/* Out-of-line slow path: SPC700 hardware register read (addr in
+ * [0xF0, 0xFF]). The fast path — plain RAM read for the other
+ * 65,520 addresses — is in the inline wrapper below, so this body
+ * never runs unless the SPC700 actually touched one of its 16
+ * memory-mapped registers.
+ *
+ * __attribute__((noinline)) keeps GCC from inlining this back into
+ * spc_cpu_read; without it the optimizer notices spc_cpu_read is
+ * the only caller and folds them together, restoring the original
+ * monolithic shape and defeating the purpose of the split. */
+#ifdef __GNUC__
+__attribute__((noinline))
+#endif
+static int spc_cpu_read_io ( uint16_t addr, int32_t time )
 {
 	int32_t result = m.ram.ram[addr];
-	int32_t reg = addr - 0xF0;
+	int32_t reg    = addr - 0x100 + 0x10 - R_T0OUT;
 
-	if ( reg >= 0 ) /* 40% */
+	/* Timers */
+	if ( (uint32_t) reg < TIMER_COUNT ) /* 90% */
 	{
-		reg -= 0x10;
-		if ( (uint32_t) reg >= 0xFF00 ) /* 21% */
+		Timer* t = &m.timers [reg];
+		if ( time >= t->next_time )
+			t = spc_run_timer_( t, time );
+		result = t->counter;
+		t->counter = 0;
+	}
+	/* Other registers */
+	else /* 10% */
+	{
+		int32_t reg_tmp = reg + R_T0OUT;
+		result = m.smp_regs[1][reg_tmp];
+		reg_tmp -= R_DSPADDR;
+		/* DSP addr and data */
+		if ( (uint32_t) reg_tmp <= 1 ) /* 4% 0xF2 and 0xF3 */
 		{
-			reg += 0x10 - R_T0OUT;
-			
-			/* Timers */
-			if ( (uint32_t) reg < TIMER_COUNT ) /* 90% */
+			result = m.smp_regs[0][R_DSPADDR];
+			if ( (uint32_t) reg_tmp == 1 )
 			{
-				Timer* t = &m.timers [reg];
-				if ( time >= t->next_time )
-					t = spc_run_timer_( t, time );
-				result = t->counter;
-				t->counter = 0;
-			}
-			/* Other registers */
-			else /* 10% */
-			{
-				int32_t reg_tmp = reg + R_T0OUT;
-				result = m.smp_regs[1][reg_tmp];
-				reg_tmp -= R_DSPADDR;
-				/* DSP addr and data */
-				if ( (uint32_t) reg_tmp <= 1 ) /* 4% 0xF2 and 0xF3 */
-				{
-					result = m.smp_regs[0][R_DSPADDR];
-					if ( (uint32_t) reg_tmp == 1 )
-					{
-						RUN_DSP( time, reg_times [m.smp_regs[0][R_DSPADDR] & 0x7F] );
+				RUN_DSP( time, reg_times [m.smp_regs[0][R_DSPADDR] & 0x7F] );
 
-						result = dsp_m.regs[m.smp_regs[0][R_DSPADDR] & 0x7F]; /* 0xF3 */
-					}
-				}
+				result = dsp_m.regs[m.smp_regs[0][R_DSPADDR] & 0x7F]; /* 0xF3 */
 			}
 		}
 	}
-	
+
 	return result;
+}
+
+#ifdef __GNUC__
+__attribute__((always_inline))
+#endif
+static INLINE int spc_cpu_read ( uint16_t addr, int32_t time )
+{
+	/* The SPC700's 16 hardware registers live at $00F0..$00FF.
+	 * Everything else is plain RAM. */
+	if ( (unsigned) (addr - 0xF0) < 0x10 )
+		return spc_cpu_read_io( addr, time );
+
+	return m.ram.ram[addr];
 }
 
 /***********************************************************************************
