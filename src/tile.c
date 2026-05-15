@@ -7805,19 +7805,36 @@ static int m7hr_blend_smooth_cold(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint
  * collapses to three equality comparisons.
  *
  * Everything else (mixed transparency, row-disagreement, true
- * bilinear) falls through to m7hr_blend_smooth_cold. */
-static INLINE int m7hr_blend_smooth(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint8_t p_br,
-                                    uint32_t Xf, uint32_t Yf, uint16_t *out)
-{
-	if ((p_tl | p_tr | p_bl | p_br) == 0)
-		return 0;
-	if (p_tr == p_tl && p_bl == p_tl && p_br == p_tl)
-	{
-		*out = GFX.ScreenColors[p_tl];
-		return 1;
-	}
-	return m7hr_blend_smooth_cold(p_tl, p_tr, p_bl, p_br, Xf, Yf, out);
-}
+ * bilinear) falls through to m7hr_blend_smooth_cold.
+ *
+ * Folded to a GCC statement-expression macro: as a static INLINE
+ * function at 105 B body, GCC's IPA inliner kept declining to
+ * inline this at the 168 call sites in the Mode 7 HiRes pixel
+ * loops (per-pixel hot code in Mode 7 games). Macroizing forces
+ * inlining at every use. The sibling m7hr_blend_stable wrapper
+ * has identical structure and was already being inlined by the
+ * cost model — the difference is the cold body size
+ * (smooth_cold 1230 B vs stable_cold 424 B), which the inliner
+ * factors into its estimate of the inline cost. The 4 pixel
+ * args are captured into locals so multi-evaluation is safe. */
+#define m7hr_blend_smooth(p_tl, p_tr, p_bl, p_br, Xf, Yf, out) __extension__ ({ \
+	uint8_t _m7s_tl = (p_tl); \
+	uint8_t _m7s_tr = (p_tr); \
+	uint8_t _m7s_bl = (p_bl); \
+	uint8_t _m7s_br = (p_br); \
+	int     _m7s_ret; \
+	if ((_m7s_tl | _m7s_tr | _m7s_bl | _m7s_br) == 0) \
+		_m7s_ret = 0; \
+	else if (_m7s_tr == _m7s_tl && _m7s_bl == _m7s_tl && _m7s_br == _m7s_tl) \
+	{ \
+		*(out) = GFX.ScreenColors[_m7s_tl]; \
+		_m7s_ret = 1; \
+	} \
+	else \
+		_m7s_ret = m7hr_blend_smooth_cold(_m7s_tl, _m7s_tr, _m7s_bl, _m7s_br, \
+		                                  (Xf), (Yf), (out)); \
+	_m7s_ret; \
+})
 
 /* Stable path: X-only blend on the floor-Y row. Yf is unused.
  * Cold body — fast paths are in the inline wrapper below. */
