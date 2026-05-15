@@ -394,15 +394,26 @@ static void S9xSetSA1MemMap (uint32_t which1, uint8_t map)
 
 static uint8_t S9xSA1GetByteFromRegister (uint8_t *GetAddress, uint32_t address);
 
-static INLINE uint8_t S9xSA1GetByte (uint32_t address)
-{
-	uint8_t *GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
-
-	if (GetAddress >= (uint8_t *) MAP_LAST)
-		return (*(GetAddress + (address & 0xffff)));
-
-	return S9xSA1GetByteFromRegister(GetAddress, address);
-}
+/* S9xSA1GetByte: SA1 memory read fast-path wrapper.
+ *
+ * Folded to a statement-expression macro for the same reason
+ * memory_speed and spc_cpu_read were folded: once the slow path
+ * moved to an out-of-line *FromRegister helper, the wrapper itself
+ * is small enough to inline everywhere, but GCC's inline cost
+ * model still kept ~270 \`call S9xSA1GetByte\` instructions in the
+ * production .so. A macro removes the optimizer's discretion.
+ *
+ * The argument is captured into a local so it is evaluated exactly
+ * once even if a call site ever passes a side-effecting expression
+ * (no current site does, but the SPC700 macro showed how easy that
+ * is to overlook). */
+#define S9xSA1GetByte(address) __extension__ ({ \
+	uint32_t  _sa1_gb_addr = (address); \
+	uint8_t  *_sa1_gb_p    = SA1.Map[(_sa1_gb_addr & 0xffffff) >> MEMMAP_SHIFT]; \
+	(_sa1_gb_p >= (uint8_t *) MAP_LAST) \
+		? *(_sa1_gb_p + (_sa1_gb_addr & 0xffff)) \
+		: S9xSA1GetByteFromRegister(_sa1_gb_p, _sa1_gb_addr); \
+})
 
 static uint8_t S9xSA1GetByteFromRegister (uint8_t *GetAddress, uint32_t address)
 {
@@ -1009,18 +1020,21 @@ void S9xSetSA1 (uint8_t byte, uint32_t address)
 
 static void S9xSA1SetByteToRegister (uint8_t byte, uint8_t *SetAddress, uint32_t address);
 
-static INLINE void S9xSA1SetByte (uint8_t byte, uint32_t address)
-{
-	uint8_t *SetAddress = SA1.WriteMap[(address & 0xffffff) >> MEMMAP_SHIFT];
-
-	if (SetAddress >= (uint8_t *) MAP_LAST)
-	{
-		*(SetAddress + (address & 0xffff)) = byte;
-		return;
-	}
-
-	S9xSA1SetByteToRegister(byte, SetAddress, address);
-}
+/* S9xSA1SetByte: SA1 memory write fast-path wrapper.
+ *
+ * Folded to a do-while(0) macro (rather than a statement expression
+ * — there's no return value to produce, and do-while-0 is plain C
+ * without needing __extension__). Both arguments are captured into
+ * locals so the macro is multiple-evaluation-safe. */
+#define S9xSA1SetByte(byte, address) do { \
+	uint8_t   _sa1_sb_byte = (byte); \
+	uint32_t  _sa1_sb_addr = (address); \
+	uint8_t  *_sa1_sb_p    = SA1.WriteMap[(_sa1_sb_addr & 0xffffff) >> MEMMAP_SHIFT]; \
+	if (_sa1_sb_p >= (uint8_t *) MAP_LAST) \
+		*(_sa1_sb_p + (_sa1_sb_addr & 0xffff)) = _sa1_sb_byte; \
+	else \
+		S9xSA1SetByteToRegister(_sa1_sb_byte, _sa1_sb_p, _sa1_sb_addr); \
+} while (0)
 
 static void S9xSA1SetByteToRegister (uint8_t byte, uint8_t *SetAddress, uint32_t address)
 {
