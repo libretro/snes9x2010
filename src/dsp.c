@@ -503,43 +503,55 @@ static void DSP1_Op10 (void)
 
 }
 
-static int16_t DSP1_Sin (int16_t Angle)
-{
-	int32_t	S;
+/* DSP1_Sin / DSP1_Cos: lookup-table sine / cosine for the DSP-1
+ * coprocessor's projection / matrix math. Each used to be a
+ * small static function but GCC's IPA inliner kept declining to
+ * inline at the 20 / 19 call sites inside DSP1's per-frame
+ * matrix routines (Pilotwings, Super Mario Kart's mode-7-like
+ * effects, Ace o Nerae, etc.).
+ *
+ * Folded to GCC statement-expression macros under the "macros
+ * first for must-inline" rule. The original DSP1_Sin had a
+ * depth-1 self-recursion for negative angles
+ * (\`return -DSP1_Sin(-Angle)\`) which can't be expressed in a
+ * macro; rewrite as a non-recursive negate-flag form that folds
+ * the negative-angle case into the same lookup expression.
+ *
+ * Angle is captured into a local once, so a side-effecting call
+ * site is safe. None of the current call sites do that, but it's
+ * the same defensive pattern as every other macro in this series. */
+#define DSP1_Sin(Angle) __extension__ ({ \
+	int16_t _sin_a = (Angle); \
+	int16_t _sin_ret; \
+	if (_sin_a == -32768) \
+		_sin_ret = 0; \
+	else { \
+		int     _sin_neg = (_sin_a < 0); \
+		int32_t _sin_s; \
+		if (_sin_neg) _sin_a = -_sin_a; \
+		_sin_s = DSP1_SinTable[_sin_a >> 8] + \
+		         (DSP1_MulTable[_sin_a & 0xff] * DSP1_SinTable[0x40 + (_sin_a >> 8)] >> 15); \
+		if (_sin_s > 32767) _sin_s = 32767; \
+		_sin_ret = _sin_neg ? -(int16_t) _sin_s : (int16_t) _sin_s; \
+	} \
+	_sin_ret; \
+})
 
-	if (Angle < 0)
-	{
-		if (Angle == -32768)
-			return (0);
-
-		return (-DSP1_Sin(-Angle));
-	}
-
-	S = DSP1_SinTable[Angle >> 8] + (DSP1_MulTable[Angle & 0xff] * DSP1_SinTable[0x40 + (Angle >> 8)] >> 15);
-	if (S > 32767)
-		S = 32767;
-
-	return ((int16_t) S);
-}
-
-static int16_t DSP1_Cos (int16_t Angle)
-{
-	int32_t	S;
-
-	if (Angle < 0)
-	{
-		if (Angle == -32768)
-			return (-32768);
-
-		Angle = -Angle;
-	}
-
-	S = DSP1_SinTable[0x40 + (Angle >> 8)] - (DSP1_MulTable[Angle & 0xff] * DSP1_SinTable[Angle >> 8] >> 15);
-	if (S < -32768)
-		S = -32767;
-
-	return ((int16_t) S);
-}
+#define DSP1_Cos(Angle) __extension__ ({ \
+	int16_t _cos_a = (Angle); \
+	int16_t _cos_ret; \
+	if (_cos_a == -32768) \
+		_cos_ret = -32768; \
+	else { \
+		int32_t _cos_s; \
+		if (_cos_a < 0) _cos_a = -_cos_a; \
+		_cos_s = DSP1_SinTable[0x40 + (_cos_a >> 8)] - \
+		         (DSP1_MulTable[_cos_a & 0xff] * DSP1_SinTable[_cos_a >> 8] >> 15); \
+		if (_cos_s < -32768) _cos_s = -32767; \
+		_cos_ret = (int16_t) _cos_s; \
+	} \
+	_cos_ret; \
+})
 
 static void DSP1_Normalize (int16_t m, int16_t *Coefficient, int16_t *Exponent)
 {
