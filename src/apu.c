@@ -3316,6 +3316,8 @@ uint8_t S9xInitAPU (void)
 
 /* Emulated port read at specified time */
 
+uint8_t S9xAPUReadPort (int port)	{ return ((uint8_t) spc_run_until_(S9X_APU_GET_CLOCK(CPU.Cycles))[port]); }
+
 /* Emulated port write at specified time */
 
 void S9xAPUWritePort (int port, uint8_t byte)
@@ -3332,7 +3334,7 @@ void S9xAPUSetReferenceTime (int32_t cpucycles)
 void S9xAPUExecute (void)
 {
 	/* Per-scanline timing rebase. The catch-up itself is usually a no-op
-	   because S9xAPUWritePort already drove spc_run_until_
+	   because S9xAPUReadPort/S9xAPUWritePort already drove spc_run_until_
 	   to current cycle, but this is also the only path that advances the
 	   SPC when a game has no port traffic for many lines. The reference-
 	   time reset that follows keeps the multiply in S9X_APU_GET_CLOCK
