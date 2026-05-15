@@ -200,35 +200,29 @@
 /* Per-channel saturating RGB subtraction used by the PPU
  * subtractive-color-math path (translucent windows, fade-out
  * effects, half-intensity sub-screen blends). Same shape as the
- * sibling COLOR_ADD / COLOR_ADD1_2 / COLOR_SUB1_2 macros in ppu.h
- * — those are simple per-channel expressions and were already
- * macros; this one needs per-channel control flow (saturate at 0
- * if subtrahend > minuend) so it was previously a static INLINE
- * function and got skipped by GCC's inliner at 74 of its call
- * sites in the per-pixel blending loops.
+ * sibling COLOR_ADD / COLOR_ADD1_2 / COLOR_SUB1_2 macros in ppu.h.
  *
- * Folded to a statement-expression macro for the same reason as
- * memory_speed, spc_cpu_read, m7hr_blend_smooth and the rest of
- * the series: the inliner cost model is unreliable; reach for
- * the preprocessor when force-inlining is what we actually want.
- * C1 and C2 are captured into locals once for multi-evaluation
- * safety. */
-#define COLOR_SUB(C1, C2) __extension__ ({ \
-	uint16_t _csub_c1 = (C1); \
-	uint16_t _csub_c2 = (C2); \
-	uint16_t _csub_v  = ALPHA_BITS_MASK; \
-	uint16_t _csub_m1, _csub_m2; \
-	_csub_m1 = _csub_c1 & FIRST_COLOR_MASK; \
-	_csub_m2 = _csub_c2 & FIRST_COLOR_MASK; \
-	if (_csub_m1 > _csub_m2) _csub_v += (_csub_m1 - _csub_m2); \
-	_csub_m1 = _csub_c1 & SECOND_COLOR_MASK; \
-	_csub_m2 = _csub_c2 & SECOND_COLOR_MASK; \
-	if (_csub_m1 > _csub_m2) _csub_v += (_csub_m1 - _csub_m2); \
-	_csub_m1 = _csub_c1 & THIRD_COLOR_MASK; \
-	_csub_m2 = _csub_c2 & THIRD_COLOR_MASK; \
-	if (_csub_m1 > _csub_m2) _csub_v += (_csub_m1 - _csub_m2); \
-	_csub_v; \
-})
+ * Plain expression macro: C1 and C2 are each referenced multiple
+ * times. All current call sites (through REGMATH / MATHF1_2 /
+ * MATHS1_2 token-paste) pass simple expressions — variable reads,
+ * struct member accesses, ScreenColors lookups — so the multi-
+ * evaluation reduces to identical sub-expressions that the
+ * compiler will CSE. Do NOT pass side-effecting expressions here.
+ *
+ * The earlier `__extension__ ({ ... })` form captured C1 and C2
+ * into locals for safety but relied on a GCC extension that older
+ * MSVC rejects. */
+#define COLOR_SUB(C1, C2) \
+	((uint16_t) (ALPHA_BITS_MASK \
+		+ ((((C1) & FIRST_COLOR_MASK)  > ((C2) & FIRST_COLOR_MASK))  \
+			? (uint16_t) (((C1) & FIRST_COLOR_MASK)  - ((C2) & FIRST_COLOR_MASK))  \
+			: (uint16_t) 0) \
+		+ ((((C1) & SECOND_COLOR_MASK) > ((C2) & SECOND_COLOR_MASK)) \
+			? (uint16_t) (((C1) & SECOND_COLOR_MASK) - ((C2) & SECOND_COLOR_MASK)) \
+			: (uint16_t) 0) \
+		+ ((((C1) & THIRD_COLOR_MASK)  > ((C2) & THIRD_COLOR_MASK))  \
+			? (uint16_t) (((C1) & THIRD_COLOR_MASK)  - ((C2) & THIRD_COLOR_MASK))  \
+			: (uint16_t) 0)))
 
 static uint16_t	DirectColourMaps[8][256];
 static const uint16_t BlackColourMap[256] = {0};
@@ -7807,34 +7801,19 @@ static int m7hr_blend_smooth_cold(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint
  * Everything else (mixed transparency, row-disagreement, true
  * bilinear) falls through to m7hr_blend_smooth_cold.
  *
- * Folded to a GCC statement-expression macro: as a static INLINE
- * function at 105 B body, GCC's IPA inliner kept declining to
- * inline this at the 168 call sites in the Mode 7 HiRes pixel
- * loops (per-pixel hot code in Mode 7 games). Macroizing forces
- * inlining at every use. The sibling m7hr_blend_stable wrapper
- * has identical structure and was already being inlined by the
- * cost model — the difference is the cold body size
- * (smooth_cold 1230 B vs stable_cold 424 B), which the inliner
- * factors into its estimate of the inline cost. The 4 pixel
- * args are captured into locals so multi-evaluation is safe. */
-#define m7hr_blend_smooth(p_tl, p_tr, p_bl, p_br, Xf, Yf, out) __extension__ ({ \
-	uint8_t _m7s_tl = (p_tl); \
-	uint8_t _m7s_tr = (p_tr); \
-	uint8_t _m7s_bl = (p_bl); \
-	uint8_t _m7s_br = (p_br); \
-	int     _m7s_ret; \
-	if ((_m7s_tl | _m7s_tr | _m7s_bl | _m7s_br) == 0) \
-		_m7s_ret = 0; \
-	else if (_m7s_tr == _m7s_tl && _m7s_bl == _m7s_tl && _m7s_br == _m7s_tl) \
-	{ \
-		*(out) = GFX.ScreenColors[_m7s_tl]; \
-		_m7s_ret = 1; \
-	} \
-	else \
-		_m7s_ret = m7hr_blend_smooth_cold(_m7s_tl, _m7s_tr, _m7s_bl, _m7s_br, \
-		                                  (Xf), (Yf), (out)); \
-	_m7s_ret; \
-})
+ * Plain expression macro — each pixel argument is referenced
+ * multiple times and the call sites all pass simple variables
+ * (see M7HR_BLEND_AND_WRITE) so the duplication is CSE'd. Do NOT
+ * pass side-effecting expressions through this macro. The
+ * earlier statement-expression form captured into locals but
+ * relied on a GCC extension that older MSVC rejects. */
+#define m7hr_blend_smooth(p_tl, p_tr, p_bl, p_br, Xf, Yf, out) \
+	((((p_tl) | (p_tr) | (p_bl) | (p_br)) == 0) \
+		? 0 \
+		: (((p_tr) == (p_tl) && (p_bl) == (p_tl) && (p_br) == (p_tl)) \
+			? (*(out) = GFX.ScreenColors[(p_tl)], 1) \
+			: m7hr_blend_smooth_cold((p_tl), (p_tr), (p_bl), (p_br), \
+			                         (Xf), (Yf), (out))))
 
 /* Stable path: X-only blend on the floor-Y row. Yf is unused.
  * Cold body — fast paths are in the inline wrapper below. */

@@ -504,54 +504,50 @@ static void DSP1_Op10 (void)
 }
 
 /* DSP1_Sin / DSP1_Cos: lookup-table sine / cosine for the DSP-1
- * coprocessor's projection / matrix math. Each used to be a
- * small static function but GCC's IPA inliner kept declining to
- * inline at the 20 / 19 call sites inside DSP1's per-frame
- * matrix routines (Pilotwings, Super Mario Kart's mode-7-like
- * effects, Ace o Nerae, etc.).
+ * coprocessor's projection / matrix math. Used at ~20 sites in
+ * DSP1's per-frame matrix routines (Pilotwings, Super Mario Kart's
+ * mode-7-like effects, Ace o Nerae, etc.).
  *
- * Folded to GCC statement-expression macros under the "macros
- * first for must-inline" rule. The original DSP1_Sin had a
- * depth-1 self-recursion for negative angles
- * (\`return -DSP1_Sin(-Angle)\`) which can't be expressed in a
- * macro; rewrite as a non-recursive negate-flag form that folds
- * the negative-angle case into the same lookup expression.
+ * Plain expression macros. The earlier statement-expression form
+ * captured Angle into a local but used a GCC extension that older
+ * MSVC rejects. Here Angle is referenced several times, so the
+ * macro relies on its argument being side-effect-free — all
+ * current call sites pass struct member reads, which is safe.
  *
- * Angle is captured into a local once, so a side-effecting call
- * site is safe. None of the current call sites do that, but it's
- * the same defensive pattern as every other macro in this series. */
-#define DSP1_Sin(Angle) __extension__ ({ \
-	int16_t _sin_a = (Angle); \
-	int16_t _sin_ret; \
-	if (_sin_a == -32768) \
-		_sin_ret = 0; \
-	else { \
-		int     _sin_neg = (_sin_a < 0); \
-		int32_t _sin_s; \
-		if (_sin_neg) _sin_a = -_sin_a; \
-		_sin_s = DSP1_SinTable[_sin_a >> 8] + \
-		         (DSP1_MulTable[_sin_a & 0xff] * DSP1_SinTable[0x40 + (_sin_a >> 8)] >> 15); \
-		if (_sin_s > 32767) _sin_s = 32767; \
-		_sin_ret = _sin_neg ? -(int16_t) _sin_s : (int16_t) _sin_s; \
-	} \
-	_sin_ret; \
-})
+ * The two-stage helpers (_DSP1_Sin_lookup / _DSP1_Cos_lookup)
+ * factor the table-and-multiply expression so that the saturating
+ * "is the sum out of range" test does not have to literally
+ * duplicate the multiply in the source. The preprocessor still
+ * expands the body twice, but both copies are syntactically
+ * identical and the compiler will CSE them for the simple variable
+ * inputs all current call sites use.
+ *
+ * Non-recursive sine: the original code recursed for negative
+ * angles; here we detect the sign, work on |Angle| through the
+ * lookup, and negate the result at the end. */
+#define _DSP1_Sin_lookup(mag) \
+	( DSP1_SinTable[(mag) >> 8] + \
+	  (DSP1_MulTable[(mag) & 0xff] * DSP1_SinTable[0x40 + ((mag) >> 8)] >> 15) )
 
-#define DSP1_Cos(Angle) __extension__ ({ \
-	int16_t _cos_a = (Angle); \
-	int16_t _cos_ret; \
-	if (_cos_a == -32768) \
-		_cos_ret = -32768; \
-	else { \
-		int32_t _cos_s; \
-		if (_cos_a < 0) _cos_a = -_cos_a; \
-		_cos_s = DSP1_SinTable[0x40 + (_cos_a >> 8)] - \
-		         (DSP1_MulTable[_cos_a & 0xff] * DSP1_SinTable[_cos_a >> 8] >> 15); \
-		if (_cos_s < -32768) _cos_s = -32767; \
-		_cos_ret = (int16_t) _cos_s; \
-	} \
-	_cos_ret; \
-})
+#define _DSP1_Sin_sat(mag) \
+	( _DSP1_Sin_lookup(mag) > 32767 ? 32767 : _DSP1_Sin_lookup(mag) )
+
+#define DSP1_Sin(Angle) \
+	( (Angle) == -32768 ? (int16_t) 0 \
+	  : (Angle) < 0 \
+	      ? (int16_t) -_DSP1_Sin_sat(-(int32_t)(Angle)) \
+	      : (int16_t)  _DSP1_Sin_sat( (int32_t)(Angle)) )
+
+#define _DSP1_Cos_lookup(mag) \
+	( DSP1_SinTable[0x40 + ((mag) >> 8)] - \
+	  (DSP1_MulTable[(mag) & 0xff] * DSP1_SinTable[(mag) >> 8] >> 15) )
+
+#define _DSP1_Cos_sat(mag) \
+	( _DSP1_Cos_lookup(mag) < -32768 ? -32767 : _DSP1_Cos_lookup(mag) )
+
+#define DSP1_Cos(Angle) \
+	( (Angle) == -32768 ? (int16_t) -32768 \
+	  : (int16_t) _DSP1_Cos_sat((Angle) < 0 ? -(int32_t)(Angle) : (int32_t)(Angle)) )
 
 static void DSP1_Normalize (int16_t m, int16_t *Coefficient, int16_t *Exponent)
 {

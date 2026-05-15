@@ -1903,8 +1903,10 @@ static void OpEA (void)
  * that RTL uses. Address always in \$00FE-\$0100 (or higher up to
  * \$01FF) which is WRAM bank 0 low half. */
 #ifdef SA1_OPCODES
-#define PullB_E1_JSL(b) \
-	(b) = S9xGetByte(++Registers.S.W);
+#define PullB_E1_JSL(b) do { \
+	++Registers.S.W; \
+	(b) = S9xGetByte(Registers.S.W); \
+} while (0)
 #else
 #define PullB_E1_JSL(b) do { \
 	int32_t speed = SLOW_ONE_CYCLE; \
@@ -2330,8 +2332,10 @@ static void Op5ASlow (void)
  * current SP), then runtime-check S.W <= $1FFF for the WRAM
  * bypass. */
 #ifdef SA1_OPCODES
-#define PullB(b) \
-	(b) = S9xGetByte(++Registers.S.W);
+#define PullB(b) do { \
+	++Registers.S.W; \
+	(b) = S9xGetByte(Registers.S.W); \
+} while (0)
 #else
 #define PullB(b) do { \
 	Registers.S.W++; \

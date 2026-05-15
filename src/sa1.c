@@ -403,17 +403,17 @@ static uint8_t S9xSA1GetByteFromRegister (uint8_t *GetAddress, uint32_t address)
  * model still kept ~270 \`call S9xSA1GetByte\` instructions in the
  * production .so. A macro removes the optimizer's discretion.
  *
- * The argument is captured into a local so it is evaluated exactly
- * once even if a call site ever passes a side-effecting expression
- * (no current site does, but the SPC700 macro showed how easy that
- * is to overlook). */
-#define S9xSA1GetByte(address) __extension__ ({ \
-	uint32_t  _sa1_gb_addr = (address); \
-	uint8_t  *_sa1_gb_p    = SA1.Map[(_sa1_gb_addr & 0xffffff) >> MEMMAP_SHIFT]; \
-	(_sa1_gb_p >= (uint8_t *) MAP_LAST) \
-		? *(_sa1_gb_p + (_sa1_gb_addr & 0xffff)) \
-		: S9xSA1GetByteFromRegister(_sa1_gb_p, _sa1_gb_addr); \
-})
+ * Plain expression macro: `address` is referenced four times and
+ * the SA1.Map[] lookup is replayed three times. All current call
+ * sites pass simple expressions (variables, struct members, +1
+ * offsets) so the duplication is CSE'd by the compiler. Do NOT
+ * pass side-effecting expressions through this macro. The earlier
+ * statement-expression form captured into locals for safety but
+ * relied on a GCC extension that older MSVC rejects. */
+#define S9xSA1GetByte(address) \
+	((SA1.Map[(((address) & 0xffffff) >> MEMMAP_SHIFT)] >= (uint8_t *) MAP_LAST) \
+		? *(SA1.Map[(((address) & 0xffffff) >> MEMMAP_SHIFT)] + ((address) & 0xffff)) \
+		: S9xSA1GetByteFromRegister(SA1.Map[(((address) & 0xffffff) >> MEMMAP_SHIFT)], (address)))
 
 #ifdef __GNUC__
 __attribute__((noinline))

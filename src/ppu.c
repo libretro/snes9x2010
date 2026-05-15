@@ -3941,27 +3941,39 @@ uint8_t S9xGetPPU (uint16_t Address)
 
 static uint8_t	sdd1_decode_buffer[0x10000];
 
-/* Fold to a statement-expression macro for the same reason
- * memory_speed was folded (see cpuexec.h): this is called inside
- * the per-byte DMA / HDMA transfer loops in S9xDoDMA, and at -O2
- * -flto GCC kept emitting a real \`call addCyclesInDMA\` at 31 of
- * those sites despite the static INLINE hint. The body is small
- * enough to inline at every use, and macro expansion sidesteps the
- * inliner's cost model entirely.
+/* addCyclesInDMA: advance the CPU clock by one slow cycle inside
+ * the per-byte DMA / HDMA transfer loops in S9xDoDMA, run any
+ * H-events that have come due, and report whether HDMA fired on
+ * this same channel mid-transfer (which kills the DMA).
+ *
+ * Plain expression macro at every call site. The earlier
+ * statement-expression form used a GCC extension that older MSVC
+ * rejects; this portable form inlines the hot path (one add, one
+ * compare, the bit test, the unconditional clear) at every site
+ * and only function-calls into addCyclesInDMA_drainEvents when
+ * the cycle counter has actually crossed an H-event boundary —
+ * which is rare during a single DMA byte. The drain helper itself
+ * contains the while loop, which cannot be expressed as a single
+ * expression in portable C.
+ *
+ * CALLER CONSTRAINT: dma_channel is referenced twice. All current
+ * call sites pass a simple variable (Channel), so this is safe.
  *
  * Returns TRUE if the DMA should continue, FALSE if HDMA fired in
  * the middle on the same channel and killed it. */
-#define addCyclesInDMA(dma_channel) __extension__ ({ \
-	uint8_t _adma_ret = TRUE; \
-	uint8_t _adma_ch  = (dma_channel); \
-	CPU.Cycles += SLOW_ONE_CYCLE; \
-	while (CPU.Cycles >= CPU.NextEvent) \
-		S9xDoHEventProcessing(); \
-	if (CPU.HDMARanInDMA & (1 << _adma_ch)) \
-		_adma_ret = FALSE; \
-	CPU.HDMARanInDMA = 0; \
-	_adma_ret; \
-})
+static void addCyclesInDMA_drainEvents (void)
+{
+	while (CPU.Cycles >= CPU.NextEvent)
+		S9xDoHEventProcessing();
+}
+
+#define addCyclesInDMA(dma_channel) \
+	( (CPU.Cycles += SLOW_ONE_CYCLE), \
+	  ((CPU.Cycles >= CPU.NextEvent) \
+		? (addCyclesInDMA_drainEvents(), 0) : 0), \
+	  ((CPU.HDMARanInDMA & (1u << (dma_channel))) \
+		? (CPU.HDMARanInDMA = 0, (uint8_t) FALSE) \
+		: (CPU.HDMARanInDMA = 0, (uint8_t) TRUE)) )
 
 static uint8_t dma_channels_to_be_used[8] = {0};
 static uint8_t special_chips_active = FALSE;
