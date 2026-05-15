@@ -256,34 +256,31 @@ void S9xLibretroSwFbAbort (void);
 	Registers.PL &= ~(Zero | Negative | Carry | Overflow); \
 	Registers.PL |= ICPU._Carry | ((ICPU._Zero == 0) << 1) | (ICPU._Negative & 0x80) | (ICPU._Overflow << 6);
 
-/* memory_speed: bus-cycle cost for an SNES address. Inlined here
- * because it is called on every memory access from getset.h's
- * S9xGetByte / S9xGetWord / S9xSetByte / S9xSetWord and from
- * S9xGetByteFromRegister; the body is small bit-tests and a load,
- * so a function call to it was pure overhead relative to the work.
+/* memory_speed: bus-cycle cost for an SNES address. Folded into a
+ * macro so the body is guaranteed to be substituted at every call
+ * site at preprocess time, regardless of how the optimizer's
+ * inliner scores it. Once getset.h was split into small inline
+ * wrappers and big out-of-line slow paths, the wrappers themselves
+ * began to inline at ~1200 call sites; at that point GCC's inline
+ * cost model refused to also inline the static-INLINE memory_speed
+ * at most of those newly-exposed sites and ~1400 \`call memory_speed\`
+ * instructions came back into the production .so. A macro sidesteps
+ * the cost model entirely.
  *
  *   $00xx-$3Fxx, $80xx-$BFxx     bank-low / system area, slow
  *   $40xx-$7Dxx                  WRAM and slow-ROM bank
  *   $7Exx-$7Fxx                  WRAM, fast
  *   $C0xx-$FFxx                  fast or slow depending on FastROMSpeed
- * The bit patterns below collapse those regions into three branches. */
-static INLINE int32_t memory_speed (uint32_t address)
-{
-	if (address & 0x408000)
-	{
-		if (address & 0x800000)
-			return (CPU.FastROMSpeed);
-		return (SLOW_ONE_CYCLE);
-	}
-
-	if ((address + 0x6000) & 0x4000)
-		return (SLOW_ONE_CYCLE);
-
-	if ((address - 0x4000) & 0x7e00)
-		return (ONE_CYCLE);
-
-	return (TWO_CYCLES);
-}
+ *
+ * The macro evaluates its argument multiple times. Every existing
+ * call site passes a plain variable (Address / address), so this is
+ * safe; the lvalue would have been spilled to memory anyway. */
+#define memory_speed(addr) \
+	(((addr) & 0x408000) \
+		? (((addr) & 0x800000) ? CPU.FastROMSpeed : SLOW_ONE_CYCLE) \
+		: ((((addr) + 0x6000) & 0x4000) \
+			? SLOW_ONE_CYCLE \
+			: ((((addr) - 0x4000) & 0x7e00) ? ONE_CYCLE : TWO_CYCLES)))
 
 static INLINE void S9xFixCycles (void)
 {
