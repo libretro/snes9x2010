@@ -1770,10 +1770,26 @@ static void OpEA (void)
 	S9xSetWord_Write1(w, Registers.S.W - 1, WRAP_BANK); \
 	Registers.S.W -= 2;
 
+/* PushWE: 16-bit push in EMULATION mode. With SH hardware-forced
+ * to $01, both bytes always land in $0100-$01FF and the WRAP_PAGE
+ * semantics of the original S9xSetWord_Write1 call are exactly
+ * what two consecutive PushBE invocations produce: each PushBE
+ * writes at the current SP and then decrements SL, so the SH=$01
+ * lock makes the wrap at $0100↔$01FF happen naturally. Build on
+ * top of PushBE to inherit its compile-time fold of Memory.RAM
+ * and SLOW_ONE_CYCLE. */
+#ifdef SA1_OPCODES
 #define PushWE(w) \
 	Registers.SL--; \
 	S9xSetWord_Write1(w, Registers.S.W, WRAP_PAGE); \
 	Registers.SL--;
+#else
+#define PushWE(w) do { \
+	uint16_t _pwe_val = (w); \
+	PushBE((uint8_t) (_pwe_val >> 8)); /* high byte first */ \
+	PushBE((uint8_t) _pwe_val);        /* low byte */ \
+} while (0)
+#endif
 
 #define PushB(b) \
 	S9xSetByte(b, Registers.S.W--);
@@ -2149,10 +2165,23 @@ static void Op5ASlow (void)
 	w = S9xGetWord(Registers.S.W + 1, WRAP_BANK); \
 	Registers.S.W += 2;
 
+/* PullWE: 16-bit pull in EMULATION mode. Same justification as
+ * PushWE: two consecutive PullBE invocations reproduce the
+ * WRAP_PAGE semantics naturally because the SH=$01 lock keeps
+ * every byte read inside $0100-$01FF. */
+#ifdef SA1_OPCODES
 #define PullWE(w) \
 	Registers.SL++; \
 	w = S9xGetWord(Registers.S.W, WRAP_PAGE); \
 	Registers.SL++;
+#else
+#define PullWE(w) do { \
+	uint8_t _pwe_lo, _pwe_hi; \
+	PullBE(_pwe_lo); /* low byte first (at the lower address) */ \
+	PullBE(_pwe_hi); /* high byte */ \
+	(w) = (uint16_t) _pwe_lo | ((uint16_t) _pwe_hi << 8); \
+} while (0)
+#endif
 
 #define PullB(b) \
 	b = S9xGetByte(++Registers.S.W);
