@@ -7674,7 +7674,20 @@ extern struct SLineMatrixData	LineMatrixData[240];
 
 /* Smooth path: 4-corner bilinear with vertical-row-contrast guard.
  * See M7HR_VROW_THRESHOLD above for the guard's tuning rationale. */
-static int m7hr_blend_smooth(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint8_t p_br,
+/* Cold slow body for m7hr_blend_smooth. The fast paths
+ * (all-transparent and all-four-corners-same-non-zero) live in the
+ * inline wrapper below; this function handles everything else.
+ *
+ * The noinline attribute is essential: with a single caller (the
+ * inline wrapper), GCC's IPA inliner would fold this 1230-byte
+ * body back into the wrapper, blow the wrapper past the inline
+ * threshold at every Mode 7 HiRes call site, and undo the split —
+ * the same fold-back trap that bit S9xSetByteToRegister
+ * (see 9e66654). */
+#ifdef __GNUC__
+__attribute__((noinline))
+#endif
+static int m7hr_blend_smooth_cold(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint8_t p_br,
                              uint32_t Xf, uint32_t Yf, uint16_t *out)
 {
 	uint8_t op_tl = (p_tl != 0);
@@ -7770,8 +7783,48 @@ static int m7hr_blend_smooth(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint8_t p
 	}
 }
 
-/* Stable path: X-only blend on the floor-Y row. Yf is unused. */
-static int m7hr_blend_stable(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint8_t p_br,
+/* Inline fast-path wrapper for m7hr_blend_smooth.
+ *
+ * Two trivial cases dominate Mode 7 HiRes pixel work:
+ *
+ *   1. All four corners transparent (palette index 0): the pixel is
+ *      skipped. Common at sprite/edge boundaries and off-track in
+ *      racing games. The op_mask OR-with-zero test catches this
+ *      with one OR and one branch.
+ *
+ *   2. All four corners the same non-zero palette index:
+ *      bilinear interpolation between identical samples is the
+ *      identity, so we look up the colour and write it without
+ *      computing weights or mixing. This is overwhelmingly the
+ *      common case for the flat textured surfaces (track, ground,
+ *      water plane) that Mode 7 is used for: F-Zero, Pilotwings,
+ *      Super Mario Kart, Final Fantasy IV/V/VI airship maps.
+ *
+ * After case 1 has rejected the all-zero case, "all four corners
+ * equal" automatically implies "all non-zero", so the second test
+ * collapses to three equality comparisons.
+ *
+ * Everything else (mixed transparency, row-disagreement, true
+ * bilinear) falls through to m7hr_blend_smooth_cold. */
+static INLINE int m7hr_blend_smooth(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint8_t p_br,
+                                    uint32_t Xf, uint32_t Yf, uint16_t *out)
+{
+	if ((p_tl | p_tr | p_bl | p_br) == 0)
+		return 0;
+	if (p_tr == p_tl && p_bl == p_tl && p_br == p_tl)
+	{
+		*out = GFX.ScreenColors[p_tl];
+		return 1;
+	}
+	return m7hr_blend_smooth_cold(p_tl, p_tr, p_bl, p_br, Xf, Yf, out);
+}
+
+/* Stable path: X-only blend on the floor-Y row. Yf is unused.
+ * Cold body — fast paths are in the inline wrapper below. */
+#ifdef __GNUC__
+__attribute__((noinline))
+#endif
+static int m7hr_blend_stable_cold(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint8_t p_br,
                              uint32_t Xf, uint16_t *out)
 {
 	uint8_t op_tl = (p_tl != 0);
@@ -7820,6 +7873,25 @@ static int m7hr_blend_stable(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint8_t p
 		*out = (uint16_t)(((r_ / wsum_) << 11) | ((g_ / wsum_) << 6) | (b_ / wsum_));
 		return 1;
 	}
+}
+
+/* Inline fast-path wrapper for m7hr_blend_stable. Same two cases
+ * as m7hr_blend_smooth: all-transparent skip and all-four-corners-
+ * equal short-circuit. (The "all 4 equal" case happens to produce
+ * the same answer in both blends because bilinear interpolation
+ * over identical samples is the identity regardless of the weight
+ * scheme.) */
+static INLINE int m7hr_blend_stable(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, uint8_t p_br,
+                                    uint32_t Xf, uint16_t *out)
+{
+	if ((p_tl | p_tr | p_bl | p_br) == 0)
+		return 0;
+	if (p_tr == p_tl && p_bl == p_tl && p_br == p_tl)
+	{
+		*out = GFX.ScreenColors[p_tl];
+		return 1;
+	}
+	return m7hr_blend_stable_cold(p_tl, p_tr, p_bl, p_br, Xf, out);
 }
 
 #define M7HR_BLEND_AND_WRITE(out_offset, p_tl, p_tr, p_bl, p_br, b_tl_raw, Xf, Yf, \
