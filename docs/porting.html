@@ -47,10 +47,6 @@
 		<p>
 			Snes9x also implements freeze-game files which can record the state of the SNES hardware and RAM at a particular point in time and can restore it to that exact state at a later date - the result is that users can save a game at any point, not just at save-game or password points provided by the original game coders. Each freeze file is over 400k in size. To help save disk space, Snes9x can be compiled with zlib (<a href="http://www.zlib.net/">http://www.zlib.net/</a>), which is used to GZIP compress the freeze files, reducing the size to typically below 100k. zlib is also used to load GZIP or ZIP compressed ROM images.</p>
 		<h2>Compile-Time Options</h2>
-		<h3><code>RIGHTSHIFT_IS_SAR</code></h3>
-		<p>
-			Define this if your compiler uses shift right arithmetic for signed values. For example, GCC and Visual C++ use shift right arithmetic.
-		</p>
 		<h3><code>CPU_SHUTDOWN</code></h3>
 		<p>
 			This is a speed-up hack. When defined and if <code>Settings.ShutdownMaster</code> is <code>true</code>, Snes9x starts watching for when CPU is in a simply loop waiting for a known event to happen - like the end of the current scanline. If Snes9x spots CPU in such a loop, it simply skips the emulation of its instructions until the event happens. It can be a big win with lots of SNES games, but will break a small number of games. In this case, set <code>Settings.ShutdownMaster</code> to <code>false</code> before you load a ROM image. Note that this hack is forcibly disabled in some games. See <code>Memory.ApplyROMFixes</code> function for the list of such games.
@@ -72,7 +68,6 @@
 			ZLIB<br>
 			UNZIP_SUPPORT<br>
 			CPU_SHUTDOWN<br>
-			RIGHTSHIFT_IS_SAR<br>
 			CORRECT_VRAM_READS
 		</code></p>
 		<h2>Editing port.h</h2>

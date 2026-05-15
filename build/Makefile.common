@@ -1,6 +1,6 @@
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro/libretro-common
 INCFLAGS          := -I$(CORE_DIR)/libretro -I$(CORE_DIR)/src -I$(LIBRETRO_COMM_DIR)/include
-COREDEFINES        = -D__LIBRETRO__ -DRIGHTSHIFT_IS_SAR 
+COREDEFINES        = -D__LIBRETRO__
 
 ifneq (,$(findstring msvc,$(platform)))
 COREDEFINES        += -DINLINE=_inline
