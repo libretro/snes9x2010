@@ -188,9 +188,27 @@
 #include "bsx.h"
 #include "getset.h"
 
+/* The five out-of-line slow-path helpers below MUST stay out of
+ * line. They each have exactly one or two callers (the matching
+ * inline wrappers in getset.h), and without an explicit noinline
+ * GCC's IPA inliner notices the single-caller case and folds the
+ * 200-700 byte switch body back into the wrapper - which then
+ * grows past the inline threshold and stops being inlined at its
+ * own call sites, defeating the entire hot/cold split.
+ *
+ * S9xSetByteToRegister was the case that exposed this: with no
+ * noinline, the inliner merged it into S9xSetByte and grew that
+ * wrapper to 848 B (the slow body inlined), at which point GCC
+ * refused to inline S9xSetByte at hundreds of call sites. */
+#ifdef __GNUC__
+#define HWREG_NOINLINE __attribute__((noinline))
+#else
+#define HWREG_NOINLINE
+#endif
+
 extern uint8_t	OpenBus;
 
-uint8_t S9xGetByteFromRegister(uint8_t *GetAddress, uint32_t Address)
+HWREG_NOINLINE uint8_t S9xGetByteFromRegister(uint8_t *GetAddress, uint32_t Address)
 {
    uint8_t	byte;
    int32_t    speed    = memory_speed(Address);
@@ -278,7 +296,7 @@ uint8_t S9xGetByteFromRegister(uint8_t *GetAddress, uint32_t Address)
  * special-memory cases. Splitting the body keeps the inline portion
  * small enough that GCC will actually inline it at the ~679 call
  * sites it previously refused to. */
-uint16_t S9xGetWordFromRegister(uint8_t *GetAddress, uint32_t Address)
+HWREG_NOINLINE uint16_t S9xGetWordFromRegister(uint8_t *GetAddress, uint32_t Address)
 {
 	uint16_t word;
 	int32_t  speed = memory_speed(Address);
@@ -406,7 +424,7 @@ uint16_t S9xGetWordFromRegister(uint8_t *GetAddress, uint32_t Address)
 }
 
 /* Out-of-line slow path for S9xSetByte. */
-void S9xSetByteToRegister(uint8_t Byte, uint8_t *SetAddress, uint32_t Address)
+HWREG_NOINLINE void S9xSetByteToRegister(uint8_t Byte, uint8_t *SetAddress, uint32_t Address)
 {
 	int32_t speed = memory_speed(Address);
 
@@ -478,7 +496,7 @@ void S9xSetByteToRegister(uint8_t Byte, uint8_t *SetAddress, uint32_t Address)
 }
 
 /* Out-of-line slow path for S9xSetWord_Write0 (low byte first). */
-void S9xSetWordToRegister_Write0(uint16_t Word, uint8_t *SetAddress, uint32_t Address)
+HWREG_NOINLINE void S9xSetWordToRegister_Write0(uint16_t Word, uint8_t *SetAddress, uint32_t Address)
 {
 	int32_t speed = memory_speed(Address);
 
@@ -608,7 +626,7 @@ void S9xSetWordToRegister_Write0(uint16_t Word, uint8_t *SetAddress, uint32_t Ad
 }
 
 /* Out-of-line slow path for S9xSetWord_Write1 (high byte first). */
-void S9xSetWordToRegister_Write1(uint16_t Word, uint8_t *SetAddress, uint32_t Address)
+HWREG_NOINLINE void S9xSetWordToRegister_Write1(uint16_t Word, uint8_t *SetAddress, uint32_t Address)
 {
 	int32_t speed = memory_speed(Address);
 

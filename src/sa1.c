@@ -415,6 +415,9 @@ static uint8_t S9xSA1GetByteFromRegister (uint8_t *GetAddress, uint32_t address)
 		: S9xSA1GetByteFromRegister(_sa1_gb_p, _sa1_gb_addr); \
 })
 
+#ifdef __GNUC__
+__attribute__((noinline))
+#endif
 static uint8_t S9xSA1GetByteFromRegister (uint8_t *GetAddress, uint32_t address)
 {
 	switch ((intptr_t) GetAddress)
@@ -1036,6 +1039,9 @@ static void S9xSA1SetByteToRegister (uint8_t byte, uint8_t *SetAddress, uint32_t
 		S9xSA1SetByteToRegister(_sa1_sb_byte, _sa1_sb_p, _sa1_sb_addr); \
 } while (0)
 
+#ifdef __GNUC__
+__attribute__((noinline))
+#endif
 static void S9xSA1SetByteToRegister (uint8_t byte, uint8_t *SetAddress, uint32_t address)
 {
 	switch ((intptr_t) SetAddress)
