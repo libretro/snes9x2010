@@ -421,13 +421,11 @@ static INLINE void ADC8(uint8_t Work8)
 {
 	if (CheckDecimal())
 	{
-		uint8_t A1, W1, W2, Ans8;
-		uint16_t A2;
-
-		A1 = Registers.A.W & 0x0F;
-		A2 = Registers.A.W & 0xF0;
-		W1 = Work8 & 0x0F;
-		W2 = Work8 & 0xF0;
+		uint8_t Ans8;
+		uint8_t  A1 = Registers.A.W & 0x0F;
+		uint16_t A2 = Registers.A.W & 0xF0;
+		uint8_t  W1 = Work8 & 0x0F;
+		uint8_t  W2 = Work8 & 0xF0;
 
 		A1 += W1 + CheckCarry();
 		if (A1 > 0x09)
@@ -523,9 +521,7 @@ static INLINE void BIT8(uint8_t Work8)
 static INLINE void CMP16(uint16_t val)
 {
 	int16_t Int16;
-	int32_t Int32;
-
-	Int32 = (int32_t) Registers.A.W - (int32_t) val;
+	int32_t Int32 = (int32_t) Registers.A.W - (int32_t) val;
 	ICPU._Carry = Int32 >= 0;
 	Int16 = Int32;
 	SetZN16(Int16);
@@ -533,10 +529,8 @@ static INLINE void CMP16(uint16_t val)
 
 static INLINE void CMP8(uint8_t val)
 {
-	int16_t Int16;
 	uint8_t Int8;
-
-	Int16 = (int16_t) Registers.AL - (int16_t) val;
+	int16_t Int16 = (int16_t) Registers.AL - (int16_t) val;
 	ICPU._Carry = Int16 >= 0;
 	Int8 = Int16;
 	SetZN8(Int8);
@@ -544,10 +538,8 @@ static INLINE void CMP8(uint8_t val)
 
 static INLINE void CPX16(uint16_t val)
 {
-	int32_t Int32;
 	uint16_t Int16;
-
-	Int32 = (int32_t) Registers.X.W - (int32_t) val;
+	int32_t Int32 = (int32_t) Registers.X.W - (int32_t) val;
 	ICPU._Carry = Int32 >= 0;
 	Int16 = Int32;
 	SetZN16(Int16);
@@ -555,10 +547,8 @@ static INLINE void CPX16(uint16_t val)
 
 static INLINE void CPX8(uint8_t val)
 {
-	int16_t Int16;
 	uint8_t Int8;
-
-	Int16 = (int16_t) Registers.XL - (int16_t) val;
+	int16_t Int16 = (int16_t) Registers.XL - (int16_t) val;
 	ICPU._Carry = Int16 >= 0;
 	Int8 = Int16;
 	SetZN8(Int8);
@@ -566,10 +556,8 @@ static INLINE void CPX8(uint8_t val)
 
 static INLINE void CPY16(uint16_t val)
 {
-	int32_t Int32;
 	uint16_t Int16;
-
-	Int32 = (int32_t) Registers.Y.W - (int32_t) val;
+	int32_t Int32 = (int32_t) Registers.Y.W - (int32_t) val;
 	ICPU._Carry = Int32 >= 0;
 	Int16 = Int32;
 	SetZN16(Int16);
@@ -577,10 +565,8 @@ static INLINE void CPY16(uint16_t val)
 
 static INLINE void CPY8(uint8_t val)
 {
-	int16_t Int16;
 	uint8_t Int8;
-
-	Int16 = (int16_t) Registers.YL - (int16_t) val;
+	int16_t Int16 = (int16_t) Registers.YL - (int16_t) val;
 	ICPU._Carry = Int16 >= 0;
 	Int8 = Int16;
 	SetZN8(Int8);
@@ -588,9 +574,7 @@ static INLINE void CPY8(uint8_t val)
 
 static INLINE void DEC16 (uint32_t OpAddress, uint32_t w)
 {
-	uint16_t Work16;
-
-	Work16 = S9xGetWord(OpAddress, w) - 1;
+	uint16_t Work16 = S9xGetWord(OpAddress, w) - 1;
 	AddCycles(ONE_CYCLE);
 	S9xSetWord_Write1(Work16, OpAddress, w);
 	OpenBus = Work16 & 0xff;
@@ -826,13 +810,11 @@ static INLINE void SBC8(uint8_t Work8)
 {
 	if (CheckDecimal())
 	{
-		uint8_t A1, W1, W2, Ans8;
-		uint16_t A2;
-
-		A1 = Registers.A.W & 0x0F;
-		A2 = Registers.A.W & 0xF0;
-		W1 = Work8 & 0x0F;
-		W2 = Work8 & 0xF0;
+		uint8_t Ans8;
+		uint8_t  A1 = Registers.A.W & 0x0F;
+		uint16_t A2 = Registers.A.W & 0xF0;
+		uint8_t  W1 = Work8 & 0x0F;
+		uint8_t  W2 = Work8 & 0xF0;
 
 		A1 -= W1 + !CheckCarry();
 		A2 -= W2;
@@ -928,9 +910,7 @@ static INLINE void STZ8 (uint32_t OpAddress)
 
 static INLINE void TSB16 (uint32_t OpAddress, uint32_t w)
 {
-	uint16_t Work16;
-
-	Work16 = S9xGetWord(OpAddress, w);
+	uint16_t Work16 = S9xGetWord(OpAddress, w);
 	ICPU._Zero = (Work16 & Registers.A.W) != 0;
 	Work16 |= Registers.A.W;
 	AddCycles(ONE_CYCLE);
@@ -940,9 +920,7 @@ static INLINE void TSB16 (uint32_t OpAddress, uint32_t w)
 
 static INLINE void TSB8 (uint32_t OpAddress)
 {
-	uint8_t Work8;
-
-	Work8 = S9xGetByte(OpAddress);
+	uint8_t Work8 = S9xGetByte(OpAddress);
 	ICPU._Zero = Work8 & Registers.AL;
 	Work8 |= Registers.AL;
 	AddCycles(ONE_CYCLE);
@@ -952,9 +930,7 @@ static INLINE void TSB8 (uint32_t OpAddress)
 
 static INLINE void TRB16 (uint32_t OpAddress, uint32_t w)
 {
-	uint16_t Work16;
-
-	Work16 = S9xGetWord(OpAddress, w);
+	uint16_t Work16 = S9xGetWord(OpAddress, w);
 	ICPU._Zero = (Work16 & Registers.A.W) != 0;
 	Work16 &= ~Registers.A.W;
 	AddCycles(ONE_CYCLE);
@@ -964,9 +940,7 @@ static INLINE void TRB16 (uint32_t OpAddress, uint32_t w)
 
 static INLINE void TRB8 (uint32_t OpAddress)
 {
-	uint8_t Work8;
-
-	Work8 = S9xGetByte(OpAddress);
+	uint8_t Work8 = S9xGetByte(OpAddress);
 	ICPU._Zero = Work8 & Registers.AL;
 	Work8 &= ~Registers.AL;
 	AddCycles(ONE_CYCLE);
