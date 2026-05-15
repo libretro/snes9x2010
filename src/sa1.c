@@ -392,15 +392,20 @@ static void S9xSetSA1MemMap (uint32_t which1, uint8_t map)
 	}
 }
 
-static uint8_t S9xSA1GetByte (uint32_t address)
-{
-	uint8_t	*GetAddress;
+static uint8_t S9xSA1GetByteFromRegister (uint8_t *GetAddress, uint32_t address);
 
-	GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
+static INLINE uint8_t S9xSA1GetByte (uint32_t address)
+{
+	uint8_t *GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
 
 	if (GetAddress >= (uint8_t *) MAP_LAST)
 		return (*(GetAddress + (address & 0xffff)));
 
+	return S9xSA1GetByteFromRegister(GetAddress, address);
+}
+
+static uint8_t S9xSA1GetByteFromRegister (uint8_t *GetAddress, uint32_t address)
+{
 	switch ((intptr_t) GetAddress)
 	{
 		case MAP_PPU:
@@ -432,7 +437,7 @@ static uint8_t S9xSA1GetByte (uint32_t address)
 	}
 }
 
-static uint16_t S9xSA1GetWord (uint32_t address, uint32_t w)
+static INLINE uint16_t S9xSA1GetWord (uint32_t address, uint32_t w)
 {
 	PC_t	a;
 
@@ -1002,11 +1007,11 @@ void S9xSetSA1 (uint8_t byte, uint32_t address)
 
 
 
-static void S9xSA1SetByte (uint8_t byte, uint32_t address)
-{
-	uint8_t *SetAddress;
+static void S9xSA1SetByteToRegister (uint8_t byte, uint8_t *SetAddress, uint32_t address);
 
-	SetAddress = SA1.WriteMap[(address & 0xffffff) >> MEMMAP_SHIFT];
+static INLINE void S9xSA1SetByte (uint8_t byte, uint32_t address)
+{
+	uint8_t *SetAddress = SA1.WriteMap[(address & 0xffffff) >> MEMMAP_SHIFT];
 
 	if (SetAddress >= (uint8_t *) MAP_LAST)
 	{
@@ -1014,6 +1019,11 @@ static void S9xSA1SetByte (uint8_t byte, uint32_t address)
 		return;
 	}
 
+	S9xSA1SetByteToRegister(byte, SetAddress, address);
+}
+
+static void S9xSA1SetByteToRegister (uint8_t byte, uint8_t *SetAddress, uint32_t address)
+{
 	switch ((intptr_t) SetAddress)
 	{
 		case MAP_PPU:
@@ -1068,7 +1078,7 @@ static void S9xSA1SetByte (uint8_t byte, uint32_t address)
 	}
 }
 
-static void S9xSA1SetWord_Write0(uint16_t Word, uint32_t address, uint32_t w)
+static INLINE void S9xSA1SetWord_Write0(uint16_t Word, uint32_t address, uint32_t w)
 {
 	PC_t	a;
 
@@ -1095,7 +1105,7 @@ static void S9xSA1SetWord_Write0(uint16_t Word, uint32_t address, uint32_t w)
 	}
 }
 
-static void S9xSA1SetWord_Write1(uint16_t Word, uint32_t address, uint32_t w)
+static INLINE void S9xSA1SetWord_Write1(uint16_t Word, uint32_t address, uint32_t w)
 {
 	PC_t	a;
 
