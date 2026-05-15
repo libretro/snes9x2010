@@ -376,6 +376,75 @@ static INLINE void S9xSetWord_Write1(uint16_t Word, uint32_t Address, uint32_t w
 	S9xSetWordToRegister_Write1(Word, SetAddress, Address);
 }
 
+/* S9xSetPCBase_cold: special-chip MAP_* dispatch for S9xSetPCBase.
+ *
+ * Pulled out of the hot wrapper so the wrapper - which is the
+ * branch that runs on every JSR / JSL / RTS / RTL / BRK / COP /
+ * NMI / IRQ / BBR / BBS / JMP / JML when PC ends up in ROM or
+ * work-RAM (the common case) - is small enough for the inliner to
+ * consider at small caller sites. The original combined form was
+ * 811 B; the 9 switch cases below (SRAM, BWRAM, SA1 RAM, SPC7110,
+ * C4, OBC1, BSX) dominate the body and are runtime-cold for
+ * normal gameplay code, since PC almost always points at a region
+ * whose Map[] entry is a direct memory pointer (>= MAP_LAST).
+ *
+ * __attribute__((noinline)) is mandatory: without it the optimizer
+ * merges this back into the wrapper, defeating the split. Same
+ * pattern as HWREG_NOINLINE in hwregisters.c and the explicit
+ * noinline on spc_cpu_write_io. */
+#ifdef __GNUC__
+__attribute__((noinline))
+#endif
+static void S9xSetPCBase_cold (uint32_t Address, uint8_t *GetAddress)
+{
+	CPU.PCBase = NULL;
+
+	if ((intptr_t) GetAddress == MAP_NONE)
+		return;
+
+	switch ((intptr_t) GetAddress)
+	{
+		case MAP_LOROM_SRAM:
+			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
+				CPU.PCBase = Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask) - (Address & 0xffff);
+			break;
+
+		case MAP_LOROM_SRAM_B:
+			if ((Multi.sramMaskB & MEMMAP_MASK) == MEMMAP_MASK)
+				CPU.PCBase = Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB) - (Address & 0xffff);
+			break;
+
+		case MAP_HIROM_SRAM:
+			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
+				CPU.PCBase = Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask) - (Address & 0xffff);
+			break;
+
+		case MAP_BWRAM:
+			CPU.PCBase = Memory.BWRAM - 0x6000 - (Address & 0x8000);
+			break;
+
+		case MAP_SA1RAM:
+			CPU.PCBase = Memory.SRAM;
+			break;
+
+		case MAP_SPC7110_ROM:
+			CPU.PCBase = S9xGetBasePointerSPC7110(Address);
+			break;
+
+		case MAP_C4:
+			CPU.PCBase = S9xGetBasePointerC4(Address & 0xffff);
+			break;
+
+		case MAP_OBC_RAM:
+			CPU.PCBase = S9xGetBasePointerOBC1(Address & 0xffff);
+			break;
+
+		case MAP_BSX:
+			CPU.PCBase = S9xGetBasePointerBSX(Address);
+			break;
+	}
+}
+
 static INLINE void S9xSetPCBase (uint32_t Address)
 {
 	int block;
@@ -396,52 +465,7 @@ static INLINE void S9xSetPCBase (uint32_t Address)
 		return;
 	}
 
-	CPU.PCBase = NULL;
-	
-	if((intptr_t)GetAddress == MAP_NONE)
-		return;
-
-	switch ((intptr_t) GetAddress)
-	{
-		case MAP_LOROM_SRAM:
-			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
-				CPU.PCBase = Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask) - (Address & 0xffff);
-         break;
-
-		case MAP_LOROM_SRAM_B:
-			if ((Multi.sramMaskB & MEMMAP_MASK) == MEMMAP_MASK)
-				CPU.PCBase = Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB) - (Address & 0xffff);
-         break;
-
-		case MAP_HIROM_SRAM:
-			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
-				CPU.PCBase = Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask) - (Address & 0xffff);
-         break;
-
-		case MAP_BWRAM:
-			CPU.PCBase = Memory.BWRAM - 0x6000 - (Address & 0x8000);
-         break;
-
-		case MAP_SA1RAM:
-			CPU.PCBase = Memory.SRAM;
-         break;
-
-		case MAP_SPC7110_ROM:
-			CPU.PCBase = S9xGetBasePointerSPC7110(Address);
-         break;
-
-		case MAP_C4:
-			CPU.PCBase = S9xGetBasePointerC4(Address & 0xffff);
-         break;
-
-		case MAP_OBC_RAM:
-			CPU.PCBase = S9xGetBasePointerOBC1(Address & 0xffff);
-         break;
-
-		case MAP_BSX:
-			CPU.PCBase = S9xGetBasePointerBSX(Address);
-         break;
-	}
+	S9xSetPCBase_cold(Address, GetAddress);
 }
 
 static INLINE uint8_t * S9xGetBasePointer (uint32_t Address)
