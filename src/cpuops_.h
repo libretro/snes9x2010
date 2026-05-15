@@ -1778,9 +1778,37 @@ static void OpEA (void)
 #define PushB(b) \
 	S9xSetByte(b, Registers.S.W--);
 
+/* PushBE: 8-bit push in EMULATION mode. SH is hardware-forced to
+ * $01 in emulation mode, so the write address is always $0100-$01FF
+ * — which bank 0 maps directly to Memory.RAM with no offset (see
+ * MAP_SPACE(0x00, 0x3f, 0x0000, 0x1fff, Memory.RAM, true) in
+ * memmap.c). We can therefore skip the Memory.WriteMap[] lookup,
+ * the MAP_LAST sentinel check, the slow-path tail call, and the
+ * memory_speed bit-tests entirely: stack addresses in $0100-$01FF
+ * always return SLOW_ONE_CYCLE from memory_speed (both 0x408000
+ * and (addr+0x6000)&0x4000 are constant for that range).
+ *
+ * This is the answer to "can SetAddress be folded at compile time
+ * for some opcodes?" — for stack ops in E=1, yes, completely.
+ *
+ * Restricted to the main-CPU instantiation: when sa1.c re-includes
+ * cpuops_.h with SA1_OPCODES defined, `Cycles` and `InDMAorHDMA`
+ * (referenced by addCyclesInMemoryAccess) belong to the main CPU
+ * struct, not SA1's, so the macro would not compile in that pass.
+ * SA1 push opcodes are a much smaller fraction of the SA1 workload
+ * and keep the dispatched S9xSA1SetByte path. */
+#ifdef SA1_OPCODES
 #define PushBE(b) \
 	S9xSetByte(b, Registers.S.W); \
 	Registers.SL--;
+#else
+#define PushBE(b) do { \
+	int32_t speed = SLOW_ONE_CYCLE; \
+	Memory.RAM[Registers.S.W] = (b); \
+	addCyclesInMemoryAccess; \
+	Registers.SL--; \
+} while (0)
+#endif
 
 /* PEA*/
 static void OpF4E0 (void)
@@ -2129,9 +2157,20 @@ static void Op5ASlow (void)
 #define PullB(b) \
 	b = S9xGetByte(++Registers.S.W);
 
+/* PullBE: emulation-mode pull, same justification as PushBE.
+ * Address is $0100-$01FF, maps directly to Memory.RAM. */
+#ifdef SA1_OPCODES
 #define PullBE(b) \
 	Registers.SL++; \
 	b = S9xGetByte(Registers.S.W);
+#else
+#define PullBE(b) do { \
+	int32_t speed = SLOW_ONE_CYCLE; \
+	Registers.SL++; \
+	(b) = Memory.RAM[Registers.S.W]; \
+	addCyclesInMemoryAccess; \
+} while (0)
+#endif
 
 /* PLA*/
 static void Op68E1 (void)
