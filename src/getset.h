@@ -29,11 +29,6 @@
   (c) Copyright 2005 - 2006  Dreamer Nom,
                              zones
 
-  C4 x86 assembler and some C emulation code
-  (c) Copyright 2000 - 2003  _Demo_ (_demo_@zsnes.com),
-                             Nach,
-                             zsKnight (zsknight@zsnes.com)
-
   C4 C++ code
   (c) Copyright 2003 - 2006  Brad Jorsch,
                              Nach
@@ -100,11 +95,6 @@
                              Kris Bleakley,
                              Matthew Kendora
 
-  Super FX x86 assembler emulator code
-  (c) Copyright 1998 - 2003  _Demo_,
-                             pagefault,
-                             zsKnight
-
   Super FX C emulator code
   (c) Copyright 1997 - 1999  Ivar,
                              Gary Henderson,
@@ -120,29 +110,10 @@
   SH assembler code partly based on x86 assembler code
   (c) Copyright 2002 - 2004  Marcus Comstedt (marcus@mc.pp.se)
 
-  2xSaI filter
-  (c) Copyright 1999 - 2001  Derek Liauw Kie Fa
-
-  HQ2x, HQ3x, HQ4x filters
-  (c) Copyright 2003         Maxim Stepin (maxim@hiend3d.com)
-
   NTSC filter
   (c) Copyright 2006 - 2007  Shay Green
 
-  GTK+ GUI code
-  (c) Copyright 2004 - 2010  BearOso
-
-  Win32 GUI code
-  (c) Copyright 2003 - 2006  blip,
-                             funkyass,
-                             Matthew Kendora,
-                             Nach,
-                             nitsuja
   (c) Copyright 2009 - 2010  OV2
-
-  Mac OS GUI code
-  (c) Copyright 1998 - 2001  John Stiles
-  (c) Copyright 2001 - 2010  zones
 
   (c) Copyright 2010 - 2016 Daniel De Matteis. (UNDER NO CIRCUMSTANCE 
   WILL COMMERCIAL RIGHTS EVER BE APPROPRIATED TO ANY PARTY)
@@ -413,10 +384,10 @@ static INLINE void S9xSetPCBase (uint32_t Address)
 	Registers.PBPC = Address & 0xffffff;
 	ICPU.ShiftedPB = Address & 0xff0000;
 
-	block = ((Address & 0xffffff) >> MEMMAP_SHIFT);
-	GetAddress = Memory.Map[block];
+	block          = ((Address & 0xffffff) >> MEMMAP_SHIFT);
+	GetAddress     = Memory.Map[block];
 
-	CPU.MemSpeed = memory_speed(Address);
+	CPU.MemSpeed   = memory_speed(Address);
 	CPU.MemSpeedx2 = CPU.MemSpeed << 1;
 
 	if (GetAddress >= (uint8_t *) MAP_LAST)
@@ -435,41 +406,41 @@ static INLINE void S9xSetPCBase (uint32_t Address)
 		case MAP_LOROM_SRAM:
 			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
 				CPU.PCBase = Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask) - (Address & 0xffff);
-			return;
+         break;
 
 		case MAP_LOROM_SRAM_B:
 			if ((Multi.sramMaskB & MEMMAP_MASK) == MEMMAP_MASK)
 				CPU.PCBase = Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB) - (Address & 0xffff);
-			return;
+         break;
 
 		case MAP_HIROM_SRAM:
 			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
 				CPU.PCBase = Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask) - (Address & 0xffff);
-			return;
+         break;
 
 		case MAP_BWRAM:
 			CPU.PCBase = Memory.BWRAM - 0x6000 - (Address & 0x8000);
-			return;
+         break;
 
 		case MAP_SA1RAM:
 			CPU.PCBase = Memory.SRAM;
-			return;
+         break;
 
 		case MAP_SPC7110_ROM:
 			CPU.PCBase = S9xGetBasePointerSPC7110(Address);
-			return;
+         break;
 
 		case MAP_C4:
 			CPU.PCBase = S9xGetBasePointerC4(Address & 0xffff);
-			return;
+         break;
 
 		case MAP_OBC_RAM:
 			CPU.PCBase = S9xGetBasePointerOBC1(Address & 0xffff);
-			return;
+         break;
 
 		case MAP_BSX:
 			CPU.PCBase = S9xGetBasePointerBSX(Address);
-			return;
+         break;
 	}
 }
 
@@ -483,19 +454,19 @@ static INLINE uint8_t * S9xGetBasePointer (uint32_t Address)
 	switch ((intptr_t) GetAddress)
 	{
 		case MAP_LOROM_SRAM:
-			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)
-				return (NULL);
-			return (Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask) - (Address & 0xffff));
+			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
+            return (Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask) - (Address & 0xffff));
+         break;
 
 		case MAP_LOROM_SRAM_B:
-			if ((Multi.sramMaskB & MEMMAP_MASK) != MEMMAP_MASK)
-				return (NULL);
-			return (Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB) - (Address & 0xffff));
+			if ((Multi.sramMaskB & MEMMAP_MASK) == MEMMAP_MASK)
+            return (Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB) - (Address & 0xffff));
+         break;
 
 		case MAP_HIROM_SRAM:
-			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)
-				return (NULL);
-			return (Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask) - (Address & 0xffff));
+			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
+            return (Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask) - (Address & 0xffff));
+         break;
 
 		case MAP_BWRAM:
 			return (Memory.BWRAM - 0x6000 - (Address & 0x8000));
@@ -514,8 +485,9 @@ static INLINE uint8_t * S9xGetBasePointer (uint32_t Address)
 
 		case MAP_NONE:
 		default:
-			return (NULL);
+         break;
 	}
+   return (NULL);
 }
 
 static INLINE uint8_t * S9xGetMemPointer (uint32_t Address)
@@ -528,19 +500,17 @@ static INLINE uint8_t * S9xGetMemPointer (uint32_t Address)
 	switch ((intptr_t) GetAddress)
 	{
 		case MAP_LOROM_SRAM:
-			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)
-				return (NULL);
-			return (Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask));
-
+			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
+            return (Memory.SRAM + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask));
+         break;
 		case MAP_LOROM_SRAM_B:
-			if ((Multi.sramMaskB & MEMMAP_MASK) != MEMMAP_MASK)
-				return (NULL);
-			return (Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB));
-
+			if ((Multi.sramMaskB & MEMMAP_MASK) == MEMMAP_MASK)
+            return (Multi.sramB + ((((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Multi.sramMaskB));
+         break;
 		case MAP_HIROM_SRAM:
-			if ((Memory.SRAMMask & MEMMAP_MASK) != MEMMAP_MASK)
-				return (NULL);
-			return (Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask));
+			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
+            return (Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask));
+         break;
 
 		case MAP_BWRAM:
 			return (Memory.BWRAM - 0x6000 + (Address & 0x7fff));
@@ -559,8 +529,10 @@ static INLINE uint8_t * S9xGetMemPointer (uint32_t Address)
 
 		case MAP_NONE:
 		default:
-			return (NULL);
+         break;
 	}
+
+	return (NULL);
 }
 
 #endif
