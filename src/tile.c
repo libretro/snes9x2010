@@ -197,6 +197,21 @@
 #include "ppu.h"
 #include "tile.h"
 
+/* Optional SIMD acceleration for the per-pixel compositor stages.
+ * Selected at compile time; when the host ISA does not provide SSE2
+ * (Windows x86 pre-SSE2 builds, some embedded ARM that lacks NEON,
+ * any other target) the scalar bodies below are used unchanged.
+ *
+ * Every SIMD kernel must produce framebuffer output bit-exact with
+ * the scalar reference it replaces. */
+#if defined(__SSE2__)
+#include <emmintrin.h>
+#define TILE_HAVE_SSE2 1
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#define TILE_HAVE_NEON 1
+#endif
+
 /* Per-channel saturating RGB subtraction used by the PPU
  * subtractive-color-math path (translucent windows, fade-out
  * effects, half-intensity sub-screen blends). Same shape as the
@@ -6978,12 +6993,51 @@ static void (*Renderers_DrawMosaicPixel16HiresInterlace[7]) (uint32_t, uint32_t,
 static void DrawBackdrop16_Normal1x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
+    uint16_t fill_color;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    fill_color = GFX.ScreenColors[0];
+#if defined(TILE_HAVE_SSE2)
+    /* Backdrop NOMATH inner loop:
+     *   if (1 > DB[N]) { S[N] = ScreenColors[0]; DB[N] = 1; }
+     * which is "fill pixel where Z buffer is still zero". DB is u8,
+     * S is u16, both contiguous on the row, no palette gather, no
+     * color math. Process 8 pixels per __m128i: pcmpeqb on DB gives
+     * the write mask, masked-store the constant fill colour, masked-
+     * store 1 to the depth byte. */
+    {
+        const __m128i vColor = _mm_set1_epi16((short) fill_color);
+        const __m128i vOne8  = _mm_set1_epi8(1);
+        for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+        {
+            x = Left;
+            for (; x + 8 <= Right; x += 8)
+            {
+                __m128i db = _mm_loadl_epi64((const __m128i *)(GFX.DB + Offset + x));
+                __m128i mask8 = _mm_cmpeq_epi8(db, _mm_setzero_si128());
+                __m128i newdb = _mm_or_si128(_mm_and_si128(mask8, vOne8),
+                                             _mm_andnot_si128(mask8, db));
+                _mm_storel_epi64((__m128i *)(GFX.DB + Offset + x), newdb);
+                __m128i mask16 = _mm_unpacklo_epi8(mask8, mask8);
+                __m128i sOld = _mm_loadu_si128((const __m128i *)(GFX.S + Offset + x));
+                __m128i sNew = _mm_or_si128(_mm_and_si128(mask16, vColor),
+                                            _mm_andnot_si128(mask16, sOld));
+                _mm_storeu_si128((__m128i *)(GFX.S + Offset + x), sNew);
+            }
+            /* Scalar tail covers width-mod-8 leftover. Most cases (256-
+             * pixel main screen, 512-pixel HiRes) are a clean multiple
+             * of 8, but clip-window spans can leave 1-7 pixels. */
+            for (; x < Right; x++)
+                BACKDROP_PIXEL_N1x1(x, NOMATH, ADD)
+        }
+    }
+#else
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
         for (x = Left; x < Right; x++)
             BACKDROP_PIXEL_N1x1(x, NOMATH, ADD)
     }
+#endif
+    (void) fill_color;
 }
 
 static void DrawBackdrop16Add_Normal1x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
