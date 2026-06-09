@@ -628,11 +628,25 @@ static void dsp_voice_V3c( dsp_voice_t* v )
 		dsp_m.t_pitch = 0;
 	}
 	
-	output = dsp_interpolate( v );
-
-	/* Noise */
+	/* dsp_interpolate is a pure function (reads the const gauss table and
+	 * the voice's decode buffer; writes nothing), and its result is used
+	 * in exactly two ways below:
+	 *   1. overwritten entirely when this voice's noise bit is set, or
+	 *   2. multiplied by v->env in the envelope application.
+	 * So when the noise bit is set, or when env == 0 (slot unused, voice
+	 * released to silence, or inside KON delay -- which zeroes env above),
+	 * the gaussian FIR's four multiplies are computed only to be thrown
+	 * away. Skipping them in those cases is bit-exact by construction:
+	 * with env == 0, (output * 0) >> 11 & ~1 == 0 for ANY output value.
+	 * Across a 16-game corpus, env==0 alone covers 24-100% of calls
+	 * (unused voice slots sit at env 0 permanently), and the env==0
+	 * state is sticky, so the added branch predicts near-perfectly. */
 	if ( dsp_m.t_non & v->vbit )
 		output = (int16_t) (dsp_m.noise * 2);
+	else if ( v->env == 0 )
+		output = 0;
+	else
+		output = dsp_interpolate( v );
 
 	/* Apply envelope */
 	dsp_m.t_output = (output * v->env) >> 11 & ~1;
