@@ -355,6 +355,41 @@ static INLINE __m128i tile_z2x1_mask_sse2(__m128i db8)
     return _mm_cmpeq_epi16(db_even, _mm_setzero_si128());
 }
 
+/* 2x1 helper: build the per-pair SubZBuffer-bit-5 select mask from an
+ * 8-byte SDB load. The 8 SubZBuffer bytes hold values at byte
+ * positions 0..7; the scalar 2x1 path reads only positions 0, 2, 4,
+ * 6 for the 4 source pixels of a batch. The select mask must cover
+ * BOTH dest u16 lanes (2i, 2i+1) of source pixel i with the same
+ * FFFF/0000 value derived from SDB[2i] & 0x20.
+ *
+ * Treat the 8-byte SDB load as four meaningful 16-bit byte pairs in
+ * the low half; AND with 0x00FF isolates the even (source-aligned)
+ * byte into the low byte of each lane; AND with 0x0020 then cmpeq
+ * against 0x0020 yields a 4-lane mask; unpacklo_epi16 duplicates
+ * each of the 4 source masks into adjacent lane pairs, giving the
+ * correct 8-lane per-pair mask.
+ *
+ * The previous landed version used tile_broadcast_even_u16_sse2 on
+ * the masked SDB load. That helper broadcasts even-INDEXED u16 lanes
+ * (correct for the SubScreen path where the data is u16-aligned in
+ * memory), but for SubZBuffer the source-aligned values are at every
+ * other BYTE — packed into the low byte of each u16 lane after the
+ * 0x00FF mask. Broadcasting at u16-lane granularity then dropped
+ * lanes 1 and 3 (which held SDB[2] and SDB[6]), producing wrong
+ * select results for those two source pixels of every 4-pixel batch
+ * in the Normal2x1 color-math variants. The bug was latent because
+ * Normal2x1 + backdrop color math only fires in HiRes Mode 5/6 or
+ * HD Mode 7 with backdrop CGADSUB enabled — combinations not
+ * exercised by the regression corpus when the original patch landed. */
+static INLINE __m128i tile_z2x1_sd_select_mask_sse2(__m128i sdb_loaded)
+{
+    const __m128i mLowByte = _mm_set1_epi16(0x00FF);
+    const __m128i v20      = _mm_set1_epi16(0x0020);
+    __m128i masked = _mm_and_si128(sdb_loaded, mLowByte);
+    __m128i pair   = _mm_cmpeq_epi16(_mm_and_si128(masked, v20), v20);
+    return _mm_unpacklo_epi16(pair, pair);
+}
+
 #endif /* TILE_HAVE_SSE2 */
 
 /* Per-channel saturating RGB subtraction used by the PPU
@@ -7650,14 +7685,12 @@ static void DrawBackdrop16Add_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_
                 if (_mm_movemask_epi8(mask16) == 0) continue;
 
                 __m128i sdb_loaded = _mm_loadl_epi64((const __m128i *)sdb_ptr);
-                __m128i sd_pair = tile_broadcast_even_u16_sse2(
-                                      _mm_and_si128(sdb_loaded,
-                                                    _mm_set1_epi16(0x00FF)));
+                __m128i sd_mask    = tile_z2x1_sd_select_mask_sse2(sdb_loaded);
                 __m128i sub_loaded = _mm_loadu_si128((const __m128i *)sub_ptr);
                 __m128i vSubBcast  = tile_broadcast_even_u16_sse2(sub_loaded);
 
-                __m128i operand = tile_select_sub_or_fixed_sse2(sd_pair,
-                                                                vSubBcast, vFixed);
+                __m128i operand = _mm_or_si128(_mm_and_si128(sd_mask, vSubBcast),
+                                               _mm_andnot_si128(sd_mask, vFixed));
                 __m128i pix = tile_color_add_sse2(vMain, operand);
 
                 __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
@@ -7769,28 +7802,23 @@ static void DrawBackdrop16AddS1_2_Normal2x1 (uint32_t Offset, uint32_t Left, uin
                 if (_mm_movemask_epi8(mask16) == 0) continue;
 
                 __m128i sdb_loaded = _mm_loadl_epi64((const __m128i *)sdb_ptr);
-                __m128i sd_pair = tile_broadcast_even_u16_sse2(
-                                      _mm_and_si128(sdb_loaded,
-                                                    _mm_set1_epi16(0x00FF)));
+                __m128i sd_mask    = tile_z2x1_sd_select_mask_sse2(sdb_loaded);
                 __m128i sub_loaded = _mm_loadu_si128((const __m128i *)sub_ptr);
                 __m128i vSubBcast  = tile_broadcast_even_u16_sse2(sub_loaded);
 
                 __m128i pix;
                 if (clip)
                 {
-                    __m128i operand = tile_select_sub_or_fixed_sse2(sd_pair,
-                                                                    vSubBcast, vFixed);
+                    __m128i operand = _mm_or_si128(_mm_and_si128(sd_mask, vSubBcast),
+                                                   _mm_andnot_si128(sd_mask, vFixed));
                     pix = tile_color_add_sse2(vMain, operand);
                 }
                 else
                 {
-                    const __m128i v20 = _mm_set1_epi8(0x20);
-                    __m128i sd_bit8  = _mm_cmpeq_epi8(_mm_and_si128(sd_pair, v20), v20);
-                    __m128i sd_bit16 = _mm_unpacklo_epi8(sd_bit8, sd_bit8);
                     __m128i half = tile_color_add_half_sse2(vMain, vSubBcast);
                     __m128i full = tile_color_add_sse2(vMain, vFixed);
-                    pix = _mm_or_si128(_mm_and_si128(sd_bit16, half),
-                                       _mm_andnot_si128(sd_bit16, full));
+                    pix = _mm_or_si128(_mm_and_si128(sd_mask, half),
+                                       _mm_andnot_si128(sd_mask, full));
                 }
 
                 __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
@@ -7843,14 +7871,12 @@ static void DrawBackdrop16Sub_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_
                 if (_mm_movemask_epi8(mask16) == 0) continue;
 
                 __m128i sdb_loaded = _mm_loadl_epi64((const __m128i *)sdb_ptr);
-                __m128i sd_pair = tile_broadcast_even_u16_sse2(
-                                      _mm_and_si128(sdb_loaded,
-                                                    _mm_set1_epi16(0x00FF)));
+                __m128i sd_mask    = tile_z2x1_sd_select_mask_sse2(sdb_loaded);
                 __m128i sub_loaded = _mm_loadu_si128((const __m128i *)sub_ptr);
                 __m128i vSubBcast  = tile_broadcast_even_u16_sse2(sub_loaded);
 
-                __m128i operand = tile_select_sub_or_fixed_sse2(sd_pair,
-                                                                vSubBcast, vFixed);
+                __m128i operand = _mm_or_si128(_mm_and_si128(sd_mask, vSubBcast),
+                                               _mm_andnot_si128(sd_mask, vFixed));
                 __m128i pix = tile_color_sub_sse2(vMain, operand);
 
                 __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
@@ -7966,28 +7992,23 @@ static void DrawBackdrop16SubS1_2_Normal2x1 (uint32_t Offset, uint32_t Left, uin
                 if (_mm_movemask_epi8(mask16) == 0) continue;
 
                 __m128i sdb_loaded = _mm_loadl_epi64((const __m128i *)sdb_ptr);
-                __m128i sd_pair = tile_broadcast_even_u16_sse2(
-                                      _mm_and_si128(sdb_loaded,
-                                                    _mm_set1_epi16(0x00FF)));
+                __m128i sd_mask    = tile_z2x1_sd_select_mask_sse2(sdb_loaded);
                 __m128i sub_loaded = _mm_loadu_si128((const __m128i *)sub_ptr);
                 __m128i vSubBcast  = tile_broadcast_even_u16_sse2(sub_loaded);
 
                 __m128i pix;
                 if (clip)
                 {
-                    __m128i operand = tile_select_sub_or_fixed_sse2(sd_pair,
-                                                                    vSubBcast, vFixed);
+                    __m128i operand = _mm_or_si128(_mm_and_si128(sd_mask, vSubBcast),
+                                                   _mm_andnot_si128(sd_mask, vFixed));
                     pix = tile_color_sub_sse2(vMain, operand);
                 }
                 else
                 {
-                    const __m128i v20 = _mm_set1_epi8(0x20);
-                    __m128i sd_bit8  = _mm_cmpeq_epi8(_mm_and_si128(sd_pair, v20), v20);
-                    __m128i sd_bit16 = _mm_unpacklo_epi8(sd_bit8, sd_bit8);
                     __m128i half = tile_color_sub_half_sse2(vMain, vSubBcast);
                     __m128i full = tile_color_sub_sse2(vMain, vFixed);
-                    pix = _mm_or_si128(_mm_and_si128(sd_bit16, half),
-                                       _mm_andnot_si128(sd_bit16, full));
+                    pix = _mm_or_si128(_mm_and_si128(sd_mask, half),
+                                       _mm_andnot_si128(sd_mask, full));
                 }
 
                 __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
