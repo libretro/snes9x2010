@@ -1294,6 +1294,336 @@ static INLINE void tile_draw_row_nomath_n1x1(uint8_t *db, uint16_t *s,
 }
 #endif /* TILE_HAVE_SSE2 || TILE_HAVE_NEON */
 
+/* SSE2 / NEON helpers for the six color-math variants of
+ * DrawTile16_*_Normal1x1. All share the row scaffolding from the
+ * NOMATH helper above (load pix, hflip reverse, build (pix!=0 &&
+ * Z1>db) mask, scalar palette gather), then apply the variant's
+ * specific color math to the gathered colors, then masked-store
+ * S and DB.
+ *
+ * Math primitives reused from the backdrop SIMD already in tile.c:
+ *   tile_color_add{,_half}_sse2 / _neon  - per-channel saturating add
+ *   tile_color_sub{,_half}_sse2 / _neon  - per-channel saturating sub
+ *   tile_select_sub_or_fixed_sse2 / _neon - per-pixel (SD & 0x20)
+ *                                          ? Sub : Fixed select.
+ *
+ * Math selector / op meaning:
+ *   REGMATH  : per-pixel select Sub vs Fixed via SD&0x20, apply Op
+ *   MATHF1_2 : ClipColors ? Op(Main, Fixed) : Op_half(Main, Fixed)
+ *              - row-constant: ClipColors and Fixed are per-call.
+ *   MATHS1_2 : ClipColors ? REGMATH(Op)
+ *                         : (SD&0x20 ? Op_half(Main, Sub)
+ *                                    : Op    (Main, Fixed))
+ */
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+
+/* Common pre-step: load 8 pix indices (with optional hflip reverse),
+ * load 8 db bytes, build (pix!=0 & Z1>db) byte mask, scalar gather
+ * palette into col_buf. Outputs the mask and the gathered colors as
+ * a uint16x8_t / __m128i. */
+#if defined(TILE_HAVE_SSE2)
+#  define TILE_ROW_PRE_SSE2(BP_PTR, HFLIP, Z1_VAL, DB_PTR, PALETTE,             \
+                            OUT_MASK8, OUT_MASK16, OUT_DB_LOAD, OUT_COLORS,     \
+                            PIX_BUF, COL_BUF) do {                              \
+    __m128i _pix = _mm_loadl_epi64((const __m128i *)(BP_PTR));                  \
+    if (HFLIP) {                                                                \
+        _pix = _mm_shufflelo_epi16(_pix, _MM_SHUFFLE(0, 1, 2, 3));               \
+        _pix = _mm_or_si128(_mm_slli_epi16(_pix, 8), _mm_srli_epi16(_pix, 8));   \
+    }                                                                           \
+    __m128i _isz = _mm_cmpeq_epi8(_pix, _mm_setzero_si128());                   \
+    __m128i _pnz = _mm_andnot_si128(_isz, _mm_set1_epi8(-1));                   \
+    OUT_DB_LOAD = _mm_loadl_epi64((const __m128i *)(DB_PTR));                   \
+    __m128i _bias = _mm_set1_epi8((char)0x80);                                  \
+    __m128i _zt = _mm_cmpgt_epi8(                                               \
+        _mm_xor_si128(_mm_set1_epi8((char)(Z1_VAL)), _bias),                    \
+        _mm_xor_si128(OUT_DB_LOAD,                    _bias));                  \
+    OUT_MASK8 = _mm_and_si128(_pnz, _zt);                                       \
+    OUT_MASK16 = _mm_unpacklo_epi8(OUT_MASK8, OUT_MASK8);                       \
+    _mm_storel_epi64((__m128i *)(PIX_BUF), _pix);                               \
+    (COL_BUF)[0] = (PALETTE)[(PIX_BUF)[0]];                                     \
+    (COL_BUF)[1] = (PALETTE)[(PIX_BUF)[1]];                                     \
+    (COL_BUF)[2] = (PALETTE)[(PIX_BUF)[2]];                                     \
+    (COL_BUF)[3] = (PALETTE)[(PIX_BUF)[3]];                                     \
+    (COL_BUF)[4] = (PALETTE)[(PIX_BUF)[4]];                                     \
+    (COL_BUF)[5] = (PALETTE)[(PIX_BUF)[5]];                                     \
+    (COL_BUF)[6] = (PALETTE)[(PIX_BUF)[6]];                                     \
+    (COL_BUF)[7] = (PALETTE)[(PIX_BUF)[7]];                                     \
+    OUT_COLORS = _mm_load_si128((const __m128i *)(COL_BUF));                    \
+} while (0)
+#  define TILE_ROW_STORE_SSE2(DB_PTR, S_PTR, MASK8, MASK16, DB_LOAD, Z2_VAL,    \
+                              PIX) do {                                          \
+    __m128i _vZ2 = _mm_set1_epi8((char)(Z2_VAL));                               \
+    __m128i _ndb = _mm_or_si128(_mm_and_si128(MASK8, _vZ2),                     \
+                                _mm_andnot_si128(MASK8, DB_LOAD));              \
+    _mm_storel_epi64((__m128i *)(DB_PTR), _ndb);                                \
+    __m128i _so = _mm_loadu_si128((const __m128i *)(S_PTR));                    \
+    __m128i _sn = _mm_or_si128(_mm_and_si128(MASK16, (PIX)),                    \
+                               _mm_andnot_si128(MASK16, _so));                  \
+    _mm_storeu_si128((__m128i *)(S_PTR), _sn);                                  \
+} while (0)
+#endif
+
+#if defined(TILE_HAVE_NEON)
+#  define TILE_ROW_PRE_NEON(BP_PTR, HFLIP, Z1_VAL, DB_PTR, PALETTE,             \
+                            OUT_MASK8, OUT_MASK16, OUT_DB_LOAD, OUT_COLORS,     \
+                            PIX_BUF, COL_BUF) do {                              \
+    uint8x8_t _pix = vld1_u8(BP_PTR);                                           \
+    if (HFLIP) _pix = vrev64_u8(_pix);                                          \
+    uint8x8_t _pnz = vmvn_u8(vceq_u8(_pix, vdup_n_u8(0)));                      \
+    OUT_DB_LOAD = vld1_u8(DB_PTR);                                              \
+    uint8x8_t _zt = vcgt_u8(vdup_n_u8(Z1_VAL), OUT_DB_LOAD);                    \
+    OUT_MASK8 = vand_u8(_pnz, _zt);                                             \
+    OUT_MASK16 = vreinterpretq_u16_u8(tile_neon_dup_each_byte(OUT_MASK8));      \
+    vst1_u8(PIX_BUF, _pix);                                                     \
+    (COL_BUF)[0] = (PALETTE)[(PIX_BUF)[0]];                                     \
+    (COL_BUF)[1] = (PALETTE)[(PIX_BUF)[1]];                                     \
+    (COL_BUF)[2] = (PALETTE)[(PIX_BUF)[2]];                                     \
+    (COL_BUF)[3] = (PALETTE)[(PIX_BUF)[3]];                                     \
+    (COL_BUF)[4] = (PALETTE)[(PIX_BUF)[4]];                                     \
+    (COL_BUF)[5] = (PALETTE)[(PIX_BUF)[5]];                                     \
+    (COL_BUF)[6] = (PALETTE)[(PIX_BUF)[6]];                                     \
+    (COL_BUF)[7] = (PALETTE)[(PIX_BUF)[7]];                                     \
+    OUT_COLORS = vld1q_u16(COL_BUF);                                            \
+} while (0)
+#  define TILE_ROW_STORE_NEON(DB_PTR, S_PTR, MASK8, MASK16, DB_LOAD, Z2_VAL,    \
+                              PIX) do {                                          \
+    uint8x8_t _ndb = vbsl_u8(MASK8, vdup_n_u8(Z2_VAL), DB_LOAD);                \
+    vst1_u8(DB_PTR, _ndb);                                                      \
+    uint16x8_t _so = vld1q_u16(S_PTR);                                          \
+    uint16x8_t _sn = vbslq_u16(MASK16, (PIX), _so);                             \
+    vst1q_u16(S_PTR, _sn);                                                      \
+} while (0)
+#endif
+
+/* --- REGMATH ADD / SUB ----------------------------------------------- */
+static INLINE void tile_draw_row_regmath_add_n1x1(
+    uint8_t *db, uint16_t *s, const uint8_t *bp, int hflip,
+    uint8_t Z1, uint8_t Z2, const uint16_t *palette,
+    const uint8_t *subzbuf, const uint16_t *subscreen, uint16_t fixed_colour)
+{
+    uint8_t  pix_buf[8] __attribute__((aligned(16)));
+    uint16_t col_buf[8] __attribute__((aligned(16)));
+#if defined(TILE_HAVE_SSE2)
+    __m128i mask8, mask16, db_load, colors;
+    TILE_ROW_PRE_SSE2(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    __m128i sd      = _mm_loadl_epi64((const __m128i *)subzbuf);
+    __m128i vSub    = _mm_loadu_si128((const __m128i *)subscreen);
+    __m128i vFixed  = _mm_set1_epi16((short)fixed_colour);
+    __m128i operand = tile_select_sub_or_fixed_sse2(sd, vSub, vFixed);
+    __m128i pix     = tile_color_add_sse2(colors, operand);
+    TILE_ROW_STORE_SSE2(db, s, mask8, mask16, db_load, Z2, pix);
+#else
+    uint8x8_t mask8, db_load;
+    uint16x8_t mask16, colors;
+    TILE_ROW_PRE_NEON(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    uint8x8_t  sd      = vld1_u8(subzbuf);
+    uint16x8_t vSub    = vld1q_u16(subscreen);
+    uint16x8_t vFixed  = vdupq_n_u16(fixed_colour);
+    uint16x8_t operand = tile_select_sub_or_fixed_neon(sd, vSub, vFixed);
+    uint16x8_t pix     = tile_color_add_neon(colors, operand);
+    TILE_ROW_STORE_NEON(db, s, mask8, mask16, db_load, Z2, pix);
+#endif
+}
+
+static INLINE void tile_draw_row_regmath_sub_n1x1(
+    uint8_t *db, uint16_t *s, const uint8_t *bp, int hflip,
+    uint8_t Z1, uint8_t Z2, const uint16_t *palette,
+    const uint8_t *subzbuf, const uint16_t *subscreen, uint16_t fixed_colour)
+{
+    uint8_t  pix_buf[8] __attribute__((aligned(16)));
+    uint16_t col_buf[8] __attribute__((aligned(16)));
+#if defined(TILE_HAVE_SSE2)
+    __m128i mask8, mask16, db_load, colors;
+    TILE_ROW_PRE_SSE2(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    __m128i sd      = _mm_loadl_epi64((const __m128i *)subzbuf);
+    __m128i vSub    = _mm_loadu_si128((const __m128i *)subscreen);
+    __m128i vFixed  = _mm_set1_epi16((short)fixed_colour);
+    __m128i operand = tile_select_sub_or_fixed_sse2(sd, vSub, vFixed);
+    __m128i pix     = tile_color_sub_sse2(colors, operand);
+    TILE_ROW_STORE_SSE2(db, s, mask8, mask16, db_load, Z2, pix);
+#else
+    uint8x8_t mask8, db_load;
+    uint16x8_t mask16, colors;
+    TILE_ROW_PRE_NEON(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    uint8x8_t  sd      = vld1_u8(subzbuf);
+    uint16x8_t vSub    = vld1q_u16(subscreen);
+    uint16x8_t vFixed  = vdupq_n_u16(fixed_colour);
+    uint16x8_t operand = tile_select_sub_or_fixed_neon(sd, vSub, vFixed);
+    uint16x8_t pix     = tile_color_sub_neon(colors, operand);
+    TILE_ROW_STORE_NEON(db, s, mask8, mask16, db_load, Z2, pix);
+#endif
+}
+
+/* --- MATHF1_2 ADD / SUB ---------------------------------------------- *
+ * Row-constant math: ClipColors and FixedColour are per-call; the
+ * per-pixel operand is always GFX.FixedColour regardless of SD. */
+static INLINE void tile_draw_row_mathf12_add_n1x1(
+    uint8_t *db, uint16_t *s, const uint8_t *bp, int hflip,
+    uint8_t Z1, uint8_t Z2, const uint16_t *palette,
+    uint16_t fixed_colour, int clip_colors)
+{
+    uint8_t  pix_buf[8] __attribute__((aligned(16)));
+    uint16_t col_buf[8] __attribute__((aligned(16)));
+#if defined(TILE_HAVE_SSE2)
+    __m128i mask8, mask16, db_load, colors;
+    TILE_ROW_PRE_SSE2(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    __m128i vFixed = _mm_set1_epi16((short)fixed_colour);
+    __m128i pix    = clip_colors ? tile_color_add_sse2(colors, vFixed)
+                                 : tile_color_add_half_sse2(colors, vFixed);
+    TILE_ROW_STORE_SSE2(db, s, mask8, mask16, db_load, Z2, pix);
+#else
+    uint8x8_t mask8, db_load;
+    uint16x8_t mask16, colors;
+    TILE_ROW_PRE_NEON(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    uint16x8_t vFixed = vdupq_n_u16(fixed_colour);
+    uint16x8_t pix    = clip_colors ? tile_color_add_neon(colors, vFixed)
+                                    : tile_color_add_half_neon(colors, vFixed);
+    TILE_ROW_STORE_NEON(db, s, mask8, mask16, db_load, Z2, pix);
+#endif
+}
+
+static INLINE void tile_draw_row_mathf12_sub_n1x1(
+    uint8_t *db, uint16_t *s, const uint8_t *bp, int hflip,
+    uint8_t Z1, uint8_t Z2, const uint16_t *palette,
+    uint16_t fixed_colour, int clip_colors)
+{
+    uint8_t  pix_buf[8] __attribute__((aligned(16)));
+    uint16_t col_buf[8] __attribute__((aligned(16)));
+#if defined(TILE_HAVE_SSE2)
+    __m128i mask8, mask16, db_load, colors;
+    TILE_ROW_PRE_SSE2(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    __m128i vFixed = _mm_set1_epi16((short)fixed_colour);
+    __m128i pix    = clip_colors ? tile_color_sub_sse2(colors, vFixed)
+                                 : tile_color_sub_half_sse2(colors, vFixed);
+    TILE_ROW_STORE_SSE2(db, s, mask8, mask16, db_load, Z2, pix);
+#else
+    uint8x8_t mask8, db_load;
+    uint16x8_t mask16, colors;
+    TILE_ROW_PRE_NEON(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    uint16x8_t vFixed = vdupq_n_u16(fixed_colour);
+    uint16x8_t pix    = clip_colors ? tile_color_sub_neon(colors, vFixed)
+                                    : tile_color_sub_half_neon(colors, vFixed);
+    TILE_ROW_STORE_NEON(db, s, mask8, mask16, db_load, Z2, pix);
+#endif
+}
+
+/* --- MATHS1_2 ADD / SUB ---------------------------------------------- *
+ * Two clip-color sub-cases: clip == REGMATH; !clip == per-pixel
+ * SD-mask between Op_half(Main, Sub) and Op(Main, Fixed). */
+static INLINE void tile_draw_row_maths12_add_n1x1(
+    uint8_t *db, uint16_t *s, const uint8_t *bp, int hflip,
+    uint8_t Z1, uint8_t Z2, const uint16_t *palette,
+    const uint8_t *subzbuf, const uint16_t *subscreen,
+    uint16_t fixed_colour, int clip_colors)
+{
+    uint8_t  pix_buf[8] __attribute__((aligned(16)));
+    uint16_t col_buf[8] __attribute__((aligned(16)));
+#if defined(TILE_HAVE_SSE2)
+    __m128i mask8, mask16, db_load, colors;
+    TILE_ROW_PRE_SSE2(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    __m128i sd     = _mm_loadl_epi64((const __m128i *)subzbuf);
+    __m128i vSub   = _mm_loadu_si128((const __m128i *)subscreen);
+    __m128i vFixed = _mm_set1_epi16((short)fixed_colour);
+    __m128i pix;
+    if (clip_colors) {
+        __m128i operand = tile_select_sub_or_fixed_sse2(sd, vSub, vFixed);
+        pix = tile_color_add_sse2(colors, operand);
+    } else {
+        __m128i half = tile_color_add_half_sse2(colors, vSub);
+        __m128i full = tile_color_add_sse2(colors, vFixed);
+        const __m128i v20 = _mm_set1_epi8(0x20);
+        __m128i sd_b8  = _mm_cmpeq_epi8(_mm_and_si128(sd, v20), v20);
+        __m128i sd_b16 = _mm_unpacklo_epi8(sd_b8, sd_b8);
+        pix = _mm_or_si128(_mm_and_si128(sd_b16, half),
+                           _mm_andnot_si128(sd_b16, full));
+    }
+    TILE_ROW_STORE_SSE2(db, s, mask8, mask16, db_load, Z2, pix);
+#else
+    uint8x8_t mask8, db_load;
+    uint16x8_t mask16, colors;
+    TILE_ROW_PRE_NEON(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    uint8x8_t  sd     = vld1_u8(subzbuf);
+    uint16x8_t vSub   = vld1q_u16(subscreen);
+    uint16x8_t vFixed = vdupq_n_u16(fixed_colour);
+    uint16x8_t pix;
+    if (clip_colors) {
+        uint16x8_t operand = tile_select_sub_or_fixed_neon(sd, vSub, vFixed);
+        pix = tile_color_add_neon(colors, operand);
+    } else {
+        uint16x8_t half = tile_color_add_half_neon(colors, vSub);
+        uint16x8_t full = tile_color_add_neon(colors, vFixed);
+        uint8x8_t  sd_b8  = vceq_u8(vand_u8(sd, vdup_n_u8(0x20)), vdup_n_u8(0x20));
+        uint16x8_t sd_b16 = vreinterpretq_u16_u8(tile_neon_dup_each_byte(sd_b8));
+        pix = vbslq_u16(sd_b16, half, full);
+    }
+    TILE_ROW_STORE_NEON(db, s, mask8, mask16, db_load, Z2, pix);
+#endif
+}
+
+static INLINE void tile_draw_row_maths12_sub_n1x1(
+    uint8_t *db, uint16_t *s, const uint8_t *bp, int hflip,
+    uint8_t Z1, uint8_t Z2, const uint16_t *palette,
+    const uint8_t *subzbuf, const uint16_t *subscreen,
+    uint16_t fixed_colour, int clip_colors)
+{
+    uint8_t  pix_buf[8] __attribute__((aligned(16)));
+    uint16_t col_buf[8] __attribute__((aligned(16)));
+#if defined(TILE_HAVE_SSE2)
+    __m128i mask8, mask16, db_load, colors;
+    TILE_ROW_PRE_SSE2(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    __m128i sd     = _mm_loadl_epi64((const __m128i *)subzbuf);
+    __m128i vSub   = _mm_loadu_si128((const __m128i *)subscreen);
+    __m128i vFixed = _mm_set1_epi16((short)fixed_colour);
+    __m128i pix;
+    if (clip_colors) {
+        __m128i operand = tile_select_sub_or_fixed_sse2(sd, vSub, vFixed);
+        pix = tile_color_sub_sse2(colors, operand);
+    } else {
+        __m128i half = tile_color_sub_half_sse2(colors, vSub);
+        __m128i full = tile_color_sub_sse2(colors, vFixed);
+        const __m128i v20 = _mm_set1_epi8(0x20);
+        __m128i sd_b8  = _mm_cmpeq_epi8(_mm_and_si128(sd, v20), v20);
+        __m128i sd_b16 = _mm_unpacklo_epi8(sd_b8, sd_b8);
+        pix = _mm_or_si128(_mm_and_si128(sd_b16, half),
+                           _mm_andnot_si128(sd_b16, full));
+    }
+    TILE_ROW_STORE_SSE2(db, s, mask8, mask16, db_load, Z2, pix);
+#else
+    uint8x8_t mask8, db_load;
+    uint16x8_t mask16, colors;
+    TILE_ROW_PRE_NEON(bp, hflip, Z1, db, palette,
+                      mask8, mask16, db_load, colors, pix_buf, col_buf);
+    uint8x8_t  sd     = vld1_u8(subzbuf);
+    uint16x8_t vSub   = vld1q_u16(subscreen);
+    uint16x8_t vFixed = vdupq_n_u16(fixed_colour);
+    uint16x8_t pix;
+    if (clip_colors) {
+        uint16x8_t operand = tile_select_sub_or_fixed_neon(sd, vSub, vFixed);
+        pix = tile_color_sub_neon(colors, operand);
+    } else {
+        uint16x8_t half = tile_color_sub_half_neon(colors, vSub);
+        uint16x8_t full = tile_color_sub_neon(colors, vFixed);
+        uint8x8_t  sd_b8  = vceq_u8(vand_u8(sd, vdup_n_u8(0x20)), vdup_n_u8(0x20));
+        uint16x8_t sd_b16 = vreinterpretq_u16_u8(tile_neon_dup_each_byte(sd_b8));
+        pix = vbslq_u16(sd_b16, half, full);
+    }
+    TILE_ROW_STORE_NEON(db, s, mask8, mask16, db_load, Z2, pix);
+#endif
+}
+
+#endif /* TILE_HAVE_SSE2 || TILE_HAVE_NEON */
+
 /* DrawTile16 NAME2 = Normal1x1: 7 math variants. */
 static void DrawTile16_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
 {
@@ -1382,6 +1712,30 @@ static void DrawTile16Add_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t St
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    {
+        int hflip = (Tile & H_FLIP) != 0;
+        int bp_step;
+        if (!(Tile & V_FLIP))
+        {
+            bp = pCache + StartLine;
+            bp_step = 8;
+        }
+        else
+        {
+            bp = pCache + 56 - StartLine;
+            bp_step = -8;
+        }
+        for (l = LineCount; l > 0; l--, bp += bp_step, Offset += GFX.PPL)
+        {
+            tile_draw_row_regmath_add_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
+                                              GFX.Z1, GFX.Z2, GFX.ScreenColors,
+                                              GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
+                                              GFX.FixedColour);
+        }
+        (void) Pix; (void) n;
+    }
+#else
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
@@ -1428,6 +1782,7 @@ static void DrawTile16Add_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t St
             }
         }
     }
+#endif
 }
 
 static void DrawTile16AddF1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
@@ -1438,6 +1793,29 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    {
+        int hflip = (Tile & H_FLIP) != 0;
+        int bp_step;
+        if (!(Tile & V_FLIP))
+        {
+            bp = pCache + StartLine;
+            bp_step = 8;
+        }
+        else
+        {
+            bp = pCache + 56 - StartLine;
+            bp_step = -8;
+        }
+        for (l = LineCount; l > 0; l--, bp += bp_step, Offset += GFX.PPL)
+        {
+            tile_draw_row_mathf12_add_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
+                                              GFX.Z1, GFX.Z2, GFX.ScreenColors,
+                                              GFX.FixedColour, GFX.ClipColors);
+        }
+        (void) Pix; (void) n;
+    }
+#else
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
@@ -1484,6 +1862,7 @@ static void DrawTile16AddF1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
             }
         }
     }
+#endif
 }
 
 static void DrawTile16AddS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
@@ -1494,6 +1873,30 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    {
+        int hflip = (Tile & H_FLIP) != 0;
+        int bp_step;
+        if (!(Tile & V_FLIP))
+        {
+            bp = pCache + StartLine;
+            bp_step = 8;
+        }
+        else
+        {
+            bp = pCache + 56 - StartLine;
+            bp_step = -8;
+        }
+        for (l = LineCount; l > 0; l--, bp += bp_step, Offset += GFX.PPL)
+        {
+            tile_draw_row_maths12_add_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
+                                              GFX.Z1, GFX.Z2, GFX.ScreenColors,
+                                              GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
+                                              GFX.FixedColour, GFX.ClipColors);
+        }
+        (void) Pix; (void) n;
+    }
+#else
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
@@ -1540,6 +1943,7 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
             }
         }
     }
+#endif
 }
 
 static void DrawTile16Sub_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
@@ -1550,6 +1954,30 @@ static void DrawTile16Sub_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t St
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    {
+        int hflip = (Tile & H_FLIP) != 0;
+        int bp_step;
+        if (!(Tile & V_FLIP))
+        {
+            bp = pCache + StartLine;
+            bp_step = 8;
+        }
+        else
+        {
+            bp = pCache + 56 - StartLine;
+            bp_step = -8;
+        }
+        for (l = LineCount; l > 0; l--, bp += bp_step, Offset += GFX.PPL)
+        {
+            tile_draw_row_regmath_sub_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
+                                              GFX.Z1, GFX.Z2, GFX.ScreenColors,
+                                              GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
+                                              GFX.FixedColour);
+        }
+        (void) Pix; (void) n;
+    }
+#else
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
@@ -1596,6 +2024,7 @@ static void DrawTile16Sub_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t St
             }
         }
     }
+#endif
 }
 
 static void DrawTile16SubF1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
@@ -1606,6 +2035,29 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    {
+        int hflip = (Tile & H_FLIP) != 0;
+        int bp_step;
+        if (!(Tile & V_FLIP))
+        {
+            bp = pCache + StartLine;
+            bp_step = 8;
+        }
+        else
+        {
+            bp = pCache + 56 - StartLine;
+            bp_step = -8;
+        }
+        for (l = LineCount; l > 0; l--, bp += bp_step, Offset += GFX.PPL)
+        {
+            tile_draw_row_mathf12_sub_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
+                                              GFX.Z1, GFX.Z2, GFX.ScreenColors,
+                                              GFX.FixedColour, GFX.ClipColors);
+        }
+        (void) Pix; (void) n;
+    }
+#else
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
@@ -1652,6 +2104,7 @@ static void DrawTile16SubF1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
             }
         }
     }
+#endif
 }
 
 static void DrawTile16SubS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
@@ -1662,6 +2115,30 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
     if (IS_BLANK_TILE())
         return;
     SELECT_PALETTE();
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    {
+        int hflip = (Tile & H_FLIP) != 0;
+        int bp_step;
+        if (!(Tile & V_FLIP))
+        {
+            bp = pCache + StartLine;
+            bp_step = 8;
+        }
+        else
+        {
+            bp = pCache + 56 - StartLine;
+            bp_step = -8;
+        }
+        for (l = LineCount; l > 0; l--, bp += bp_step, Offset += GFX.PPL)
+        {
+            tile_draw_row_maths12_sub_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
+                                              GFX.Z1, GFX.Z2, GFX.ScreenColors,
+                                              GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
+                                              GFX.FixedColour, GFX.ClipColors);
+        }
+        (void) Pix; (void) n;
+    }
+#else
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
@@ -1708,6 +2185,7 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
             }
         }
     }
+#endif
 }
 
 static void (*Renderers_DrawTile16Normal1x1[7]) (uint32_t, uint32_t, uint32_t, uint32_t) =
