@@ -4412,6 +4412,30 @@ static void DrawClippedTile16AddF1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, 
     SELECT_PALETTE();
     endpix = StartPixel + Width;
     if (endpix > 8) endpix = 8;
+
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    /* Fast path: full-row clipped tile (no actual clipping inside).
+     * SuperFX games (Star Fox) hit this in 96%+ of their clipped-tile
+     * traffic — polygon rasterisers emit per-row 8-pixel runs that
+     * happen to go through the Clipped renderer regardless. Delegates
+     * to the existing Normal1x1 SIMD row kernel. The H/V flip cases
+     * are rare on the Clipped path and remain on the scalar fallback.
+     *
+     * StartPixel must be 0 (no left clip) and endpix == 8 (no right
+     * clip), which together mean the full 8 pixels are written. */
+    if (StartPixel == 0 && endpix == 8 && !(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + StartLine;
+        for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
+        {
+            tile_draw_row_nomath_n1x1(
+                GFX.DB + Offset, GFX.S + Offset, bp,
+                0, GFX.Z1, GFX.Z2, GFX.ScreenColors);
+        }
+        return;
+    }
+#endif
+
     if (!(Tile & (V_FLIP | H_FLIP)))
     {
         bp = pCache + (StartLine);
