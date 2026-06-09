@@ -327,6 +327,34 @@ static INLINE __m128i tile_select_sub_or_fixed_sse2(__m128i sd_byte_lo,
                         _mm_andnot_si128(bit16, vFixed));
 }
 
+/* 2x1 helper: from 8 contiguous u16s [v0..v7], produce an 8-u16 register
+ * where each EVEN-position value is duplicated into both halves of its
+ * 32-bit pair: result = [v0, v0, v2, v2, v4, v4, v6, v6].
+ *
+ * Used to broadcast a "per source pixel" lookup (SubScreen, SubZBuffer
+ * as u16) into the dest-aligned 8-pixel layout for Normal2x1 paths. */
+static INLINE __m128i tile_broadcast_even_u16_sse2(__m128i v)
+{
+    /* Per 32-bit lane: keep low u16, replicate it into high u16. */
+    const __m128i lo_mask_32 = _mm_set1_epi32(0x0000FFFF);
+    __m128i lo = _mm_and_si128(v, lo_mask_32);
+    return _mm_or_si128(lo, _mm_slli_epi32(lo, 16));
+}
+
+/* 2x1 helper: from 8 contiguous u8s [b0..b7] loaded into low 8 bytes of
+ * an __m128i, return a 16-bit-lane mask where each lane spans the byte
+ * pair (2i, 2i+1) and is FFFF iff b[2i] == 0. Used as the Z-test mask
+ * for Normal2x1 backdrop paths.
+ *
+ * Same value works as an 8-byte store mask (since each 16-bit lane
+ * covers 2 bytes with the same FFFF/0000 value). */
+static INLINE __m128i tile_z2x1_mask_sse2(__m128i db8)
+{
+    const __m128i mLowByte = _mm_set1_epi16(0x00FF);
+    __m128i db_even = _mm_and_si128(db8, mLowByte);
+    return _mm_cmpeq_epi16(db_even, _mm_setzero_si128());
+}
+
 #endif /* TILE_HAVE_SSE2 */
 
 /* Per-channel saturating RGB subtraction used by the PPU
@@ -7537,82 +7565,452 @@ static void (*Renderers_DrawBackdrop16Normal1x1[7]) (uint32_t, uint32_t, uint32_
     DrawBackdrop16SubS1_2_Normal1x1,
 };
 
-/* DrawBackdrop16 NAME2 = Normal2x1: 7 math variants. */
+/* DrawBackdrop16 NAME2 = Normal2x1: 7 math variants.
+ *
+ * 2x1 writes 2 dest pixels per source pixel index. Scalar macro:
+ *   if (DB[2N] == 0) {
+ *       S[2N] = S[2N+1] = MATH_SELECTOR(...);
+ *       DB[2N] = DB[2N+1] = 1;
+ *   }
+ * Z-test reads only the EVEN-position DB byte, then writes both dest
+ * positions of the pair. SIMD strategy: 4 source pixels per pass =
+ * 8 dest pixels per pass. The Z mask is built from even DB bytes via
+ * tile_z2x1_mask_sse2; the resulting 16-bit-lane mask naturally
+ * covers both bytes of each pair for the DB store and, after
+ * unpack-low to widen each lane, gives the 8-lane mask for the
+ * 16-bit-pixel store. SubScreen / SubZBuffer source-pixel reads are
+ * also at even positions only, broadcast to both halves via
+ * tile_broadcast_even_u16_sse2. */
 static void DrawBackdrop16_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
+    uint16_t fill_color;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    fill_color = GFX.ScreenColors[0];
+#if defined(TILE_HAVE_SSE2)
+    {
+        const __m128i vColor = _mm_set1_epi16((short) fill_color);
+        const __m128i vOne8  = _mm_set1_epi8(1);
+        for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+        {
+            x = Left;
+            for (; x + 4 <= Right; x += 4)
+            {
+                uint8_t  *db_ptr = GFX.DB + Offset + 2 * x;
+                uint16_t *s_ptr  = GFX.S  + Offset + 2 * x;
+                __m128i db8    = _mm_loadl_epi64((const __m128i *)db_ptr);
+                __m128i mask16 = tile_z2x1_mask_sse2(db8);
+                __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
+                                             _mm_andnot_si128(mask16, db8));
+                _mm_storel_epi64((__m128i *)db_ptr, newdb);
+                __m128i mask_pix = _mm_unpacklo_epi16(mask16, mask16);
+                __m128i sOld = _mm_loadu_si128((const __m128i *)s_ptr);
+                __m128i sNew = _mm_or_si128(_mm_and_si128(mask_pix, vColor),
+                                            _mm_andnot_si128(mask_pix, sOld));
+                _mm_storeu_si128((__m128i *)s_ptr, sNew);
+            }
+            for (; x < Right; x++)
+                BACKDROP_PIXEL_N2x1(x, NOMATH, ADD)
+        }
+    }
+#else
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
         for (x = Left; x < Right; x++)
             BACKDROP_PIXEL_N2x1(x, NOMATH, ADD)
     }
+#endif
+    (void) fill_color;
 }
 
 static void DrawBackdrop16Add_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
+    uint16_t main_color, fixed;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    main_color = GFX.ScreenColors[0];
+    fixed = GFX.FixedColour;
+#if defined(TILE_HAVE_SSE2)
+    {
+        const __m128i vMain  = _mm_set1_epi16((short) main_color);
+        const __m128i vFixed = _mm_set1_epi16((short) fixed);
+        const __m128i vOne8  = _mm_set1_epi8(1);
+        for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+        {
+            x = Left;
+            for (; x + 4 <= Right; x += 4)
+            {
+                uint8_t  *db_ptr  = GFX.DB + Offset + 2 * x;
+                uint8_t  *sdb_ptr = GFX.SubZBuffer + Offset + 2 * x;
+                uint16_t *s_ptr   = GFX.S  + Offset + 2 * x;
+                uint16_t *sub_ptr = GFX.SubScreen + Offset + 2 * x;
+
+                __m128i db8     = _mm_loadl_epi64((const __m128i *)db_ptr);
+                __m128i mask16  = tile_z2x1_mask_sse2(db8);
+                if (_mm_movemask_epi8(mask16) == 0) continue;
+
+                __m128i sdb_loaded = _mm_loadl_epi64((const __m128i *)sdb_ptr);
+                __m128i sd_pair = tile_broadcast_even_u16_sse2(
+                                      _mm_and_si128(sdb_loaded,
+                                                    _mm_set1_epi16(0x00FF)));
+                __m128i sub_loaded = _mm_loadu_si128((const __m128i *)sub_ptr);
+                __m128i vSubBcast  = tile_broadcast_even_u16_sse2(sub_loaded);
+
+                __m128i operand = tile_select_sub_or_fixed_sse2(sd_pair,
+                                                                vSubBcast, vFixed);
+                __m128i pix = tile_color_add_sse2(vMain, operand);
+
+                __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
+                                             _mm_andnot_si128(mask16, db8));
+                _mm_storel_epi64((__m128i *)db_ptr, newdb);
+                __m128i mask_pix = _mm_unpacklo_epi16(mask16, mask16);
+                __m128i sOld = _mm_loadu_si128((const __m128i *)s_ptr);
+                __m128i sNew = _mm_or_si128(_mm_and_si128(mask_pix, pix),
+                                            _mm_andnot_si128(mask_pix, sOld));
+                _mm_storeu_si128((__m128i *)s_ptr, sNew);
+            }
+            for (; x < Right; x++)
+                BACKDROP_PIXEL_N2x1(x, REGMATH, ADD)
+        }
+    }
+#else
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
         for (x = Left; x < Right; x++)
             BACKDROP_PIXEL_N2x1(x, REGMATH, ADD)
     }
+#endif
+    (void) main_color; (void) fixed;
 }
 
 static void DrawBackdrop16AddF1_2_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
+    uint16_t main_color, fixed, computed;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    main_color = GFX.ScreenColors[0];
+    fixed = GFX.FixedColour;
+    if (GFX.ClipColors)
+    {
+        unsigned r = ((main_color >> 11) & 0x1F) + ((fixed >> 11) & 0x1F);
+        unsigned g = ((main_color >>  5) & 0x3F) + ((fixed >>  5) & 0x3F);
+        unsigned b =  (main_color        & 0x1F) +  (fixed        & 0x1F);
+        if (r > 0x1F) r = 0x1F;
+        if (g > 0x3F) g = 0x3F;
+        if (b > 0x1F) b = 0x1F;
+        computed = (uint16_t) ((r << 11) | (g << 5) | b);
+    }
+    else
+    {
+        computed = (uint16_t) (((((main_color & 0xF7DE) + (fixed & 0xF7DE)) >> 1)
+                                + (main_color & fixed & 0x0821)) | ALPHA_BITS_MASK);
+    }
+#if defined(TILE_HAVE_SSE2)
+    {
+        const __m128i vCol  = _mm_set1_epi16((short) computed);
+        const __m128i vOne8 = _mm_set1_epi8(1);
+        for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+        {
+            x = Left;
+            for (; x + 4 <= Right; x += 4)
+            {
+                uint8_t  *db_ptr = GFX.DB + Offset + 2 * x;
+                uint16_t *s_ptr  = GFX.S  + Offset + 2 * x;
+                __m128i db8     = _mm_loadl_epi64((const __m128i *)db_ptr);
+                __m128i mask16  = tile_z2x1_mask_sse2(db8);
+                __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
+                                             _mm_andnot_si128(mask16, db8));
+                _mm_storel_epi64((__m128i *)db_ptr, newdb);
+                __m128i mask_pix = _mm_unpacklo_epi16(mask16, mask16);
+                __m128i sOld = _mm_loadu_si128((const __m128i *)s_ptr);
+                __m128i sNew = _mm_or_si128(_mm_and_si128(mask_pix, vCol),
+                                            _mm_andnot_si128(mask_pix, sOld));
+                _mm_storeu_si128((__m128i *)s_ptr, sNew);
+            }
+            for (; x < Right; x++)
+                BACKDROP_PIXEL_N2x1(x, MATHF1_2, ADD)
+        }
+    }
+#else
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
         for (x = Left; x < Right; x++)
             BACKDROP_PIXEL_N2x1(x, MATHF1_2, ADD)
     }
+#endif
+    (void) main_color; (void) fixed; (void) computed;
 }
 
 static void DrawBackdrop16AddS1_2_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
+    uint16_t main_color, fixed;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    main_color = GFX.ScreenColors[0];
+    fixed = GFX.FixedColour;
+#if defined(TILE_HAVE_SSE2)
+    {
+        const __m128i vMain  = _mm_set1_epi16((short) main_color);
+        const __m128i vFixed = _mm_set1_epi16((short) fixed);
+        const __m128i vOne8  = _mm_set1_epi8(1);
+        const uint8_t clip   = GFX.ClipColors;
+        for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+        {
+            x = Left;
+            for (; x + 4 <= Right; x += 4)
+            {
+                uint8_t  *db_ptr  = GFX.DB + Offset + 2 * x;
+                uint8_t  *sdb_ptr = GFX.SubZBuffer + Offset + 2 * x;
+                uint16_t *s_ptr   = GFX.S  + Offset + 2 * x;
+                uint16_t *sub_ptr = GFX.SubScreen + Offset + 2 * x;
+
+                __m128i db8     = _mm_loadl_epi64((const __m128i *)db_ptr);
+                __m128i mask16  = tile_z2x1_mask_sse2(db8);
+                if (_mm_movemask_epi8(mask16) == 0) continue;
+
+                __m128i sdb_loaded = _mm_loadl_epi64((const __m128i *)sdb_ptr);
+                __m128i sd_pair = tile_broadcast_even_u16_sse2(
+                                      _mm_and_si128(sdb_loaded,
+                                                    _mm_set1_epi16(0x00FF)));
+                __m128i sub_loaded = _mm_loadu_si128((const __m128i *)sub_ptr);
+                __m128i vSubBcast  = tile_broadcast_even_u16_sse2(sub_loaded);
+
+                __m128i pix;
+                if (clip)
+                {
+                    __m128i operand = tile_select_sub_or_fixed_sse2(sd_pair,
+                                                                    vSubBcast, vFixed);
+                    pix = tile_color_add_sse2(vMain, operand);
+                }
+                else
+                {
+                    const __m128i v20 = _mm_set1_epi8(0x20);
+                    __m128i sd_bit8  = _mm_cmpeq_epi8(_mm_and_si128(sd_pair, v20), v20);
+                    __m128i sd_bit16 = _mm_unpacklo_epi8(sd_bit8, sd_bit8);
+                    __m128i half = tile_color_add_half_sse2(vMain, vSubBcast);
+                    __m128i full = tile_color_add_sse2(vMain, vFixed);
+                    pix = _mm_or_si128(_mm_and_si128(sd_bit16, half),
+                                       _mm_andnot_si128(sd_bit16, full));
+                }
+
+                __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
+                                             _mm_andnot_si128(mask16, db8));
+                _mm_storel_epi64((__m128i *)db_ptr, newdb);
+                __m128i mask_pix = _mm_unpacklo_epi16(mask16, mask16);
+                __m128i sOld = _mm_loadu_si128((const __m128i *)s_ptr);
+                __m128i sNew = _mm_or_si128(_mm_and_si128(mask_pix, pix),
+                                            _mm_andnot_si128(mask_pix, sOld));
+                _mm_storeu_si128((__m128i *)s_ptr, sNew);
+            }
+            for (; x < Right; x++)
+                BACKDROP_PIXEL_N2x1(x, MATHS1_2, ADD)
+        }
+    }
+#else
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
         for (x = Left; x < Right; x++)
             BACKDROP_PIXEL_N2x1(x, MATHS1_2, ADD)
     }
+#endif
+    (void) main_color; (void) fixed;
 }
 
 static void DrawBackdrop16Sub_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
+    uint16_t main_color, fixed;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    main_color = GFX.ScreenColors[0];
+    fixed = GFX.FixedColour;
+#if defined(TILE_HAVE_SSE2)
+    {
+        const __m128i vMain  = _mm_set1_epi16((short) main_color);
+        const __m128i vFixed = _mm_set1_epi16((short) fixed);
+        const __m128i vOne8  = _mm_set1_epi8(1);
+        for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+        {
+            x = Left;
+            for (; x + 4 <= Right; x += 4)
+            {
+                uint8_t  *db_ptr  = GFX.DB + Offset + 2 * x;
+                uint8_t  *sdb_ptr = GFX.SubZBuffer + Offset + 2 * x;
+                uint16_t *s_ptr   = GFX.S  + Offset + 2 * x;
+                uint16_t *sub_ptr = GFX.SubScreen + Offset + 2 * x;
+
+                __m128i db8     = _mm_loadl_epi64((const __m128i *)db_ptr);
+                __m128i mask16  = tile_z2x1_mask_sse2(db8);
+                if (_mm_movemask_epi8(mask16) == 0) continue;
+
+                __m128i sdb_loaded = _mm_loadl_epi64((const __m128i *)sdb_ptr);
+                __m128i sd_pair = tile_broadcast_even_u16_sse2(
+                                      _mm_and_si128(sdb_loaded,
+                                                    _mm_set1_epi16(0x00FF)));
+                __m128i sub_loaded = _mm_loadu_si128((const __m128i *)sub_ptr);
+                __m128i vSubBcast  = tile_broadcast_even_u16_sse2(sub_loaded);
+
+                __m128i operand = tile_select_sub_or_fixed_sse2(sd_pair,
+                                                                vSubBcast, vFixed);
+                __m128i pix = tile_color_sub_sse2(vMain, operand);
+
+                __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
+                                             _mm_andnot_si128(mask16, db8));
+                _mm_storel_epi64((__m128i *)db_ptr, newdb);
+                __m128i mask_pix = _mm_unpacklo_epi16(mask16, mask16);
+                __m128i sOld = _mm_loadu_si128((const __m128i *)s_ptr);
+                __m128i sNew = _mm_or_si128(_mm_and_si128(mask_pix, pix),
+                                            _mm_andnot_si128(mask_pix, sOld));
+                _mm_storeu_si128((__m128i *)s_ptr, sNew);
+            }
+            for (; x < Right; x++)
+                BACKDROP_PIXEL_N2x1(x, REGMATH, SUB)
+        }
+    }
+#else
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
         for (x = Left; x < Right; x++)
             BACKDROP_PIXEL_N2x1(x, REGMATH, SUB)
     }
+#endif
+    (void) main_color; (void) fixed;
 }
 
 static void DrawBackdrop16SubF1_2_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
+    uint16_t main_color, fixed, computed;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    main_color = GFX.ScreenColors[0];
+    fixed = GFX.FixedColour;
+    if (GFX.ClipColors)
+    {
+        unsigned mr = main_color & 0xF800, fr = fixed & 0xF800;
+        unsigned mg = main_color & 0x07E0, fg = fixed & 0x07E0;
+        unsigned mb = main_color & 0x001F, fb = fixed & 0x001F;
+        unsigned r = (mr > fr) ? mr - fr : 0;
+        unsigned g = (mg > fg) ? mg - fg : 0;
+        unsigned b = (mb > fb) ? mb - fb : 0;
+        computed = (uint16_t) (r | g | b);
+    }
+    else
+    {
+        uint32_t expr = (((uint32_t) main_color | (uint32_t) RGB_HI_BITS_MASKx2)
+                       - ((uint32_t) fixed & RGB_REMOVE_LOW_BITS_MASK)) >> 1;
+        unsigned r = (expr & 0x8000) ? (expr & 0x7800) : 0;
+        unsigned g = (expr & 0x0400) ? (expr & 0x03E0) : 0;
+        unsigned b = (expr & 0x0010) ? (expr & 0x000F) : 0;
+        computed = (uint16_t) (r | g | b);
+    }
+#if defined(TILE_HAVE_SSE2)
+    {
+        const __m128i vCol  = _mm_set1_epi16((short) computed);
+        const __m128i vOne8 = _mm_set1_epi8(1);
+        for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+        {
+            x = Left;
+            for (; x + 4 <= Right; x += 4)
+            {
+                uint8_t  *db_ptr = GFX.DB + Offset + 2 * x;
+                uint16_t *s_ptr  = GFX.S  + Offset + 2 * x;
+                __m128i db8     = _mm_loadl_epi64((const __m128i *)db_ptr);
+                __m128i mask16  = tile_z2x1_mask_sse2(db8);
+                __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
+                                             _mm_andnot_si128(mask16, db8));
+                _mm_storel_epi64((__m128i *)db_ptr, newdb);
+                __m128i mask_pix = _mm_unpacklo_epi16(mask16, mask16);
+                __m128i sOld = _mm_loadu_si128((const __m128i *)s_ptr);
+                __m128i sNew = _mm_or_si128(_mm_and_si128(mask_pix, vCol),
+                                            _mm_andnot_si128(mask_pix, sOld));
+                _mm_storeu_si128((__m128i *)s_ptr, sNew);
+            }
+            for (; x < Right; x++)
+                BACKDROP_PIXEL_N2x1(x, MATHF1_2, SUB)
+        }
+    }
+#else
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
         for (x = Left; x < Right; x++)
             BACKDROP_PIXEL_N2x1(x, MATHF1_2, SUB)
     }
+#endif
+    (void) main_color; (void) fixed; (void) computed;
 }
 
 static void DrawBackdrop16SubS1_2_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
+    uint16_t main_color, fixed;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    main_color = GFX.ScreenColors[0];
+    fixed = GFX.FixedColour;
+#if defined(TILE_HAVE_SSE2)
+    {
+        const __m128i vMain  = _mm_set1_epi16((short) main_color);
+        const __m128i vFixed = _mm_set1_epi16((short) fixed);
+        const __m128i vOne8  = _mm_set1_epi8(1);
+        const uint8_t clip   = GFX.ClipColors;
+        for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+        {
+            x = Left;
+            for (; x + 4 <= Right; x += 4)
+            {
+                uint8_t  *db_ptr  = GFX.DB + Offset + 2 * x;
+                uint8_t  *sdb_ptr = GFX.SubZBuffer + Offset + 2 * x;
+                uint16_t *s_ptr   = GFX.S  + Offset + 2 * x;
+                uint16_t *sub_ptr = GFX.SubScreen + Offset + 2 * x;
+
+                __m128i db8     = _mm_loadl_epi64((const __m128i *)db_ptr);
+                __m128i mask16  = tile_z2x1_mask_sse2(db8);
+                if (_mm_movemask_epi8(mask16) == 0) continue;
+
+                __m128i sdb_loaded = _mm_loadl_epi64((const __m128i *)sdb_ptr);
+                __m128i sd_pair = tile_broadcast_even_u16_sse2(
+                                      _mm_and_si128(sdb_loaded,
+                                                    _mm_set1_epi16(0x00FF)));
+                __m128i sub_loaded = _mm_loadu_si128((const __m128i *)sub_ptr);
+                __m128i vSubBcast  = tile_broadcast_even_u16_sse2(sub_loaded);
+
+                __m128i pix;
+                if (clip)
+                {
+                    __m128i operand = tile_select_sub_or_fixed_sse2(sd_pair,
+                                                                    vSubBcast, vFixed);
+                    pix = tile_color_sub_sse2(vMain, operand);
+                }
+                else
+                {
+                    const __m128i v20 = _mm_set1_epi8(0x20);
+                    __m128i sd_bit8  = _mm_cmpeq_epi8(_mm_and_si128(sd_pair, v20), v20);
+                    __m128i sd_bit16 = _mm_unpacklo_epi8(sd_bit8, sd_bit8);
+                    __m128i half = tile_color_sub_half_sse2(vMain, vSubBcast);
+                    __m128i full = tile_color_sub_sse2(vMain, vFixed);
+                    pix = _mm_or_si128(_mm_and_si128(sd_bit16, half),
+                                       _mm_andnot_si128(sd_bit16, full));
+                }
+
+                __m128i newdb = _mm_or_si128(_mm_and_si128(mask16, vOne8),
+                                             _mm_andnot_si128(mask16, db8));
+                _mm_storel_epi64((__m128i *)db_ptr, newdb);
+                __m128i mask_pix = _mm_unpacklo_epi16(mask16, mask16);
+                __m128i sOld = _mm_loadu_si128((const __m128i *)s_ptr);
+                __m128i sNew = _mm_or_si128(_mm_and_si128(mask_pix, pix),
+                                            _mm_andnot_si128(mask_pix, sOld));
+                _mm_storeu_si128((__m128i *)s_ptr, sNew);
+            }
+            for (; x < Right; x++)
+                BACKDROP_PIXEL_N2x1(x, MATHS1_2, SUB)
+        }
+    }
+#else
     for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
     {
         for (x = Left; x < Right; x++)
             BACKDROP_PIXEL_N2x1(x, MATHS1_2, SUB)
     }
+#endif
+    (void) main_color; (void) fixed;
 }
 
 static void (*Renderers_DrawBackdrop16Normal2x1[7]) (uint32_t, uint32_t, uint32_t) =
