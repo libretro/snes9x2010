@@ -1107,6 +1107,8 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
+		uint32_t BatchLines;
+
 		GFX.ClipColors = !(GFX.Clip[bg].DrawMode[clip] & 1);
 
 		if (BG.EnableMath && (GFX.Clip[bg].DrawMode[clip] & 2))
@@ -1114,7 +1116,7 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 		else
 			DrawClippedTile = GFX.DrawClippedTileNomath;
 
-		for ( Y = GFX.StartY; Y <= GFX.EndY; Y++)
+		for ( Y = GFX.StartY; Y <= GFX.EndY; Y += BatchLines)
 		{
 			uint32_t Y2, VOff, HOff, HOffsetRow, VOffsetRow,
 			Left, Right, Offset, LineHOffset, Width;
@@ -1123,6 +1125,29 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 			uint16_t  *s2 = BPS1;
 			int32_t VOffsetOffset;
 			uint8_t left_edge;
+
+			/* Batch scroll-constant scanline runs, like DrawBackground
+			 * does. The per-column offset words come from VRAM, which
+			 * cannot change inside one rendering catch-up, so within a
+			 * run of lines whose offset-source (BG3) scroll and consumer
+			 * scroll are all unchanged, every column's effective H/V
+			 * offset is identical line to line. OPT alignment is per
+			 * column, so a batch is rendered as at most two tile spans
+			 * per column (split where that column crosses its 8-row tile
+			 * band; the second span starts band-aligned). Hires and
+			 * interlace keep the original per-line path: their Y2
+			 * stepping and VirtAlign halving are not corpus-verifiable
+			 * here, and they are rare in OPT modes. */
+			BatchLines = 1;
+			if (PixWidth == 1 && !IPPU.Interlace)
+			{
+				while (Y + BatchLines <= GFX.EndY && BatchLines < 8 &&
+				       LineData[Y].BG[2].VOffset  == LineData[Y + BatchLines].BG[2].VOffset  &&
+				       LineData[Y].BG[2].HOffset  == LineData[Y + BatchLines].BG[2].HOffset  &&
+				       LineData[Y].BG[bg].VOffset == LineData[Y + BatchLines].BG[bg].VOffset &&
+				       LineData[Y].BG[bg].HOffset == LineData[Y + BatchLines].BG[bg].HOffset)
+					BatchLines++;
+			}
 
 			Y2 = HiresInterlace ? Y * 2 + GFX.InterlaceFrame : Y;
 			VOff = LineData[Y].BG[2].VOffset - 1;
@@ -1260,16 +1285,84 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 				if (BG.TileSizeV == 16)
 					Tile = TILE_PLUS(Tile, ((Tile & V_FLIP) ? t2 : t1));
 
-				if (BG.TileSizeH == 8)
 				{
-					DrawClippedTile(Tile, Offset, l, w, VirtAlign, 1);
-				}
-				else
-				{
-					if (!(Tile & H_FLIP))
-						DrawClippedTile(TILE_PLUS(Tile, (HTile & 1)), Offset, l, w, VirtAlign, 1);
+					uint32_t DrawnTile, Span1;
+
+					if (BG.TileSizeH == 8)
+						DrawnTile = Tile;
+					else if (!(Tile & H_FLIP))
+						DrawnTile = TILE_PLUS(Tile, (HTile & 1));
 					else
-						DrawClippedTile(TILE_PLUS(Tile, 1 - (HTile & 1)), Offset, l, w, VirtAlign, 1);
+						DrawnTile = TILE_PLUS(Tile, 1 - (HTile & 1));
+
+					Span1 = 8 - ((Y2 + VOffset) & 7);
+					if (Span1 > BatchLines)
+						Span1 = BatchLines;
+
+					DrawClippedTile(DrawnTile, Offset, l, w, VirtAlign, Span1);
+
+					if (Span1 < BatchLines)
+					{
+						/* This column's batch crosses into the next
+						 * 8-row tile band: re-derive the tile entry at
+						 * the band boundary (which may be a new tilemap
+						 * row, or for 16-pixel-tall tiles the other half
+						 * of the same entry), reload priority from the
+						 * new entry, and render the remainder starting
+						 * band-aligned. */
+						uint32_t Yv2, Tile2, Drawn2;
+						uint32_t T1 = 0, T2 = 16;
+						uint16_t *B1 = SC0, *B2 = SC1, *T;
+						int TmRow2;
+
+						Yv2 = VOffset + Y2 + Span1;
+						TmRow2 = (int) (Yv2 >> OffsetShift);
+
+						if (Yv2 & 8)
+						{
+							T1 = 16;
+							T2 = 0;
+						}
+
+						if (TmRow2 & 0x20)
+						{
+							B1 = SC2;
+							B2 = SC3;
+						}
+
+						B1 += (TmRow2 & 0x1f) << 5;
+						B2 += (TmRow2 & 0x1f) << 5;
+
+						if (BG.TileSizeH == 8)
+						{
+							if (HTile > 31)
+								T = B2 + (HTile & 0x1f);
+							else
+								T = B1 + HTile;
+						}
+						else
+						{
+							if (HTile > 63)
+								T = B2 + ((HTile >> 1) & 0x1f);
+							else
+								T = B1 + (HTile >> 1);
+						}
+
+						Tile2 = READ_WORD(T);
+						GFX.Z1 = GFX.Z2 = (Tile2 & 0x2000) ? Zh : Zl;
+
+						if (BG.TileSizeV == 16)
+							Tile2 = TILE_PLUS(Tile2, ((Tile2 & V_FLIP) ? T2 : T1));
+
+						if (BG.TileSizeH == 8)
+							Drawn2 = Tile2;
+						else if (!(Tile2 & H_FLIP))
+							Drawn2 = TILE_PLUS(Tile2, (HTile & 1));
+						else
+							Drawn2 = TILE_PLUS(Tile2, 1 - (HTile & 1));
+
+						DrawClippedTile(Drawn2, Offset + Span1 * GFX.PPL, l, w, 0, BatchLines - Span1);
+					}
 				}
 
 				Left += w;
