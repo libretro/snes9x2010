@@ -567,29 +567,89 @@ static void DrawOBJS (int D)
 	BG.InterlaceLine = GFX.InterlaceFrame ? 8 : 0;
 	GFX.Z1 = 2;
 
-	for ( Y = GFX.StartY, Offset = Y * GFX.PPL; Y <= GFX.EndY; Y++, Offset += GFX.PPL)
+	{
+	/* Batch scanline runs over which the per-line sprite state is
+	 * provably identical, the same way the background dispatchers
+	 * batch scroll-constant runs. Two lines are batchable when their
+	 * OBJ lists carry the same sprites in the same order with each
+	 * sprite's tile line advanced by exactly one, and the same tile
+	 * budget. Then the entire per-sprite setup, tile-budget walk and
+	 * window-clip walk are line-invariant, and every draw site can
+	 * issue one LineCount=n call instead of n LineCount=1 calls. A
+	 * pixel belongs to exactly one line and within that line sprites
+	 * are still written in list order, so equal-priority overlap
+	 * resolves identically and output is bit-exact. Vertically
+	 * flipped sprites step their tile line backwards and so simply
+	 * fail the probe, keeping those runs on the per-line path, as do
+	 * interlace and hires configurations. A sprite whose batch
+	 * crosses its 8-row tile band renders as two spans, the second
+	 * band-aligned with the tile row group re-derived. */
+	uint32_t BatchL;
+	uint8_t batch_cfg = (PixWidth == 1 && !IPPU.Interlace && !IPPU.InterlaceOBJ);
+
+	for ( Y = GFX.StartY, Offset = Y * GFX.PPL; Y <= GFX.EndY; Y += BatchL, Offset += BatchL * GFX.PPL)
 	{
 		int I, tiles;
+
+		BatchL = 1;
+		if (batch_cfg)
+		{
+			while (Y + BatchL <= GFX.EndY && BatchL < 8 &&
+			       GFX.OBJLines[Y].Tiles == GFX.OBJLines[Y + BatchL].Tiles)
+			{
+				int k, eq = 1;
+				for (k = 0; k < 32; k++)
+				{
+					int sA = GFX.OBJLines[Y].OBJ[k].Sprite;
+					int sB = GFX.OBJLines[Y + BatchL].OBJ[k].Sprite;
+					if (sA != sB)
+					{
+						eq = 0;
+						break;
+					}
+					if (sA < 0)
+						break;
+					if (GFX.OBJLines[Y + BatchL].OBJ[k].Line != GFX.OBJLines[Y].OBJ[k].Line + BatchL)
+					{
+						eq = 0;
+						break;
+					}
+				}
+				if (!eq)
+					break;
+				BatchL++;
+			}
+		}
 
 		I = 0;
 		tiles = GFX.OBJLines[Y].Tiles;
 
 		for ( S = GFX.OBJLines[Y].OBJ[I].Sprite; S >= 0 && I < 32; S = GFX.OBJLines[Y].OBJ[++I].Sprite)
 		{
-			int	BaseTile, TileX, TileLine, TileInc, DrawMode, clip, next_clip, X;
+			int	BaseTile, BaseTile2, TileX, TileLine, TileInc, DrawMode, clip, next_clip, X;
+			uint32_t Span1, Span2, Line0;
+
 			tiles += GFX.OBJVisibleTiles[S];
 			if (tiles <= 0)
 				continue;
 
-			BaseTile = (((GFX.OBJLines[Y].OBJ[I].Line << 1) + (PPU.OBJ[S].Name & 0xf0)) & 0xf0) | (PPU.OBJ[S].Name & 0x100) | (PPU.OBJ[S].Palette << 10);
+			Line0 = GFX.OBJLines[Y].OBJ[I].Line;
+			BaseTile = (((Line0 << 1) + (PPU.OBJ[S].Name & 0xf0)) & 0xf0) | (PPU.OBJ[S].Name & 0x100) | (PPU.OBJ[S].Palette << 10);
 			TileX = PPU.OBJ[S].Name & 0x0f;
-			TileLine = (GFX.OBJLines[Y].OBJ[I].Line & 7) * 8;
+			TileLine = (Line0 & 7) * 8;
 			TileInc = 1;
+
+			Span1 = 8 - (Line0 & 7);
+			if (Span1 > BatchL)
+				Span1 = BatchL;
+			Span2 = BatchL - Span1;
+			BaseTile2 = ((((Line0 + Span1) << 1) + (PPU.OBJ[S].Name & 0xf0)) & 0xf0) | (PPU.OBJ[S].Name & 0x100) | (PPU.OBJ[S].Palette << 10);
 
 			if (PPU.OBJ[S].HFlip)
 			{
 				TileX = (TileX + (GFX.OBJWidths[S] >> 3) - 1) & 0x0f;
 				BaseTile |= H_FLIP;
+				BaseTile2 |= H_FLIP;
 				TileInc = -1;
 			}
 
@@ -640,19 +700,28 @@ static void DrawOBJS (int D)
 					if (x == X && x + 8 < next_clip)
 					{
 						if (DrawMode)
-							DrawTile(BaseTile | TileX, O, TileLine, 1);
+						{
+							DrawTile(BaseTile | TileX, O, TileLine, Span1);
+							if (Span2)
+								DrawTile(BaseTile2 | TileX, O + Span1 * GFX.PPL, 0, Span2);
+						}
 						x += 8;
 					}
 					else
 					{
 						int	w = (next_clip <= X + 8) ? next_clip - x : X + 8 - x;
 						if (DrawMode)
-							DrawClippedTile(BaseTile | TileX, O, x - X, w, TileLine, 1);
+						{
+							DrawClippedTile(BaseTile | TileX, O, x - X, w, TileLine, Span1);
+							if (Span2)
+								DrawClippedTile(BaseTile2 | TileX, O + Span1 * GFX.PPL, x - X, w, 0, Span2);
+						}
 						x += w;
 					}
 				}
 			}
 		}
+	}
 	}
 }
 
