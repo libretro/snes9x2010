@@ -1573,7 +1573,42 @@ int sounddrv_hle_driver = SOUNDDRV_AKAO4; /* first target; detection TODO */
 #define AKAO4_HDR_BASE   0x1C24
 #define AKAO4_NUM_CHAN   8
 
+/* Defer the header probe by this many KON events after a song-start edge,
+ * so the driver finishes writing the channel-pointer table before we read
+ * it. The first capture showed a read-during-write race: some pointers
+ * were already updated, others still held stale/zero bytes. Letting a few
+ * key-ons pass lets the table settle. */
+#define AKAO4_PROBE_DEFER  8
+
 static int sounddrv_song_active = 0; /* tracks key-on activity for edge   */
+static int sounddrv_probe_armed = 0; /* 1 = probe pending after settle    */
+static int sounddrv_probe_delay = 0; /* KON events remaining before dump  */
+
+/* Raw hex dump of an APU-RAM region, for eyeballing structure directly
+ * (independent of any pointer-table interpretation). */
+static void sounddrv_dump_region( unsigned int base, int rows )
+{
+	const uint8_t *ram;
+	int r;
+
+	if ( dsp_m.ram == NULL )
+		return;
+	ram = dsp_m.ram;
+
+	fprintf( stderr, "[HLE:AKAO4] raw ARAM %04X (%d rows of 16):\n",
+	         base, rows );
+	for ( r = 0; r < rows; ++r )
+	{
+		unsigned int row;
+		int c;
+
+		row = ( base + (unsigned int)( r * 16 ) ) & 0xFFFF;
+		fprintf( stderr, "[HLE:AKAO4]   %04X:", row );
+		for ( c = 0; c < 16; ++c )
+			fprintf( stderr, " %02X", ram[( row + (unsigned int)c ) & 0xFFFF] );
+		fprintf( stderr, "\n" );
+	}
+}
 
 static void sounddrv_probe_akao4( void )
 {
@@ -1583,6 +1618,11 @@ static void sounddrv_probe_akao4( void )
 	if ( dsp_m.ram == NULL )
 		return;
 	ram = dsp_m.ram;
+
+	/* Raw window around the header so the pointer table can be confirmed
+	 * by eye, independent of the interpreted dump below. Start a couple of
+	 * rows before the base to show any preamble (count/flags word). */
+	sounddrv_dump_region( ( AKAO4_HDR_BASE - 0x10 ) & 0xFFFF, 4 );
 
 	fprintf( stderr, "[HLE:AKAO4] song header @ ARAM %04X:\n",
 	         AKAO4_HDR_BASE );
@@ -1673,14 +1713,32 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 	if ( addr == R_KOFF && data == 0xFF )
 		sounddrv_song_active = 0;
 
-	/* On the first non-zero KON after a quiet stretch, probe the AKAO4
-	 * song header once. This correlates the voice writes that follow with
-	 * the sequence layout the driver placed in RAM. Read-only. */
+	/* Song-start edge: first non-zero KON after silence. Don't dump
+	 * immediately -- the driver is still writing the channel-pointer table
+	 * at this instant (observed read-during-write race). Arm a deferred
+	 * probe and let a few more key-ons pass so the table settles. */
 	if ( addr == R_KON && !sounddrv_song_active )
 	{
 		sounddrv_song_active = 1;
 		if ( sounddrv_hle_driver == SOUNDDRV_AKAO4 )
+		{
+			sounddrv_probe_armed = 1;
+			sounddrv_probe_delay = AKAO4_PROBE_DEFER;
+		}
+	}
+
+	/* Count down the deferred probe on each KON; fire once settled. */
+	if ( addr == R_KON && sounddrv_probe_armed )
+	{
+		if ( sounddrv_probe_delay > 0 )
+		{
+			sounddrv_probe_delay--;
+		}
+		else
+		{
+			sounddrv_probe_armed = 0;
 			sounddrv_probe_akao4();
+		}
 	}
 
 	drv = sounddrv_name( sounddrv_hle_driver );
