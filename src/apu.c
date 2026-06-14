@@ -320,6 +320,15 @@ typedef struct {
 	int  blk[16];       /* decoded samples of the current block        */
 	int  out_pos;       /* next sample to emit from blk (0..15)        */
 	int  have_block;    /* blk currently holds a decoded block         */
+	/* Pitch / resampling. pitch is fixed-point with 0x1000 = native rate
+	 * (one source sample per output sample); 0x2000 = one octave up,
+	 * 0x0800 = one octave down. frac accumulates the fractional source
+	 * position; cur/prev are the two most recent decoded source samples
+	 * for linear interpolation between them. */
+	int  pitch;         /* fixed-point step, 0x1000 = 1.0              */
+	int  frac;          /* fractional position into the source (0..0xFFF)*/
+	int  cur, prev;     /* current and previous source samples         */
+	int  primed;        /* cur/prev have been filled                   */
 } hle_brr_voice;
 
 static hle_brr_voice sounddrv_poc_voice;
@@ -411,7 +420,7 @@ static void hle_brr_decode_block( hle_brr_voice *v )
 
 /* Start the PoC voice on a given sample number, looking the BRR start and
  * loop addresses up in the live sample directory (DSP DIR register). */
-static void hle_brr_start( hle_brr_voice *v, int srcn )
+static void hle_brr_start( hle_brr_voice *v, int srcn, int pitch )
 {
 	int dir;
 	int entry;
@@ -424,12 +433,20 @@ static void hle_brr_start( hle_brr_voice *v, int srcn )
 	v->p2 = 0;
 	v->have_block = 0;
 	v->out_pos    = 0;
+	v->pitch      = pitch ? pitch : 0x1000;
+	v->frac       = 0;
+	v->cur        = 0;
+	v->prev       = 0;
+	v->primed     = 0;
 	v->active     = 1;
 }
 
 /* Return the next PCM sample from the PoC voice (native rate, no resample),
  * or 0 when inactive. */
-static int hle_brr_next_sample( hle_brr_voice *v )
+/* Drain one decoded source sample at the native rate (decoding the next
+ * block when the current one is exhausted). Returns 0 and clears active at
+ * sample end. */
+static int hle_brr_raw_sample( hle_brr_voice *v )
 {
 	if ( !v->active )
 		return 0;
@@ -438,6 +455,43 @@ static int hle_brr_next_sample( hle_brr_voice *v )
 	if ( !v->active )
 		return 0;
 	return v->blk[ v->out_pos++ ];
+}
+
+/* Return the next output sample at the voice's pitch, linearly interpolating
+ * between source samples. frac advances by pitch each output sample; each
+ * time it crosses 0x1000 a new source sample is pulled, so a pitch of
+ * 0x1000 maps 1:1 (native), 0x2000 doubles the rate (an octave up), etc. */
+static int hle_brr_next_sample( hle_brr_voice *v )
+{
+	int out;
+
+	if ( !v->active )
+		return 0;
+
+	/* Prime the two-sample interpolation window on first use. */
+	if ( !v->primed )
+	{
+		v->prev = hle_brr_raw_sample( v );
+		v->cur  = hle_brr_raw_sample( v );
+		v->frac = 0;
+		v->primed = 1;
+	}
+
+	/* Advance the source position by the pitch step, pulling new source
+	 * samples for each whole-sample boundary crossed. */
+	v->frac += v->pitch;
+	while ( v->frac >= 0x1000 )
+	{
+		v->frac -= 0x1000;
+		v->prev = v->cur;
+		v->cur  = hle_brr_raw_sample( v );
+		if ( !v->active )
+			return 0;
+	}
+
+	/* Linear interpolation between prev and cur at the fractional pos. */
+	out = v->prev + ( ( ( v->cur - v->prev ) * v->frac ) >> 12 );
+	return out;
 }
 
 
@@ -1000,7 +1054,7 @@ static INLINE void dsp_echo_27 (void)
 	{
 		int s;
 		if ( !sounddrv_poc_voice.active )
-			hle_brr_start( &sounddrv_poc_voice, 0x20 );
+			hle_brr_start( &sounddrv_poc_voice, 0x20, 0x1000 );
 		s = hle_brr_next_sample( &sounddrv_poc_voice );
 		/* the sample is full-scale; scale down so it sits under the music */
 		s = ( s >> 2 );
@@ -1729,14 +1783,15 @@ int sounddrv_hle_driver = SOUNDDRV_AKAO4; /* first target; detection TODO */
  * the real chip would produce. The original eight DSP voices are untouched;
  * the enhancement only sums additional signal on top.
  *
- * PROOF OF CONCEPT STAGE (step 1): the enhancement now decodes one real
+ * PROOF OF CONCEPT STAGE (steps 1-2): the enhancement decodes one real
  * BRR sample straight from ARAM (via the live DSP sample directory) and
- * sums it into the output, proving the ARAM-BRR read+decode path works for
- * an extra voice. It still does NOT run the sequencer or apply pitch/
- * envelope -- the sample plays at native rate on a fixed sample number.
- * Sequencer control (which sample, when, at what pitch) comes next. The
- * decode reuses the core's exact BRR filter math but on private state, so
- * the real eight voices are untouched. */
+ * sums it into the output at a chosen pitch, proving both the ARAM-BRR
+ * read+decode path and fractional-rate resampling for an extra voice. It
+ * still does NOT run the sequencer or apply an envelope -- the sample
+ * plays at a fixed pitch on a fixed sample number. Sequencer control
+ * (which sample, when, at what pitch) and ADSR come next. The decode
+ * reuses the core's exact BRR filter math but on private state, so the
+ * real eight voices are untouched. */
 
 
 /* AKAO4 song-header probe.
