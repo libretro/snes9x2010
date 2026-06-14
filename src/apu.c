@@ -1917,12 +1917,20 @@ static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
  * with no terminator). */
 
 #define AKAO4_SEQ_TICK_BUDGET 4096
+#define AKAO4_LOOP_DEPTH       4   /* AkaoSnes nests up to four loops */
 
 typedef struct {
 	unsigned int pos;     /* current read position in ARAM            */
 	int          rem;     /* AKAO ticks remaining on the current note */
 	int          octave;  /* running octave (for later pitch predict) */
 	int          ended;   /* set when end_track reached               */
+	/* Loop stack: E2 [count] pushes the body's start position and the
+	 * remaining iteration count; E3 decrements and jumps back to the
+	 * body start until the count is exhausted, then pops. Depth-limited
+	 * to match the driver's four-deep nesting. */
+	unsigned int loop_pos[AKAO4_LOOP_DEPTH];   /* body start after E2   */
+	int          loop_cnt[AKAO4_LOOP_DEPTH];   /* iterations remaining  */
+	int          loop_sp;                      /* stack depth (0 = none)*/
 } akao4_seq_chan;
 
 static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
@@ -1953,6 +1961,7 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 		ch[i].rem    = 0;
 		ch[i].octave = 0;
 		ch[i].ended  = 0;
+		ch[i].loop_sp = 0;
 	}
 
 	fprintf( stderr, "[HLE:AKAO4:SEQ] == tick sequence (per-tick KON/KOFF masks) ==\n" );
@@ -2032,6 +2041,47 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 						{
 							ch[i].ended = 1;
 							break;
+						}
+						else if ( b == 0xE2 )  /* loop_start [count] */
+						{
+							/* Push the body start (just past the 2-byte
+							 * E2) and the iteration count, then enter the
+							 * body. Overflow of the 4-deep stack drops the
+							 * loop (advances past it) rather than corrupt
+							 * neighbouring channels' state. */
+							if ( ch[i].loop_sp < AKAO4_LOOP_DEPTH )
+							{
+								int sp;
+								sp = ch[i].loop_sp;
+								ch[i].loop_pos[sp] =
+								  ( ch[i].pos + 2 ) & 0xFFFF;
+								ch[i].loop_cnt[sp] =
+								  ram[( ch[i].pos + 1 ) & 0xFFFF];
+								ch[i].loop_sp++;
+							}
+							ch[i].pos = ( ch[i].pos + len ) & 0xFFFF;
+							continue;
+						}
+						else if ( b == 0xE3 )  /* loop_end */
+						{
+							/* Decrement the innermost loop; jump back to
+							 * its body start while iterations remain, pop
+							 * when exhausted. A stray E3 with no active
+							 * loop just falls through. */
+							if ( ch[i].loop_sp > 0 )
+							{
+								int sp;
+								sp = ch[i].loop_sp - 1;
+								ch[i].loop_cnt[sp]--;
+								if ( ch[i].loop_cnt[sp] > 0 )
+								{
+									ch[i].pos = ch[i].loop_pos[sp];
+									continue;
+								}
+								ch[i].loop_sp--;
+							}
+							ch[i].pos = ( ch[i].pos + len ) & 0xFFFF;
+							continue;
 						}
 						ch[i].pos = ( ch[i].pos + len ) & 0xFFFF;
 					}
