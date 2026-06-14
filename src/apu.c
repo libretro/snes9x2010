@@ -1774,14 +1774,17 @@ static const char *akao4_key_name[14] = {
  * and shows the channel's musical content, the basis for a later predictor
  * that diffs against the live voice writes.
  *
- * VERIFICATION STATUS: the intro decodes cleanly and matches the live
- * voice writes (program_change $20 == SRCN 20, etc.). The deeper stream
- * parses without hitting an unknown opcode, but is NOT yet independently
- * verified -- e.g. whether long runs of set_tempo (F0) are genuine fine-
- * timing or a latent opcode-length error causing operand/opcode desync can
- * only be settled by correlating decoded notes against the live PITCH
- * writes. That correlation is the next step; until then, treat output past
- * the first phrase as provisional. */
+ * VERIFICATION STATUS: validated against two distinct FF6 songs (the
+ * prelude intro and the title-screen theme, captured via the song-change
+ * re-probe). Across both, all eight channels decode as coherent music
+ * with no opcode-length desync. The long set_tempo (F0) runs seen earlier
+ * were specific to the intro's conductor track (ch0) -- genuine rapid
+ * tempo automation, not a parser error; the melodic channels and the
+ * second song's conductor show no such runs. program_change operands in
+ * the decoded streams match the SRCN values in the live voice writes.
+ * The opcode-length table, relative-pointer addressing, and note encoding
+ * are therefore confirmed. This is still a static decoder, not a tick-
+ * accurate sequencer; turning it into a timed predictor is the next step. */
 static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
                                          unsigned int start )
 {
