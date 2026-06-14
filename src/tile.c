@@ -1241,15 +1241,28 @@ static INLINE void tile_draw_row_nomath_n1x1(uint8_t *db, uint16_t *s,
         _mm_xor_si128(db_load,                 bias));
     __m128i mask8  = _mm_and_si128(pix_nz, z_test);
 
-    _mm_storel_epi64((__m128i *)pix_buf, pix);
-    col_buf[0] = palette[pix_buf[0]];
-    col_buf[1] = palette[pix_buf[1]];
-    col_buf[2] = palette[pix_buf[2]];
-    col_buf[3] = palette[pix_buf[3]];
-    col_buf[4] = palette[pix_buf[4]];
-    col_buf[5] = palette[pix_buf[5]];
-    col_buf[6] = palette[pix_buf[6]];
-    col_buf[7] = palette[pix_buf[7]];
+    /* Palette gather: extract pixel indices through GPRs and build the
+     * colors vector with pinsrw straight back into xmm.  Avoids a stack
+     * scratchpad: gcc 13 -O3 lowers the obvious
+     *   _mm_storel_epi64(pix_buf, pix); col_buf[i] = palette[pix_buf[i]];
+     * pattern into seven redundant 16-byte stores to distinct stack
+     * slots (one per byte-load it can't prove non-aliasing for) plus
+     * the eight movzbl loads, because the byte-loads sit downstream of
+     * the SLP analysis and alias-versioning kicks in.  Pulling the
+     * indices through pextrw goes register-only and the inserts go
+     * straight to xmm. */
+    unsigned p01 = (unsigned)_mm_extract_epi16(pix, 0);
+    unsigned p23 = (unsigned)_mm_extract_epi16(pix, 1);
+    unsigned p45 = (unsigned)_mm_extract_epi16(pix, 2);
+    unsigned p67 = (unsigned)_mm_extract_epi16(pix, 3);
+    __m128i colors = _mm_cvtsi32_si128((int)(unsigned)palette[p01 & 0xFF]);
+    colors = _mm_insert_epi16(colors, palette[(p01 >> 8) & 0xFF], 1);
+    colors = _mm_insert_epi16(colors, palette[p23        & 0xFF], 2);
+    colors = _mm_insert_epi16(colors, palette[(p23 >> 8) & 0xFF], 3);
+    colors = _mm_insert_epi16(colors, palette[p45        & 0xFF], 4);
+    colors = _mm_insert_epi16(colors, palette[(p45 >> 8) & 0xFF], 5);
+    colors = _mm_insert_epi16(colors, palette[p67        & 0xFF], 6);
+    colors = _mm_insert_epi16(colors, palette[(p67 >> 8) & 0xFF], 7);
 
     __m128i vZ2   = _mm_set1_epi8((char)Z2);
     __m128i newdb = _mm_or_si128(_mm_and_si128(mask8, vZ2),
@@ -1257,7 +1270,6 @@ static INLINE void tile_draw_row_nomath_n1x1(uint8_t *db, uint16_t *s,
     _mm_storel_epi64((__m128i *)db, newdb);
 
     __m128i mask16 = _mm_unpacklo_epi8(mask8, mask8);
-    __m128i colors = _mm_load_si128((const __m128i *)col_buf);
     __m128i s_old  = _mm_loadu_si128((const __m128i *)s);
     __m128i s_new  = _mm_or_si128(_mm_and_si128(mask16, colors),
                                   _mm_andnot_si128(mask16, s_old));
@@ -1339,16 +1351,25 @@ static INLINE void tile_draw_row_nomath_n1x1(uint8_t *db, uint16_t *s,
         _mm_xor_si128(OUT_DB_LOAD,                    _bias));                  \
     OUT_MASK8 = _mm_and_si128(_pnz, _zt);                                       \
     OUT_MASK16 = _mm_unpacklo_epi8(OUT_MASK8, OUT_MASK8);                       \
-    _mm_storel_epi64((__m128i *)(PIX_BUF), _pix);                               \
-    (COL_BUF)[0] = (PALETTE)[(PIX_BUF)[0]];                                     \
-    (COL_BUF)[1] = (PALETTE)[(PIX_BUF)[1]];                                     \
-    (COL_BUF)[2] = (PALETTE)[(PIX_BUF)[2]];                                     \
-    (COL_BUF)[3] = (PALETTE)[(PIX_BUF)[3]];                                     \
-    (COL_BUF)[4] = (PALETTE)[(PIX_BUF)[4]];                                     \
-    (COL_BUF)[5] = (PALETTE)[(PIX_BUF)[5]];                                     \
-    (COL_BUF)[6] = (PALETTE)[(PIX_BUF)[6]];                                     \
-    (COL_BUF)[7] = (PALETTE)[(PIX_BUF)[7]];                                     \
-    OUT_COLORS = _mm_load_si128((const __m128i *)(COL_BUF));                    \
+    /* Palette gather: see tile_draw_row_nomath_n1x1 for the rationale.        \
+     * Going through pextrw + pinsrw avoids the seven redundant 16-byte        \
+     * stack stores gcc 13 -O3 emits for the storel + 8 byte-loads pattern.    \
+     * PIX_BUF / COL_BUF are still on the parameter list so existing callers   \
+     * compile unchanged; the unused stack arrays are DCE'd at -O2/-O3. */     \
+    { unsigned _p01 = (unsigned)_mm_extract_epi16(_pix, 0);                    \
+      unsigned _p23 = (unsigned)_mm_extract_epi16(_pix, 1);                    \
+      unsigned _p45 = (unsigned)_mm_extract_epi16(_pix, 2);                    \
+      unsigned _p67 = (unsigned)_mm_extract_epi16(_pix, 3);                    \
+      __m128i  _c   = _mm_cvtsi32_si128((int)(unsigned)(PALETTE)[_p01 & 0xFF]); \
+      _c = _mm_insert_epi16(_c, (PALETTE)[(_p01 >> 8) & 0xFF], 1);             \
+      _c = _mm_insert_epi16(_c, (PALETTE)[ _p23       & 0xFF], 2);             \
+      _c = _mm_insert_epi16(_c, (PALETTE)[(_p23 >> 8) & 0xFF], 3);             \
+      _c = _mm_insert_epi16(_c, (PALETTE)[ _p45       & 0xFF], 4);             \
+      _c = _mm_insert_epi16(_c, (PALETTE)[(_p45 >> 8) & 0xFF], 5);             \
+      _c = _mm_insert_epi16(_c, (PALETTE)[ _p67       & 0xFF], 6);             \
+      _c = _mm_insert_epi16(_c, (PALETTE)[(_p67 >> 8) & 0xFF], 7);             \
+      OUT_COLORS = _c; }                                                       \
+    (void)(PIX_BUF); (void)(COL_BUF);                                          \
 } while (0)
 #  define TILE_ROW_STORE_SSE2(DB_PTR, S_PTR, MASK8, MASK16, DB_LOAD, Z2_VAL,    \
                               PIX) do {                                          \
