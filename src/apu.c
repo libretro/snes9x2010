@@ -1510,12 +1510,119 @@ void spc_enable_rom( int enable )
 		dsp_run( clock_count ); \
 	}
 
+/* ----------------------------------------------------------------------
+ * Sound-driver HLE debug instrumentation.
+ *
+ * This is a GENERIC facility for high-level-emulating SNES sound drivers.
+ * AKAO4 (Final Fantasy VI family) is the first target, but the design is
+ * driver-neutral on purpose -- N-SPC, Rare, Konami, etc. plug in as
+ * additional driver ids without renaming the option or the flag (renaming
+ * a core-option key would break users' saved configs).
+ *
+ * When sounddrv_hle_log is non-zero, every DSP voice-relevant register
+ * write is logged. This is the GROUND-TRUTH capture: it records exactly
+ * what the real (LLE) SPC700 + sound driver write to the S-DSP. Any HLE
+ * path must reproduce this trace; without the capture there is nothing to
+ * diff HLE output against. Logging only -- it does not alter emulation, so
+ * with the option on the audio is still 100% accurate (this is the
+ * baseline reference).
+ *
+ * sounddrv_hle_log values:
+ *   0 = off (default)
+ *   1 = log voice register writes (KON/KOFF/pitch/SRCN/ADSR/VOL) to stderr
+ *
+ * sounddrv_hle_driver selects which driver the HLE layer targets. It is
+ * currently informational (tags the log) and will gate driver-specific
+ * parsing/injection once that lands. Detection is TODO; defaults to AKAO4.
+ *
+ * Set from libretro.c via the snes9x_2010_sounddrv_hle core option.
+ * -------------------------------------------------------------------- */
+
+/* Supported / planned sound drivers. Extend this list as drivers are
+ * added; the option and logging code never need driver-specific renames. */
+enum sounddrv_id
+{
+	SOUNDDRV_NONE = 0,
+	SOUNDDRV_AKAO4,   /* Square AKAO4 (FF6, Chrono Trigger, RS3, ...)   */
+	SOUNDDRV_NSPC,    /* Nintendo N-SPC (planned)                       */
+	SOUNDDRV_RARE,    /* Rare driver (planned)                          */
+	SOUNDDRV_KONAMI,  /* Konami driver (planned)                        */
+	SOUNDDRV_COUNT
+};
+
+int sounddrv_hle_log    = 0;
+int sounddrv_hle_driver = SOUNDDRV_AKAO4; /* first target; detection TODO */
+
+static const char *sounddrv_name( int id )
+{
+	switch ( id )
+	{
+		case SOUNDDRV_AKAO4:  return "AKAO4";
+		case SOUNDDRV_NSPC:   return "NSPC";
+		case SOUNDDRV_RARE:   return "RARE";
+		case SOUNDDRV_KONAMI: return "KONAMI";
+		default:              return "NONE";
+	}
+}
+
+/* Map a DSP register address to a short name for the voice-relevant ones.
+ * Voice registers are at 0xV0..0xV9 (V = voice 0..7); globals are the
+ * 0x_C / 0x_D column. Returns NULL for registers we don't trace. */
+static const char *sounddrv_regname( uint_fast8_t addr )
+{
+	switch ( addr & 0x0F )
+	{
+		case 0x00: return "VOLL";
+		case 0x01: return "VOLR";
+		case 0x02: return "PITCHL";
+		case 0x03: return "PITCHH";
+		case 0x04: return "SRCN";
+		case 0x05: return "ADSR1";
+		case 0x06: return "ADSR2";
+		case 0x07: return "GAIN";
+	}
+	if ( addr == R_KON )  return "KON";
+	if ( addr == R_KOFF ) return "KOFF";
+	return NULL;
+}
+
+static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
+{
+	const char *name;
+	const char *drv;
+	int voice;
+
+	name = sounddrv_regname( addr );
+	if ( name == NULL )
+		return;
+
+	drv = sounddrv_name( sounddrv_hle_driver );
+
+	/* Voice index lives in the high nibble for per-voice regs; KON/KOFF
+	 * are global bitmasks (one bit per voice). */
+	if ( addr == R_KON || addr == R_KOFF )
+	{
+		fprintf( stderr, "[HLE:%s] %-4s mask=%02X\n", drv, name, data );
+	}
+	else
+	{
+		voice = ( addr >> 4 ) & 0x0F;
+		if ( voice < VOICE_COUNT )
+			fprintf( stderr, "[HLE:%s] v%d %-6s %02X\n",
+			         drv, voice, name, data );
+	}
+}
+
 static INLINE void spc_dsp_write( const uint8_t data )
 {
 	uint_fast8_t addr;
 
 	/* Writes DSP registers. */
 	addr = m.smp_regs[0][R_DSPADDR];
+
+	if ( sounddrv_hle_log )
+		sounddrv_log_write( addr, data );
+
 	dsp_m.regs [addr] = data;
 	switch ( addr & 0x0F )
 	{

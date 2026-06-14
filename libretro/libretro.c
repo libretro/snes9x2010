@@ -274,6 +274,8 @@ static unsigned retro_audio_latency = 0;
 static bool update_audio_latency = false;
 
 extern s9xcommand_t keymap[1024];
+extern int sounddrv_hle_log;    /* defined in src/apu.c; sound-driver HLE logger */
+extern int sounddrv_hle_driver; /* defined in src/apu.c; selected driver id      */
 bool overclock_cycles = false;
 bool reduce_sprite_flicker = false;
 extern uint16_t joypad[8];
@@ -462,6 +464,16 @@ static void check_variables(bool first_run)
 
 		if (newval != aspect_ratio_mode)
 			aspect_ratio_mode = newval;
+	}
+
+	var.key = "snes9x_2010_sounddrv_hle";
+	var.value = NULL;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (strcmp(var.value, "log_voice") == 0)
+			sounddrv_hle_log = 1;
+		else
+			sounddrv_hle_log = 0;
 	}
 
 	var.key = "snes9x_2010_overclock";
