@@ -394,9 +394,17 @@ typedef struct {
 } hle_seq_driver;
 
 static hle_seq_driver sounddrv_drv;
-/* Output samples per AKAO tick. ~31617 SPC cycles/tick measured against
- * hardware, 32 SPC cycles per output sample -> ~988 samples/tick. */
-#define HLE_SAMPLES_PER_TICK 988
+/* Output samples per AKAO tick at a reference tempo. The driver advances a
+ * musical tick once its tempo accumulator ($47) overflows, which happens
+ * every 256/tempo timer-0 interrupts; timer 0 runs at 8000/0x27 ~= 205.13
+ * Hz, and the DSP emits 32000 samples/sec, so:
+ *   samples_per_tick = 32000 * 256 / (205.13 * tempo) ~= 39936 / tempo.
+ * Read the live tempo from ARAM ($46) each tick so the extra voice tracks
+ * tempo changes (including F0 set_tempo and F1 ritardando) instead of a
+ * fixed rate. */
+#define HLE_TICK_NUMERATOR  39936
+#define HLE_TEMPO_ADDR      0x46
+
 
 /* Driver entry points (defined later, after the AKAO4 opcode table and
  * header constants they depend on). hle_seq_driver_start resolves a
@@ -2262,12 +2270,25 @@ static void hle_seq_driver_tick( void )
  * and process a tick when due. */
 static void hle_seq_driver_advance( void )
 {
+	int tempo;
+	int samples_per_tick;
+
 	if ( !sounddrv_drv.active )
 		return;
+
+	/* Live tempo from ARAM; clamp to a sane range so a transient mid-write
+	 * (0 or garbage) can't divide by zero or stall/race the tick clock. */
+	tempo = dsp_m.ram[HLE_TEMPO_ADDR];
+	if ( tempo < 1 )
+		tempo = 1;
+	samples_per_tick = HLE_TICK_NUMERATOR / tempo;
+	if ( samples_per_tick < 1 )
+		samples_per_tick = 1;
+
 	sounddrv_drv.samp_acc++;
-	if ( sounddrv_drv.samp_acc >= HLE_SAMPLES_PER_TICK )
+	if ( sounddrv_drv.samp_acc >= samples_per_tick )
 	{
-		sounddrv_drv.samp_acc -= HLE_SAMPLES_PER_TICK;
+		sounddrv_drv.samp_acc -= samples_per_tick;
 		hle_seq_driver_tick();
 	}
 }
