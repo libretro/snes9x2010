@@ -1571,7 +1571,7 @@ int sounddrv_hle_driver = SOUNDDRV_AKAO4; /* first target; detection TODO */
 #define AKAO4_DATA_ORIGIN  0x1C24
 #define AKAO4_NUM_CHAN     8
 
-static int sounddrv_song_active = 0; /* latches on first KON; fire-once    */
+static unsigned int sounddrv_last_dstart = 0xFFFFFFFF; /* header signature  */
 
 /* Raw hex dump of an APU-RAM region, for eyeballing structure directly
  * (independent of any pointer-table interpretation). */
@@ -1915,19 +1915,29 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 			return;
 	}
 
-	/* Fire-once probe on the first KON.
+	/* Probe on first KON, and re-probe whenever the song changes.
 	 *
-	 * NOTE: an all-voices KOFF (mask FF) is NOT a song-end signal in FF6 --
-	 * the driver issues it routinely during normal playback -- so we do not
-	 * key detection off KOFF. The earlier successful capture confirmed the
-	 * channel-pointer table (now read at 0x1C14, not 0x1C24) already holds
-	 * coherent pointers by the first KON, so no defer is needed; dumping
-	 * immediately also means a short capture still gets the probe output. */
-	if ( addr == R_KON && !sounddrv_song_active )
+	 * KOFF mask FF is NOT a song boundary in FF6 (the driver issues it
+	 * routinely during playback), so it cannot gate detection. Instead we
+	 * use a reliable signal now that the header layout is known: a new song
+	 * means the driver rewrites the song header, changing the data_start
+	 * word at 0x1C00. On each KON, compare the current data_start to the
+	 * last probed one; if it differs, a new song has loaded -- re-probe. */
+	if ( addr == R_KON && sounddrv_hle_driver == SOUNDDRV_AKAO4
+	     && dsp_m.ram != NULL )
 	{
-		sounddrv_song_active = 1;
-		if ( sounddrv_hle_driver == SOUNDDRV_AKAO4 )
+		unsigned int sig;
+		/* Combine data_start and data_end into one 32-bit signature so two
+		 * songs that happen to share a start offset are still told apart. */
+		sig = ( (unsigned int)dsp_m.ram[AKAO4_HDR_DSTART]
+		      | ( (unsigned int)dsp_m.ram[AKAO4_HDR_DSTART + 1] << 8 )
+		      | ( (unsigned int)dsp_m.ram[AKAO4_HDR_DSTART + 2] << 16 )
+		      | ( (unsigned int)dsp_m.ram[AKAO4_HDR_DSTART + 3] << 24 ) );
+		if ( sig != sounddrv_last_dstart )
+		{
+			sounddrv_last_dstart = sig;
 			sounddrv_probe_akao4();
+		}
 	}
 
 	drv = sounddrv_name( sounddrv_hle_driver );
