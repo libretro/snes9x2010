@@ -1573,16 +1573,7 @@ int sounddrv_hle_driver = SOUNDDRV_AKAO4; /* first target; detection TODO */
 #define AKAO4_HDR_BASE   0x1C24
 #define AKAO4_NUM_CHAN   8
 
-/* Defer the header probe by this many KON events after a song-start edge,
- * so the driver finishes writing the channel-pointer table before we read
- * it. The first capture showed a read-during-write race: some pointers
- * were already updated, others still held stale/zero bytes. Letting a few
- * key-ons pass lets the table settle. */
-#define AKAO4_PROBE_DEFER  8
-
-static int sounddrv_song_active = 0; /* tracks key-on activity for edge   */
-static int sounddrv_probe_armed = 0; /* 1 = probe pending after settle    */
-static int sounddrv_probe_delay = 0; /* KON events remaining before dump  */
+static int sounddrv_song_active = 0; /* latches on first KON; fire-once    */
 
 /* Raw hex dump of an APU-RAM region, for eyeballing structure directly
  * (independent of any pointer-table interpretation). */
@@ -1711,38 +1702,19 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 			return;
 	}
 
-	/* Defer-and-fire-once probe.
+	/* Fire-once probe on the first KON.
 	 *
 	 * NOTE: an all-voices KOFF (mask FF) is NOT a song-end signal in FF6 --
-	 * the driver issues it constantly as part of normal per-phrase voice
-	 * management (observed firing many times during continuous music). So
-	 * we do NOT key song detection off KOFF. Instead we arm on the first
-	 * KON we ever see and fire once, AKAO4_PROBE_DEFER key-ons later, by
-	 * which point the channel-pointer table has been fully written. */
-	if ( addr == R_KON )
+	 * the driver issues it routinely during normal playback -- so we do not
+	 * key detection off KOFF. The earlier successful capture confirmed the
+	 * channel-pointer table (now read at 0x1C14, not 0x1C24) already holds
+	 * coherent pointers by the first KON, so no defer is needed; dumping
+	 * immediately also means a short capture still gets the probe output. */
+	if ( addr == R_KON && !sounddrv_song_active )
 	{
-		if ( !sounddrv_song_active )
-		{
-			sounddrv_song_active = 1;
-			if ( sounddrv_hle_driver == SOUNDDRV_AKAO4 )
-			{
-				sounddrv_probe_armed = 1;
-				sounddrv_probe_delay = AKAO4_PROBE_DEFER;
-			}
-		}
-
-		if ( sounddrv_probe_armed )
-		{
-			if ( sounddrv_probe_delay > 0 )
-			{
-				sounddrv_probe_delay--;
-			}
-			else
-			{
-				sounddrv_probe_armed = 0;
-				sounddrv_probe_akao4();
-			}
-		}
+		sounddrv_song_active = 1;
+		if ( sounddrv_hle_driver == SOUNDDRV_AKAO4 )
+			sounddrv_probe_akao4();
 	}
 
 	drv = sounddrv_name( sounddrv_hle_driver );
