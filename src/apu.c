@@ -1600,7 +1600,7 @@ static void sounddrv_dump_region( unsigned int base, int rows )
 }
 
 static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
-                                         unsigned int start );
+                                         unsigned int start, int cap );
 
 static void sounddrv_probe_akao4( void )
 {
@@ -1674,7 +1674,25 @@ static void sounddrv_probe_akao4( void )
 		   | ( (unsigned int)ram[AKAO4_HDR_TABLE + i * 2 + 1] << 8 );
 		an = ( AKAO4_DATA_ORIGIN + ( ( pn - data_start ) & 0xFFFF ) )
 		   & 0xFFFF;
-		sounddrv_walk_channel_akao4( ram, i, an );
+		sounddrv_walk_channel_akao4( ram, i, an, 32 );
+	}
+
+	/* Deep walk of channel 0 with a high step cap, to run past the first
+	 * phrase and reach the control-flow opcodes (loop_start/loop_end,
+	 * loop_break, end_track, jumps) that the shallow 32-step walks stop
+	 * short of. These are the opcodes a tick-driven sequencer must handle
+	 * correctly, and the ones we have the least confirmed FF6 data for, so
+	 * we want their real operands before designing loop-stack handling.
+	 * The walk still terminates early at end_track or an unknown opcode. */
+	{
+		unsigned int p0;
+		unsigned int a0;
+		p0 = (unsigned int)ram[AKAO4_HDR_TABLE]
+		   | ( (unsigned int)ram[AKAO4_HDR_TABLE + 1] << 8 );
+		a0 = ( AKAO4_DATA_ORIGIN + ( ( p0 - data_start ) & 0xFFFF ) )
+		   & 0xFFFF;
+		fprintf( stderr, "[HLE:AKAO4] == deep walk channel 0 (cap 256) ==\n" );
+		sounddrv_walk_channel_akao4( ram, 0, a0, 256 );
 	}
 }
 
@@ -1786,7 +1804,7 @@ static const char *akao4_key_name[14] = {
  * are therefore confirmed. This is still a static decoder, not a tick-
  * accurate sequencer; turning it into a timed predictor is the next step. */
 static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
-                                         unsigned int start )
+                                         unsigned int start, int cap )
 {
 	unsigned int pos;
 	int steps;
@@ -1796,7 +1814,7 @@ static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
 
 	fprintf( stderr, "[HLE:AKAO4] -- channel %d walk @ %04X --\n", ch, pos );
 
-	while ( steps < 32 )
+	while ( steps < cap )
 	{
 		unsigned char b;
 
@@ -1853,7 +1871,8 @@ static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
 			pos = ( pos + len ) & 0xFFFF;
 		}
 	}
-	fprintf( stderr, "[HLE:AKAO4]   channel %d: step cap reached\n", ch );
+	fprintf( stderr, "[HLE:AKAO4]   channel %d: step cap (%d) reached\n",
+	         ch, cap );
 }
 
 static const char *sounddrv_name( int id )
