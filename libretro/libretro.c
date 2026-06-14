@@ -274,7 +274,8 @@ static unsigned retro_audio_latency = 0;
 static bool update_audio_latency = false;
 
 extern s9xcommand_t keymap[1024];
-extern int sounddrv_hle_log;    /* defined in src/apu.c; sound-driver HLE logger */
+extern int sounddrv_hle_log;     /* defined in src/apu.c; sound-driver HLE logger */
+extern int sounddrv_hle_enhance; /* defined in src/apu.c; HLE enhancement (extra voices) */
 extern int sounddrv_hle_driver; /* defined in src/apu.c; selected driver id      */
 bool overclock_cycles = false;
 bool reduce_sprite_flicker = false;
@@ -471,9 +472,20 @@ static void check_variables(bool first_run)
 	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
 		if (strcmp(var.value, "log_voice") == 0)
+		{
 			sounddrv_hle_log = 1;
-		else
+			sounddrv_hle_enhance = 0;
+		}
+		else if (strcmp(var.value, "enhance") == 0)
+		{
 			sounddrv_hle_log = 0;
+			sounddrv_hle_enhance = 1;
+		}
+		else
+		{
+			sounddrv_hle_log = 0;
+			sounddrv_hle_enhance = 0;
+		}
 	}
 
 	var.key = "snes9x_2010_overclock";

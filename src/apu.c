@@ -293,6 +293,14 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 /* if ( io >  32767 ) io =  32767; */
 #define CLAMP16( io ) if ( (int16_t) io != io ) io = ((io >> 31) ^ 0x7FFF)
 
+/* HLE enhancement state, defined early so the DSP output mix (below) can see
+ * it. sounddrv_hle_enhance is the opt-in enable for the fictional-upgraded-
+ * SPC path; sounddrv_poc_phase is the proof-of-concept test-tone oscillator
+ * phase. See the fuller comment at the HLE state block later in this file. */
+int          sounddrv_hle_enhance = 0;
+static unsigned int sounddrv_poc_phase = 0;
+
+
 /* Access global DSP register */
 #define REG(n)      dsp_m.regs [R_##n]
 
@@ -839,6 +847,26 @@ static INLINE void dsp_echo_27 (void)
 	{
 		l = 0;
 		r = 0;
+	}
+
+	/* HLE enhancement injection point. The original eight voices are fully
+	 * mixed into l/r above (master volume applied, mute handled). Here the
+	 * fictional-upgraded-SPC path sums its extra signal on top. PoC stage:
+	 * a quiet square-wave test tone, just enough to confirm the injection
+	 * is audible and does not corrupt the hardware mix. CLAMP16 guards the
+	 * sum against overflow. Replaced by real BRR/sequencer voices later. */
+	if ( sounddrv_hle_enhance )
+	{
+		int tone;
+		/* ~440 Hz-ish square at the 32000 Hz DSP rate: toggle every ~36
+		 * samples. Low amplitude (+/- 2000 of the 32767 range) so it sits
+		 * under the music rather than blasting over it. */
+		sounddrv_poc_phase++;
+		tone = ( ( sounddrv_poc_phase / 36 ) & 1 ) ? 2000 : -2000;
+		l += tone;
+		r += tone;
+		CLAMP16( l );
+		CLAMP16( r );
 	}
 
 	out = dsp_m.out;
@@ -1552,6 +1580,21 @@ enum sounddrv_id
 
 int sounddrv_hle_log    = 0;
 int sounddrv_hle_driver = SOUNDDRV_AKAO4; /* first target; detection TODO */
+
+/* HLE enhancement enable (distinct from the diagnostic logger above). When
+ * non-zero, the HLE "fictional upgraded SPC" path is active: extra,
+ * sequencer-driven voices are mixed into the DSP output beyond the hardware
+ * eight. This is OPT-IN and explicitly INACCURATE -- it changes the audio
+ * the real chip would produce. The original eight DSP voices are untouched;
+ * the enhancement only sums additional signal on top.
+ *
+ * PROOF OF CONCEPT STAGE: this first step does NOT yet read BRR or run the
+ * sequencer. It mixes a single, quiet test tone into the output, gated on
+ * this flag, purely to prove the extra-signal injection path is clean (the
+ * real eight voices unaffected, no buffer corruption) before wiring up real
+ * BRR playback and sequencer control. The tone is intentionally obvious and
+ * temporary scaffolding. */
+
 
 /* AKAO4 song-header probe.
  *
