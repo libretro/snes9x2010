@@ -355,7 +355,10 @@ typedef struct {
 	int  sustain;       /* sustain level the attack ramps up to        */
 } hle_brr_voice;
 
-static hle_brr_voice sounddrv_poc_voice;
+/* Eight extra software voices, one shadowing each of the eight AKAO4 music
+ * channels (the "fictional upgraded SPC" bank). Index matches channel. */
+#define HLE_VOICE_COUNT 8
+static hle_brr_voice sounddrv_voices[HLE_VOICE_COUNT];
 
 /* Note -> pitch multiplier table, from the FF6 driver (FreqMultTbl):
  * pitch = 0x1000 * 2^((note-11)/12). These are the twelve chromatic
@@ -378,6 +381,7 @@ static const int hle_note_pitch[12] = {
  * refinement. */
 typedef struct {
 	int          active;     /* driver running                          */
+	int          chan;       /* which AKAO4 channel this driver plays    */
 	unsigned int pos;        /* read position in ARAM                    */
 	int          rem;        /* AKAO ticks left on the current note      */
 	int          octave;     /* running octave (D6/D7/D8)                */
@@ -393,7 +397,8 @@ typedef struct {
 	int          slur_started;
 } hle_seq_driver;
 
-static hle_seq_driver sounddrv_drv;
+/* One sequencer driver per channel, sharing the global tempo clock. */
+static hle_seq_driver sounddrv_drv[HLE_VOICE_COUNT];
 /* Output samples per AKAO tick at a reference tempo. The driver advances a
  * musical tick once its tempo accumulator ($47) overflows, which happens
  * every 256/tempo timer-0 interrupts; timer 0 runs at 8000/0x27 ~= 205.13
@@ -410,8 +415,8 @@ static hle_seq_driver sounddrv_drv;
  * header constants they depend on). hle_seq_driver_start resolves a
  * channel's bytecode and arms the driver; hle_seq_driver_advance steps it
  * by one output sample, keying the PoC voice as notes begin. */
-static void hle_seq_driver_start( int channel );
-static void hle_seq_driver_advance( void );
+static void hle_seq_driver_start( hle_seq_driver *d, int channel );
+static void hle_seq_driver_advance( hle_seq_driver *d, hle_brr_voice *v );
 
 
 /* Decode one 9-byte BRR block at v->brr_addr into v->blk[0..15], advancing
@@ -1175,17 +1180,27 @@ static INLINE void dsp_echo_27 (void)
 	 * sample and pitch as notes begin, and the voice renders BRR with pitch
 	 * and envelope. This is single-channel; scaling to the extra bank and
 	 * live-tempo sync come next. CLAMP16 guards the sum. */
+	/* HLE enhancement injection point. The original eight DSP voices are
+	 * fully mixed into l/r above. The fictional extra bank -- eight
+	 * sequencer-driven software voices, one shadowing each AKAO4 music
+	 * channel -- is advanced and summed in here. Each is armed from the
+	 * song-change handler in sounddrv_log_write (stable, fully-loaded
+	 * header). This stage shadows all eight channels unconditionally to
+	 * prove the engine; the policy layer (only sound under SFX-steal) comes
+	 * next. CLAMP16 guards the sum. */
 	if ( sounddrv_hle_enhance )
 	{
 		int s;
-		/* The driver is armed from the song-change handler in
-		 * sounddrv_log_write (which fires on a stable, fully-loaded
-		 * header). Here we just advance it per output sample and mix the
-		 * voice it drives. */
-		hle_seq_driver_advance();
-		s = hle_brr_next_sample( &sounddrv_poc_voice );
-		/* scale down so it sits under the music */
-		s = ( s >> 2 );
+		int vi;
+		s = 0;
+		for ( vi = 0; vi < HLE_VOICE_COUNT; ++vi )
+		{
+			hle_seq_driver_advance( &sounddrv_drv[vi],
+			                        &sounddrv_voices[vi] );
+			s += hle_brr_next_sample( &sounddrv_voices[vi] );
+		}
+		/* scale down: eight voices summed, keep headroom under the music */
+		s = ( s >> 3 );
 		l += s;
 		r += s;
 		CLAMP16( l );
@@ -2102,7 +2117,7 @@ static const unsigned char akao4_cmd_len[0x100 - AKAO4_CMD_BASE] = {
 
 /* Resolve channel `channel`'s AKAO4 bytecode start and arm the driver. Uses
  * the same relative-pointer rule as the walks/sequencer. */
-static void hle_seq_driver_start( int channel )
+static void hle_seq_driver_start( hle_seq_driver *d, int channel )
 {
 	const uint8_t *ram;
 	unsigned int data_start;
@@ -2117,43 +2132,44 @@ static void hle_seq_driver_start( int channel )
 	pn = (unsigned int)ram[AKAO4_HDR_TABLE + channel * 2]
 	   | ( (unsigned int)ram[AKAO4_HDR_TABLE + channel * 2 + 1] << 8 );
 
-	sounddrv_drv.pos = ( AKAO4_DATA_ORIGIN
+	d->pos = ( AKAO4_DATA_ORIGIN
 	                   + ( ( pn - data_start ) & 0xFFFF ) ) & 0xFFFF;
-	sounddrv_drv.rem          = 0;
-	sounddrv_drv.octave       = 4;     /* driver default initial octave */
-	sounddrv_drv.srcn         = -1;
-	sounddrv_drv.started      = 0;
-	sounddrv_drv.ended        = 0;
-	sounddrv_drv.samp_acc     = 0;
-	sounddrv_drv.loop_sp      = 0;
-	sounddrv_drv.slur_active  = 0;
-	sounddrv_drv.slur_started = 0;
-	sounddrv_drv.active       = 1;
+	d->rem          = 0;
+	d->octave       = 4;     /* driver default initial octave */
+	d->srcn         = -1;
+	d->started      = 0;
+	d->ended        = 0;
+	d->samp_acc     = 0;
+	d->loop_sp      = 0;
+	d->slur_active  = 0;
+	d->slur_started = 0;
+	d->active       = 1;
+	d->chan         = channel;
 }
 
 /* Process the driver's bytecode for one tick: if the current note has
  * expired, run commands until the next note/rest/tie, key the PoC voice for
  * a real note (suppressing key-on under an in-progress slur, like the
  * driver), and key off on a rest. */
-static void hle_seq_driver_tick( void )
+static void hle_seq_driver_tick( hle_seq_driver *d, hle_brr_voice *v )
 {
 	const uint8_t *ram;
 	int guard;
 
 	ram = dsp_m.ram;
-	if ( ram == NULL || !sounddrv_drv.active || sounddrv_drv.ended )
+	if ( ram == NULL || !d->active || d->ended )
 		return;
 
-	if ( sounddrv_drv.rem > 0 )
+	if ( d->rem > 0 )
 	{
-		sounddrv_drv.rem--;
+		d->rem--;
 		return;
 	}
 
-	for ( guard = 0; guard < 256 && !sounddrv_drv.ended; ++guard )
+	for ( guard = 0; guard < 256 && !d->ended; ++guard )
 	{
 		unsigned char b;
-		b = ram[ sounddrv_drv.pos & 0xFFFF ];
+		b = ram[ d->pos & 0xFFFF ];
 
 		if ( b < AKAO4_CMD_BASE )
 		{
@@ -2163,39 +2179,39 @@ static void hle_seq_driver_tick( void )
 			key = b % 14;
 			if ( dur >= 14 )
 			{
-				sounddrv_drv.ended = 1;
+				d->ended = 1;
 				break;
 			}
-			sounddrv_drv.pos = ( sounddrv_drv.pos + 1 ) & 0xFFFF;
-			sounddrv_drv.rem = akao4_dur_ticks[dur] - 1;
+			d->pos = ( d->pos + 1 ) & 0xFFFF;
+			d->rem = akao4_dur_ticks[dur] - 1;
 
 			if ( key < 12 )
 			{
 				/* real note: key the voice unless mid-slur */
 				int suppress;
-				suppress = ( sounddrv_drv.slur_active
-				             && sounddrv_drv.slur_started );
-				if ( !suppress && sounddrv_drv.srcn >= 0 )
+				suppress = ( d->slur_active
+				             && d->slur_started );
+				if ( !suppress && d->srcn >= 0 )
 				{
 					int pitch;
 					int oct;
 					/* pitch = note mult, octave-shifted around octave 4
 					 * (the table's reference) */
 					pitch = hle_note_pitch[key];
-					oct = sounddrv_drv.octave - 4;
+					oct = d->octave - 4;
 					if ( oct > 0 ) pitch <<= oct;
 					else if ( oct < 0 ) pitch >>= ( -oct );
-					hle_brr_keyoff( &sounddrv_poc_voice );
-					hle_brr_start( &sounddrv_poc_voice,
-					               sounddrv_drv.srcn, pitch );
+					hle_brr_keyoff( v );
+					hle_brr_start( v,
+					               d->srcn, pitch );
 				}
-				if ( sounddrv_drv.slur_active )
-					sounddrv_drv.slur_started = 1;
+				if ( d->slur_active )
+					d->slur_started = 1;
 			}
 			else if ( key == 12 )
 			{
-				hle_brr_keyoff( &sounddrv_poc_voice );
-				sounddrv_drv.slur_started = 0;
+				hle_brr_keyoff( v );
+				d->slur_started = 0;
 			}
 			/* key == 13 tie: hold */
 			break;
@@ -2206,74 +2222,74 @@ static void hle_seq_driver_tick( void )
 			len = akao4_cmd_len[b - AKAO4_CMD_BASE];
 			if ( len == 0 )
 			{
-				sounddrv_drv.ended = 1;
+				d->ended = 1;
 				break;
 			}
 			if ( b == 0xDC )       /* program_change -> SRCN */
-				sounddrv_drv.srcn = ram[( sounddrv_drv.pos + 1 ) & 0xFFFF];
+				d->srcn = ram[( d->pos + 1 ) & 0xFFFF];
 			else if ( b == 0xD6 )  /* set_octave */
-				sounddrv_drv.octave = ram[( sounddrv_drv.pos + 1 ) & 0xFFFF];
+				d->octave = ram[( d->pos + 1 ) & 0xFFFF];
 			else if ( b == 0xD7 )  /* octave_up */
-				sounddrv_drv.octave++;
+				d->octave++;
 			else if ( b == 0xD8 )  /* octave_down */
-				sounddrv_drv.octave--;
+				d->octave--;
 			else if ( b == 0xE4 )  /* slur on */
 			{
-				sounddrv_drv.slur_active  = 1;
-				sounddrv_drv.slur_started = 0;
+				d->slur_active  = 1;
+				d->slur_started = 0;
 			}
 			else if ( b == 0xE5 )  /* slur off */
-				sounddrv_drv.slur_active = 0;
+				d->slur_active = 0;
 			else if ( b == 0xE2 )  /* loop_start [count] */
 			{
-				if ( sounddrv_drv.loop_sp < AKAO4_LOOP_DEPTH )
+				if ( d->loop_sp < AKAO4_LOOP_DEPTH )
 				{
 					int sp;
-					sp = sounddrv_drv.loop_sp;
-					sounddrv_drv.loop_pos[sp] =
-					  ( sounddrv_drv.pos + 2 ) & 0xFFFF;
-					sounddrv_drv.loop_cnt[sp] =
-					  ram[( sounddrv_drv.pos + 1 ) & 0xFFFF];
-					sounddrv_drv.loop_sp++;
+					sp = d->loop_sp;
+					d->loop_pos[sp] =
+					  ( d->pos + 2 ) & 0xFFFF;
+					d->loop_cnt[sp] =
+					  ram[( d->pos + 1 ) & 0xFFFF];
+					d->loop_sp++;
 				}
-				sounddrv_drv.pos = ( sounddrv_drv.pos + len ) & 0xFFFF;
+				d->pos = ( d->pos + len ) & 0xFFFF;
 				continue;
 			}
 			else if ( b == 0xE3 )  /* loop_end */
 			{
-				if ( sounddrv_drv.loop_sp > 0 )
+				if ( d->loop_sp > 0 )
 				{
 					int sp;
-					sp = sounddrv_drv.loop_sp - 1;
-					sounddrv_drv.loop_cnt[sp]--;
-					if ( sounddrv_drv.loop_cnt[sp] > 0 )
+					sp = d->loop_sp - 1;
+					d->loop_cnt[sp]--;
+					if ( d->loop_cnt[sp] > 0 )
 					{
-						sounddrv_drv.pos = sounddrv_drv.loop_pos[sp];
+						d->pos = d->loop_pos[sp];
 						continue;
 					}
-					sounddrv_drv.loop_sp--;
+					d->loop_sp--;
 				}
-				sounddrv_drv.pos = ( sounddrv_drv.pos + len ) & 0xFFFF;
+				d->pos = ( d->pos + len ) & 0xFFFF;
 				continue;
 			}
 			else if ( b == 0xEB )  /* end_track */
 			{
-				sounddrv_drv.ended = 1;
+				d->ended = 1;
 				break;
 			}
-			sounddrv_drv.pos = ( sounddrv_drv.pos + len ) & 0xFFFF;
+			d->pos = ( d->pos + len ) & 0xFFFF;
 		}
 	}
 }
 
 /* Advance the driver by one output sample: accumulate toward the next tick
  * and process a tick when due. */
-static void hle_seq_driver_advance( void )
+static void hle_seq_driver_advance( hle_seq_driver *d, hle_brr_voice *v )
 {
 	int tempo;
 	int samples_per_tick;
 
-	if ( !sounddrv_drv.active )
+	if ( !d->active )
 		return;
 
 	/* Live tempo from ARAM; clamp to a sane range so a transient mid-write
@@ -2285,11 +2301,11 @@ static void hle_seq_driver_advance( void )
 	if ( samples_per_tick < 1 )
 		samples_per_tick = 1;
 
-	sounddrv_drv.samp_acc++;
-	if ( sounddrv_drv.samp_acc >= samples_per_tick )
+	d->samp_acc++;
+	if ( d->samp_acc >= samples_per_tick )
 	{
-		sounddrv_drv.samp_acc -= samples_per_tick;
-		hle_seq_driver_tick();
+		d->samp_acc -= samples_per_tick;
+		hle_seq_driver_tick( d, v );
 	}
 }
 
@@ -2819,7 +2835,11 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 			 * channel pointers are valid -- unlike polling the header
 			 * every output sample). */
 			if ( sounddrv_hle_enhance )
-				hle_seq_driver_start( 5 );
+			{
+				int ci;
+				for ( ci = 0; ci < HLE_VOICE_COUNT; ++ci )
+					hle_seq_driver_start( &sounddrv_drv[ci], ci );
+			}
 		}
 	}
 
