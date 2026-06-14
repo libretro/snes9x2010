@@ -1691,8 +1691,8 @@ static void sounddrv_probe_akao4( void )
 		   | ( (unsigned int)ram[AKAO4_HDR_TABLE + 1] << 8 );
 		a0 = ( AKAO4_DATA_ORIGIN + ( ( p0 - data_start ) & 0xFFFF ) )
 		   & 0xFFFF;
-		fprintf( stderr, "[HLE:AKAO4] == deep walk channel 0 (cap 256) ==\n" );
-		sounddrv_walk_channel_akao4( ram, 0, a0, 256 );
+		fprintf( stderr, "[HLE:AKAO4] == deep walk channel 0 (cap 4096) ==\n" );
+		sounddrv_walk_channel_akao4( ram, 0, a0, 4096 );
 	}
 }
 
