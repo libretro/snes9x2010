@@ -1707,37 +1707,37 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 			return;
 	}
 
-	/* Re-arm the song-start probe when all voices are keyed off (mask FF),
-	 * the usual "song ended / scene change" signal, so a new song re-probes
-	 * its header instead of probing only once per session. */
-	if ( addr == R_KOFF && data == 0xFF )
-		sounddrv_song_active = 0;
-
-	/* Song-start edge: first non-zero KON after silence. Don't dump
-	 * immediately -- the driver is still writing the channel-pointer table
-	 * at this instant (observed read-during-write race). Arm a deferred
-	 * probe and let a few more key-ons pass so the table settles. */
-	if ( addr == R_KON && !sounddrv_song_active )
+	/* Defer-and-fire-once probe.
+	 *
+	 * NOTE: an all-voices KOFF (mask FF) is NOT a song-end signal in FF6 --
+	 * the driver issues it constantly as part of normal per-phrase voice
+	 * management (observed firing many times during continuous music). So
+	 * we do NOT key song detection off KOFF. Instead we arm on the first
+	 * KON we ever see and fire once, AKAO4_PROBE_DEFER key-ons later, by
+	 * which point the channel-pointer table has been fully written. */
+	if ( addr == R_KON )
 	{
-		sounddrv_song_active = 1;
-		if ( sounddrv_hle_driver == SOUNDDRV_AKAO4 )
+		if ( !sounddrv_song_active )
 		{
-			sounddrv_probe_armed = 1;
-			sounddrv_probe_delay = AKAO4_PROBE_DEFER;
+			sounddrv_song_active = 1;
+			if ( sounddrv_hle_driver == SOUNDDRV_AKAO4 )
+			{
+				sounddrv_probe_armed = 1;
+				sounddrv_probe_delay = AKAO4_PROBE_DEFER;
+			}
 		}
-	}
 
-	/* Count down the deferred probe on each KON; fire once settled. */
-	if ( addr == R_KON && sounddrv_probe_armed )
-	{
-		if ( sounddrv_probe_delay > 0 )
+		if ( sounddrv_probe_armed )
 		{
-			sounddrv_probe_delay--;
-		}
-		else
-		{
-			sounddrv_probe_armed = 0;
-			sounddrv_probe_akao4();
+			if ( sounddrv_probe_delay > 0 )
+			{
+				sounddrv_probe_delay--;
+			}
+			else
+			{
+				sounddrv_probe_armed = 0;
+				sounddrv_probe_akao4();
+			}
 		}
 	}
 
