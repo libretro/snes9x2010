@@ -295,10 +295,151 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 /* HLE enhancement state, defined early so the DSP output mix (below) can see
  * it. sounddrv_hle_enhance is the opt-in enable for the fictional-upgraded-
- * SPC path; sounddrv_poc_phase is the proof-of-concept test-tone oscillator
- * phase. See the fuller comment at the HLE state block later in this file. */
+ * SPC path. See the fuller comment at the HLE state block later in this
+ * file, and the hle_brr_voice player defined just below. */
 int          sounddrv_hle_enhance = 0;
-static unsigned int sounddrv_poc_phase = 0;
+
+/* Minimal single-voice BRR player for the HLE enhancement PoC (step 1).
+ *
+ * This decodes one real BRR sample straight out of ARAM and feeds it into
+ * the DSP output mix, to prove the ARAM-BRR read+decode path works for an
+ * extra voice before any sequencer wiring. It deliberately reuses the
+ * core's exact BRR filter math (the four-mode IIR from dsp_decode_brr) but
+ * keeps its own tiny state, so it does NOT touch the global dsp_m pipeline
+ * or the real eight voices. It is NOT a DSP reimplementation: no Gaussian
+ * resampling, no envelope, no pitch -- just decode a sample's 9-byte blocks
+ * to PCM at the native rate and loop. Pitch/envelope/sequencer come later.
+ *
+ * brr_addr/offset track the current block; p1/p2 are the IIR history; the
+ * 16-sample block is decoded on demand into 'blk' and drained by out_pos. */
+typedef struct {
+	int  active;        /* currently playing                          */
+	int  brr_addr;      /* ARAM address of current 9-byte block        */
+	int  loop_addr;     /* ARAM address to jump to on loop             */
+	int  p1, p2;        /* BRR IIR filter history (previous 2 samples) */
+	int  blk[16];       /* decoded samples of the current block        */
+	int  out_pos;       /* next sample to emit from blk (0..15)        */
+	int  have_block;    /* blk currently holds a decoded block         */
+} hle_brr_voice;
+
+static hle_brr_voice sounddrv_poc_voice;
+
+/* Decode one 9-byte BRR block at v->brr_addr into v->blk[0..15], advancing
+ * brr_addr and handling end/loop via the block header's low two bits.
+ * Faithful to the core's dsp_decode_brr filter math. */
+static void hle_brr_decode_block( hle_brr_voice *v )
+{
+	int header;
+	int filter;
+	int shift;
+	int b;
+	int n;
+
+	header = dsp_m.ram[ v->brr_addr & 0xFFFF ];
+	filter = header & 0x0C;
+	shift  = header >> 4;
+
+	for ( b = 0; b < 8; ++b )
+	{
+		int byte;
+		int half;
+		byte = dsp_m.ram[ ( v->brr_addr + 1 + b ) & 0xFFFF ];
+		for ( half = 0; half < 2; ++half )
+		{
+			int s;
+			int p1;
+			int p2;
+			/* high nybble first, then low */
+			s = ( half == 0 ) ? ( (int8_t)byte >> 4 )
+			                  : ( (int)( (int8_t)( byte << 4 ) ) >> 4 );
+			p1 = v->p1;
+			p2 = v->p2 >> 1;
+
+			s = ( s << shift ) >> 1;
+			if ( shift >= 0xD )
+				s = ( s >> 25 ) << 11;
+
+			if ( filter )
+			{
+				if ( filter >= 8 )
+				{
+					s += p1;
+					s -= p2;
+					if ( filter == 8 )
+					{
+						s += p2 >> 4;
+						s += ( p1 * -3 ) >> 6;
+					}
+					else
+					{
+						s += ( p1 * -13 ) >> 7;
+						s += ( p2 * 3 ) >> 4;
+					}
+				}
+				else
+				{
+					s += p1 >> 1;
+					s += ( -p1 ) >> 5;
+				}
+			}
+
+			CLAMP16( s );
+			s = (int16_t)( s * 2 );
+
+			n = b * 2 + half;
+			v->blk[n] = s;
+			v->p2 = v->p1;
+			v->p1 = s;
+		}
+	}
+
+	/* Advance to the next block, or loop / stop per header bits 0-1. */
+	if ( header & 1 )            /* end flag set */
+	{
+		if ( header & 2 )       /* loop flag: jump to loop point */
+			v->brr_addr = v->loop_addr;
+		else                    /* end without loop: restart sample */
+			v->active = 0;
+	}
+	else
+	{
+		v->brr_addr = ( v->brr_addr + BRR_BLOCK_SIZE ) & 0xFFFF;
+	}
+	v->out_pos    = 0;
+	v->have_block = 1;
+}
+
+/* Start the PoC voice on a given sample number, looking the BRR start and
+ * loop addresses up in the live sample directory (DSP DIR register). */
+static void hle_brr_start( hle_brr_voice *v, int srcn )
+{
+	int dir;
+	int entry;
+
+	dir   = dsp_m.regs[R_DIR] * 0x100;
+	entry = ( dir + srcn * 4 ) & 0xFFFF;
+	v->brr_addr  = GET_LE16( &dsp_m.ram[ entry ] );
+	v->loop_addr = GET_LE16( &dsp_m.ram[ ( entry + 2 ) & 0xFFFF ] );
+	v->p1 = 0;
+	v->p2 = 0;
+	v->have_block = 0;
+	v->out_pos    = 0;
+	v->active     = 1;
+}
+
+/* Return the next PCM sample from the PoC voice (native rate, no resample),
+ * or 0 when inactive. */
+static int hle_brr_next_sample( hle_brr_voice *v )
+{
+	if ( !v->active )
+		return 0;
+	if ( !v->have_block || v->out_pos >= 16 )
+		hle_brr_decode_block( v );
+	if ( !v->active )
+		return 0;
+	return v->blk[ v->out_pos++ ];
+}
+
 
 
 /* Access global DSP register */
@@ -850,21 +991,21 @@ static INLINE void dsp_echo_27 (void)
 	}
 
 	/* HLE enhancement injection point. The original eight voices are fully
-	 * mixed into l/r above (master volume applied, mute handled). Here the
-	 * fictional-upgraded-SPC path sums its extra signal on top. PoC stage:
-	 * a quiet square-wave test tone, just enough to confirm the injection
-	 * is audible and does not corrupt the hardware mix. CLAMP16 guards the
-	 * sum against overflow. Replaced by real BRR/sequencer voices later. */
+	 * mixed into l/r above. The PoC extra voice decodes one real BRR sample
+	 * from ARAM and sums it in, proving the ARAM-BRR read+decode path. It is
+	 * started once (on the first enabled sample) on a fixed sample number
+	 * that FF6 actually uses; sequencer control of which sample/when comes
+	 * later. CLAMP16 guards the sum. */
 	if ( sounddrv_hle_enhance )
 	{
-		int tone;
-		/* ~440 Hz-ish square at the 32000 Hz DSP rate: toggle every ~36
-		 * samples. Low amplitude (+/- 2000 of the 32767 range) so it sits
-		 * under the music rather than blasting over it. */
-		sounddrv_poc_phase++;
-		tone = ( ( sounddrv_poc_phase / 36 ) & 1 ) ? 2000 : -2000;
-		l += tone;
-		r += tone;
+		int s;
+		if ( !sounddrv_poc_voice.active )
+			hle_brr_start( &sounddrv_poc_voice, 0x20 );
+		s = hle_brr_next_sample( &sounddrv_poc_voice );
+		/* the sample is full-scale; scale down so it sits under the music */
+		s = ( s >> 2 );
+		l += s;
+		r += s;
 		CLAMP16( l );
 		CLAMP16( r );
 	}
@@ -1588,12 +1729,14 @@ int sounddrv_hle_driver = SOUNDDRV_AKAO4; /* first target; detection TODO */
  * the real chip would produce. The original eight DSP voices are untouched;
  * the enhancement only sums additional signal on top.
  *
- * PROOF OF CONCEPT STAGE: this first step does NOT yet read BRR or run the
- * sequencer. It mixes a single, quiet test tone into the output, gated on
- * this flag, purely to prove the extra-signal injection path is clean (the
- * real eight voices unaffected, no buffer corruption) before wiring up real
- * BRR playback and sequencer control. The tone is intentionally obvious and
- * temporary scaffolding. */
+ * PROOF OF CONCEPT STAGE (step 1): the enhancement now decodes one real
+ * BRR sample straight from ARAM (via the live DSP sample directory) and
+ * sums it into the output, proving the ARAM-BRR read+decode path works for
+ * an extra voice. It still does NOT run the sequencer or apply pitch/
+ * envelope -- the sample plays at native rate on a fixed sample number.
+ * Sequencer control (which sample, when, at what pitch) comes next. The
+ * decode reuses the core's exact BRR filter math but on private state, so
+ * the real eight voices are untouched. */
 
 
 /* AKAO4 song-header probe.
