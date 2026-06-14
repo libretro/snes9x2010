@@ -1619,27 +1619,31 @@ static void sounddrv_probe_akao4( void )
 		return;
 	ram = dsp_m.ram;
 
-	/* Raw window around the header so the pointer table can be confirmed
-	 * by eye, independent of the interpreted dump below. Start a couple of
-	 * rows before the base to show any preamble (count/flags word). */
-	sounddrv_dump_region( ( AKAO4_HDR_BASE - 0x10 ) & 0xFFFF, 4 );
+	/* The first capture showed that 0x1C24 is NOT a pointer table -- the
+	 * bytes there decode as a clean AKAO4 command stream (echo_volume,
+	 * program_change $20, set_pan, echo_on, set_tempo, ...). The actual
+	 * channel-pointer table appears to sit just before it (around 0x1C14),
+	 * holding 16-bit pointers that climb monotonically into an ~0x85xx
+	 * data region. Dump a wide window so the real header can be pinned
+	 * down, then interpret a candidate pointer table and follow each
+	 * pointer to confirm it lands on plausible sequence bytes. */
+	sounddrv_dump_region( 0x1C00, 8 );
 
-	fprintf( stderr, "[HLE:AKAO4] song header @ ARAM %04X:\n",
-	         AKAO4_HDR_BASE );
+	/* Candidate pointer table just below the old base. Interpret 8 little-
+	 * endian 16-bit entries and show where each points. Adjust the base
+	 * here once the raw window confirms the exact table location. */
+	fprintf( stderr, "[HLE:AKAO4] candidate ptr table @ 0x1C14:\n" );
 	for ( i = 0; i < AKAO4_NUM_CHAN; ++i )
 	{
 		unsigned int a;
 		unsigned int p;
 		int j;
 
-		a = AKAO4_HDR_BASE + (unsigned int)( i * 2 );
+		a = 0x1C14 + (unsigned int)( i * 2 );
 		p = (unsigned int)ram[a] | ( (unsigned int)ram[a + 1] << 8 );
 
-		/* Dump the first few bytes at the pointer so the pointer can be
-		 * sanity-checked by eye: plausible sequence data is a mix of note
-		 * bytes (<0xC4) and command bytes (>=0xC4), not 00/FF runs. */
-		fprintf( stderr, "[HLE:AKAO4]   ch%d -> %04X :", i, p );
-		for ( j = 0; j < 6; ++j )
+		fprintf( stderr, "[HLE:AKAO4]   [%d] @%04X = %04X ->", i, a, p );
+		for ( j = 0; j < 8; ++j )
 			fprintf( stderr, " %02X", ram[( p + (unsigned int)j ) & 0xFFFF] );
 		fprintf( stderr, "\n" );
 	}
