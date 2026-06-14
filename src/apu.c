@@ -1931,6 +1931,15 @@ typedef struct {
 	int          rem;     /* AKAO ticks remaining on the current note */
 	int          octave;  /* running octave (for later pitch predict) */
 	int          ended;   /* set when end_track reached               */
+	/* Slur / legato state, mirroring the driver's per-voice $5b (slur
+	 * active) and $5d (slur already in progress) bits. E4 enables slur
+	 * and clears the in-progress flag; E5 disables it. A note keys on
+	 * unless slur is active AND already in progress -- i.e. the first
+	 * note of a slur run keys, the rest only re-pitch. Drumroll (E6/E7,
+	 * driver $5f) forces a key-on on every note while active. */
+	int          slur_active;   /* E4 set, E5 clear ($5b)            */
+	int          slur_started;  /* set once first slur note keyed ($5d) */
+	int          drumroll;      /* E6 set, E7 clear ($5f)            */
 	/* Loop stack: E2 [count] pushes the body's start position and the
 	 * remaining iteration count; E3 decrements and jumps back to the
 	 * body start until the count is exhausted, then pops. Depth-limited
@@ -1969,6 +1978,9 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 		ch[i].octave = 0;
 		ch[i].ended  = 0;
 		ch[i].loop_sp = 0;
+		ch[i].slur_active  = 0;
+		ch[i].slur_started = 0;
+		ch[i].drumroll     = 0;
 	}
 
 	fprintf( stderr, "[HLE:AKAO4:SEQ] == tick sequence (per-tick KON/KOFF masks) ==\n" );
@@ -2031,9 +2043,29 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 						ch[i].rem = akao4_dur_ticks[dur] - 1;
 
 						if ( key < 12 )
-							kon_mask  |= ( 1 << i );  /* note: key-on  */
+						{
+							/* Note. Key-on unless slur is active and
+							 * already in progress (driver: $5b && $5d);
+							 * drumroll ($5f) forces a key-on. The first
+							 * note of a slur run keys and marks the run
+							 * started; subsequent slurred notes only
+							 * re-pitch and are suppressed here. */
+							int suppress;
+							suppress = ( ch[i].slur_active
+							             && ch[i].slur_started
+							             && !ch[i].drumroll );
+							if ( !suppress )
+								kon_mask |= ( 1 << i );  /* key-on */
+							if ( ch[i].slur_active )
+								ch[i].slur_started = 1;
+						}
 						else if ( key == 12 )
+						{
 							koff_mask |= ( 1 << i );  /* rest: key-off */
+							/* a rest ends any slur run (driver clears
+							 * $5b/$5f on a rest/tie boundary). */
+							ch[i].slur_started = 0;
+						}
 						/* key == 13 is a tie: hold, emit nothing */
 						break;
 					}
@@ -2053,6 +2085,21 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 						else if ( b == 0xD6 )  /* set_octave  */
 							ch[i].octave =
 							  ram[( ch[i].pos + 1 ) & 0xFFFF];
+						else if ( b == 0xE4 )  /* slur/legato on  */
+						{
+							ch[i].slur_active  = 1;
+							ch[i].slur_started = 0;
+							ch[i].drumroll     = 0;
+						}
+						else if ( b == 0xE5 )  /* slur/legato off */
+							ch[i].slur_active  = 0;
+						else if ( b == 0xE6 )  /* drum roll on    */
+						{
+							ch[i].drumroll    = 1;
+							ch[i].slur_active = 0;
+						}
+						else if ( b == 0xE7 )  /* drum roll off   */
+							ch[i].drumroll     = 0;
 						else if ( b == 0xEB )  /* end_track   */
 						{
 							ch[i].ended = 1;
