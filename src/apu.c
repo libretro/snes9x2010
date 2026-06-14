@@ -1596,6 +1596,25 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 	if ( name == NULL )
 		return;
 
+	/* Suppress no-op spam. FF6 (and AKAO drivers generally) poll the DSP
+	 * every audio frame, rewriting KON/KOFF with mask 00 and re-issuing
+	 * identical per-voice register values. Those writes change nothing and
+	 * bury the actual musical events. We log only meaningful writes:
+	 *   - KON/KOFF: only when the mask is non-zero (an actual key on/off).
+	 *   - per-voice regs: only when the value differs from what the
+	 *     register currently holds. The hook calls us BEFORE the store, so
+	 *     dsp_m.regs[addr] still holds the previous value here. */
+	if ( addr == R_KON || addr == R_KOFF )
+	{
+		if ( data == 0 )
+			return;
+	}
+	else
+	{
+		if ( dsp_m.regs[addr] == data )
+			return;
+	}
+
 	drv = sounddrv_name( sounddrv_hle_driver );
 
 	/* Voice index lives in the high nibble for per-voice regs; KON/KOFF
