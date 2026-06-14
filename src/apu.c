@@ -1601,6 +1601,7 @@ static void sounddrv_dump_region( unsigned int base, int rows )
 
 static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
                                          unsigned int start, int cap );
+static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start );
 
 static void sounddrv_probe_akao4( void )
 {
@@ -1679,6 +1680,13 @@ static void sounddrv_probe_akao4( void )
 		   & 0xFFFF;
 		sounddrv_walk_channel_akao4( ram, i, an, 4096 );
 	}
+
+	/* Run the tick-driven sequencer over the same song. Where the walks
+	 * above prove the bytecode parses spatially, the sequencer advances
+	 * all eight channels against a shared tick clock and emits the
+	 * predicted key-on order. Diffing that order against the live
+	 * [HLE:AKAO4] KON masks is the actual test of the timing engine. */
+	sounddrv_seq_akao4( ram, data_start );
 }
 
 /* AKAO4 command opcode byte-lengths, indexed by (opcode - 0xC4), covering
@@ -1858,6 +1866,167 @@ static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
 	}
 	fprintf( stderr, "[HLE:AKAO4]   channel %d: step cap (%d) reached\n",
 	         ch, cap );
+}
+
+/* Tick-driven AKAO4 sequencer (skeleton).
+ *
+ * The walker above is a spatial decoder: it follows one channel's bytes in
+ * address order and prints them. This is a temporal decoder: it advances all
+ * eight channels against one shared tick clock and emits the predicted key-on
+ * events in the order they actually occur in time, interleaved across
+ * channels. That interleaved order is what we diff against the live
+ * [HLE:AKAO4] KON masks -- if the sequencer keys voice N on at the same point
+ * in the stream that the real driver does, the timing model is correct.
+ *
+ * SCOPE / DELIBERATE LIMITS of this first skeleton:
+ *   - No tempo->sample-rate conversion. We count note durations in AKAO
+ *     ticks and step tick by tick; this validates relative ordering and
+ *     relative timing, not absolute wall-clock placement. Set_tempo (F0) is
+ *     consumed and ignored for now.
+ *   - No loop/jump handling. E2/E3/F5/FC are consumed by length but not
+ *     acted on. FF6's intro -- our test song -- contains none (every channel
+ *     ends on a plain EB), so the whole intro sequences correctly without
+ *     them. A looping song is the next milestone and gates the loop stack.
+ *   - No pitch/SRCN/ADSR emission yet. Only note-on / note-off ordering,
+ *     which is the part the live KON masks let us check directly.
+ *   - One voice per channel (AkaoSnes maps channel i -> voice i), matching
+ *     the driver's fixed module-style polyphony.
+ *
+ * Each channel holds its read position, the ticks remaining on its current
+ * note, its end flag, and a running octave (tracked for the later pitch
+ * predictor; unused for note-on ordering). On each tick, any channel whose
+ * remaining count reaches zero executes bytecode -- running state commands
+ * instantly -- until it reaches a note, rest, or tie, then emits the event
+ * and loads the new duration. The loop stops when every channel has ended
+ * or a generous global tick budget is exhausted (guards against a stream
+ * with no terminator). */
+
+#define AKAO4_SEQ_TICK_BUDGET 4096
+
+typedef struct {
+	unsigned int pos;     /* current read position in ARAM            */
+	int          rem;     /* AKAO ticks remaining on the current note */
+	int          octave;  /* running octave (for later pitch predict) */
+	int          ended;   /* set when end_track reached               */
+} akao4_seq_chan;
+
+static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
+{
+	akao4_seq_chan ch[AKAO4_NUM_CHAN];
+	int i;
+	int tick;
+	int live;
+
+	/* Resolve each channel's start using the same relative-pointer rule
+	 * the walks use, and mark every channel as needing immediate service
+	 * (rem = 0) so tick 0 primes them all. */
+	for ( i = 0; i < AKAO4_NUM_CHAN; ++i )
+	{
+		unsigned int pn;
+		pn = (unsigned int)ram[AKAO4_HDR_TABLE + i * 2]
+		   | ( (unsigned int)ram[AKAO4_HDR_TABLE + i * 2 + 1] << 8 );
+		ch[i].pos = ( AKAO4_DATA_ORIGIN
+		            + ( ( pn - data_start ) & 0xFFFF ) ) & 0xFFFF;
+		ch[i].rem    = 0;
+		ch[i].octave = 0;
+		ch[i].ended  = 0;
+	}
+
+	fprintf( stderr, "[HLE:AKAO4:SEQ] == tick sequence (key-on order) ==\n" );
+
+	for ( tick = 0; tick < AKAO4_SEQ_TICK_BUDGET; ++tick )
+	{
+		live = 0;
+
+		for ( i = 0; i < AKAO4_NUM_CHAN; ++i )
+		{
+			if ( ch[i].ended )
+				continue;
+			live = 1;
+
+			/* A channel only acts when its current note expires. */
+			if ( ch[i].rem > 0 )
+			{
+				ch[i].rem--;
+				continue;
+			}
+
+			/* Note expired: execute commands until the next timed
+			 * event (note / rest / tie), then emit and reload. A small
+			 * inner cap prevents an all-command channel from spinning
+			 * forever within a single tick. */
+			{
+				int guard;
+				for ( guard = 0; guard < 256 && !ch[i].ended; ++guard )
+				{
+					unsigned char b;
+					b = ram[ch[i].pos];
+
+					if ( b < AKAO4_CMD_BASE )
+					{
+						int dur;
+						int key;
+						dur = b / 14;
+						key = b % 14;
+						if ( dur >= 14 )
+						{
+							/* malformed -- stop this channel */
+							ch[i].ended = 1;
+							break;
+						}
+						ch[i].pos = ( ch[i].pos + 1 ) & 0xFFFF;
+						ch[i].rem = akao4_dur_ticks[dur];
+
+						if ( key < 12 )
+						{
+							/* a real note: predicted key-on for voice i */
+							fprintf( stderr,
+							  "[HLE:AKAO4:SEQ] t%5d v%d KON  %-2s dur=%d\n",
+							  tick, i, akao4_key_name[key],
+							  akao4_dur_ticks[dur] );
+						}
+						else if ( key == 12 )
+						{
+							/* rest: predicted key-off for voice i */
+							fprintf( stderr,
+							  "[HLE:AKAO4:SEQ] t%5d v%d KOFF   dur=%d\n",
+							  tick, i, akao4_dur_ticks[dur] );
+						}
+						/* key == 13 is a tie: hold, emit nothing */
+						break;
+					}
+					else
+					{
+						unsigned char len;
+						len = akao4_cmd_len[b - AKAO4_CMD_BASE];
+						if ( len == 0 )
+						{
+							ch[i].ended = 1;
+							break;
+						}
+						if ( b == 0xD7 )       /* octave_up   */
+							ch[i].octave++;
+						else if ( b == 0xD8 )  /* octave_down */
+							ch[i].octave--;
+						else if ( b == 0xD6 )  /* set_octave  */
+							ch[i].octave =
+							  ram[( ch[i].pos + 1 ) & 0xFFFF];
+						else if ( b == 0xEB )  /* end_track   */
+						{
+							ch[i].ended = 1;
+							break;
+						}
+						ch[i].pos = ( ch[i].pos + len ) & 0xFFFF;
+					}
+				}
+			}
+		}
+
+		if ( !live )
+			break;
+	}
+
+	fprintf( stderr, "[HLE:AKAO4:SEQ] == end (%d ticks) ==\n", tick );
 }
 
 static const char *sounddrv_name( int id )
