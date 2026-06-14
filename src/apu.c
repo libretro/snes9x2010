@@ -1660,15 +1660,21 @@ static void sounddrv_probe_akao4( void )
 		fprintf( stderr, "\n" );
 	}
 
-	/* Walk channel 0 to verify the bytecode parses cleanly end to end. */
+	/* Walk every channel to verify the bytecode parses, and to compare the
+	 * conductor track (ch0) against the melodic channels. If a suspicious
+	 * pattern (e.g. long set_tempo runs) appears only in ch0, it is likely
+	 * genuine conductor automation; if it appears across all channels at
+	 * the same structural point, it indicates a systematic opcode-length
+	 * error to fix. */
+	for ( i = 0; i < AKAO4_NUM_CHAN; ++i )
 	{
-		unsigned int p0;
-		unsigned int a0;
-		p0 = (unsigned int)ram[AKAO4_HDR_TABLE]
-		   | ( (unsigned int)ram[AKAO4_HDR_TABLE + 1] << 8 );
-		a0 = ( AKAO4_DATA_ORIGIN + ( ( p0 - data_start ) & 0xFFFF ) )
+		unsigned int pn;
+		unsigned int an;
+		pn = (unsigned int)ram[AKAO4_HDR_TABLE + i * 2]
+		   | ( (unsigned int)ram[AKAO4_HDR_TABLE + i * 2 + 1] << 8 );
+		an = ( AKAO4_DATA_ORIGIN + ( ( pn - data_start ) & 0xFFFF ) )
 		   & 0xFFFF;
-		sounddrv_walk_channel_akao4( ram, 0, a0 );
+		sounddrv_walk_channel_akao4( ram, i, an );
 	}
 }
 
@@ -1766,7 +1772,16 @@ static const char *akao4_key_name[14] = {
  * and caps total steps so a malformed stream can't loop forever. This is
  * NOT a tick-accurate sequencer -- it confirms the bytecode parses cleanly
  * and shows the channel's musical content, the basis for a later predictor
- * that diffs against the live voice writes. */
+ * that diffs against the live voice writes.
+ *
+ * VERIFICATION STATUS: the intro decodes cleanly and matches the live
+ * voice writes (program_change $20 == SRCN 20, etc.). The deeper stream
+ * parses without hitting an unknown opcode, but is NOT yet independently
+ * verified -- e.g. whether long runs of set_tempo (F0) are genuine fine-
+ * timing or a latent opcode-length error causing operand/opcode desync can
+ * only be settled by correlating decoded notes against the live PITCH
+ * writes. That correlation is the next step; until then, treat output past
+ * the first phrase as provisional. */
 static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
                                          unsigned int start )
 {
@@ -1778,7 +1793,7 @@ static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
 
 	fprintf( stderr, "[HLE:AKAO4] -- channel %d walk @ %04X --\n", ch, pos );
 
-	while ( steps < 64 )
+	while ( steps < 32 )
 	{
 		unsigned char b;
 
