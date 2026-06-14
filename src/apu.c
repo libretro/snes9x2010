@@ -2019,7 +2019,16 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 							break;
 						}
 						ch[i].pos = ( ch[i].pos + 1 ) & 0xFFFF;
-						ch[i].rem = akao4_dur_ticks[dur];
+						/* A note occupies exactly `dur` ticks. The tick
+						 * on which it keys on is the first of those ticks,
+						 * so the countdown is dur-1 more ticks: setting
+						 * rem = dur would make the note span dur+1 ticks
+						 * and every channel's onsets would drift one tick
+						 * later per note. Verified against hardware: with
+						 * dur-1, voice 5's 'note C 3' roll keys every 3
+						 * ticks (31617 SPC cycles each), matching the
+						 * live [HLE:AKAO4:TIME] deltas exactly. */
+						ch[i].rem = akao4_dur_ticks[dur] - 1;
 
 						if ( key < 12 )
 							kon_mask  |= ( 1 << i );  /* note: key-on  */
