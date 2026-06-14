@@ -1553,6 +1553,58 @@ enum sounddrv_id
 int sounddrv_hle_log    = 0;
 int sounddrv_hle_driver = SOUNDDRV_AKAO4; /* first target; detection TODO */
 
+/* AKAO4 song-header probe.
+ *
+ * Read-only inspection of the AKAO4 sequence structure that the driver has
+ * already uploaded into APU RAM. For FF6 (AKAO4 rev3) the song header sits
+ * at ARAM 0x1C24 (loveemu "ARAMBase"): eight little-endian 16-bit channel
+ * track pointers, one per DSP voice.
+ *
+ * This does NOT drive audio and does NOT parse the sequence yet. It exists
+ * so the captured ground-truth voice writes can be correlated with the
+ * actual sequence layout in RAM -- the prerequisite for any later
+ * prediction/diff. It dumps once per detected song start to avoid spam.
+ *
+ * NOTE: 0x1C24 / pointer-table layout is the documented FF6 case. If the
+ * dumped pointers don't land in plausible sequence regions on a given ROM,
+ * the table likely sits at a small offset from the base (some revisions
+ * prefix a count/flags word) -- adjust AKAO4_HDR_BASE accordingly. This is
+ * exactly the thing to confirm against a running FF6. */
+#define AKAO4_HDR_BASE   0x1C24
+#define AKAO4_NUM_CHAN   8
+
+static int sounddrv_song_active = 0; /* tracks key-on activity for edge   */
+
+static void sounddrv_probe_akao4( void )
+{
+	const uint8_t *ram;
+	int i;
+
+	if ( dsp_m.ram == NULL )
+		return;
+	ram = dsp_m.ram;
+
+	fprintf( stderr, "[HLE:AKAO4] song header @ ARAM %04X:\n",
+	         AKAO4_HDR_BASE );
+	for ( i = 0; i < AKAO4_NUM_CHAN; ++i )
+	{
+		unsigned int a;
+		unsigned int p;
+		int j;
+
+		a = AKAO4_HDR_BASE + (unsigned int)( i * 2 );
+		p = (unsigned int)ram[a] | ( (unsigned int)ram[a + 1] << 8 );
+
+		/* Dump the first few bytes at the pointer so the pointer can be
+		 * sanity-checked by eye: plausible sequence data is a mix of note
+		 * bytes (<0xC4) and command bytes (>=0xC4), not 00/FF runs. */
+		fprintf( stderr, "[HLE:AKAO4]   ch%d -> %04X :", i, p );
+		for ( j = 0; j < 6; ++j )
+			fprintf( stderr, " %02X", ram[( p + (unsigned int)j ) & 0xFFFF] );
+		fprintf( stderr, "\n" );
+	}
+}
+
 static const char *sounddrv_name( int id )
 {
 	switch ( id )
@@ -1613,6 +1665,22 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 	{
 		if ( dsp_m.regs[addr] == data )
 			return;
+	}
+
+	/* Re-arm the song-start probe when all voices are keyed off (mask FF),
+	 * the usual "song ended / scene change" signal, so a new song re-probes
+	 * its header instead of probing only once per session. */
+	if ( addr == R_KOFF && data == 0xFF )
+		sounddrv_song_active = 0;
+
+	/* On the first non-zero KON after a quiet stretch, probe the AKAO4
+	 * song header once. This correlates the voice writes that follow with
+	 * the sequence layout the driver placed in RAM. Read-only. */
+	if ( addr == R_KON && !sounddrv_song_active )
+	{
+		sounddrv_song_active = 1;
+		if ( sounddrv_hle_driver == SOUNDDRV_AKAO4 )
+			sounddrv_probe_akao4();
 	}
 
 	drv = sounddrv_name( sounddrv_hle_driver );
