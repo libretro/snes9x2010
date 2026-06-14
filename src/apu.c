@@ -1660,12 +1660,15 @@ static void sounddrv_probe_akao4( void )
 		fprintf( stderr, "\n" );
 	}
 
-	/* Walk every channel to verify the bytecode parses, and to compare the
-	 * conductor track (ch0) against the melodic channels. If a suspicious
-	 * pattern (e.g. long set_tempo runs) appears only in ch0, it is likely
-	 * genuine conductor automation; if it appears across all channels at
-	 * the same structural point, it indicates a systematic opcode-length
-	 * error to fix. */
+	/* Walk every channel to verify the bytecode parses end to end.
+	 * The step cap is high enough that each channel runs to its own
+	 * end_track (EB/F6) rather than stopping mid-phrase. A correctly
+	 * aligned walk lands its terminator exactly on the next channel's
+	 * header pointer; any opcode-length error accumulates drift and the
+	 * walk ends at the wrong address or hits an unknown opcode. This is
+	 * the global alignment check, and it also surfaces opcodes that only
+	 * appear in the bass/percussion tracks (ch6/ch7), which the melodic
+	 * channels never exercise. */
 	for ( i = 0; i < AKAO4_NUM_CHAN; ++i )
 	{
 		unsigned int pn;
@@ -1674,25 +1677,7 @@ static void sounddrv_probe_akao4( void )
 		   | ( (unsigned int)ram[AKAO4_HDR_TABLE + i * 2 + 1] << 8 );
 		an = ( AKAO4_DATA_ORIGIN + ( ( pn - data_start ) & 0xFFFF ) )
 		   & 0xFFFF;
-		sounddrv_walk_channel_akao4( ram, i, an, 32 );
-	}
-
-	/* Deep walk of channel 0 with a high step cap, to run past the first
-	 * phrase and reach the control-flow opcodes (loop_start/loop_end,
-	 * loop_break, end_track, jumps) that the shallow 32-step walks stop
-	 * short of. These are the opcodes a tick-driven sequencer must handle
-	 * correctly, and the ones we have the least confirmed FF6 data for, so
-	 * we want their real operands before designing loop-stack handling.
-	 * The walk still terminates early at end_track or an unknown opcode. */
-	{
-		unsigned int p0;
-		unsigned int a0;
-		p0 = (unsigned int)ram[AKAO4_HDR_TABLE]
-		   | ( (unsigned int)ram[AKAO4_HDR_TABLE + 1] << 8 );
-		a0 = ( AKAO4_DATA_ORIGIN + ( ( p0 - data_start ) & 0xFFFF ) )
-		   & 0xFFFF;
-		fprintf( stderr, "[HLE:AKAO4] == deep walk channel 0 (cap 4096) ==\n" );
-		sounddrv_walk_channel_akao4( ram, 0, a0, 4096 );
+		sounddrv_walk_channel_akao4( ram, i, an, 4096 );
 	}
 }
 
