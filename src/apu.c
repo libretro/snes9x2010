@@ -1573,6 +1573,21 @@ int sounddrv_hle_driver = SOUNDDRV_AKAO4; /* first target; detection TODO */
 
 static unsigned int sounddrv_last_dstart = 0xFFFFFFFF; /* header signature  */
 
+/* Predicted KON-mask sequence, filled by the sequencer at probe time, then
+ * compared against the live driver's KON masks as they arrive. This is the
+ * standing self-check that the sequencer's timing model matches the real
+ * driver: each live KON is checked against the next predicted mask, and a
+ * running verdict is logged. The buffer holds the song's first pass; once
+ * the live stream loops past the end of the prediction (we don't model
+ * loops yet), comparison simply stops. */
+#define AKAO4_PRED_MAX 1024
+static unsigned char sounddrv_pred_kon[AKAO4_PRED_MAX];
+static int           sounddrv_pred_count = 0;  /* predicted masks stored    */
+static int           sounddrv_pred_cursor = 0; /* next predicted to compare */
+static int           sounddrv_cmp_ok = 0;      /* live KONs matched so far  */
+static int           sounddrv_cmp_bad = 0;     /* live KONs mismatched      */
+static int           sounddrv_cmp_anchored = 0;/* cursor aligned to live yet */
+
 /* Raw hex dump of an APU-RAM region, for eyeballing structure directly
  * (independent of any pointer-table interpretation). */
 static void sounddrv_dump_region( unsigned int base, int rows )
@@ -1917,6 +1932,14 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 	int tick;
 	int live;
 
+	/* Fresh prediction for this song: clear the compare buffer and reset
+	 * the live-comparison cursor and tallies. */
+	sounddrv_pred_count  = 0;
+	sounddrv_pred_cursor = 0;
+	sounddrv_cmp_ok      = 0;
+	sounddrv_cmp_bad     = 0;
+	sounddrv_cmp_anchored = 0;
+
 	/* Resolve each channel's start using the same relative-pointer rule
 	 * the walks use, and mark every channel as needing immediate service
 	 * (rem = 0) so tick 0 primes them all. */
@@ -2025,8 +2048,13 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 			fprintf( stderr, "[HLE:AKAO4:SEQ] t%5d KOFF mask=%02X\n",
 			         tick, koff_mask );
 		if ( kon_mask != 0 )
+		{
 			fprintf( stderr, "[HLE:AKAO4:SEQ] t%5d KON  mask=%02X\n",
 			         tick, kon_mask );
+			if ( sounddrv_pred_count < AKAO4_PRED_MAX )
+				sounddrv_pred_kon[sounddrv_pred_count++] =
+				  (unsigned char)kon_mask;
+		}
 
 		if ( !live )
 			break;
@@ -2129,6 +2157,64 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 	if ( addr == R_KON || addr == R_KOFF )
 	{
 		fprintf( stderr, "[HLE:%s] %-4s mask=%02X\n", drv, name, data );
+
+		/* Standing self-check: compare each live KON against the
+		 * predicted mask sequence from the sequencer. Ordering is
+		 * tempo-independent, so this validates the timing model without
+		 * any tempo->rate conversion.
+		 *
+		 * The prediction always starts at the song's tick 0, but the
+		 * live stream we compare against may begin partway in (the KON
+		 * that triggered the probe, plus any playback already in
+		 * progress, precede us). So we don't assume index-0 alignment:
+		 * the first live KON anchors the cursor by locating that mask in
+		 * the prediction, and subsequent KONs compare forward from
+		 * there. Comparison runs until the live stream loops past the
+		 * end of the prediction (loops are not modelled yet). */
+		if ( addr == R_KON && sounddrv_hle_driver == SOUNDDRV_AKAO4
+		     && sounddrv_pred_count > 0 )
+		{
+			if ( !sounddrv_cmp_anchored )
+			{
+				int s;
+				for ( s = 0; s < sounddrv_pred_count; ++s )
+				{
+					if ( sounddrv_pred_kon[s] == data )
+					{
+						sounddrv_pred_cursor = s;
+						sounddrv_cmp_anchored = 1;
+						break;
+					}
+				}
+				if ( sounddrv_cmp_anchored )
+				{
+					sounddrv_pred_cursor++;
+					sounddrv_cmp_ok++;
+					fprintf( stderr,
+					  "[HLE:AKAO4:CMP] anchored live KON %02X at "
+					  "predicted index %d\n", data, s );
+				}
+			}
+			else if ( sounddrv_pred_cursor < sounddrv_pred_count )
+			{
+				unsigned char want;
+				want = sounddrv_pred_kon[sounddrv_pred_cursor++];
+				if ( want == data )
+					sounddrv_cmp_ok++;
+				else
+				{
+					sounddrv_cmp_bad++;
+					fprintf( stderr,
+					  "[HLE:AKAO4:CMP] mismatch at %d: live=%02X "
+					  "predicted=%02X\n",
+					  sounddrv_pred_cursor, data, want );
+				}
+				fprintf( stderr,
+				  "[HLE:AKAO4:CMP] %d/%d  ok=%d bad=%d\n",
+				  sounddrv_pred_cursor, sounddrv_pred_count,
+				  sounddrv_cmp_ok, sounddrv_cmp_bad );
+			}
+		}
 	}
 	else
 	{
