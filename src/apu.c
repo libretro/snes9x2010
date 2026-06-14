@@ -1557,21 +1557,19 @@ int sounddrv_hle_driver = SOUNDDRV_AKAO4; /* first target; detection TODO */
  *
  * Read-only inspection of the AKAO4 sequence structure that the driver has
  * already uploaded into APU RAM. For FF6 (AKAO4 rev3) the song header sits
- * at ARAM 0x1C24 (loveemu "ARAMBase"): eight little-endian 16-bit channel
- * track pointers, one per DSP voice.
- *
  * This does NOT drive audio and does NOT parse the sequence yet. It exists
  * so the captured ground-truth voice writes can be correlated with the
  * actual sequence layout in RAM -- the prerequisite for any later
- * prediction/diff. It dumps once per detected song start to avoid spam.
- *
- * NOTE: 0x1C24 / pointer-table layout is the documented FF6 case. If the
- * dumped pointers don't land in plausible sequence regions on a given ROM,
- * the table likely sits at a small offset from the base (some revisions
- * prefix a count/flags word) -- adjust AKAO4_HDR_BASE accordingly. This is
- * exactly the thing to confirm against a running FF6. */
-#define AKAO4_HDR_BASE   0x1C24
-#define AKAO4_NUM_CHAN   8
+ * prediction/diff. It dumps once per session on the first key-on. */
+/* AKAO4 song-header layout in APU RAM (resolved empirically from FF6):
+ *   HDR_DSTART: data_start word, data_end word (whole-song bounds)
+ *   HDR_TABLE : eight 16-bit channel pointers, RELATIVE to data_start
+ *   DATA_ORIGIN: ARAM address where the sequence data region begins
+ * A channel's first byte is at DATA_ORIGIN + (ptr - data_start). */
+#define AKAO4_HDR_DSTART   0x1C00
+#define AKAO4_HDR_TABLE    0x1C04
+#define AKAO4_DATA_ORIGIN  0x1C24
+#define AKAO4_NUM_CHAN     8
 
 static int sounddrv_song_active = 0; /* latches on first KON; fire-once    */
 
@@ -1605,37 +1603,57 @@ static void sounddrv_probe_akao4( void )
 {
 	const uint8_t *ram;
 	int i;
+	unsigned int data_start;
+	unsigned int data_end;
 
 	if ( dsp_m.ram == NULL )
 		return;
 	ram = dsp_m.ram;
 
-	/* The first capture showed that 0x1C24 is NOT a pointer table -- the
-	 * bytes there decode as a clean AKAO4 command stream (echo_volume,
-	 * program_change $20, set_pan, echo_on, set_tempo, ...). The actual
-	 * channel-pointer table appears to sit just before it (around 0x1C14),
-	 * holding 16-bit pointers that climb monotonically into an ~0x85xx
-	 * data region. Dump a wide window so the real header can be pinned
-	 * down, then interpret a candidate pointer table and follow each
-	 * pointer to confirm it lands on plausible sequence bytes. */
-	sounddrv_dump_region( 0x1C00, 8 );
+	/* Layout, fully resolved from captured FF6 RAM:
+	 *   0x1C00: data_start word, data_end word (whole-song data bounds)
+	 *   0x1C04: eight channel pointers
+	 *   0x1C14: a second identical copy of the channel pointers
+	 *   0x1C24: sequence data region begins
+	 *
+	 * The channel pointers are RELATIVE to data_start, not absolute ARAM
+	 * addresses. The real ARAM address of a channel's first byte is:
+	 *
+	 *     addr = AKAO4_DATA_ORIGIN + (ptr - data_start)
+	 *
+	 * Confirmed: channel 0's pointer equals data_start, resolving to
+	 * 0x1C24, which is exactly where the clean AKAO4 intro (echo_volume /
+	 * program_change $20 / set_pan / echo_on / set_tempo) lives. */
 
-	/* Candidate pointer table just below the old base. Interpret 8 little-
-	 * endian 16-bit entries and show where each points. Adjust the base
-	 * here once the raw window confirms the exact table location. */
-	fprintf( stderr, "[HLE:AKAO4] candidate ptr table @ 0x1C14:\n" );
+	data_start = (unsigned int)ram[AKAO4_HDR_DSTART]
+	           | ( (unsigned int)ram[AKAO4_HDR_DSTART + 1] << 8 );
+	data_end   = (unsigned int)ram[AKAO4_HDR_DSTART + 2]
+	           | ( (unsigned int)ram[AKAO4_HDR_DSTART + 3] << 8 );
+
+	/* Raw window over the header + start of data, for direct verification. */
+	sounddrv_dump_region( AKAO4_HDR_DSTART, 4 );
+
+	fprintf( stderr, "[HLE:AKAO4] data_start=%04X data_end=%04X origin=%04X\n",
+	         data_start, data_end, AKAO4_DATA_ORIGIN );
+	fprintf( stderr, "[HLE:AKAO4] channel starts (resolved):\n" );
+
 	for ( i = 0; i < AKAO4_NUM_CHAN; ++i )
 	{
 		unsigned int a;
 		unsigned int p;
+		unsigned int addr;
 		int j;
 
-		a = 0x1C14 + (unsigned int)( i * 2 );
+		a = AKAO4_HDR_TABLE + (unsigned int)( i * 2 );
 		p = (unsigned int)ram[a] | ( (unsigned int)ram[a + 1] << 8 );
+		addr = ( AKAO4_DATA_ORIGIN + ( ( p - data_start ) & 0xFFFF ) )
+		     & 0xFFFF;
 
-		fprintf( stderr, "[HLE:AKAO4]   [%d] @%04X = %04X ->", i, a, p );
-		for ( j = 0; j < 8; ++j )
-			fprintf( stderr, " %02X", ram[( p + (unsigned int)j ) & 0xFFFF] );
+		fprintf( stderr, "[HLE:AKAO4]   ch%d ptr=%04X -> ARAM %04X :",
+		         i, p, addr );
+		for ( j = 0; j < 10; ++j )
+			fprintf( stderr, " %02X",
+			         ram[( addr + (unsigned int)j ) & 0xFFFF] );
 		fprintf( stderr, "\n" );
 	}
 }
