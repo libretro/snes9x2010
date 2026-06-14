@@ -329,9 +329,21 @@ typedef struct {
 	int  frac;          /* fractional position into the source (0..0xFFF)*/
 	int  cur, prev;     /* current and previous source samples         */
 	int  primed;        /* cur/prev have been filled                   */
+	/* Amplitude envelope. A simple linear ADSR scaled to the same
+	 * 0..0x7FF range the hardware envelope uses, so the level multiplies
+	 * the sample the same way (out = sample * env >> 11). Not the exact
+	 * hardware rate tables -- a clean attack/release that keeps notes
+	 * click-free, which is what the enhancement needs when the sequencer
+	 * keys notes on and off. env_phase: 0 attack, 1 sustain, 2 release. */
+	int  env;           /* current level 0..0x7FF                      */
+	int  env_phase;     /* 0 = attack, 1 = sustain, 2 = release        */
+	int  atk_rate;      /* level units added per output sample (attack)*/
+	int  rel_rate;      /* level units removed per output sample (rel) */
+	int  sustain;       /* sustain level the attack ramps up to        */
 } hle_brr_voice;
 
 static hle_brr_voice sounddrv_poc_voice;
+static unsigned int  sounddrv_poc_clock = 0; /* PoC note-cycle counter */
 
 /* Decode one 9-byte BRR block at v->brr_addr into v->blk[0..15], advancing
  * brr_addr and handling end/loop via the block header's low two bits.
@@ -438,6 +450,16 @@ static void hle_brr_start( hle_brr_voice *v, int srcn, int pitch )
 	v->cur        = 0;
 	v->prev       = 0;
 	v->primed     = 0;
+	/* Envelope: start silent, attack up to a near-full sustain. Rates are
+	 * chosen for a quick but click-free attack (~3 ms) and a short release
+	 * (~15 ms) at the 32 kHz output rate. */
+	v->env        = 0;
+	v->env_phase  = 0;            /* attack */
+	v->sustain    = 0x700;        /* near full (max 0x7FF)              */
+	v->atk_rate   = 0x700 / 96;   /* reach sustain in ~96 samples (~3ms)*/
+	v->rel_rate   = 0x700 / 480;  /* fall to zero in ~480 samples(~15ms)*/
+	if ( v->atk_rate < 1 ) v->atk_rate = 1;
+	if ( v->rel_rate < 1 ) v->rel_rate = 1;
 	v->active     = 1;
 }
 
@@ -491,7 +513,40 @@ static int hle_brr_next_sample( hle_brr_voice *v )
 
 	/* Linear interpolation between prev and cur at the fractional pos. */
 	out = v->prev + ( ( ( v->cur - v->prev ) * v->frac ) >> 12 );
+
+	/* Advance the amplitude envelope and scale the sample by it. Attack
+	 * ramps up to the sustain level, then holds; release ramps to zero and
+	 * deactivates the voice when it reaches silence. */
+	if ( v->env_phase == 0 )            /* attack */
+	{
+		v->env += v->atk_rate;
+		if ( v->env >= v->sustain )
+		{
+			v->env = v->sustain;
+			v->env_phase = 1;           /* -> sustain */
+		}
+	}
+	else if ( v->env_phase == 2 )       /* release */
+	{
+		v->env -= v->rel_rate;
+		if ( v->env <= 0 )
+		{
+			v->env = 0;
+			v->active = 0;              /* fully released: stop */
+		}
+	}
+	/* phase 1 (sustain): env held constant */
+
+	out = ( out * v->env ) >> 11;
 	return out;
+}
+
+/* Begin the release phase: the voice ramps to silence and then stops. Used
+ * when the sequencer keys a note off (or starts a new note on the voice). */
+static void hle_brr_keyoff( hle_brr_voice *v )
+{
+	if ( v->active )
+		v->env_phase = 2;
 }
 
 
@@ -1046,15 +1101,22 @@ static INLINE void dsp_echo_27 (void)
 
 	/* HLE enhancement injection point. The original eight voices are fully
 	 * mixed into l/r above. The PoC extra voice decodes one real BRR sample
-	 * from ARAM and sums it in, proving the ARAM-BRR read+decode path. It is
-	 * started once (on the first enabled sample) on a fixed sample number
-	 * that FF6 actually uses; sequencer control of which sample/when comes
-	 * later. CLAMP16 guards the sum. */
+	 * from ARAM, pitches it, and shapes it with an amplitude envelope. To
+	 * exercise the envelope it plays a repeating note: key on, hold, then
+	 * key off (triggering the release ramp), pause, and retrigger. This
+	 * fixed cycling is PoC scaffolding; the sequencer will key notes for
+	 * real next. CLAMP16 guards the sum. */
 	if ( sounddrv_hle_enhance )
 	{
 		int s;
-		if ( !sounddrv_poc_voice.active )
+		/* ~32 kHz output: 16000 samples = ~0.5 s. Note on for the first
+		 * 12000, released after, retriggered every 20000. */
+		unsigned int t = sounddrv_poc_clock % 20000;
+		sounddrv_poc_clock++;
+		if ( t == 0 )
 			hle_brr_start( &sounddrv_poc_voice, 0x20, 0x1000 );
+		else if ( t == 12000 )
+			hle_brr_keyoff( &sounddrv_poc_voice );
 		s = hle_brr_next_sample( &sounddrv_poc_voice );
 		/* the sample is full-scale; scale down so it sits under the music */
 		s = ( s >> 2 );
