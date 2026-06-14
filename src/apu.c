@@ -1599,6 +1599,9 @@ static void sounddrv_dump_region( unsigned int base, int rows )
 	}
 }
 
+static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
+                                         unsigned int start );
+
 static void sounddrv_probe_akao4( void )
 {
 	const uint8_t *ram;
@@ -1656,6 +1659,183 @@ static void sounddrv_probe_akao4( void )
 			         ram[( addr + (unsigned int)j ) & 0xFFFF] );
 		fprintf( stderr, "\n" );
 	}
+
+	/* Walk channel 0 to verify the bytecode parses cleanly end to end. */
+	{
+		unsigned int p0;
+		unsigned int a0;
+		p0 = (unsigned int)ram[AKAO4_HDR_TABLE]
+		   | ( (unsigned int)ram[AKAO4_HDR_TABLE + 1] << 8 );
+		a0 = ( AKAO4_DATA_ORIGIN + ( ( p0 - data_start ) & 0xFFFF ) )
+		   & 0xFFFF;
+		sounddrv_walk_channel_akao4( ram, 0, a0 );
+	}
+}
+
+/* AKAO4 command opcode byte-lengths, indexed by (opcode - 0xC4), covering
+ * 0xC4..0xFF. Bytes below 0xC4 are notes (1 byte each: packed key+duration).
+ * Lengths and mnemonics from the mfvitools AKAO4 bytecode reference. A
+ * length of 0 marks an opcode we don't have a confirmed length for; the
+ * walker stops there rather than guessing and desyncing. */
+#define AKAO4_CMD_BASE  0xC4
+
+static const unsigned char akao4_cmd_len[0x100 - AKAO4_CMD_BASE] = {
+	/* C4 */ 2, /* C5 */ 3, /* C6 */ 2, /* C7 */ 3,
+	/* C8 */ 3, /* C9 */ 4, /* CA */ 1, /* CB */ 4,
+	/* CC */ 1, /* CD */ 3, /* CE */ 1, /* CF */ 0,
+	/* D0 */ 0, /* D1 */ 0, /* D2 */ 1, /* D3 */ 1,
+	/* D4 */ 1, /* D5 */ 1, /* D6 */ 2, /* D7 */ 1,
+	/* D8 */ 1, /* D9 */ 2, /* DA */ 2, /* DB */ 2,
+	/* DC */ 2, /* DD */ 2, /* DE */ 2, /* DF */ 2,
+	/* E0 */ 2, /* E1 */ 1, /* E2 */ 2, /* E3 */ 1,
+	/* E4 */ 1, /* E5 */ 1, /* E6 */ 1, /* E7 */ 1,
+	/* E8 */ 2, /* E9 */ 0, /* EA */ 0, /* EB */ 1,
+	/* EC */ 0, /* ED */ 0, /* EE */ 0, /* EF */ 0,
+	/* F0 */ 2, /* F1 */ 3, /* F2 */ 2, /* F3 */ 3,
+	/* F4 */ 2, /* F5 */ 4, /* F6 */ 3, /* F7 */ 3,
+	/* F8 */ 3, /* F9 */ 0, /* FA */ 0, /* FB */ 0,
+	/* FC */ 3, /* FD */ 0, /* FE */ 0, /* FF */ 0
+};
+
+static const char *akao4_cmd_name( unsigned char op )
+{
+	switch ( op )
+	{
+		case 0xC4: return "set_volume";
+		case 0xC5: return "volume_fade";
+		case 0xC6: return "set_pan";
+		case 0xC7: return "pan_fade";
+		case 0xC8: return "pitch_slide";
+		case 0xC9: return "vibrato";
+		case 0xCA: return "vibrato_off";
+		case 0xCB: return "tremolo";
+		case 0xCC: return "tremolo_off";
+		case 0xCD: return "pansweep";
+		case 0xCE: return "pansweep_off";
+		case 0xD2: return "pitchmod_on";
+		case 0xD3: return "pitchmod_off";
+		case 0xD4: return "echo_on";
+		case 0xD5: return "echo_off";
+		case 0xD6: return "set_octave";
+		case 0xD7: return "octave_up";
+		case 0xD8: return "octave_down";
+		case 0xD9: return "set_transpose";
+		case 0xDA: return "add_transpose";
+		case 0xDB: return "set_detune";
+		case 0xDC: return "program_change";
+		case 0xDD: return "adsr_attack";
+		case 0xDE: return "adsr_decay";
+		case 0xDF: return "adsr_sustain";
+		case 0xE0: return "adsr_release";
+		case 0xE1: return "adsr_reset";
+		case 0xE2: return "loop_start";
+		case 0xE3: return "loop_end";
+		case 0xE4: return "legato_on";
+		case 0xE5: return "legato_off";
+		case 0xE6: return "gapless_on";
+		case 0xE7: return "gapless_off";
+		case 0xE8: return "set_note_dur";
+		case 0xEB: return "end_track";
+		case 0xF0: return "set_tempo";
+		case 0xF1: return "tempo_fade";
+		case 0xF2: return "echo_volume";
+		case 0xF3: return "echo_volume_fade";
+		case 0xF4: return "master_volume";
+		case 0xF5: return "loop_break";
+		case 0xF6: return "hard_jump";
+		case 0xF7: return "echo_feedback";
+		case 0xF8: return "echo_fir_mode";
+		case 0xFC: return "cond_jump_section";
+		default:   return "(unknown)";
+	}
+}
+
+/* Note duration table (ticks), indexed by the duration index packed into a
+ * note byte. 14 durations x 14 keys = 196 = 0xC4 (the command base). */
+static const int akao4_dur_ticks[14] = {
+	192, 96, 72, 64, 48, 36, 32, 24, 16, 12, 8, 6, 4, 3
+};
+static const char *akao4_key_name[14] = {
+	"C", "C#", "D", "D#", "E", "F", "F#", "G",
+	"G#", "A", "A#", "B", "rest", "tie"
+};
+
+/* Statically walk one channel's AKAO4 bytecode from its resolved ARAM
+ * start, printing each decoded note/command. Read-only static decode: it
+ * follows linear flow, stops at end_track / an unknown opcode / a revisit,
+ * and caps total steps so a malformed stream can't loop forever. This is
+ * NOT a tick-accurate sequencer -- it confirms the bytecode parses cleanly
+ * and shows the channel's musical content, the basis for a later predictor
+ * that diffs against the live voice writes. */
+static void sounddrv_walk_channel_akao4( const uint8_t *ram, int ch,
+                                         unsigned int start )
+{
+	unsigned int pos;
+	int steps;
+
+	pos = start & 0xFFFF;
+	steps = 0;
+
+	fprintf( stderr, "[HLE:AKAO4] -- channel %d walk @ %04X --\n", ch, pos );
+
+	while ( steps < 64 )
+	{
+		unsigned char b;
+
+		b = ram[pos];
+		steps++;
+
+		if ( b < AKAO4_CMD_BASE )
+		{
+			int dur;
+			int key;
+
+			dur = b / 14;
+			key = b % 14;
+			if ( dur >= 14 )
+			{
+				fprintf( stderr, "[HLE:AKAO4]   %04X bad note %02X\n",
+				         pos, b );
+				return;
+			}
+			fprintf( stderr, "[HLE:AKAO4]   %04X note %-4s %3d\n",
+			         pos, akao4_key_name[key], akao4_dur_ticks[dur] );
+			pos = ( pos + 1 ) & 0xFFFF;
+		}
+		else
+		{
+			unsigned char len;
+
+			len = akao4_cmd_len[b - AKAO4_CMD_BASE];
+			if ( len == 0 )
+			{
+				fprintf( stderr,
+				         "[HLE:AKAO4]   %04X stop: opcode %02X no length\n",
+				         pos, b );
+				return;
+			}
+			fprintf( stderr, "[HLE:AKAO4]   %04X cmd  %02X %-16s",
+			         pos, b, akao4_cmd_name( b ) );
+			if ( len > 1 )
+			{
+				int k;
+				fprintf( stderr, " [" );
+				for ( k = 1; k < len; ++k )
+					fprintf( stderr, "%02X%s", ram[( pos + k ) & 0xFFFF],
+					         ( k + 1 < len ) ? " " : "" );
+				fprintf( stderr, "]" );
+			}
+			fprintf( stderr, "\n" );
+
+			if ( b == 0xEB ) /* end_track */
+			{
+				fprintf( stderr, "[HLE:AKAO4]   end of channel %d\n", ch );
+				return;
+			}
+			pos = ( pos + len ) & 0xFFFF;
+		}
+	}
+	fprintf( stderr, "[HLE:AKAO4]   channel %d: step cap reached\n", ch );
 }
 
 static const char *sounddrv_name( int id )
