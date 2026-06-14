@@ -1588,6 +1588,13 @@ static int           sounddrv_cmp_ok = 0;      /* live KONs matched so far  */
 static int           sounddrv_cmp_bad = 0;     /* live KONs mismatched      */
 static int           sounddrv_cmp_anchored = 0;/* cursor aligned to live yet */
 
+/* Free-running SPC-cycle clock, accumulated per frame in spc_end_frame, so
+ * each live KON can be timestamped on a monotonic axis. Used only to measure
+ * the real inter-KON tick spacing for diagnosing the sequencer's timing
+ * model; not part of audio output. */
+static long          sounddrv_spc_clock = 0;
+static long          sounddrv_last_kon_clock = -1;
+
 /* Raw hex dump of an APU-RAM region, for eyeballing structure directly
  * (independent of any pointer-table interpretation). */
 static void sounddrv_dump_region( unsigned int base, int rows )
@@ -2207,6 +2214,21 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 	if ( addr == R_KON || addr == R_KOFF )
 	{
 		fprintf( stderr, "[HLE:%s] %-4s mask=%02X\n", drv, name, data );
+
+		/* Timestamp live KONs with the cumulative SPC clock and the
+		 * cycle delta since the previous KON, so the real inter-key-on
+		 * spacing can be measured against the sequencer's note
+		 * durations. */
+		if ( addr == R_KON )
+		{
+			long delta;
+			delta = ( sounddrv_last_kon_clock < 0 ) ? 0
+			      : ( sounddrv_spc_clock - sounddrv_last_kon_clock );
+			fprintf( stderr,
+			  "[HLE:AKAO4:TIME] KON mask=%02X clock=%ld dclk=%ld\n",
+			  data, sounddrv_spc_clock, delta );
+			sounddrv_last_kon_clock = sounddrv_spc_clock;
+		}
 
 		/* Standing self-check: compare each live KON against the
 		 * predicted mask sequence from the sequencer. Ordering is
@@ -3725,6 +3747,11 @@ stop:
 static void spc_end_frame( int end_time )
 {
 	int i;
+
+	/* Advance the free-running clock by this frame's cycle span, for
+	 * timestamping live KON events on a monotonic axis. */
+	sounddrv_spc_clock += end_time;
+
 	/* Catch CPU up to as close to end as possible. If final instruction
 	   would exceed end, does NOT execute it and leaves m.spc_time < end. */
 
