@@ -1932,11 +1932,16 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 		ch[i].ended  = 0;
 	}
 
-	fprintf( stderr, "[HLE:AKAO4:SEQ] == tick sequence (key-on order) ==\n" );
+	fprintf( stderr, "[HLE:AKAO4:SEQ] == tick sequence (per-tick KON/KOFF masks) ==\n" );
 
 	for ( tick = 0; tick < AKAO4_SEQ_TICK_BUDGET; ++tick )
 	{
-		live = 0;
+		int kon_mask;
+		int koff_mask;
+
+		live     = 0;
+		kon_mask = 0;
+		koff_mask = 0;
 
 		for ( i = 0; i < AKAO4_NUM_CHAN; ++i )
 		{
@@ -1952,9 +1957,9 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 			}
 
 			/* Note expired: execute commands until the next timed
-			 * event (note / rest / tie), then emit and reload. A small
-			 * inner cap prevents an all-command channel from spinning
-			 * forever within a single tick. */
+			 * event (note / rest / tie), then accumulate the event into
+			 * this tick's mask and reload. A small inner cap prevents an
+			 * all-command channel from spinning forever within a tick. */
 			{
 				int guard;
 				for ( guard = 0; guard < 256 && !ch[i].ended; ++guard )
@@ -1978,20 +1983,9 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 						ch[i].rem = akao4_dur_ticks[dur];
 
 						if ( key < 12 )
-						{
-							/* a real note: predicted key-on for voice i */
-							fprintf( stderr,
-							  "[HLE:AKAO4:SEQ] t%5d v%d KON  %-2s dur=%d\n",
-							  tick, i, akao4_key_name[key],
-							  akao4_dur_ticks[dur] );
-						}
+							kon_mask  |= ( 1 << i );  /* note: key-on  */
 						else if ( key == 12 )
-						{
-							/* rest: predicted key-off for voice i */
-							fprintf( stderr,
-							  "[HLE:AKAO4:SEQ] t%5d v%d KOFF   dur=%d\n",
-							  tick, i, akao4_dur_ticks[dur] );
-						}
+							koff_mask |= ( 1 << i );  /* rest: key-off */
 						/* key == 13 is a tie: hold, emit nothing */
 						break;
 					}
@@ -2021,6 +2015,18 @@ static void sounddrv_seq_akao4( const uint8_t *ram, unsigned int data_start )
 				}
 			}
 		}
+
+		/* Emit one line per tick that produced events, in the same
+		 * mask=XX vocabulary the live driver log uses, so the predicted
+		 * key-on order can be diffed directly against the live KON masks.
+		 * KOFF is emitted before KON within a tick, matching the driver's
+		 * convention of releasing voices before re-keying them. */
+		if ( koff_mask != 0 )
+			fprintf( stderr, "[HLE:AKAO4:SEQ] t%5d KOFF mask=%02X\n",
+			         tick, koff_mask );
+		if ( kon_mask != 0 )
+			fprintf( stderr, "[HLE:AKAO4:SEQ] t%5d KON  mask=%02X\n",
+			         tick, kon_mask );
 
 		if ( !live )
 			break;
