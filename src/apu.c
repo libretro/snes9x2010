@@ -1192,15 +1192,40 @@ static INLINE void dsp_echo_27 (void)
 	{
 		int s;
 		int vi;
+		int steal;
+		int nsteal;
+		/* Music-under-SFX policy. FF6's AKAO4 driver steals high DSP
+		 * voices for sound effects, dropping whatever music note that
+		 * channel was playing. The steal mask lives at ARAM $83|$84,
+		 * one bit per voice (bit N = voice N). We always advance every
+		 * shadow driver so its sequencer position stays correct, but we
+		 * only MIX a shadow voice while its channel is actually stolen --
+		 * filling the dropped music note -- and stay silent otherwise so
+		 * we never double a voice the hardware is already sounding. */
+		steal = 0;
+		if ( dsp_m.ram != NULL )
+			steal = dsp_m.ram[ 0x83 ] | dsp_m.ram[ 0x84 ];
 		s = 0;
+		nsteal = 0;
 		for ( vi = 0; vi < HLE_VOICE_COUNT; ++vi )
 		{
+			int samp;
+			/* keep the sequencer running regardless of steal state */
 			hle_seq_driver_advance( &sounddrv_drv[vi],
 			                        &sounddrv_voices[vi] );
-			s += hle_brr_next_sample( &sounddrv_voices[vi] );
+			samp = hle_brr_next_sample( &sounddrv_voices[vi] );
+			if ( steal & ( 1 << vi ) )
+			{
+				s += samp;
+				++nsteal;
+			}
 		}
-		/* scale down: eight voices summed, keep headroom under the music */
-		s = ( s >> 3 );
+		/* Stolen voices fill in for muted hardware voices, so each should
+		 * sit near a normal voice's level rather than 1/8. Average across
+		 * the voices actually sounding (typically 1-2) to keep headroom
+		 * without over-attenuating. */
+		if ( nsteal > 1 )
+			s = s / nsteal;
 		l += s;
 		r += s;
 		CLAMP16( l );
