@@ -359,8 +359,8 @@ typedef struct {
 	 * for linear interpolation between them. */
 	int  pitch;         /* fixed-point step, 0x1000 = 1.0              */
 	int  frac;          /* fractional position into the source (0..0xFFF)*/
-	int  cur, prev;     /* current and previous source samples         */
-	int  primed;        /* cur/prev have been filled                   */
+	int  s4[4];         /* four most recent source samples (Gaussian window) */
+	int  primed;        /* s4 has been filled                          */
 	/* Amplitude envelope. A simple linear ADSR scaled to the same
 	 * 0..0x7FF range the hardware envelope uses, so the level multiplies
 	 * the sample the same way (out = sample * env >> 11). Not the exact
@@ -384,6 +384,12 @@ static hle_brr_voice sounddrv_voices[HLE_VOICE_COUNT];
  * multipliers; octave shifts halve/double around them. With note 11 (B)
  * mapping to 0x1000, this matches the extra voice's pitch convention
  * (0x1000 = the sample's native rate). */
+/* The 4-point Gaussian interpolation table (defined later, shared with the
+ * real DSP voices) -- forward-declared so the fill voice's resampler below
+ * can use the same windowed interpolation the hardware uses, instead of a
+ * crude linear blend that aliases and sounds harsh. */
+static const short gauss [512];
+
 static const int hle_note_pitch[12] = {
 	0x0879, 0x08FA, 0x0983, 0x0A14, 0x0AAD, 0x0B50,
 	0x0BFC, 0x0CB2, 0x0D74, 0x0E41, 0x0F1A, 0x1000
@@ -493,8 +499,10 @@ static void hle_brr_start( hle_brr_voice *v, int srcn, int pitch )
 	v->out_pos    = 0;
 	v->pitch      = pitch ? pitch : 0x1000;
 	v->frac       = 0;
-	v->cur        = 0;
-	v->prev       = 0;
+	v->s4[0]      = 0;
+	v->s4[1]      = 0;
+	v->s4[2]      = 0;
+	v->s4[3]      = 0;
 	v->primed     = 0;
 	/* Envelope: start silent, attack up to a near-full sustain. Rates are
 	 * chosen for a quick but click-free attack (~3 ms) and a short release
@@ -532,33 +540,55 @@ static int hle_brr_raw_sample( hle_brr_voice *v )
 static int hle_brr_next_sample( hle_brr_voice *v )
 {
 	int out;
+	int offset;
+	const short *fwd;
+	const short *rev;
 
 	if ( !v->active )
 		return 0;
 
-	/* Prime the two-sample interpolation window on first use. */
+	/* Prime the four-sample Gaussian window on first use. The window holds
+	 * s4[0..3] = oldest..newest; interpolation reads all four. */
 	if ( !v->primed )
 	{
-		v->prev = hle_brr_raw_sample( v );
-		v->cur  = hle_brr_raw_sample( v );
+		v->s4[0] = 0;
+		v->s4[1] = 0;
+		v->s4[2] = hle_brr_raw_sample( v );
+		v->s4[3] = hle_brr_raw_sample( v );
 		v->frac = 0;
 		v->primed = 1;
 	}
 
-	/* Advance the source position by the pitch step, pulling new source
-	 * samples for each whole-sample boundary crossed. */
+	/* Advance the source position by the pitch step, shifting a new source
+	 * sample into the window for each whole-sample boundary crossed. */
 	v->frac += v->pitch;
 	while ( v->frac >= 0x1000 )
 	{
 		v->frac -= 0x1000;
-		v->prev = v->cur;
-		v->cur  = hle_brr_raw_sample( v );
+		v->s4[0] = v->s4[1];
+		v->s4[1] = v->s4[2];
+		v->s4[2] = v->s4[3];
+		v->s4[3] = hle_brr_raw_sample( v );
 		if ( !v->active )
 			return 0;
 	}
 
-	/* Linear interpolation between prev and cur at the fractional pos. */
-	out = v->prev + ( ( ( v->cur - v->prev ) * v->frac ) >> 12 );
+	/* 4-point Gaussian interpolation, the same windowed filter the real
+	 * S-DSP uses (and the same gauss table), instead of a linear blend.
+	 * Linear interpolation passes a lot of aliased high-frequency energy,
+	 * which is what made the fill sound harsh/"8-bit"; the Gaussian window
+	 * rolls that off the way the hardware does. The fractional position
+	 * frac (0..0xFFF) indexes the table exactly as interp_pos>>4 does for
+	 * the real voices (frac>>4 gives the 0..0xFF table offset). */
+	offset = ( v->frac >> 4 ) & 0xFF;
+	fwd = gauss + 255 - offset;
+	rev = gauss + offset;
+	out  = ( fwd[  0] * v->s4[0] ) >> 11;
+	out += ( fwd[256] * v->s4[1] ) >> 11;
+	out += ( rev[256] * v->s4[2] ) >> 11;
+	out  = (int16_t) out;
+	out += ( rev[  0] * v->s4[3] ) >> 11;
+	CLAMP16( out );
 
 	/* Advance the amplitude envelope and scale the sample by it. Attack
 	 * ramps up to the sustain level, then holds; release ramps to zero and
