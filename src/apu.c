@@ -2251,7 +2251,9 @@ static void hle_seq_driver_tick( hle_seq_driver *d, hle_brr_voice *v )
 				break;
 			}
 			if ( b == 0xDC )       /* program_change -> SRCN */
+			{
 				d->srcn = ram[( d->pos + 1 ) & 0xFFFF];
+			}
 			else if ( b == 0xD6 )  /* set_octave */
 				d->octave = ram[( d->pos + 1 ) & 0xFFFF];
 			else if ( b == 0xD7 )  /* octave_up */
@@ -2270,11 +2272,17 @@ static void hle_seq_driver_tick( hle_seq_driver *d, hle_brr_voice *v )
 				if ( d->loop_sp < AKAO4_LOOP_DEPTH )
 				{
 					int sp;
+					int cnt;
 					sp = d->loop_sp;
 					d->loop_pos[sp] =
 					  ( d->pos + 2 ) & 0xFFFF;
-					d->loop_cnt[sp] =
-					  ram[( d->pos + 1 ) & 0xFFFF];
+					/* AKAO4: the parameter byte is "loop count - 1",
+					 * so the loop body runs byte+1 times. A byte of 0
+					 * means an infinite loop (the real driver never
+					 * decrements it to exit). Store the iteration count
+					 * directly; 0 is the infinite sentinel. */
+					cnt = ram[( d->pos + 1 ) & 0xFFFF];
+					d->loop_cnt[sp] = ( cnt == 0 ) ? 0 : ( cnt + 1 );
 					d->loop_sp++;
 				}
 				d->pos = ( d->pos + len ) & 0xFFFF;
@@ -2286,6 +2294,12 @@ static void hle_seq_driver_tick( hle_seq_driver *d, hle_brr_voice *v )
 				{
 					int sp;
 					sp = d->loop_sp - 1;
+					if ( d->loop_cnt[sp] == 0 )
+					{
+						/* infinite loop: always jump back */
+						d->pos = d->loop_pos[sp];
+						continue;
+					}
 					d->loop_cnt[sp]--;
 					if ( d->loop_cnt[sp] > 0 )
 					{
