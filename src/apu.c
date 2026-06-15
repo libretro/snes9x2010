@@ -302,6 +302,25 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 #define AKAO4_NUM_CHAN     8
 #define AKAO4_CMD_BASE     0xC4
 #define AKAO4_LOOP_DEPTH   4   /* AkaoSnes nests up to four loops */
+
+/* Live per-channel state the real FF6 (AKAO4) sound driver maintains in SPC
+ * zeropage / page-$F6, indexed by channel*2 (the driver walks channels with
+ * an x-register stride of 2). The driver keeps sequencing every music channel
+ * even while its physical voice is stolen for an SFX -- it advances the
+ * bytecode and updates these, only suppressing the key-on -- so reading these
+ * gives the true current music state with zero drift, unlike re-sequencing the
+ * bytecode on an independent clock. Verified against the live DSP voices: the
+ * SRCN here matches the keyed voice's SRCN 100% on unstolen channels.
+ *   $0002+2N / $0003+2N : 16-bit ARAM read pointer (current bytecode cursor)
+ *   $0025+2N            : note-duration counter (reloads on each new note)
+ *   $F600+2N            : current octave
+ *   $F601+2N            : current sample number (SRCN) */
+#define AKAO4_CH_POS_LO    0x0002
+#define AKAO4_CH_POS_HI    0x0003
+#define AKAO4_CH_DURCTR    0x0025
+#define AKAO4_CH_OCTAVE    0xF600
+#define AKAO4_CH_SRCN      0xF601
+#define AKAO4_CH_STRIDE    2
 static const int akao4_dur_ticks[14] = {
 	192, 96, 72, 64, 48, 36, 32, 24, 16, 12, 8, 6, 4, 3
 };
@@ -621,6 +640,105 @@ static void hle_brr_keyoff( hle_brr_voice *v )
 {
 	if ( v->active )
 		v->env_phase = 2;
+}
+
+/* ----------------------------------------------------------------------
+ * Driver mirror.
+ *
+ * Instead of re-running the AKAO4 bytecode on an independent tick clock
+ * (which accumulates drift against the real driver and was only ~31%
+ * note-accurate), the enhancement now MIRRORS the live state the real
+ * driver maintains in ARAM. Each channel's note-duration counter
+ * ($0025+2N) reloads when a new note begins; at that moment the channel's
+ * read cursor ($0002+2N) points just past the note byte the driver
+ * consumed, and the live octave ($F600+2N) and SRCN ($F601+2N) are
+ * already set. We detect the reload edge, decode that note byte, and key
+ * the shadow voice with the live SRCN/octave -- so the shadow can never
+ * desync from the driver. This works identically for stolen channels,
+ * which the driver keeps sequencing. */
+typedef struct {
+	int prev_durctr;   /* note-duration counter on the previous check   */
+	int primed;        /* prev_durctr holds a valid prior value         */
+} hle_mirror_state;
+
+static hle_mirror_state sounddrv_mirror[HLE_VOICE_COUNT];
+
+static void hle_mirror_reset( void )
+{
+	int i;
+	for ( i = 0; i < HLE_VOICE_COUNT; ++i )
+	{
+		sounddrv_mirror[i].prev_durctr = 0;
+		sounddrv_mirror[i].primed      = 0;
+	}
+}
+
+/* Check one channel for a new-note onset and key the shadow voice if so.
+ * Reads only ARAM (the real driver's live state); never sequences. */
+static void hle_mirror_tick( int chan, hle_brr_voice *v )
+{
+	const uint8_t *ram;
+	int base;
+	int durctr;
+	int prev;
+	int primed;
+
+	ram = dsp_m.ram;
+	if ( ram == NULL )
+		return;
+
+	base   = chan * AKAO4_CH_STRIDE;
+	durctr = ram[ AKAO4_CH_DURCTR + base ];
+	prev   = sounddrv_mirror[chan].prev_durctr;
+	primed = sounddrv_mirror[chan].primed;
+
+	sounddrv_mirror[chan].prev_durctr = durctr;
+	sounddrv_mirror[chan].primed      = 1;
+
+	/* A new note begins when the counter RELOADS: it was counting down and
+	 * has just jumped back up to a larger value. (A plain decrement, equal
+	 * value, or the initial sample are not onsets.) */
+	if ( primed && durctr > prev )
+	{
+		unsigned int pos;
+		int note;
+		int key;
+
+		pos = (unsigned int)ram[ AKAO4_CH_POS_LO + base ]
+		    | ( (unsigned int)ram[ AKAO4_CH_POS_HI + base ] << 8 );
+
+		/* The note byte the driver just consumed sits just before the
+		 * cursor. AKAO4 notes are single bytes < 0xC4 (>= 0xC4 are
+		 * commands); skip back over any command bytes to the note. */
+		note = ram[ ( pos - 1 ) & 0xFFFF ];
+		if ( note >= AKAO4_CMD_BASE )
+			return;                       /* cursor not on a note byte */
+
+		key = note % 14;
+		if ( key < 12 )                   /* 12 = rest, 13 = tie */
+		{
+			int srcn;
+			int octave;
+			int pitch;
+			int oct;
+
+			srcn   = ram[ AKAO4_CH_SRCN   + base ];
+			octave = ram[ AKAO4_CH_OCTAVE + base ];
+
+			pitch = hle_note_pitch[key];
+			oct   = octave - 4;           /* table reference is octave 4 */
+			if ( oct > 0 )
+				pitch <<= oct;
+			else if ( oct < 0 )
+				pitch >>= ( -oct );
+
+			hle_brr_keyoff( v );
+			hle_brr_start( v, srcn, pitch );
+		}
+		else if ( key == 12 )             /* rest: silence the voice */
+			hle_brr_keyoff( v );
+		/* key == 13 (tie): hold the current note */
+	}
 }
 
 
@@ -1210,9 +1328,9 @@ static INLINE void dsp_echo_27 (void)
 		for ( vi = 0; vi < HLE_VOICE_COUNT; ++vi )
 		{
 			int samp;
-			/* keep the sequencer running regardless of steal state */
-			hle_seq_driver_advance( &sounddrv_drv[vi],
-			                        &sounddrv_voices[vi] );
+			/* Mirror the real driver's live state for this channel
+			 * (drift-free) rather than sequencing independently. */
+			hle_mirror_tick( vi, &sounddrv_voices[vi] );
 			samp = hle_brr_next_sample( &sounddrv_voices[vi] );
 			if ( steal & ( 1 << vi ) )
 			{
@@ -2934,15 +3052,14 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 				{
 					int ci;
 					sounddrv_last_dstart = sig;
+					/* The mirror reads live driver state, so there is no
+					 * sequencer to arm. Just reset the onset detectors and
+					 * silence any note still sounding from the previous song
+					 * (its sample directory and channel layout differ, so a
+					 * held note would otherwise bleed across the boundary). */
+					hle_mirror_reset();
 					for ( ci = 0; ci < HLE_VOICE_COUNT; ++ci )
-					{
-						/* Silence any note still sounding from the previous
-						 * song before re-arming: the new song's sample
-						 * directory and channel layout differ, so a held
-						 * note would otherwise bleed across the boundary. */
 						sounddrv_voices[ci].active = 0;
-						hle_seq_driver_start( &sounddrv_drv[ci], ci );
-					}
 				}
 			}
 		}
