@@ -612,6 +612,9 @@ static void hle_brr_keyoff( hle_brr_voice *v )
 typedef struct {
 	int prev_durctr;   /* note-duration counter on the previous check   */
 	int primed;        /* prev_durctr holds a valid prior value         */
+	int vol_l;         /* last music VOL_L seen on this voice unstolen   */
+	int vol_r;         /* last music VOL_R seen on this voice unstolen   */
+	int have_vol;      /* a music volume has been captured              */
 } hle_mirror_state;
 
 static hle_mirror_state sounddrv_mirror[HLE_VOICE_COUNT];
@@ -623,6 +626,9 @@ static void hle_mirror_reset( void )
 	{
 		sounddrv_mirror[i].prev_durctr = 0;
 		sounddrv_mirror[i].primed      = 0;
+		sounddrv_mirror[i].vol_l       = 0;
+		sounddrv_mirror[i].vol_r       = 0;
+		sounddrv_mirror[i].have_vol    = 0;
 	}
 }
 
@@ -647,6 +653,24 @@ static void hle_mirror_tick( int chan, hle_brr_voice *v )
 
 	sounddrv_mirror[chan].prev_durctr = durctr;
 	sounddrv_mirror[chan].primed      = 1;
+
+	/* While this channel's physical voice is NOT stolen, the real DSP voice
+	 * is playing the music at its true mixed level. Snapshot that voice's
+	 * VOL_L/VOL_R so we can scale the fill to the same level (and stereo
+	 * pan) when the voice IS later stolen -- otherwise the raw BRR fill is
+	 * far louder than the note ever was, which sounds like distortion. The
+	 * SFX overwrites the shared VOL registers while stolen, so the last
+	 * unstolen value is the music's intended level. */
+	{
+		int stolen = ( ram[0x83] | ram[0x84] ) & ( 1 << chan );
+		if ( !stolen )
+		{
+			dsp_voice_t *rv = (dsp_voice_t*)&dsp_m.voices[chan];
+			sounddrv_mirror[chan].vol_l    = (signed char)rv->regs[V_VOLL];
+			sounddrv_mirror[chan].vol_r    = (signed char)rv->regs[V_VOLR];
+			sounddrv_mirror[chan].have_vol = 1;
+		}
+	}
 
 	/* A new note begins when the counter RELOADS: it was counting down and
 	 * has just jumped back up to a larger value. (A plain decrement, equal
@@ -1254,44 +1278,62 @@ static INLINE void dsp_echo_27 (void)
 	 * next. CLAMP16 guards the sum. */
 	if ( sounddrv_hle_enhance )
 	{
-		int s;
+		int sl;
+		int sr;
 		int vi;
 		int steal;
-		int nsteal;
+		int mvol_l;
+		int mvol_r;
 		/* Music-under-SFX policy. FF6's AKAO4 driver steals high DSP
 		 * voices for sound effects, dropping whatever music note that
 		 * channel was playing. The steal mask lives at ARAM $83|$84,
 		 * one bit per voice (bit N = voice N). We always advance every
-		 * shadow driver so its sequencer position stays correct, but we
-		 * only MIX a shadow voice while its channel is actually stolen --
+		 * shadow voice so its mirrored state stays correct, but we only
+		 * MIX a shadow voice while its channel is actually stolen --
 		 * filling the dropped music note -- and stay silent otherwise so
 		 * we never double a voice the hardware is already sounding. */
 		steal = 0;
 		if ( dsp_m.ram != NULL )
 			steal = dsp_m.ram[ 0x83 ] | dsp_m.ram[ 0x84 ];
-		s = 0;
-		nsteal = 0;
+		/* Master volume, applied exactly as the real DSP does (>>7). */
+		mvol_l = (int8_t)dsp_m.regs[ R_MVOLL ];
+		mvol_r = (int8_t)dsp_m.regs[ R_MVOLR ];
+		sl = 0;
+		sr = 0;
 		for ( vi = 0; vi < HLE_VOICE_COUNT; ++vi )
 		{
 			int samp;
 			/* Mirror the real driver's live state for this channel
-			 * (drift-free) rather than sequencing independently. */
+			 * (drift-free) rather than sequencing independently. This
+			 * also snapshots the channel's music VOL while unstolen. */
 			hle_mirror_tick( vi, &sounddrv_voices[vi] );
 			samp = hle_brr_next_sample( &sounddrv_voices[vi] );
 			if ( steal & ( 1 << vi ) )
 			{
-				s += samp;
-				++nsteal;
+				int vl;
+				int vr;
+				/* Scale the fill to the music note's own per-voice
+				 * volume and stereo pan (captured while unstolen), so
+				 * it sits at the level the dropped note would have had
+				 * instead of raw full-scale BRR. Without a captured
+				 * volume, fall back to a centered half level. */
+				if ( sounddrv_mirror[vi].have_vol )
+				{
+					vl = sounddrv_mirror[vi].vol_l;
+					vr = sounddrv_mirror[vi].vol_r;
+				}
+				else
+				{
+					vl = 0x40;
+					vr = 0x40;
+				}
+				sl += ( samp * vl ) >> 7;
+				sr += ( samp * vr ) >> 7;
 			}
 		}
-		/* Stolen voices fill in for muted hardware voices, so each should
-		 * sit near a normal voice's level rather than 1/8. Average across
-		 * the voices actually sounding (typically 1-2) to keep headroom
-		 * without over-attenuating. */
-		if ( nsteal > 1 )
-			s = s / nsteal;
-		l += s;
-		r += s;
+		/* Apply master volume as the DSP would, then sum into the mix. */
+		l += ( sl * mvol_l ) >> 7;
+		r += ( sr * mvol_r ) >> 7;
 		CLAMP16( l );
 		CLAMP16( r );
 	}
