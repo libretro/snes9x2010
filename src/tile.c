@@ -554,33 +554,6 @@ static INLINE uint16x8_t tile_z2x1_sd_select_mask_neon(uint8x8_t sdb8)
 
 #endif /* TILE_HAVE_NEON */
 
-/* Per-channel saturating RGB subtraction used by the PPU
- * subtractive-color-math path (translucent windows, fade-out
- * effects, half-intensity sub-screen blends). Same shape as the
- * sibling COLOR_ADD / COLOR_ADD1_2 / COLOR_SUB1_2 macros in ppu.h.
- *
- * Plain expression macro: C1 and C2 are each referenced multiple
- * times. All current call sites (through REGMATH / MATHF1_2 /
- * MATHS1_2 token-paste) pass simple expressions — variable reads,
- * struct member accesses, ScreenColors lookups — so the multi-
- * evaluation reduces to identical sub-expressions that the
- * compiler will CSE. Do NOT pass side-effecting expressions here.
- *
- * The earlier `__extension__ ({ ... })` form captured C1 and C2
- * into locals for safety but relied on a GCC extension that older
- * MSVC rejects. */
-#define COLOR_SUB(C1, C2) \
-	((uint16_t) (ALPHA_BITS_MASK \
-		+ ((((C1) & FIRST_COLOR_MASK)  > ((C2) & FIRST_COLOR_MASK))  \
-			? (uint16_t) (((C1) & FIRST_COLOR_MASK)  - ((C2) & FIRST_COLOR_MASK))  \
-			: (uint16_t) 0) \
-		+ ((((C1) & SECOND_COLOR_MASK) > ((C2) & SECOND_COLOR_MASK)) \
-			? (uint16_t) (((C1) & SECOND_COLOR_MASK) - ((C2) & SECOND_COLOR_MASK)) \
-			: (uint16_t) 0) \
-		+ ((((C1) & THIRD_COLOR_MASK)  > ((C2) & THIRD_COLOR_MASK))  \
-			? (uint16_t) (((C1) & THIRD_COLOR_MASK)  - ((C2) & THIRD_COLOR_MASK))  \
-			: (uint16_t) 0)))
-
 static uint16_t	DirectColourMaps[8][256];
 static const uint16_t BlackColourMap[256] = {0};
 
