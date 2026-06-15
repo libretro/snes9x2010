@@ -81,12 +81,13 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "snes9x_2010_sounddrv_hle",
       "Sound Driver HLE (Experimental, Inaccurate)",
       NULL,
-      "EXPERIMENTAL / NOT ACCURATE. Debug instrumentation for the sound-driver high-level-emulation experiment (first target: the AKAO4 driver used by the Final Fantasy VI family; more drivers to follow). 'Log voice writes' prints every S-DSP voice register write (KON/KOFF/pitch/SRCN/ADSR/volume) to stderr, capturing exactly what the real driver does. Audio remains 100% accurate in this mode (logging only); it exists to validate the HLE path against ground truth. Leave 'disabled' for normal play.",
+      "EXPERIMENTAL / NOT ACCURATE. High-level-emulation experiment for the sound driver (first target: the AKAO4 driver used by the Final Fantasy VI family; more drivers to follow). 'Log voice writes' prints every S-DSP voice register write (KON/KOFF/pitch/SRCN/ADSR/volume) to stderr to validate the HLE path against ground truth; audio stays 100% accurate in that mode. 'Music under SFX' is the enhancement: when a sound effect steals a music voice (e.g. the menu cursor blip overriding a beat in FF6), it fills the dropped music note from a shadow voice that mirrors the live driver state, so the music keeps playing under the SFX. Leave 'disabled' for normal play.",
       NULL,
       NULL,
       {
          { "disabled",  "disabled" },
          { "log_voice", "Log voice writes (accurate; debug)" },
+         { "enhance",   "Music under SFX (fill stolen voices)" },
          { NULL, NULL },
       },
       "disabled"
