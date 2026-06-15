@@ -78,6 +78,21 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "auto"
    },
    {
+      "snes9x_2010_audio_interpolation",
+      "Audio Interpolation (Inaccurate)",
+      NULL,
+      "Choose how each SNES voice's pitch is interpolated. 'Gaussian' matches real hardware. 'Cubic' is brighter and less muffled, but does not match hardware and does not undo BRR sample compression. 'Sinc' is the sharpest/brightest (8-tap) and the most CPU-intensive.",
+      NULL,
+      NULL,
+      {
+         { "gaussian", "Gaussian (Accurate)" },
+         { "cubic",    "Cubic (Brighter)" },
+         { "sinc",     "Sinc (Sharpest)" },
+         { NULL, NULL},
+      },
+      "gaussian"
+   },
+   {
       "snes9x_2010_aspect",
       "Preferred Aspect Ratio",
       NULL,

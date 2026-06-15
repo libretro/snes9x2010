@@ -448,6 +448,13 @@ typedef struct
 #define SPC_SAVE_STATE_BLOCK_SIZE	(STATE_SIZE + 8)
 
 uint8_t S9xInitAPU (void);
+/* DSP voice interpolation mode core option: gaussian (accurate),
+ * cubic (inaccurate, brighter). dsp_interp_mode is defined in apu.c. */
+#define DSP_INTERP_GAUSSIAN 0
+#define DSP_INTERP_CUBIC    1
+#define DSP_INTERP_SINC     2
+extern int dsp_interp_mode;
+
 void S9xResetAPU (void);
 void S9xSoftResetAPU (void);
 uint8_t S9xAPUReadPort (int port);

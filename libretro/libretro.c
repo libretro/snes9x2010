@@ -423,6 +423,20 @@ static void check_variables(bool first_run)
 		}
 	}
 
+	var.key = "snes9x_2010_audio_interpolation";
+	var.value = NULL;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (strcmp(var.value, "cubic") == 0)
+			dsp_interp_mode = DSP_INTERP_CUBIC;
+		else if (strcmp(var.value, "sinc") == 0)
+			dsp_interp_mode = DSP_INTERP_SINC;
+		else
+			dsp_interp_mode = DSP_INTERP_GAUSSIAN;
+	}
+	else
+		dsp_interp_mode = DSP_INTERP_GAUSSIAN;
+
 	var.key = "snes9x_2010_frameskip";
 	var.value = NULL;
 
