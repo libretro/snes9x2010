@@ -1767,23 +1767,29 @@ static int spc_cpu_read_io ( uint16_t addr, int32_t time )
 
 /* spc_cpu_read: SPC700 memory read.
  *
- * Folded from a static INLINE function to a plain expression macro
- * once the slow path moved out of line: the 50 call sites in the
- * SPC700 opcode dispatch were not being inlined and the wrapper is
- * small enough to substitute at every use. A macro forces inlining
- * without depending on the optimizer's cost model.
+ * Implemented as a static INLINE function rather than a macro. The
+ * earlier statement-expression form was replaced with a plain
+ * expression macro for MSVC portability, but that macro references
+ * its `addr` argument up to three times, and several of the ~50 call
+ * sites in the opcode dispatch reach it through wrappers
+ * (spc_CPU_mem_bit, READ_DP / READ_DP_TIMER -> CPU_READ_TIMER) that
+ * pass address expressions which are themselves re-evaluated. Any
+ * such argument with a side effect was therefore stepped multiple
+ * times per opcode, corrupting SPC700 execution -- observed as the
+ * FF6 sound driver wedging after the first battle (music stops and
+ * never resumes while the game keeps running).
  *
- * CALLER CONSTRAINT: addr is referenced up to three times. Pass
- * only side-effect-free expressions (simple variables, struct
- * member reads, arithmetic on those). The earlier statement-
- * expression form captured into a local for safety; that relied on
- * a GCC extension and broke under MSVC. The one previously-unsafe
- * caller (case 0x78, CMP dp,imm — passed READ_PC(++pc)) has been
- * rewritten to step pc in its own statement. */
-#define spc_cpu_read(addr, time) \
-	(((unsigned) ((addr) - 0xF0) < 0x10) \
-		? spc_cpu_read_io((addr), (time)) \
-		: (int) m.ram.ram[(addr)])
+ * A static INLINE function evaluates each argument exactly once, like
+ * the original statement-expression, and is fully portable (no GCC
+ * extension), so it keeps the MSVC fix while restoring correctness.
+ * The optimizer inlines it at the call sites just as the macro did. */
+static INLINE int spc_cpu_read_fn( uint16_t addr, int32_t time )
+{
+	if ( (unsigned) ( addr - 0xF0 ) < 0x10 )
+		return spc_cpu_read_io( addr, time );
+	return (int) m.ram.ram[ addr ];
+}
+#define spc_cpu_read(addr, time) spc_cpu_read_fn( (addr), (time) )
 
 /***********************************************************************************
  SPC CPU
