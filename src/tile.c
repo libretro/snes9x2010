@@ -1215,12 +1215,10 @@ static uint8_t ConvertTile4h_even (uint8_t *pCache, uint32_t TileAddr, uint32_t 
  * are unified into a single SIMD loop. */
 #if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
 static INLINE void tile_draw_row_nomath_n1x1(uint8_t *db, uint16_t *s,
-                                             const uint8_t *bp, int hflip,
-                                             uint8_t Z1, uint8_t Z2,
-                                             const uint16_t *palette)
+		const uint8_t *bp, int hflip,
+		uint8_t Z1, uint8_t Z2,
+		const uint16_t *palette)
 {
-    uint8_t  pix_buf[8] __attribute__((aligned(16)));
-    uint16_t col_buf[8] __attribute__((aligned(16)));
 #if defined(TILE_HAVE_SSE2)
     __m128i pix = _mm_loadl_epi64((const __m128i *)bp);
     if (hflip)
@@ -1275,6 +1273,8 @@ static INLINE void tile_draw_row_nomath_n1x1(uint8_t *db, uint16_t *s,
                                   _mm_andnot_si128(mask16, s_old));
     _mm_storeu_si128((__m128i *)s, s_new);
 #else /* TILE_HAVE_NEON */
+    uint16_t col_buf[8] __attribute__((aligned(16)));
+    uint8_t  pix_buf[8] __attribute__((aligned(16)));
     uint8x8_t pix = vld1_u8(bp);
     if (hflip)
         pix = vrev64_u8(pix);
