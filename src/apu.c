@@ -691,19 +691,38 @@ static void hle_mirror_tick( int chan, hle_brr_voice *v )
 		if ( note >= AKAO4_CMD_BASE )
 			return;                       /* cursor not on a note byte */
 
-		key = note % 14;
-		if ( key < 12 )                   /* 12 = rest, 13 = tie */
+		/* AKAO4 note encoding (from the driver's note handler): the byte
+		 * splits as pitch_index = note / 14, duration_index = note % 14.
+		 * pitch_index 0..11 are the twelve chromatic semitones; 12 is a
+		 * tie (hold the current note) and 13 is a rest. The pitch is then
+		 * (octave * 12 + semitone), re-split by CalcFreq into a FreqMultTbl
+		 * entry and an octave shift around octave 4. */
+		key = note / 14;
+		if ( key < 12 )                   /* 0..11 = note; 12 = tie; 13 = rest */
 		{
 			int srcn;
 			int octave;
 			int pitch;
+			int effnote;
+			int semitone;
 			int oct;
 
 			srcn   = ram[ AKAO4_CH_SRCN   + base ];
 			octave = ram[ AKAO4_CH_OCTAVE + base ];
 
-			pitch = hle_note_pitch[key];
-			oct   = octave - 4;           /* table reference is octave 4 */
+			/* Combine octave and semitone the way the driver does
+			 * (CalcFreq: effnote = octave*12 + semitone_index - 10, the
+			 * -10 being the driver's fixed tuning offset), then re-split
+			 * modulo 12 for the multiplier-table lookup and the octave
+			 * shift (table reference octave is 4). */
+			effnote  = octave * 12 + key - 10;
+			/* Floor-divide so low octaves (negative effnote after the
+			 * -10 offset) split correctly; C's / and % truncate toward
+			 * zero, which would mis-bin negative values. */
+			semitone = ( ( effnote % 12 ) + 12 ) % 12;
+			oct      = ( ( effnote - semitone ) / 12 ) - 4;
+
+			pitch = hle_note_pitch[semitone];
 			if ( oct > 0 )
 				pitch <<= oct;
 			else if ( oct < 0 )
@@ -712,9 +731,9 @@ static void hle_mirror_tick( int chan, hle_brr_voice *v )
 			hle_brr_keyoff( v );
 			hle_brr_start( v, srcn, pitch );
 		}
-		else if ( key == 12 )             /* rest: silence the voice */
+		else if ( key == 13 )             /* rest: silence the voice */
 			hle_brr_keyoff( v );
-		/* key == 13 (tie): hold the current note */
+		/* key == 12 (tie): hold the current note */
 	}
 }
 
