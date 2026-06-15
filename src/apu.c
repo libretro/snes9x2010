@@ -2778,6 +2778,54 @@ static const char *sounddrv_regname( uint_fast8_t addr )
 	return NULL;
 }
 
+/* Returns nonzero when the AKAO4 song header at 0x1C00 looks like a real,
+ * settled song rather than a transient mid-load / mid-suspend state. Checks
+ * that data_end follows data_start, that the gap is a plausible song size,
+ * and that every channel pointer falls inside [data_start, data_end] and is
+ * non-decreasing -- valid AKAO4 channel pointers are laid out in order, so a
+ * scrambled set (as seen briefly during the battle suspend/resume swap) is
+ * rejected. */
+static int hle_akao4_header_valid( void )
+{
+	const uint8_t *ram;
+	unsigned int ds;
+	unsigned int de;
+	int i;
+
+	ram = dsp_m.ram;
+	if ( ram == NULL )
+		return 0;
+
+	ds = (unsigned int)ram[AKAO4_HDR_DSTART]
+	   | ( (unsigned int)ram[AKAO4_HDR_DSTART + 1] << 8 );
+	de = (unsigned int)ram[AKAO4_HDR_DSTART + 2]
+	   | ( (unsigned int)ram[AKAO4_HDR_DSTART + 3] << 8 );
+
+	if ( ds == 0 || de <= ds )
+	{
+		return 0;
+	}
+	if ( ( de - ds ) > 0xC000 )      /* implausibly large for one song */
+		return 0;
+
+	for ( i = 0; i < AKAO4_NUM_CHAN; ++i )
+	{
+		unsigned int p;
+		p = (unsigned int)ram[AKAO4_HDR_TABLE + i * 2]
+		  | ( (unsigned int)ram[AKAO4_HDR_TABLE + i * 2 + 1] << 8 );
+		/* Every channel pointer must fall inside the song's own data range.
+		 * (Channel pointers are usually in ascending order, but some songs
+		 * legitimately place a short channel out of order, so order is not
+		 * required -- only containment, which a transient/garbage header
+		 * fails.) */
+		if ( p < ds || p > de )
+		{
+			return 0;
+		}
+	}
+	return 1;
+}
+
 static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 {
 	const char *name;
@@ -2827,18 +2875,36 @@ static void sounddrv_log_write( uint_fast8_t addr, uint8_t data )
 		      | ( (unsigned int)dsp_m.ram[AKAO4_HDR_DSTART + 3] << 24 ) );
 		if ( sig != sounddrv_last_dstart )
 		{
-			sounddrv_last_dstart = sig;
 			if ( sounddrv_hle_log )
+			{
+				sounddrv_last_dstart = sig;
 				sounddrv_probe_akao4();
-			/* Arm the enhancement driver on the now-stable header (this
-			 * KON fires after the song has finished loading, so the
-			 * channel pointers are valid -- unlike polling the header
-			 * every output sample). */
+			}
+			/* Arm the enhancement drivers only on a header that is actually
+			 * a valid, settled AKAO4 song. During song transitions (and the
+			 * suspend/resume swap around battles) the header at 0x1C00 is
+			 * briefly inconsistent; arming then would resolve garbage
+			 * channel pointers and the extra voices would play noise over
+			 * the real song. Crucially, only commit the signature (so this
+			 * counts as "handled") once a VALID header is seen -- a
+			 * transient invalid header does not consume the change, so the
+			 * real song that follows is still detected and armed. */
 			if ( sounddrv_hle_enhance )
 			{
-				int ci;
-				for ( ci = 0; ci < HLE_VOICE_COUNT; ++ci )
-					hle_seq_driver_start( &sounddrv_drv[ci], ci );
+				if ( hle_akao4_header_valid() )
+				{
+					int ci;
+					sounddrv_last_dstart = sig;
+					for ( ci = 0; ci < HLE_VOICE_COUNT; ++ci )
+					{
+						/* Silence any note still sounding from the previous
+						 * song before re-arming: the new song's sample
+						 * directory and channel layout differ, so a held
+						 * note would otherwise bleed across the boundary. */
+						sounddrv_voices[ci].active = 0;
+						hle_seq_driver_start( &sounddrv_drv[ci], ci );
+					}
+				}
 			}
 		}
 	}
