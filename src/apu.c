@@ -525,7 +525,13 @@ static void hle_brr_start( hle_brr_voice *v, int srcn, int pitch )
 	v->p2 = 0;
 	v->have_block = 0;
 	v->out_pos    = 0;
-	v->pitch      = pitch ? pitch : 0x1000;
+	/* The S-DSP pitch register is 14 bits: it reads PITCHH masked with 0x3F,
+	 * so any pitch the driver computes is implicitly capped at 0x3FFF in
+	 * hardware. High octaves (e.g. a $d6 set-octave to 8) can push the
+	 * computed value past that; the real voice wraps it via the mask rather
+	 * than playing the sample at the raw, far-too-fast rate. Mask the fill
+	 * pitch identically so an extreme octave doesn't turn into a screech. */
+	v->pitch      = ( pitch ? pitch : 0x1000 ) & 0x3FFF;
 	v->frac       = 0;
 	v->s4[0]      = 0;
 	v->s4[1]      = 0;
