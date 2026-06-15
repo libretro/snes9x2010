@@ -380,6 +380,14 @@ typedef struct {
 #define HLE_VOICE_COUNT 8
 static hle_brr_voice sounddrv_voices[HLE_VOICE_COUNT];
 
+/* Per-voice "an effect is actively using this voice" hold-off, in output
+ * samples. Set when the real DSP keys a voice on while that voice is stolen
+ * (an effect taking the slot) and counts down afterwards. While non-zero the
+ * fill is suppressed: the effect owns the voice for the duration of its note,
+ * so the dropped music should stay dropped rather than have a tone laid under
+ * it once the effect's own envelope falls silent between repeats. */
+static int sounddrv_sfx_hold[HLE_VOICE_COUNT];
+
 /* Note -> pitch multiplier table, from the FF6 driver (FreqMultTbl):
  * pitch = 0x1000 * 2^((note-11)/12). These are the twelve chromatic
  * multipliers; octave shifts halve/double around them. With note 11 (B)
@@ -696,6 +704,7 @@ static void hle_mirror_reset( void )
 		sounddrv_mirror[i].vol_l       = 0;
 		sounddrv_mirror[i].vol_r       = 0;
 		sounddrv_mirror[i].have_vol    = 0;
+		sounddrv_sfx_hold[i]           = 0;
 	}
 }
 
@@ -1183,6 +1192,21 @@ static void dsp_voice_V3c( dsp_voice_t* v )
 		{
 			v->kon_delay = 5;
 			v->env_mode  = ENV_ATTACK;
+			/* If this key-on lands on a voice the music driver currently
+			 * has stolen, it is an effect taking the slot. Hold the fill
+			 * off for the effect note's lifetime (a generous fixed window
+			 * at 32 kHz covers a cursor-blip-length effect) so repeated
+			 * effects don't get music layered under them between repeats. */
+			if ( dsp_m.ram != NULL )
+			{
+				int vbit = v->vbit;
+				int vidx = 0;
+				int stolen;
+				while ( vbit > 1 ) { vbit >>= 1; ++vidx; }
+				stolen = ( dsp_m.ram[0x83] | dsp_m.ram[0x84] ) & v->vbit;
+				if ( stolen && vidx < HLE_VOICE_COUNT )
+					sounddrv_sfx_hold[vidx] = 8000;   /* ~250 ms */
+			}
 		}
 	}
 	
@@ -1394,10 +1418,22 @@ static INLINE void dsp_echo_27 (void)
 			 * also snapshots the channel's music VOL while unstolen. */
 			hle_mirror_tick( vi, &sounddrv_voices[vi] );
 			samp = hle_brr_next_sample( &sounddrv_voices[vi] );
+			if ( sounddrv_sfx_hold[vi] > 0 )
+				--sounddrv_sfx_hold[vi];
 			if ( ( steal & ( 1 << vi ) ) && sounddrv_voices[vi].fillable )
 			{
 				int vl;
 				int vr;
+				/* Suppress the fill while an effect is actively holding
+				 * this voice. When an effect keys a stolen voice it sets a
+				 * hold-off window (see the DSP key-on path); during that
+				 * window the effect owns the slot and the dropped music
+				 * should stay dropped, otherwise a held tone is layered
+				 * under a repeated effect like the menu cursor (the "bell
+				 * under the cursor"). Brief, isolated steals fall outside
+				 * any hold and still recover normally. */
+				if ( sounddrv_sfx_hold[vi] > 0 )
+					continue;
 				/* Scale the fill to the music note's own per-voice
 				 * volume and stereo pan (captured while unstolen), so
 				 * it sits at the level the dropped note would have had
