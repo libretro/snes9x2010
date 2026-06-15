@@ -346,6 +346,7 @@ int          sounddrv_hle_enhance = 0;
  * 16-sample block is decoded on demand into 'blk' and drained by out_pos. */
 typedef struct {
 	int  active;        /* currently playing                          */
+	int  fillable;      /* sample loops (sustained) -> eligible as fill */
 	int  brr_addr;      /* ARAM address of current 9-byte block        */
 	int  loop_addr;     /* ARAM address to jump to on loop             */
 	int  p1, p2;        /* BRR IIR filter history (previous 2 samples) */
@@ -493,6 +494,33 @@ static void hle_brr_start( hle_brr_voice *v, int srcn, int pitch )
 	entry = ( dir + srcn * 4 ) & 0xFFFF;
 	v->brr_addr  = GET_LE16( &dsp_m.ram[ entry ] );
 	v->loop_addr = GET_LE16( &dsp_m.ram[ ( entry + 2 ) & 0xFFFF ] );
+
+	/* Decide whether this note is worth filling. "Music under SFX" recovery
+	 * only makes musical sense for SUSTAINED voices an effect briefly
+	 * interrupts -- a melodic or harmonic line the listener expects to keep
+	 * hearing. Percussive one-shots (a beat, a hit) are samples the sound
+	 * design intentionally lets the effect duck; forcing them back in layers
+	 * stray hits over the effect and sounds wrong. The two are distinguishable
+	 * from the sample itself: a sustained instrument's BRR sample LOOPS (its
+	 * end block has the loop bit set) whereas a one-shot does not. Walk to the
+	 * sample's end block (header bit 0 set) and read its loop bit (bit 1);
+	 * only looping (sustained) samples are eligible to be filled. The walk is
+	 * bounded so a malformed or unterminated sample can't spin. */
+	{
+		int a = v->brr_addr;
+		int i;
+		v->fillable = 0;
+		for ( i = 0; i < 2048; ++i )
+		{
+			int h = dsp_m.ram[ a & 0xFFFF ];
+			if ( h & 1 )                          /* end block reached */
+			{
+				v->fillable = ( h >> 1 ) & 1;     /* loop bit */
+				break;
+			}
+			a += BRR_BLOCK_SIZE;
+		}
+	}
 	v->p1 = 0;
 	v->p2 = 0;
 	v->have_block = 0;
@@ -1360,7 +1388,7 @@ static INLINE void dsp_echo_27 (void)
 			 * also snapshots the channel's music VOL while unstolen. */
 			hle_mirror_tick( vi, &sounddrv_voices[vi] );
 			samp = hle_brr_next_sample( &sounddrv_voices[vi] );
-			if ( steal & ( 1 << vi ) )
+			if ( ( steal & ( 1 << vi ) ) && sounddrv_voices[vi].fillable )
 			{
 				int vl;
 				int vr;
