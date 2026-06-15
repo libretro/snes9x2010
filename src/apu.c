@@ -504,13 +504,16 @@ static void hle_brr_start( hle_brr_voice *v, int srcn, int pitch )
 	v->s4[2]      = 0;
 	v->s4[3]      = 0;
 	v->primed     = 0;
-	/* Envelope: start silent, attack up to a near-full sustain. Rates are
-	 * chosen for a quick but click-free attack (~3 ms) and a short release
-	 * (~15 ms) at the 32 kHz output rate. */
+	/* Envelope: a fast attack that preserves the note's transient (the
+	 * real driver's samples key with near-instant ADSR attacks, e.g. the
+	 * FF6 beat uses ADSR0=0xFF = fastest attack; a slow ramp here acts as a
+	 * lowpass on the attack and makes the fill sound dull/muffled). A few
+	 * samples of ramp keeps it click-free without smearing the transient.
+	 * Sustain holds near full; release is short for a clean tail. */
 	v->env        = 0;
 	v->env_phase  = 0;            /* attack */
 	v->sustain    = 0x700;        /* near full (max 0x7FF)              */
-	v->atk_rate   = 0x700 / 96;   /* reach sustain in ~96 samples (~3ms)*/
+	v->atk_rate   = 0x700 / 8;    /* reach sustain in ~8 samples (~0.25ms)*/
 	v->rel_rate   = 0x700 / 480;  /* fall to zero in ~480 samples(~15ms)*/
 	if ( v->atk_rate < 1 ) v->atk_rate = 1;
 	if ( v->rel_rate < 1 ) v->rel_rate = 1;
