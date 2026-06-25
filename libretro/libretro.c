@@ -236,6 +236,19 @@ void linearFree(void* mem);
 #define MUTE_BUFFER_FRAMES 768
 static int16_t mute_buffer[MUTE_BUFFER_FRAMES * 2];
 
+/* Backing buffer for the in-memory STREAM abstraction (see snes9x.h).
+ * Upstream libretro-common dropped memstream_set_buffer/get_last_size and
+ * now requires the buffer at memstream_open() time, so we publish it here
+ * for the OPEN_STREAM() macro to pick up. */
+uint8_t *s9x_stream_buffer      = NULL;
+uint64_t s9x_stream_buffer_size = 0;
+
+void S9xSetStreamBuffer(uint8_t *buffer, uint64_t size)
+{
+	s9x_stream_buffer      = buffer;
+	s9x_stream_buffer_size = size;
+}
+
 /* Set when the frontend has signalled that audio should not be played
    (either user has disabled audio or a frontend-controlled fast-forward
    path has set RETRO_AVENABLE_HARD_DISABLE_AUDIO). When set, we still
@@ -1614,7 +1627,7 @@ bool retro_serialize(void *data, size_t size)
 	if (environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result))
 		Settings.FastSavestates = 0 != (result & 0x04);
 
-	memstream_set_buffer((uint8_t*)data, (uint64_t)size);
+	S9xSetStreamBuffer((uint8_t*)data, (uint64_t)size);
 
 	if (S9xFreezeGame() == FALSE)
 		return FALSE;
@@ -1628,7 +1641,7 @@ bool retro_unserialize(const void * data, size_t size)
 	if (environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result))
 		Settings.FastSavestates = 0 != (result & 0x04);
 
-	memstream_set_buffer((uint8_t*)data, (uint64_t)size);
+	S9xSetStreamBuffer((uint8_t*)data, (uint64_t)size);
 
 	if (S9xUnfreezeGame() == FALSE)
 		return FALSE;
@@ -1766,7 +1779,7 @@ bool retro_load_game(const struct retro_game_info *game)
 	memorydesc_c = 0;
 
 	/* Hack. S9x cannot do stuff from RAM. <_< */
-	memstream_set_buffer((uint8_t*)game->data, (uint64_t)game->size);
+	S9xSetStreamBuffer((uint8_t*)game->data, (uint64_t)game->size);
 
 	loaded = LoadROM();
 	if (!loaded)

@@ -220,7 +220,15 @@ extern "C" {
 #define WRITE_STREAM(p, l, s)    memstream_write(s, p, l)
 #define GETS_STREAM(p, l, s)     memstream_gets(s, p, l)
 #define GETC_STREAM(s)           memstream_getc(s)
-#define OPEN_STREAM(w)           memstream_open(w)
+/* memstream_open() now takes the backing buffer and its size up front
+ * (upstream libretro-common removed memstream_set_buffer/get_last_size).
+ * The buffer for the active save/load/ROM operation is published by
+ * libretro.c via S9xSetStreamBuffer() and consumed here so the existing
+ * OPEN_STREAM(w) call sites in snapshot.c / memmap.c stay unchanged. */
+extern uint8_t *s9x_stream_buffer;
+extern uint64_t s9x_stream_buffer_size;
+void S9xSetStreamBuffer(uint8_t *buffer, uint64_t size);
+#define OPEN_STREAM(w)           memstream_open(s9x_stream_buffer, s9x_stream_buffer_size, (w))
 #define FIND_STREAM(f)           memstream_pos(f)
 #define REVERT_STREAM(f, o, s)   memstream_seek(f, o, s)
 #define CLOSE_STREAM(s)          memstream_close(s)

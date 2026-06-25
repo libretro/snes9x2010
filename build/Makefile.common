@@ -36,10 +36,16 @@ SOURCES_C := $(CORE_DIR)/src/apu.c \
 	$(CORE_DIR)/filter/snes_ntsc.c \
 	$(CORE_DIR)/libretro/libretro.c
 
+# memory_stream is consumed directly by the core's savestate / ROM-load
+# code (snapshot.c, memmap.c, libretro.c via the STREAM macros in
+# snes9x.h) and must be linked into the core itself even on statically-
+# linked platforms, where the frontend does not export libretro-common
+# symbols. Keep it outside the STATIC_LINKING guard below.
+SOURCES_C += $(LIBRETRO_COMM_DIR)/streams/memory_stream.c
+
 ifeq ($(STATIC_LINKING),1)
 else
 SOURCES_C += \
-	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_snprintf.c \
