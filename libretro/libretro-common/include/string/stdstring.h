@@ -32,23 +32,19 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <compat/strl.h>
+#include <compat/posix_string.h>
 
 RETRO_BEGIN_DECLS
 
 #define STRLEN_CONST(x)                   ((sizeof((x))-1))
 
-#define strcpy_literal(a, b)              strcpy(a, b)
-
 #define string_is_not_equal(a, b)         !string_is_equal((a), (b))
-
-#define string_is_not_equal_fast(a, b, size) (memcmp(a, b, size) != 0)
-#define string_is_equal_fast(a, b, size)     (memcmp(a, b, size) == 0)
 
 #define TOLOWER(c)   ((c) |  (lr_char_props[(unsigned char)(c)] & 0x20))
 #define TOUPPER(c)   ((c) & ~(lr_char_props[(unsigned char)(c)] & 0x20))
 
 /* C standard says \f \v are space, but this one disagrees */
-#define ISSPACE(c)   (lr_char_props[(unsigned char)(c)] & 0x80) 
+#define ISSPACE(c)   (lr_char_props[(unsigned char)(c)] & 0x80)
 
 #define ISDIGIT(c)   (lr_char_props[(unsigned char)(c)] & 0x40)
 #define ISALPHA(c)   (lr_char_props[(unsigned char)(c)] & 0x20)
@@ -64,18 +60,22 @@ RETRO_BEGIN_DECLS
 
 static INLINE bool string_is_empty(const char *data)
 {
-   return !data || (*data == '\0');
+   return !data || !*data;
 }
 
 static INLINE bool string_is_equal(const char *a, const char *b)
 {
-   return (a && b) ? !strcmp(a, b) : false;
+   if (a == b)
+      return true;
+   if (!a || !b)
+      return false;
+   return !strcmp(a, b);
 }
 
 static INLINE bool string_starts_with_size(const char *str, const char *prefix,
-      size_t size)
+      size_t len)
 {
-   return (str && prefix) ? !strncmp(prefix, str, size) : false;
+   return (str && prefix) ? !strncmp(prefix, str, len) : false;
 }
 
 static INLINE bool string_starts_with(const char *str, const char *prefix)
@@ -83,33 +83,36 @@ static INLINE bool string_starts_with(const char *str, const char *prefix)
    return (str && prefix) ? !strncmp(prefix, str, strlen(prefix)) : false;
 }
 
-static INLINE bool string_ends_with_size(const char *str, const char *suffix,
-      size_t str_len, size_t suffix_len)
+static INLINE bool string_ends_with_size(const char *s, const char *suffix,
+      size_t len, size_t suffix_len)
 {
-   return (str_len < suffix_len) ? false :
-         !memcmp(suffix, str + (str_len - suffix_len), suffix_len);
+   return (len < suffix_len) ? false :
+         !memcmp(suffix, s + (len - suffix_len), suffix_len);
 }
 
-static INLINE bool string_ends_with(const char *str, const char *suffix)
+static INLINE bool string_ends_with(const char *s, const char *suffix)
 {
-   if (!str || !suffix)
-      return false;
-   return string_ends_with_size(str, suffix, strlen(str), strlen(suffix));
+   return s && suffix && string_ends_with_size(s, suffix, strlen(s), strlen(suffix));
 }
 
-/* Returns the length of 'str' (c.f. strlen()), but only
+/**
+ * strlen_size:
+ *
+ * Leaf function.
+ *
+ * @return the length of 'str' (c.f. strlen()), but only
  * checks the first 'size' characters
  * - If 'str' is NULL, returns 0
  * - If 'str' is not NULL and no '\0' character is found
- *   in the first 'size' characters, returns 'size' */
-static INLINE size_t strlen_size(const char *str, size_t size)
+ *   in the first 'size' characters, returns 'size'
+ **/
+static INLINE size_t strlen_size(const char *str, size_t len)
 {
    size_t i = 0;
    if (str)
-      while (i < size && str[i]) i++;
+      while (i < len && str[i]) i++;
    return i;
 }
-
 
 static INLINE bool string_is_equal_case_insensitive(const char *a,
       const char *b)
@@ -130,25 +133,69 @@ static INLINE bool string_is_equal_case_insensitive(const char *a,
    return (result == 0);
 }
 
+static INLINE bool string_starts_with_case_insensitive(const char *str,
+      const char *prefix)
+{
+   int result              = 0;
+   const unsigned char *p1 = (const unsigned char*)str;
+   const unsigned char *p2 = (const unsigned char*)prefix;
+
+   if (!str || !prefix)
+      return false;
+   if (p1 == p2)
+      return true;
+
+   while ((result = tolower (*p1++) - tolower (*p2)) == 0)
+      if (*p2++ == '\0')
+         break;
+
+   return (result == 0 || *p2 == '\0');
+}
+
 char *string_to_upper(char *s);
 
 char *string_to_lower(char *s);
 
 char *string_ucwords(char *s);
 
-char *string_replace_substring(const char *in, const char *pattern,
-      const char *by);
+char *string_replace_substring(
+      const char *in,          size_t in_len,
+      const char *pattern,     size_t pattern_len,
+      const char *replacement, size_t replacement_len);
 
-/* Remove leading whitespaces */
+/**
+ * string_trim_whitespace_left:
+ *
+ * Remove leading whitespaces
+ **/
 char *string_trim_whitespace_left(char *const s);
 
-/* Remove trailing whitespaces */
+/**
+ * string_trim_whitespace_right:
+ *
+ * Remove trailing whitespaces
+ **/
 char *string_trim_whitespace_right(char *const s);
 
-/* Remove leading and trailing whitespaces */
+/**
+ * string_trim_whitespace:
+ *
+ * Remove leading and trailing whitespaces
+ **/
 char *string_trim_whitespace(char *const s);
 
-/*
+/**
+ * word_wrap:
+ * @dst                : pointer to destination buffer.
+ * @dst_size           : size of destination buffer.
+ * @src                : pointer to input string.
+ * @src_len            : length of @src
+ * @line_width         : max number of characters per line.
+ * @wideglyph_width    : not used, but is necessary to keep
+ *                       compatibility with word_wrap_wideglyph().
+ * @max_lines          : max lines of destination string.
+ *                       0 means no limit.
+ *
  * Wraps string specified by 'src' to destination buffer
  * specified by 'dst' and 'dst_size'.
  * This function assumes that all glyphs in the string
@@ -156,58 +203,57 @@ char *string_trim_whitespace(char *const s);
  * regular Latin characters - i.e. it will not wrap
  * correctly any text containing so-called 'wide' Unicode
  * characters (e.g. CJK languages, emojis, etc.).
- *
- * @param dst             pointer to destination buffer.
- * @param dst_size        size of destination buffer.
- * @param src             pointer to input string.
- * @param line_width      max number of characters per line.
- * @param wideglyph_width not used, but is necessary to keep
- *                        compatibility with word_wrap_wideglyph().
- * @param max_lines       max lines of destination string.
- *                        0 means no limit.
- */
-void word_wrap(char *dst, size_t dst_size, const char *src,
+ **/
+size_t word_wrap(char *dst, size_t dst_size, const char *src, size_t src_len,
       int line_width, int wideglyph_width, unsigned max_lines);
 
-/*
- * Wraps string specified by 'src' to destination buffer
- * specified by 'dst' and 'dst_size'.
+/**
+ * word_wrap_wideglyph:
+ * @dst                : pointer to destination buffer.
+ * @dst_size           : size of destination buffer.
+ * @src                : pointer to input string.
+ * @src_len            : length of @src
+ * @line_width         : max number of characters per line.
+ * @wideglyph_width    : effective width of 'wide' Unicode glyphs.
+ *                       the value here is normalised relative to the
+ *                       typical on-screen pixel width of a regular
+ *                       Latin character:
+ *                       - a regular Latin character is defined to
+ *                         have an effective width of 100
+ *                       - wideglyph_width = 100 * (wide_character_pixel_width / latin_character_pixel_width)
+ *                       - e.g. if 'wide' Unicode characters in 'src'
+ *                         have an on-screen pixel width twice that of
+ *                         regular Latin characters, wideglyph_width
+ *                         would be 200
+ * @max_lines          : max lines of destination string.
+ *                       0 means no limit.
+ *
+ * Wraps string specified by @src to destination buffer
+ * specified by @dst and @dst_size.
  * This function assumes that all glyphs in the string
  * are:
  * - EITHER 'non-wide' Unicode glyphs, with an on-screen
  *   pixel width similar to that of regular Latin characters
  * - OR 'wide' Unicode glyphs (e.g. CJK languages, emojis, etc.)
- *   with an on-screen pixel width defined by 'wideglyph_width'
+ *   with an on-screen pixel width defined by @wideglyph_width
  * Note that wrapping may occur in inappropriate locations
- * if 'src' string contains 'wide' Unicode characters whose
+ * if @src string contains 'wide' Unicode characters whose
  * on-screen pixel width deviates greatly from the set
- * 'wideglyph_width' value.
- *
- * @param dst             pointer to destination buffer.
- * @param dst_size        size of destination buffer.
- * @param src             pointer to input string.
- * @param line_width      max number of characters per line.
- * @param wideglyph_width effective width of 'wide' Unicode glyphs.
- *                        the value here is normalised relative to the
- *                        typical on-screen pixel width of a regular
- *                        Latin character:
- *                        - a regular Latin character is defined to
- *                          have an effective width of 100
- *                        - wideglyph_width = 100 * (wide_character_pixel_width / latin_character_pixel_width)
- *                        - e.g. if 'wide' Unicode characters in 'src'
- *                          have an on-screen pixel width twice that of
- *                          regular Latin characters, wideglyph_width
- *                          would be 200
- * @param max_lines       max lines of destination string.
- *                        0 means no limit.
- */
-void word_wrap_wideglyph(char *dst, size_t dst_size, const char *src,
-      int line_width, int wideglyph_width, unsigned max_lines);
+ * @wideglyph_width value.
+ **/
+size_t word_wrap_wideglyph(
+      char *dst, size_t dst_size,
+      const char *src, size_t src_len,
+      int line_width, int wideglyph_width,
+      unsigned max_lines);
 
-/* Splits string into tokens seperated by 'delim'
+/**
+ * string_tokenize:
+ *
+ * Splits string into tokens separated by @delim
  * > Returned token string must be free()'d
  * > Returns NULL if token is not found
- * > After each call, 'str' is set to the position after the
+ * > After each call, @str is set to the position after the
  *   last found token
  * > Tokens *include* empty strings
  * Usage example:
@@ -220,28 +266,192 @@ void word_wrap_wideglyph(char *dst, size_t dst_size, const char *src,
  *        free(token);
  *        token = NULL;
  *    }
- */
-char* string_tokenize(char **str, const char *delim);
+ **/
+char *string_tokenize(char **str, const char *delim);
 
-/* Removes every instance of character 'c' from 'str' */
-void string_remove_all_chars(char *str, char c);
+/**
+ * string_remove_all_chars:
+ * @s                 : input string (must be non-NULL, otherwise UB)
+ *
+ * Leaf function.
+ *
+ * Removes every instance of character @c from @s
+ *
+ * Returns the length of the resulting string.
+ **/
+size_t string_remove_all_chars(char *s, char c);
 
-/* Replaces every instance of character 'find' in 'str'
- * with character 'replace' */
+/**
+ * string_replace_all_chars:
+ * @str                : input string (must be non-NULL, otherwise UB)
+ * @find               : character to find
+ * @replace            : character to replace @find with
+ *
+ * Hidden non-leaf function cost:
+ * - Calls strchr (in a loop)
+ *
+ * Replaces every instance of character @find in @str
+ * with character @replace
+ **/
 void string_replace_all_chars(char *str, char find, char replace);
 
-/* Converts string to unsigned integer.
- * Returns 0 if string is invalid  */
+/**
+ * string_to_unsigned:
+ * @str                : input string
+ *
+ * Converts string to unsigned integer.
+ *
+ * @return 0 if string is invalid, otherwise > 0
+ **/
 unsigned string_to_unsigned(const char *str);
 
-/* Converts hexadecimal string to unsigned integer.
+/**
+ * string_hex_to_unsigned:
+ * @str                : input string (must be non-NULL, otherwise UB)
+ *
+ * Converts hexadecimal string to unsigned integer.
  * Handles optional leading '0x'.
- * Returns 0 if string is invalid  */
+ *
+ * @return 0 if string is invalid, otherwise > 0
+ **/
 unsigned string_hex_to_unsigned(const char *str);
 
-char *string_init(const char *src);
+/**
+ * string_count_occurrences_single_character:
+ *
+ * Leaf function.
+ *
+ * Get the total number of occurrences of character @c in @str.
+ *
+ * @return Total number of occurrences of character @c
+ */
+int string_count_occurrences_single_character(const char *str, char c);
 
-void string_set(char **string, const char *src);
+/**
+ * string_replace_whitespace_with_single_character:
+ *
+ * Leaf function.
+ *
+ * Replaces all spaces with given character @c.
+ **/
+void string_replace_whitespace_with_single_character(char *str, char c);
+
+/**
+ * string_replace_multi_space_with_single_space:
+ *
+ * Leaf function.
+ *
+ * Replaces multiple spaces with a single space in a string.
+ **/
+void string_replace_multi_space_with_single_space(char *str);
+
+/**
+ * string_remove_all_whitespace:
+ *
+ * Leaf function.
+ *
+ * Remove all spaces from the given string.
+ * Returns the length of the resulting string.
+ **/
+size_t string_remove_all_whitespace(char *str_trimmed, const char *str);
+
+/**
+ * strlcpy_append:
+ * @s                  : destination buffer
+ * @len                : total size of @s, including space for the NUL
+ * @pos                : in-out cursor.  On entry, the offset within
+ *                       @s where @src should be appended; on
+ *                       successful return advanced past the appended
+ *                       bytes.  On truncation clamped to @len - 1 so
+ *                       subsequent calls in a chain short-circuit.
+ * @src                : NUL-terminated source string to append
+ *
+ * Bound-checked replacement for the unsafe pattern
+ *
+ *     *pos += strlcpy(@s + *pos, @src, @len - *pos);
+ *
+ * which is widely used to build strings piece-by-piece but is
+ * NOT self-bounding -- strlcpy returns strlen(@src) regardless
+ * of how much was actually written, so on truncation *pos
+ * overshoots @len and the next @len - *pos subtraction underflows
+ * size_t, corrupting subsequent appends.
+ *
+ * On success returns 0 and advances *pos by strlen(@src).  On
+ * truncation (the appended bytes plus a NUL would exceed @len)
+ * returns -1, leaves @s NUL-terminated at @len - 1, and clamps
+ * *pos to @len - 1 so a chain of strlcpy_append calls can
+ * short-circuit cleanly -- the caller need only check the bitwise
+ * OR of the chain's results once at the end.
+ *
+ * @return 0 on success, -1 on truncation or invalid arguments
+ **/
+int strlcpy_append(char *s, size_t len, size_t *pos, const char *src);
+
+/* Retrieve the last occurance of the given character in a string. */
+int string_index_last_occurance(const char *str, char c);
+
+/**
+ * string_find_index_substring_string:
+ * @str                : input string (must be non-NULL, otherwise UB)
+ * @substr             : substring to find in @str
+ *
+ * Hidden non-leaf function cost:
+ * - Calls strstr
+ *
+ * Find the position of substring @substr in string @str.
+ **/
+int string_find_index_substring_string(const char *str, const char *substr);
+
+/**
+ * string_copy_only_ascii:
+ *
+ * Leaf function.
+ *
+ * Strips non-ASCII characters from a string.
+ **/
+void string_copy_only_ascii(char *str_stripped, const char *str);
+
+/**
+ * string_ext_list_find:
+ * @delim_str : '|'-delimited extension string (e.g. "bin|iso|cue")
+ * @delim_len : length of @delim_str
+ * @ext       : single extension token to look for
+ * @ext_len   : length of @ext
+ *
+ * Checks whether @ext exists as an exact token inside @delim_str.
+ * "bi" will not match "bin".
+ *
+ * Returns: true if found, false otherwise.
+ **/
+bool string_ext_list_find(const char *delim_str, size_t delim_len,
+      const char *ext, size_t ext_len);
+
+/**
+ * string_ext_list_append_dedup:
+ * @dst      : destination '|'-delimited string being built
+ * @dst_len  : pointer to current length of content in @dst (updated in place)
+ * @dst_size : total buffer capacity of @dst
+ * @ext      : a single extension token (no '|') to append if not duplicate
+ * @ext_len  : length of @ext
+ *
+ * Appends a single extension to @dst with a '|' separator,
+ * but only if @ext is not already present in @dst.
+ **/
+void string_ext_list_append_dedup(char *dst, size_t *dst_len,
+      size_t dst_size, const char *ext, size_t ext_len);
+
+/**
+ * string_ext_list_merge_dedup:
+ * @dst      : destination '|'-delimited string being built
+ * @dst_len  : pointer to current length of content in @dst (updated in place)
+ * @dst_size : total buffer capacity of @dst
+ * @src      : source '|'-delimited extension string (may contain many tokens)
+ *
+ * Splits @src on '|' and appends each unique extension to @dst.
+ * Extensions already present in @dst are skipped.
+ **/
+void string_ext_list_merge_dedup(char *dst, size_t *dst_len,
+      size_t dst_size, const char *src);
 
 extern const unsigned char lr_char_props[256];
 
