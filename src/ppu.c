@@ -5021,6 +5021,28 @@ void S9xSetCPU (uint8_t Byte, uint16_t Address)
 						S9X_SET_IRQ(PPU_IRQ_SOURCE);
 					}
 				}
+				/* Pure vertical IRQ (no H component) enabled while the beam is
+				   already on the target scanline must fire immediately,
+				   regardless of the current horizontal position. The
+				   H-position-window check above only catches this when the
+				   write happens to land near the start of the line, so a
+				   V-IRQ enabled later in the scanline would otherwise be
+				   deferred a whole frame - the game stays in forced blank and
+				   the screen strobes. Affects e.g. RoboCop vs. The Terminator,
+				   whose lightning/strobe effect flickers constantly instead of
+				   at the intended interval.
+
+				   Only fire on an off-to-on transition of the IRQ-enable bits
+				   (old $4200 & 0x30 == 0), matching the "initial" immediate-IRQ
+				   path in upstream Snes9x's S9xUpdateIRQPositions; this avoids
+				   spuriously re-triggering when a game rewrites $4200 with
+				   V-IRQ already active. */
+				else if (PPU.VTimerEnabled && !PPU.HTimerEnabled &&
+				         (CPU.V_Counter == PPU.VTimerPosition) &&
+				         ((Memory.FillRAM[0x4200] & 0x30) == 0))
+				{
+					S9X_SET_IRQ(PPU_IRQ_SOURCE);
+				}
 
 				if (!(Byte & 0x30))
 				{
