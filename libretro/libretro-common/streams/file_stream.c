@@ -186,7 +186,7 @@ char* filestream_gets(RFILE *stream, char *s, size_t len)
 {
    int c   = 0;
    char *p = s;
-   if (!stream)
+   if (!stream || !s || len == 0)
       return NULL;
 
    /* get max bytes or up to a newline */
