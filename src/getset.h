@@ -416,7 +416,7 @@ static void S9xSetPCBase_cold (uint32_t Address, uint8_t *GetAddress)
 
 		case MAP_HIROM_SRAM:
 			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
-				CPU.PCBase = Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask) - (Address & 0xffff);
+				CPU.PCBase = Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0x1f0000) >> 3)) & Memory.SRAMMask) - (Address & 0xffff);
 			break;
 
 		case MAP_BWRAM:
@@ -489,7 +489,7 @@ static INLINE uint8_t * S9xGetBasePointer (uint32_t Address)
 
 		case MAP_HIROM_SRAM:
 			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
-            return (Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask) - (Address & 0xffff));
+            return (Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0x1f0000) >> 3)) & Memory.SRAMMask) - (Address & 0xffff));
          break;
 
 		case MAP_BWRAM:
@@ -533,7 +533,7 @@ static INLINE uint8_t * S9xGetMemPointer (uint32_t Address)
          break;
 		case MAP_HIROM_SRAM:
 			if ((Memory.SRAMMask & MEMMAP_MASK) == MEMMAP_MASK)
-            return (Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask));
+            return (Memory.SRAM + (((Address & 0x7fff) - 0x6000 + ((Address & 0x1f0000) >> 3)) & Memory.SRAMMask));
          break;
 
 		case MAP_BWRAM:
