@@ -194,6 +194,7 @@
 
 #include <streams/file_stream.h>
 #include <libretro.h>
+#include <memalign.h>
 
 void S9xAppendMapping(struct retro_memory_descriptor *desc);
 
@@ -364,6 +365,33 @@ static void S9xDeinterleaveGD24 (int size, uint8_t *base)
 
 /* allocation and deallocation */
 
+/* Cache-line aligned (de)allocation for the decoded-tile caches.  A
+ * decoded tile is exactly 64 bytes (8x8, one byte per pixel); when the
+ * base is cache-line aligned each tile occupies exactly one line, so the
+ * line-batched DrawTile sweeps that read a tile end-to-end touch a single
+ * line instead of straddling two.  Plain calloc only guarantees
+ * max_align_t (16 on glibc x86_64), leaving every tile split across two
+ * lines.  memalign_alloc_aligned() picks the right boundary per arch
+ * (64 on 64-bit, 32 on GEKKO/x86 where the cache line is 32B).  It is
+ * malloc-backed (no posix_memalign / _aligned_malloc), so it is portable
+ * to every target and is paired with memalign_free().  memalign does not
+ * zero, so memset to preserve the previous calloc semantics - the tile
+ * converters always write all 64 bytes before a tile is marked Buffered,
+ * so this is belt-and-suspenders rather than a correctness dependency. */
+static uint8_t *TileCacheAllocAligned (size_t size)
+{
+	uint8_t *ptr = (uint8_t *) memalign_alloc_aligned(size);
+	if (ptr)
+		memset(ptr, 0, size);
+	return ptr;
+}
+
+static void TileCacheFreeAligned (void *ptr)
+{
+	if (ptr)
+		memalign_free(ptr);
+}
+
 uint8_t Init (void)
 {
 	/* Defensive teardown: if Init() is re-entered without an intervening
@@ -378,13 +406,13 @@ uint8_t Init (void)
 	Memory.VRAM = (uint8_t *) calloc(1, 0x10000);
 	Memory.ROM  = (uint8_t *) calloc(1, MAX_ROM_SIZE + 0x200 + 0x8000);
 
-	IPPU.TileCache[TILE_2BIT]       = (uint8_t *) calloc(1, MAX_2BIT_TILES * 64);
-	IPPU.TileCache[TILE_4BIT]       = (uint8_t *) calloc(1, MAX_4BIT_TILES * 64);
-	IPPU.TileCache[TILE_8BIT]       = (uint8_t *) calloc(1, MAX_8BIT_TILES * 64);
-	IPPU.TileCache[TILE_2BIT_EVEN]  = (uint8_t *) calloc(1, MAX_2BIT_TILES * 64);
-	IPPU.TileCache[TILE_2BIT_ODD]   = (uint8_t *) calloc(1, MAX_2BIT_TILES * 64);
-	IPPU.TileCache[TILE_4BIT_EVEN]  = (uint8_t *) calloc(1, MAX_4BIT_TILES * 64);
-	IPPU.TileCache[TILE_4BIT_ODD]   = (uint8_t *) calloc(1, MAX_4BIT_TILES * 64);
+	IPPU.TileCache[TILE_2BIT]       = TileCacheAllocAligned(MAX_2BIT_TILES * 64);
+	IPPU.TileCache[TILE_4BIT]       = TileCacheAllocAligned(MAX_4BIT_TILES * 64);
+	IPPU.TileCache[TILE_8BIT]       = TileCacheAllocAligned(MAX_8BIT_TILES * 64);
+	IPPU.TileCache[TILE_2BIT_EVEN]  = TileCacheAllocAligned(MAX_2BIT_TILES * 64);
+	IPPU.TileCache[TILE_2BIT_ODD]   = TileCacheAllocAligned(MAX_2BIT_TILES * 64);
+	IPPU.TileCache[TILE_4BIT_EVEN]  = TileCacheAllocAligned(MAX_4BIT_TILES * 64);
+	IPPU.TileCache[TILE_4BIT_ODD]   = TileCacheAllocAligned(MAX_4BIT_TILES * 64);
 
 	IPPU.TileCached[TILE_2BIT]      = (uint8_t *) calloc(1, MAX_2BIT_TILES);
 	IPPU.TileCached[TILE_4BIT]      = (uint8_t *) calloc(1, MAX_4BIT_TILES);
@@ -566,7 +594,7 @@ void Deinit (void)
 	{
 		if (IPPU.TileCache[t])
 		{
-			free(IPPU.TileCache[t]);
+			TileCacheFreeAligned(IPPU.TileCache[t]);
 			IPPU.TileCache[t] = NULL;
 		}
 
