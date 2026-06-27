@@ -1024,6 +1024,16 @@ again:
 
 	S9xReset();
 
+	/* Initialise SRAM to the power-on fill pattern (SNESGameFixes.
+	   SRAMInitialValue, 0x60 by default; per-game overrides are applied
+	   in InitROM). Some games checksum uninitialised SRAM at boot and
+	   hang in forced-blank if it reads back as all-zero - e.g. Madden
+	   NFL 96, which sums words from $30:6000.. and rejects a zero
+	   result. This matches upstream Snes9x. The libretro frontend loads
+	   any battery save into Memory.SRAM after retro_load_game returns,
+	   overwriting this fill when a save exists. */
+	memset(Memory.SRAM, SNESGameFixes.SRAMInitialValue, 0x80000);
+
     return (TRUE);
 }
 
