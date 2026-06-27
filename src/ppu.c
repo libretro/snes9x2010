@@ -1678,6 +1678,12 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 static INLINE void DrawBackgroundMode7 (int bg, void (*DrawMath) (uint32_t, uint32_t, int), void (*DrawNomath) (uint32_t, uint32_t, int), int D)
 {
 	int clip;
+	/* Refresh the de-interleaved Mode 7 tilemap/graphics planes from
+	 * current VRAM before sampling. VRAM is VBlank-stable across a frame's
+	 * Mode 7 rendering, so this snapshot is valid for every clip segment
+	 * below; rebuilding here (rather than on every VRAM write) keeps the
+	 * write path untouched. */
+	S9xMode7DeinterleaveVRAM();
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
 		GFX.ClipColors = !(GFX.Clip[bg].DrawMode[clip] & 1);

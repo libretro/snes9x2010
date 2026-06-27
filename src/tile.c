@@ -10335,13 +10335,47 @@ static INLINE int m7hr_blend_stable(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, ui
  *
  * Two BG x 3 NAME2 x 7 math = 42 functions plus 6 dispatch arrays. */
 
+/* Mode 7 stores its tilemap in the even VRAM bytes and the character
+ * graphics in the odd bytes, so the two per-pixel gathers stride by 2
+ * and every 64-byte cache line they pull is 50% wasted on the other
+ * plane.  De-interleave VRAM into two contiguous planes once per Mode 7
+ * frame: the tilemap gather then streams a packed 16 KB plane and each
+ * character's 64 graphics bytes become one contiguous cache line instead
+ * of straddling two.
+ *
+ * Planes are rebuilt from authoritative VRAM at the top of every
+ * DrawBackgroundMode7 (S9xMode7DeinterleaveVRAM).  VRAM is only safely
+ * written during VBlank/forced-blank, so it is stable across a frame's
+ * Mode 7 rendering and the snapshot can never be stale within a rendered
+ * region.  No VRAM-write hooks; ~3 us per rebuild. */
+static uint8_t Mode7TileMap[0x8000];
+static uint8_t Mode7Gfx[0x8000];
+
+void S9xMode7DeinterleaveVRAM (void)
+{
+	const uint8_t *v = Memory.VRAM;
+	int i;
+	for (i = 0; i < 0x8000; i++)
+	{
+		Mode7TileMap[i] = v[(i << 1)];
+		Mode7Gfx[i]     = v[(i << 1) + 1];
+	}
+}
+
+/* The per-pixel gathers below read these planes directly.  Index
+ * derivation (byte-for-byte identical to the original VRAM reads):
+ *   tilemap idx  ((Y&~7)<<5)+((X>>2)&~1)   is even; /2 = ((Y&~7)<<4)+(X>>3)
+ *   gfx     idx  1+(tile<<7)+((Y&7)<<4)+((X&7)<<1) is odd; (idx-1)/2 =
+ *                (tile<<6)+((Y&7)<<3)+(X&7)   (64 contiguous bytes/tile)
+ * giving:  M7tn = Mode7TileMap[((Y&~7)<<4)+(X>>3)];
+ *          b    = Mode7Gfx[(M7tn<<6)+((Y&7)<<3)+(X&7)];
+ *          fill = Mode7Gfx[((Y&7)<<3)+(X&7)]; */
+
 /* DrawMode7BG1 NAME2 = Normal1x1: 7 math variants. */
 static void DrawMode7BG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10387,11 +10421,11 @@ static void DrawMode7BG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), NOMATH, ADD, ((D + 7)))
             }
         }
@@ -10400,17 +10434,17 @@ static void DrawMode7BG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), NOMATH, ADD, ((D + 7)))
@@ -10423,8 +10457,6 @@ static void DrawMode7BG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10470,11 +10502,11 @@ static void DrawMode7BG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), REGMATH, ADD, ((D + 7)))
             }
         }
@@ -10483,17 +10515,17 @@ static void DrawMode7BG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), REGMATH, ADD, ((D + 7)))
@@ -10506,8 +10538,6 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10553,11 +10583,11 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHF1_2, ADD, ((D + 7)))
             }
         }
@@ -10566,17 +10596,17 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHF1_2, ADD, ((D + 7)))
@@ -10589,8 +10619,6 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10636,11 +10664,11 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
             }
         }
@@ -10649,17 +10677,17 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
@@ -10672,8 +10700,6 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10719,11 +10745,11 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), REGMATH, SUB, ((D + 7)))
             }
         }
@@ -10732,17 +10758,17 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), REGMATH, SUB, ((D + 7)))
@@ -10755,8 +10781,6 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10802,11 +10826,11 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHF1_2, SUB, ((D + 7)))
             }
         }
@@ -10815,17 +10839,17 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHF1_2, SUB, ((D + 7)))
@@ -10838,8 +10862,6 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10885,11 +10907,11 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHS1_2, SUB, ((D + 7)))
             }
         }
@@ -10898,17 +10920,17 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHS1_2, SUB, ((D + 7)))
@@ -10933,8 +10955,6 @@ static void DrawMode7BG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -10980,11 +11000,11 @@ static void DrawMode7BG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), NOMATH, ADD, ((D + 7)))
             }
         }
@@ -10993,17 +11013,17 @@ static void DrawMode7BG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), NOMATH, ADD, ((D + 7)))
@@ -11016,8 +11036,6 @@ static void DrawMode7BG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11063,11 +11081,11 @@ static void DrawMode7BG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), REGMATH, ADD, ((D + 7)))
             }
         }
@@ -11076,17 +11094,17 @@ static void DrawMode7BG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), REGMATH, ADD, ((D + 7)))
@@ -11099,8 +11117,6 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11146,11 +11162,11 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHF1_2, ADD, ((D + 7)))
             }
         }
@@ -11159,17 +11175,17 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHF1_2, ADD, ((D + 7)))
@@ -11182,8 +11198,6 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11229,11 +11243,11 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
             }
         }
@@ -11242,17 +11256,17 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
@@ -11265,8 +11279,6 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11312,11 +11324,11 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), REGMATH, SUB, ((D + 7)))
             }
         }
@@ -11325,17 +11337,17 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), REGMATH, SUB, ((D + 7)))
@@ -11348,8 +11360,6 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11395,11 +11405,11 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHF1_2, SUB, ((D + 7)))
             }
         }
@@ -11408,17 +11418,17 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHF1_2, SUB, ((D + 7)))
@@ -11431,8 +11441,6 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11478,11 +11486,11 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHS1_2, SUB, ((D + 7)))
             }
         }
@@ -11491,17 +11499,17 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHS1_2, SUB, ((D + 7)))
@@ -11526,8 +11534,6 @@ static void DrawMode7BG1_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11573,11 +11579,11 @@ static void DrawMode7BG1_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), NOMATH, ADD, ((D + 7)))
             }
         }
@@ -11586,17 +11592,17 @@ static void DrawMode7BG1_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), NOMATH, ADD, ((D + 7)))
@@ -11609,8 +11615,6 @@ static void DrawMode7BG1Add_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11656,11 +11660,11 @@ static void DrawMode7BG1Add_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), REGMATH, ADD, ((D + 7)))
             }
         }
@@ -11669,17 +11673,17 @@ static void DrawMode7BG1Add_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), REGMATH, ADD, ((D + 7)))
@@ -11692,8 +11696,6 @@ static void DrawMode7BG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11739,11 +11741,11 @@ static void DrawMode7BG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHF1_2, ADD, ((D + 7)))
             }
         }
@@ -11752,17 +11754,17 @@ static void DrawMode7BG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHF1_2, ADD, ((D + 7)))
@@ -11775,8 +11777,6 @@ static void DrawMode7BG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11822,11 +11822,11 @@ static void DrawMode7BG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
             }
         }
@@ -11835,17 +11835,17 @@ static void DrawMode7BG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
@@ -11858,8 +11858,6 @@ static void DrawMode7BG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11905,11 +11903,11 @@ static void DrawMode7BG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), REGMATH, SUB, ((D + 7)))
             }
         }
@@ -11918,17 +11916,17 @@ static void DrawMode7BG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), REGMATH, SUB, ((D + 7)))
@@ -11941,8 +11939,6 @@ static void DrawMode7BG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -11988,11 +11984,11 @@ static void DrawMode7BG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHF1_2, SUB, ((D + 7)))
             }
         }
@@ -12001,17 +11997,17 @@ static void DrawMode7BG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHF1_2, SUB, ((D + 7)))
@@ -12024,8 +12020,6 @@ static void DrawMode7BG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
@@ -12071,11 +12065,11 @@ static void DrawMode7BG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHS1_2, SUB, ((D + 7)))
             }
         }
@@ -12084,17 +12078,17 @@ static void DrawMode7BG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHS1_2, SUB, ((D + 7)))
@@ -12119,8 +12113,6 @@ static void DrawMode7BG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12160,11 +12152,11 @@ static void DrawMode7BG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), NOMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12173,17 +12165,17 @@ static void DrawMode7BG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), NOMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12196,8 +12188,6 @@ static void DrawMode7BG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12237,11 +12227,11 @@ static void DrawMode7BG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), REGMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12250,17 +12240,17 @@ static void DrawMode7BG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), REGMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12273,8 +12263,6 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12314,11 +12302,11 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHF1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12327,17 +12315,17 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHF1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12350,8 +12338,6 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12391,11 +12377,11 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12404,17 +12390,17 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12427,8 +12413,6 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12468,11 +12452,11 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), REGMATH, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12481,17 +12465,17 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), REGMATH, SUB, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12504,8 +12488,6 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12545,11 +12527,11 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHF1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12558,17 +12540,17 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHF1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12581,8 +12563,6 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12622,11 +12602,11 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHS1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12635,17 +12615,17 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHS1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12670,8 +12650,6 @@ static void DrawMode7BG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12711,11 +12689,11 @@ static void DrawMode7BG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), NOMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12724,17 +12702,17 @@ static void DrawMode7BG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), NOMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12747,8 +12725,6 @@ static void DrawMode7BG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12788,11 +12764,11 @@ static void DrawMode7BG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), REGMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12801,17 +12777,17 @@ static void DrawMode7BG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), REGMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12824,8 +12800,6 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12865,11 +12839,11 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHF1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12878,17 +12852,17 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHF1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12901,8 +12875,6 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12942,11 +12914,11 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -12955,17 +12927,17 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -12978,8 +12950,6 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13019,11 +12989,11 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), REGMATH, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -13032,17 +13002,17 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), REGMATH, SUB, ((D + ((b & 0x80) ? 11 : 3))))
@@ -13055,8 +13025,6 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13096,11 +13064,11 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHF1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -13109,17 +13077,17 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHF1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
@@ -13132,8 +13100,6 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13173,11 +13139,11 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHS1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -13186,17 +13152,17 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHS1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
@@ -13221,8 +13187,6 @@ static void DrawMode7BG2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13262,11 +13226,11 @@ static void DrawMode7BG2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), NOMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -13275,17 +13239,17 @@ static void DrawMode7BG2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), NOMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -13298,8 +13262,6 @@ static void DrawMode7BG2Add_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13339,11 +13301,11 @@ static void DrawMode7BG2Add_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), REGMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -13352,17 +13314,17 @@ static void DrawMode7BG2Add_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), REGMATH, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -13375,8 +13337,6 @@ static void DrawMode7BG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13416,11 +13376,11 @@ static void DrawMode7BG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHF1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -13429,17 +13389,17 @@ static void DrawMode7BG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHF1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -13452,8 +13412,6 @@ static void DrawMode7BG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13493,11 +13451,11 @@ static void DrawMode7BG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -13506,17 +13464,17 @@ static void DrawMode7BG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
@@ -13529,8 +13487,6 @@ static void DrawMode7BG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13570,11 +13526,11 @@ static void DrawMode7BG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), REGMATH, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -13583,17 +13539,17 @@ static void DrawMode7BG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), REGMATH, SUB, ((D + ((b & 0x80) ? 11 : 3))))
@@ -13606,8 +13562,6 @@ static void DrawMode7BG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13647,11 +13601,11 @@ static void DrawMode7BG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHF1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -13660,17 +13614,17 @@ static void DrawMode7BG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHF1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
@@ -13683,8 +13637,6 @@ static void DrawMode7BG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, startx;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13724,11 +13676,11 @@ static void DrawMode7BG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHS1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
@@ -13737,17 +13689,17 @@ static void DrawMode7BG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 X = ((AA + BB) >> 8);
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHS1_2, SUB, ((D + ((b & 0x80) ? 11 : 3))))
@@ -13789,8 +13741,6 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -13858,14 +13808,14 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -13881,7 +13831,7 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -13889,12 +13839,12 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -13917,8 +13867,6 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -13986,14 +13934,14 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -14009,7 +13957,7 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -14017,12 +13965,12 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -14045,8 +13993,6 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14114,14 +14060,14 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -14137,7 +14083,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -14145,12 +14091,12 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -14173,8 +14119,6 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14242,14 +14186,14 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -14265,7 +14209,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -14273,12 +14217,12 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -14301,8 +14245,6 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14370,14 +14312,14 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -14393,7 +14335,7 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -14401,12 +14343,12 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -14429,8 +14371,6 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14498,14 +14438,14 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -14521,7 +14461,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -14529,12 +14469,12 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -14557,8 +14497,6 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14626,14 +14564,14 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -14649,7 +14587,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -14657,12 +14595,12 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -14697,8 +14635,6 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14766,14 +14702,14 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -14789,7 +14725,7 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -14797,12 +14733,12 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -14825,8 +14761,6 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -14894,14 +14828,14 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -14917,7 +14851,7 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -14925,12 +14859,12 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -14953,8 +14887,6 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15022,14 +14954,14 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -15045,7 +14977,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -15053,12 +14985,12 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -15081,8 +15013,6 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15150,14 +15080,14 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -15173,7 +15103,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -15181,12 +15111,12 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -15209,8 +15139,6 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15278,14 +15206,14 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -15301,7 +15229,7 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -15309,12 +15237,12 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -15337,8 +15265,6 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15406,14 +15332,14 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -15429,7 +15355,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -15437,12 +15363,12 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -15465,8 +15391,6 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15534,14 +15458,14 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -15557,7 +15481,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -15565,12 +15489,12 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -15605,8 +15529,6 @@ static void DrawMode7MosaicBG1_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15674,14 +15596,14 @@ static void DrawMode7MosaicBG1_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -15697,7 +15619,7 @@ static void DrawMode7MosaicBG1_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -15705,12 +15627,12 @@ static void DrawMode7MosaicBG1_Hires (uint32_t Left, uint32_t Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -15733,8 +15655,6 @@ static void DrawMode7MosaicBG1Add_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15802,14 +15722,14 @@ static void DrawMode7MosaicBG1Add_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -15825,7 +15745,7 @@ static void DrawMode7MosaicBG1Add_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -15833,12 +15753,12 @@ static void DrawMode7MosaicBG1Add_Hires (uint32_t Left, uint32_t Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -15861,8 +15781,6 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -15930,14 +15848,14 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -15953,7 +15871,7 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -15961,12 +15879,12 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -15989,8 +15907,6 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -16058,14 +15974,14 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -16081,7 +15997,7 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -16089,12 +16005,12 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -16117,8 +16033,6 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -16186,14 +16100,14 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -16209,7 +16123,7 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -16217,12 +16131,12 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -16245,8 +16159,6 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -16314,14 +16226,14 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -16337,7 +16249,7 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -16345,12 +16257,12 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -16373,8 +16285,6 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     if ((Memory.FillRAM[0x2130] & 1))
     {
@@ -16442,14 +16352,14 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0xff)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -16465,7 +16375,7 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -16473,12 +16383,12 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0xff)))
@@ -16513,8 +16423,6 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16576,14 +16484,14 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -16599,7 +16507,7 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -16607,12 +16515,12 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -16635,8 +16543,6 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16698,14 +16604,14 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -16721,7 +16627,7 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -16729,12 +16635,12 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -16757,8 +16663,6 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16820,14 +16724,14 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -16843,7 +16747,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -16851,12 +16755,12 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -16879,8 +16783,6 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -16942,14 +16844,14 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -16965,7 +16867,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -16973,12 +16875,12 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -17001,8 +16903,6 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17064,14 +16964,14 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -17087,7 +16987,7 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -17095,12 +16995,12 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -17123,8 +17023,6 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17186,14 +17084,14 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -17209,7 +17107,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -17217,12 +17115,12 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -17245,8 +17143,6 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17308,14 +17204,14 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -17331,7 +17227,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -17339,12 +17235,12 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -17379,8 +17275,6 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17442,14 +17336,14 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -17465,7 +17359,7 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -17473,12 +17367,12 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -17501,8 +17395,6 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17564,14 +17456,14 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -17587,7 +17479,7 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -17595,12 +17487,12 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -17623,8 +17515,6 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17686,14 +17576,14 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -17709,7 +17599,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -17717,12 +17607,12 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -17745,8 +17635,6 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17808,14 +17696,14 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -17831,7 +17719,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -17839,12 +17727,12 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -17867,8 +17755,6 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -17930,14 +17816,14 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -17953,7 +17839,7 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -17961,12 +17847,12 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -17989,8 +17875,6 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -18052,14 +17936,14 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -18075,7 +17959,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -18083,12 +17967,12 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -18111,8 +17995,6 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -18174,14 +18056,14 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -18197,7 +18079,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -18205,12 +18087,12 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -18245,8 +18127,6 @@ static void DrawMode7MosaicBG2_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -18308,14 +18188,14 @@ static void DrawMode7MosaicBG2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -18331,7 +18211,7 @@ static void DrawMode7MosaicBG2_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -18339,12 +18219,12 @@ static void DrawMode7MosaicBG2_Hires (uint32_t Left, uint32_t Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -18367,8 +18247,6 @@ static void DrawMode7MosaicBG2Add_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -18430,14 +18308,14 @@ static void DrawMode7MosaicBG2Add_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -18453,7 +18331,7 @@ static void DrawMode7MosaicBG2Add_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -18461,12 +18339,12 @@ static void DrawMode7MosaicBG2Add_Hires (uint32_t Left, uint32_t Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -18489,8 +18367,6 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -18552,14 +18428,14 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -18575,7 +18451,7 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -18583,12 +18459,12 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -18611,8 +18487,6 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -18674,14 +18548,14 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -18697,7 +18571,7 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -18705,12 +18579,12 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -18733,8 +18607,6 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -18796,14 +18668,14 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -18819,7 +18691,7 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -18827,12 +18699,12 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -18855,8 +18727,6 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -18918,14 +18788,14 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -18941,7 +18811,7 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -18949,12 +18819,12 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -18977,8 +18847,6 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
     uint32_t Line, Offset;
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     GFX.RealScreenColors = IPPU.ScreenColors;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
     StartY = GFX.StartY;
@@ -19040,14 +18908,14 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if ((Pix = (b & 0x7f)))
                 {
                     for ( h = MosaicStart; h < VMosaic; h++)
@@ -19063,7 +18931,7 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
                 int X, Y;
-                uint8_t b, *TileData;
+                uint8_t b; uint32_t M7tn;
                 if (--ctr)
                     continue;
                 ctr = HMosaic;
@@ -19071,12 +18939,12 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
                 Y = ((CC + DD) >> 8);
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 + (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
                 if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1    + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
                 if ((Pix = (b & 0x7f)))
@@ -19158,8 +19026,6 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19215,14 +19081,13 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
                 {
@@ -19238,9 +19103,8 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
                 {
@@ -19261,7 +19125,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -19270,13 +19134,11 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -19300,13 +19162,11 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -19332,8 +19192,6 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19389,14 +19247,13 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
                 {
@@ -19412,9 +19269,8 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
                 {
@@ -19435,7 +19291,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -19444,13 +19300,11 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -19474,13 +19328,11 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -19506,8 +19358,6 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19563,14 +19413,13 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
                 {
@@ -19586,9 +19435,8 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
                 {
@@ -19609,7 +19457,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -19618,13 +19466,11 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -19648,13 +19494,11 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -19680,8 +19524,6 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19737,14 +19579,13 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
                 {
@@ -19760,9 +19601,8 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
                 {
@@ -19783,7 +19623,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -19792,13 +19632,11 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -19822,13 +19660,11 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -19854,8 +19690,6 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -19911,14 +19745,13 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
                 {
@@ -19934,9 +19767,8 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
                 {
@@ -19957,7 +19789,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -19966,13 +19798,11 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -19996,13 +19826,11 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20028,8 +19856,6 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20085,14 +19911,13 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
                 {
@@ -20108,9 +19933,8 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
                 {
@@ -20131,7 +19955,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -20140,13 +19964,11 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20170,13 +19992,11 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20202,8 +20022,6 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20259,14 +20077,13 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0xff)))
                 {
@@ -20282,9 +20099,8 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0xff)))
                 {
@@ -20305,7 +20121,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -20314,13 +20130,11 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20344,13 +20158,11 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20389,8 +20201,6 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20440,14 +20250,13 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
                 {
@@ -20463,9 +20272,8 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
                 {
@@ -20486,7 +20294,7 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -20495,13 +20303,11 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20525,13 +20331,11 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20557,8 +20361,6 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20608,14 +20410,13 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
                 {
@@ -20631,9 +20432,8 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
                 {
@@ -20654,7 +20454,7 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -20663,13 +20463,11 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20693,13 +20491,11 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20725,8 +20521,6 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20776,14 +20570,13 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
                 {
@@ -20799,9 +20592,8 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
                 {
@@ -20822,7 +20614,7 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -20831,13 +20623,11 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20861,13 +20651,11 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -20893,8 +20681,6 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -20944,14 +20730,13 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
                 {
@@ -20967,9 +20752,8 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
                 {
@@ -20990,7 +20774,7 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -20999,13 +20783,11 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -21029,13 +20811,11 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -21061,8 +20841,6 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21112,14 +20890,13 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
                 {
@@ -21135,9 +20912,8 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
                 {
@@ -21158,7 +20934,7 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -21167,13 +20943,11 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -21197,13 +20971,11 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -21229,8 +21001,6 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21280,14 +21050,13 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
                 {
@@ -21303,9 +21072,8 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
                 {
@@ -21326,7 +21094,7 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -21335,13 +21103,11 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -21365,13 +21131,11 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -21397,8 +21161,6 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21448,14 +21210,13 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
 
                 /* Sample 1 -> output index 2*x */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
                     && (Pix = (b & 0x7f)))
                 {
@@ -21471,9 +21232,8 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 /* Sample 2 -> output index 2*x + 1 */
                 X = ((AA + BB) >> 8) & 0x3ff;
                 Y = ((CC + DD) >> 8) & 0x3ff;
-                TileData = VRAM1 +
-                    (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
                     && (Pix = (b & 0x7f)))
                 {
@@ -21494,7 +21254,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
             for (x = Left; x < Right; x++)
             {
                 int X, Y;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 int do_draw;
 
                 /* Sample 1 -> output index 2*x */
@@ -21503,13 +21263,11 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -21533,13 +21291,11 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                 do_draw = 1;
                 if (((X | Y) & ~0x3ff) == 0)
                 {
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5)
-                                   + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else if (PPU.Mode7Repeat == 3)
-                    b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
                 if (do_draw)
@@ -21624,8 +21380,6 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21681,14 +21435,13 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
                     {
@@ -21726,7 +21479,7 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -21734,13 +21487,11 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -21777,8 +21528,6 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21834,14 +21583,13 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
                     {
@@ -21879,7 +21627,7 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -21887,13 +21635,11 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -21930,8 +21676,6 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -21987,14 +21731,13 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
                     {
@@ -22032,7 +21775,7 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -22040,13 +21783,11 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -22083,8 +21824,6 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -22140,14 +21879,13 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
                     {
@@ -22185,7 +21923,7 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -22193,13 +21931,11 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -22236,8 +21972,6 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -22293,14 +22027,13 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
                     {
@@ -22338,7 +22071,7 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -22346,13 +22079,11 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -22389,8 +22120,6 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -22446,14 +22175,13 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
                     {
@@ -22491,7 +22219,7 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -22499,13 +22227,11 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -22542,8 +22268,6 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -22599,14 +22323,13 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0xff);
                     /* Z-test + write. (D + 7) may reference 'b' (BG2). */
                     {
@@ -22644,7 +22367,7 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -22652,13 +22375,11 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -22712,8 +22433,6 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -22763,14 +22482,13 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
                     {
@@ -22808,7 +22526,7 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -22816,13 +22534,11 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -22859,8 +22575,6 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -22910,14 +22624,13 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
                     {
@@ -22955,7 +22668,7 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -22963,13 +22676,11 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -23006,8 +22717,6 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -23057,14 +22766,13 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
                     {
@@ -23102,7 +22810,7 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -23110,13 +22818,11 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -23153,8 +22859,6 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -23204,14 +22908,13 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
                     {
@@ -23249,7 +22952,7 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -23257,13 +22960,11 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -23300,8 +23001,6 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -23351,14 +23050,13 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
                     {
@@ -23396,7 +23094,7 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -23404,13 +23102,11 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -23447,8 +23143,6 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -23498,14 +23192,13 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
                     {
@@ -23543,7 +23236,7 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -23551,13 +23244,11 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)
@@ -23594,8 +23285,6 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
 {
     struct SLineMatrixData *l;
     uint32_t x, Line, Offset;
-    uint8_t *VRAM  = Memory.VRAM;
-    uint8_t *VRAM1 = VRAM + 1;
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = IPPU.ScreenColors;
@@ -23645,14 +23334,13 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8) & 0x3ff;
                     Y = ((CC + DD) >> 8) & 0x3ff;
-                    TileData = VRAM1 +
-                        (VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
-                    b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     Pix = (b & 0x7f);
                     /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
                     {
@@ -23690,7 +23378,7 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
             for (x = Left; x < Right; x++)
             {
                 int X, Y, sub, do_draw;
-                uint8_t *TileData, b;
+                uint8_t b; uint32_t M7tn;
                 for (sub = 0; sub < 4; sub++)
                 {
                     X = ((AA + BB) >> 8);
@@ -23698,13 +23386,11 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                     do_draw = 1;
                     if (((X | Y) & ~0x3ff) == 0)
                     {
-                        TileData = VRAM1 +
-                            (VRAM[((Y & ~7) << 5)
-                                       + ((X >> 2) & ~1)] << 7);
-                        b = *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
                     else if (PPU.Mode7Repeat == 3)
-                        b = *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1));
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
                     if (do_draw)

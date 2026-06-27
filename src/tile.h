@@ -187,5 +187,6 @@ void S9xSelectTileConverter (int, uint8_t, uint8_t, uint8_t);
 void S9xSelectTileConverter_Depth8 (void);
 void S9xSelectTileConverter_Depth4 (void);
 void S9xSelectTileConverter_Depth2 (void);
+void S9xMode7DeinterleaveVRAM (void);
 
 #endif
