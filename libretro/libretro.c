@@ -497,18 +497,21 @@ static void check_variables(bool first_run)
 	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 	{
 		char *endptr;
-		double freq = strtod(var.value, &endptr);
+		long freq = strtol(var.value, &endptr, 10);
 
 		/* There must be a space between the value and the unit. Therefore, we
-		 * check that the character after the converter integer is a space. */
-		if (*endptr != ' ' || freq == 0.0)
+		 * check that the character after the converted integer is a space. */
+		if (*endptr != ' ' || freq == 0)
 		{
 			S9xMessage(S9X_MSG_WARN, S9X_CATEGORY_EXTERNAL, "Unable to obtain SuperFX overclock setting.");
-			freq = 10.0;
+			freq = 10;
 		}
 
-		/* Convert MHz value to Hz and multiply by required factors. */
-		Settings.SuperFXSpeedPerLine = 0.417 * 1.5e6 * freq;
+		/* 0.417 * 1.5e6 == 625500 GSU cycles/second per MHz (the option list
+		 * is integer MHz only). Computed in integer math: the SNES has no FPU
+		 * and this value feeds the per-line instruction budget, so it must be
+		 * bit-identical across platforms for deterministic SuperFX execution. */
+		Settings.SuperFXSpeedPerLine = 625500u * (uint32_t)freq;
 		reset_sfx = true;
 	}
 
@@ -1148,8 +1151,10 @@ void retro_init(void)
 	S9xUnmapAllControls();
 	map_buttons();
 
-	/* Initialize SuperFX CPU to normal speed by default */
-	Settings.SuperFXSpeedPerLine = 0.417 * 10.5e6;
+	/* Initialize SuperFX CPU to normal speed by default.
+	 * 0.417 * 10.5e6 == 4378500 exactly; kept as an integer so the
+	 * GSU instruction budget stays FPU-free and deterministic. */
+	Settings.SuperFXSpeedPerLine = 4378500;
 }
 
 /* libretro uses relative values for analogue devices. 

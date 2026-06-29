@@ -430,7 +430,7 @@ struct SSettings
 	   Toons rainbow rings). Stable matches HD-no-BL's Y-axis sampling
 	   and only smooths X. */
 	int32_t		Mode7HiresBilinear;
-   float    SuperFXSpeedPerLine;
+   uint32_t SuperFXSpeedPerLine; /* GSU clock cycles per second (already scaled by the 0.417 duty factor) */
    uint8_t	FastSavestates;
    uint8_t	HardDisableAudio;
 };

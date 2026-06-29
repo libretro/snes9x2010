@@ -4498,15 +4498,19 @@ static void FxReset (struct FxInfo_s *psFxInfo)
 
 void S9xResetSuperFX (void)
 {
-   float frames_per_second;
+   /* GSU cycles per scanline = cycles_per_second / (fps * scanlines_per_frame).
+    * Done entirely in integer math: the SNES has no FPU, and this value is the
+    * per-line SuperFX instruction budget, so it must be bit-identical across
+    * platforms and compilers for deterministic emulation (netplay/savestates/
+    * runahead). frames_per_second is the fixed 50/60 the core has always used,
+    * and Timings.V_Max (262 NTSC / 312 PAL) is established by S9xResetCPU before
+    * this runs, so the divisor (15600 or 15720) is never zero.
+    *
+    * FIXME: Snes9x can't execute CPU and SuperFX at a time. Don't ask me what
+    * is the 0.417 baked into Settings.SuperFXSpeedPerLine :P */
+   uint32_t frames_per_second = Settings.PAL ? 50 : 60;
 
-   /* FIXME: Snes9x can't execute CPU and SuperFX at a time. Don't ask me what is 0.417 :P*/
-   if (Settings.PAL)
-      frames_per_second = 50.0f;
-   else
-      frames_per_second = 60.0f;
-
-   SuperFX.speedPerLine = (uint32_t) (Settings.SuperFXSpeedPerLine * ((1.0f / frames_per_second) / ((float) (Timings.V_Max))));
+   SuperFX.speedPerLine = Settings.SuperFXSpeedPerLine / (frames_per_second * Timings.V_Max);
    SuperFX.oneLineDone = FALSE;
    SuperFX.vFlags = 0;
    FxReset(&SuperFX);
