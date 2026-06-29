@@ -4498,19 +4498,29 @@ static void FxReset (struct FxInfo_s *psFxInfo)
 
 void S9xResetSuperFX (void)
 {
-   /* GSU cycles per scanline = cycles_per_second / (fps * scanlines_per_frame).
-    * Done entirely in integer math: the SNES has no FPU, and this value is the
-    * per-line SuperFX instruction budget, so it must be bit-identical across
-    * platforms and compilers for deterministic emulation (netplay/savestates/
-    * runahead). frames_per_second is the fixed 50/60 the core has always used,
-    * and Timings.V_Max (262 NTSC / 312 PAL) is established by S9xResetCPU before
-    * this runs, so the divisor (15600 or 15720) is never zero.
+   /* GSU cycles per scanline.  A scanline lasts SNES_CYCLES_PER_SCANLINE (1364)
+    * master-clock cycles, so the number of GSU cycles that elapse in one line is
+    *
+    *    speedPerLine = SuperFXSpeedPerLine * 1364 / master_clock
+    *
+    * This is the hardware-exact form: it uses the real master clock and dot
+    * count rather than a rounded 50/60 Hz refresh.  fps and V_Max both cancel
+    * out, since master_clock == fps * V_Max * SNES_CYCLES_PER_SCANLINE, so the
+    * divisor is a nonzero compile-time constant (no V_Max==0 hazard).
+    *
+    * Integer math throughout: the SNES has no FPU, and this value is the per-line
+    * SuperFX instruction budget, so it must be bit-identical across platforms for
+    * deterministic emulation (netplay/savestates/runahead).  The master-clock
+    * macros are doubles, but the casts are compile-time constant conversions
+    * (21477272.0 / 21281370.0 are exact), so no runtime float op is emitted; the
+    * SuperFXSpeedPerLine * 1364 product needs the 64-bit intermediate.
     *
     * FIXME: Snes9x can't execute CPU and SuperFX at a time. Don't ask me what
     * is the 0.417 baked into Settings.SuperFXSpeedPerLine :P */
-   uint32_t frames_per_second = Settings.PAL ? 50 : 60;
+   uint32_t master_clock = Settings.PAL ? (uint32_t) PAL_MASTER_CLOCK : (uint32_t) NTSC_MASTER_CLOCK;
 
-   SuperFX.speedPerLine = Settings.SuperFXSpeedPerLine / (frames_per_second * Timings.V_Max);
+   SuperFX.speedPerLine = (uint32_t) ((uint64_t) Settings.SuperFXSpeedPerLine
+                                      * SNES_CYCLES_PER_SCANLINE / master_clock);
    SuperFX.oneLineDone = FALSE;
    SuperFX.vFlags = 0;
    FxReset(&SuperFX);
