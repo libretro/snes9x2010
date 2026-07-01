@@ -178,7 +178,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 #include "snes9x.h"
 #include "memmap.h"
 #include "seta.h"
@@ -346,6 +345,32 @@ static int16_t ST010_Sin (int16_t Theta)
 static int16_t ST010_Cos (int16_t Theta)
 {
 	return (ST010_SinTable[((Theta + 0x4000) >> 8) & 0xff]);
+}
+
+static uint16_t ST010_ISqrt (uint32_t n)
+{
+	/* Integer floor(sqrt(n)) via the classic bit-by-bit method.  Verified
+	 * bit-identical to the former (int)sqrt((double)n) for every n < 2^31 --
+	 * the full range of x*x + y*y for int16 x, y -- so OP04's vector length is
+	 * unchanged, and the file no longer needs floating point or <math.h>. */
+	uint32_t rem = 0, root = 0;
+	int i;
+
+	for (i = 0; i < 16; i++)
+	{
+		root <<= 1;
+		rem = (rem << 2) | (n >> 30);
+		n <<= 2;
+		root++;
+		if (root <= rem)
+		{
+			rem  -= root;
+			root++;
+		}
+		else
+			root--;
+	}
+	return (uint16_t) (root >> 1);
 }
 
 static void ST010_OP01 (int16_t x0, int16_t y0, int16_t * x1, int16_t * y1, int16_t * Quadrant, int16_t * Theta)
@@ -699,7 +724,7 @@ void S9xSetST010 (uint32_t Address, uint8_t Byte)
 				x = Memory.SRAM[0] | (Memory.SRAM[1] << 8);
 				y = Memory.SRAM[2] | (Memory.SRAM[3] << 8);
 			#endif
-				square = (int16_t) sqrt((double) (y * y + x * x));
+				square = (int16_t) ST010_ISqrt((uint32_t) (x * x) + (uint32_t) (y * y));
 				/*SETA_Distance(x, y, square);*/
 
 			#ifndef MSB_FIRST
