@@ -4625,7 +4625,7 @@ static void fx_writeRegisterSpace (void)
 #define FX_CYC_AVG_NUM	12	/* budget scale numerator   (12/5 == 2.4 ~= 1/0.417) */
 #define FX_CYC_AVG_DEN	5	/* budget scale denominator */
 
-int		fx_cycle_accuracy = 0;	/* set from the core option (default off) */
+int		fx_cycle_accuracy = 1;	/* set from the core option (default on) */
 static uint8_t	fx_OpcodeCycles[1024];	/* indexed by (vStatusReg & 0x300) | opcode, i.e. 0..0x3ff */
 static uint32_t	fx_multWait;
 static int	fx_cycleTableReady = 0;

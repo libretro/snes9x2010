@@ -227,17 +227,17 @@ struct retro_core_option_v2_definition option_defs_us[] = {
    },
    {
       "snes9x_2010_superfx_cycle_accuracy",
-      "SuperFX Cycle Accuracy (Experimental)",
+      "SuperFX Cycle Accuracy",
       NULL,
-      "Charge each SuperFX (GSU) instruction an approximate hardware cycle cost (multiplies, RAM/ROM access, plots) instead of a flat per-instruction budget. Changes GSU timing; leave disabled for the established behaviour. Works together with the SuperFX overclock option.",
+      "Charge each SuperFX (GSU) instruction an approximate hardware cycle cost (multiplies, RAM/ROM access, plots) rather than a flat per-instruction budget, for more hardware-like GSU timing. Set to 'disabled' for the legacy instruction-count behaviour. Works together with the SuperFX overclock option.",
       NULL,
       "hacks",
       {
-         { "disabled", NULL },
          { "enabled",  NULL },
+         { "disabled", NULL },
          { NULL, NULL},
       },
-      "disabled"
+      "enabled"
    },
    {
       "snes9x_2010_reduce_sprite_flicker",
