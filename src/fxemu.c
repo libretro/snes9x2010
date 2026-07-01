@@ -2888,8 +2888,7 @@ static void fx_lmult (void)
 	DREG = v;
 	GSU.vSign = v;
 	GSU.vZero = v;
-	/* XXX: R6 or R4?*/
-	GSU.vCarry = (R4 >> 15) & 1; /* should it be bit 15 of R4 instead ?*/
+	GSU.vCarry = (R4 >> 15) & 1;
 	TESTR14;
 	CLRFLAGS;
 }
