@@ -4626,14 +4626,14 @@ static void fx_writeRegisterSpace (void)
 #define FX_CYC_AVG_DEN	5	/* budget scale denominator */
 
 int		fx_cycle_accuracy = 0;	/* set from the core option (default off) */
-static uint8_t	fx_OpcodeCycles[512];
+static uint8_t	fx_OpcodeCycles[1024];	/* indexed by (vStatusReg & 0x300) | opcode, i.e. 0..0x3ff */
 static uint32_t	fx_multWait;
 static int	fx_cycleTableReady = 0;
 
 static void fx_initCycleTable (void)
 {
 	int alt, op;
-	for (op = 0; op < 512; op++) fx_OpcodeCycles[op] = FX_CYC_BASE;
+	for (op = 0; op < 1024; op++) fx_OpcodeCycles[op] = FX_CYC_BASE;
 	for (alt = 0; alt < 4; alt++)
 	{
 		int b = alt << 8;
