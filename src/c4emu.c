@@ -178,7 +178,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
 
 #include <retro_inline.h>
 
