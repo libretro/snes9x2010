@@ -180,7 +180,6 @@
  ***********************************************************************************/
 #include <stdint.h>
 #include <stdio.h>
-#include <math.h>
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -3590,7 +3589,7 @@ const short *S9xDrainAudio (int *count_out)
    single canonical value across NTSC and PAL, since the SPC clock is
    not derived from the video clock and runs at the same rate in both
    regions. */
-#define SNES_AUDIO_FREQ 32040.0
+#define SNES_AUDIO_FREQ 32040
 
 /* Effective SPC output sample rate for the current cart.
 
@@ -3603,7 +3602,13 @@ const short *S9xDrainAudio (int *count_out)
    frontend resampler handles the conversion to host audio rate. */
 unsigned S9xGetAudioSampleRate (void)
 {
-	return (unsigned)(SNES_AUDIO_FREQ * TEMPO_UNIT / timing_hack_denominator + 0.5);
+	/* Integer round-to-nearest of SNES_AUDIO_FREQ * TEMPO_UNIT / denominator.
+	 * SNES_AUDIO_FREQ * TEMPO_UNIT == 32040 * 0x100 == 8202240 fits in 32 bits
+	 * and the denominator is in 1..TEMPO_UNIT, so the result is exact and
+	 * bit-identical to the former (unsigned)(32040.0 * TEMPO_UNIT / d + 0.5)
+	 * for every denominator -- and keeps the audio path free of floating point. */
+	unsigned denom = (unsigned) timing_hack_denominator;
+	return ((unsigned) (SNES_AUDIO_FREQ * TEMPO_UNIT) + denom / 2) / denom;
 }
 
 void S9xInitSound (void)
