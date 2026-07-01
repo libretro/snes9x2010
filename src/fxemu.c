@@ -4606,6 +4606,51 @@ static void fx_writeRegisterSpace (void)
 
 /* NOTE: no use to return anything here*/
 
+/* --- Optional per-opcode GSU cycle-cost model (experimental) -------------------
+ * When fx_cycle_accuracy is 0 the executor is bit-identical to the historical
+ * instruction-count model.  When 1, each opcode is charged an approximate GSU
+ * cycle cost so that multiplies (incl. the MS0 fast/slow bit), RAM/ROM access
+ * and plots consume the per-line budget at hardware-like relative rates.
+ *
+ * The per-line budget is scaled by FX_CYC_AVG_NUM/FX_CYC_AVG_DEN (~2.4), which
+ * un-bakes the legacy 0.417 average-instructions-per-cycle factor so the *average*
+ * throughput (and therefore the overclock scaling, which multiplies speedPerLine)
+ * is preserved; only the per-op distribution changes.  Integer only -> the model
+ * stays deterministic for netplay/savestates/runahead. */
+#define FX_CYC_BASE	2
+#define FX_CYC_MEM	3
+#define FX_CYC_PLOT	3
+#define FX_CYC_MULT	2
+#define FX_CYC_FMULT	3
+#define FX_CYC_AVG_NUM	12	/* budget scale numerator   (12/5 == 2.4 ~= 1/0.417) */
+#define FX_CYC_AVG_DEN	5	/* budget scale denominator */
+
+int		fx_cycle_accuracy = 0;	/* set from the core option (default off) */
+static uint8_t	fx_OpcodeCycles[512];
+static uint32_t	fx_multWait;
+static int	fx_cycleTableReady = 0;
+
+static void fx_initCycleTable (void)
+{
+	int alt, op;
+	for (op = 0; op < 512; op++) fx_OpcodeCycles[op] = FX_CYC_BASE;
+	for (alt = 0; alt < 4; alt++)
+	{
+		int b = alt << 8;
+		for (op = 0x30; op <= 0x3b; op++) fx_OpcodeCycles[b | op] = FX_CYC_MEM;	/* stw/stb  */
+		for (op = 0x40; op <= 0x4b; op++) fx_OpcodeCycles[b | op] = FX_CYC_MEM;	/* ldw/ldb  */
+		fx_OpcodeCycles[b | 0x4c] = FX_CYC_PLOT;				/* plot/rpix*/
+		for (op = 0x80; op <= 0x8f; op++) fx_OpcodeCycles[b | op] = FX_CYC_MULT;	/* mult/umult */
+		fx_OpcodeCycles[b | 0x9f] = FX_CYC_FMULT;				/* fmult/lmult */
+		fx_OpcodeCycles[b | 0xef] = FX_CYC_MEM;					/* getb*    */
+	}
+	fx_OpcodeCycles[0x90] = FX_CYC_MEM;	/* sbk  */
+	fx_OpcodeCycles[0xdf] = FX_CYC_MEM;	/* getc */
+	for (op = 0xa0; op <= 0xaf; op++) { fx_OpcodeCycles[(1<<8)|op] = FX_CYC_MEM; fx_OpcodeCycles[(2<<8)|op] = FX_CYC_MEM; } /* lms/sms */
+	for (op = 0xf0; op <= 0xff; op++) { fx_OpcodeCycles[(1<<8)|op] = FX_CYC_MEM; fx_OpcodeCycles[(2<<8)|op] = FX_CYC_MEM; } /* lm/sm   */
+	fx_cycleTableReady = 1;
+}
+
 void S9xSuperFXExec (void)
 {
 	uint8_t address_valid;
@@ -4616,6 +4661,9 @@ void S9xSuperFXExec (void)
 
 	/* Read registers and initialize GSU session*/
 	fx_readRegisterSpace();
+
+	if (fx_cycle_accuracy && !fx_cycleTableReady) fx_initCycleTable();
+	fx_multWait = (GSU.pvRegisters[GSU_CFGR] & 0x20) ? 0 : 1;
    
 	/* Check if we start inside the cache*/
 	if (GSU.bCacheActive && R15 >= GSU.vCacheBaseReg && R15 < (GSU.vCacheBaseReg + 512))
@@ -4630,13 +4678,32 @@ void S9xSuperFXExec (void)
 		CF(IRQ);
       
 		/* GSU executions functions*/
-		GSU.vCounter = nInstructions;
-      while (TF(G) && GSU.vCounter-- > 0)
+		if (!fx_cycle_accuracy)
 		{
-			/* Execute instruction from the pipe, and fetch next byte to the pipe*/
-			uint32_t	vOpcode = (uint32_t) PIPE;
-			FETCHPIPE;
-			(*fx_OpcodeTable[(GSU.vStatusReg & 0x300) | vOpcode])();
+			GSU.vCounter = nInstructions;
+			while (TF(G) && GSU.vCounter-- > 0)
+			{
+				/* Execute instruction from the pipe, and fetch next byte to the pipe*/
+				uint32_t	vOpcode = (uint32_t) PIPE;
+				FETCHPIPE;
+				(*fx_OpcodeTable[(GSU.vStatusReg & 0x300) | vOpcode])();
+			}
+		}
+		else
+		{
+			/* Per-opcode cycle budget (see fx_initCycleTable above). */
+			GSU.vCounter = (uint32_t)((uint64_t)nInstructions * FX_CYC_AVG_NUM / FX_CYC_AVG_DEN);
+			while (TF(G) && GSU.vCounter > 0)
+			{
+				uint32_t	vOpcode = (uint32_t) PIPE;
+				uint32_t	idx, cost;
+				FETCHPIPE;
+				idx = (GSU.vStatusReg & 0x300) | vOpcode;
+				(*fx_OpcodeTable[idx])();
+				cost = fx_OpcodeCycles[idx];
+				if ((vOpcode & 0xf0) == 0x80) cost += fx_multWait;	/* MS0=0 slow multiply */
+				GSU.vCounter = (GSU.vCounter > cost) ? (GSU.vCounter - cost) : 0;
+			}
 		}
 	}
 	else

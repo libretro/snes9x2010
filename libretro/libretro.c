@@ -288,6 +288,7 @@ static bool update_audio_latency = false;
 
 extern s9xcommand_t keymap[1024];
 bool overclock_cycles = false;
+extern int fx_cycle_accuracy; /* fxemu.c SuperFX cycle-cost toggle */
 bool reduce_sprite_flicker = false;
 bool pseudo_hires_blend = false;
 extern uint16_t joypad[8];
@@ -513,6 +514,18 @@ static void check_variables(bool first_run)
 		 * bit-identical across platforms for deterministic SuperFX execution. */
 		Settings.SuperFXSpeedPerLine = 625500u * (uint32_t)freq;
 		reset_sfx = true;
+	}
+
+	var.key = "snes9x_2010_superfx_cycle_accuracy";
+	var.value = NULL;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		int newval = (!strcmp(var.value, "enabled")) ? 1 : 0;
+		if (newval != fx_cycle_accuracy)
+		{
+			fx_cycle_accuracy = newval;
+			reset_sfx = true;
+		}
 	}
 
    	var.key = "snes9x_2010_turbodelay";
