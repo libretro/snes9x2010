@@ -221,8 +221,8 @@ void linearFree(void* mem);
 #define CORE_VERSION	"1.52.4"
 #define LIBRETRO_LIB_NAME "Snes9x 2010"
 
-#define VIDEO_REFRESH_RATE_PAL  (PAL_MASTER_CLOCK / (double)(SNES_CYCLES_PER_SCANLINE * SNES_MAX_PAL_VCOUNTER))
-#define VIDEO_REFRESH_RATE_NTSC (NTSC_MASTER_CLOCK / (double)(SNES_CYCLES_PER_SCANLINE * SNES_MAX_NTSC_VCOUNTER))
+#define VIDEO_REFRESH_RATE_PAL  (PAL_MASTER_CLOCK / (SNES_CYCLES_PER_SCANLINE * SNES_MAX_PAL_VCOUNTER))
+#define VIDEO_REFRESH_RATE_NTSC (NTSC_MASTER_CLOCK / (SNES_CYCLES_PER_SCANLINE * SNES_MAX_NTSC_VCOUNTER))
 
 /* Pre-zeroed silence buffer used in place of real SPC output when
    audio_muted is set. Sized for one worst-case PAL frame at the
@@ -984,38 +984,52 @@ static void map_buttons(void)
 
 static float get_aspect_ratio(unsigned width, unsigned height)
 {
-	double sample_frequency_ntsc;
-	double sample_frequency_pal;
-	double sample_freq;
-	double dot_rate;
-	double par;
+	/* Pixel aspect ratio = sample_freq / 2 / dot_rate, with
+	   dot_rate = master_clock / 4. That reduces to an exact ratio of
+	   integers, so it is evaluated in 64-bit integer math and only
+	   converted to float (the geometry field's type) at the boundary:
+	     aspect = width * 2 * sf_num / (height * sf_den * master_clock)
+	   NTSC sample frequency is 135000000/11 Hz, PAL is 14750000 Hz.
+	   OV2: not sure if these really make sense - NTSC is similar to
+	   4:3, PAL looks weird. */
+	int64_t sf_num, sf_den, master_clock, num, den;
 
 	if (aspect_ratio_mode == ASPECT_RATIO_4_3)
 		return (4.0f / 3.0f);
 	else if (aspect_ratio_mode == ASPECT_RATIO_1_1)
 		return (float)width / (float)height;
 
-	// OV2: not sure if these really make sense - 
-        // NTSC is similar to 4:3, PAL looks weird
-	sample_frequency_ntsc = 135000000.0f / 11.0f;
-	sample_frequency_pal = 14750000.0;
-	sample_freq = (retro_get_region() == RETRO_REGION_NTSC) ? sample_frequency_ntsc : sample_frequency_pal;
-	dot_rate = (Settings.PAL ? PAL_MASTER_CLOCK : NTSC_MASTER_CLOCK) / 4.0;
-
-	if (aspect_ratio_mode == ASPECT_RATIO_NTSC) // ntsc
+	if (aspect_ratio_mode == ASPECT_RATIO_NTSC) /* ntsc */
 	{
-		sample_freq = sample_frequency_ntsc;
-		dot_rate = NTSC_MASTER_CLOCK / 4.0;
+		sf_num       = 135000000;
+		sf_den       = 11;
+		master_clock = (int64_t)NTSC_MASTER_CLOCK;
 	}
-	else if (aspect_ratio_mode == ASPECT_RATIO_PAL) // pal
+	else if (aspect_ratio_mode == ASPECT_RATIO_PAL) /* pal */
 	{
-		sample_freq = sample_frequency_pal;
-		dot_rate = PAL_MASTER_CLOCK / 4.0;
+		sf_num       = 14750000;
+		sf_den       = 1;
+		master_clock = (int64_t)PAL_MASTER_CLOCK;
+	}
+	else /* auto: sample rate follows region, dot clock follows Settings.PAL */
+	{
+		if (retro_get_region() == RETRO_REGION_NTSC)
+		{
+			sf_num = 135000000;
+			sf_den = 11;
+		}
+		else
+		{
+			sf_num = 14750000;
+			sf_den = 1;
+		}
+		master_clock = Settings.PAL ? (int64_t)PAL_MASTER_CLOCK : (int64_t)NTSC_MASTER_CLOCK;
 	}
 
-	par = sample_freq / 2.0 / dot_rate;
+	num = (int64_t)width  * 2 * sf_num;
+	den = (int64_t)height * sf_den * master_clock;
 
-	return (float)(width * par / height);
+	return (float)num / (float)den;
 }
 
 static void update_geometry(void)
@@ -1041,7 +1055,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 	   hack (~70 game IDs handled in memmap.c). Reporting the effective
 	   rate here lets the frontend's resampler handle conversion to the
 	   host audio rate. */
-	info->timing.sample_rate    = (double)S9xGetAudioSampleRate();
+	info->timing.sample_rate    = S9xGetAudioSampleRate();
 	info->timing.fps            = (retro_get_region() == RETRO_REGION_NTSC) ?
 			VIDEO_REFRESH_RATE_NTSC : VIDEO_REFRESH_RATE_PAL;
 }
