@@ -982,20 +982,21 @@ static void map_buttons(void)
 	LR_MAP_BUTTON(MAKE_BUTTON(5, RETRO_DEVICE_ID_JOYPAD_DOWN), "Joypad5 Down");
 }
 
-float get_aspect_ratio(unsigned width, unsigned height)
+static float get_aspect_ratio(unsigned width, unsigned height)
 {
 	double sample_frequency_ntsc;
 	double sample_frequency_pal;
 	double sample_freq;
 	double dot_rate;
-    double par;
+	double par;
 
 	if (aspect_ratio_mode == ASPECT_RATIO_4_3)
 		return (4.0f / 3.0f);
 	else if (aspect_ratio_mode == ASPECT_RATIO_1_1)
 		return (float)width / (float)height;
 
-	// OV2: not sure if these really make sense - NTSC is similar to 4:3, PAL looks weird
+	// OV2: not sure if these really make sense - 
+        // NTSC is similar to 4:3, PAL looks weird
 	sample_frequency_ntsc = 135000000.0f / 11.0f;
 	sample_frequency_pal = 14750000.0;
 	sample_freq = (retro_get_region() == RETRO_REGION_NTSC) ? sample_frequency_ntsc : sample_frequency_pal;
