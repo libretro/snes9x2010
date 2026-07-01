@@ -13,18 +13,18 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
-snes_ntsc_setup_t const snes_ntsc_monochrome = { 0,-1, 0, 0,.2,  0,.2,-.2,-.2,-1,  1, 0, 0 };
+snes_ntsc_setup_t const snes_ntsc_monochrome = { 0,-16777216L, 0, 0,3355443L,  0,3355443L,-3355443L,-3355443L,-16777216L,  1, 0, 0 };
 snes_ntsc_setup_t const snes_ntsc_composite  = { 0, 0, 0, 0, 0,  0, 0,  0,  0, 0,  1, 0, 0 };
-snes_ntsc_setup_t const snes_ntsc_svideo     = { 0, 0, 0, 0,.2,  0,.2, -1, -1, 0,  1, 0, 0 };
-snes_ntsc_setup_t const snes_ntsc_rgb        = { 0, 0, 0, 0,.2,  0,.7, -1, -1,-1,  1, 0, 0 };
+snes_ntsc_setup_t const snes_ntsc_svideo     = { 0, 0, 0, 0,3355443L,  0,3355443L, -16777216L, -16777216L, 0,  1, 0, 0 };
+snes_ntsc_setup_t const snes_ntsc_rgb        = { 0, 0, 0, 0,3355443L,  0,11744051L, -16777216L, -16777216L,-16777216L,  1, 0, 0 };
 
 #define alignment_count 3
 #define burst_count     3
 #define rescale_in      8
 #define rescale_out     7
 
-#define artifacts_mid   1.0f
-#define fringing_mid    1.0f
+#define artifacts_mid   SNES_NTSC_ONE
+#define fringing_mid    SNES_NTSC_ONE
 #define std_decoder_hue 0
 
 #define rgb_bits        7 /* half normal range to allow for doubled hires pixels */
@@ -37,9 +37,9 @@ unsigned short snes_ntsc_scanline_mask = 0xffff;
 
 /* 3 input pixels -> 8 composite samples */
 pixel_info_t const snes_ntsc_pixels [alignment_count] = {
-	{ PIXEL_OFFSET( -4, -9 ), { 1, 1, .6667f, 0 } },
-	{ PIXEL_OFFSET( -2, -7 ), {       .3333f, 1, 1, .3333f } },
-	{ PIXEL_OFFSET(  0, -5 ), {                  0, .6667f, 1, 1 } },
+	{ PIXEL_OFFSET( -4, -9 ), { SNES_NTSC_ONE, SNES_NTSC_ONE, SNES_NTSC_K_6667, 0 } },
+	{ PIXEL_OFFSET( -2, -7 ), { SNES_NTSC_K_3333, SNES_NTSC_ONE, SNES_NTSC_ONE, SNES_NTSC_K_3333 } },
+	{ PIXEL_OFFSET(  0, -5 ), { 0, SNES_NTSC_K_6667, SNES_NTSC_ONE, SNES_NTSC_ONE } },
 };
 
 static void merge_kernel_fields( snes_ntsc_rgb_t* io )
@@ -88,7 +88,7 @@ void snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup )
 	init( &impl, setup );
 	
 	merge_fields = setup->merge_fields;
-	if ( setup->artifacts <= -1 && setup->fringing <= -1 )
+	if ( setup->artifacts <= -SNES_NTSC_ONE && setup->fringing <= -SNES_NTSC_ONE )
 		merge_fields = 1;
 	
 	for ( entry = 0; entry < snes_ntsc_palette_size; entry++ )
@@ -112,11 +112,11 @@ void snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup )
 		#endif
 		
 		{
-			float rr = impl.to_float [ir];
-			float gg = impl.to_float [ig];
-			float bb = impl.to_float [ib];
+			snes_ntsc_fx_t rr = impl.to_float [ir];
+			snes_ntsc_fx_t gg = impl.to_float [ig];
+			snes_ntsc_fx_t bb = impl.to_float [ib];
 			
-			float y, i, q = RGB_TO_YIQ( rr, gg, bb, y, i );
+			snes_ntsc_fx_t y, i, q = RGB_TO_YIQ( rr, gg, bb, y, i );
 			
 			int r, g, b = YIQ_TO_RGB( y, i, q, impl.to_rgb, int, r, g );
 			snes_ntsc_rgb_t rgb = PACK_RGB( r, g, b );
