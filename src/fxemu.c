@@ -943,6 +943,8 @@ static void fx_rpix_2bit (void)
 	DREG = 0;
 	DREG |= ((uint32_t) ((a[0] & v) != 0)) << 0;
 	DREG |= ((uint32_t) ((a[1] & v) != 0)) << 1;
+	GSU.vSign = DREG;
+	GSU.vZero = DREG;
 	TESTR14;
 }
 
@@ -1008,6 +1010,8 @@ static void fx_rpix_4bit (void)
 	DREG |= ((uint32_t) ((a[0x01] & v) != 0)) << 1;
 	DREG |= ((uint32_t) ((a[0x10] & v) != 0)) << 2;
 	DREG |= ((uint32_t) ((a[0x11] & v) != 0)) << 3;
+	GSU.vSign = DREG;
+	GSU.vZero = DREG;
 	TESTR14;
 }
 
@@ -1093,6 +1097,7 @@ static void fx_rpix_8bit (void)
 	DREG |= ((uint32_t) ((a[0x21] & v) != 0)) << 5;
 	DREG |= ((uint32_t) ((a[0x30] & v) != 0)) << 6;
 	DREG |= ((uint32_t) ((a[0x31] & v) != 0)) << 7;
+	GSU.vSign = DREG;
 	GSU.vZero = DREG;
 	TESTR14;
 }
