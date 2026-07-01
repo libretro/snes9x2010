@@ -869,6 +869,32 @@ static void fx_ldb_r11 (void)
 }
 
 /* 4c - plot - plot pixel with R1, R2 as x, y and the color register as the color*/
+/* SuperFX plot transparency (the hardware PLOT_EXEC test): in each colour
+ * depth only the bits that actually exist are compared against zero.
+ *   mode 0 (2bpp): colour & 0x03
+ *   mode 1 (4bpp): colour & 0x0f
+ *   mode 2 / 3   : colour & 0xff, or & 0x0f when the freeze-high bit (POR bit
+ *                  3) is set
+ * POR bit 0 (transparency disabled) always forces the pixel opaque. */
+static int fx_plot_opaque (void)
+{
+	uint8_t c = (uint8_t) GSU.vColorReg;
+
+	if (GSU.vPlotOptionReg & 0x01)
+		return TRUE;
+	switch (GSU.vMode)
+	{
+		case 0:
+			return (c & 0x03) != 0;
+		case 1:
+			return (c & 0x0f) != 0;
+		default:
+			if (GSU.vPlotOptionReg & 0x08)
+				return (c & 0x0f) != 0;
+			return (c & 0xff) != 0;
+	}
+}
+
 static void fx_plot_2bit (void)
 {
    uint32_t x = USEX8(R1);
@@ -879,7 +905,7 @@ static void fx_plot_2bit (void)
 	CLRFLAGS;
 	R1++;
 
-	if (!(GSU.vPlotOptionReg & 0x01) && !(COLR & 0xf))
+	if (!fx_plot_opaque())
 		return;
 
 	if (GSU.vPlotOptionReg & 0x02)
@@ -931,7 +957,7 @@ static void fx_plot_4bit (void)
 	CLRFLAGS;
 	R1++;
 
-	if (!(GSU.vPlotOptionReg & 0x01) && !(COLR & 0xf))
+	if (!fx_plot_opaque())
 		return;
 
 	if (GSU.vPlotOptionReg & 0x02)
@@ -998,13 +1024,7 @@ static void fx_plot_8bit (void)
 	R1++;
 
 	c = (uint8_t) GSU.vColorReg;
-	if (!(GSU.vPlotOptionReg & 0x10))
-	{
-		if (!(GSU.vPlotOptionReg & 0x01) && !(c & 0xf))
-			return;
-	}
-	else
-	if (!(GSU.vPlotOptionReg & 0x01) && !c)
+	if (!fx_plot_opaque())
 		return;
 
 	a = GSU.apvScreen[y >> 3] + GSU.x[x >> 3] + ((y & 7) << 1);
