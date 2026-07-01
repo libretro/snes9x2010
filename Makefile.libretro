@@ -96,7 +96,10 @@ endif
 
 #CC         = gcc
 TARGET_NAME	:= snes9x2010
-LIBM		= -lm
+# The core no longer uses math.h or any libm function (all floating-point
+# and transcendental math was converted to integer/fixed-point), so no
+# math library needs to be linked on any platform.
+LIBM		=
 
 ifeq ($(STATIC_LINKING),1)
 EXT=a
