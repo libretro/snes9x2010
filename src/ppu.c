@@ -2723,11 +2723,16 @@ static void S9xUpdateHVTimerPosition (void)
 				PPU.HTimerPosition += (ONE_DOT_CYCLE_DIV_2);
 		}
 
-		/* Add 14 to HTimerPosition*/
-		/* /IRQ - add 4 to HTimerPosition*/
-		/* after CPU executing - add 6 to HTimerPosition*/
-		/* Total = add 24*/
-		PPU.HTimerPosition += 24;
+		/* IRQ is recognized IRQTriggerCycles (~14 master cycles) after the
+		 * beam reaches IRQHBeamPos.  The /IRQ propagation and CPU interrupt
+		 * sequence are already accounted for in S9xOpcode_IRQ (which adds
+		 * CPU.MemSpeed + ONE_CYCLE plus the stack pushes and vector read,
+		 * identically to accurate snes9x), so they must NOT be added here as
+		 * well.  The previous "+= 24" double-counted those ~10 cycles, firing
+		 * every H-IRQ late; this desynchronised raster-timed effects (e.g. the
+		 * Top Gear 3000 road, whose per-scanline handler polls $4211/$2140)
+		 * and eventually produced a full-screen palette scramble. */
+		PPU.HTimerPosition += 14;
 	}
 	else
 		PPU.HTimerPosition = 20;
