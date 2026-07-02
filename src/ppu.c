@@ -5213,7 +5213,7 @@ void S9xSetCPU (uint8_t Byte, uint16_t Address)
 					S9xSetSPC7110(Byte, Address);
 				else
 				if (Settings.SDD1 && Address >= 0x4804 && Address <= 0x4807)
-					S9xSetSDD1MemoryMap(Address - 0x4804, Byte & 7);
+					S9xSetSDD1MemoryMap(Address - 0x4804, Byte & 0x0f);
 				break;
 		}
 	}

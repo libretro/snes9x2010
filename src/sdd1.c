@@ -202,15 +202,41 @@
 #include "sdd1emu.h"
 
 
+/* Same power-of-two decomposition memmap.c's map_mirror uses (from
+ * bsnes): out-of-range positions fold back into the ROM image the way
+ * the cartridge address decoding mirrors them, including for
+ * non-power-of-two ROM sizes such as Star Ocean's 48 Mbit. */
+static uint32_t sdd1_mirror (uint32_t size, uint32_t pos)
+{
+	uint32_t mask;
+
+	if (size == 0)
+		return (0);
+	if (pos < size)
+		return (pos);
+
+	mask = UINT32_C(1) << 31;
+	while (!(pos & mask))
+		mask >>= 1;
+
+	if (size <= (pos & mask))
+		return (sdd1_mirror(size, pos - mask));
+	return (mask + sdd1_mirror(size - mask, pos - mask));
+}
+
 void S9xSetSDD1MemoryMap (uint32_t bank, uint32_t value)
 {
 	int i, c;
 	bank = 0xc00 + bank * 0x100;
-	value = value * 1024 * 1024;
+	/* The MMC bank registers hold four bank-select bits (16 pages of
+	 * 1 MB), not three: both ares and the MiSTer core decode
+	 * bits 0-3. Mask here as well so stale high bits from FillRAM
+	 * can never index past the intended page. */
+	value = (value & 0x0f) * 1024 * 1024;
 
 	for ( c = 0; c < 0x100; c += 16)
 	{
-		uint8_t	*block = &Memory.ROM[value + (c << 12)];
+		uint8_t	*block = &Memory.ROM[sdd1_mirror(Memory.CalculatedSize, value + (c << 12))];
 		for ( i = c; i < c + 16; i++)
 			Memory.Map[i + bank] = block;
 	}
