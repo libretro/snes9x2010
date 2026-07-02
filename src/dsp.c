@@ -430,7 +430,13 @@ static void DSP1_Op00 (void)
 static void DSP1_Op20 (void)
 {
 	DSP1.Op20Result = DSP1.Op20Multiplicand * DSP1.Op20Multiplier >> 15;
-	DSP1.Op20Result++;
+	/* Bit-exact with the uPD7725 firmware (verified against ares/MiSTer LLE):
+	 * command 0x20 shares the multiply routine used by command 0x00, entered
+	 * with accumulator A holding the low bit left over from the command
+	 * dispatcher, and the routine ORs that residue into the result (A | m).
+	 * The net effect is to force bit 0, i.e. "|= 1", NOT an increment: for
+	 * odd products "++" would carry into higher bits and diverge from hardware. */
+	DSP1.Op20Result |= 1;
 
 }
 
