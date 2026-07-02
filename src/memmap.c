@@ -2407,7 +2407,7 @@ static uint8_t InitROM (void)
 			MATCH_NA ("DOOM TROOPERS")			|| /* Doom Troopers*/
 			MATCH_NA ("PORKY PIGS HAUNTED")			|| /* Porky Pig's Haunted Holiday*/
 			MATCH_NA ("Big Sky Trooper")			|| /* Big Sky Trooper*/
-			MATCH_NA ("A35"))				/* Mechwarrior 3050/Battle Tech 3050*/
+			MATCH_ID ("A35"))				/* Mechwarrior 3050/Battle Tech 3050*/
 			Timings.APUAllowTimeOverflow = TRUE;
 
 		/* SWAP MOSAIC HI-RES WITH HI-RES 
