@@ -190,6 +190,14 @@
 extern "C" {
 #endif
 
+/* S9X_ACCURACY_LEVEL must be visible to port.h: the level >= 2 check in
+ * port.h selects the event-draining addCyclesInMemoryAccess variants. With
+ * the define placed after the include, the macro was undefined (0) during
+ * preprocessing and every translation unit silently compiled the drain-free
+ * memory-access macros, deferring due events (HV-IRQ among them) by up to a
+ * full opcode sequence. */
+#define S9X_ACCURACY_LEVEL		3
+
 #include "port.h"
 #include "65c816.h"
 #include "messages.h"
@@ -197,9 +205,6 @@ extern "C" {
 #define ACCESSORY_AUTODETECTION_CONFIRM   0
 #define ACCESSORY_AUTODETECTION_ENABLED   1
 #define ACCESSORY_AUTODETECTION_NONE      2
-
-#define S9X_ACCURACY_LEVEL		3
-
 
 #ifndef SNES_SUPPORT_MULTI_CART
 #define SNES_SUPPORT_MULTI_CART		0
