@@ -2399,6 +2399,7 @@ static uint8_t InitROM (void)
 			Timings.APUSpeedup = 1;
 
 		if (MATCH_NA ("EARTHWORM JIM 2")			|| /* Earthworm Jim 2*/
+			MATCH_NA ("Madden NFL 96")			|| /* Madden NFL 96*/
 			MATCH_NA ("NBA Hangtime")			|| /* NBA Hang Time*/
 			MATCH_NA ("MSPACMAN")				|| /* Ms Pacman*/
 			MATCH_NA ("THE MASK")				|| /* The Mask*/
