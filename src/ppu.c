@@ -4241,10 +4241,22 @@ static void S9xDoDMA (void)
 		{
 			if (Settings.SDD1)
 			{
-				if (d->AAddressFixed && Memory.FillRAM[0x4801] > 0)
+				/* The chip streams decompressed data only for reads of the
+				 * c0-ff banks, and only on a DMA channel whose bit is set in
+				 * both $4800 (enable) and $4801 (run); when the transfer
+				 * completes, the hardware clears just that channel's run bit
+				 * and leaves any other armed channels alone (ares and the
+				 * MiSTer core agree on all three points). The old code
+				 * ignored $4800, triggered on any nonzero $4801, and wiped
+				 * the whole run register after every DMA while the chip was
+				 * present, so a stale $4801 could decompress an unrelated
+				 * fixed-address ROM transfer. Both retail games arm channel 0
+				 * with $4800=$4801=$01 and read from banks >= $c0 on every
+				 * decompression (verified by logging). */
+				if (d->AAddressFixed && d->ABank >= 0xc0 &&
+						(Memory.FillRAM[0x4800] & Memory.FillRAM[0x4801] & (1 << Channel)))
 				{
 					uint8_t *in_ptr;
-					/* XXX: Should probably verify that we're DMAing from ROM?*/
 					/* And somewhere we should make sure we're not running across a mapping boundary too.*/
 					/* Hacky support for pre-decompressed S-DD1 data*/
 					inc = !d->AAddressDecrement ? 1 : -1;
@@ -4257,9 +4269,8 @@ static void S9xDoDMA (void)
 					}
 
 					in_sdd1_dma = sdd1_decode_buffer;
+					Memory.FillRAM[0x4801] &= ~(1 << Channel);
 				}
-
-				Memory.FillRAM[0x4801] = 0;
 			}
 
 			/* SPC7110 */
