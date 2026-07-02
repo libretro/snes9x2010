@@ -1192,11 +1192,19 @@ static INLINE void dsp_echo_27 (void)
 		r = 0;
 	}
 
+	/* Clamp to the end of landing_buffer. A pathological long frame (e.g.
+	   Top Gear 3000 periodically emits ~2600 stereo samples in one frame,
+	   ~5x the ~530 nominal) can otherwise run the cursor past out_end,
+	   corrupting adjacent globals and eventually crashing. Dropping the
+	   overflow samples is inaudible and DRC absorbs the per-frame count. */
 	out = dsp_m.out;
-	out [0] = l;
-	out [1] = r;
-	out += 2;
-	dsp_m.out = out;
+	if (out + 2 <= dsp_m.out_end)
+	{
+		out [0] = l;
+		out [1] = r;
+		out += 2;
+		dsp_m.out = out;
+	}
 }
 
 #define ECHO_28() dsp_m.t_echo_enabled = dsp_m.regs [R_FLG];
@@ -1534,8 +1542,9 @@ static void dsp_run( int clocks_remain )
 
 /* Sets destination for output samples. The caller is responsible for
    passing a real buffer; with the bsnes-style audio path this is always
-   landing_buffer (sized for the worst-case PAL ticks=4 frame), so the
-   DSP cursor never approaches out_end and there's no overflow path. */
+   landing_buffer. A pathological long frame can exceed this; dsp_echo_27
+   clamps the write cursor at out_end so an overrun drops samples instead
+   of corrupting adjacent memory. */
 
 static void dsp_set_output( short * out, int size )
 {
