@@ -258,6 +258,21 @@ void S9xSetStreamBuffer(uint8_t *buffer, uint64_t size)
    substitute the silence buffer for the SPC's actual output. */
 static bool audio_muted;
 
+/* MSU-1 Enhanced Audio: when enabled AND an MSU1 cart is loaded, the whole
+   output pipeline runs at 44.1 kHz (the SPC's ~32040 Hz output is resampled up
+   and the MSU1 stream mixes in at its native rate, avoiding the intermediate
+   downsample). Latched at content load so the reported sample rate is stable
+   for the frontend. `msu1_enhanced_pref` is the user's option; the active rate
+   is only raised when MSU1 is actually present. */
+#define MSU1_ENHANCED_RATE 44100
+static bool msu1_enhanced_pref = false;
+
+/* True when 44.1 kHz output is actually in effect (option on AND MSU1 active). */
+static bool msu1_enhanced_active(void)
+{
+	return msu1_enhanced_pref && Settings.MSU1;
+}
+
 enum
 {
 	ASPECT_RATIO_4_3,
@@ -452,6 +467,13 @@ static void check_variables(bool first_run)
 	}
 	else
 		dsp_interp_mode = DSP_INTERP_GAUSSIAN;
+
+	var.key = "snes9x_2010_msu1_enhanced_audio";
+	var.value = NULL;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+		msu1_enhanced_pref = (strcmp(var.value, "enabled") == 0);
+	else
+		msu1_enhanced_pref = false;
 
 	var.key = "snes9x_2010_frameskip";
 	var.value = NULL;
@@ -849,10 +871,69 @@ static void audio_upload_samples(void)
 			n = MUTE_BUFFER_FRAMES * 2;
 	}
 
-	/* MSU1 audio mix: S9xDrainAudio returns a const pointer into the SPC
-	   landing buffer, so when MSU1 is streaming we copy the SPC output into a
-	   writable scratch buffer, add the (resampled) MSU1 stream, and ship that.
-	   No-op for non-MSU1 carts and when nothing is playing. */
+	/* MSU-1 Enhanced Audio path: run the whole frame at 44.1 kHz. The SPC's
+	   ~32040 Hz output is linearly upsampled to 44.1 kHz, then the MSU1 stream
+	   mixes in at its native rate (no downsample), and the 44.1 kHz result
+	   ships to the frontend. Only taken when an MSU1 cart is loaded and the
+	   option is on; every other game skips this entirely. */
+	if (!audio_muted && msu1_enhanced_active())
+	{
+		/* 44.1 kHz needs more room per frame than the 32 kHz mute buffer:
+		   PAL worst case is 44100/50 = 882 frames, plus up to ~1.6% for the
+		   APU speedup hack. 1024 covers it with margin. */
+		#define MSU1_ENH_FRAMES 1024
+		static int16_t enh_buffer[MSU1_ENH_FRAMES * 2];
+		int   in_frames  = n >> 1;
+		/* Number of 44.1 kHz output frames for this batch of SPC frames. */
+		uint32_t out_rate = (uint32_t) ((double) MSU1_ENHANCED_RATE
+			* (double) S9xGetAudioSampleRate() / 32040.0);
+		int   out_frames;
+		int   i;
+		/* 16.16 step through the SPC (source) buffer per output frame. */
+		uint32_t step = (uint32_t) (((uint64_t) S9xGetAudioSampleRate() << 16) / out_rate);
+		uint32_t pos  = 0;
+
+		out_frames = (int) (((uint64_t) in_frames * out_rate) / S9xGetAudioSampleRate());
+		if (out_frames > MSU1_ENH_FRAMES)
+			out_frames = MSU1_ENH_FRAMES;
+
+		for (i = 0; i < out_frames; i++)
+		{
+			uint32_t idx = pos >> 16;
+			uint32_t frac = pos & 0xffff;
+			int32_t  l0, r0, l1, r1;
+
+			if ((int) idx >= in_frames) idx = in_frames - 1;
+			l0 = src[idx * 2 + 0];
+			r0 = src[idx * 2 + 1];
+			if ((int) idx + 1 < in_frames)
+			{
+				l1 = src[idx * 2 + 2];
+				r1 = src[idx * 2 + 3];
+			}
+			else
+			{
+				l1 = l0;
+				r1 = r0;
+			}
+
+			enh_buffer[i * 2 + 0] = (int16_t) (l0 + (((l1 - l0) * (int32_t) frac) >> 16));
+			enh_buffer[i * 2 + 1] = (int16_t) (r0 + (((r1 - r0) * (int32_t) frac) >> 16));
+			pos += step;
+		}
+
+		/* Mix MSU1 at the 44.1 kHz output rate (native: step == 1.0). */
+		if (MSU1.MSU1_AudioPlay)
+			S9xMSU1Mix(enh_buffer, (size_t) out_frames, out_rate);
+
+		audio_batch_cb(enh_buffer, (size_t) out_frames);
+		return;
+	}
+
+	/* MSU1 audio mix (normal ~32040 Hz path): S9xDrainAudio returns a const
+	   pointer into the SPC landing buffer, so when MSU1 is streaming we copy
+	   the SPC output into a writable scratch buffer, add the (downsampled) MSU1
+	   stream, and ship that. No-op for non-MSU1 carts and when nothing plays. */
 	if (!audio_muted && Settings.MSU1 && MSU1.MSU1_AudioPlay)
 	{
 		static int16_t msu_mix_buffer[MUTE_BUFFER_FRAMES * 2];
@@ -860,7 +941,7 @@ static void audio_upload_samples(void)
 		if (frames > MUTE_BUFFER_FRAMES)
 			frames = MUTE_BUFFER_FRAMES;
 		memcpy(msu_mix_buffer, src, (size_t) frames * 2 * sizeof(int16_t));
-		S9xMSU1Mix(msu_mix_buffer, (size_t) frames);
+		S9xMSU1Mix(msu_mix_buffer, (size_t) frames, S9xGetAudioSampleRate());
 		audio_batch_cb(msu_mix_buffer, (size_t) frames);
 		return;
 	}
@@ -1071,8 +1152,16 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 	   carts and ~32550 Hz (or similar) for carts that use the APU speedup
 	   hack (~70 game IDs handled in memmap.c). Reporting the effective
 	   rate here lets the frontend's resampler handle conversion to the
-	   host audio rate. */
-	info->timing.sample_rate    = S9xGetAudioSampleRate();
+	   host audio rate.
+
+	   MSU-1 Enhanced Audio: only when an MSU1 cart is actually loaded and the
+	   option is on do we raise the whole pipeline to 44.1 kHz (scaled by the
+	   same APU speedup factor). For every non-MSU1 game this is untouched. */
+	if (msu1_enhanced_active())
+		info->timing.sample_rate = (double) MSU1_ENHANCED_RATE
+			* (double) S9xGetAudioSampleRate() / 32040.0;
+	else
+		info->timing.sample_rate = S9xGetAudioSampleRate();
 	info->timing.fps            = (retro_get_region() == RETRO_REGION_NTSC) ?
 			VIDEO_REFRESH_RATE_NTSC : VIDEO_REFRESH_RATE_PAL;
 }

@@ -464,19 +464,25 @@ static void msu1_next_frame_44k (int32_t *outL, int32_t *outR)
 	*outR = r;
 }
 
-void S9xMSU1Mix (int16_t *buffer, size_t sample_count)
+void S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate)
 {
-	/* Fixed-point 44100/snes_rate step, applied per output frame. The output
-	   rate is the SPC native rate reported to the frontend; using 32040 here
-	   keeps the MSU1 pitch correct against the SPC clock. */
+	/* Resample the 44.1 kHz MSU1 stream to the caller's output rate with a
+	   16.16 fixed-point step. In normal mode output_rate is the SPC's ~32040
+	   Hz, so MSU1 is gently downsampled to match. In MSU-1 Enhanced Audio mode
+	   the whole pipeline runs at 44100 Hz, so step == 1.0 and the MSU1 stream
+	   passes through at native rate with no resampling loss. */
 	static uint32_t	frac = 0;      /* 16.16 fractional source position */
-	const uint32_t	step = (uint32_t) (((uint64_t) 44100 << 16) / 32040);
+	uint32_t	step;
 	size_t		i;
 
 	if (!Settings.MSU1)
 		return;
 	if (!MSU1.MSU1_AudioPlay || !audioFile)
 		return;
+	if (output_rate == 0)
+		output_rate = 32040;
+
+	step = (uint32_t) (((uint64_t) 44100 << 16) / output_rate);
 
 	/* Prime with the first source frame. */
 	{

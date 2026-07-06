@@ -74,7 +74,7 @@ void	S9xMSU1WritePort (uint8_t port, uint8_t byte);
 /* Audio: mix `sample_count` stereo frames of MSU1 audio (at the SNES native
  * output rate) into the caller's 16-bit interleaved LR buffer. Adds to what is
  * already there (SPC output); a no-op when nothing is playing. */
-void	S9xMSU1Mix (int16_t *buffer, size_t sample_count);
+void	S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate);
 
 /* Savestate */
 void	S9xMSU1PreSaveState (void);
