@@ -537,6 +537,9 @@ uint8_t S9xGetSA1 (uint32_t address)
 		case 0x230a:
 			return ((uint8_t) (SA1.sum >> 32));
 
+		case 0x230b: /* Arithmetic overflow flag (sigma), bit 7*/
+			return ((uint8_t) (SA1.overflow << 7));
+
 		case 0x230c:
 			return (Memory.FillRAM[0x230c]);
 
@@ -976,21 +979,52 @@ void S9xSetSA1 (uint8_t byte, uint32_t address)
 			switch (SA1.arithmetic_op)
 			{
 				case 0:	/* multiply*/
-					SA1.sum = SA1.op1 * SA1.op2;
+					/* Signed 16x16 -> 32-bit product, zero-extended into the
+					 * 40-bit MR result register (MR[39:32] read as 0x00).
+					 * The previous "SA1.op1 * SA1.op2" sign-extended the int
+					 * product across all of the int64_t, corrupting the byte
+					 * read back at $230a for negative products. */
+					SA1.sum = (uint32_t) ((int32_t) SA1.op1 * (int32_t) SA1.op2);
+					/* Multiplication clears the multiplier (MB) only. */
+					SA1.op2 = 0;
 					break;
 
 				case 1: /* divide*/
-					if (SA1.op2 == 0)
-						SA1.sum = SA1.op1 << 16;
+					/* Signed dividend / unsigned divisor, Euclidean
+					 * (remainder always non-negative), packed as
+					 * MR = (remainder << 16) | quotient. Division by zero
+					 * yields MR = 0 on hardware. The previous truncating C
+					 * division produced negative quotients/remainders and a
+					 * bogus op1<<16 on divide-by-zero. */
+					if ((uint16_t) SA1.op2 == 0)
+						SA1.sum = 0;
 					else
-						SA1.sum = (SA1.op1 / (int) ((uint16_t) SA1.op2)) | ((SA1.op1 % (int) ((uint16_t) SA1.op2)) << 16);
+					{
+						int16_t  dividend  = SA1.op1;
+						uint16_t divisor   = (uint16_t) SA1.op2;
+						uint16_t remainder = (dividend >= 0)
+							? (uint16_t) (dividend % divisor)
+							: (uint16_t) (((dividend % divisor) + divisor) % divisor);
+						uint16_t quotient  = (uint16_t) ((dividend - (int) remainder) / divisor);
+
+						SA1.sum = ((int64_t) remainder << 16) | quotient;
+					}
+					/* Division clears both the dividend (MA) and divisor (MB). */
+					SA1.op1 = 0;
+					SA1.op2 = 0;
 					break;
 
 				case 2: /* cumulative sum*/
 				default:
-					SA1.sum += SA1.op1 * SA1.op2;
-					if (SA1.sum & ((int64_t) 0xffffff << 32))
-						SA1.overflow = TRUE;
+					/* Accumulate signed 32-bit products into the 40-bit MR.
+					 * Overflow is MR bit 40 for the current result (not a
+					 * sticky OR of the top bytes), then MR is truncated to
+					 * 40 bits. */
+					SA1.sum += (int32_t) SA1.op1 * (int32_t) SA1.op2;
+					SA1.overflow = (uint8_t) ((SA1.sum >> 40) & 1);
+					SA1.sum &= ((int64_t) 0xffffffffff);
+					/* Cumulative sum clears the multiplier (MB) only. */
+					SA1.op2 = 0;
 					break;
 			}
 
