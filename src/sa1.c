@@ -640,7 +640,15 @@ uint8_t S9xGetSA1 (uint32_t address)
 	switch (address)
 	{
 		case 0x2300:
-			return ((uint8_t) ((Memory.FillRAM[0x2209] & 0x5f) | (CPU.IRQActive & (SA1_IRQ_SOURCE | SA1_DMA_IRQ_SOURCE))));
+			/* SFR (S-CPU flag read). The IRQ/CDMA-IRQ flag bits (7 and 5)
+			 * latch independently of their enables, so they must be read
+			 * from the latched flag register in FillRAM[0x2300] -- not
+			 * reconstructed from CPU.IRQActive, which only reflects the
+			 * (enable-gated) S-CPU IRQ line. A game that polls SFR to see a
+			 * pending IRQ before enabling it previously read the flags as 0.
+			 * Bits 0-4,6 (CMEG, NMI/IRQ vector-select) come from the last
+			 * $2209 write. Matches ares (SFR) and the MiSTer T-SA-1 RTL. */
+			return ((uint8_t) ((Memory.FillRAM[0x2209] & 0x5f) | (Memory.FillRAM[0x2300] & 0xa0)));
 
 		case 0x2301:
 			return ((Memory.FillRAM[0x2200] & 0xf) | (Memory.FillRAM[0x2301] & 0xf0));
