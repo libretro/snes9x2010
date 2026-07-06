@@ -24,6 +24,17 @@ static FILE		*audioFile  = NULL;
 static char		 msu1_rom_path[PATH_MAX + 1] = { 0 };
 static uint8_t		 msu1_have_path = FALSE;
 
+/* Audio fast path: the per-sample generator must not touch the FILE stream
+   (ftell/fseek/fgetc per sample throttles emulation badly). Instead we cache
+   the track size once at open, track the play cursor as an integer byte
+   offset, and stream PCM through a RAM buffer, refilling in bulk. */
+static long		 audio_size = 0;                 /* cached track file size */
+static uint32_t		 audio_cursor = 0;               /* absolute byte offset of next sample */
+#define MSU1_AUDIO_BUFSZ	8192                     /* PCM read-ahead buffer (bytes) */
+static uint8_t		 audio_buf[MSU1_AUDIO_BUFSZ];
+static uint32_t		 audio_buf_base = 0;             /* file offset of audio_buf[0] */
+static uint32_t		 audio_buf_len  = 0;             /* valid bytes in audio_buf */
+
 /* Path helpers ----------------------------------------------------------------
 
    MSU1 companion files live next to the ROM:
@@ -140,7 +151,8 @@ static void msu1_audio_open (void)
 	audioFile = msu1_open_track(MSU1.MSU1_CurrentTrack);
 	if (audioFile)
 	{
-		if (msu1_filesize(audioFile) >= 8)
+		long fsz = msu1_filesize(audioFile);
+		if (fsz >= 8)
 		{
 			uint32_t	header;
 			fseek(audioFile, 0, SEEK_SET);
@@ -148,10 +160,15 @@ static void msu1_audio_open (void)
 			if (header == 0x4d535531)  /* "MSU1" */
 			{
 				MSU1.MSU1_AudioLoopOffset = 8 + msu1_readl(audioFile, 4) * 4;
-				if (MSU1.MSU1_AudioLoopOffset > (uint32_t) msu1_filesize(audioFile))
+				if (MSU1.MSU1_AudioLoopOffset > (uint32_t) fsz)
 					MSU1.MSU1_AudioLoopOffset = 8;
 				MSU1.MSU1_AudioError = FALSE;
-				fseek(audioFile, MSU1.MSU1_AudioPlayOffset, SEEK_SET);
+				/* Cache size and reset the read-ahead buffer; the play cursor
+				   follows AudioPlayOffset (restored on resume / savestate). */
+				audio_size     = fsz;
+				audio_cursor   = MSU1.MSU1_AudioPlayOffset;
+				audio_buf_base = 0;
+				audio_buf_len  = 0;
 				msu1_update_status();
 				return;
 			}
@@ -161,6 +178,9 @@ static void msu1_audio_open (void)
 		audioFile = NULL;
 	}
 
+	audio_size   = 0;
+	audio_cursor = 0;
+	audio_buf_len = 0;
 	MSU1.MSU1_AudioError = TRUE;
 	msu1_update_status();
 }
@@ -372,36 +392,64 @@ void S9xMSU1WritePort (uint8_t port, uint8_t byte)
 
 /* Read one interpolated 44.1 kHz MSU1 stereo frame at fractional source
    position, honouring end-of-file / loop / stop, matching ares' main(). */
+/* Read one signed-16 LE sample at the current audio_cursor, streaming through
+   audio_buf. Returns 0 past EOF. Advances audio_cursor by 2. No FILE calls
+   unless the buffer needs refilling (once per ~4096 samples). */
+static int16_t msu1_audio_sample (void)
+{
+	uint32_t	off;
+	int16_t		v;
+
+	if (!audioFile || audio_cursor + 2 > (uint32_t) audio_size)
+		return (0);
+
+	/* Refill if the cursor is outside the buffered window. */
+	if (audio_cursor < audio_buf_base ||
+	    audio_cursor + 2 > audio_buf_base + audio_buf_len)
+	{
+		size_t got;
+		fseek(audioFile, (long) audio_cursor, SEEK_SET);
+		got = fread(audio_buf, 1, MSU1_AUDIO_BUFSZ, audioFile);
+		audio_buf_base = audio_cursor;
+		audio_buf_len  = (uint32_t) got;
+		if (audio_buf_len < 2)
+			return (0);
+	}
+
+	off = audio_cursor - audio_buf_base;
+	v = (int16_t) ((uint16_t) audio_buf[off] | ((uint16_t) audio_buf[off + 1] << 8));
+	audio_cursor += 2;
+	return (v);
+}
+
 static void msu1_next_frame_44k (int32_t *outL, int32_t *outR)
 {
 	int16_t	l = 0, r = 0;
 
 	if (MSU1.MSU1_AudioPlay && audioFile)
 	{
-		long	pos  = ftell(audioFile);
-		long	size = msu1_filesize(audioFile);
-
-		if (pos >= size || pos < 8)
+		/* End-of-track: cursor reached the file size (cached, no FILE call). */
+		if (audio_cursor + 4 > (uint32_t) audio_size || audio_cursor < 8)
 		{
 			if (!MSU1.MSU1_AudioRepeat)
 			{
 				MSU1.MSU1_AudioPlay = FALSE;
 				MSU1.MSU1_AudioPlayOffset = 8;
-				fseek(audioFile, 8, SEEK_SET);
+				audio_cursor = 8;
 				msu1_update_status();
 			}
 			else
 			{
 				MSU1.MSU1_AudioPlayOffset = MSU1.MSU1_AudioLoopOffset;
-				fseek(audioFile, MSU1.MSU1_AudioLoopOffset, SEEK_SET);
+				audio_cursor = MSU1.MSU1_AudioLoopOffset;
 			}
 		}
 
 		if (MSU1.MSU1_AudioPlay && audioFile)
 		{
-			l = (int16_t) msu1_readl(audioFile, 2);
-			r = (int16_t) msu1_readl(audioFile, 2);
-			MSU1.MSU1_AudioPlayOffset += 4;
+			l = msu1_audio_sample();
+			r = msu1_audio_sample();
+			MSU1.MSU1_AudioPlayOffset = audio_cursor;
 			l = (int16_t) (((int32_t) l * (int32_t) MSU1.MSU1_VolumeB) / 255);
 			r = (int16_t) (((int32_t) r * (int32_t) MSU1.MSU1_VolumeB) / 255);
 		}
@@ -471,10 +519,9 @@ void S9xMSU1Mix (int16_t *buffer, size_t sample_count)
 void S9xMSU1PreSaveState (void)
 {
 	/* All persisted MSU1 state lives directly in struct MSU1 (serialised by
-	   snapshot.c). The current file offsets are captured here so the streams
-	   can be re-seeked on load. */
-	if (audioFile)
-		MSU1.MSU1_AudioPlayOffset = (uint32_t) ftell(audioFile);
+	   snapshot.c). MSU1_AudioPlayOffset already tracks the play cursor; the
+	   data-stream offset is captured here so it can be re-seeked on load. */
+	MSU1.MSU1_AudioPlayOffset = audio_cursor;
 	if (dataFile)
 		MSU1.MSU1_DataReadOffset = (uint32_t) ftell(dataFile);
 }
@@ -482,14 +529,13 @@ void S9xMSU1PreSaveState (void)
 void S9xMSU1PostLoadState (void)
 {
 	/* Re-open the companion files and restore stream positions from the
-	   deserialised offsets. */
+	   deserialised offsets. msu1_audio_open() seeds audio_cursor from
+	   MSU1_AudioPlayOffset and resets the read-ahead buffer. */
 	msu1_data_open();
 	if (dataFile)
 		fseek(dataFile, MSU1.MSU1_DataReadOffset, SEEK_SET);
 
 	msu1_audio_open();
-	if (audioFile)
-		fseek(audioFile, MSU1.MSU1_AudioPlayOffset, SEEK_SET);
 
 	msu1_update_status();
 }
