@@ -208,8 +208,7 @@
 
 extern uint8_t	OpenBus;
 
-HWREG_NOINLINE uint8_t S9xGetByteFromRegister(uint8_t *GetAddress, uint32_t Address)
-{
+HWREG_NOINLINE uint8_t S9xGetByteFromRegister(uint8_t *GetAddress, uint32_t Address){
    uint8_t	byte;
    int32_t    speed    = memory_speed(Address);
 
@@ -433,6 +432,28 @@ HWREG_NOINLINE uint16_t S9xGetWordFromRegister(uint8_t *GetAddress, uint32_t Add
 	return (word);
 }
 
+/* BW-RAM word write honouring SA-1 write protection (per byte). Used by
+ * the S-CPU SetWord paths. When SA-1 isn't active this is a plain word
+ * store. */
+static INLINE void S9xBWRAMWriteWordProtected(uint16_t Word, uint32_t Address)
+{
+	uint8_t *base = Memory.BWRAM + ((Address & 0x7fff) - 0x6000);
+
+	if (!Settings.SA1)
+	{
+		WRITE_WORD(base, Word);
+		return;
+	}
+
+	{
+		uint32_t bwoff = (uint32_t)(Memory.BWRAM - Memory.SRAM) + ((Address & 0x7fff) - 0x6000);
+		if (!S9xSA1BWRAMWriteProtected(bwoff))
+			*(base)     = (uint8_t) Word;
+		if (!S9xSA1BWRAMWriteProtected(bwoff + 1))
+			*(base + 1) = (uint8_t) (Word >> 8);
+	}
+}
+
 /* Out-of-line slow path for S9xSetByte. */
 HWREG_NOINLINE void S9xSetByteToRegister(uint8_t Byte, uint8_t *SetAddress, uint32_t Address)
 {
@@ -466,7 +487,8 @@ HWREG_NOINLINE void S9xSetByteToRegister(uint8_t Byte, uint8_t *SetAddress, uint
 			break;
 
 		case MAP_BWRAM:
-			*(Memory.BWRAM + ((Address & 0x7fff) - 0x6000)) = Byte;
+			if (!(Settings.SA1 && S9xSA1BWRAMWriteProtected((uint32_t)(Memory.BWRAM - Memory.SRAM) + ((Address & 0x7fff) - 0x6000))))
+				*(Memory.BWRAM + ((Address & 0x7fff) - 0x6000)) = Byte;
 			break;
 
 		case MAP_SA1RAM:
@@ -577,7 +599,7 @@ HWREG_NOINLINE void S9xSetWordToRegister_Write0(uint16_t Word, uint8_t *SetAddre
 			return;
 
 		case MAP_BWRAM:
-			WRITE_WORD(Memory.BWRAM + ((Address & 0x7fff) - 0x6000), Word);
+			S9xBWRAMWriteWordProtected(Word, Address);
 			addCyclesInMemoryAccess_x2;
 			return;
 
@@ -707,7 +729,7 @@ HWREG_NOINLINE void S9xSetWordToRegister_Write1(uint16_t Word, uint8_t *SetAddre
 			return;
 
 		case MAP_BWRAM:
-			WRITE_WORD(Memory.BWRAM + ((Address & 0x7fff) - 0x6000), Word);
+			S9xBWRAMWriteWordProtected(Word, Address);
 			addCyclesInMemoryAccess_x2;
 			return;
 

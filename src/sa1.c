@@ -422,9 +422,35 @@ static INLINE uint8_t S9xSA1GetByte (uint32_t address)
 	return (S9xSA1GetByteFromRegister(GetAddress, address));
 }
 
-#ifdef __GNUC__
-__attribute__((noinline))
-#endif
+/* BW-RAM write protection.
+ *
+ * Mirrors ares' rule (SA1::BWRAM::writeCPU / writeLinear): a write to
+ * the BW-RAM linear region is blocked only when BOTH write-enables are
+ * off and the (18-bit) offset falls inside the protected window.
+ *
+ *   swen = $2226 bit7    (SNES-side BW-RAM write enable)
+ *   cwen = $2227 bit7    (SA-1-side BW-RAM write enable)
+ *   bwp  = $2228 bits0-3 (protect size; window = 0x100 << bwp)
+ *
+ * Protection applies to linear BW-RAM writes from both the S-CPU and
+ * the SA-1; it does NOT apply to the bitmap write paths, matching
+ * hardware. `bwoffset` is the BW-RAM-relative byte offset (same space
+ * as the DSA register).
+ *
+ * Both write-enables reset to 0 and bwp resets to 0x0f, so BW-RAM is
+ * fully protected at power-on until a game asserts SWEN or CWEN -- this
+ * matches hardware and ares. */
+int S9xSA1BWRAMWriteProtected (uint32_t bwoffset)
+{
+	if ((Memory.FillRAM[0x2226] & 0x80) || (Memory.FillRAM[0x2227] & 0x80))
+		return (0); /* writes enabled */
+
+	if ((bwoffset & 0x3ffff) < (0x100u << (Memory.FillRAM[0x2228] & 0x0f)))
+		return (1); /* inside protected window */
+
+	return (0);
+}
+
 /* Type-1 character-conversion DMA read.
  *
  * When CC1 is armed (in_char_dma), the S-CPU reads of the BW-RAM
@@ -512,6 +538,9 @@ uint8_t S9xSA1ReadCC1 (uint32_t bwoffset)
 	return (Memory.FillRAM[0x3000 + ((dda + (bwoffset & charmask)) & 0x7ff)]);
 }
 
+#ifdef __GNUC__
+__attribute__((noinline))
+#endif
 static uint8_t S9xSA1GetByteFromRegister (uint8_t *GetAddress, uint32_t address)
 {
 	switch ((intptr_t) GetAddress)
@@ -1184,7 +1213,8 @@ static void S9xSA1SetByteToRegister (uint8_t byte, uint8_t *SetAddress, uint32_t
 			return;
 
 		case MAP_BWRAM:
-			*(SA1.BWRAM + ((address & 0x7fff) - 0x6000)) = byte;
+			if (!S9xSA1BWRAMWriteProtected((uint32_t)(SA1.BWRAM - Memory.SRAM) + ((address & 0x7fff) - 0x6000)))
+				*(SA1.BWRAM + ((address & 0x7fff) - 0x6000)) = byte;
 			return;
 
 		case MAP_BWRAM_BITMAP:
