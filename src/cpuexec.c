@@ -185,6 +185,7 @@
 #include "apu.h"
 #include "fxinst.h"
 #include "fxemu.h"
+#include "spc7110.h"
 #include "boolean.h"
 #include "controls.h"
 #include "cheats.h"
@@ -393,6 +394,11 @@ static INLINE void speedhacks_manager (void)
 
 static void S9xEndScreenRefresh (void)
 {
+	/* Advance the SPC7110 RTC on the emulated frame clock (no-op unless
+	 * an SPC7110+RTC cart is loaded). One tick per emulated frame keeps
+	 * the in-game clock running on emulated time rather than host time. */
+	S9xSPC7110RTCTick();
+
 	if (IPPU.RenderThisFrame)
 	{
 		FLUSH_REDRAW();

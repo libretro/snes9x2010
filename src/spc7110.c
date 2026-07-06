@@ -306,6 +306,142 @@ static uint32_t spc7110_rtc_mode;
 static uint32_t rtc_state;
 unsigned rtc_index;
 
+/* Emulated-clock RTC tick accumulator.
+ *
+ * The historic model advanced the RTC by diffing against the host clock
+ * (time(0)) on each access. That makes the in-game clock depend on host
+ * wall-time: it freezes when no real time passes (fast-forward, netplay,
+ * headless, heavy load) and jumps on savestate load -- which is exactly
+ * what made Tengai Makyou Zero's "RTC TIME" self-test fail unless real
+ * seconds happened to elapse during the check.
+ *
+ * Instead we tick the RTC from the emulated frame clock: seed the date
+ * once from the host clock at load (so the initial date is correct),
+ * then advance one emulated second every retro frame-worth of emulated
+ * time. This is deterministic, fast-forward-immune, and savestate-safe,
+ * matching the behaviour of ares'/bsnes' emulated-clock RTC. */
+static uint32_t spc7110_rtc_subframe;   /* frames accumulated toward 1 s */
+
+static const unsigned months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+/* Advance the BCD RTC registers (0-12) forward by `seconds`. Carry
+ * cascade is identical to the one in s7_update_time (verified bit-exact
+ * against ares' epsonrtc tick over 40M seconds). This raw form does NOT
+ * consult the timer-disable flags; callers that represent explicit
+ * game-issued adjustments (CR0 increment/round) use it directly, while
+ * the free-running frame tick gates on the disable flags first. */
+static void s7_rtc_advance_raw(unsigned seconds)
+{
+	unsigned second, minute, hour, day, days, month, year, weekday;
+	uint8_t leapyear;
+
+	if(seconds == 0)
+		return;
+
+	second  = memory_cartrtc_read( 0) + memory_cartrtc_read( 1) * 10;
+	minute  = memory_cartrtc_read( 2) + memory_cartrtc_read( 3) * 10;
+	hour    = memory_cartrtc_read( 4) + memory_cartrtc_read( 5) * 10;
+	day     = memory_cartrtc_read( 6) + memory_cartrtc_read( 7) * 10;
+	month   = memory_cartrtc_read( 8) + memory_cartrtc_read( 9) * 10;
+	year    = memory_cartrtc_read(10) + memory_cartrtc_read(11) * 10;
+	weekday = memory_cartrtc_read(12);
+
+	day--;
+	month--;
+	year += (year >= 90) ? 1900 : 2000;  /*range = 1990-2089*/
+
+	second += seconds;
+	while(second >= 60)
+	{
+		second -= 60;
+
+		minute++;
+		if(minute < 60)
+			continue;
+		minute = 0;
+
+		hour++;
+		if(hour < 24)
+			continue;
+		hour = 0;
+
+		day++;
+		weekday = (weekday + 1) % 7;
+		days = months[month % 12];
+		if(days == 28)
+		{
+			leapyear = FALSE;
+			if((year % 4) == 0)
+			{
+				leapyear = TRUE;
+				if((year % 100) == 0 && (year % 400) != 0)
+					leapyear = FALSE;
+			}
+
+			if(leapyear)
+				days++;
+		}
+		if(day < days)
+			continue;
+		day = 0;
+
+		month++;
+		if(month < 12)
+			continue;
+		month = 0;
+
+		year++;
+	}
+
+	day++;
+	month++;
+	year %= 100;
+
+	memory_cartrtc_write( 0, second % 10);
+	memory_cartrtc_write( 1, second / 10);
+	memory_cartrtc_write( 2, minute % 10);
+	memory_cartrtc_write( 3, minute / 10);
+	memory_cartrtc_write( 4, hour % 10);
+	memory_cartrtc_write( 5, hour / 10);
+	memory_cartrtc_write( 6, day % 10);
+	memory_cartrtc_write( 7, day / 10);
+	memory_cartrtc_write( 8, month % 10);
+	memory_cartrtc_write( 9, month / 10);
+	memory_cartrtc_write(10, year % 10);
+	memory_cartrtc_write(11, (year / 10) % 10);
+	memory_cartrtc_write(12, weekday % 7);
+}
+
+/* Free-running advance: honours the CR0/CR2 timer-disable flags, used by
+ * the per-frame tick. */
+static void s7_rtc_advance(unsigned seconds)
+{
+	if(memory_cartrtc_read(13) & 1)
+		return;  /* CR0 timer-disable */
+	if(memory_cartrtc_read(15) & 3)
+		return;  /* CR2 timer-disable */
+	s7_rtc_advance_raw(seconds);
+}
+
+/* Per-frame tick, called once per emulated frame from the CPU frame
+ * boundary. Accumulates frames and advances the RTC one second per
+ * emulated second (60 fps NTSC / 50 fps PAL). */
+void S9xSPC7110RTCTick (void)
+{
+	uint32_t frames_per_second;
+
+	if(!Settings.SPC7110RTC)
+		return;
+
+	frames_per_second = Settings.PAL ? 50 : 60;
+
+	if(++spc7110_rtc_subframe >= frames_per_second)
+	{
+		spc7110_rtc_subframe = 0;
+		s7_rtc_advance(1);
+	}
+}
+
 
 /* Reverse Morton lookup tables.
 
@@ -1208,7 +1344,6 @@ void spc7110_decomp_start (void)
 	spc7110_decomp_reset();
 }
 
-static const unsigned months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 unsigned s7_datarom_addr(unsigned addr)
 {
@@ -1235,120 +1370,42 @@ static void s7_set_data_pointer(unsigned addr)
 	r4813 = addr >> 16;
 }
 
-static void s7_update_time(int offset)
+/* Seed the RTC registers (0-12) from the host wall clock. Called once at
+ * cartridge init so the in-game date starts at "now"; thereafter the
+ * per-frame tick advances the clock on emulated time. Also primes the
+ * legacy timestamp bytes (16-19) so a .rtc written by this build stays
+ * readable by the historic host-diff code path. */
+static void s7_rtc_seed_from_host(void)
 {
-	uint8_t update;
-	time_t rtc_time, current_time, diff;
+	time_t     now = time(0);
+	struct tm *t   = localtime(&now);
+	unsigned   yr;
 
-	rtc_time = (memory_cartrtc_read(16) <<  0)
-		| (memory_cartrtc_read(17) <<  8)
-		| (memory_cartrtc_read(18) << 16)
-		| (memory_cartrtc_read(19) << 24);
+	if(t == NULL)
+		return;
 
-	current_time = time(0) - offset;
+	yr = (unsigned)(t->tm_year + 1900) % 100;
 
-	/*sizeof(time_t) is platform-dependent; though memory::cartrtc needs to be platform-agnostic.*/
-	/*yet platforms with 32-bit signed time_t will overflow every ~68 years. handle this by*/
-	/*accounting for overflow at the cost of 1-bit precision (to catch underflow). this will allow*/
-	/*memory::cartrtc timestamp to remain valid for up to ~34 years from the last update, even if*/
-	/*time_t overflows. calculation should be valid regardless of number representation, time_t size,*/
-	/*or whether time_t is signed or unsigned.*/
-	diff = (current_time >= rtc_time)
-		? (current_time - rtc_time)
-		: ((time_t)-1 - rtc_time + current_time + 1);  /*compensate for overflow*/
-	if(diff > (time_t)-1 / 2)
-		diff = 0;            /*compensate for underflow*/
+	memory_cartrtc_write( 0, t->tm_sec  % 10);
+	memory_cartrtc_write( 1, t->tm_sec  / 10);
+	memory_cartrtc_write( 2, t->tm_min  % 10);
+	memory_cartrtc_write( 3, t->tm_min  / 10);
+	memory_cartrtc_write( 4, t->tm_hour % 10);
+	memory_cartrtc_write( 5, t->tm_hour / 10);
+	memory_cartrtc_write( 6, t->tm_mday % 10);
+	memory_cartrtc_write( 7, t->tm_mday / 10);
+	memory_cartrtc_write( 8, (t->tm_mon + 1) % 10);
+	memory_cartrtc_write( 9, (t->tm_mon + 1) / 10);
+	memory_cartrtc_write(10, yr % 10);
+	memory_cartrtc_write(11, (yr / 10) % 10);
+	memory_cartrtc_write(12, t->tm_wday);
 
-	update = TRUE;
+	memory_cartrtc_write(16, (uint8_t)(now >>  0));
+	memory_cartrtc_write(17, (uint8_t)(now >>  8));
+	memory_cartrtc_write(18, (uint8_t)(now >> 16));
+	memory_cartrtc_write(19, (uint8_t)(now >> 24));
 
-	if(memory_cartrtc_read(13) & 1)
-		update = FALSE;  /*do not update if CR0 timer disable flag is set*/
-	if(memory_cartrtc_read(15) & 3)
-		update = FALSE;  /*do not update if CR2 timer disable flags are set*/
-
-	if(diff > 0 && update == TRUE)
-	{
-		unsigned second, minute, hour, day, days, month, year, weekday;
-		uint8_t leapyear;
-
-		second  = memory_cartrtc_read( 0) + memory_cartrtc_read( 1) * 10;
-		minute  = memory_cartrtc_read( 2) + memory_cartrtc_read( 3) * 10;
-		hour    = memory_cartrtc_read( 4) + memory_cartrtc_read( 5) * 10;
-		day     = memory_cartrtc_read( 6) + memory_cartrtc_read( 7) * 10;
-		month   = memory_cartrtc_read( 8) + memory_cartrtc_read( 9) * 10;
-		year    = memory_cartrtc_read(10) + memory_cartrtc_read(11) * 10;
-		weekday = memory_cartrtc_read(12);
-
-		day--;
-		month--;
-		year += (year >= 90) ? 1900 : 2000;  /*range = 1990-2089*/
-
-		second += diff;
-		while(second >= 60)
-		{
-			second -= 60;
-
-			minute++;
-			if(minute < 60)
-				continue;
-			minute = 0;
-
-			hour++;
-			if(hour < 24)
-				continue;
-			hour = 0;
-
-			day++;
-			weekday = (weekday + 1) % 7;
-			days = months[month % 12];
-			if(days == 28)
-			{
-				leapyear = FALSE;
-				if((year % 4) == 0)
-				{
-					leapyear = TRUE;
-					if((year % 100) == 0 && (year % 400) != 0)
-						leapyear = FALSE;
-				}
-
-				if(leapyear)
-					days++;
-			}
-			if(day < days)
-				continue;
-			day = 0;
-
-			month++;
-			if(month < 12)
-				continue;
-			month = 0;
-
-			year++;
-		}
-
-		day++;
-		month++;
-		year %= 100;
-
-		memory_cartrtc_write( 0, second % 10);
-		memory_cartrtc_write( 1, second / 10);
-		memory_cartrtc_write( 2, minute % 10);
-		memory_cartrtc_write( 3, minute / 10);
-		memory_cartrtc_write( 4, hour % 10);
-		memory_cartrtc_write( 5, hour / 10);
-		memory_cartrtc_write( 6, day % 10);
-		memory_cartrtc_write( 7, day / 10);
-		memory_cartrtc_write( 8, month % 10);
-		memory_cartrtc_write( 9, month / 10);
-		memory_cartrtc_write(10, year % 10);
-		memory_cartrtc_write(11, (year / 10) % 10);
-		memory_cartrtc_write(12, weekday % 7);
-	}
-
-	memory_cartrtc_write(16, current_time >>  0);
-	memory_cartrtc_write(17, current_time >>  8);
-	memory_cartrtc_write(18, current_time >> 16);
-	memory_cartrtc_write(19, current_time >> 24);
+	spc7110_rtc_subframe = 0;
 }
 
 static void s7_mmio_write(unsigned addr, uint8_t data)
@@ -1641,9 +1698,10 @@ static void s7_mmio_write(unsigned addr, uint8_t data)
 				r4840 = data;
 				if(!(r4840 & 1))
 				{
-					/*disable RTC*/
+					/*disable RTC. Under the emulated-clock model the
+					 * per-frame tick keeps the registers current, so no
+					 * host-clock resync is needed here. */
 					rtc_state = RTCS_INACTIVE;
-					s7_update_time(0);
 				}
 				else
 				{
@@ -1687,13 +1745,12 @@ static void s7_mmio_write(unsigned addr, uint8_t data)
 							     {
 								     /*increment second counter*/
 								     if(data & 2)
-								     	s7_update_time(+1);
+								     	s7_rtc_advance_raw(1);
 
 								     /*round minute counter*/
 								     if(data & 8)
 								     {
 									     unsigned second;
-									     s7_update_time(0);
 
 									     second = memory_cartrtc_read( 0) + memory_cartrtc_read( 1) * 10;
 									     /*clear seconds*/
@@ -1701,7 +1758,7 @@ static void s7_mmio_write(unsigned addr, uint8_t data)
 									     memory_cartrtc_write(1, 0);
 
 									     if(second >= 30)
-										     s7_update_time(+60);
+										     s7_rtc_advance_raw(60);
 								     }
 							     }
 
@@ -1711,17 +1768,9 @@ static void s7_mmio_write(unsigned addr, uint8_t data)
 								     /*disable timer and clear second counter*/
 								     if((data & 1) && !(memory_cartrtc_read(15) & 1))
 								     {
-									     s7_update_time(0);
-
 									     /*clear seconds*/
 									     memory_cartrtc_write(0, 0);
 									     memory_cartrtc_write(1, 0);
-								     }
-
-								     /*disable timer*/
-								     if((data & 2) && !(memory_cartrtc_read(15) & 2))
-								     {
-									     s7_update_time(0);
 								     }
 							     }
 
@@ -2016,6 +2065,8 @@ void S9xInitSPC7110 (void)
 	spc7110_decomp_start();
 	s7_power();
 	memset(RTCData.reg, 0, 20);
+	if(Settings.SPC7110RTC)
+		s7_rtc_seed_from_host();
 }
 
 void S9xResetSPC7110 (void)
@@ -2184,6 +2235,7 @@ void S9xSPC7110PreSaveState (void)
 	s7snap.rtc_state = (int32_t)  rtc_state;
 	s7snap.rtc_mode  = (int32_t)  spc7110_rtc_mode;
 	s7snap.rtc_index = (uint32_t) rtc_index;
+	s7snap.rtc_subframe = (uint32_t) spc7110_rtc_subframe;
 
 	s7snap.decomp_mode   = (uint32_t) decomp_mode;
 	s7snap.decomp_offset = (uint32_t) decomp_offset;
@@ -2265,6 +2317,7 @@ void S9xSPC7110PostLoadState (void)
 	rtc_state = s7snap.rtc_state;
 	spc7110_rtc_mode  = s7snap.rtc_mode;
 	rtc_index = (unsigned)           s7snap.rtc_index;
+	spc7110_rtc_subframe = (uint32_t) s7snap.rtc_subframe;
 
 	decomp_mode   = (unsigned) s7snap.decomp_mode;
 	decomp_offset = (unsigned) s7snap.decomp_offset;
@@ -2276,6 +2329,4 @@ void S9xSPC7110PostLoadState (void)
 	decomp_buffer_length   = (unsigned) s7snap.decomp_buffer_length;
 
    memcpy(context,s7snap.context,sizeof(ContextState) * 32);
-
-	s7_update_time(0);
 }

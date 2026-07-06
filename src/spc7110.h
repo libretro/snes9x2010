@@ -252,6 +252,7 @@ struct SSPC7110Snapshot
 	int32_t	rtc_state;			/* enum RTC_State */
 	int32_t	rtc_mode;			/* enum RTC_Mode */
 	uint32_t	rtc_index;			/* unsigned */
+	uint32_t	rtc_subframe;			/* emulated-clock frame accumulator */
 
 	uint32_t	decomp_mode;			/* unsigned */
 	uint32_t	decomp_offset;			/* unsigned */
@@ -269,6 +270,7 @@ extern struct SSPC7110Snapshot	s7snap;
 
 void S9xInitSPC7110 (void);
 void S9xResetSPC7110 (void);
+void S9xSPC7110RTCTick (void);
 void S9xFreeSPC7110 (void);
 void S9xSPC7110PreSaveState (void);
 void S9xSPC7110PostLoadState (void);
