@@ -396,24 +396,31 @@ static uint8_t S9xSA1GetByteFromRegister (uint8_t *GetAddress, uint32_t address)
 
 /* S9xSA1GetByte: SA1 memory read fast-path wrapper.
  *
- * Folded to a statement-expression macro for the same reason
- * memory_speed and spc_cpu_read were folded: once the slow path
- * moved to an out-of-line *FromRegister helper, the wrapper itself
- * is small enough to inline everywhere, but GCC's inline cost
- * model still kept ~270 \`call S9xSA1GetByte\` instructions in the
- * production .so. A macro removes the optimizer's discretion.
+ * This MUST be a function, not a plain-expression macro. The 8-bit
+ * opcode wrappers in cpuops (rOP8/rOPC) call it as
  *
- * Plain expression macro: `address` is referenced four times and
- * the SA1.Map[] lookup is replayed three times. All current call
- * sites pass simple expressions (variables, struct members, +1
- * offsets) so the duplication is CSE'd by the compiler. Do NOT
- * pass side-effecting expressions through this macro. The earlier
- * statement-expression form captured into locals for safety but
- * relied on a GCC extension that older MSVC rejects. */
-#define S9xSA1GetByte(address) \
-	((SA1.Map[(((address) & 0xffffff) >> MEMMAP_SHIFT)] >= (uint8_t *) MAP_LAST) \
-		? *(SA1.Map[(((address) & 0xffffff) >> MEMMAP_SHIFT)] + ((address) & 0xffff)) \
-		: S9xSA1GetByteFromRegister(SA1.Map[(((address) & 0xffffff) >> MEMMAP_SHIFT)], (address)))
+ *     val = OpenBus = S9xGetByte(ADDR##_R());
+ *
+ * where ADDR##_R() is a *side-effecting* addressing helper (e.g.
+ * DirectIndirectLong_R(), which reads the direct-page pointer, walks
+ * memory and updates OpenBus). A multiple-evaluation macro that
+ * referenced `address` several times re-invoked that helper on each
+ * expansion, so the MAP_LAST check and the pointer dereference could
+ * see two different resolved addresses — combining a base pointer
+ * from one evaluation with an offset from another and reading out of
+ * bounds. This crashed e.g. Kirby's Dream Land 3 in OpE7 (SBC [d]).
+ *
+ * A static INLINE function evaluates the argument exactly once,
+ * matching the main-CPU S9xGetByte, and still inlines under -O2. */
+static INLINE uint8_t S9xSA1GetByte (uint32_t address)
+{
+	uint8_t	*GetAddress = SA1.Map[(address & 0xffffff) >> MEMMAP_SHIFT];
+
+	if (GetAddress >= (uint8_t *) MAP_LAST)
+		return (*(GetAddress + (address & 0xffff)));
+
+	return (S9xSA1GetByteFromRegister(GetAddress, address));
+}
 
 #ifdef __GNUC__
 __attribute__((noinline))
