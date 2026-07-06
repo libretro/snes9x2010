@@ -190,6 +190,7 @@ struct SSRTCSnapshot
 {
 	int32_t	rtc_mode;	/* enum RTC_Mode */
 	int32_t	rtc_index;	/* signed */
+	uint32_t	rtc_subframe;	/* emulated-clock frame accumulator */
 };
 
 extern struct SRTCData		RTCData;
@@ -197,6 +198,7 @@ extern struct SSRTCSnapshot	srtcsnap;
 
 void S9xInitSRTC (void);
 void S9xResetSRTC (void);
+void S9xSRTCTick (void);
 void S9xSRTCPreSaveState (void);
 void S9xSRTCPostLoadState (void);
 void S9xSetSRTC (uint8_t, uint16_t);

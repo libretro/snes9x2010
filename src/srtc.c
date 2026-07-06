@@ -204,108 +204,95 @@ static uint32_t srtc_mode;
 
 static const unsigned srtc_months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
-static void srtcemu_update_time (void)
+/* Emulated-clock tick accumulator (see spc7110.c for the rationale). The
+ * S-RTC previously advanced by diffing against the host clock (time(0))
+ * on each $2800 read, tying the in-game clock to host wall-time. Instead
+ * we seed once from the host at init, then tick on the emulated frame
+ * clock: deterministic, fast-forward immune, and savestate-safe. */
+static uint32_t srtc_subframe;   /* frames accumulated toward 1 s */
+
+/* Advance the S-RTC BCD registers (0-12) forward by `seconds`. Carry
+ * cascade matches srtcemu_update_time (month = 1 digit at reg 8, year =
+ * 3 digits at regs 9-11, epoch +1000), which was verified equivalent to
+ * ares' sharprtc tick. */
+static void srtcemu_advance (unsigned seconds)
 {
-	unsigned days;
-	time_t current_time, rtc_time, diff;
+	unsigned second, minute, hour, day, days, month, year, weekday;
 
-	rtc_time = (MEMORY_CARTRTC_READ(16) <<  0) | (MEMORY_CARTRTC_READ(17) <<  8) | (MEMORY_CARTRTC_READ(18) << 16) | (MEMORY_CARTRTC_READ(19) << 24);
-	current_time = time(0);
+	if(seconds == 0)
+		return;
 
-	/*sizeof(time_t) is platform-dependent; though memory::cartrtc needs to be platform-agnostic.*/
-	/*yet platforms with 32-bit signed time_t will overflow every ~68 years. handle this by*/
-	/*accounting for overflow at the cost of 1-bit precision (to catch underflow). this will allow*/
-	/*memory::cartrtc timestamp to remain valid for up to ~34 years from the last update, even if*/
-	/*time_t overflows. calculation should be valid regardless of number representation, time_t size,*/
-	/*or whether time_t is signed or unsigned.*/
+	second  = MEMORY_CARTRTC_READ( 0) + MEMORY_CARTRTC_READ( 1) * 10;
+	minute  = MEMORY_CARTRTC_READ( 2) + MEMORY_CARTRTC_READ( 3) * 10;
+	hour    = MEMORY_CARTRTC_READ( 4) + MEMORY_CARTRTC_READ( 5) * 10;
+	day     = MEMORY_CARTRTC_READ( 6) + MEMORY_CARTRTC_READ( 7) * 10;
+	month   = MEMORY_CARTRTC_READ( 8);
+	year    = MEMORY_CARTRTC_READ( 9) + MEMORY_CARTRTC_READ(10) * 10 + MEMORY_CARTRTC_READ(11) * 100;
+	weekday = MEMORY_CARTRTC_READ(12);
 
-	diff = (current_time >= rtc_time) ? (current_time - rtc_time) : ((time_t)-1 - rtc_time + current_time + 1);
-	/*compensate for overflow*/
+	day--;
+	month--;
+	year += 1000;
 
-	if(diff > (time_t)-1 / 2)
-		diff = 0;            /*compensate for underflow*/
-
-	if(diff > 0)
+	second += seconds;
+	while(second >= 60)
 	{
-		unsigned second, minute, hour, day, month, year, weekday;
+		second -= 60;
 
-		second  = MEMORY_CARTRTC_READ( 0) + MEMORY_CARTRTC_READ( 1) * 10;
-		minute  = MEMORY_CARTRTC_READ( 2) + MEMORY_CARTRTC_READ( 3) * 10;
-		hour    = MEMORY_CARTRTC_READ( 4) + MEMORY_CARTRTC_READ( 5) * 10;
-		day     = MEMORY_CARTRTC_READ( 6) + MEMORY_CARTRTC_READ( 7) * 10;
-		month   = MEMORY_CARTRTC_READ( 8);
-		year    = MEMORY_CARTRTC_READ( 9) + MEMORY_CARTRTC_READ(10) * 10 + MEMORY_CARTRTC_READ(11) * 100;
-		weekday = MEMORY_CARTRTC_READ(12);
+		minute++;
+		if(minute < 60)
+			continue;
+		minute = 0;
 
-		day--;
-		month--;
-		year += 1000;
-
-		second += diff;
-		while(second >= 60)
-		{
-			second -= 60;
-
-			minute++;
-			if(minute < 60)
-				continue;
-			minute = 0;
-
-			hour++;
-			if(hour < 24)
-				continue;
-			hour = 0;
-
-			day++;
-			weekday = (weekday + 1) % 7;
-			days = srtc_months[month % 12];
-			if(days == 28)
-			{
-				uint8_t leapyear = FALSE;
-				if((year % 4) == 0)
-				{
-					leapyear = TRUE;
-					if((year % 100) == 0 && (year % 400) != 0)
-						leapyear = FALSE;
-				}
-				if(leapyear)
-					days++;
-			}
-			if(day < days)
-				continue;
-			day = 0;
-
-			month++;
-			if(month < 12)
-				continue;
-			month = 0;
-
-			year++;
-		}
+		hour++;
+		if(hour < 24)
+			continue;
+		hour = 0;
 
 		day++;
-		month++;
-		year -= 1000;
+		weekday = (weekday + 1) % 7;
+		days = srtc_months[month % 12];
+		if(days == 28)
+		{
+			uint8_t leapyear = FALSE;
+			if((year % 4) == 0)
+			{
+				leapyear = TRUE;
+				if((year % 100) == 0 && (year % 400) != 0)
+					leapyear = FALSE;
+			}
+			if(leapyear)
+				days++;
+		}
+		if(day < days)
+			continue;
+		day = 0;
 
-		MEMORY_CARTRTC_WRITE( 0, second % 10);
-		MEMORY_CARTRTC_WRITE( 1, second / 10);
-		MEMORY_CARTRTC_WRITE( 2, minute % 10);
-		MEMORY_CARTRTC_WRITE( 3, minute / 10);
-		MEMORY_CARTRTC_WRITE( 4, hour % 10);
-		MEMORY_CARTRTC_WRITE( 5, hour / 10);
-		MEMORY_CARTRTC_WRITE( 6, day % 10);
-		MEMORY_CARTRTC_WRITE( 7, day / 10);
-		MEMORY_CARTRTC_WRITE( 8, month);
-		MEMORY_CARTRTC_WRITE( 9, year % 10);
-		MEMORY_CARTRTC_WRITE(10, (year / 10) % 10);
-		MEMORY_CARTRTC_WRITE(11, year / 100);
-		MEMORY_CARTRTC_WRITE(12, weekday % 7);
+		month++;
+		if(month < 12)
+			continue;
+		month = 0;
+
+		year++;
 	}
 
-	MEMORY_CARTRTC_WRITE(16, current_time >>  0);
-	MEMORY_CARTRTC_WRITE(17, current_time >>  8);
-	MEMORY_CARTRTC_WRITE(18, current_time >> 16);
-	MEMORY_CARTRTC_WRITE(19, current_time >> 24);
+	day++;
+	month++;
+	year -= 1000;
+
+	MEMORY_CARTRTC_WRITE( 0, second % 10);
+	MEMORY_CARTRTC_WRITE( 1, second / 10);
+	MEMORY_CARTRTC_WRITE( 2, minute % 10);
+	MEMORY_CARTRTC_WRITE( 3, minute / 10);
+	MEMORY_CARTRTC_WRITE( 4, hour % 10);
+	MEMORY_CARTRTC_WRITE( 5, hour / 10);
+	MEMORY_CARTRTC_WRITE( 6, day % 10);
+	MEMORY_CARTRTC_WRITE( 7, day / 10);
+	MEMORY_CARTRTC_WRITE( 8, month);
+	MEMORY_CARTRTC_WRITE( 9, year % 10);
+	MEMORY_CARTRTC_WRITE(10, (year / 10) % 10);
+	MEMORY_CARTRTC_WRITE(11, year / 100);
+	MEMORY_CARTRTC_WRITE(12, weekday % 7);
 }
 
 /*returns day of week for specified date*/
@@ -359,19 +346,72 @@ static unsigned srtcemu_weekday(unsigned year, unsigned month, unsigned day)
 	return (sum + 1) % 7;  /*1900-01-01 was a Monday*/
 }
 
+/* Seed the S-RTC registers (0-12) from the host wall clock, once at
+ * cartridge init. The weekday is computed from the seeded date. Also
+ * primes the legacy timestamp bytes (16-19) for .rtc compatibility. */
+static void srtcemu_seed_from_host (void)
+{
+	time_t     now = time(0);
+	struct tm *t   = localtime(&now);
+	unsigned   fullyear;
+
+	if(t == NULL)
+		return;
+
+	fullyear = (unsigned)(t->tm_year + 1900);
+
+	MEMORY_CARTRTC_WRITE( 0, t->tm_sec  % 10);
+	MEMORY_CARTRTC_WRITE( 1, t->tm_sec  / 10);
+	MEMORY_CARTRTC_WRITE( 2, t->tm_min  % 10);
+	MEMORY_CARTRTC_WRITE( 3, t->tm_min  / 10);
+	MEMORY_CARTRTC_WRITE( 4, t->tm_hour % 10);
+	MEMORY_CARTRTC_WRITE( 5, t->tm_hour / 10);
+	MEMORY_CARTRTC_WRITE( 6, t->tm_mday % 10);
+	MEMORY_CARTRTC_WRITE( 7, t->tm_mday / 10);
+	MEMORY_CARTRTC_WRITE( 8, t->tm_mon + 1);           /* month: single BCD digit */
+	MEMORY_CARTRTC_WRITE( 9, (fullyear % 1000) % 10);  /* year: 3 digits, epoch 1000 */
+	MEMORY_CARTRTC_WRITE(10, (fullyear % 1000) / 10 % 10);
+	MEMORY_CARTRTC_WRITE(11, (fullyear % 1000) / 100);
+	MEMORY_CARTRTC_WRITE(12, t->tm_wday);
+
+	MEMORY_CARTRTC_WRITE(16, (uint8_t)(now >>  0));
+	MEMORY_CARTRTC_WRITE(17, (uint8_t)(now >>  8));
+	MEMORY_CARTRTC_WRITE(18, (uint8_t)(now >> 16));
+	MEMORY_CARTRTC_WRITE(19, (uint8_t)(now >> 24));
+
+	srtc_subframe = 0;
+}
+
+/* Per-frame tick: advance the S-RTC one second per emulated second
+ * (60 fps NTSC / 50 fps PAL). No-op unless an S-RTC cart is loaded. */
+void S9xSRTCTick (void)
+{
+	uint32_t frames_per_second;
+
+	if(!Settings.SRTC)
+		return;
+
+	frames_per_second = Settings.PAL ? 50 : 60;
+
+	if(++srtc_subframe >= frames_per_second)
+	{
+		srtc_subframe = 0;
+		srtcemu_advance(1);
+	}
+}
+
 void S9xInitSRTC (void)
 {
 	srtc_mode = RTCM_READ;
 	srtc_index = -1;
-	srtcemu_update_time();
 	memset(RTCData.reg, 0, 20);
+	srtcemu_seed_from_host();
 }
 
 void S9xResetSRTC (void)
 {
 	srtc_mode = RTCM_READ;
 	srtc_index = -1;
-	srtcemu_update_time();
 }
 
 void S9xSetSRTC (uint8_t data, uint16_t address)
@@ -448,7 +488,8 @@ uint8_t S9xGetSRTC (uint16_t address)
 
 		if(srtc_index < 0)
 		{
-			srtcemu_update_time();
+			/* Under the emulated-clock model the per-frame tick keeps
+			 * the registers current; no host-clock resync on read. */
 			srtc_index++;
 			return 0x0f;
 		}
@@ -468,12 +509,12 @@ void S9xSRTCPreSaveState (void)
 {
 	srtcsnap.rtc_mode  = (int32_t) srtc_mode;
 	srtcsnap.rtc_index = (int32_t) srtc_index;
+	srtcsnap.rtc_subframe = (uint32_t) srtc_subframe;
 }
 
 void S9xSRTCPostLoadState (void)
 {
 	srtc_mode  = srtcsnap.rtc_mode;
 	srtc_index = (signed)         srtcsnap.rtc_index;
-
-	srtcemu_update_time();
+	srtc_subframe = (uint32_t)    srtcsnap.rtc_subframe;
 }

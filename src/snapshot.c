@@ -1048,8 +1048,9 @@ static FreezeData	SnapSPC7110Snap[] =
 	O(  0), O(  1), O(  2), O(  3), O(  4), O(  5), O(  6), O(  7),
 	O(  8), O(  9), O( 10), O( 11), O( 12), O( 13), O( 14), O( 15),
 	O( 16), O( 17), O( 18), O( 19), O( 20), O( 21), O( 22), O( 23),
-	O( 24), O( 25), O( 26), O( 27), O( 28), O( 29), O( 30), O( 31)
+	O( 24), O( 25), O( 26), O( 27), O( 28), O( 29), O( 30), O( 31),
 #undef O
+	INT_ENTRY(7, rtc_subframe)
 };
 
 #undef STRUCT
@@ -1058,7 +1059,8 @@ static FreezeData	SnapSPC7110Snap[] =
 static FreezeData	SnapSRTCSnap[] =
 {
 	INT_ENTRY(6, rtc_mode),
-	INT_ENTRY(6, rtc_index)
+	INT_ENTRY(6, rtc_index),
+	INT_ENTRY(7, rtc_subframe)
 };
 
 #undef STRUCT

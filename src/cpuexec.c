@@ -186,6 +186,7 @@
 #include "fxinst.h"
 #include "fxemu.h"
 #include "spc7110.h"
+#include "srtc.h"
 #include "boolean.h"
 #include "controls.h"
 #include "cheats.h"
@@ -398,6 +399,7 @@ static void S9xEndScreenRefresh (void)
 	 * an SPC7110+RTC cart is loaded). One tick per emulated frame keeps
 	 * the in-game clock running on emulated time rather than host time. */
 	S9xSPC7110RTCTick();
+	S9xSRTCTick();
 
 	if (IPPU.RenderThisFrame)
 	{
