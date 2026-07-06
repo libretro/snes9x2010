@@ -204,6 +204,7 @@ void linearFree(void* mem);
 #include "../src/ppu.h"
 #include "../src/snapshot.h"
 #include "../src/snes9x.h"
+#include "../src/msu1.h"
 #include "../src/srtc.h"
 #include "../filter/snes_ntsc.h"
 
@@ -846,6 +847,22 @@ static void audio_upload_samples(void)
 		src = mute_buffer;
 		if (n > MUTE_BUFFER_FRAMES * 2)
 			n = MUTE_BUFFER_FRAMES * 2;
+	}
+
+	/* MSU1 audio mix: S9xDrainAudio returns a const pointer into the SPC
+	   landing buffer, so when MSU1 is streaming we copy the SPC output into a
+	   writable scratch buffer, add the (resampled) MSU1 stream, and ship that.
+	   No-op for non-MSU1 carts and when nothing is playing. */
+	if (!audio_muted && Settings.MSU1 && MSU1.MSU1_AudioPlay)
+	{
+		static int16_t msu_mix_buffer[MUTE_BUFFER_FRAMES * 2];
+		int frames = n >> 1;
+		if (frames > MUTE_BUFFER_FRAMES)
+			frames = MUTE_BUFFER_FRAMES;
+		memcpy(msu_mix_buffer, src, (size_t) frames * 2 * sizeof(int16_t));
+		S9xMSU1Mix(msu_mix_buffer, (size_t) frames);
+		audio_batch_cb(msu_mix_buffer, (size_t) frames);
+		return;
 	}
 
 	audio_batch_cb(src, (size_t)n >> 1);
@@ -1837,6 +1854,21 @@ bool retro_load_game(const struct retro_game_info *game)
 			environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
 
 		return FALSE;
+	}
+
+	/* MSU1: locate companion files next to the ROM and enable the chip if a
+	   "<rom>.msu" data ROM or "<rom>-0.pcm" audio track is present. The core
+	   loads the ROM image from RAM, so the path comes from game->path. */
+	Settings.MSU1 = FALSE;
+	if (game->path)
+	{
+		S9xMSU1SetROMPath(game->path);
+		if (S9xMSU1ROMExists())
+		{
+			Settings.MSU1 = TRUE;
+			S9xResetMSU1();
+			S9xMSU1Init();
+		}
 	}
 
 	check_variables(true);

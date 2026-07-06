@@ -193,6 +193,7 @@
 #include "sdd1emu.h"
 #include "spc7110emu.h"
 #include "ppu.h"
+#include "msu1.h"
 #include "tile.h"
 #include "cpuexec.h"
 
@@ -3156,6 +3157,15 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 {
 	// MAP_PPU: $2000-$3FFF
 
+	/* MSU1 registers occupy $2000-$2007 on carts that provide it. Handle the
+	   non-DMA case up front; when inside DMA/HDMA the address may be wrapped
+	   into $21xx below, which never collides with the MSU1 range. */
+	if (Settings.MSU1 && !CPU.InDMAorHDMA && Address >= 0x2000 && Address <= 0x2007)
+	{
+		S9xMSU1WritePort((uint8_t) (Address & 7), Byte);
+		return;
+	}
+
 	if (CPU.InDMAorHDMA)
 	{
 		if (CPU.CurrentDMAorHDMAChannel >= 0 && DMA[CPU.CurrentDMAorHDMAChannel].ReverseTransfer)
@@ -3824,6 +3834,12 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 uint8_t S9xGetPPU (uint16_t Address)
 {
 	/* MAP_PPU: $2000-$3FFF */
+
+	/* MSU1 registers occupy $2000-$2007 (banks $00-$3F/$80-$BF) on carts that
+	   provide it, taking precedence over the otherwise-open-bus $2000-$20FF
+	   region. Gated on Settings.MSU1 so it is inert for every other cart. */
+	if (Settings.MSU1 && Address >= 0x2000 && Address <= 0x2007)
+		return (S9xMSU1ReadPort((uint8_t) (Address & 7)));
 
 	if (Address < 0x2100)
 		return (OpenBus);

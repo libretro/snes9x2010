@@ -24,6 +24,7 @@ SOURCES_C := $(CORE_DIR)/src/apu.c \
 	$(CORE_DIR)/src/globals.c \
 	$(CORE_DIR)/src/memmap.c \
 	$(CORE_DIR)/src/obc1.c \
+	$(CORE_DIR)/src/msu1.c \
 	$(CORE_DIR)/src/ppu.c \
 	$(CORE_DIR)/src/sa1.c \
 	$(CORE_DIR)/src/sdd1.c \

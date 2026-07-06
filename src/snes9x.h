@@ -367,6 +367,7 @@ struct SSettings
 	uint8_t	SPC7110;
 	uint8_t	SPC7110RTC;
 	uint8_t	OBC1;
+	uint8_t	MSU1;
 	uint8_t	SETA;
 	uint8_t	SRTC;
 	uint8_t	BS;

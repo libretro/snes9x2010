@@ -1918,6 +1918,7 @@ static uint8_t InitROM (void)
 	Settings.SPC7110 = FALSE;
 	Settings.SPC7110RTC = FALSE;
 	Settings.OBC1 = FALSE;
+	Settings.MSU1 = FALSE;
 	Settings.SETA = 0;
 	Settings.SRTC = FALSE;
 	Settings.BS = FALSE;

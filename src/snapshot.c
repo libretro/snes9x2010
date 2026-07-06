@@ -187,6 +187,7 @@
 #include "fxemu.h"
 #include "sdd1.h"
 #include "srtc.h"
+#include "msu1.h"
 #include "snapshot.h"
 #include "controls.h"
 #include "display.h"
@@ -979,6 +980,28 @@ static FreezeData	SnapOBC1[] =
 };
 
 #undef STRUCT
+#define STRUCT	struct SMSU1
+
+static FreezeData	SnapMSU1[] =
+{
+	INT_ENTRY(7, MSU1_STATUS),
+	INT_ENTRY(7, MSU1_DataSeekOffset),
+	INT_ENTRY(7, MSU1_DataReadOffset),
+	INT_ENTRY(7, MSU1_AudioPlayOffset),
+	INT_ENTRY(7, MSU1_AudioLoopOffset),
+	INT_ENTRY(7, MSU1_CurrentTrack),
+	INT_ENTRY(7, MSU1_VolumeB),
+	INT_ENTRY(7, MSU1_AudioResumeTrack),
+	INT_ENTRY(7, MSU1_AudioResumeOffset),
+	INT_ENTRY(7, MSU1_Control),
+	INT_ENTRY(7, MSU1_AudioError),
+	INT_ENTRY(7, MSU1_AudioPlay),
+	INT_ENTRY(7, MSU1_AudioRepeat),
+	INT_ENTRY(7, MSU1_AudioBusy),
+	INT_ENTRY(7, MSU1_DataBusy)
+};
+
+#undef STRUCT
 #define STRUCT	struct SSPC7110Snapshot
 
 static FreezeData	SnapSPC7110Snap[] =
@@ -1333,6 +1356,12 @@ void S9xFreezeToStream (STREAM stream)
 	{
 		FreezeStruct(stream, "OBC", &OBC1, SnapOBC1, COUNT(SnapOBC1));
 		FreezeBlock (stream, "OBM", Memory.OBC1RAM, 8192);
+	}
+
+	if (Settings.MSU1)
+	{
+		S9xMSU1PreSaveState();
+		FreezeStruct(stream, "MS1", &MSU1, SnapMSU1, COUNT(SnapMSU1));
 	}
 
 	if (Settings.SPC7110)
@@ -1702,6 +1731,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 	uint8_t *local_st010         = NULL;
 	uint8_t *local_obc1          = NULL;
 	uint8_t *local_obc1_data     = NULL;
+	uint8_t *local_msu1          = NULL;
 	uint8_t *local_spc7110       = NULL;
 	uint8_t *local_srtc          = NULL;
 	uint8_t *local_rtc_data      = NULL;
@@ -1842,6 +1872,10 @@ int S9xUnfreezeFromStream (STREAM stream)
 			SkipBlockWithName(stream, "OBM");
 		}
 
+		result = UnfreezeStructCopy(stream, "MS1", &local_msu1, SnapMSU1, COUNT(SnapMSU1), version);
+		if (result != SUCCESS && Settings.MSU1)
+			break;
+
 		result = UnfreezeStructCopy(stream, "S71", &local_spc7110, SnapSPC7110Snap, COUNT(SnapSPC7110Snap), version);
 		if (result != SUCCESS && Settings.SPC7110)
 			break;
@@ -1935,6 +1969,13 @@ int S9xUnfreezeFromStream (STREAM stream)
 		if (local_obc1_data)
 			memcpy(Memory.OBC1RAM, local_obc1_data, 8192);
 
+		if (local_msu1)
+		{
+			UnfreezeStructFromCopy(&MSU1, SnapMSU1, COUNT(SnapMSU1), local_msu1, version);
+			if (Settings.MSU1)
+				S9xMSU1PostLoadState();
+		}
+
 		if (local_spc7110)
 			UnfreezeStructFromCopy(&s7snap, SnapSPC7110Snap, COUNT(SnapSPC7110Snap), local_spc7110, version);
 
@@ -2015,6 +2056,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 	if (local_cx4_data)		free(local_cx4_data);
 	if (local_st010)		free(local_st010);
 	if (local_obc1)			free(local_obc1);
+	if (local_msu1)			free(local_msu1);
 	if (local_obc1_data)		free(local_obc1_data);
 	if (local_spc7110)		free(local_spc7110);
 	if (local_srtc)			free(local_srtc);
@@ -2110,6 +2152,9 @@ int32_t SnapshotSize(void)
 		len += StructSize("OBC", SnapOBC1, COUNT(SnapOBC1));
 		len += BlockSize ("OBM", 8192);
 	}
+
+	if (Settings.MSU1)
+		len += StructSize("MS1", SnapMSU1, COUNT(SnapMSU1));
 
 	if (Settings.SPC7110)
 		len += StructSize("S71", SnapSPC7110Snap, COUNT(SnapSPC7110Snap));
