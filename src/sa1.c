@@ -425,6 +425,93 @@ static INLINE uint8_t S9xSA1GetByte (uint32_t address)
 #ifdef __GNUC__
 __attribute__((noinline))
 #endif
+/* Type-1 character-conversion DMA read.
+ *
+ * When CC1 is armed (in_char_dma), the S-CPU reads of the BW-RAM
+ * character window return SNES-tile-format data that the SA-1
+ * converts on the fly from the linear bitmap in BW-RAM. Hardware
+ * buffers one whole character into I-RAM on each character-boundary
+ * read, then the individual bytes are read back out of that I-RAM
+ * buffer. This mirrors ares' SA1::dmaCC1Read exactly (verified
+ * bit-exact against it across all bpp/size/offset combinations).
+ *
+ * `bwoffset` is the BW-RAM-relative byte offset being read (same
+ * address space as the DSA source register). Returns the converted
+ * byte from the I-RAM buffer at FillRAM[0x3000].
+ *
+ * Registers:
+ *   $2231: dmacb = bits0-1 (colour-depth code, clamped to 2),
+ *          dmasize = bits2-4 (clamped to 5)
+ *   $2232-4: DSA (BW-RAM source address)
+ *   $2235-6: DDA (I-RAM destination address) */
+uint8_t S9xSA1ReadCC1 (uint32_t bwoffset)
+{
+	uint32_t charmask, bpp, bpl, bwmask, tile, ty, tx, bwaddr, dsa, dda;
+	int      dmacb, dmasize;
+	uint32_t y, x, byte;
+
+	dmacb   = Memory.FillRAM[0x2231] & 3;
+	if (dmacb > 2)
+		dmacb = 2;
+	dmasize = (Memory.FillRAM[0x2231] >> 2) & 7;
+	if (dmasize > 5)
+		dmasize = 5;
+
+	dsa = Memory.FillRAM[0x2232] | (Memory.FillRAM[0x2233] << 8) | (Memory.FillRAM[0x2234] << 16);
+	dda = Memory.FillRAM[0x2235] | (Memory.FillRAM[0x2236] << 8);
+
+	charmask = (1u << (6 - dmacb)) - 1;
+
+	if ((bwoffset & charmask) == 0)
+	{
+		bpp    = 2u << (2 - dmacb);
+		bpl    = (8u << dmasize) >> dmacb;
+		bwmask = Memory.SRAMMask;
+		tile   = ((bwoffset - dsa) & bwmask) >> (6 - dmacb);
+		ty     = tile >> dmasize;
+		tx     = tile & ((1u << dmasize) - 1);
+		bwaddr = dsa + ty * 8 * bpl + tx * bpp;
+
+		for (y = 0; y < 8; y++)
+		{
+			uint64_t data = 0;
+			uint8_t  out[8];
+
+			for (byte = 0; byte < bpp; byte++)
+				data |= (uint64_t) Memory.SRAM[(bwaddr + byte) & bwmask] << (byte << 3);
+
+			bwaddr += bpl;
+
+			memset(out, 0, sizeof(out));
+			for (x = 0; x < 8; x++)
+			{
+				out[0] |= (data & 1) << (7 - x); data >>= 1;
+				out[1] |= (data & 1) << (7 - x); data >>= 1;
+				if (dmacb != 2)
+				{
+					out[2] |= (data & 1) << (7 - x); data >>= 1;
+					out[3] |= (data & 1) << (7 - x); data >>= 1;
+					if (dmacb != 1)
+					{
+						out[4] |= (data & 1) << (7 - x); data >>= 1;
+						out[5] |= (data & 1) << (7 - x); data >>= 1;
+						out[6] |= (data & 1) << (7 - x); data >>= 1;
+						out[7] |= (data & 1) << (7 - x); data >>= 1;
+					}
+				}
+			}
+
+			for (byte = 0; byte < bpp; byte++)
+			{
+				uint32_t p = dda + (y << 1) + ((byte & 6) << 3) + (byte & 1);
+				Memory.FillRAM[0x3000 + (p & 0x7ff)] = out[byte];
+			}
+		}
+	}
+
+	return (Memory.FillRAM[0x3000 + ((dda + (bwoffset & charmask)) & 0x7ff)]);
+}
+
 static uint8_t S9xSA1GetByteFromRegister (uint8_t *GetAddress, uint32_t address)
 {
 	switch ((intptr_t) GetAddress)

@@ -249,6 +249,7 @@ extern const uint8_t			S9xOpLengthsM0X0[256];
 
 uint8_t S9xGetSA1 (uint32_t address);
 void S9xSetSA1 (uint8_t byte, uint32_t address);
+uint8_t S9xSA1ReadCC1 (uint32_t bwoffset);
 void S9xSA1Init (void);
 void S9xSA1MainLoop (void);
 void S9xSA1PostLoadState (void);

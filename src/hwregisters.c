@@ -245,7 +245,17 @@ HWREG_NOINLINE uint8_t S9xGetByteFromRegister(uint8_t *GetAddress, uint32_t Addr
          break;
 
       case MAP_BWRAM:
-         byte = *(Memory.BWRAM + ((Address & 0x7fff) - 0x6000));
+         /* Type-1 character-conversion DMA: while armed, S-CPU reads of
+          * the BW-RAM character window return SA-1-converted tile data
+          * (buffered through I-RAM) instead of the raw bitmap. Inert
+          * unless a game has armed CC1 via $2230/$2236. */
+         if (Settings.SA1 && SA1.in_char_dma)
+         {
+            uint32_t bwoffset = (uint32_t)(Memory.BWRAM - Memory.SRAM) + ((Address & 0x7fff) - 0x6000);
+            byte = S9xSA1ReadCC1(bwoffset);
+         }
+         else
+            byte = *(Memory.BWRAM + ((Address & 0x7fff) - 0x6000));
          break;
 
       case MAP_DSP:
