@@ -1857,17 +1857,50 @@ bool retro_load_game(const struct retro_game_info *game)
 	}
 
 	/* MSU1: locate companion files next to the ROM and enable the chip if a
-	   "<rom>.msu" data ROM or "<rom>-0.pcm" audio track is present. The core
-	   loads the ROM image from RAM, so the path comes from game->path. */
+	   "<rom>.msu" data ROM or "<rom>-0.pcm" audio track is present.
+
+	   The ROM image is loaded from the frontend's memory buffer (need_fullpath
+	   is false, to preserve softpatching and buffer loading for every game), so
+	   game->path is not guaranteed to be non-NULL. MSU1 nevertheless needs the
+	   on-disk ROM path to find its companion files, so we ask the frontend for
+	   it via RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, which supplies the content
+	   path even when the ROM was handed over as a buffer. We fall back to
+	   game->path for older frontends that lack the ext interface. */
 	Settings.MSU1 = FALSE;
-	if (game->path)
 	{
-		S9xMSU1SetROMPath(game->path);
-		if (S9xMSU1ROMExists())
+		const char *msu_path = NULL;
+		char        rebuilt[PATH_MAX + 8];
+		const struct retro_game_info_ext *info_ext = NULL;
+
+		if (environ_cb && environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &info_ext) && info_ext)
 		{
-			Settings.MSU1 = TRUE;
-			S9xResetMSU1();
-			S9xMSU1Init();
+			if (info_ext->full_path && info_ext->full_path[0])
+				msu_path = info_ext->full_path;
+			else if (info_ext->dir && info_ext->name)
+			{
+				/* Reconstruct "<dir>/<name>.<ext>"; MSU1 resolution only needs
+				   the directory + basename, so any extension resolves the same
+				   companion files. */
+				snprintf(rebuilt, sizeof(rebuilt), "%s/%s.%s",
+					info_ext->dir,
+					info_ext->name,
+					(info_ext->ext && info_ext->ext[0]) ? info_ext->ext : "sfc");
+				msu_path = rebuilt;
+			}
+		}
+
+		if (!msu_path && game->path && game->path[0])
+			msu_path = game->path;
+
+		if (msu_path)
+		{
+			S9xMSU1SetROMPath(msu_path);
+			if (S9xMSU1ROMExists())
+			{
+				Settings.MSU1 = TRUE;
+				S9xResetMSU1();
+				S9xMSU1Init();
+			}
 		}
 	}
 
