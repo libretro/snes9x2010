@@ -220,6 +220,7 @@ void linearFree(void* mem);
 
 /* Subsystem id for the Satellaview (BS-X base cart + memory pack) pairing. */
 #define RETRO_GAME_TYPE_BSX			0x0101
+#define RETRO_GAME_TYPE_SUFAMI_TURBO		0x0102
 #define RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE		RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
 #define RETRO_DEVICE_LIGHTGUN_JUSTIFIER		RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 1)
 #define RETRO_DEVICE_LIGHTGUN_JUSTIFIERS		RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 2)
@@ -835,8 +836,13 @@ void retro_set_environment(retro_environment_t cb)
 			{ "BS-X Base Cartridge", "bsx|sfc|smc|bin", false, false, true, NULL, 0 },
 			{ "BS Memory Pack",      "bs|sfc|smc|bin",  false, false, false, NULL, 0 },
 		};
+		static const struct retro_subsystem_rom_info st_roms[] = {
+			{ "Sufami Turbo Cartridge (Slot 1)", "st|sfc|smc|bin", false, false, true,  NULL, 0 },
+			{ "Sufami Turbo Cartridge (Slot 2)", "st|sfc|smc|bin", false, false, false, NULL, 0 },
+		};
 		static const struct retro_subsystem_info subsystems[] = {
 			{ "Satellaview (BS-X + Memory Pack)", "bsx", bsx_roms, 2, RETRO_GAME_TYPE_BSX },
+			{ "Sufami Turbo",                     "st",  st_roms,  2, RETRO_GAME_TYPE_SUFAMI_TURBO },
 			{ NULL, NULL, NULL, 0, 0 },
 		};
 		environ_cb(RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO, (void*)subsystems);
@@ -2041,6 +2047,104 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 	int loaded;
 	const struct retro_game_info *base;
 	const struct retro_game_info *pack;
+
+	if (game_type == RETRO_GAME_TYPE_SUFAMI_TURBO)
+	{
+		/* Sufami Turbo: assemble the base-cassette BIOS + one or two minicart
+		 * dumps into the "combined image" layout that the existing Sufami Turbo
+		 * pseudo-LoROM map consumes (BIOS mirrored across 0..0x100000, minicart
+		 * A at 0x100000, minicart B at 0x200000), then load it through the
+		 * normal path. This reuses the verified combined-image mapping instead
+		 * of the bit-rotted, file-path-based LoadMultiCart machinery.
+		 *
+		 * The base cassette is the 256KB "BANDAI SFC-ADX"/"SFC-ADX BACKUP"
+		 * firmware; a minicart is "BANDAI SFC-ADX" WITHOUT the second signature.
+		 * We accept the two ROMs in any slot order: whichever is the base
+		 * cassette becomes banks $00-$1F, and the minicart(s) go into slots
+		 * A/B. If neither ROM is a base cassette the load is rejected (a BIOS
+		 * is required; there is no HLE path yet). */
+		const struct retro_game_info *bios = NULL;
+		const struct retro_game_info *miniA = NULL;
+		const struct retro_game_info *miniB = NULL;
+		uint8_t *image;
+		uint32_t total;
+		unsigned i;
+
+		if (!info || num_info < 1)
+			return (false);
+
+		for (i = 0; i < num_info && i < 2; i++)
+		{
+			const struct retro_game_info *g = &info[i];
+			const uint8_t *d;
+			if (!g->data || g->size < 0x8000)
+				continue;
+			d = (const uint8_t *) g->data;
+			if (strncmp((const char *) d, "BANDAI SFC-ADX", 14) != 0)
+				continue;
+			if (g->size >= 0x40000
+			 && strncmp((const char *) (d + 0x10), "SFC-ADX BACKUP", 14) == 0)
+			{
+				if (!bios)
+					bios = g;              /* base cassette */
+			}
+			else if (!miniA)
+				miniA = g;                 /* first minicart */
+			else if (!miniB)
+				miniB = g;                 /* second minicart (link play) */
+		}
+
+		/* A base cassette and at least one minicart are required. */
+		if (!bios || !miniA)
+			return (false);
+
+		image = (uint8_t *) calloc(1, MAX_ROM_SIZE);
+		if (!image)
+			return (false);
+
+		/* Mirror the 256KB base cassette across banks $00-$1F (0..0x100000),
+		 * matching how a combined ST image is laid out. */
+		{
+			uint32_t biossz = (uint32_t) bios->size;
+			uint32_t off;
+			if (biossz > 0x40000)
+				biossz = 0x40000;
+			for (off = 0; off + biossz <= 0x100000; off += 0x40000)
+				memcpy(image + off, bios->data, biossz);
+		}
+
+		/* Minicart A -> 0x100000 (banks $20-$3F). */
+		{
+			uint32_t szA = (uint32_t) miniA->size;
+			if (szA > 0x100000)
+				szA = 0x100000;
+			memcpy(image + 0x100000, miniA->data, szA);
+		}
+
+		/* Minicart B -> 0x200000 (banks $40-$5F), when present. */
+		if (miniB)
+		{
+			uint32_t szB = (uint32_t) miniB->size;
+			if (szB > 0x100000)
+				szB = 0x100000;
+			memcpy(image + 0x200000, miniB->data, szB);
+			total = 0x300000;
+		}
+		else
+			total = 0x200000;
+
+		init_descriptors();
+		memorydesc_c = 0;
+
+		S9xSetStreamBuffer(image, (uint64_t) total);
+		loaded = LoadROM();
+		free(image);
+		if (!loaded)
+			return (false);
+
+		Settings.MSU1 = FALSE;
+		return (true);
+	}
 
 	if (game_type != RETRO_GAME_TYPE_BSX)
 		return (false);
