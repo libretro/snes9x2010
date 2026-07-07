@@ -137,6 +137,13 @@ MiSTer RTL / Snes9x mainline) or on real hardware before landing.
 - **Chou Aniki - Bakuretsu Rantou Hen (Japan)** — fixed a permanent black
   screen (the game's NMI-driven loop stalled) by adding it to the per-game
   APU-speedup timing list, matching mainline Snes9x's fix for this title.
+- **Madden NFL 96** — fixed silent audio: the game was missing from the
+  APU time-overflow list, so its SPC700 sound driver deadlocked after boot
+  and stopped issuing DSP writes. Added it to the list.
+- **MechWarrior 3050 / Battle Tech 3050** — fixed degraded sound: the
+  existing APU time-overflow entry used an exact ROM-name match against the
+  ROM ID ("A35"), so it never applied. Corrected to match by ROM ID, also
+  covering the title's regional variants.
 
 ### Audited (verified accurate, no change required)
 
