@@ -187,6 +187,7 @@
 #include "snes9x.h"
 #include "memmap.h"
 #include "bsx.h"
+#include "bsflash.h"
 #include "display.h"
 
 #include <streams/file_stream.h>
@@ -1077,6 +1078,13 @@ void S9xInitBSX (void)
 	{
 		MapROM = NULL;
 		FlashROM = Memory.ROM;
+
+		/* Initialise the ares-accurate BS Memory flash chip over the same
+		   image the legacy mapping uses. Read-only (ROM cassette) dumps read
+		   straight through, so this does not disturb dumped BS games; it only
+		   changes behaviour once software actually issues flash commands. */
+		S9xBSFlashInit(FlashROM, FlashSize,
+			(FlashMode == FALSE) ? TRUE : FALSE);
 
 		time(&t);
 		tmr = localtime(&t);
