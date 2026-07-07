@@ -2363,6 +2363,9 @@ static uint8_t InitROM (void)
 		if (MATCH_ID("AVCJ"))                                      /* Rendering Ranger R2*/
 			Timings.APUSpeedup = 4;
 
+		if (MATCH_ID("AANJ"))                                      /* Chou Aniki - Bakuretsu Rantou Hen*/
+			Timings.APUSpeedup = 1;
+
 		if (MATCH_NA("GAIA GENSOUKI 1 JPN")                     || /* Gaia Gensouki*/
 			MATCH_ID("JG  ")                                    || /* Illusion of Gaia*/
 			MATCH_ID("CQ  ")                                    || /* Stunt Race FX*/
