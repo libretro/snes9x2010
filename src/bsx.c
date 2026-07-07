@@ -612,16 +612,28 @@ uint8_t S9xGetBSX (uint32_t address)
 		/* default: read-through mode */
 		t = BSX_Get_Bypass_FlashIO(offset);
 
+		/* When the ares-accurate flash chip is in one of the command modes
+		   it owns (chip-id, page buffer, compatible/extended status), return
+		   its response: these are position-independent register reads the
+		   BS-X BIOS performs after a Sharp command. In plain flash-read mode
+		   the chip is not consulted, so ordinary flash-content reads continue
+		   through the MMC-mapped path above (preserving dumped-BS games). */
+		if (BSFlashChip.memory && BSFlashChip.size && !BSFlashChip.is_rom &&
+			BSFlashChip.mode != BSF_MODE_FLASH)
+		{
+			t = S9xBSFlashRead(offset);
+		}
+
 		/* note: may be more registers, purposes unknown */
 		switch (offset)
 		{
 			case 0x0002:
-				if (BSX.flash_enable)
+				if (BSX.flash_enable && BSFlashChip.mode == BSF_MODE_FLASH)
 					t = 0x80; /* status register? */
 				break;
 
 			case 0x5555:
-				if (BSX.flash_enable)
+				if (BSX.flash_enable && BSFlashChip.mode == BSF_MODE_FLASH)
 					t = 0x80; /* ??? */
 				break;
 
@@ -635,8 +647,10 @@ uint8_t S9xGetBSX (uint32_t address)
 			case 0xFF0E:
 			case 0xFF10:
 			case 0xFF12:
-				/* return flash vendor information */
-				if (BSX.read_enable)
+				/* Legacy vendor-information window (older 0xAA55 unlock path).
+				   Only used when the chip is in flash-read mode; the Sharp
+				   command path returns this info via the page buffer above. */
+				if (BSX.read_enable && BSFlashChip.mode == BSF_MODE_FLASH)
 					t = flashcard[offset - 0xFF00];
 				break;
 		}
@@ -703,6 +717,15 @@ void S9xSetBSX (uint8_t byte, uint32_t address)
 			BSX_Set_Bypass_FlashIO(offset, byte);
 			return;
 		}
+
+		/* Feed command bytes to the ares-accurate flash chip so its mode,
+		   page buffers and status registers track the real Sharp command
+		   sequence the BS-X BIOS issues (0x38/0x71/0x72/0x75/0x99/...). The
+		   legacy state machine below is kept in lock-step so the existing,
+		   verified boot path is unchanged; reads consult the chip only for
+		   the command modes it owns (see S9xGetBSX). */
+		if (BSFlashChip.memory && BSFlashChip.size && !BSFlashChip.is_rom)
+			S9xBSFlashWrite(offset, byte);
 
 		/* flash command handling
 		   NOTE: incomplete */
@@ -1080,11 +1103,14 @@ void S9xInitBSX (void)
 		FlashROM = Memory.ROM;
 
 		/* Initialise the ares-accurate BS Memory flash chip over the same
-		   image the legacy mapping uses. Read-only (ROM cassette) dumps read
-		   straight through, so this does not disturb dumped BS games; it only
-		   changes behaviour once software actually issues flash commands. */
+		   image the legacy mapping uses. The BS-X base unit hosts a writable
+		   Flash cassette (the BIOS issues real Sharp flash commands), so the
+		   chip is active there. Dumped BS-game ROM cassettes are read-only and
+		   read straight through, so they are unaffected. FlashMode mirrors the
+		   legacy "flash present" flag; treat a non-flash dumped cart as a ROM
+		   cassette. */
 		S9xBSFlashInit(FlashROM, FlashSize,
-			(FlashMode == FALSE) ? TRUE : FALSE);
+			(Settings.BSXItself || FlashMode) ? FALSE : TRUE);
 
 		time(&t);
 		tmr = localtime(&t);
