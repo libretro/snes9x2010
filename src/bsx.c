@@ -206,6 +206,10 @@ struct SBSX_RTC
 	int	minutes;
 	int	seconds;
 	int	ticks;
+	int	wday;
+	int	mday;
+	int	month;
+	int	year;
 };
 
 static struct SBSX_RTC	BSX_RTC;
@@ -221,16 +225,19 @@ static const uint8_t	flashcard[20] =
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static const uint8_t	init2192[32] =	/* FIXME */
+static const uint8_t	init2192[32] =	/* Satellaview time channel (ch 0) */
 {
-	00, 00, 00, 00, 00,		/* unknown */
-	01, 01, 00, 00, 00,
-	00,				/* seconds (?) */
-	00,				/* minutes */
-	00,				/* hours */
-	10, 10, 10, 10, 10,		/* unknown */
-	10, 10, 10, 10, 10,		/* dummy */
-	00, 00, 00, 00, 00, 00, 00, 00, 00
+	/* Layout follows the MiSTer BSX RTL channel-0 data stream:
+	   [4]=0x10, [5]=0x01, [6]=0x01 are fixed; [10..12]=sec/min/hour;
+	   [13]=weekday, [14]=day, [15]=month, [16..17]=year (seeded at init). */
+	0x00, 0x00, 0x00, 0x00, 0x10,
+	0x01, 0x01, 0x00, 0x00, 0x00,
+	0x00,				/* seconds */
+	0x00,				/* minutes */
+	0x00,				/* hours   */
+	0x00, 0x00, 0x00, 0x00, 0x00,	/* weekday, day, month, year lo/hi */
+	0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 static uint8_t	FlashMode;
@@ -852,11 +859,41 @@ uint8_t S9xGetBSXPPU (uint16_t address)
 				BSX_RTC.hours++;
 			}
 			if (BSX_RTC.hours >= 24)
+			{
 				BSX_RTC.hours = 0;
+				/* Advance the date on day rollover so long sessions keep a
+				   coherent calendar (weekday 0-6, day-of-month, month). */
+				BSX_RTC.wday = (BSX_RTC.wday + 1) % 7;
+				BSX_RTC.mday++;
+				{
+					static const int mdays[12] =
+						{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+					int dim = mdays[(BSX_RTC.month - 1) % 12];
+					if (BSX_RTC.month == 2 &&
+						((BSX_RTC.year % 4 == 0 && BSX_RTC.year % 100 != 0) ||
+						 (BSX_RTC.year % 400 == 0)))
+						dim = 29;
+					if (BSX_RTC.mday > dim)
+					{
+						BSX_RTC.mday = 1;
+						BSX_RTC.month++;
+						if (BSX_RTC.month > 12)
+						{
+							BSX_RTC.month = 1;
+							BSX_RTC.year++;
+						}
+					}
+				}
+			}
 
-			BSX.test2192[10] = BSX_RTC.seconds;
-			BSX.test2192[11] = BSX_RTC.minutes;
-			BSX.test2192[12] = BSX_RTC.hours;
+			BSX.test2192[10] = (uint8_t) BSX_RTC.seconds;
+			BSX.test2192[11] = (uint8_t) BSX_RTC.minutes;
+			BSX.test2192[12] = (uint8_t) BSX_RTC.hours;
+			BSX.test2192[13] = (uint8_t) BSX_RTC.wday;
+			BSX.test2192[14] = (uint8_t) BSX_RTC.mday;
+			BSX.test2192[15] = (uint8_t) BSX_RTC.month;
+			BSX.test2192[16] = (uint8_t) (BSX_RTC.year & 0xFF);
+			BSX.test2192[17] = (uint8_t) ((BSX_RTC.year >> 8) & 0xFF);
 
 			break;
 
@@ -1117,9 +1154,24 @@ void S9xInitBSX (void)
 
 		BSX_RTC.ticks = 0;
 		memcpy(BSX.test2192, init2192, sizeof(init2192));
+		/* Seed the Satellaview time channel (channel 0) from the host clock.
+		   Layout matches the MiSTer BSX RTL's channel-0 data: index 10-12 are
+		   sec/min/hour, 13 = weekday, 14 = day, 15 = month, 16-17 = year
+		   (little-endian). Previously only sec/min/hour were provided (the
+		   date read back as zero); the full date is now populated so BS
+		   software that shows the date behaves correctly. */
 		BSX.test2192[10] = BSX_RTC.seconds = tmr->tm_sec;
 		BSX.test2192[11] = BSX_RTC.minutes = tmr->tm_min;
 		BSX.test2192[12] = BSX_RTC.hours   = tmr->tm_hour;
+		BSX_RTC.wday  = tmr->tm_wday;
+		BSX_RTC.mday  = tmr->tm_mday;
+		BSX_RTC.month = tmr->tm_mon + 1;
+		BSX_RTC.year  = tmr->tm_year + 1900;
+		BSX.test2192[13] = (uint8_t) BSX_RTC.wday;
+		BSX.test2192[14] = (uint8_t) BSX_RTC.mday;
+		BSX.test2192[15] = (uint8_t) BSX_RTC.month;
+		BSX.test2192[16] = (uint8_t) (BSX_RTC.year & 0xFF);
+		BSX.test2192[17] = (uint8_t) ((BSX_RTC.year >> 8) & 0xFF);
 		SNESGameFixes.SRAMInitialValue = 0x00;
 	}
 }
