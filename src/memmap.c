@@ -1901,6 +1901,28 @@ static const char * Size (void)
 	return (str);
 }
 
+/* A "combined" Sufami Turbo image is the base-cassette BIOS (starts with
+ * the "BANDAI SFC-ADX" / "SFC-ADX BACKUP" signature and carries the
+ * "ADD-ON BASE CASSETE" internal name at $7FC0) with one or two minicart
+ * dumps appended at 0x100000 / 0x200000. Each appended minicart also
+ * begins with the "BANDAI SFC-ADX" signature (but NOT the "SFC-ADX
+ * BACKUP" second signature, which only the base cassette has). This is
+ * the layout Map_SufamiTurboPseudoLoROMMap consumes. Defined outside the
+ * SNES_SUPPORT_MULTI_CART block because the combined-image path does not
+ * depend on the (bit-rotted, file-path-based) LoadMultiCart machinery. */
+static uint8_t is_SufamiTurbo_Combined (uint8_t *data, uint32_t size)
+{
+	if (size < 0x140000)
+		return FALSE;
+	if (strncmp((char *) data, "BANDAI SFC-ADX", 14) != 0
+	 || strncmp((char *) (data + 0x10), "SFC-ADX BACKUP", 14) != 0)
+		return FALSE;
+	/* At least one minicart appended at 0x100000. */
+	if (strncmp((char *) (data + 0x100000), "BANDAI SFC-ADX", 14) != 0)
+		return FALSE;
+	return TRUE;
+}
+
 static uint8_t InitROM (void)
 {
 	int p;
@@ -1983,6 +2005,24 @@ static uint8_t InitROM (void)
 		l2 = (l > '9') ? l - '7' : l - '0';
 		r2 = (r > '9') ? r - '7' : r - '0';
 		Memory.CompanyId = l2 * 36 + r2;
+	}
+
+	/* Sufami Turbo combined image: the base-cassette BIOS header declares
+	 * ROMSize/SRAMSize 0, which the generic sanity check below rejects.
+	 * Detect the combined layout (BIOS + appended minicart(s)) up front and
+	 * substitute the values the Sufami Turbo pseudo-LoROM map needs, so the
+	 * image survives validation and is routed to Map_SufamiTurboPseudoLoROMMap
+	 * (keyed on the "ADD-ON BASE CASSETE" name) later in this function. */
+	if (is_SufamiTurbo_Combined(Memory.ROM, Memory.CalculatedSize))
+	{
+		/* Derive ROMSize from the actual image size (log2 - 10), matching the
+		 * BS path's computation, and give it the BS-X-style 5 (32KB) SRAM the
+		 * pseudo map wires up per minicart. */
+		p = 0;
+		while ((1 << p) < (int) Memory.CalculatedSize)
+			p++;
+		Memory.ROMSize  = p - 10;
+		Memory.SRAMSize = 5;
 	}
 
 	if (Memory.SRAMSize > 16 || Memory.ROMSize < 7 || Memory.ROMSize - 7 > 23)
