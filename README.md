@@ -6,7 +6,7 @@ former "snes9x-next"). It targets low-to-mid power hardware while keeping
 broad game compatibility, and integrates with RetroArch and other libretro
 frontends.
 
-The emulator core is written in C/C++; the SPC700 + S-DSP audio and the
+The emulator core is written in C; the SPC700 + S-DSP audio and the
 tile renderer include hand-tuned SSE2 (x86) and NEON (ARM) paths with a
 portable scalar fallback.
 
