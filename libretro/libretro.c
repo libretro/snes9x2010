@@ -200,6 +200,8 @@ void linearFree(void* mem);
 #include "../src/display.h"
 #include "../src/fxemu.h"
 #include "../src/memmap.h"
+#include "../src/bsx.h"
+#include "../src/bsflash.h"
 #include "../src/messages.h"
 #include "../src/ppu.h"
 #include "../src/snapshot.h"
@@ -215,6 +217,9 @@ void linearFree(void* mem);
 #define BTN_POINTER2		(BTN_POINTER + 1)
 
 #define RETRO_DEVICE_JOYPAD_MULTITAP		RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 0)
+
+/* Subsystem id for the Satellaview (BS-X base cart + memory pack) pairing. */
+#define RETRO_GAME_TYPE_BSX			0x0101
 #define RETRO_DEVICE_LIGHTGUN_SUPER_SCOPE		RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
 #define RETRO_DEVICE_LIGHTGUN_JUSTIFIER		RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 1)
 #define RETRO_DEVICE_LIGHTGUN_JUSTIFIERS		RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 2)
@@ -818,6 +823,24 @@ void retro_set_environment(retro_environment_t cb)
 	   are now independent and both are always shown.) */
 
 	environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+
+	/* Satellaview subsystem: a BS-X base cartridge (Slot A) paired with a
+	   swappable BS Memory pack (Slot B), matching the two-slot model used by
+	   mainline snes9x and bsnes-plus. The single-ROM heuristic path (which
+	   auto-detects dumped BS games and the BS-X BIOS by header) is retained,
+	   so this subsystem is an additional, explicit way to pair a base cart
+	   with a specific memory-pack dump. */
+	{
+		static const struct retro_subsystem_rom_info bsx_roms[] = {
+			{ "BS-X Base Cartridge", "bsx|sfc|smc|bin", false, false, true, NULL, 0 },
+			{ "BS Memory Pack",      "bs|sfc|smc|bin",  false, false, false, NULL, 0 },
+		};
+		static const struct retro_subsystem_info subsystems[] = {
+			{ "Satellaview (BS-X + Memory Pack)", "bsx", bsx_roms, 2, RETRO_GAME_TYPE_BSX },
+			{ NULL, NULL, NULL, 0, 0 },
+		};
+		environ_cb(RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO, (void*)subsystems);
+	}
 
 	vfs_iface_info.required_interface_version = 1;
 	vfs_iface_info.iface                      = NULL;
@@ -2008,11 +2031,51 @@ bool retro_load_game(const struct retro_game_info *game)
 
 bool retro_load_game_special(unsigned game_type, const struct retro_game_info *info, size_t num_info)
 {
-	(void)game_type;
-	(void)info;
-	(void)num_info;
+	/* Satellaview subsystem: Slot A = BS-X base cartridge, Slot B = optional
+	   BS Memory pack. Mirrors mainline snes9x's two-slot model. The base cart
+	   is loaded as the running ROM through the normal path (so header-based
+	   BS-X detection in S9xInitBSX still applies); the memory-pack dump, when
+	   present, is copied into the BS flash region so the BS-X BIOS sees a
+	   cassette to browse and flash. The single-ROM heuristic path is retained
+	   for auto-detected dumped BS games and the BIOS loaded on its own. */
+	int loaded;
+	const struct retro_game_info *base;
+	const struct retro_game_info *pack;
 
-	return false;
+	if (game_type != RETRO_GAME_TYPE_BSX)
+		return (false);
+	if (!info || num_info < 1 || !info[0].data)
+		return (false);
+
+	base = &info[0];
+	pack = (num_info >= 2 && info[1].data && info[1].size) ? &info[1] : NULL;
+
+	init_descriptors();
+	memorydesc_c = 0;
+
+	/* Load the base cartridge as the running ROM. */
+	S9xSetStreamBuffer((uint8_t *) base->data, (uint64_t) base->size);
+	loaded = LoadROM();
+	if (!loaded)
+		return (false);
+
+	/* Copy the memory-pack dump into the BS flash region (Memory.BSRAM =
+	   Memory.ROM + 0x400000). S9xInitBSX has already run inside LoadROM and
+	   set up the base-unit mapping; the pack now backs the flash cassette. */
+	if (pack)
+	{
+		uint32_t pack_size = (uint32_t) pack->size;
+		if (pack_size > (uint32_t)(MAX_ROM_SIZE - 0x400000))
+			pack_size = (uint32_t)(MAX_ROM_SIZE - 0x400000);
+		memcpy(Memory.BSRAM, pack->data, pack_size);
+
+		/* Re-initialise the flash chip over the freshly-loaded pack image as
+		   a writable Flash cassette. */
+		S9xBSFlashInit(Memory.BSRAM, pack_size ? pack_size : 0x200000, FALSE);
+	}
+
+	Settings.MSU1 = FALSE;
+	return (true);
 }
 
 void retro_unload_game (void)
