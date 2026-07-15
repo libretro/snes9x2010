@@ -195,6 +195,7 @@
 
 #include "snes9x.h"
 #include "ppu.h"
+#include "hdpack.h"
 #include "tile.h"
 
 /* Optional SIMD acceleration for the per-pixel compositor stages.
@@ -28434,6 +28435,8 @@ void S9xSelectTileRenderers_SFXSpeedup (void)
 	GFX.DrawTileMath        = Renderers_DrawTile16Normal1x1[i];
 	GFX.DrawClippedTileMath = Renderers_DrawClippedTile16Normal1x1[i];
 	GFX.DrawBackdropMath    = Renderers_DrawBackdrop16Normal1x1[i];
+
+	S9xHdPackWrapRenderers(1);
 }
 
 void S9xSelectTileRenderers (int BGMode, uint8_t sub, uint8_t obj)
@@ -28615,6 +28618,8 @@ void S9xSelectTileRenderers (int BGMode, uint8_t sub, uint8_t obj)
 	GFX.DrawBackdropMath    = DB[i];
 	GFX.DrawMode7BG1Math    = DM7BG1[i];
 	GFX.DrawMode7BG2Math    = DM7BG2[i];
+
+	S9xHdPackWrapRenderers(DT == Renderers_DrawTile16Normal1x1);
 }
 
 void S9xSelectTileConverter_Depth4 (void)

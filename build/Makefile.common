@@ -1,6 +1,6 @@
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro/libretro-common
-INCFLAGS          := -I$(CORE_DIR)/libretro -I$(CORE_DIR)/src -I$(LIBRETRO_COMM_DIR)/include
-COREDEFINES        = -D__LIBRETRO__
+INCFLAGS          := -I$(CORE_DIR)/libretro -I$(CORE_DIR)/src -I$(LIBRETRO_COMM_DIR)/include -I$(LIBRETRO_COMM_DIR)/include/compat/zlib -I$(CORE_DIR)/deps/libz
+COREDEFINES        = -D__LIBRETRO__ -DHAVE_RPNG -DHAVE_RWEBP -DHAVE_RDDS -DHAVE_ZLIB
 
 ifneq (,$(findstring msvc,$(platform)))
 COREDEFINES        += -DINLINE=_inline
@@ -13,6 +13,7 @@ INCFLAGS += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
 endif
 
 SOURCES_C := $(CORE_DIR)/src/apu.c \
+	$(CORE_DIR)/src/hdpack.c \
 	$(CORE_DIR)/src/bsx.c \
 	$(CORE_DIR)/src/bsflash.c \
 	$(CORE_DIR)/src/c4emu.c \
@@ -45,9 +46,35 @@ SOURCES_C := $(CORE_DIR)/src/apu.c \
 # symbols. Keep it outside the STATIC_LINKING guard below.
 SOURCES_C += $(LIBRETRO_COMM_DIR)/streams/memory_stream.c
 
+# The image loaders below (and their stream/zlib support) also exist
+# inside statically linked RetroArch builds - rpng, image_transfer,
+# trans_stream*, rzip_stream, interface_stream, encoding_crc32 and
+# zlib are all part of the frontend on those platforms - so they must
+# stay out of the core there or the final link sees every symbol
+# twice. hdpack.c only reaches the decoders through the
+# image_transfer interface, which the frontend always provides.
 ifeq ($(STATIC_LINKING),1)
 else
 SOURCES_C += \
+	$(LIBRETRO_COMM_DIR)/formats/png/rpng.c \
+	$(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.c \
+	$(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
+	$(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c \
+	$(LIBRETRO_COMM_DIR)/formats/dds/rdds.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
+	$(CORE_DIR)/deps/libz/adler32.c \
+	$(CORE_DIR)/deps/libz/libz-crc32.c \
+	$(CORE_DIR)/deps/libz/inflate.c \
+	$(CORE_DIR)/deps/libz/inffast.c \
+	$(CORE_DIR)/deps/libz/inftrees.c \
+	$(CORE_DIR)/deps/libz/deflate.c \
+	$(CORE_DIR)/deps/libz/trees.c \
+	$(CORE_DIR)/deps/libz/zutil.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_snprintf.c \

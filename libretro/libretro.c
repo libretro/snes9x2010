@@ -187,6 +187,7 @@
 #include <vfs/vfs.h>
 #include <streams/file_stream.h>
 #include "libretro_core_options.h"
+#include "hdpack.h"
 
 #ifdef _3DS
 void* linearMemAlign(size_t size, size_t alignment);
@@ -1175,6 +1176,14 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->geometry.base_height  = height;
 	info->geometry.max_width    = MAX_BUFFER_WIDTH;
 	info->geometry.max_height   = MAX_SNES_HEIGHT;
+	if (S9xHdPackActive())
+	{
+		uint32_t hd_scale = S9xHdPackScale();
+		info->geometry.base_width  *= hd_scale;
+		info->geometry.base_height *= hd_scale;
+		info->geometry.max_width   *= hd_scale;
+		info->geometry.max_height  *= hd_scale;
+	}
 	info->geometry.aspect_ratio = get_aspect_ratio(width, height);
 
 	/* The SPC's effective output rate is its native 32040 Hz for ordinary
@@ -1326,6 +1335,8 @@ void retro_init(void)
 
 void retro_deinit(void)
 {
+	S9xHdPackDeinit();
+
 	/* If the user closes content with pause-on-menu disabled, retro_deinit
 	   can fire while a frame is mid-render and GFX.Screen still points at
 	   the frontend's swapchain buffer. Restore for tidiness, but the
@@ -1714,6 +1725,8 @@ void retro_run(void)
 	bool okay = false;
 	bool updated = false;
 
+	S9xHdPackFrameBegin();
+
 	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
 	{
 		check_variables(false);
@@ -2032,6 +2045,15 @@ bool retro_load_game(const struct retro_game_info *game)
 
 	environ_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &map);
 
+	if (game && game->path && S9xHdPackInit(game->path))
+	{
+		/* Composite frames come from the pack's buffer; direct
+		   frontend-framebuffer rendering must stay off so GFX.Screen
+		   remains the internal buffer the compositor reads. */
+		libretro_sw_fb_checked  = true;
+		libretro_supports_sw_fb = false;
+	}
+
 	return TRUE;
 }
 
@@ -2184,6 +2206,7 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 
 void retro_unload_game (void)
 {
+	S9xHdPackDeinit();
 	/* See retro_deinit: with pause-on-menu disabled the frontend may
 	   tear down while a frame is mid-render. Unwind any active sw_fb
 	   redirect so subsequent code (including a re-load_game without an
@@ -2336,6 +2359,15 @@ void S9xDeinitUpdate(int width, int height)
 			snes_ntsc_blit(&snes_ntsc, GFX.Screen, GFX.Pitch / 2, burst_phase, width, height, ntsc_screen_buffer, (long)ntsc_out_pitch);
 
 		video_cb(ntsc_screen_buffer, ntsc_out_width, height, ntsc_out_pitch);
+	}
+	else if (S9xHdPackActive())
+	{
+		int hd_w, hd_h, hd_pitch;
+		uint16_t *hd_frame = S9xHdPackComposite(width, height, &hd_w, &hd_h, &hd_pitch);
+		if (hd_frame)
+			video_cb(hd_frame, hd_w, hd_h, hd_pitch);
+		else
+			video_cb(GFX.Screen, width, height, GFX.Pitch);
 	}
 	else
 	{
