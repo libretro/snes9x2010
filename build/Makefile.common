@@ -60,6 +60,7 @@ SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.c \
 	$(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
 	$(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c \
+	$(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
 	$(LIBRETRO_COMM_DIR)/formats/dds/rdds.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
