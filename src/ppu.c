@@ -2589,11 +2589,23 @@ void S9xMode7VertResample (void)
 			{
 				uint16_t a = src[x];
 				uint16_t b = src_below[x];
-				/* Blend each channel of RGB565 independently.
-				 * (a & 0xF7DE) >> 1 + (b & 0xF7DE) >> 1 averages
-				 * the high bits of each channel; the masked low
-				 * bit drops out (acceptable LSB rounding). */
-				uint16_t blend = ((a & 0xF7DE) >> 1) + ((b & 0xF7DE) >> 1);
+				/* Blend each channel of RGB565 independently
+				 * with the same overflow-safe, floor-exact
+				 * halving-add identity used by the tile
+				 * compositor (src/tile.c tile_color_add_half)
+				 * and the pseudo-hires post-pass in libretro.c:
+				 *   ((a & 0xF7DE) >> 1) + ((b & 0xF7DE) >> 1)
+				 *   + (a & b & 0x0821)
+				 * The final term restores the per-channel low
+				 * bit that both operands share, making the
+				 * result bit-exact to per-channel
+				 * floor((ca + cb) / 2). Without it the red and
+				 * blue LSBs (bits 11 and 0; green's field LSB is
+				 * always 0 here) are dropped whenever both source
+				 * pixels are odd, biasing interpolated Mode 7
+				 * scanlines one level dark. */
+				uint16_t blend = ((a & 0xF7DE) >> 1) + ((b & 0xF7DE) >> 1)
+				               + (a & b & 0x0821);
 				dst_odd[x]  = blend;
 			}
 			memmove(dst_even, src, width * sizeof(uint16_t));
