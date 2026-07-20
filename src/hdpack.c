@@ -961,9 +961,13 @@ static uint16_t hd_blend_565(uint32_t argb, uint16_t under)
    }
    if (a >= 255)
       return hd_argb_to_565(argb);
-   ur = ((under >> 11) & 0x1f) << 3;
-   ug = ((under >> 5)  & 0x3f) << 2;
-   ub = ( under        & 0x1f) << 3;
+   /* Expand the native 565 under-pixel to full 8-bit range with bit
+    * replication. A bare left-shift tops out at 248/252/248 instead of
+    * 255, which darkens the base image everywhere an HD texture is
+    * alpha-blended over it. */
+   ur = (under >> 11) & 0x1f; ur = (ur << 3) | (ur >> 2);
+   ug = (under >> 5)  & 0x3f; ug = (ug << 2) | (ug >> 4);
+   ub =  under        & 0x1f; ub = (ub << 3) | (ub >> 2);
    r = ((argb >> 16) & 0xff) * a + ur * (255 - a);
    g = ((argb >> 8)  & 0xff) * a + ug * (255 - a);
    b = ( argb        & 0xff) * a + ub * (255 - a);
