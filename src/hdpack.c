@@ -28,7 +28,7 @@
 #include <formats/image.h>
 #include <formats/rpng.h>
 
-#include <zlib.h>
+#include <encodings/crc32.h>
 
 /* ------------------------------------------------------------------ */
 /* limits                                                              */
@@ -45,7 +45,10 @@
 
 static uint32_t hd_crc32(const void *data, size_t len)
 {
-   return (uint32_t)crc32(0, (const unsigned char *)data, (unsigned)len);
+   /* encoding_crc32 is the standard CRC-32 (poly 0xEDB88320, init/final
+    * 0xFFFFFFFF) - verified bit-identical to the zlib crc32 this
+    * previously called, so pack tile hashes are unchanged. */
+   return encoding_crc32(0, (const uint8_t *)data, len);
 }
 
 /* ------------------------------------------------------------------ */
