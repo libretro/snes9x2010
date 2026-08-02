@@ -2430,7 +2430,7 @@ const char* S9xGetDirectory(uint32_t dirtype)
 {
 	const char *directory = NULL;
 
-	if (dirtype == BIOS_DIR)
+	if (dirtype == BIOS_DIR || dirtype == SAT_DIR)
 	{
 		if (!environ_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &directory) ||
 		    !directory)

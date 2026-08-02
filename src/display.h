@@ -188,6 +188,7 @@ enum s9x_getdirtype
 {
 	DEFAULT_DIR = 0,
 	BIOS_DIR,
+	SAT_DIR,
 	LAST_DIR
 };
 
