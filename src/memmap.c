@@ -695,7 +695,10 @@ static int ScoreHiROM (uint32_t calculated_size, uint8_t * rom,  uint8_t skip_he
 	if (calculated_size > 1024 * 1024 * 3)
 		score += 4;
 
-	if ((1 << (buf[0xd7] - 7)) > 48)
+	/* buf[0xd7] < 7 claims a ROM smaller than 16KB: bogus header,
+	   penalize. Also avoids a negative shift count (UB, and the
+	   result differed across architectures). */
+	if (buf[0xd7] < 7 || (1 << (buf[0xd7] - 7)) > 48)
 		score -= 1;
 
 	if (!allASCII(&buf[0xb0], 6))
@@ -744,7 +747,10 @@ static int ScoreLoROM (uint32_t calculated_size, uint8_t * rom, uint8_t skip_hea
 	if (calculated_size <= 1024 * 1024 * 16)
 		score += 2;
 
-	if ((1 << (buf[0xd7] - 7)) > 48)
+	/* buf[0xd7] < 7 claims a ROM smaller than 16KB: bogus header,
+	   penalize. Also avoids a negative shift count (UB, and the
+	   result differed across architectures). */
+	if (buf[0xd7] < 7 || (1 << (buf[0xd7] - 7)) > 48)
 		score -= 1;
 
 	if (!allASCII(&buf[0xb0], 6))
