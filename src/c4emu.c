@@ -1222,10 +1222,14 @@ static void C4Op1F (void)
 
 static void S9XSetC4Square(void)
 {
-   int64_t b = (int64_t) READ_3WORD(Memory.C4RAM + 0x1f80);
-   int64_t c = b << 40;
-   int64_t a = SAR(c, 30);
-   a = SAR(c, 10);
+   /* Square of the signed 24-bit value at $1f80, 48-bit result. The
+    * value must be sign-extended from bit 23 before squaring; done
+    * manually to avoid shifting into the sign bit (UB). The previous
+    * chained-SAR form squared the value pre-shifted left by 30 bits
+    * (the second SAR reused c instead of a), overflowing int64_t and
+    * always writing a zero result. */
+   int64_t a = (int64_t) READ_3WORD(Memory.C4RAM + 0x1f80);
+   a |= (int64_t) -16777216 * ((a >> 23) & 1);
    a *= a;
    WRITE_3WORD(Memory.C4RAM + 0x1f83, a);
    WRITE_3WORD(Memory.C4RAM + 0x1f86, (a >> 24));
