@@ -885,7 +885,10 @@ static int fx_plot_opaque (void)
 	switch (GSU.vMode)
 	{
 		case 0:
-			return (c & 0x03) != 0;
+			/* ares tests COLR & 0x0f in 2bpp as well (SuperFX::plot:
+			 * the non-8bpp path); 0x03 diverged from hardware. Matches
+			 * mainline snes9x. */
+			return (c & 0x0f) != 0;
 		case 1:
 			return (c & 0x0f) != 0;
 		default:
@@ -4552,18 +4555,23 @@ void S9xResetSuperFX (void)
 
 static uint8_t fx_checkStartAddress (void)
 {
-	uint8_t condition1, condition2, condition3, condition4;
+	/* Execution bank rules ported from mainline snes9x (65ef81ca,
+	 * 986dd2a0): with RON granted, code may run from any ROM bank
+	 * (<= 0x5f or the mirrors at >= 0x80, so higher banks execute);
+	 * with RAN granted, from any bank <= 0x7f (RAM region included).
+	 * The old rules required RON unconditionally and blocked banks
+	 * >= 0x74 outright. The caller already allows a cache-resident
+	 * start before consulting this. */
+	if (SCMR & 16)
+	{
+		if (GSU.vPrgBankReg <= 0x5f || GSU.vPrgBankReg >= 0x80)
+			return (TRUE);
+	}
 
-	/* Check if we're in RAM and the RAN flag is not set*/
-	condition1 = GSU.vPrgBankReg >= 0x60 && GSU.vPrgBankReg <= 0x6f;
-	condition2 = GSU.vPrgBankReg >= 0x74;
-	condition3 = GSU.vPrgBankReg >= 0x70 && GSU.vPrgBankReg <= 0x73 && !(SCMR & 8);
-	condition4 = !(SCMR & 16);
+	if ((SCMR & 8) && GSU.vPrgBankReg <= 0x7f)
+		return (TRUE);
 
-	if (condition1 | condition2 | condition3 | condition4)
-		return (FALSE);
-
-	return (TRUE);
+	return (FALSE);
 }
 
 static void fx_writeRegisterSpace (void)
