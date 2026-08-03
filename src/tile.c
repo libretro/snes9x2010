@@ -204,7 +204,16 @@
  * any other target) the scalar bodies below are used unchanged.
  *
  * Every SIMD kernel must produce framebuffer output bit-exact with
- * the scalar reference it replaces. */
+ * the scalar reference it replaces. *
+ * The kernels are written in C99 style (declarations near first use,
+ * as intrinsics code conventionally is). This is deliberate and safe:
+ * the gates below test __SSE2__ / __ARM_NEON, which only GCC and
+ * Clang define -- MSVC signals SSE2 through _M_IX86_FP / _M_X64 and
+ * is intentionally not matched -- so no C89-only compiler ever parses
+ * these branches. The C89 audit for this file is therefore run with
+ * the kernels disabled (-U__SSE2__), where it is clean; auditing with
+ * them enabled reports ~56 -Wdeclaration-after-statement style
+ * findings that no supported build configuration can hit. */
 #if defined(__SSE2__)
 #include <emmintrin.h>
 #define TILE_HAVE_SSE2 1
@@ -782,6 +791,7 @@ static uint8_t ConvertTile2 (uint8_t *pCache, uint32_t TileAddr, uint32_t unused
 	uint32_t *p       = (uint32_t *) pCache;
 	uint32_t non_zero = 0;
 
+	(void) unused;
 	for (line = 8; line != 0; line--, tp += 2)
 	{
 		uint8_t pix;
@@ -807,6 +817,7 @@ static uint8_t ConvertTile4 (uint8_t *pCache, uint32_t TileAddr, uint32_t unused
 	uint32_t *p       = (uint32_t *) pCache;
 	uint32_t non_zero = 0;
 
+	(void) unused;
 	for (line = 8; line != 0; line--, tp += 2)
 	{
 		uint8_t pix;
@@ -834,6 +845,7 @@ static uint8_t ConvertTile8 (uint8_t *pCache, uint32_t TileAddr, uint32_t unused
 	uint32_t *p       = (uint32_t *) pCache;
 	uint32_t non_zero = 0;
 
+	(void) unused;
 	for (line = 8; line != 0; line--, tp += 2)
 	{
 		uint8_t	pix;
