@@ -297,13 +297,9 @@ s9xcommand_t S9xGetCommandT (const char *name);
 /* Generic mapping functions */
 
 /* Button mapping functions.
-   
-   snes9x will assume you will call S9xReportButton() whenever the 
-   button state changes.
    S9xMapButton() will fail and return FALSE if mapping.type isn't an S9xButton* type. */
 
 uint8_t S9xMapButton (uint32_t id, s9xcommand_t mapping);
-void S9xReportButton (uint32_t id, uint8_t pressed);
 
 /* Pointer mapping functions.
 

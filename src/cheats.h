@@ -206,18 +206,9 @@ typedef struct
 
 extern SCheatData	Cheat;
 
-void S9xApplyCheat (uint32_t);
 void S9xApplyCheats (void);
-void S9xRemoveCheat (uint32_t);
-void S9xRemoveCheats (void);
-void S9xDeleteCheat (uint32_t);
 void S9xDeleteCheats (void);
-void S9xEnableCheat (uint32_t);
-void S9xDisableCheat (uint32_t);
-void S9xAddCheat (uint8_t, uint8_t, uint32_t, uint8_t);
 void S9xInitCheatData (void);
-uint8_t S9xCheatEnabled (uint32_t);
-const char * S9xGetCheatName(uint8_t cheat_no);
 
 const char * S9xGameGenieToRaw (const char * code, uint32_t * address, uint8_t * byte);
 const char * S9xProActionReplayToRaw (const char * code, uint32_t * address, uint8_t * byte);

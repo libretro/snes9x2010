@@ -288,14 +288,12 @@ const char * S9xGameGenieToRaw (const char *code, uint32_t * address, uint8_t * 
 
 static uint8_t S9xGetByteFree (uint32_t address)
 {
-	uint32_t	Cycles = CPU.Cycles;
-	uint8_t	byte;
-
-	byte = S9xGetByte(address);
+	uint32_t Cycles = CPU.Cycles;
+	uint8_t byte    = S9xGetByte(address);
 
 	CPU.Cycles = Cycles;
 
-	return (byte);
+	return byte;
 }
 
 static void S9xSetByteFree (uint8_t byte, uint32_t address)
@@ -314,49 +312,7 @@ void S9xInitCheatData (void)
 	Cheat.FillRAM = Memory.FillRAM;
 }
 
-void S9xAddCheat (uint8_t enable, uint8_t save_current_value, uint32_t address, uint8_t byte)
-{
-	if (Cheat.num_cheats < sizeof(Cheat.c) / sizeof(Cheat.c[0]))
-	{
-		Cheat.c[Cheat.num_cheats].address = address;
-		Cheat.c[Cheat.num_cheats].byte = byte;
-		Cheat.c[Cheat.num_cheats].enabled = enable;
-
-		if (save_current_value)
-		{
-			Cheat.c[Cheat.num_cheats].saved_byte = S9xGetByteFree(address);
-			Cheat.c[Cheat.num_cheats].saved = TRUE;
-		}
-
-		Cheat.num_cheats++;
-	}
-}
-
-const char * S9xGetCheatName(uint8_t cheat_no)
-{
-	return Cheat.c[cheat_no].name;
-}
-
-void S9xDeleteCheat (uint32_t which1)
-{
-	if (which1 < Cheat.num_cheats)
-	{
-		if (Cheat.c[which1].enabled)
-			S9xRemoveCheat(which1);
-
-		memmove(&Cheat.c[which1], &Cheat.c[which1 + 1], sizeof(Cheat.c[0]) * (Cheat.num_cheats - which1 - 1));
-
-		Cheat.num_cheats--;
-	}
-}
-
-void S9xDeleteCheats (void)
-{
-	S9xRemoveCheats();
-	Cheat.num_cheats = 0;
-}
-
-void S9xRemoveCheat (uint32_t which1)
+static void S9xRemoveCheat (uint32_t which1)
 {
 	if (Cheat.c[which1].saved)
 	{
@@ -372,7 +328,8 @@ void S9xRemoveCheat (uint32_t which1)
 	}
 }
 
-void S9xRemoveCheats (void)
+
+static void S9xRemoveCheats (void)
 {
 	uint32_t i;
 	for ( i = 0; i < Cheat.num_cheats; i++)
@@ -380,30 +337,13 @@ void S9xRemoveCheats (void)
 			S9xRemoveCheat(i);
 }
 
-void S9xEnableCheat (uint32_t which1)
+void S9xDeleteCheats (void)
 {
-	if (which1 < Cheat.num_cheats && !Cheat.c[which1].enabled)
-	{
-		Cheat.c[which1].enabled = TRUE;
-		S9xApplyCheat(which1);
-	}
+	S9xRemoveCheats();
+	Cheat.num_cheats = 0;
 }
 
-uint8_t S9xCheatEnabled (uint32_t which1)
-{
-	return Cheat.c[which1].enabled;
-}
-
-void S9xDisableCheat (uint32_t which1)
-{
-	if (which1 < Cheat.num_cheats && Cheat.c[which1].enabled)
-	{
-		S9xRemoveCheat(which1);
-		Cheat.c[which1].enabled = FALSE;
-	}
-}
-
-void S9xApplyCheat (uint32_t which1)
+static void S9xApplyCheat (uint32_t which1)
 {
 	int block;
 	uint8_t *ptr;
