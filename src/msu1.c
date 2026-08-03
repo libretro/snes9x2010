@@ -492,9 +492,13 @@ void S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate)
 
 		for (i = 0; i < sample_count; i++)
 		{
+			/* The interpolation product needs 33 bits: |nxt - cur| reaches
+			   65535 (full-scale adjacent-sample swing) and t reaches 65535,
+			   overflowing int32 (signed UB, wraps to full-scale spikes).
+			   Widen to 64-bit for the multiply. */
 			uint32_t	t = frac & 0xffff;
-			int32_t		mixL = curL + (((nxtL - curL) * (int32_t) t) >> 16);
-			int32_t		mixR = curR + (((nxtR - curR) * (int32_t) t) >> 16);
+			int32_t		mixL = curL + (int32_t) (((int64_t) (nxtL - curL) * (int32_t) t) >> 16);
+			int32_t		mixR = curR + (int32_t) (((int64_t) (nxtR - curR) * (int32_t) t) >> 16);
 			int32_t		sumL = (int32_t) buffer[i * 2 + 0] + mixL;
 			int32_t		sumR = (int32_t) buffer[i * 2 + 1] + mixR;
 

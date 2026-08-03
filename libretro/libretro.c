@@ -947,8 +947,10 @@ static void audio_upload_samples(void)
 				r1 = r0;
 			}
 
-			enh_buffer[i * 2 + 0] = (int16_t) (l0 + (((l1 - l0) * (int32_t) frac) >> 16));
-			enh_buffer[i * 2 + 1] = (int16_t) (r0 + (((r1 - r0) * (int32_t) frac) >> 16));
+			/* 64-bit product: |l1 - l0| * frac can reach 65535 * 65535,
+			   overflowing int32 (signed UB) on full-scale transients. */
+			enh_buffer[i * 2 + 0] = (int16_t) (l0 + (int32_t) (((int64_t) (l1 - l0) * (int32_t) frac) >> 16));
+			enh_buffer[i * 2 + 1] = (int16_t) (r0 + (int32_t) (((int64_t) (r1 - r0) * (int32_t) frac) >> 16));
 			pos += step;
 		}
 
