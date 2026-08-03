@@ -2429,6 +2429,33 @@ void S9xDeinitUpdate(int width, int height)
 		   in cpuexec.c, so the phase advances either way). */
 		int burst_phase = (int)(ICPU.Frame % 3);
 
+		if (width > 512)
+		{
+			/* HD Mode 7 4x frame. The filter's output tops out at
+			   SNES_NTSC_OUT_WIDTH(256) = 602 px, so input columns
+			   beyond 512 add no information -- and the lores blitter,
+			   fed 1024-px rows, would write ~2400 px per line into the
+			   602-px-pitch buffer (garbage plus overflow within the
+			   allocation). Box-downsample each row 2:1 in place
+			   (per-channel floor average via the LSB-exact halving-add
+			   identity, as in S9xMode7VertResample) and take the hires
+			   path; 4x sub-pixel detail survives as anti-aliasing.
+			   In-place is safe: x ascends, reads at 2x/2x+1 stay ahead
+			   of the write at x. */
+			int y, x;
+			for (y = 0; y < height; y++)
+			{
+				uint16_t *row = GFX.Screen + (size_t) y * (GFX.Pitch >> 1);
+				for (x = 0; x < 512; x++)
+				{
+					uint16_t a = row[2 * x];
+					uint16_t b = row[2 * x + 1];
+					row[x] = (uint16_t) (((a & 0xF7DE) >> 1) + ((b & 0xF7DE) >> 1) + (a & b & 0x0821));
+				}
+			}
+			width = 512;
+		}
+
 		if (width == 512)
 			snes_ntsc_blit_hires(&snes_ntsc, GFX.Screen, GFX.Pitch / 2, burst_phase, width, height, ntsc_screen_buffer, (long)ntsc_out_pitch);
 		else
