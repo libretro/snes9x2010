@@ -463,11 +463,20 @@ static void msu1_next_frame_44k (int32_t *outL, int32_t *outR)
 
 		if (MSU1.MSU1_AudioPlay && audioFile)
 		{
+			int32_t	sl, sr;
 			l = msu1_audio_sample();
 			r = msu1_audio_sample();
 			MSU1.MSU1_AudioPlayOffset = audio_cursor;
-			l = (int16_t) (((int32_t) l * (int32_t) MSU1.MSU1_VolumeB) / 255);
-			r = (int16_t) (((int32_t) r * (int32_t) MSU1.MSU1_VolumeB) / 255);
+			/* Round to nearest rather than truncate toward zero. ares
+			   computes this scale in double; plain integer division loses
+			   up to 1 LSB toward zero at every level. sl mod 255 is never
+			   exactly half, so ties can't occur and round-half-away here
+			   agrees with the double-precision reference everywhere.
+			   Range stays exact: 32767*255 + 127 -> 32767. */
+			sl = (int32_t) l * (int32_t) MSU1.MSU1_VolumeB;
+			sr = (int32_t) r * (int32_t) MSU1.MSU1_VolumeB;
+			l = (int16_t) ((sl + ((sl >= 0) ? 127 : -127)) / 255);
+			r = (int16_t) ((sr + ((sr >= 0) ? 127 : -127)) / 255);
 		}
 	}
 	else if (MSU1.MSU1_AudioPlay && !audioFile)
