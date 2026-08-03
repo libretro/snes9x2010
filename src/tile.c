@@ -236,24 +236,31 @@
  * then repacked into RGB565. */
 static INLINE __m128i tile_color_add_sse2(__m128i c1, __m128i c2)
 {
-    const __m128i kR = _mm_set1_epi16(0x1F);
-    const __m128i kG = _mm_set1_epi16(0x3F);
-    const __m128i kB = _mm_set1_epi16(0x1F);
+    /* Mainline-exact COLOR_ADD: all three channels are FIVE-bit lanes --
+     * green input bit 5 is ignored ((c >> 6) & 0x1F) -- saturated at 31,
+     * and the output green LSB is the saturated green's top bit
+     * replicated down ((g & 0x10) << 1). The previous form added full
+     * 6-bit greens (min(g1+g2, 63)), which matched the old X2-table
+     * scalar but diverges from the exact scalar by the green LSB, e.g.
+     * green6 35 + 3: 6-bit gives 38, exact gives 37. */
+    const __m128i k31 = _mm_set1_epi16(0x1F);
     __m128i r1 = _mm_srli_epi16(c1, 11);
     __m128i r2 = _mm_srli_epi16(c2, 11);
-    __m128i g1 = _mm_and_si128(_mm_srli_epi16(c1, 5), kG);
-    __m128i g2 = _mm_and_si128(_mm_srli_epi16(c2, 5), kG);
-    __m128i b1 = _mm_and_si128(c1, kB);
-    __m128i b2 = _mm_and_si128(c2, kB);
+    __m128i g1 = _mm_and_si128(_mm_srli_epi16(c1, 6), k31);
+    __m128i g2 = _mm_and_si128(_mm_srli_epi16(c2, 6), k31);
+    __m128i b1 = _mm_and_si128(c1, k31);
+    __m128i b2 = _mm_and_si128(c2, k31);
     __m128i rs = _mm_add_epi16(r1, r2);
     __m128i gs = _mm_add_epi16(g1, g2);
     __m128i bs = _mm_add_epi16(b1, b2);
-    __m128i rsat = _mm_sub_epi16(rs, _mm_subs_epu16(rs, kR));
-    __m128i gsat = _mm_sub_epi16(gs, _mm_subs_epu16(gs, kG));
-    __m128i bsat = _mm_sub_epi16(bs, _mm_subs_epu16(bs, kB));
-    return _mm_or_si128(_mm_or_si128(_mm_slli_epi16(rsat, 11),
-                                     _mm_slli_epi16(gsat, 5)),
-                        bsat);
+    __m128i rsat = _mm_sub_epi16(rs, _mm_subs_epu16(rs, k31));
+    __m128i gsat = _mm_sub_epi16(gs, _mm_subs_epu16(gs, k31));
+    __m128i bsat = _mm_sub_epi16(bs, _mm_subs_epu16(bs, k31));
+    __m128i glsb = _mm_slli_epi16(_mm_and_si128(gsat, _mm_set1_epi16(0x10)), 1);
+    return _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi16(rsat, 11),
+                                                  _mm_slli_epi16(gsat, 6)),
+                                     bsat),
+                        glsb);
 }
 
 /* Half-intensity add, RGB565 - pure bit-ALU, no table.
@@ -285,7 +292,14 @@ static INLINE __m128i tile_color_sub_sse2(__m128i c1, __m128i c2)
     __m128i r = _mm_subs_epu16(_mm_and_si128(c1, mR), _mm_and_si128(c2, mR));
     __m128i g = _mm_subs_epu16(_mm_and_si128(c1, mG), _mm_and_si128(c2, mG));
     __m128i b = _mm_subs_epu16(_mm_and_si128(c1, mB), _mm_and_si128(c2, mB));
-    return _mm_or_si128(_mm_or_si128(r, g), b);
+    __m128i o = _mm_or_si128(_mm_or_si128(r, g), b);
+    /* Mainline COLOR_SUB's saturate mask spans bits 15..6 and 4..0 only,
+     * so the green input LSB participates in the 6-bit subtraction but
+     * is cleared from the result; the output LSB is solely the green
+     * top bit replicated down (retval |= (retval & 0x0400) >> 5). */
+    o = _mm_and_si128(o, _mm_set1_epi16((short) 0xFFDF));
+    return _mm_or_si128(o,
+        _mm_srli_epi16(_mm_and_si128(o, _mm_set1_epi16(0x0400)), 5));
 }
 
 /* Half-intensity subtract - must use 32-bit lanes for correct bit-16
@@ -417,25 +431,27 @@ static INLINE __m128i tile_z2x1_sd_select_mask_sse2(__m128i sdb_loaded)
 
 static INLINE uint16x8_t tile_color_add_neon(uint16x8_t c1, uint16x8_t c2)
 {
-    const uint16x8_t kR = vdupq_n_u16(0x1F);
-    const uint16x8_t kG = vdupq_n_u16(0x3F);
-    const uint16x8_t kB = vdupq_n_u16(0x1F);
+    /* Mainline-exact COLOR_ADD; see the SSE2 twin for the rationale
+     * (5-bit green lane, green LSB replicated from the top bit). */
+    const uint16x8_t k31 = vdupq_n_u16(0x1F);
     uint16x8_t r1 = vshrq_n_u16(c1, 11);
     uint16x8_t r2 = vshrq_n_u16(c2, 11);
-    uint16x8_t g1 = vandq_u16(vshrq_n_u16(c1, 5), kG);
-    uint16x8_t g2 = vandq_u16(vshrq_n_u16(c2, 5), kG);
-    uint16x8_t b1 = vandq_u16(c1, kB);
-    uint16x8_t b2 = vandq_u16(c2, kB);
+    uint16x8_t g1 = vandq_u16(vshrq_n_u16(c1, 6), k31);
+    uint16x8_t g2 = vandq_u16(vshrq_n_u16(c2, 6), k31);
+    uint16x8_t b1 = vandq_u16(c1, k31);
+    uint16x8_t b2 = vandq_u16(c2, k31);
     uint16x8_t rs = vaddq_u16(r1, r2);
     uint16x8_t gs = vaddq_u16(g1, g2);
     uint16x8_t bs = vaddq_u16(b1, b2);
     /* min(x, K) = x - vqsubq_u16(x, K)  -- saturating-subtract trick. */
-    uint16x8_t rsat = vsubq_u16(rs, vqsubq_u16(rs, kR));
-    uint16x8_t gsat = vsubq_u16(gs, vqsubq_u16(gs, kG));
-    uint16x8_t bsat = vsubq_u16(bs, vqsubq_u16(bs, kB));
-    return vorrq_u16(vorrq_u16(vshlq_n_u16(rsat, 11),
-                               vshlq_n_u16(gsat, 5)),
-                     bsat);
+    uint16x8_t rsat = vsubq_u16(rs, vqsubq_u16(rs, k31));
+    uint16x8_t gsat = vsubq_u16(gs, vqsubq_u16(gs, k31));
+    uint16x8_t bsat = vsubq_u16(bs, vqsubq_u16(bs, k31));
+    uint16x8_t glsb = vshlq_n_u16(vandq_u16(gsat, vdupq_n_u16(0x10)), 1);
+    return vorrq_u16(vorrq_u16(vorrq_u16(vshlq_n_u16(rsat, 11),
+                                         vshlq_n_u16(gsat, 6)),
+                               bsat),
+                     glsb);
 }
 
 static INLINE uint16x8_t tile_color_add_half_neon(uint16x8_t c1, uint16x8_t c2)
@@ -457,7 +473,10 @@ static INLINE uint16x8_t tile_color_sub_neon(uint16x8_t c1, uint16x8_t c2)
     uint16x8_t r = vqsubq_u16(vandq_u16(c1, mR), vandq_u16(c2, mR));
     uint16x8_t g = vqsubq_u16(vandq_u16(c1, mG), vandq_u16(c2, mG));
     uint16x8_t b = vqsubq_u16(vandq_u16(c1, mB), vandq_u16(c2, mB));
-    return vorrq_u16(vorrq_u16(r, g), b);
+    uint16x8_t o = vorrq_u16(vorrq_u16(r, g), b);
+    /* Bit-5 clear + green-LSB propagation, as in the SSE2 twin. */
+    o = vandq_u16(o, vdupq_n_u16(0xFFDF));
+    return vorrq_u16(o, vshrq_n_u16(vandq_u16(o, vdupq_n_u16(0x0400)), 5));
 }
 
 static INLINE uint32x4_t tile_color_sub_half_neon_4(uint32x4_t c1_32, uint32x4_t c2_32)

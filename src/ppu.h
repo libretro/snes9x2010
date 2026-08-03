@@ -638,17 +638,21 @@ extern uint8_t brightness_cap[64];
  * arguments here. (Left as a macro on purpose: it is instantiated
  * across many DrawTile* template variants and must inline at every
  * site.) */
+#define CSUB_RBMASK  (THIRD_COLOR_MASK | FIRST_COLOR_MASK)
+#define CSUB_RB(C1, C2) \
+	(((int) (((C1) & CSUB_RBMASK) | ((0x20 << 0) | (0x20 << 11)))) - \
+	 ((int) ((C2) & CSUB_RBMASK)))
+#define CSUB_G(C1, C2) \
+	(((int) (((C1) & SECOND_COLOR_MASK) | (0x20 << 6))) - \
+	 ((int) ((C2) & SECOND_COLOR_MASK)))
+#define CSUB_SAT(C1, C2) \
+	((((CSUB_G((C1), (C2)) & (0x20 << 6)) | \
+	   (CSUB_RB((C1), (C2)) & ((0x20 << 11) | (0x20 << 0)))) >> 5) * 0x1f)
+#define COLOR_SUB_RAW(C1, C2) \
+	((uint16_t) (((CSUB_RB((C1), (C2)) & CSUB_RBMASK) | \
+		(CSUB_G((C1), (C2)) & SECOND_COLOR_MASK)) & CSUB_SAT((C1), (C2))))
 #define COLOR_SUB(C1, C2) \
-	((uint16_t) (ALPHA_BITS_MASK \
-		+ ((((C1) & FIRST_COLOR_MASK)  > ((C2) & FIRST_COLOR_MASK))  \
-			? (uint16_t) (((C1) & FIRST_COLOR_MASK)  - ((C2) & FIRST_COLOR_MASK))  \
-			: (uint16_t) 0) \
-		+ ((((C1) & SECOND_COLOR_MASK) > ((C2) & SECOND_COLOR_MASK)) \
-			? (uint16_t) (((C1) & SECOND_COLOR_MASK) - ((C2) & SECOND_COLOR_MASK)) \
-			: (uint16_t) 0) \
-		+ ((((C1) & THIRD_COLOR_MASK)  > ((C2) & THIRD_COLOR_MASK))  \
-			? (uint16_t) (((C1) & THIRD_COLOR_MASK)  - ((C2) & THIRD_COLOR_MASK))  \
-			: (uint16_t) 0)))
+	((uint16_t) (COLOR_SUB_RAW((C1), (C2)) | ((COLOR_SUB_RAW((C1), (C2)) & 0x0400) >> 5)))
 
 void S9xUpdateScreen (void);
 void S9xMode7VertResample (void);
