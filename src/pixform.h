@@ -164,7 +164,14 @@
 #define THIRD_COLOR_MASK_RGB565		0x001F
 #define ALPHA_BITS_MASK_RGB565		0x0000
 
-#define BUILD_PIXEL(R, G, B)			(((int) (R) << 11) | ((int) (G) << 6) | (int) (B))
+/* Green-LSB replication from mainline snes9x: proper 5-to-6-bit green
+ * expansion copies the field's top bit into the extra low bit, so the
+ * 32 CGRAM green levels map onto the full 0..63 output range
+ * (0 -> 0, 31 -> 63) instead of topping out at 62. Also makes colors
+ * bit-identical to mainline, which matters for cross-core validation
+ * and for the vertical-2x Mode 7 blend, where the missing LSB
+ * propagates through the halving-add carry chain. */
+#define BUILD_PIXEL(R, G, B)			(((int) (R) << 11) | ((int) (G) << 6) | (((int) (G) & 0x10) << 1) | (int) (B))
 #define BUILD_PIXEL2(R, G, B)			(((int) (R) << 11) | ((int) (G) << 5) | (int) (B))
 
 #define MAX_RED					MAX_RED_RGB565
