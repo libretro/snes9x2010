@@ -2861,11 +2861,24 @@ static void S9xUpdateHVTimerPosition (void)
 
 }
 
+uint8_t brightness_cap[64];
+
 void S9xFixColourBrightness (void)
 {
 	int i;
 
 	IPPU.XB = mul_brightness[PPU.Brightness];
+
+	/* Cap table for COLOR_ADD_BRIGHTNESS: the sum of two brightness-scaled
+	 * 5-bit channels saturates at the scaled maximum XB[0x1f], not at 31.
+	 * From mainline snes9x's S9xFixColourBrightness. */
+	for (i = 0; i < 64; i++)
+	{
+		if (i > IPPU.XB[0x1f])
+			brightness_cap[i] = IPPU.XB[0x1f];
+		else
+			brightness_cap[i] = (uint8_t) i;
+	}
 
 	for ( i = 0; i < 256; i++)
 	{

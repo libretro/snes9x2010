@@ -1821,6 +1821,87 @@ static void DrawTile16Add_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t St
 #endif
 }
 
+static void DrawTile16AddBrightness_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    {
+        int hflip = (Tile & H_FLIP) != 0;
+        int bp_step;
+        if (!(Tile & V_FLIP))
+        {
+            bp = pCache + StartLine;
+            bp_step = 8;
+        }
+        else
+        {
+            bp = pCache + 56 - StartLine;
+            bp_step = -8;
+        }
+        for (l = LineCount; l > 0; l--, bp += bp_step, Offset += GFX.PPL)
+        {
+            tile_draw_row_regmath_add_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
+                                              GFX.Z1, GFX.Z2, GFX.ScreenColors,
+                                              GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
+                                              GFX.FixedColour);
+        }
+        (void) Pix; (void) n;
+    }
+#else
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+#endif
+}
+
 static void DrawTile16AddF1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix, n;
@@ -1976,6 +2057,87 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
             for (n = 0; n < 8; n++)
             {
                 DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+            }
+        }
+    }
+#endif
+}
+
+static void DrawTile16AddS1_2Brightness_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    {
+        int hflip = (Tile & H_FLIP) != 0;
+        int bp_step;
+        if (!(Tile & V_FLIP))
+        {
+            bp = pCache + StartLine;
+            bp_step = 8;
+        }
+        else
+        {
+            bp = pCache + 56 - StartLine;
+            bp_step = -8;
+        }
+        for (l = LineCount; l > 0; l--, bp += bp_step, Offset += GFX.PPL)
+        {
+            tile_draw_row_maths12_add_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
+                                              GFX.Z1, GFX.Z2, GFX.ScreenColors,
+                                              GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
+                                              GFX.FixedColour, GFX.ClipColors);
+        }
+        (void) Pix; (void) n;
+    }
+#else
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N1x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N1x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
             }
         }
     }
@@ -2224,7 +2386,7 @@ static void DrawTile16SubS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
 #endif
 }
 
-static void (*Renderers_DrawTile16Normal1x1[7]) (uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawTile16Normal1x1[9]) (uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawTile16_Normal1x1,
     DrawTile16Add_Normal1x1,
@@ -2233,6 +2395,8 @@ static void (*Renderers_DrawTile16Normal1x1[7]) (uint32_t, uint32_t, uint32_t, u
     DrawTile16Sub_Normal1x1,
     DrawTile16SubF1_2_Normal1x1,
     DrawTile16SubS1_2_Normal1x1,
+    DrawTile16AddBrightness_Normal1x1,
+    DrawTile16AddS1_2Brightness_Normal1x1,
 };
 
 /* DrawTile16 NAME2 = Normal2x1: 7 math variants. */
@@ -2348,6 +2512,62 @@ static void DrawTile16Add_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_t St
     }
 }
 
+static void DrawTile16AddBrightness_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+}
+
 static void DrawTile16AddF1_2_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix, n;
@@ -2455,6 +2675,62 @@ static void DrawTile16AddS1_2_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_
             for (n = 0; n < 8; n++)
             {
                 DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+            }
+        }
+    }
+}
+
+static void DrawTile16AddS1_2Brightness_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
             }
         }
     }
@@ -2628,7 +2904,7 @@ static void DrawTile16SubS1_2_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_
     }
 }
 
-static void (*Renderers_DrawTile16Normal2x1[7]) (uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawTile16Normal2x1[9]) (uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawTile16_Normal2x1,
     DrawTile16Add_Normal2x1,
@@ -2637,6 +2913,8 @@ static void (*Renderers_DrawTile16Normal2x1[7]) (uint32_t, uint32_t, uint32_t, u
     DrawTile16Sub_Normal2x1,
     DrawTile16SubF1_2_Normal2x1,
     DrawTile16SubS1_2_Normal2x1,
+    DrawTile16AddBrightness_Normal2x1,
+    DrawTile16AddS1_2Brightness_Normal2x1,
 };
 
 /* DrawTile16 NAME2 = Normal4x1: 7 math variants. */
@@ -2752,6 +3030,62 @@ static void DrawTile16Add_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_t St
     }
 }
 
+static void DrawTile16AddBrightness_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+}
+
 static void DrawTile16AddF1_2_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix, n;
@@ -2859,6 +3193,62 @@ static void DrawTile16AddS1_2_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_
             for (n = 0; n < 8; n++)
             {
                 DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+            }
+        }
+    }
+}
+
+static void DrawTile16AddS1_2Brightness_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N4x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N4x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
             }
         }
     }
@@ -3032,7 +3422,7 @@ static void DrawTile16SubS1_2_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_
     }
 }
 
-static void (*Renderers_DrawTile16Normal4x1[7]) (uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawTile16Normal4x1[9]) (uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawTile16_Normal4x1,
     DrawTile16Add_Normal4x1,
@@ -3041,6 +3431,8 @@ static void (*Renderers_DrawTile16Normal4x1[7]) (uint32_t, uint32_t, uint32_t, u
     DrawTile16Sub_Normal4x1,
     DrawTile16SubF1_2_Normal4x1,
     DrawTile16SubS1_2_Normal4x1,
+    DrawTile16AddBrightness_Normal4x1,
+    DrawTile16AddS1_2Brightness_Normal4x1,
 };
 
 /* DrawTile16 NAME2 = Hires: 7 math variants. */
@@ -3212,6 +3604,90 @@ static void DrawTile16Add_Hires (uint32_t Tile, uint32_t Offset, uint32_t StartL
     }
 }
 
+static void DrawTile16AddBrightness_Hires (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+}
+
 static void DrawTile16AddF1_2_Hires (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix, n;
@@ -3375,6 +3851,90 @@ static void DrawTile16AddS1_2_Hires (uint32_t Tile, uint32_t Offset, uint32_t St
             for (n = 0; n < 8; n++)
             {
                 DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+            }
+        }
+    }
+}
+
+static void DrawTile16AddS1_2Brightness_Hires (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
             }
         }
     }
@@ -3632,7 +4192,7 @@ static void DrawTile16SubS1_2_Hires (uint32_t Tile, uint32_t Offset, uint32_t St
     }
 }
 
-static void (*Renderers_DrawTile16Hires[7]) (uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawTile16Hires[9]) (uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawTile16_Hires,
     DrawTile16Add_Hires,
@@ -3641,6 +4201,8 @@ static void (*Renderers_DrawTile16Hires[7]) (uint32_t, uint32_t, uint32_t, uint3
     DrawTile16Sub_Hires,
     DrawTile16SubF1_2_Hires,
     DrawTile16SubS1_2_Hires,
+    DrawTile16AddBrightness_Hires,
+    DrawTile16AddS1_2Brightness_Hires,
 };
 
 /* DrawTile16 NAME2 = Interlace: 7 math variants. */
@@ -3756,6 +4318,62 @@ static void DrawTile16Add_Interlace (uint32_t Tile, uint32_t Offset, uint32_t St
     }
 }
 
+static void DrawTile16AddBrightness_Interlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+}
+
 static void DrawTile16AddF1_2_Interlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix, n;
@@ -3863,6 +4481,62 @@ static void DrawTile16AddS1_2_Interlace (uint32_t Tile, uint32_t Offset, uint32_
             for (n = 0; n < 8; n++)
             {
                 DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+            }
+        }
+    }
+}
+
+static void DrawTile16AddS1_2Brightness_Interlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_N2x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
             }
         }
     }
@@ -4036,7 +4710,7 @@ static void DrawTile16SubS1_2_Interlace (uint32_t Tile, uint32_t Offset, uint32_
     }
 }
 
-static void (*Renderers_DrawTile16Interlace[7]) (uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawTile16Interlace[9]) (uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawTile16_Interlace,
     DrawTile16Add_Interlace,
@@ -4045,6 +4719,8 @@ static void (*Renderers_DrawTile16Interlace[7]) (uint32_t, uint32_t, uint32_t, u
     DrawTile16Sub_Interlace,
     DrawTile16SubF1_2_Interlace,
     DrawTile16SubS1_2_Interlace,
+    DrawTile16AddBrightness_Interlace,
+    DrawTile16AddS1_2Brightness_Interlace,
 };
 
 /* DrawTile16 NAME2 = HiresInterlace: 7 math variants. */
@@ -4216,6 +4892,90 @@ static void DrawTile16Add_HiresInterlace (uint32_t Tile, uint32_t Offset, uint32
     }
 }
 
+static void DrawTile16AddBrightness_HiresInterlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+}
+
 static void DrawTile16AddF1_2_HiresInterlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix, n;
@@ -4379,6 +5139,90 @@ static void DrawTile16AddS1_2_HiresInterlace (uint32_t Tile, uint32_t Offset, ui
             for (n = 0; n < 8; n++)
             {
                 DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD)
+            }
+        }
+    }
+}
+
+static void DrawTile16AddS1_2Brightness_HiresInterlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix, n;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1_FAST(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (n = 0; n < 8; n++)
+            {
+                DRAW_PIXEL_H2x1(n, Pix = bp[7 - n], MATHS1_2, ADD_BRIGHTNESS)
             }
         }
     }
@@ -4636,7 +5480,7 @@ static void DrawTile16SubS1_2_HiresInterlace (uint32_t Tile, uint32_t Offset, ui
     }
 }
 
-static void (*Renderers_DrawTile16HiresInterlace[7]) (uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawTile16HiresInterlace[9]) (uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawTile16_HiresInterlace,
     DrawTile16Add_HiresInterlace,
@@ -4645,6 +5489,8 @@ static void (*Renderers_DrawTile16HiresInterlace[7]) (uint32_t, uint32_t, uint32
     DrawTile16Sub_HiresInterlace,
     DrawTile16SubF1_2_HiresInterlace,
     DrawTile16SubS1_2_HiresInterlace,
+    DrawTile16AddBrightness_HiresInterlace,
+    DrawTile16AddS1_2Brightness_HiresInterlace,
 };
 
 
@@ -4854,6 +5700,86 @@ static void DrawClippedTile16Add_Normal1x1 (uint32_t Tile, uint32_t Offset, uint
     }
 }
 
+static void DrawClippedTile16AddBrightness_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    /* Full-row fast path, same shape as the NOMATH clipped renderer:
+     * when the clip degenerates to a complete 8-pixel row with no
+     * H/V flip, delegate to the SIMD row kernel already used by the
+     * corresponding unclipped renderer. Measured on the corpus, the
+     * color-math clipped traffic is dominated by this degenerate
+     * case (99.5% of clipped-Add calls in one heavy title-screen
+     * user, 96.6% of clipped-SubS1_2 in another). Flipped and
+     * genuinely-partial tiles stay on the scalar fallback below. */
+    if (StartPixel == 0 && endpix == 8 && !(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + StartLine;
+        for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
+        {
+            tile_draw_row_regmath_add_n1x1(
+                GFX.DB + Offset, GFX.S + Offset, bp,
+                0, GFX.Z1, GFX.Z2, GFX.ScreenColors,
+                GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
+                GFX.FixedColour);
+        }
+        return;
+    }
+#endif
+
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+}
+
 static void DrawClippedTile16AddF1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix;
@@ -5033,6 +5959,86 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, 
             uint32_t i;
             for (i = StartPixel; i < endpix; i++)
                 DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+        }
+    }
+}
+
+static void DrawClippedTile16AddS1_2Brightness_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+
+#if defined(TILE_HAVE_SSE2) || defined(TILE_HAVE_NEON)
+    /* Full-row fast path, same shape as the NOMATH clipped renderer:
+     * when the clip degenerates to a complete 8-pixel row with no
+     * H/V flip, delegate to the SIMD row kernel already used by the
+     * corresponding unclipped renderer. Measured on the corpus, the
+     * color-math clipped traffic is dominated by this degenerate
+     * case (99.5% of clipped-Add calls in one heavy title-screen
+     * user, 96.6% of clipped-SubS1_2 in another). Flipped and
+     * genuinely-partial tiles stay on the scalar fallback below. */
+    if (StartPixel == 0 && endpix == 8 && !(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + StartLine;
+        for (l = LineCount; l > 0; l--, bp += 8, Offset += GFX.PPL)
+        {
+            tile_draw_row_maths12_add_n1x1(
+                GFX.DB + Offset, GFX.S + Offset, bp,
+                0, GFX.Z1, GFX.Z2, GFX.ScreenColors,
+                GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
+                GFX.FixedColour, GFX.ClipColors);
+        }
+        return;
+    }
+#endif
+
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N1x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N1x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
         }
     }
 }
@@ -5276,7 +6282,7 @@ static void DrawClippedTile16SubS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, 
     }
 }
 
-static void (*Renderers_DrawClippedTile16Normal1x1[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawClippedTile16Normal1x1[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawClippedTile16_Normal1x1,
     DrawClippedTile16Add_Normal1x1,
@@ -5285,6 +6291,8 @@ static void (*Renderers_DrawClippedTile16Normal1x1[7]) (uint32_t, uint32_t, uint
     DrawClippedTile16Sub_Normal1x1,
     DrawClippedTile16SubF1_2_Normal1x1,
     DrawClippedTile16SubS1_2_Normal1x1,
+    DrawClippedTile16AddBrightness_Normal1x1,
+    DrawClippedTile16AddS1_2Brightness_Normal1x1,
 };
 
 /* DrawClippedTile16 NAME2 = Normal2x1: 7 math variants. */
@@ -5398,6 +6406,61 @@ static void DrawClippedTile16Add_Normal2x1 (uint32_t Tile, uint32_t Offset, uint
     }
 }
 
+static void DrawClippedTile16AddBrightness_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+}
+
 static void DrawClippedTile16AddF1_2_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix;
@@ -5504,6 +6567,61 @@ static void DrawClippedTile16AddS1_2_Normal2x1 (uint32_t Tile, uint32_t Offset, 
             uint32_t i;
             for (i = StartPixel; i < endpix; i++)
                 DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+        }
+    }
+}
+
+static void DrawClippedTile16AddS1_2Brightness_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
         }
     }
 }
@@ -5673,7 +6791,7 @@ static void DrawClippedTile16SubS1_2_Normal2x1 (uint32_t Tile, uint32_t Offset, 
     }
 }
 
-static void (*Renderers_DrawClippedTile16Normal2x1[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawClippedTile16Normal2x1[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawClippedTile16_Normal2x1,
     DrawClippedTile16Add_Normal2x1,
@@ -5682,6 +6800,8 @@ static void (*Renderers_DrawClippedTile16Normal2x1[7]) (uint32_t, uint32_t, uint
     DrawClippedTile16Sub_Normal2x1,
     DrawClippedTile16SubF1_2_Normal2x1,
     DrawClippedTile16SubS1_2_Normal2x1,
+    DrawClippedTile16AddBrightness_Normal2x1,
+    DrawClippedTile16AddS1_2Brightness_Normal2x1,
 };
 
 /* DrawClippedTile16 NAME2 = Normal4x1: 7 math variants. */
@@ -5795,6 +6915,61 @@ static void DrawClippedTile16Add_Normal4x1 (uint32_t Tile, uint32_t Offset, uint
     }
 }
 
+static void DrawClippedTile16AddBrightness_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+}
+
 static void DrawClippedTile16AddF1_2_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix;
@@ -5901,6 +7076,61 @@ static void DrawClippedTile16AddS1_2_Normal4x1 (uint32_t Tile, uint32_t Offset, 
             uint32_t i;
             for (i = StartPixel; i < endpix; i++)
                 DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+        }
+    }
+}
+
+static void DrawClippedTile16AddS1_2Brightness_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N4x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N4x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
         }
     }
 }
@@ -6070,7 +7300,7 @@ static void DrawClippedTile16SubS1_2_Normal4x1 (uint32_t Tile, uint32_t Offset, 
     }
 }
 
-static void (*Renderers_DrawClippedTile16Normal4x1[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawClippedTile16Normal4x1[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawClippedTile16_Normal4x1,
     DrawClippedTile16Add_Normal4x1,
@@ -6079,6 +7309,8 @@ static void (*Renderers_DrawClippedTile16Normal4x1[7]) (uint32_t, uint32_t, uint
     DrawClippedTile16Sub_Normal4x1,
     DrawClippedTile16SubF1_2_Normal4x1,
     DrawClippedTile16SubS1_2_Normal4x1,
+    DrawClippedTile16AddBrightness_Normal4x1,
+    DrawClippedTile16AddS1_2Brightness_Normal4x1,
 };
 
 /* DrawClippedTile16 NAME2 = Hires: 7 math variants. */
@@ -6264,6 +7496,97 @@ static void DrawClippedTile16Add_Hires (uint32_t Tile, uint32_t Offset, uint32_t
     }
 }
 
+static void DrawClippedTile16AddBrightness_Hires (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+}
+
 static void DrawClippedTile16AddF1_2_Hires (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix;
@@ -6441,6 +7764,97 @@ static void DrawClippedTile16AddS1_2_Hires (uint32_t Tile, uint32_t Offset, uint
             for (i = StartPixel; i < endpix; i++)
             {
                 DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+            }
+        }
+    }
+}
+
+static void DrawClippedTile16AddS1_2Brightness_Hires (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + (StartLine);
+        for (l = LineCount; l > 0; l--, bp += (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - (StartLine);
+        for (l = LineCount; l > 0; l--, bp -= (8), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
             }
         }
     }
@@ -6719,7 +8133,7 @@ static void DrawClippedTile16SubS1_2_Hires (uint32_t Tile, uint32_t Offset, uint
     }
 }
 
-static void (*Renderers_DrawClippedTile16Hires[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawClippedTile16Hires[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawClippedTile16_Hires,
     DrawClippedTile16Add_Hires,
@@ -6728,6 +8142,8 @@ static void (*Renderers_DrawClippedTile16Hires[7]) (uint32_t, uint32_t, uint32_t
     DrawClippedTile16Sub_Hires,
     DrawClippedTile16SubF1_2_Hires,
     DrawClippedTile16SubS1_2_Hires,
+    DrawClippedTile16AddBrightness_Hires,
+    DrawClippedTile16AddS1_2Brightness_Hires,
 };
 
 /* DrawClippedTile16 NAME2 = Interlace: 7 math variants. */
@@ -6841,6 +8257,61 @@ static void DrawClippedTile16Add_Interlace (uint32_t Tile, uint32_t Offset, uint
     }
 }
 
+static void DrawClippedTile16AddBrightness_Interlace (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+}
+
 static void DrawClippedTile16AddF1_2_Interlace (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix;
@@ -6947,6 +8418,61 @@ static void DrawClippedTile16AddS1_2_Interlace (uint32_t Tile, uint32_t Offset, 
             uint32_t i;
             for (i = StartPixel; i < endpix; i++)
                 DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+        }
+    }
+}
+
+static void DrawClippedTile16AddS1_2Brightness_Interlace (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            for (i = StartPixel; i < endpix; i++)
+                DRAW_PIXEL_N2x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
         }
     }
 }
@@ -7116,7 +8642,7 @@ static void DrawClippedTile16SubS1_2_Interlace (uint32_t Tile, uint32_t Offset, 
     }
 }
 
-static void (*Renderers_DrawClippedTile16Interlace[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawClippedTile16Interlace[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawClippedTile16_Interlace,
     DrawClippedTile16Add_Interlace,
@@ -7125,6 +8651,8 @@ static void (*Renderers_DrawClippedTile16Interlace[7]) (uint32_t, uint32_t, uint
     DrawClippedTile16Sub_Interlace,
     DrawClippedTile16SubF1_2_Interlace,
     DrawClippedTile16SubS1_2_Interlace,
+    DrawClippedTile16AddBrightness_Interlace,
+    DrawClippedTile16AddS1_2Brightness_Interlace,
 };
 
 /* DrawClippedTile16 NAME2 = HiresInterlace: 7 math variants. */
@@ -7310,6 +8838,97 @@ static void DrawClippedTile16Add_HiresInterlace (uint32_t Tile, uint32_t Offset,
     }
 }
 
+static void DrawClippedTile16AddBrightness_HiresInterlace (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+}
+
 static void DrawClippedTile16AddF1_2_HiresInterlace (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
 {
     uint8_t *pCache, *bp, Pix;
@@ -7487,6 +9106,97 @@ static void DrawClippedTile16AddS1_2_HiresInterlace (uint32_t Tile, uint32_t Off
             for (i = StartPixel; i < endpix; i++)
             {
                 DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD)
+            }
+        }
+    }
+}
+
+static void DrawClippedTile16AddS1_2Brightness_HiresInterlace (uint32_t Tile, uint32_t Offset, uint32_t StartPixel, uint32_t Width, uint32_t StartLine, uint32_t LineCount)
+{
+    uint8_t *pCache, *bp, Pix;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l;
+    uint32_t endpix;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    endpix = StartPixel + Width;
+    if (endpix > 8) endpix = 8;
+    if (!(Tile & (V_FLIP | H_FLIP)))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & V_FLIP))
+    {
+        bp = pCache + ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp += (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    if (!(Tile & H_FLIP))
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+        }
+    }
+    else
+    {
+        bp = pCache + 56 - ((StartLine * 2 + BG.InterlaceLine));
+        for (l = LineCount; l > 0; l--, bp -= (16), Offset += GFX.PPL)
+        {
+            uint32_t i;
+            if (!hires_edge)
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1_FAST(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (i = StartPixel; i < endpix; i++)
+            {
+                DRAW_PIXEL_H2x1(i, Pix = bp[7 - i], MATHS1_2, ADD_BRIGHTNESS)
             }
         }
     }
@@ -7765,7 +9475,7 @@ static void DrawClippedTile16SubS1_2_HiresInterlace (uint32_t Tile, uint32_t Off
     }
 }
 
-static void (*Renderers_DrawClippedTile16HiresInterlace[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawClippedTile16HiresInterlace[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawClippedTile16_HiresInterlace,
     DrawClippedTile16Add_HiresInterlace,
@@ -7774,6 +9484,8 @@ static void (*Renderers_DrawClippedTile16HiresInterlace[7]) (uint32_t, uint32_t,
     DrawClippedTile16Sub_HiresInterlace,
     DrawClippedTile16SubF1_2_HiresInterlace,
     DrawClippedTile16SubS1_2_HiresInterlace,
+    DrawClippedTile16AddBrightness_HiresInterlace,
+    DrawClippedTile16AddS1_2Brightness_HiresInterlace,
 };
 
 
@@ -7890,6 +9602,30 @@ static void DrawMosaicPixel16Add_Normal1x1 (uint32_t Tile, uint32_t Offset, uint
     }
 }
 
+static void DrawMosaicPixel16AddBrightness_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - (StartLine) + StartPixel];
+    else
+        Pix = pCache[(StartLine) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            for (w = Width - 1; w >= 0; w--)
+                DRAW_PIXEL_N1x1(w, 1, REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+}
+
 static void DrawMosaicPixel16AddF1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
 {
     uint8_t *pCache, Pix;
@@ -7934,6 +9670,30 @@ static void DrawMosaicPixel16AddS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, 
         {
             for (w = Width - 1; w >= 0; w--)
                 DRAW_PIXEL_N1x1(w, 1, MATHS1_2, ADD)
+        }
+    }
+}
+
+static void DrawMosaicPixel16AddS1_2Brightness_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - (StartLine) + StartPixel];
+    else
+        Pix = pCache[(StartLine) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            for (w = Width - 1; w >= 0; w--)
+                DRAW_PIXEL_N1x1(w, 1, MATHS1_2, ADD_BRIGHTNESS)
         }
     }
 }
@@ -8010,7 +9770,7 @@ static void DrawMosaicPixel16SubS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, 
     }
 }
 
-static void (*Renderers_DrawMosaicPixel16Normal1x1[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawMosaicPixel16Normal1x1[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawMosaicPixel16_Normal1x1,
     DrawMosaicPixel16Add_Normal1x1,
@@ -8019,6 +9779,8 @@ static void (*Renderers_DrawMosaicPixel16Normal1x1[7]) (uint32_t, uint32_t, uint
     DrawMosaicPixel16Sub_Normal1x1,
     DrawMosaicPixel16SubF1_2_Normal1x1,
     DrawMosaicPixel16SubS1_2_Normal1x1,
+    DrawMosaicPixel16AddBrightness_Normal1x1,
+    DrawMosaicPixel16AddS1_2Brightness_Normal1x1,
 };
 
 /* DrawMosaicPixel16 NAME2 = Normal2x1: 7 math variants. */
@@ -8070,6 +9832,30 @@ static void DrawMosaicPixel16Add_Normal2x1 (uint32_t Tile, uint32_t Offset, uint
     }
 }
 
+static void DrawMosaicPixel16AddBrightness_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - (StartLine) + StartPixel];
+    else
+        Pix = pCache[(StartLine) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            for (w = Width - 1; w >= 0; w--)
+                DRAW_PIXEL_N2x1(w, 1, REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+}
+
 static void DrawMosaicPixel16AddF1_2_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
 {
     uint8_t *pCache, Pix;
@@ -8114,6 +9900,30 @@ static void DrawMosaicPixel16AddS1_2_Normal2x1 (uint32_t Tile, uint32_t Offset, 
         {
             for (w = Width - 1; w >= 0; w--)
                 DRAW_PIXEL_N2x1(w, 1, MATHS1_2, ADD)
+        }
+    }
+}
+
+static void DrawMosaicPixel16AddS1_2Brightness_Normal2x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - (StartLine) + StartPixel];
+    else
+        Pix = pCache[(StartLine) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            for (w = Width - 1; w >= 0; w--)
+                DRAW_PIXEL_N2x1(w, 1, MATHS1_2, ADD_BRIGHTNESS)
         }
     }
 }
@@ -8190,7 +10000,7 @@ static void DrawMosaicPixel16SubS1_2_Normal2x1 (uint32_t Tile, uint32_t Offset, 
     }
 }
 
-static void (*Renderers_DrawMosaicPixel16Normal2x1[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawMosaicPixel16Normal2x1[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawMosaicPixel16_Normal2x1,
     DrawMosaicPixel16Add_Normal2x1,
@@ -8199,6 +10009,8 @@ static void (*Renderers_DrawMosaicPixel16Normal2x1[7]) (uint32_t, uint32_t, uint
     DrawMosaicPixel16Sub_Normal2x1,
     DrawMosaicPixel16SubF1_2_Normal2x1,
     DrawMosaicPixel16SubS1_2_Normal2x1,
+    DrawMosaicPixel16AddBrightness_Normal2x1,
+    DrawMosaicPixel16AddS1_2Brightness_Normal2x1,
 };
 
 /* DrawMosaicPixel16 NAME2 = Normal4x1: 7 math variants. */
@@ -8250,6 +10062,30 @@ static void DrawMosaicPixel16Add_Normal4x1 (uint32_t Tile, uint32_t Offset, uint
     }
 }
 
+static void DrawMosaicPixel16AddBrightness_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - (StartLine) + StartPixel];
+    else
+        Pix = pCache[(StartLine) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            for (w = Width - 1; w >= 0; w--)
+                DRAW_PIXEL_N4x1(w, 1, REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+}
+
 static void DrawMosaicPixel16AddF1_2_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
 {
     uint8_t *pCache, Pix;
@@ -8294,6 +10130,30 @@ static void DrawMosaicPixel16AddS1_2_Normal4x1 (uint32_t Tile, uint32_t Offset, 
         {
             for (w = Width - 1; w >= 0; w--)
                 DRAW_PIXEL_N4x1(w, 1, MATHS1_2, ADD)
+        }
+    }
+}
+
+static void DrawMosaicPixel16AddS1_2Brightness_Normal4x1 (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - (StartLine) + StartPixel];
+    else
+        Pix = pCache[(StartLine) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            for (w = Width - 1; w >= 0; w--)
+                DRAW_PIXEL_N4x1(w, 1, MATHS1_2, ADD_BRIGHTNESS)
         }
     }
 }
@@ -8370,7 +10230,7 @@ static void DrawMosaicPixel16SubS1_2_Normal4x1 (uint32_t Tile, uint32_t Offset, 
     }
 }
 
-static void (*Renderers_DrawMosaicPixel16Normal4x1[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawMosaicPixel16Normal4x1[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawMosaicPixel16_Normal4x1,
     DrawMosaicPixel16Add_Normal4x1,
@@ -8379,6 +10239,8 @@ static void (*Renderers_DrawMosaicPixel16Normal4x1[7]) (uint32_t, uint32_t, uint
     DrawMosaicPixel16Sub_Normal4x1,
     DrawMosaicPixel16SubF1_2_Normal4x1,
     DrawMosaicPixel16SubS1_2_Normal4x1,
+    DrawMosaicPixel16AddBrightness_Normal4x1,
+    DrawMosaicPixel16AddS1_2Brightness_Normal4x1,
 };
 
 /* DrawMosaicPixel16 NAME2 = Hires: 7 math variants. */
@@ -8454,6 +10316,42 @@ static void DrawMosaicPixel16Add_Hires (uint32_t Tile, uint32_t Offset, uint32_t
     }
 }
 
+static void DrawMosaicPixel16AddBrightness_Hires (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - (StartLine) + StartPixel];
+    else
+        Pix = pCache[(StartLine) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (w = Width - 1; w >= 0; w--)
+            {
+                DRAW_PIXEL_H2x1_FAST(w, 1, REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (w = Width - 1; w >= 0; w--)
+            {
+                DRAW_PIXEL_H2x1(w, 1, REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+}
+
 static void DrawMosaicPixel16AddF1_2_Hires (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
 {
     uint8_t *pCache, Pix;
@@ -8521,6 +10419,42 @@ static void DrawMosaicPixel16AddS1_2_Hires (uint32_t Tile, uint32_t Offset, uint
             for (w = Width - 1; w >= 0; w--)
             {
                 DRAW_PIXEL_H2x1(w, 1, MATHS1_2, ADD)
+            }
+        }
+    }
+}
+
+static void DrawMosaicPixel16AddS1_2Brightness_Hires (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - (StartLine) + StartPixel];
+    else
+        Pix = pCache[(StartLine) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (w = Width - 1; w >= 0; w--)
+            {
+                DRAW_PIXEL_H2x1_FAST(w, 1, MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (w = Width - 1; w >= 0; w--)
+            {
+                DRAW_PIXEL_H2x1(w, 1, MATHS1_2, ADD_BRIGHTNESS)
             }
         }
     }
@@ -8634,7 +10568,7 @@ static void DrawMosaicPixel16SubS1_2_Hires (uint32_t Tile, uint32_t Offset, uint
     }
 }
 
-static void (*Renderers_DrawMosaicPixel16Hires[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawMosaicPixel16Hires[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawMosaicPixel16_Hires,
     DrawMosaicPixel16Add_Hires,
@@ -8643,6 +10577,8 @@ static void (*Renderers_DrawMosaicPixel16Hires[7]) (uint32_t, uint32_t, uint32_t
     DrawMosaicPixel16Sub_Hires,
     DrawMosaicPixel16SubF1_2_Hires,
     DrawMosaicPixel16SubS1_2_Hires,
+    DrawMosaicPixel16AddBrightness_Hires,
+    DrawMosaicPixel16AddS1_2Brightness_Hires,
 };
 
 /* DrawMosaicPixel16 NAME2 = Interlace: 7 math variants. */
@@ -8694,6 +10630,30 @@ static void DrawMosaicPixel16Add_Interlace (uint32_t Tile, uint32_t Offset, uint
     }
 }
 
+static void DrawMosaicPixel16AddBrightness_Interlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - ((StartLine * 2 + BG.InterlaceLine)) + StartPixel];
+    else
+        Pix = pCache[((StartLine * 2 + BG.InterlaceLine)) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            for (w = Width - 1; w >= 0; w--)
+                DRAW_PIXEL_N2x1(w, 1, REGMATH, ADD_BRIGHTNESS)
+        }
+    }
+}
+
 static void DrawMosaicPixel16AddF1_2_Interlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
 {
     uint8_t *pCache, Pix;
@@ -8738,6 +10698,30 @@ static void DrawMosaicPixel16AddS1_2_Interlace (uint32_t Tile, uint32_t Offset, 
         {
             for (w = Width - 1; w >= 0; w--)
                 DRAW_PIXEL_N2x1(w, 1, MATHS1_2, ADD)
+        }
+    }
+}
+
+static void DrawMosaicPixel16AddS1_2Brightness_Interlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - ((StartLine * 2 + BG.InterlaceLine)) + StartPixel];
+    else
+        Pix = pCache[((StartLine * 2 + BG.InterlaceLine)) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            for (w = Width - 1; w >= 0; w--)
+                DRAW_PIXEL_N2x1(w, 1, MATHS1_2, ADD_BRIGHTNESS)
         }
     }
 }
@@ -8814,7 +10798,7 @@ static void DrawMosaicPixel16SubS1_2_Interlace (uint32_t Tile, uint32_t Offset, 
     }
 }
 
-static void (*Renderers_DrawMosaicPixel16Interlace[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawMosaicPixel16Interlace[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawMosaicPixel16_Interlace,
     DrawMosaicPixel16Add_Interlace,
@@ -8823,6 +10807,8 @@ static void (*Renderers_DrawMosaicPixel16Interlace[7]) (uint32_t, uint32_t, uint
     DrawMosaicPixel16Sub_Interlace,
     DrawMosaicPixel16SubF1_2_Interlace,
     DrawMosaicPixel16SubS1_2_Interlace,
+    DrawMosaicPixel16AddBrightness_Interlace,
+    DrawMosaicPixel16AddS1_2Brightness_Interlace,
 };
 
 /* DrawMosaicPixel16 NAME2 = HiresInterlace: 7 math variants. */
@@ -8898,6 +10884,42 @@ static void DrawMosaicPixel16Add_HiresInterlace (uint32_t Tile, uint32_t Offset,
     }
 }
 
+static void DrawMosaicPixel16AddBrightness_HiresInterlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - ((StartLine * 2 + BG.InterlaceLine)) + StartPixel];
+    else
+        Pix = pCache[((StartLine * 2 + BG.InterlaceLine)) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (w = Width - 1; w >= 0; w--)
+            {
+                DRAW_PIXEL_H2x1_FAST(w, 1, REGMATH, ADD_BRIGHTNESS)
+            }
+            else
+            for (w = Width - 1; w >= 0; w--)
+            {
+                DRAW_PIXEL_H2x1(w, 1, REGMATH, ADD_BRIGHTNESS)
+            }
+        }
+    }
+}
+
 static void DrawMosaicPixel16AddF1_2_HiresInterlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
 {
     uint8_t *pCache, Pix;
@@ -8965,6 +10987,42 @@ static void DrawMosaicPixel16AddS1_2_HiresInterlace (uint32_t Tile, uint32_t Off
             for (w = Width - 1; w >= 0; w--)
             {
                 DRAW_PIXEL_H2x1(w, 1, MATHS1_2, ADD)
+            }
+        }
+    }
+}
+
+static void DrawMosaicPixel16AddS1_2Brightness_HiresInterlace (uint32_t Tile, uint32_t Offset, uint32_t StartLine, uint32_t StartPixel, uint32_t Width, uint32_t LineCount)
+{
+    uint8_t *pCache, Pix;
+    uint32_t OffsetInLine;
+    int hires_edge;
+    int32_t l, w;
+    GET_CACHED_TILE();
+    if (IS_BLANK_TILE())
+        return;
+    SELECT_PALETTE();
+    OffsetInLine = Offset % GFX.RealPPL;
+    hires_edge = HIRES_EDGE_RUN();
+    if (Tile & H_FLIP)
+        StartPixel = 7 - StartPixel;
+    if (Tile & V_FLIP)
+        Pix = pCache[56 - ((StartLine * 2 + BG.InterlaceLine)) + StartPixel];
+    else
+        Pix = pCache[((StartLine * 2 + BG.InterlaceLine)) + StartPixel];
+    if (Pix)
+    {
+        for (l = LineCount; l > 0; l--, Offset += GFX.PPL)
+        {
+            if (!hires_edge)
+            for (w = Width - 1; w >= 0; w--)
+            {
+                DRAW_PIXEL_H2x1_FAST(w, 1, MATHS1_2, ADD_BRIGHTNESS)
+            }
+            else
+            for (w = Width - 1; w >= 0; w--)
+            {
+                DRAW_PIXEL_H2x1(w, 1, MATHS1_2, ADD_BRIGHTNESS)
             }
         }
     }
@@ -9078,7 +11136,7 @@ static void DrawMosaicPixel16SubS1_2_HiresInterlace (uint32_t Tile, uint32_t Off
     }
 }
 
-static void (*Renderers_DrawMosaicPixel16HiresInterlace[7]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawMosaicPixel16HiresInterlace[9]) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) =
 {
     DrawMosaicPixel16_HiresInterlace,
     DrawMosaicPixel16Add_HiresInterlace,
@@ -9087,6 +11145,8 @@ static void (*Renderers_DrawMosaicPixel16HiresInterlace[7]) (uint32_t, uint32_t,
     DrawMosaicPixel16Sub_HiresInterlace,
     DrawMosaicPixel16SubF1_2_HiresInterlace,
     DrawMosaicPixel16SubS1_2_HiresInterlace,
+    DrawMosaicPixel16AddBrightness_HiresInterlace,
+    DrawMosaicPixel16AddS1_2Brightness_HiresInterlace,
 };
 
 
@@ -9371,6 +11431,24 @@ static void DrawBackdrop16Add_Normal1x1 (uint32_t Offset, uint32_t Left, uint32_
     (void) main_color; (void) fixed;
 }
 
+static void DrawBackdrop16AddBrightness_Normal1x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
+{
+    /* Scalar only: the SSE2 backdrop kernel implements the plain
+     * saturating ADD and cannot express the brightness cap. This
+     * path only runs with color math at PPU.Brightness < 15. */
+    uint32_t l, x;
+    uint16_t main_color, fixed;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    main_color = GFX.ScreenColors[0];
+    fixed = GFX.FixedColour;
+    for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+    {
+        for (x = Left; x < Right; x++)
+            BACKDROP_PIXEL_N1x1(x, REGMATH, ADD_BRIGHTNESS)
+    }
+    (void) main_color; (void) fixed;
+}
+
 static void DrawBackdrop16AddF1_2_Normal1x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
@@ -9571,6 +11649,24 @@ static void DrawBackdrop16AddS1_2_Normal1x1 (uint32_t Offset, uint32_t Left, uin
             BACKDROP_PIXEL_N1x1(x, MATHS1_2, ADD)
     }
 #endif
+    (void) main_color; (void) fixed;
+}
+
+static void DrawBackdrop16AddS1_2Brightness_Normal1x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
+{
+    /* Scalar only: the SSE2 backdrop kernel implements the plain
+     * saturating ADD and cannot express the brightness cap. This
+     * path only runs with color math at PPU.Brightness < 15. */
+    uint32_t l, x;
+    uint16_t main_color, fixed;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    main_color = GFX.ScreenColors[0];
+    fixed = GFX.FixedColour;
+    for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+    {
+        for (x = Left; x < Right; x++)
+            BACKDROP_PIXEL_N1x1(x, MATHS1_2, ADD_BRIGHTNESS)
+    }
     (void) main_color; (void) fixed;
 }
 
@@ -9859,7 +11955,7 @@ static void DrawBackdrop16SubS1_2_Normal1x1 (uint32_t Offset, uint32_t Left, uin
     (void) main_color; (void) fixed;
 }
 
-static void (*Renderers_DrawBackdrop16Normal1x1[7]) (uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawBackdrop16Normal1x1[9]) (uint32_t, uint32_t, uint32_t) =
 {
     DrawBackdrop16_Normal1x1,
     DrawBackdrop16Add_Normal1x1,
@@ -9868,6 +11964,8 @@ static void (*Renderers_DrawBackdrop16Normal1x1[7]) (uint32_t, uint32_t, uint32_
     DrawBackdrop16Sub_Normal1x1,
     DrawBackdrop16SubF1_2_Normal1x1,
     DrawBackdrop16SubS1_2_Normal1x1,
+    DrawBackdrop16AddBrightness_Normal1x1,
+    DrawBackdrop16AddS1_2Brightness_Normal1x1,
 };
 
 /* DrawBackdrop16 NAME2 = Normal2x1: 7 math variants.
@@ -10043,6 +12141,24 @@ static void DrawBackdrop16Add_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_
             BACKDROP_PIXEL_N2x1(x, REGMATH, ADD)
     }
 #endif
+    (void) main_color; (void) fixed;
+}
+
+static void DrawBackdrop16AddBrightness_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
+{
+    /* Scalar only: the SSE2 backdrop kernel implements the plain
+     * saturating ADD and cannot express the brightness cap. This
+     * path only runs with color math at PPU.Brightness < 15. */
+    uint32_t l, x;
+    uint16_t main_color, fixed;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    main_color = GFX.ScreenColors[0];
+    fixed = GFX.FixedColour;
+    for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+    {
+        for (x = Left; x < Right; x++)
+            BACKDROP_PIXEL_N2x1(x, REGMATH, ADD_BRIGHTNESS)
+    }
     (void) main_color; (void) fixed;
 }
 
@@ -10242,6 +12358,24 @@ static void DrawBackdrop16AddS1_2_Normal2x1 (uint32_t Offset, uint32_t Left, uin
             BACKDROP_PIXEL_N2x1(x, MATHS1_2, ADD)
     }
 #endif
+    (void) main_color; (void) fixed;
+}
+
+static void DrawBackdrop16AddS1_2Brightness_Normal2x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
+{
+    /* Scalar only: the SSE2 backdrop kernel implements the plain
+     * saturating ADD and cannot express the brightness cap. This
+     * path only runs with color math at PPU.Brightness < 15. */
+    uint32_t l, x;
+    uint16_t main_color, fixed;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    main_color = GFX.ScreenColors[0];
+    fixed = GFX.FixedColour;
+    for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+    {
+        for (x = Left; x < Right; x++)
+            BACKDROP_PIXEL_N2x1(x, MATHS1_2, ADD_BRIGHTNESS)
+    }
     (void) main_color; (void) fixed;
 }
 
@@ -10541,7 +12675,7 @@ static void DrawBackdrop16SubS1_2_Normal2x1 (uint32_t Offset, uint32_t Left, uin
     (void) main_color; (void) fixed;
 }
 
-static void (*Renderers_DrawBackdrop16Normal2x1[7]) (uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawBackdrop16Normal2x1[9]) (uint32_t, uint32_t, uint32_t) =
 {
     DrawBackdrop16_Normal2x1,
     DrawBackdrop16Add_Normal2x1,
@@ -10550,6 +12684,8 @@ static void (*Renderers_DrawBackdrop16Normal2x1[7]) (uint32_t, uint32_t, uint32_
     DrawBackdrop16Sub_Normal2x1,
     DrawBackdrop16SubF1_2_Normal2x1,
     DrawBackdrop16SubS1_2_Normal2x1,
+    DrawBackdrop16AddBrightness_Normal2x1,
+    DrawBackdrop16AddS1_2Brightness_Normal2x1,
 };
 
 /* DrawBackdrop16 NAME2 = Normal4x1: 7 math variants. */
@@ -10575,6 +12711,17 @@ static void DrawBackdrop16Add_Normal4x1 (uint32_t Offset, uint32_t Left, uint32_
     }
 }
 
+static void DrawBackdrop16AddBrightness_Normal4x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
+{
+    uint32_t l, x;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+    {
+        for (x = Left; x < Right; x++)
+            BACKDROP_PIXEL_N4x1(x, REGMATH, ADD_BRIGHTNESS)
+    }
+}
+
 static void DrawBackdrop16AddF1_2_Normal4x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
@@ -10594,6 +12741,17 @@ static void DrawBackdrop16AddS1_2_Normal4x1 (uint32_t Offset, uint32_t Left, uin
     {
         for (x = Left; x < Right; x++)
             BACKDROP_PIXEL_N4x1(x, MATHS1_2, ADD)
+    }
+}
+
+static void DrawBackdrop16AddS1_2Brightness_Normal4x1 (uint32_t Offset, uint32_t Left, uint32_t Right)
+{
+    uint32_t l, x;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+    {
+        for (x = Left; x < Right; x++)
+            BACKDROP_PIXEL_N4x1(x, MATHS1_2, ADD_BRIGHTNESS)
     }
 }
 
@@ -10630,7 +12788,7 @@ static void DrawBackdrop16SubS1_2_Normal4x1 (uint32_t Offset, uint32_t Left, uin
     }
 }
 
-static void (*Renderers_DrawBackdrop16Normal4x1[7]) (uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawBackdrop16Normal4x1[9]) (uint32_t, uint32_t, uint32_t) =
 {
     DrawBackdrop16_Normal4x1,
     DrawBackdrop16Add_Normal4x1,
@@ -10639,6 +12797,8 @@ static void (*Renderers_DrawBackdrop16Normal4x1[7]) (uint32_t, uint32_t, uint32_
     DrawBackdrop16Sub_Normal4x1,
     DrawBackdrop16SubF1_2_Normal4x1,
     DrawBackdrop16SubS1_2_Normal4x1,
+    DrawBackdrop16AddBrightness_Normal4x1,
+    DrawBackdrop16AddS1_2Brightness_Normal4x1,
 };
 
 /* DrawBackdrop16 NAME2 = Hires: 7 math variants. */
@@ -10664,6 +12824,17 @@ static void DrawBackdrop16Add_Hires (uint32_t Offset, uint32_t Left, uint32_t Ri
     }
 }
 
+static void DrawBackdrop16AddBrightness_Hires (uint32_t Offset, uint32_t Left, uint32_t Right)
+{
+    uint32_t l, x;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+    {
+        for (x = Left; x < Right; x++)
+            BACKDROP_PIXEL_H2x1(x, REGMATH, ADD_BRIGHTNESS)
+    }
+}
+
 static void DrawBackdrop16AddF1_2_Hires (uint32_t Offset, uint32_t Left, uint32_t Right)
 {
     uint32_t l, x;
@@ -10683,6 +12854,17 @@ static void DrawBackdrop16AddS1_2_Hires (uint32_t Offset, uint32_t Left, uint32_
     {
         for (x = Left; x < Right; x++)
             BACKDROP_PIXEL_H2x1(x, MATHS1_2, ADD)
+    }
+}
+
+static void DrawBackdrop16AddS1_2Brightness_Hires (uint32_t Offset, uint32_t Left, uint32_t Right)
+{
+    uint32_t l, x;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    for (l = GFX.StartY; l <= GFX.EndY; l++, Offset += GFX.PPL)
+    {
+        for (x = Left; x < Right; x++)
+            BACKDROP_PIXEL_H2x1(x, MATHS1_2, ADD_BRIGHTNESS)
     }
 }
 
@@ -10719,7 +12901,7 @@ static void DrawBackdrop16SubS1_2_Hires (uint32_t Offset, uint32_t Left, uint32_
     }
 }
 
-static void (*Renderers_DrawBackdrop16Hires[7]) (uint32_t, uint32_t, uint32_t) =
+static void (*Renderers_DrawBackdrop16Hires[9]) (uint32_t, uint32_t, uint32_t) =
 {
     DrawBackdrop16_Hires,
     DrawBackdrop16Add_Hires,
@@ -10728,6 +12910,8 @@ static void (*Renderers_DrawBackdrop16Hires[7]) (uint32_t, uint32_t, uint32_t) =
     DrawBackdrop16Sub_Hires,
     DrawBackdrop16SubF1_2_Hires,
     DrawBackdrop16SubS1_2_Hires,
+    DrawBackdrop16AddBrightness_Hires,
+    DrawBackdrop16AddS1_2Brightness_Hires,
 };
 
 
@@ -11656,6 +13840,87 @@ static void DrawMode7BG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_N1x1(x, Pix = (b & 0xff), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_N1x1(x, Pix = (b & 0xff), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+            }
+        }
+    }
+}
+
 static void DrawMode7BG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -11813,6 +14078,87 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
+            }
+        }
+    }
+}
+
+static void DrawMode7BG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_N1x1(x, Pix = (b & 0xff), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
             }
         }
     }
@@ -12061,7 +14407,7 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
-static void (*Renderers_DrawMode7BG1Normal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG1Normal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG1_Normal1x1,
     DrawMode7BG1Add_Normal1x1,
@@ -12070,6 +14416,8 @@ static void (*Renderers_DrawMode7BG1Normal1x1[7]) (uint32_t, uint32_t, int) =
     DrawMode7BG1Sub_Normal1x1,
     DrawMode7BG1SubF1_2_Normal1x1,
     DrawMode7BG1SubS1_2_Normal1x1,
+    DrawMode7BG1AddBrightness_Normal1x1,
+    DrawMode7BG1AddS1_2Brightness_Normal1x1,
 };
 
 /* DrawMode7BG1 NAME2 = Normal2x1: 7 math variants. */
@@ -12235,6 +14583,87 @@ static void DrawMode7BG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_N2x1(x, Pix = (b & 0xff), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_N2x1(x, Pix = (b & 0xff), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+            }
+        }
+    }
+}
+
 static void DrawMode7BG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -12392,6 +14821,87 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
+            }
+        }
+    }
+}
+
+static void DrawMode7BG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_N2x1(x, Pix = (b & 0xff), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
             }
         }
     }
@@ -12640,7 +15150,7 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
-static void (*Renderers_DrawMode7BG1Normal2x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG1Normal2x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG1_Normal2x1,
     DrawMode7BG1Add_Normal2x1,
@@ -12649,6 +15159,8 @@ static void (*Renderers_DrawMode7BG1Normal2x1[7]) (uint32_t, uint32_t, int) =
     DrawMode7BG1Sub_Normal2x1,
     DrawMode7BG1SubF1_2_Normal2x1,
     DrawMode7BG1SubS1_2_Normal2x1,
+    DrawMode7BG1AddBrightness_Normal2x1,
+    DrawMode7BG1AddS1_2Brightness_Normal2x1,
 };
 
 /* DrawMode7BG1 NAME2 = Hires: 7 math variants. */
@@ -12814,6 +15326,87 @@ static void DrawMode7BG1Add_Hires (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG1AddBrightness_Hires (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_H2x1(x, Pix = (b & 0xff), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_H2x1(x, Pix = (b & 0xff), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+            }
+        }
+    }
+}
+
 static void DrawMode7BG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -12971,6 +15564,87 @@ static void DrawMode7BG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHS1_2, ADD, ((D + 7)))
+            }
+        }
+    }
+}
+
+static void DrawMode7BG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_H2x1(x, Pix = (b & 0xff), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
             }
         }
     }
@@ -13219,7 +15893,7 @@ static void DrawMode7BG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
     }
 }
 
-static void (*Renderers_DrawMode7BG1Hires[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG1Hires[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG1_Hires,
     DrawMode7BG1Add_Hires,
@@ -13228,6 +15902,8 @@ static void (*Renderers_DrawMode7BG1Hires[7]) (uint32_t, uint32_t, int) =
     DrawMode7BG1Sub_Hires,
     DrawMode7BG1SubF1_2_Hires,
     DrawMode7BG1SubS1_2_Hires,
+    DrawMode7BG1AddBrightness_Hires,
+    DrawMode7BG1AddS1_2Brightness_Hires,
 };
 
 /* DrawMode7BG2 NAME2 = Normal1x1: 7 math variants. */
@@ -13381,6 +16057,81 @@ static void DrawMode7BG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG2AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+    }
+}
+
 static void DrawMode7BG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -13526,6 +16277,81 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                 else
                     continue;
                 M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+    }
+}
+
+static void DrawMode7BG2AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_N1x1(x, Pix = (b & 0x7f), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
     }
@@ -13756,7 +16582,7 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
-static void (*Renderers_DrawMode7BG2Normal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG2Normal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG2_Normal1x1,
     DrawMode7BG2Add_Normal1x1,
@@ -13765,6 +16591,8 @@ static void (*Renderers_DrawMode7BG2Normal1x1[7]) (uint32_t, uint32_t, int) =
     DrawMode7BG2Sub_Normal1x1,
     DrawMode7BG2SubF1_2_Normal1x1,
     DrawMode7BG2SubS1_2_Normal1x1,
+    DrawMode7BG2AddBrightness_Normal1x1,
+    DrawMode7BG2AddS1_2Brightness_Normal1x1,
 };
 
 /* DrawMode7BG2 NAME2 = Normal2x1: 7 math variants. */
@@ -13918,6 +16746,81 @@ static void DrawMode7BG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG2AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+    }
+}
+
 static void DrawMode7BG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -14063,6 +16966,81 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                 else
                     continue;
                 M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+    }
+}
+
+static void DrawMode7BG2AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_N2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
     }
@@ -14293,7 +17271,7 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
-static void (*Renderers_DrawMode7BG2Normal2x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG2Normal2x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG2_Normal2x1,
     DrawMode7BG2Add_Normal2x1,
@@ -14302,6 +17280,8 @@ static void (*Renderers_DrawMode7BG2Normal2x1[7]) (uint32_t, uint32_t, int) =
     DrawMode7BG2Sub_Normal2x1,
     DrawMode7BG2SubF1_2_Normal2x1,
     DrawMode7BG2SubS1_2_Normal2x1,
+    DrawMode7BG2AddBrightness_Normal2x1,
+    DrawMode7BG2AddS1_2Brightness_Normal2x1,
 };
 
 /* DrawMode7BG2 NAME2 = Hires: 7 math variants. */
@@ -14455,6 +17435,81 @@ static void DrawMode7BG2Add_Hires (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG2AddBrightness_Hires (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+    }
+}
+
 static void DrawMode7BG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -14600,6 +17655,81 @@ static void DrawMode7BG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
                 else
                     continue;
                 M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+    }
+}
+
+static void DrawMode7BG2AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, startx;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+    for ( Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+            }
+        }
+        else
+        {
+            for ( x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                M7N_PIXEL_H2x1(x, Pix = (b & 0x7f), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
             }
         }
     }
@@ -14830,7 +17960,7 @@ static void DrawMode7BG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
     }
 }
 
-static void (*Renderers_DrawMode7BG2Hires[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG2Hires[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG2_Hires,
     DrawMode7BG2Add_Hires,
@@ -14839,6 +17969,8 @@ static void (*Renderers_DrawMode7BG2Hires[7]) (uint32_t, uint32_t, int) =
     DrawMode7BG2Sub_Hires,
     DrawMode7BG2SubF1_2_Hires,
     DrawMode7BG2SubS1_2_Hires,
+    DrawMode7BG2AddBrightness_Hires,
+    DrawMode7BG2AddS1_2Brightness_Hires,
 };
 
 
@@ -15109,6 +18241,132 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
     }
 }
 
+static void DrawMode7MosaicBG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[0])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N1x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N1x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
 static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -15353,6 +18611,132 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                     {
                         for ( w = x + HMosaic - 1; w >= x; w--)
                             M7N_PIXEL_N1x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD, ((D + 7)))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
+static void DrawMode7MosaicBG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[0])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N1x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N1x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
                     }
                 }
             }
@@ -15739,7 +19123,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     }
 }
 
-static void (*Renderers_DrawMode7MosaicBG1Normal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7MosaicBG1Normal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7MosaicBG1_Normal1x1,
     DrawMode7MosaicBG1Add_Normal1x1,
@@ -15748,6 +19132,8 @@ static void (*Renderers_DrawMode7MosaicBG1Normal1x1[7]) (uint32_t, uint32_t, int
     DrawMode7MosaicBG1Sub_Normal1x1,
     DrawMode7MosaicBG1SubF1_2_Normal1x1,
     DrawMode7MosaicBG1SubS1_2_Normal1x1,
+    DrawMode7MosaicBG1AddBrightness_Normal1x1,
+    DrawMode7MosaicBG1AddS1_2Brightness_Normal1x1,
 };
 
 /* DrawMode7MosaicBG1 NAME2 = Normal2x1: 7 math variants. */
@@ -16003,6 +19389,132 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
     }
 }
 
+static void DrawMode7MosaicBG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[0])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
 static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -16247,6 +19759,132 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                     {
                         for ( w = x + HMosaic - 1; w >= x; w--)
                             M7N_PIXEL_N2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD, ((D + 7)))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
+static void DrawMode7MosaicBG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[0])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
                     }
                 }
             }
@@ -16633,7 +20271,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     }
 }
 
-static void (*Renderers_DrawMode7MosaicBG1Normal2x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7MosaicBG1Normal2x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7MosaicBG1_Normal2x1,
     DrawMode7MosaicBG1Add_Normal2x1,
@@ -16642,6 +20280,8 @@ static void (*Renderers_DrawMode7MosaicBG1Normal2x1[7]) (uint32_t, uint32_t, int
     DrawMode7MosaicBG1Sub_Normal2x1,
     DrawMode7MosaicBG1SubF1_2_Normal2x1,
     DrawMode7MosaicBG1SubS1_2_Normal2x1,
+    DrawMode7MosaicBG1AddBrightness_Normal2x1,
+    DrawMode7MosaicBG1AddS1_2Brightness_Normal2x1,
 };
 
 /* DrawMode7MosaicBG1 NAME2 = Hires: 7 math variants. */
@@ -16897,6 +20537,132 @@ static void DrawMode7MosaicBG1Add_Hires (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7MosaicBG1AddBrightness_Hires (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[0])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_H2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_H2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + 7)))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
 static void DrawMode7MosaicBG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -17141,6 +20907,132 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
                     {
                         for ( w = x + HMosaic - 1; w >= x; w--)
                             M7N_PIXEL_H2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD, ((D + 7)))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
+static void DrawMode7MosaicBG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[0])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_H2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0xff)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_H2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + 7)))
                     }
                 }
             }
@@ -17527,7 +21419,7 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
     }
 }
 
-static void (*Renderers_DrawMode7MosaicBG1Hires[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7MosaicBG1Hires[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7MosaicBG1_Hires,
     DrawMode7MosaicBG1Add_Hires,
@@ -17536,6 +21428,8 @@ static void (*Renderers_DrawMode7MosaicBG1Hires[7]) (uint32_t, uint32_t, int) =
     DrawMode7MosaicBG1Sub_Hires,
     DrawMode7MosaicBG1SubF1_2_Hires,
     DrawMode7MosaicBG1SubS1_2_Hires,
+    DrawMode7MosaicBG1AddBrightness_Hires,
+    DrawMode7MosaicBG1AddS1_2Brightness_Hires,
 };
 
 /* DrawMode7MosaicBG2 NAME2 = Normal1x1: 7 math variants. */
@@ -17779,6 +21673,126 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
     }
 }
 
+static void DrawMode7MosaicBG2AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[1])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N1x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N1x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
 static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -18011,6 +22025,126 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                     {
                         for ( w = x + HMosaic - 1; w >= x; w--)
                             M7N_PIXEL_N1x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
+static void DrawMode7MosaicBG2AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[1])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N1x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N1x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
                     }
                 }
             }
@@ -18379,7 +22513,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     }
 }
 
-static void (*Renderers_DrawMode7MosaicBG2Normal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7MosaicBG2Normal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7MosaicBG2_Normal1x1,
     DrawMode7MosaicBG2Add_Normal1x1,
@@ -18388,6 +22522,8 @@ static void (*Renderers_DrawMode7MosaicBG2Normal1x1[7]) (uint32_t, uint32_t, int
     DrawMode7MosaicBG2Sub_Normal1x1,
     DrawMode7MosaicBG2SubF1_2_Normal1x1,
     DrawMode7MosaicBG2SubS1_2_Normal1x1,
+    DrawMode7MosaicBG2AddBrightness_Normal1x1,
+    DrawMode7MosaicBG2AddS1_2Brightness_Normal1x1,
 };
 
 /* DrawMode7MosaicBG2 NAME2 = Normal2x1: 7 math variants. */
@@ -18631,6 +22767,126 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
     }
 }
 
+static void DrawMode7MosaicBG2AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[1])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
 static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -18863,6 +23119,126 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                     {
                         for ( w = x + HMosaic - 1; w >= x; w--)
                             M7N_PIXEL_N2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
+static void DrawMode7MosaicBG2AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[1])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_N2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
                     }
                 }
             }
@@ -19231,7 +23607,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     }
 }
 
-static void (*Renderers_DrawMode7MosaicBG2Normal2x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7MosaicBG2Normal2x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7MosaicBG2_Normal2x1,
     DrawMode7MosaicBG2Add_Normal2x1,
@@ -19240,6 +23616,8 @@ static void (*Renderers_DrawMode7MosaicBG2Normal2x1[7]) (uint32_t, uint32_t, int
     DrawMode7MosaicBG2Sub_Normal2x1,
     DrawMode7MosaicBG2SubF1_2_Normal2x1,
     DrawMode7MosaicBG2SubS1_2_Normal2x1,
+    DrawMode7MosaicBG2AddBrightness_Normal2x1,
+    DrawMode7MosaicBG2AddS1_2Brightness_Normal2x1,
 };
 
 /* DrawMode7MosaicBG2 NAME2 = Hires: 7 math variants. */
@@ -19483,6 +23861,126 @@ static void DrawMode7MosaicBG2Add_Hires (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7MosaicBG2AddBrightness_Hires (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[1])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_H2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_H2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), REGMATH, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
 static void DrawMode7MosaicBG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -19715,6 +24213,126 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
                     {
                         for ( w = x + HMosaic - 1; w >= x; w--)
                             M7N_PIXEL_H2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        MosaicStart = 0;
+    }
+}
+
+static void DrawMode7MosaicBG2AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t Line, Offset;
+    int32_t h, w, x, MLeft, MRight;
+    int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    StartY = GFX.StartY;
+    HMosaic = 1;
+    VMosaic = 1;
+    MosaicStart = 0;
+    MLeft = Left;
+    MRight = Right;
+    if (PPU.BGMosaic[0])
+    {
+        VMosaic = PPU.Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        StartY -= MosaicStart;
+    }
+    if (PPU.BGMosaic[1])
+    {
+        HMosaic = PPU.Mosaic;
+        MLeft  -= MLeft  % HMosaic;
+        MRight += HMosaic - 1;
+        MRight -= MRight % HMosaic;
+    }
+    Offset = StartY * GFX.PPL;
+    l = &LineMatrixData[StartY];
+    for ( Line = StartY; Line <= GFX.EndY; Line += VMosaic, Offset += VMosaic * GFX.PPL, l += VMosaic)
+    {
+        int xx, yy, AA, BB, CC, DD;
+        int32_t HOffset, VOffset, CentreX, CentreY;
+        uint8_t Pix, ctr, starty;
+        if (Line + VMosaic > GFX.EndY)
+            VMosaic = GFX.EndY - Line + 1;
+        HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        starty = Line + 1;
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+        if (PPU.Mode7HFlip)
+        {
+            startx = MRight - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = MLeft;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+        ctr = 1;
+        if (!PPU.Mode7Repeat)
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_H2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                if (--ctr)
+                    continue;
+                ctr = HMosaic;
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else
+                if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    continue;
+                if ((Pix = (b & 0x7f)))
+                {
+                    for ( h = MosaicStart; h < VMosaic; h++)
+                    {
+                        for ( w = x + HMosaic - 1; w >= x; w--)
+                            M7N_PIXEL_H2x1(w + h * GFX.PPL, (w >= (int32_t) Left && w < (int32_t) Right), MATHS1_2, ADD_BRIGHTNESS, ((D + ((b & 0x80) ? 11 : 3))))
                     }
                 }
             }
@@ -20083,7 +24701,7 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
     }
 }
 
-static void (*Renderers_DrawMode7MosaicBG2Hires[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7MosaicBG2Hires[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7MosaicBG2_Hires,
     DrawMode7MosaicBG2Add_Hires,
@@ -20092,6 +24710,8 @@ static void (*Renderers_DrawMode7MosaicBG2Hires[7]) (uint32_t, uint32_t, int) =
     DrawMode7MosaicBG2Sub_Hires,
     DrawMode7MosaicBG2SubF1_2_Hires,
     DrawMode7MosaicBG2SubS1_2_Hires,
+    DrawMode7MosaicBG2AddBrightness_Hires,
+    DrawMode7MosaicBG2AddS1_2Brightness_Hires,
 };
 
 
@@ -20476,6 +25096,172 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG1HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, aa_h, cc_h, startx;
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_h = aa / 2;
+        cc_h = cc / 2;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path: X & Y mask to 10 bits, no clipping. */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+
+                /* Sample 1 -> output index 2*x */
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if (((D + 7)) > GFX.DB[Offset + 2 * x]
+                    && (Pix = (b & 0xff)))
+                {
+                    GFX.S[Offset + 2 * x] = REGMATH(
+                        ADD_BRIGHTNESS,
+                        GFX.ScreenColors[Pix],
+                        GFX.SubScreen[Offset + 2 * x],
+                        GFX.SubZBuffer[Offset + 2 * x]);
+                    GFX.DB[Offset + 2 * x] = ((D + 7));
+                }
+                AA += aa_h; CC += cc_h;
+
+                /* Sample 2 -> output index 2*x + 1 */
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
+                    && (Pix = (b & 0xff)))
+                {
+                    GFX.S[Offset + 2 * x + 1] = REGMATH(
+                        ADD_BRIGHTNESS,
+                        GFX.ScreenColors[Pix],
+                        GFX.SubScreen[Offset + 2 * x + 1],
+                        GFX.SubZBuffer[Offset + 2 * x + 1]);
+                    GFX.DB[Offset + 2 * x + 1] = ((D + 7));
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                int do_draw;
+
+                /* Sample 1 -> output index 2*x */
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                do_draw = 1;
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    do_draw = 0;
+                if (do_draw)
+                {
+                    if (((D + 7)) > GFX.DB[Offset + 2 * x]
+                        && (Pix = (b & 0xff)))
+                    {
+                        GFX.S[Offset + 2 * x] = REGMATH(
+                            ADD_BRIGHTNESS,
+                            GFX.ScreenColors[Pix],
+                            GFX.SubScreen[Offset + 2 * x],
+                            GFX.SubZBuffer[Offset + 2 * x]);
+                        GFX.DB[Offset + 2 * x] = ((D + 7));
+                    }
+                }
+                AA += aa_h; CC += cc_h;
+
+                /* Sample 2 -> output index 2*x + 1 */
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                do_draw = 1;
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    do_draw = 0;
+                if (do_draw)
+                {
+                    if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
+                        && (Pix = (b & 0xff)))
+                    {
+                        GFX.S[Offset + 2 * x + 1] = REGMATH(
+                            ADD_BRIGHTNESS,
+                            GFX.ScreenColors[Pix],
+                            GFX.SubScreen[Offset + 2 * x + 1],
+                            GFX.SubZBuffer[Offset + 2 * x + 1]);
+                        GFX.DB[Offset + 2 * x + 1] = ((D + 7));
+                    }
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+    }
+}
+
 static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -20796,6 +25582,172 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     {
                         GFX.S[Offset + 2 * x + 1] = MATHS1_2(
                             ADD,
+                            GFX.ScreenColors[Pix],
+                            GFX.SubScreen[Offset + 2 * x + 1],
+                            GFX.SubZBuffer[Offset + 2 * x + 1]);
+                        GFX.DB[Offset + 2 * x + 1] = ((D + 7));
+                    }
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+    }
+}
+
+static void DrawMode7BG1HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, aa_h, cc_h, startx;
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_h = aa / 2;
+        cc_h = cc / 2;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path: X & Y mask to 10 bits, no clipping. */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+
+                /* Sample 1 -> output index 2*x */
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if (((D + 7)) > GFX.DB[Offset + 2 * x]
+                    && (Pix = (b & 0xff)))
+                {
+                    GFX.S[Offset + 2 * x] = MATHS1_2(
+                        ADD_BRIGHTNESS,
+                        GFX.ScreenColors[Pix],
+                        GFX.SubScreen[Offset + 2 * x],
+                        GFX.SubZBuffer[Offset + 2 * x]);
+                    GFX.DB[Offset + 2 * x] = ((D + 7));
+                }
+                AA += aa_h; CC += cc_h;
+
+                /* Sample 2 -> output index 2*x + 1 */
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
+                    && (Pix = (b & 0xff)))
+                {
+                    GFX.S[Offset + 2 * x + 1] = MATHS1_2(
+                        ADD_BRIGHTNESS,
+                        GFX.ScreenColors[Pix],
+                        GFX.SubScreen[Offset + 2 * x + 1],
+                        GFX.SubZBuffer[Offset + 2 * x + 1]);
+                    GFX.DB[Offset + 2 * x + 1] = ((D + 7));
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                int do_draw;
+
+                /* Sample 1 -> output index 2*x */
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                do_draw = 1;
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    do_draw = 0;
+                if (do_draw)
+                {
+                    if (((D + 7)) > GFX.DB[Offset + 2 * x]
+                        && (Pix = (b & 0xff)))
+                    {
+                        GFX.S[Offset + 2 * x] = MATHS1_2(
+                            ADD_BRIGHTNESS,
+                            GFX.ScreenColors[Pix],
+                            GFX.SubScreen[Offset + 2 * x],
+                            GFX.SubZBuffer[Offset + 2 * x]);
+                        GFX.DB[Offset + 2 * x] = ((D + 7));
+                    }
+                }
+                AA += aa_h; CC += cc_h;
+
+                /* Sample 2 -> output index 2*x + 1 */
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                do_draw = 1;
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    do_draw = 0;
+                if (do_draw)
+                {
+                    if (((D + 7)) > GFX.DB[Offset + 2 * x + 1]
+                        && (Pix = (b & 0xff)))
+                    {
+                        GFX.S[Offset + 2 * x + 1] = MATHS1_2(
+                            ADD_BRIGHTNESS,
                             GFX.ScreenColors[Pix],
                             GFX.SubScreen[Offset + 2 * x + 1],
                             GFX.SubZBuffer[Offset + 2 * x + 1]);
@@ -21306,7 +26258,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     }
 }
 
-static void (*Renderers_DrawMode7BG1HRNormal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG1HRNormal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG1HR_Normal1x1,
     DrawMode7BG1HRAdd_Normal1x1,
@@ -21315,6 +26267,8 @@ static void (*Renderers_DrawMode7BG1HRNormal1x1[7]) (uint32_t, uint32_t, int) =
     DrawMode7BG1HRSub_Normal1x1,
     DrawMode7BG1HRSubF1_2_Normal1x1,
     DrawMode7BG1HRSubS1_2_Normal1x1,
+    DrawMode7BG1HRAddBrightness_Normal1x1,
+    DrawMode7BG1HRAddS1_2Brightness_Normal1x1,
 };
 
 /* BG2 fan-out: see HR4X / BL4X for the EXTBG priority bit
@@ -21639,6 +26593,166 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG2HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, aa_h, cc_h, startx;
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_h = aa / 2;
+        cc_h = cc / 2;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path: X & Y mask to 10 bits, no clipping. */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+
+                /* Sample 1 -> output index 2*x */
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
+                    && (Pix = (b & 0x7f)))
+                {
+                    GFX.S[Offset + 2 * x] = REGMATH(
+                        ADD_BRIGHTNESS,
+                        GFX.ScreenColors[Pix],
+                        GFX.SubScreen[Offset + 2 * x],
+                        GFX.SubZBuffer[Offset + 2 * x]);
+                    GFX.DB[Offset + 2 * x] = ((D + ((b & 0x80) ? 11 : 3)));
+                }
+                AA += aa_h; CC += cc_h;
+
+                /* Sample 2 -> output index 2*x + 1 */
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
+                    && (Pix = (b & 0x7f)))
+                {
+                    GFX.S[Offset + 2 * x + 1] = REGMATH(
+                        ADD_BRIGHTNESS,
+                        GFX.ScreenColors[Pix],
+                        GFX.SubScreen[Offset + 2 * x + 1],
+                        GFX.SubZBuffer[Offset + 2 * x + 1]);
+                    GFX.DB[Offset + 2 * x + 1] = ((D + ((b & 0x80) ? 11 : 3)));
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                int do_draw;
+
+                /* Sample 1 -> output index 2*x */
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                do_draw = 1;
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    do_draw = 0;
+                if (do_draw)
+                {
+                    if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
+                        && (Pix = (b & 0x7f)))
+                    {
+                        GFX.S[Offset + 2 * x] = REGMATH(
+                            ADD_BRIGHTNESS,
+                            GFX.ScreenColors[Pix],
+                            GFX.SubScreen[Offset + 2 * x],
+                            GFX.SubZBuffer[Offset + 2 * x]);
+                        GFX.DB[Offset + 2 * x] = ((D + ((b & 0x80) ? 11 : 3)));
+                    }
+                }
+                AA += aa_h; CC += cc_h;
+
+                /* Sample 2 -> output index 2*x + 1 */
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                do_draw = 1;
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    do_draw = 0;
+                if (do_draw)
+                {
+                    if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
+                        && (Pix = (b & 0x7f)))
+                    {
+                        GFX.S[Offset + 2 * x + 1] = REGMATH(
+                            ADD_BRIGHTNESS,
+                            GFX.ScreenColors[Pix],
+                            GFX.SubScreen[Offset + 2 * x + 1],
+                            GFX.SubZBuffer[Offset + 2 * x + 1]);
+                        GFX.DB[Offset + 2 * x + 1] = ((D + ((b & 0x80) ? 11 : 3)));
+                    }
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+    }
+}
+
 static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -21947,6 +27061,166 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     {
                         GFX.S[Offset + 2 * x + 1] = MATHS1_2(
                             ADD,
+                            GFX.ScreenColors[Pix],
+                            GFX.SubScreen[Offset + 2 * x + 1],
+                            GFX.SubZBuffer[Offset + 2 * x + 1]);
+                        GFX.DB[Offset + 2 * x + 1] = ((D + ((b & 0x80) ? 11 : 3)));
+                    }
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+    }
+}
+
+static void DrawMode7BG2HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, aa_h, cc_h, startx;
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_h = aa / 2;
+        cc_h = cc / 2;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path: X & Y mask to 10 bits, no clipping. */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+
+                /* Sample 1 -> output index 2*x */
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
+                    && (Pix = (b & 0x7f)))
+                {
+                    GFX.S[Offset + 2 * x] = MATHS1_2(
+                        ADD_BRIGHTNESS,
+                        GFX.ScreenColors[Pix],
+                        GFX.SubScreen[Offset + 2 * x],
+                        GFX.SubZBuffer[Offset + 2 * x]);
+                    GFX.DB[Offset + 2 * x] = ((D + ((b & 0x80) ? 11 : 3)));
+                }
+                AA += aa_h; CC += cc_h;
+
+                /* Sample 2 -> output index 2*x + 1 */
+                X = ((AA + BB) >> 8) & 0x3ff;
+                Y = ((CC + DD) >> 8) & 0x3ff;
+                M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
+                    && (Pix = (b & 0x7f)))
+                {
+                    GFX.S[Offset + 2 * x + 1] = MATHS1_2(
+                        ADD_BRIGHTNESS,
+                        GFX.ScreenColors[Pix],
+                        GFX.SubScreen[Offset + 2 * x + 1],
+                        GFX.SubZBuffer[Offset + 2 * x + 1]);
+                    GFX.DB[Offset + 2 * x + 1] = ((D + ((b & 0x80) ? 11 : 3)));
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y;
+                uint8_t b; uint32_t M7tn;
+                int do_draw;
+
+                /* Sample 1 -> output index 2*x */
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                do_draw = 1;
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    do_draw = 0;
+                if (do_draw)
+                {
+                    if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x]
+                        && (Pix = (b & 0x7f)))
+                    {
+                        GFX.S[Offset + 2 * x] = MATHS1_2(
+                            ADD_BRIGHTNESS,
+                            GFX.ScreenColors[Pix],
+                            GFX.SubScreen[Offset + 2 * x],
+                            GFX.SubZBuffer[Offset + 2 * x]);
+                        GFX.DB[Offset + 2 * x] = ((D + ((b & 0x80) ? 11 : 3)));
+                    }
+                }
+                AA += aa_h; CC += cc_h;
+
+                /* Sample 2 -> output index 2*x + 1 */
+                X = ((AA + BB) >> 8);
+                Y = ((CC + DD) >> 8);
+                do_draw = 1;
+                if (((X | Y) & ~0x3ff) == 0)
+                {
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                }
+                else if (PPU.Mode7Repeat == 3)
+                    b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                else
+                    do_draw = 0;
+                if (do_draw)
+                {
+                    if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + 2 * x + 1]
+                        && (Pix = (b & 0x7f)))
+                    {
+                        GFX.S[Offset + 2 * x + 1] = MATHS1_2(
+                            ADD_BRIGHTNESS,
                             GFX.ScreenColors[Pix],
                             GFX.SubScreen[Offset + 2 * x + 1],
                             GFX.SubZBuffer[Offset + 2 * x + 1]);
@@ -22439,7 +27713,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     }
 }
 
-static void (*Renderers_DrawMode7BG2HRNormal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG2HRNormal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG2HR_Normal1x1,
     DrawMode7BG2HRAdd_Normal1x1,
@@ -22448,6 +27722,8 @@ static void (*Renderers_DrawMode7BG2HRNormal1x1[7]) (uint32_t, uint32_t, int) =
     DrawMode7BG2HRSub_Normal1x1,
     DrawMode7BG2HRSubF1_2_Normal1x1,
     DrawMode7BG2HRSubS1_2_Normal1x1,
+    DrawMode7BG2HRAddBrightness_Normal1x1,
+    DrawMode7BG2HRAddS1_2Brightness_Normal1x1,
 };
 
 /* End of HR (2x nearest-neighbour) de-templated section.
@@ -22794,6 +28070,154 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG1HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, aa_q, cc_q, startx;
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_q = aa / 4;
+        cc_q = cc / 4;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path: X & Y mask to 10 bits, no clipping. */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y, sub;
+                uint8_t b; uint32_t M7tn;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    X = ((AA + BB) >> 8) & 0x3ff;
+                    Y = ((CC + DD) >> 8) & 0x3ff;
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                    Pix = (b & 0xff);
+                    /* Z-test + write. (D + 7) may reference 'b' (BG2). */
+                    {
+                        uint32_t idx = 4 * x + sub;
+                        if (((D + 7)) > GFX.DB[Offset + idx] && Pix)
+                        {
+                            GFX.S[Offset + idx] = REGMATH(
+                                ADD_BRIGHTNESS,
+                                GFX.ScreenColors[Pix],
+                                GFX.SubScreen[Offset + idx],
+                                GFX.SubZBuffer[Offset + idx]);
+                            GFX.DB[Offset + idx] = ((D + 7));
+                        }
+                    }
+                    /* Quarter-step. Final sub-sample absorbs the
+                     * rounding leftover so the total advance equals
+                     * aa/cc per native pixel. */
+                    if (sub < 3)
+                    {
+                        AA += aa_q;
+                        CC += cc_q;
+                    }
+                    else
+                    {
+                        AA += aa - 3 * aa_q;
+                        CC += cc - 3 * cc_q;
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y, sub, do_draw;
+                uint8_t b; uint32_t M7tn;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    X = ((AA + BB) >> 8);
+                    Y = ((CC + DD) >> 8);
+                    do_draw = 1;
+                    if (((X | Y) & ~0x3ff) == 0)
+                    {
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                    }
+                    else if (PPU.Mode7Repeat == 3)
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                    else
+                        do_draw = 0;
+                    if (do_draw)
+                    {
+                        uint32_t idx = 4 * x + sub;
+                        Pix = (b & 0xff);
+                        if (((D + 7)) > GFX.DB[Offset + idx] && Pix)
+                        {
+                            GFX.S[Offset + idx] = REGMATH(
+                                ADD_BRIGHTNESS,
+                                GFX.ScreenColors[Pix],
+                                GFX.SubScreen[Offset + idx],
+                                GFX.SubZBuffer[Offset + idx]);
+                            GFX.DB[Offset + idx] = ((D + 7));
+                        }
+                    }
+                    if (sub < 3)
+                    {
+                        AA += aa_q;
+                        CC += cc_q;
+                    }
+                    else
+                    {
+                        AA += aa - 3 * aa_q;
+                        CC += cc - 3 * cc_q;
+                    }
+                }
+            }
+        }
+    }
+}
+
 static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -23068,6 +28492,154 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         {
                             GFX.S[Offset + idx] = MATHS1_2(
                                 ADD,
+                                GFX.ScreenColors[Pix],
+                                GFX.SubScreen[Offset + idx],
+                                GFX.SubZBuffer[Offset + idx]);
+                            GFX.DB[Offset + idx] = ((D + 7));
+                        }
+                    }
+                    if (sub < 3)
+                    {
+                        AA += aa_q;
+                        CC += cc_q;
+                    }
+                    else
+                    {
+                        AA += aa - 3 * aa_q;
+                        CC += cc - 3 * cc_q;
+                    }
+                }
+            }
+        }
+    }
+}
+
+static void DrawMode7BG1HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, aa_q, cc_q, startx;
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_q = aa / 4;
+        cc_q = cc / 4;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path: X & Y mask to 10 bits, no clipping. */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y, sub;
+                uint8_t b; uint32_t M7tn;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    X = ((AA + BB) >> 8) & 0x3ff;
+                    Y = ((CC + DD) >> 8) & 0x3ff;
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                    Pix = (b & 0xff);
+                    /* Z-test + write. (D + 7) may reference 'b' (BG2). */
+                    {
+                        uint32_t idx = 4 * x + sub;
+                        if (((D + 7)) > GFX.DB[Offset + idx] && Pix)
+                        {
+                            GFX.S[Offset + idx] = MATHS1_2(
+                                ADD_BRIGHTNESS,
+                                GFX.ScreenColors[Pix],
+                                GFX.SubScreen[Offset + idx],
+                                GFX.SubZBuffer[Offset + idx]);
+                            GFX.DB[Offset + idx] = ((D + 7));
+                        }
+                    }
+                    /* Quarter-step. Final sub-sample absorbs the
+                     * rounding leftover so the total advance equals
+                     * aa/cc per native pixel. */
+                    if (sub < 3)
+                    {
+                        AA += aa_q;
+                        CC += cc_q;
+                    }
+                    else
+                    {
+                        AA += aa - 3 * aa_q;
+                        CC += cc - 3 * cc_q;
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y, sub, do_draw;
+                uint8_t b; uint32_t M7tn;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    X = ((AA + BB) >> 8);
+                    Y = ((CC + DD) >> 8);
+                    do_draw = 1;
+                    if (((X | Y) & ~0x3ff) == 0)
+                    {
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                    }
+                    else if (PPU.Mode7Repeat == 3)
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                    else
+                        do_draw = 0;
+                    if (do_draw)
+                    {
+                        uint32_t idx = 4 * x + sub;
+                        Pix = (b & 0xff);
+                        if (((D + 7)) > GFX.DB[Offset + idx] && Pix)
+                        {
+                            GFX.S[Offset + idx] = MATHS1_2(
+                                ADD_BRIGHTNESS,
                                 GFX.ScreenColors[Pix],
                                 GFX.SubScreen[Offset + idx],
                                 GFX.SubZBuffer[Offset + idx]);
@@ -23534,7 +29106,7 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     }
 }
 
-static void (*Renderers_DrawMode7BG1HR4XNormal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG1HR4XNormal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG1HR4X_Normal1x1,
     DrawMode7BG1HR4XAdd_Normal1x1,
@@ -23543,6 +29115,8 @@ static void (*Renderers_DrawMode7BG1HR4XNormal1x1[7]) (uint32_t, uint32_t, int) 
     DrawMode7BG1HR4XSub_Normal1x1,
     DrawMode7BG1HR4XSubF1_2_Normal1x1,
     DrawMode7BG1HR4XSubS1_2_Normal1x1,
+    DrawMode7BG1HR4XAddBrightness_Normal1x1,
+    DrawMode7BG1HR4XAddS1_2Brightness_Normal1x1,
 };
 
 /* BG2 fan-out: 7 math variants. Z = D + ((b & 0x80) ? 11 : 3) -- the
@@ -23835,6 +29409,148 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG2HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, aa_q, cc_q, startx;
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_q = aa / 4;
+        cc_q = cc / 4;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path: X & Y mask to 10 bits, no clipping. */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y, sub;
+                uint8_t b; uint32_t M7tn;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    X = ((AA + BB) >> 8) & 0x3ff;
+                    Y = ((CC + DD) >> 8) & 0x3ff;
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                    Pix = (b & 0x7f);
+                    /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
+                    {
+                        uint32_t idx = 4 * x + sub;
+                        if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + idx] && Pix)
+                        {
+                            GFX.S[Offset + idx] = REGMATH(
+                                ADD_BRIGHTNESS,
+                                GFX.ScreenColors[Pix],
+                                GFX.SubScreen[Offset + idx],
+                                GFX.SubZBuffer[Offset + idx]);
+                            GFX.DB[Offset + idx] = ((D + ((b & 0x80) ? 11 : 3)));
+                        }
+                    }
+                    /* Quarter-step. Final sub-sample absorbs the
+                     * rounding leftover so the total advance equals
+                     * aa/cc per native pixel. */
+                    if (sub < 3)
+                    {
+                        AA += aa_q;
+                        CC += cc_q;
+                    }
+                    else
+                    {
+                        AA += aa - 3 * aa_q;
+                        CC += cc - 3 * cc_q;
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y, sub, do_draw;
+                uint8_t b; uint32_t M7tn;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    X = ((AA + BB) >> 8);
+                    Y = ((CC + DD) >> 8);
+                    do_draw = 1;
+                    if (((X | Y) & ~0x3ff) == 0)
+                    {
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                    }
+                    else if (PPU.Mode7Repeat == 3)
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                    else
+                        do_draw = 0;
+                    if (do_draw)
+                    {
+                        uint32_t idx = 4 * x + sub;
+                        Pix = (b & 0x7f);
+                        if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + idx] && Pix)
+                        {
+                            GFX.S[Offset + idx] = REGMATH(
+                                ADD_BRIGHTNESS,
+                                GFX.ScreenColors[Pix],
+                                GFX.SubScreen[Offset + idx],
+                                GFX.SubZBuffer[Offset + idx]);
+                            GFX.DB[Offset + idx] = ((D + ((b & 0x80) ? 11 : 3)));
+                        }
+                    }
+                    if (sub < 3)
+                    {
+                        AA += aa_q;
+                        CC += cc_q;
+                    }
+                    else
+                    {
+                        AA += aa - 3 * aa_q;
+                        CC += cc - 3 * cc_q;
+                    }
+                }
+            }
+        }
+    }
+}
+
 static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -24097,6 +29813,148 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         {
                             GFX.S[Offset + idx] = MATHS1_2(
                                 ADD,
+                                GFX.ScreenColors[Pix],
+                                GFX.SubScreen[Offset + idx],
+                                GFX.SubZBuffer[Offset + idx]);
+                            GFX.DB[Offset + idx] = ((D + ((b & 0x80) ? 11 : 3)));
+                        }
+                    }
+                    if (sub < 3)
+                    {
+                        AA += aa_q;
+                        CC += cc_q;
+                    }
+                    else
+                    {
+                        AA += aa - 3 * aa_q;
+                        CC += cc - 3 * cc_q;
+                    }
+                }
+            }
+        }
+    }
+}
+
+static void DrawMode7BG2HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    int aa, cc, aa_q, cc_q, startx;
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t Pix;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_q = aa / 4;
+        cc_q = cc / 4;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path: X & Y mask to 10 bits, no clipping. */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y, sub;
+                uint8_t b; uint32_t M7tn;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    X = ((AA + BB) >> 8) & 0x3ff;
+                    Y = ((CC + DD) >> 8) & 0x3ff;
+                    M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                    b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                    Pix = (b & 0x7f);
+                    /* Z-test + write. (D + ((b & 0x80) ? 11 : 3)) may reference 'b' (BG2). */
+                    {
+                        uint32_t idx = 4 * x + sub;
+                        if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + idx] && Pix)
+                        {
+                            GFX.S[Offset + idx] = MATHS1_2(
+                                ADD_BRIGHTNESS,
+                                GFX.ScreenColors[Pix],
+                                GFX.SubScreen[Offset + idx],
+                                GFX.SubZBuffer[Offset + idx]);
+                            GFX.DB[Offset + idx] = ((D + ((b & 0x80) ? 11 : 3)));
+                        }
+                    }
+                    /* Quarter-step. Final sub-sample absorbs the
+                     * rounding leftover so the total advance equals
+                     * aa/cc per native pixel. */
+                    if (sub < 3)
+                    {
+                        AA += aa_q;
+                        CC += cc_q;
+                    }
+                    else
+                    {
+                        AA += aa - 3 * aa_q;
+                        CC += cc - 3 * cc_q;
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X, Y, sub, do_draw;
+                uint8_t b; uint32_t M7tn;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    X = ((AA + BB) >> 8);
+                    Y = ((CC + DD) >> 8);
+                    do_draw = 1;
+                    if (((X | Y) & ~0x3ff) == 0)
+                    {
+                        M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
+                        b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
+                    }
+                    else if (PPU.Mode7Repeat == 3)
+                        b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
+                    else
+                        do_draw = 0;
+                    if (do_draw)
+                    {
+                        uint32_t idx = 4 * x + sub;
+                        Pix = (b & 0x7f);
+                        if (((D + ((b & 0x80) ? 11 : 3))) > GFX.DB[Offset + idx] && Pix)
+                        {
+                            GFX.S[Offset + idx] = MATHS1_2(
+                                ADD_BRIGHTNESS,
                                 GFX.ScreenColors[Pix],
                                 GFX.SubScreen[Offset + idx],
                                 GFX.SubZBuffer[Offset + idx]);
@@ -24545,7 +30403,7 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     }
 }
 
-static void (*Renderers_DrawMode7BG2HR4XNormal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG2HR4XNormal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG2HR4X_Normal1x1,
     DrawMode7BG2HR4XAdd_Normal1x1,
@@ -24554,6 +30412,8 @@ static void (*Renderers_DrawMode7BG2HR4XNormal1x1[7]) (uint32_t, uint32_t, int) 
     DrawMode7BG2HR4XSub_Normal1x1,
     DrawMode7BG2HR4XSubF1_2_Normal1x1,
     DrawMode7BG2HR4XSubS1_2_Normal1x1,
+    DrawMode7BG2HR4XAddBrightness_Normal1x1,
+    DrawMode7BG2HR4XAddS1_2Brightness_Normal1x1,
 };
 
 /* End of HR4X de-templated section.
@@ -24888,6 +30748,142 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG1BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, aa_h, cc_h, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_h = aa / 2;
+        cc_h = cc / 2;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++)
+            {
+                M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
+                    VRAM1, 0xff,
+                    REGMATH, ADD_BRIGHTNESS,
+                    ((D + 7)), ((D + 7)), Offset, smooth);
+                AA += aa_h; CC += cc_h;
+                M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
+                    VRAM1, 0xff,
+                    REGMATH, ADD_BRIGHTNESS,
+                    ((D + 7)), ((D + 7)), Offset, smooth);
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X1 = (AA + BB) >> 8;
+                int Y1 = (CC + DD) >> 8;
+                int X2, Y2;
+                uint32_t Xf1 = (uint32_t)((AA + BB) & 0xff);
+                uint32_t Yf1 = (uint32_t)((CC + DD) & 0xff);
+                uint32_t Xf2, Yf2;
+                uint8_t p_tl, p_tr, p_bl, p_br;
+                uint8_t b_tl_raw_;
+                /* Sample 1 -> output 2*x */
+                if (((X1 | Y1) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(X1, Y1, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(2 * x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(2 * x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+                /* else: clip - leave pixel untouched (transparent) */
+                AA += aa_h; CC += cc_h;
+                /* Sample 2 -> output 2*x + 1 */
+                X2  = (AA + BB) >> 8;
+                Y2  = (CC + DD) >> 8;
+                Xf2 = (uint32_t)((AA + BB) & 0xff);
+                Yf2 = (uint32_t)((CC + DD) & 0xff);
+                if (((X2 | Y2) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(X2, Y2, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(2 * x + 1,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(2 * x + 1,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+    }
+}
+
 static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -25152,6 +31148,142 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHS1_2, ADD,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+    }
+}
+
+static void DrawMode7BG1BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, aa_h, cc_h, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_h = aa / 2;
+        cc_h = cc / 2;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++)
+            {
+                M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
+                    VRAM1, 0xff,
+                    MATHS1_2, ADD_BRIGHTNESS,
+                    ((D + 7)), ((D + 7)), Offset, smooth);
+                AA += aa_h; CC += cc_h;
+                M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
+                    VRAM1, 0xff,
+                    MATHS1_2, ADD_BRIGHTNESS,
+                    ((D + 7)), ((D + 7)), Offset, smooth);
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X1 = (AA + BB) >> 8;
+                int Y1 = (CC + DD) >> 8;
+                int X2, Y2;
+                uint32_t Xf1 = (uint32_t)((AA + BB) & 0xff);
+                uint32_t Yf1 = (uint32_t)((CC + DD) & 0xff);
+                uint32_t Xf2, Yf2;
+                uint8_t p_tl, p_tr, p_bl, p_br;
+                uint8_t b_tl_raw_;
+                /* Sample 1 -> output 2*x */
+                if (((X1 | Y1) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(X1, Y1, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(2 * x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
+                        MATHS1_2, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(2 * x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
+                        MATHS1_2, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+                /* else: clip - leave pixel untouched (transparent) */
+                AA += aa_h; CC += cc_h;
+                /* Sample 2 -> output 2*x + 1 */
+                X2  = (AA + BB) >> 8;
+                Y2  = (CC + DD) >> 8;
+                Xf2 = (uint32_t)((AA + BB) & 0xff);
+                Yf2 = (uint32_t)((CC + DD) & 0xff);
+                if (((X2 | Y2) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(X2, Y2, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(2 * x + 1,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
+                        MATHS1_2, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(2 * x + 1,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
+                        MATHS1_2, ADD_BRIGHTNESS,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
@@ -25568,7 +31700,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     }
 }
 
-static void (*Renderers_DrawMode7BG1BLNormal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG1BLNormal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG1BL_Normal1x1,
     DrawMode7BG1BLAdd_Normal1x1,
@@ -25577,6 +31709,8 @@ static void (*Renderers_DrawMode7BG1BLNormal1x1[7]) (uint32_t, uint32_t, int) =
     DrawMode7BG1BLSub_Normal1x1,
     DrawMode7BG1BLSubF1_2_Normal1x1,
     DrawMode7BG1BLSubS1_2_Normal1x1,
+    DrawMode7BG1BLAddBrightness_Normal1x1,
+    DrawMode7BG1BLAddS1_2Brightness_Normal1x1,
 };
 
 /* BG2 fan-out: see HR4X / BL4X for the EXTBG priority bit
@@ -25841,6 +31975,136 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG2BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, aa_h, cc_h, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_h = aa / 2;
+        cc_h = cc / 2;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++)
+            {
+                M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
+                    VRAM1, 0x7f,
+                    REGMATH, ADD_BRIGHTNESS,
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                AA += aa_h; CC += cc_h;
+                M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
+                    VRAM1, 0x7f,
+                    REGMATH, ADD_BRIGHTNESS,
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X1 = (AA + BB) >> 8;
+                int Y1 = (CC + DD) >> 8;
+                int X2, Y2;
+                uint32_t Xf1 = (uint32_t)((AA + BB) & 0xff);
+                uint32_t Yf1 = (uint32_t)((CC + DD) & 0xff);
+                uint32_t Xf2, Yf2;
+                uint8_t p_tl, p_tr, p_bl, p_br;
+                uint8_t b_tl_raw_;
+                /* Sample 1 -> output 2*x */
+                if (((X1 | Y1) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(X1, Y1, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(2 * x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(2 * x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+                /* else: clip - leave pixel untouched (transparent) */
+                AA += aa_h; CC += cc_h;
+                /* Sample 2 -> output 2*x + 1 */
+                X2  = (AA + BB) >> 8;
+                Y2  = (CC + DD) >> 8;
+                Xf2 = (uint32_t)((AA + BB) & 0xff);
+                Yf2 = (uint32_t)((CC + DD) & 0xff);
+                if (((X2 | Y2) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(X2, Y2, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(2 * x + 1,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(2 * x + 1,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+    }
+}
+
 static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -26093,6 +32357,136 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7HR_BLEND_AND_WRITE(2 * x + 1,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
                         MATHS1_2, ADD,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+    }
+}
+
+static void DrawMode7BG2BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, aa_h, cc_h, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_h = aa / 2;
+        cc_h = cc / 2;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++)
+            {
+                M7HR_SAMPLE_BILINEAR(2 * x,     AA + BB, CC + DD,
+                    VRAM1, 0x7f,
+                    MATHS1_2, ADD_BRIGHTNESS,
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                AA += aa_h; CC += cc_h;
+                M7HR_SAMPLE_BILINEAR(2 * x + 1, AA + BB, CC + DD,
+                    VRAM1, 0x7f,
+                    MATHS1_2, ADD_BRIGHTNESS,
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                AA += aa - aa_h; CC += cc - cc_h;
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int X1 = (AA + BB) >> 8;
+                int Y1 = (CC + DD) >> 8;
+                int X2, Y2;
+                uint32_t Xf1 = (uint32_t)((AA + BB) & 0xff);
+                uint32_t Yf1 = (uint32_t)((CC + DD) & 0xff);
+                uint32_t Xf2, Yf2;
+                uint8_t p_tl, p_tr, p_bl, p_br;
+                uint8_t b_tl_raw_;
+                /* Sample 1 -> output 2*x */
+                if (((X1 | Y1) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(X1, Y1, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(2 * x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
+                        MATHS1_2, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(2 * x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf1, Yf1,
+                        MATHS1_2, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+                /* else: clip - leave pixel untouched (transparent) */
+                AA += aa_h; CC += cc_h;
+                /* Sample 2 -> output 2*x + 1 */
+                X2  = (AA + BB) >> 8;
+                Y2  = (CC + DD) >> 8;
+                Xf2 = (uint32_t)((AA + BB) & 0xff);
+                Yf2 = (uint32_t)((CC + DD) & 0xff);
+                if (((X2 | Y2) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(X2, Y2, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(2 * x + 1,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
+                        MATHS1_2, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(2 * x + 1,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xf2, Yf2,
+                        MATHS1_2, ADD_BRIGHTNESS,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
                 AA += aa - aa_h; CC += cc - cc_h;
@@ -26491,7 +32885,7 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     }
 }
 
-static void (*Renderers_DrawMode7BG2BLNormal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG2BLNormal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG2BL_Normal1x1,
     DrawMode7BG2BLAdd_Normal1x1,
@@ -26500,6 +32894,8 @@ static void (*Renderers_DrawMode7BG2BLNormal1x1[7]) (uint32_t, uint32_t, int) =
     DrawMode7BG2BLSub_Normal1x1,
     DrawMode7BG2BLSubF1_2_Normal1x1,
     DrawMode7BG2BLSubS1_2_Normal1x1,
+    DrawMode7BG2BLAddBrightness_Normal1x1,
+    DrawMode7BG2BLAddS1_2Brightness_Normal1x1,
 };
 
 /* End of BL (2x bilinear) de-templated section.
@@ -26774,6 +33170,119 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG1BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, aa_q, cc_q, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_q = aa / 4;
+        cc_q = cc / 4;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++)
+            {
+                int sub;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
+                        VRAM1, 0xff,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                    if (sub < 3) { AA += aa_q;          CC += cc_q;          }
+                    else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
+                }
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int sub;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    int Xs = (AA + BB) >> 8;
+                    int Ys = (CC + DD) >> 8;
+                    uint32_t Xfs = (uint32_t)((AA + BB) & 0xff);
+                    uint32_t Yfs = (uint32_t)((CC + DD) & 0xff);
+                    uint8_t p_tl, p_tr, p_bl, p_br;
+                    uint8_t b_tl_raw_;
+                    if (((Xs | Ys) & ~0x3ff) == 0)
+                    {
+                        M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                      b_tl_raw_, VRAM1, 0xff);
+                        M7HR_BLEND_AND_WRITE(4 * x + sub,
+                            p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                            REGMATH, ADD_BRIGHTNESS,
+                            ((D + 7)), ((D + 7)), Offset, smooth);
+                    }
+                    else if (PPU.Mode7Repeat == 3)
+                    {
+                        M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                           b_tl_raw_, VRAM1, 0xff);
+                        M7HR_BLEND_AND_WRITE(4 * x + sub,
+                            p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                            REGMATH, ADD_BRIGHTNESS,
+                            ((D + 7)), ((D + 7)), Offset, smooth);
+                    }
+                    if (sub < 3) { AA += aa_q;          CC += cc_q;          }
+                    else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
+                }
+            }
+        }
+    }
+}
+
 static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -26990,6 +33499,119 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHS1_2, ADD,
+                            ((D + 7)), ((D + 7)), Offset, smooth);
+                    }
+                    if (sub < 3) { AA += aa_q;          CC += cc_q;          }
+                    else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
+                }
+            }
+        }
+    }
+}
+
+static void DrawMode7BG1BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, aa_q, cc_q, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_q = aa / 4;
+        cc_q = cc / 4;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++)
+            {
+                int sub;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
+                        VRAM1, 0xff,
+                        MATHS1_2, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                    if (sub < 3) { AA += aa_q;          CC += cc_q;          }
+                    else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
+                }
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int sub;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    int Xs = (AA + BB) >> 8;
+                    int Ys = (CC + DD) >> 8;
+                    uint32_t Xfs = (uint32_t)((AA + BB) & 0xff);
+                    uint32_t Yfs = (uint32_t)((CC + DD) & 0xff);
+                    uint8_t p_tl, p_tr, p_bl, p_br;
+                    uint8_t b_tl_raw_;
+                    if (((Xs | Ys) & ~0x3ff) == 0)
+                    {
+                        M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                      b_tl_raw_, VRAM1, 0xff);
+                        M7HR_BLEND_AND_WRITE(4 * x + sub,
+                            p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                            MATHS1_2, ADD_BRIGHTNESS,
+                            ((D + 7)), ((D + 7)), Offset, smooth);
+                    }
+                    else if (PPU.Mode7Repeat == 3)
+                    {
+                        M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                           b_tl_raw_, VRAM1, 0xff);
+                        M7HR_BLEND_AND_WRITE(4 * x + sub,
+                            p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                            MATHS1_2, ADD_BRIGHTNESS,
                             ((D + 7)), ((D + 7)), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
@@ -27339,7 +33961,7 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     }
 }
 
-static void (*Renderers_DrawMode7BG1BL4XNormal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG1BL4XNormal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG1BL4X_Normal1x1,
     DrawMode7BG1BL4XAdd_Normal1x1,
@@ -27348,6 +33970,8 @@ static void (*Renderers_DrawMode7BG1BL4XNormal1x1[7]) (uint32_t, uint32_t, int) 
     DrawMode7BG1BL4XSub_Normal1x1,
     DrawMode7BG1BL4XSubF1_2_Normal1x1,
     DrawMode7BG1BL4XSubS1_2_Normal1x1,
+    DrawMode7BG1BL4XAddBrightness_Normal1x1,
+    DrawMode7BG1BL4XAddS1_2Brightness_Normal1x1,
 };
 
 /* BG2 fan-out: see HR4X for the EXTBG priority bit explanation.
@@ -27567,6 +34191,113 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG2BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, aa_q, cc_q, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_q = aa / 4;
+        cc_q = cc / 4;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++)
+            {
+                int sub;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
+                        VRAM1, 0x7f,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                    if (sub < 3) { AA += aa_q;          CC += cc_q;          }
+                    else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
+                }
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int sub;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    int Xs = (AA + BB) >> 8;
+                    int Ys = (CC + DD) >> 8;
+                    uint32_t Xfs = (uint32_t)((AA + BB) & 0xff);
+                    uint32_t Yfs = (uint32_t)((CC + DD) & 0xff);
+                    uint8_t p_tl, p_tr, p_bl, p_br;
+                    uint8_t b_tl_raw_;
+                    if (((Xs | Ys) & ~0x3ff) == 0)
+                    {
+                        M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                      b_tl_raw_, VRAM1, 0x7f);
+                        M7HR_BLEND_AND_WRITE(4 * x + sub,
+                            p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                            REGMATH, ADD_BRIGHTNESS,
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                    }
+                    else if (PPU.Mode7Repeat == 3)
+                    {
+                        M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                           b_tl_raw_, VRAM1, 0x7f);
+                        M7HR_BLEND_AND_WRITE(4 * x + sub,
+                            p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                            REGMATH, ADD_BRIGHTNESS,
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                    }
+                    if (sub < 3) { AA += aa_q;          CC += cc_q;          }
+                    else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
+                }
+            }
+        }
+    }
+}
+
 static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -27771,6 +34502,113 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         M7HR_BLEND_AND_WRITE(4 * x + sub,
                             p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                             MATHS1_2, ADD,
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                    }
+                    if (sub < 3) { AA += aa_q;          CC += cc_q;          }
+                    else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
+                }
+            }
+        }
+    }
+}
+
+static void DrawMode7BG2BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, aa_q, cc_q, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        aa_q = aa / 4;
+        cc_q = cc / 4;
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++)
+            {
+                int sub;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    M7HR_SAMPLE_BILINEAR(4 * x + sub, AA + BB, CC + DD,
+                        VRAM1, 0x7f,
+                        MATHS1_2, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                    if (sub < 3) { AA += aa_q;          CC += cc_q;          }
+                    else         { AA += aa - 3 * aa_q; CC += cc - 3 * cc_q; }
+                }
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++)
+            {
+                int sub;
+                for (sub = 0; sub < 4; sub++)
+                {
+                    int Xs = (AA + BB) >> 8;
+                    int Ys = (CC + DD) >> 8;
+                    uint32_t Xfs = (uint32_t)((AA + BB) & 0xff);
+                    uint32_t Yfs = (uint32_t)((CC + DD) & 0xff);
+                    uint8_t p_tl, p_tr, p_bl, p_br;
+                    uint8_t b_tl_raw_;
+                    if (((Xs | Ys) & ~0x3ff) == 0)
+                    {
+                        M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                      b_tl_raw_, VRAM1, 0x7f);
+                        M7HR_BLEND_AND_WRITE(4 * x + sub,
+                            p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                            MATHS1_2, ADD_BRIGHTNESS,
+                            ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                    }
+                    else if (PPU.Mode7Repeat == 3)
+                    {
+                        M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                           b_tl_raw_, VRAM1, 0x7f);
+                        M7HR_BLEND_AND_WRITE(4 * x + sub,
+                            p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                            MATHS1_2, ADD_BRIGHTNESS,
                             ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
                     if (sub < 3) { AA += aa_q;          CC += cc_q;          }
@@ -28102,7 +34940,7 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     }
 }
 
-static void (*Renderers_DrawMode7BG2BL4XNormal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG2BL4XNormal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG2BL4X_Normal1x1,
     DrawMode7BG2BL4XAdd_Normal1x1,
@@ -28111,6 +34949,8 @@ static void (*Renderers_DrawMode7BG2BL4XNormal1x1[7]) (uint32_t, uint32_t, int) 
     DrawMode7BG2BL4XSub_Normal1x1,
     DrawMode7BG2BL4XSubF1_2_Normal1x1,
     DrawMode7BG2BL4XSubS1_2_Normal1x1,
+    DrawMode7BG2BL4XAddBrightness_Normal1x1,
+    DrawMode7BG2BL4XAddS1_2Brightness_Normal1x1,
 };
 
 /* End of BL4X de-templated section.
@@ -28356,6 +35196,105 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG1BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
+                    VRAM1, 0xff,
+                    REGMATH, ADD_BRIGHTNESS,
+                    ((D + 7)), ((D + 7)), Offset, smooth);
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int Xs = (AA + BB) >> 8;
+                int Ys = (CC + DD) >> 8;
+                uint32_t Xfs = (uint32_t)((AA + BB) & 0xff);
+                uint32_t Yfs = (uint32_t)((CC + DD) & 0xff);
+                uint8_t p_tl, p_tr, p_bl, p_br;
+                uint8_t b_tl_raw_;
+                if (((Xs | Ys) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+            }
+        }
+    }
+}
+
 static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -28547,6 +35486,105 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHS1_2, ADD,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+            }
+        }
+    }
+}
+
+static void DrawMode7BG1BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    if ((Memory.FillRAM[0x2130] & 1))
+    {
+        if (IPPU.DirectColourMapsNeedRebuild)
+            S9xBuildDirectColourMaps();
+        GFX.RealScreenColors = DirectColourMaps[0];
+    }
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
+                    VRAM1, 0xff,
+                    MATHS1_2, ADD_BRIGHTNESS,
+                    ((D + 7)), ((D + 7)), Offset, smooth);
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int Xs = (AA + BB) >> 8;
+                int Ys = (CC + DD) >> 8;
+                uint32_t Xfs = (uint32_t)((AA + BB) & 0xff);
+                uint32_t Yfs = (uint32_t)((CC + DD) & 0xff);
+                uint8_t p_tl, p_tr, p_bl, p_br;
+                uint8_t b_tl_raw_;
+                if (((Xs | Ys) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                        MATHS1_2, ADD_BRIGHTNESS,
+                        ((D + 7)), ((D + 7)), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0xff);
+                    M7HR_BLEND_AND_WRITE(x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                        MATHS1_2, ADD_BRIGHTNESS,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
             }
@@ -28851,7 +35889,7 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     }
 }
 
-static void (*Renderers_DrawMode7BG1BL1XNormal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG1BL1XNormal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG1BL1X_Normal1x1,
     DrawMode7BG1BL1XAdd_Normal1x1,
@@ -28860,6 +35898,8 @@ static void (*Renderers_DrawMode7BG1BL1XNormal1x1[7]) (uint32_t, uint32_t, int) 
     DrawMode7BG1BL1XSub_Normal1x1,
     DrawMode7BG1BL1XSubF1_2_Normal1x1,
     DrawMode7BG1BL1XSubS1_2_Normal1x1,
+    DrawMode7BG1BL1XAddBrightness_Normal1x1,
+    DrawMode7BG1BL1XAddS1_2Brightness_Normal1x1,
 };
 
 /* BG2 fan-out: see HR4X / BL4X for the EXTBG priority bit
@@ -29050,6 +36090,99 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     }
 }
 
+static void DrawMode7BG2BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
+                    VRAM1, 0x7f,
+                    REGMATH, ADD_BRIGHTNESS,
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int Xs = (AA + BB) >> 8;
+                int Ys = (CC + DD) >> 8;
+                uint32_t Xfs = (uint32_t)((AA + BB) & 0xff);
+                uint32_t Yfs = (uint32_t)((CC + DD) & 0xff);
+                uint8_t p_tl, p_tr, p_bl, p_br;
+                uint8_t b_tl_raw_;
+                if (((Xs | Ys) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                        REGMATH, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+            }
+        }
+    }
+}
+
 static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
 {
     struct SLineMatrixData *l;
@@ -29229,6 +36362,99 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                     M7HR_BLEND_AND_WRITE(x,
                         p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
                         MATHS1_2, ADD,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+            }
+        }
+    }
+}
+
+static void DrawMode7BG2BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Right, int D)
+{
+    struct SLineMatrixData *l;
+    uint32_t x, Line, Offset;
+    uint8_t *VRAM  = Memory.VRAM;
+    uint8_t *VRAM1 = VRAM + 1;
+    int aa, cc, startx;
+    uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
+
+    GFX.RealScreenColors = IPPU.ScreenColors;
+    GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+    Offset = GFX.StartY * GFX.PPL;
+    l = &LineMatrixData[GFX.StartY];
+
+    for (Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+    {
+        int AA, BB, CC, DD, xx, yy;
+        int32_t HOffset = ((int32_t) l->M7HOFS  << 19) >> 19;
+        int32_t VOffset = ((int32_t) l->M7VOFS  << 19) >> 19;
+        int32_t CentreX = ((int32_t) l->CentreX << 19) >> 19;
+        int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
+        uint8_t starty = Line + 1;
+
+        if (PPU.Mode7VFlip)
+            starty ^= 0xff;
+        yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+        BB = ((l->MatrixB * starty) & ~63)
+           + ((l->MatrixB * yy)     & ~63) + (CentreX << 8);
+        DD = ((l->MatrixD * starty) & ~63)
+           + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
+
+        if (PPU.Mode7HFlip)
+        {
+            startx = Right - 1;
+            aa = -l->MatrixA;
+            cc = -l->MatrixC;
+        }
+        else
+        {
+            startx = Left;
+            aa = l->MatrixA;
+            cc = l->MatrixC;
+        }
+        xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+        AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+        CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+        if (!PPU.Mode7Repeat)
+        {
+            /* Wrap path. */
+            for (x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                M7HR_SAMPLE_BILINEAR(x, AA + BB, CC + DD,
+                    VRAM1, 0x7f,
+                    MATHS1_2, ADD_BRIGHTNESS,
+                    ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+            }
+        }
+        else
+        {
+            /* Repeat-mode path: clip out-of-range samples (modes 1/2)
+             * or fill with tile 0 (mode 3). */
+            for (x = Left; x < Right; x++, AA += aa, CC += cc)
+            {
+                int Xs = (AA + BB) >> 8;
+                int Ys = (CC + DD) >> 8;
+                uint32_t Xfs = (uint32_t)((AA + BB) & 0xff);
+                uint32_t Yfs = (uint32_t)((CC + DD) & 0xff);
+                uint8_t p_tl, p_tr, p_bl, p_br;
+                uint8_t b_tl_raw_;
+                if (((Xs | Ys) & ~0x3ff) == 0)
+                {
+                    M7HR_LOOKUP_4(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                  b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                        MATHS1_2, ADD_BRIGHTNESS,
+                        ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
+                }
+                else if (PPU.Mode7Repeat == 3)
+                {
+                    M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
+                                       b_tl_raw_, VRAM1, 0x7f);
+                    M7HR_BLEND_AND_WRITE(x,
+                        p_tl, p_tr, p_bl, p_br, b_tl_raw_, Xfs, Yfs,
+                        MATHS1_2, ADD_BRIGHTNESS,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
             }
@@ -29515,7 +36741,7 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     }
 }
 
-static void (*Renderers_DrawMode7BG2BL1XNormal1x1[7]) (uint32_t, uint32_t, int) =
+static void (*Renderers_DrawMode7BG2BL1XNormal1x1[9]) (uint32_t, uint32_t, int) =
 {
     DrawMode7BG2BL1X_Normal1x1,
     DrawMode7BG2BL1XAdd_Normal1x1,
@@ -29524,6 +36750,8 @@ static void (*Renderers_DrawMode7BG2BL1XNormal1x1[7]) (uint32_t, uint32_t, int) 
     DrawMode7BG2BL1XSub_Normal1x1,
     DrawMode7BG2BL1XSubF1_2_Normal1x1,
     DrawMode7BG2BL1XSubS1_2_Normal1x1,
+    DrawMode7BG2BL1XAddBrightness_Normal1x1,
+    DrawMode7BG2BL1XAddS1_2Brightness_Normal1x1,
 };
 
 /* End of BL1X de-templated section.
@@ -29551,6 +36779,19 @@ void S9xSelectTileRenderers_SFXSpeedup (void)
 		i++;
 		if (Memory.FillRAM[0x2130] & 2)
 			i++;
+	}
+
+	/* ScreenColors are pre-scaled by master brightness, so the additive
+	 * full-strength paths must clamp at the scaled maximum; slots 7/8
+	 * are the brightness-capped clones of slots 1/3 (see
+	 * COLOR_ADD_BRIGHTNESS). Mirrors mainline's IPPU.MaxBrightness
+	 * selection; PPU.Brightness carries the same value here. */
+	if (PPU.Brightness != 0xf)
+	{
+		if (i == 1)
+			i = 7;
+		else if (i == 3)
+			i = 8;
 	}
 
 	GFX.DrawTileMath        = Renderers_DrawTile16Normal1x1[i];
@@ -29731,6 +36972,19 @@ void S9xSelectTileRenderers (int BGMode, uint8_t sub, uint8_t obj)
 		i++;
 		if (Memory.FillRAM[0x2130] & 2)
 			i++;
+	}
+
+	/* ScreenColors are pre-scaled by master brightness, so the additive
+	 * full-strength paths must clamp at the scaled maximum; slots 7/8
+	 * are the brightness-capped clones of slots 1/3 (see
+	 * COLOR_ADD_BRIGHTNESS). Mirrors mainline's IPPU.MaxBrightness
+	 * selection; PPU.Brightness carries the same value here. */
+	if (PPU.Brightness != 0xf)
+	{
+		if (i == 1)
+			i = 7;
+		else if (i == 3)
+			i = 8;
 	}
 
 	GFX.DrawTileMath        = DT[i];

@@ -568,6 +568,7 @@ struct SLineMatrixData
 extern const uint8_t	mul_brightness[16][32];
 extern struct SBG	BG;
 extern struct SGFX	GFX;
+extern uint8_t brightness_cap[64];
 
 #define H_FLIP		0x4000
 #define V_FLIP		0x8000
@@ -597,6 +598,23 @@ extern struct SGFX	GFX;
 			| ((((C1) & CADD_RB_MASK) + ((C2) & CADD_RB_MASK)) & CADD_RB_CARRY)) >> 5) * 0x1f)))
 #define COLOR_ADD(C1, C2) \
 	((uint16_t) (COLOR_ADD_RAW((C1), (C2)) | ((COLOR_ADD_RAW((C1), (C2)) & 0x0400) >> 5)))
+
+/* Brightness-capped additive math, from mainline snes9x. ScreenColors
+ * are pre-scaled by master brightness, so a plain saturating add clamps
+ * at 31 instead of at the brightness-scaled maximum; on hardware the
+ * math runs on raw CGRAM values and brightness is applied at the DAC
+ * (ares packs displayBrightness into the output and scales afterward).
+ * brightness_cap[] clamps each 5-bit channel sum to XB[0x1f]. Selected
+ * by S9xSelectTileRenderers when PPU.Brightness != 0xf. The half-add
+ * form is unaffected (halving cannot exceed the scaled maximum), so
+ * COLOR_ADD_BRIGHTNESS1_2 aliases COLOR_ADD1_2, and the token-pasted
+ * REGMATH/MATHS1_2 selectors work with Op = ADD_BRIGHTNESS unchanged. */
+#define COLOR_ADD_BRIGHTNESS(C1, C2) \
+	((uint16_t) (((uint16_t) brightness_cap[(((C1) >> 11) & 0x1f) + (((C2) >> 11) & 0x1f)] << 11) | \
+		((uint16_t) brightness_cap[(((C1) >>  6) & 0x1f) + (((C2) >>  6) & 0x1f)] <<  6) | \
+		(((uint16_t) brightness_cap[(((C1) >>  6) & 0x1f) + (((C2) >>  6) & 0x1f)] & 0x10) << 1) | \
+		((uint16_t) brightness_cap[ ((C1)        & 0x1f) + ( (C2)        & 0x1f)])))
+#define COLOR_ADD_BRIGHTNESS1_2(C1, C2) COLOR_ADD1_2((C1), (C2))
 
 #define COLOR_SUB1_2(C1, C2) \
 	GFX.ZERO[(((C1) | RGB_HI_BITS_MASKx2) - \
