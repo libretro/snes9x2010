@@ -272,7 +272,7 @@ static bool audio_muted;
    for the frontend. `msu1_enhanced_pref` is the user's option; the active rate
    is only raised when MSU1 is actually present. */
 #define MSU1_ENHANCED_RATE 44100
-static bool msu1_enhanced_pref = false;
+static bool msu1_enhanced_pref = true;
 
 /* True while the enhanced-audio streaming upsampler holds valid in-flight
    state (frame pair + phase). Cleared whenever the enhanced path is not the
@@ -485,7 +485,7 @@ static void check_variables(bool first_run)
 	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
 		msu1_enhanced_pref = (strcmp(var.value, "enabled") == 0);
 	else
-		msu1_enhanced_pref = false;
+		msu1_enhanced_pref = true;
 
 	var.key = "snes9x_2010_frameskip";
 	var.value = NULL;
