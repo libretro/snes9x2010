@@ -578,11 +578,25 @@ extern struct SGFX	GFX;
 	((C2) & RGB_REMOVE_LOW_BITS_MASK)) >> 1) + \
 	((C1) & (C2) & RGB_LOW_BITS_MASK)) | ALPHA_BITS_MASK)
 
+/* Exact per-channel saturating RGB addition, transplanted from mainline
+ * snes9x's COLOR_ADD::fn with its RGB565 constants (5-bit lanes at bit
+ * 11 / 6 / 0, then the green top bit propagated into the extra low
+ * green bit). The previous form approximated the full-strength add
+ * through the X2 half-add table (halve, table-double), which loses the
+ * low bit per channel and saturates through the table instead of per
+ * channel; visible as off-by-one channels in additive color math.
+ * Expression macro with the same argument rules as COLOR_SUB below. */
+#define CADD_RB_MASK   ((0x1F << 11) | 0x1F)
+#define CADD_G_MASK    (0x1F << 6)
+#define CADD_RB_CARRY  ((0x20 << 11) | 0x20)
+#define CADD_G_CARRY   (0x20 << 6)
+#define COLOR_ADD_RAW(C1, C2) \
+	((uint16_t) ((((((C1) & CADD_RB_MASK) + ((C2) & CADD_RB_MASK)) & CADD_RB_MASK) \
+		| ((((C1) & CADD_G_MASK) + ((C2) & CADD_G_MASK)) & CADD_G_MASK)) \
+		| ((uint16_t) ((((((C1) & CADD_G_MASK) + ((C2) & CADD_G_MASK)) & CADD_G_CARRY) \
+			| ((((C1) & CADD_RB_MASK) + ((C2) & CADD_RB_MASK)) & CADD_RB_CARRY)) >> 5) * 0x1f)))
 #define COLOR_ADD(C1, C2) \
-	(GFX.X2[((((C1) & RGB_REMOVE_LOW_BITS_MASK) + \
-	((C2) & RGB_REMOVE_LOW_BITS_MASK)) >> 1) + \
-	((C1) & (C2) & RGB_LOW_BITS_MASK)] | \
-	(((C1) ^ (C2)) & RGB_LOW_BITS_MASK))
+	((uint16_t) (COLOR_ADD_RAW((C1), (C2)) | ((COLOR_ADD_RAW((C1), (C2)) & 0x0400) >> 5)))
 
 #define COLOR_SUB1_2(C1, C2) \
 	GFX.ZERO[(((C1) | RGB_HI_BITS_MASKx2) - \
