@@ -274,6 +274,11 @@ static bool audio_muted;
 #define MSU1_ENHANCED_RATE 44100
 static bool msu1_enhanced_pref = false;
 
+/* True while the enhanced-audio streaming upsampler holds valid in-flight
+   state (frame pair + phase). Cleared whenever the enhanced path is not the
+   one feeding the frontend, so state never leaks across mode changes. */
+static bool msu1_enh_running = false;
+
 /* True when 44.1 kHz output is actually in effect (option on AND MSU1 active). */
 static bool msu1_enhanced_active(void)
 {
@@ -894,9 +899,35 @@ static void audio_upload_samples(void)
 	if (n <= 0)
 		return;
 
+	if (audio_muted || !msu1_enhanced_active())
+		msu1_enh_running = false;
+
 	if (audio_muted)
 	{
 		src = mute_buffer;
+
+		/* In enhanced mode the frontend is clocked at the 44.1 kHz-scaled
+		   rate, so silence must be delivered at that cadence too or the
+		   audio ring under-fills by ~27% while muted. Scale the frame count,
+		   carrying the remainder, and chunk through the mute buffer. */
+		if (msu1_enhanced_active())
+		{
+			static uint32_t mute_rem = 0;
+			uint32_t in_rate  = S9xGetAudioSampleRate();
+			uint32_t out_rate = (uint32_t) ((double) MSU1_ENHANCED_RATE
+				* (double) in_rate / 32040.0);
+			uint64_t num = (uint64_t) (n >> 1) * out_rate + mute_rem;
+			int out = (int) (num / in_rate);
+			mute_rem = (uint32_t) (num % in_rate);
+			while (out > 0)
+			{
+				int chunk = (out > MUTE_BUFFER_FRAMES) ? MUTE_BUFFER_FRAMES : out;
+				audio_batch_cb(mute_buffer, (size_t) chunk);
+				out -= chunk;
+			}
+			return;
+		}
+
 		if (n > MUTE_BUFFER_FRAMES * 2)
 			n = MUTE_BUFFER_FRAMES * 2;
 	}
@@ -913,52 +944,95 @@ static void audio_upload_samples(void)
 		   APU speedup hack. 1024 covers it with margin. */
 		#define MSU1_ENH_FRAMES 1024
 		static int16_t enh_buffer[MSU1_ENH_FRAMES * 2];
+		/* Streaming upsampler state, persistent across batches: the frame
+		   pair being interpolated and the 16.16 phase between them. The old
+		   fixed-count loop restarted the phase at 0 every batch, truncated
+		   away the fractional output frame (a steady ~0.1% deficit against
+		   the rate reported to the frontend, parking DRC off-centre), and
+		   flattened the interpolation at the batch tail (l1 = l0 hold).
+		   Driving the loop by source consumption instead makes the seam
+		   exact and the long-run output count converge to
+		   in_frames * out_rate / in_rate with no truncation loss. */
+		static int16_t  enh_cur_l, enh_cur_r, enh_nxt_l, enh_nxt_r;
+		static uint64_t enh_frac;      /* 32.32 phase between cur and nxt */
+		static int      enh_fill;      /* valid frames in cur/nxt: 0..2 */
+
 		int   in_frames  = n >> 1;
-		/* Number of 44.1 kHz output frames for this batch of SPC frames. */
+		int   in_pos     = 0;
+		int   out_frames = 0;
+		uint32_t in_rate  = S9xGetAudioSampleRate();
 		uint32_t out_rate = (uint32_t) ((double) MSU1_ENHANCED_RATE
-			* (double) S9xGetAudioSampleRate() / 32040.0);
-		int   out_frames;
-		int   i;
-		/* 16.16 step through the SPC (source) buffer per output frame. */
-		uint32_t step = (uint32_t) (((uint64_t) S9xGetAudioSampleRate() << 16) / out_rate);
-		uint32_t pos  = 0;
+			* (double) in_rate / 32040.0);
+		/* 32.32 step through the SPC (source) stream per output frame;
+		   always < 1.0 here (upsampling), so each output shifts in at most
+		   one source frame. 32 fractional bits keep the long-run output
+		   count exact against the rate reported to the frontend (16.16
+		   truncation alone leaves a ~18 ppm surplus). */
+		uint64_t step = ((uint64_t) in_rate << 32) / out_rate;
 
-		out_frames = (int) (((uint64_t) in_frames * out_rate) / S9xGetAudioSampleRate());
-		if (out_frames > MSU1_ENH_FRAMES)
-			out_frames = MSU1_ENH_FRAMES;
-
-		for (i = 0; i < out_frames; i++)
+		if (!msu1_enh_running)
 		{
-			uint32_t idx = pos >> 16;
-			uint32_t frac = pos & 0xffff;
-			int32_t  l0, r0, l1, r1;
+			enh_frac = 0;
+			enh_fill = 0;
+			msu1_enh_running = true;
+		}
 
-			if ((int) idx >= in_frames) idx = in_frames - 1;
-			l0 = src[idx * 2 + 0];
-			r0 = src[idx * 2 + 1];
-			if ((int) idx + 1 < in_frames)
+		/* (Re)fill the frame pair from this batch. */
+		while (enh_fill < 2 && in_pos < in_frames)
+		{
+			if (enh_fill == 0)
 			{
-				l1 = src[idx * 2 + 2];
-				r1 = src[idx * 2 + 3];
+				enh_cur_l = src[in_pos * 2 + 0];
+				enh_cur_r = src[in_pos * 2 + 1];
 			}
 			else
 			{
-				l1 = l0;
-				r1 = r0;
+				enh_nxt_l = src[in_pos * 2 + 0];
+				enh_nxt_r = src[in_pos * 2 + 1];
 			}
+			enh_fill++;
+			in_pos++;
+		}
 
-			/* 64-bit product: |l1 - l0| * frac can reach 65535 * 65535,
+		while (enh_fill == 2 && out_frames < MSU1_ENH_FRAMES)
+		{
+			/* 64-bit product: |nxt - cur| * t can reach 65535 * 65535,
 			   overflowing int32 (signed UB) on full-scale transients. */
-			enh_buffer[i * 2 + 0] = (int16_t) (l0 + (int32_t) (((int64_t) (l1 - l0) * (int32_t) frac) >> 16));
-			enh_buffer[i * 2 + 1] = (int16_t) (r0 + (int32_t) (((int64_t) (r1 - r0) * (int32_t) frac) >> 16));
-			pos += step;
+			uint32_t t = (uint32_t) (enh_frac >> 16) & 0xffff;
+			enh_buffer[out_frames * 2 + 0] = (int16_t) (enh_cur_l +
+				(int32_t) (((int64_t) (enh_nxt_l - enh_cur_l) * (int32_t) t) >> 16));
+			enh_buffer[out_frames * 2 + 1] = (int16_t) (enh_cur_r +
+				(int32_t) (((int64_t) (enh_nxt_r - enh_cur_r) * (int32_t) t) >> 16));
+			out_frames++;
+
+			enh_frac += step;
+			while (enh_frac >= ((uint64_t) 1 << 32))
+			{
+				enh_frac -= (uint64_t) 1 << 32;
+				enh_cur_l = enh_nxt_l;
+				enh_cur_r = enh_nxt_r;
+				if (in_pos < in_frames)
+				{
+					enh_nxt_l = src[in_pos * 2 + 0];
+					enh_nxt_r = src[in_pos * 2 + 1];
+					in_pos++;
+				}
+				else
+				{
+					/* Batch exhausted; nxt refills from the next batch. */
+					enh_fill = 1;
+					break;
+				}
+			}
 		}
 
 		/* Mix MSU1 at the 44.1 kHz output rate (native: step == 1.0). */
-		if (MSU1.MSU1_AudioPlay)
-			S9xMSU1Mix(enh_buffer, (size_t) out_frames, out_rate);
-
-		audio_batch_cb(enh_buffer, (size_t) out_frames);
+		if (out_frames > 0)
+		{
+			if (MSU1.MSU1_AudioPlay)
+				S9xMSU1Mix(enh_buffer, (size_t) out_frames, out_rate);
+			audio_batch_cb(enh_buffer, (size_t) out_frames);
+		}
 		return;
 	}
 
