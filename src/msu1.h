@@ -56,6 +56,19 @@ struct SMSU1
 	uint8_t		MSU1_AudioRepeat;
 	uint8_t		MSU1_AudioBusy;
 	uint8_t		MSU1_DataBusy;
+
+	/* Linear-interpolation resampler state (snapshot v8). Cur/Nxt hold the
+	   two adjacent 44.1 kHz source frames (volume already applied) that
+	   S9xMSU1Mix is interpolating between; RsmpFrac is the 16.16 fractional
+	   position between them. Persisting this across mix calls keeps batch
+	   boundaries seamless, and serialising it keeps savestate replay
+	   byte-exact through the interpolator. */
+	uint32_t	MSU1_RsmpFrac;
+	int32_t		MSU1_RsmpCurL;
+	int32_t		MSU1_RsmpCurR;
+	int32_t		MSU1_RsmpNxtL;
+	int32_t		MSU1_RsmpNxtR;
+	uint8_t		MSU1_RsmpPrimed;
 };
 
 extern struct SMSU1	MSU1;

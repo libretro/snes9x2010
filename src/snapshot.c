@@ -998,7 +998,13 @@ static FreezeData	SnapMSU1[] =
 	INT_ENTRY(7, MSU1_AudioPlay),
 	INT_ENTRY(7, MSU1_AudioRepeat),
 	INT_ENTRY(7, MSU1_AudioBusy),
-	INT_ENTRY(7, MSU1_DataBusy)
+	INT_ENTRY(7, MSU1_DataBusy),
+	INT_ENTRY(8, MSU1_RsmpFrac),
+	INT_ENTRY(8, MSU1_RsmpCurL),
+	INT_ENTRY(8, MSU1_RsmpCurR),
+	INT_ENTRY(8, MSU1_RsmpNxtL),
+	INT_ENTRY(8, MSU1_RsmpNxtR),
+	INT_ENTRY(8, MSU1_RsmpPrimed)
 };
 
 #undef STRUCT

@@ -126,6 +126,19 @@ static long msu1_filesize (FILE *f)
 	return (end);
 }
 
+/* Discard the interpolator's in-flight frame pair and phase. Called on every
+   track (re)mount and on reset; NOT on savestate load, where the deserialised
+   state must survive so replay stays byte-exact. */
+static void msu1_rsmp_reset (void)
+{
+	MSU1.MSU1_RsmpFrac   = 0;
+	MSU1.MSU1_RsmpCurL   = 0;
+	MSU1.MSU1_RsmpCurR   = 0;
+	MSU1.MSU1_RsmpNxtL   = 0;
+	MSU1.MSU1_RsmpNxtR   = 0;
+	MSU1.MSU1_RsmpPrimed = FALSE;
+}
+
 /* Rebuild the STATUS byte from the individual flag fields (ares layout). */
 static void msu1_update_status (void)
 {
@@ -256,6 +269,7 @@ void S9xResetMSU1 (void)
 	MSU1.MSU1_AudioBusy        = FALSE;
 	MSU1.MSU1_DataBusy         = FALSE;
 
+	msu1_rsmp_reset();
 	msu1_update_status();
 }
 
@@ -266,6 +280,7 @@ void S9xMSU1Init (void)
 	   ares' power() which calls audioOpen() with track 0; we defer so that a
 	   missing track-0 file doesn't spuriously set the error flag before the
 	   game selects a track. Track 0 is still opened here if present. */
+	msu1_rsmp_reset();
 	msu1_audio_open();
 }
 
@@ -352,6 +367,7 @@ void S9xMSU1WritePort (uint8_t port, uint8_t byte)
 				MSU1.MSU1_AudioResumeOffset = 0;
 			}
 
+			msu1_rsmp_reset();
 			msu1_audio_open();
 			break;
 
@@ -471,11 +487,14 @@ void S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate)
 	   Hz, so MSU1 is gently downsampled to match. In MSU-1 Enhanced Audio mode
 	   the whole pipeline runs at 44100 Hz, so step == 1.0 and the MSU1 stream
 	   passes through at native rate with no resampling loss. */
-	static uint32_t	frac = 0;      /* 16.16 fractional source position */
 	uint32_t	step;
+	uint32_t	frac;
+	int32_t		curL, curR, nxtL, nxtR;
 	size_t		i;
 
 	if (!Settings.MSU1)
+		return;
+	if (!sample_count)
 		return;
 	if (!MSU1.MSU1_AudioPlay || !audioFile)
 		return;
@@ -484,44 +503,58 @@ void S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate)
 
 	step = (uint32_t) (((uint64_t) 44100 << 16) / output_rate);
 
-	/* Prime with the first source frame. */
+	/* The frame pair and phase persist in struct MSU1 across calls (and
+	   across savestates), so consecutive batches interpolate seamlessly:
+	   no source frames are dropped at batch boundaries, and at unity step
+	   (enhanced mode, frac == 0) the stream passes through bit-exactly.
+	   Priming happens once per track mount. */
+	if (!MSU1.MSU1_RsmpPrimed)
 	{
-		int32_t	curL, curR, nxtL, nxtR;
-		msu1_next_frame_44k(&curL, &curR);
-		msu1_next_frame_44k(&nxtL, &nxtR);
-
-		for (i = 0; i < sample_count; i++)
-		{
-			/* The interpolation product needs 33 bits: |nxt - cur| reaches
-			   65535 (full-scale adjacent-sample swing) and t reaches 65535,
-			   overflowing int32 (signed UB, wraps to full-scale spikes).
-			   Widen to 64-bit for the multiply. */
-			uint32_t	t = frac & 0xffff;
-			int32_t		mixL = curL + (int32_t) (((int64_t) (nxtL - curL) * (int32_t) t) >> 16);
-			int32_t		mixR = curR + (int32_t) (((int64_t) (nxtR - curR) * (int32_t) t) >> 16);
-			int32_t		sumL = (int32_t) buffer[i * 2 + 0] + mixL;
-			int32_t		sumR = (int32_t) buffer[i * 2 + 1] + mixR;
-
-			if (sumL >  32767) sumL =  32767;
-			if (sumL < -32768) sumL = -32768;
-			if (sumR >  32767) sumR =  32767;
-			if (sumR < -32768) sumR = -32768;
-
-			buffer[i * 2 + 0] = (int16_t) sumL;
-			buffer[i * 2 + 1] = (int16_t) sumR;
-
-			frac += step;
-			while (frac >= 0x10000)
-			{
-				frac -= 0x10000;
-				curL = nxtL; curR = nxtR;
-				msu1_next_frame_44k(&nxtL, &nxtR);
-			}
-
-			if (!MSU1.MSU1_AudioPlay || !audioFile)
-				break;
-		}
+		msu1_next_frame_44k(&MSU1.MSU1_RsmpCurL, &MSU1.MSU1_RsmpCurR);
+		msu1_next_frame_44k(&MSU1.MSU1_RsmpNxtL, &MSU1.MSU1_RsmpNxtR);
+		MSU1.MSU1_RsmpFrac   = 0;
+		MSU1.MSU1_RsmpPrimed = TRUE;
 	}
+
+	frac = MSU1.MSU1_RsmpFrac;
+	curL = MSU1.MSU1_RsmpCurL;  curR = MSU1.MSU1_RsmpCurR;
+	nxtL = MSU1.MSU1_RsmpNxtL;  nxtR = MSU1.MSU1_RsmpNxtR;
+
+	for (i = 0; i < sample_count; i++)
+	{
+		/* The interpolation product needs 33 bits: |nxt - cur| reaches
+		   65535 (full-scale adjacent-sample swing) and t reaches 65535,
+		   overflowing int32 (signed UB, wraps to full-scale spikes).
+		   Widen to 64-bit for the multiply. */
+		uint32_t	t = frac & 0xffff;
+		int32_t		mixL = curL + (int32_t) (((int64_t) (nxtL - curL) * (int32_t) t) >> 16);
+		int32_t		mixR = curR + (int32_t) (((int64_t) (nxtR - curR) * (int32_t) t) >> 16);
+		int32_t		sumL = (int32_t) buffer[i * 2 + 0] + mixL;
+		int32_t		sumR = (int32_t) buffer[i * 2 + 1] + mixR;
+
+		if (sumL >  32767) sumL =  32767;
+		if (sumL < -32768) sumL = -32768;
+		if (sumR >  32767) sumR =  32767;
+		if (sumR < -32768) sumR = -32768;
+
+		buffer[i * 2 + 0] = (int16_t) sumL;
+		buffer[i * 2 + 1] = (int16_t) sumR;
+
+		frac += step;
+		while (frac >= 0x10000)
+		{
+			frac -= 0x10000;
+			curL = nxtL; curR = nxtR;
+			msu1_next_frame_44k(&nxtL, &nxtR);
+		}
+
+		if (!MSU1.MSU1_AudioPlay || !audioFile)
+			break;
+	}
+
+	MSU1.MSU1_RsmpFrac = frac;
+	MSU1.MSU1_RsmpCurL = curL;  MSU1.MSU1_RsmpCurR = curR;
+	MSU1.MSU1_RsmpNxtL = nxtL;  MSU1.MSU1_RsmpNxtR = nxtR;
 }
 
 /* Savestate ------------------------------------------------------------------ */
@@ -546,6 +579,18 @@ void S9xMSU1PostLoadState (void)
 		fseek(dataFile, MSU1.MSU1_DataReadOffset, SEEK_SET);
 
 	msu1_audio_open();
+
+	/* v8 states carry the interpolator state and replay byte-exactly. States
+	   older than v8 leave these fields untouched by the unfreezer; reject
+	   anything out of range and fall back to a clean re-prime (costs at most
+	   a sub-sample phase step on legacy states). */
+	if (MSU1.MSU1_RsmpPrimed > 1 ||
+	    MSU1.MSU1_RsmpFrac >= 0x10000 ||
+	    MSU1.MSU1_RsmpCurL < -32768 || MSU1.MSU1_RsmpCurL > 32767 ||
+	    MSU1.MSU1_RsmpCurR < -32768 || MSU1.MSU1_RsmpCurR > 32767 ||
+	    MSU1.MSU1_RsmpNxtL < -32768 || MSU1.MSU1_RsmpNxtL > 32767 ||
+	    MSU1.MSU1_RsmpNxtR < -32768 || MSU1.MSU1_RsmpNxtR > 32767)
+		msu1_rsmp_reset();
 
 	msu1_update_status();
 }
