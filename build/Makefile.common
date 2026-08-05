@@ -85,3 +85,13 @@ SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 endif
+
+# The hybrid VFS only exists for dynamically loaded builds: statically
+# linked frontends share one libretro-common with the core, where the
+# frontend's filestream is already local-first and vfs_hybrid.o's
+# reference to filestream_set_mapped_ptr_cb can force our file_stream.o
+# out of the archive into collision with griffin.
+ifneq ($(STATIC_LINKING), 1)
+SOURCES_C += $(LIBRETRO_COMM_DIR)/vfs/vfs_hybrid.c \
+	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c
+endif

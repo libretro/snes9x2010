@@ -29,6 +29,7 @@
 #include <formats/rpng.h>
 
 #include <encodings/crc32.h>
+#include <streams/file_stream.h>
 
 /* ------------------------------------------------------------------ */
 /* limits                                                              */
@@ -189,7 +190,7 @@ static enum image_type_enum hd_image_type_from_name(const char *name)
 
 static int hd_load_image(const char *path, hd_image *img)
 {
-   FILE     *f;
+   RFILE *f;
    long      sz;
    void     *buf;
    void     *handle;
@@ -204,30 +205,30 @@ static int hd_load_image(const char *path, hd_image *img)
       return 0;
    }
 
-   f = fopen(path, "rb");
+   f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!f)
       return 0;
-   fseek(f, 0, SEEK_END);
-   sz = ftell(f);
-   fseek(f, 0, SEEK_SET);
+   filestream_seek(f, 0, RETRO_VFS_SEEK_POSITION_END);
+   sz = filestream_tell(f);
+   filestream_seek(f, 0, RETRO_VFS_SEEK_POSITION_START);
    if (sz <= 0)
    {
-      fclose(f);
+      filestream_close(f);
       return 0;
    }
    buf = malloc((size_t)sz);
    if (!buf)
    {
-      fclose(f);
+      filestream_close(f);
       return 0;
    }
-   if (fread(buf, 1, (size_t)sz, f) != (size_t)sz)
+   if (filestream_read(f, buf, (int64_t)( 1)*( (size_t)sz)) != (size_t)sz)
    {
       free(buf);
-      fclose(f);
+      filestream_close(f);
       return 0;
    }
-   fclose(f);
+   filestream_close(f);
 
    handle = image_transfer_new(type);
    if (!handle)
@@ -345,18 +346,18 @@ static int hd_load_pack(const char *dir)
 {
    char  path[1200];
    char  line[600];
-   FILE *f;
+   RFILE *f;
    unsigned est;
 
    sprintf(path, "%s/hires.txt", dir);
-   f = fopen(path, "rb");
+   f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!f)
       return 0;
 
    /* size the pack hash from the file size (one tile per ~160 bytes) */
-   fseek(f, 0, SEEK_END);
-   est = (unsigned)(ftell(f) / 64) + HD_PACK_HASH_MIN;
-   fseek(f, 0, SEEK_SET);
+   filestream_seek(f, 0, RETRO_VFS_SEEK_POSITION_END);
+   est = (unsigned)(filestream_tell(f) / 64) + HD_PACK_HASH_MIN;
+   filestream_seek(f, 0, RETRO_VFS_SEEK_POSITION_START);
    hd.hash_size = HD_PACK_HASH_MIN;
    while (hd.hash_size < est)
       hd.hash_size <<= 1;
@@ -364,14 +365,14 @@ static int hd_load_pack(const char *dir)
    hd.hash_def = (hd_entry **)calloc(hd.hash_size, sizeof(hd_entry *));
    if (!hd.hash || !hd.hash_def)
    {
-      fclose(f);
+      filestream_close(f);
       return 0;
    }
 
    hd.scale    = 1;
    hd.n_images = 0;
 
-   while (fgets(line, sizeof(line), f))
+   while (filestream_gets(f, line,  sizeof(line)))
    {
       size_t n = strlen(line);
       while (n && (line[n - 1] == '\n' || line[n - 1] == '\r'))
@@ -381,7 +382,7 @@ static int hd_load_pack(const char *dir)
       {
          if (atoi(line + 5) > 1)
          {
-            fclose(f);
+            filestream_close(f);
             fprintf(stderr, "[hdpack] hires.txt version too new\n");
             return 0;
          }
@@ -391,7 +392,7 @@ static int hd_load_pack(const char *dir)
          int s = atoi(line + 7);
          if (s < 1 || s > HD_MAX_SCALE)
          {
-            fclose(f);
+            filestream_close(f);
             fprintf(stderr, "[hdpack] unsupported <scale>%d\n", s);
             return 0;
          }
@@ -405,14 +406,14 @@ static int hd_load_pack(const char *dir)
           * able to overflow the path buffer */
          if (strlen(dir) + 1 + strlen(line + 5) + 1 > sizeof(path))
          {
-            fclose(f);
+            filestream_close(f);
             fprintf(stderr, "[hdpack] image path too long\n");
             return 0;
          }
          sprintf(path, "%s/%s", dir, line + 5);
          if (!hd_load_image(path, &hd.images[hd.n_images]))
          {
-            fclose(f);
+            filestream_close(f);
             fprintf(stderr, "[hdpack] failed to load %s\n", path);
             return 0;
          }
@@ -469,7 +470,7 @@ static int hd_load_pack(const char *dir)
          hd.n_entries++;
       }
    }
-   fclose(f);
+   filestream_close(f);
 
    if (!hd.n_entries || !hd.n_images)
       return 0;
@@ -1125,7 +1126,7 @@ static void hd_recorder_flush(void)
    unsigned rows, w, h, i, px, py;
    uint32_t *sheet;
    char path[1200];
-   FILE *f;
+   RFILE *f;
 
    if (!hd_rec_count)
       return;
@@ -1168,21 +1169,21 @@ static void hd_recorder_flush(void)
    free(sheet);
 
    sprintf(path, "%s/hires.txt", hd_pack_dir);
-   f = fopen(path, "wb");
+   f = filestream_open(path, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!f)
       return;
-   fprintf(f, "<ver>1\n<scale>1\n<img>tiles.png\n");
+   filestream_printf(f, "<ver>1\n<scale>1\n<img>tiles.png\n");
    for (i = 0; i < hd_rec_count; i++)
    {
       const hd_rec_tile *t = &hd_rec[i];
       unsigned k;
-      fprintf(f, "<tile>0,%u,", (unsigned)t->bpp);
+      filestream_printf(f, "<tile>0,%u,", (unsigned)t->bpp);
       for (k = 0; k < HD_TILE_BYTES; k++)
-         fprintf(f, "%02x", t->data[k]);
-      fprintf(f, ",%08x,%u,%u\n", t->pal_crc,
+         filestream_printf(f, "%02x", t->data[k]);
+      filestream_printf(f, ",%08x,%u,%u\n", t->pal_crc,
             (i % HD_REC_PER_ROW) * 8, (i / HD_REC_PER_ROW) * 8);
    }
-   fclose(f);
+   filestream_close(f);
    fprintf(stderr, "[hdpack] recorder: wrote %u tiles to %s\n",
          hd_rec_count, hd_pack_dir);
 }

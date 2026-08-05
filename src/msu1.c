@@ -15,12 +15,13 @@
 #include "snes9x.h"
 #include "memmap.h"
 #include "msu1.h"
+#include <streams/file_stream.h>
 
 struct SMSU1	MSU1;
 
 /* Companion-file streams: "<rom>.msu" data ROM and "<rom>-<track>.pcm" audio. */
-static FILE		*dataFile   = NULL;
-static FILE		*audioFile  = NULL;
+static RFILE *dataFile   = NULL;
+static RFILE *audioFile  = NULL;
 static char		 msu1_rom_path[PATH_MAX + 1] = { 0 };
 static uint8_t		 msu1_have_path = FALSE;
 
@@ -55,7 +56,7 @@ static void msu1_strip_ext (char *path)
 		*dot = '\0';
 }
 
-static FILE * msu1_open_data (void)
+static RFILE * msu1_open_data (void)
 {
 	char	path[PATH_MAX + 8];
 
@@ -66,10 +67,10 @@ static FILE * msu1_open_data (void)
 	msu1_strip_ext(path);
 	strcat(path, ".msu");
 
-	return (fopen(path, "rb"));
+	return (filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE));
 }
 
-static FILE * msu1_open_track (unsigned track)
+static RFILE * msu1_open_track (unsigned track)
 {
 	char	path[PATH_MAX + 24];
 	char	base[PATH_MAX + 1];
@@ -81,18 +82,18 @@ static FILE * msu1_open_track (unsigned track)
 	msu1_strip_ext(base);
 	snprintf(path, sizeof(path), "%s-%u.pcm", base, track);
 
-	return (fopen(path, "rb"));
+	return (filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE));
 }
 
 /* Little-endian helpers reading directly from the companion streams. */
 
-static uint32_t msu1_readl (FILE *f, int bytes)
+static uint32_t msu1_readl (RFILE *f, int bytes)
 {
 	uint32_t	value = 0;
 	int		i;
 	for (i = 0; i < bytes; i++)
 	{
-		int c = fgetc(f);
+		int c = filestream_getc(f);
 		if (c == EOF)
 			c = 0;
 		value |= ((uint32_t) (c & 0xff)) << (i * 8);
@@ -100,13 +101,13 @@ static uint32_t msu1_readl (FILE *f, int bytes)
 	return (value);
 }
 
-static uint32_t msu1_readm (FILE *f, int bytes)
+static uint32_t msu1_readm (RFILE *f, int bytes)
 {
 	uint32_t	value = 0;
 	int		i;
 	for (i = 0; i < bytes; i++)
 	{
-		int c = fgetc(f);
+		int c = filestream_getc(f);
 		if (c == EOF)
 			c = 0;
 		value = (value << 8) | (uint32_t) (c & 0xff);
@@ -114,15 +115,15 @@ static uint32_t msu1_readm (FILE *f, int bytes)
 	return (value);
 }
 
-static long msu1_filesize (FILE *f)
+static long msu1_filesize (RFILE *f)
 {
 	long	cur, end;
 	if (!f)
 		return (0);
-	cur = ftell(f);
-	fseek(f, 0, SEEK_END);
-	end = ftell(f);
-	fseek(f, cur, SEEK_SET);
+	cur = filestream_tell(f);
+	filestream_seek(f, 0, RETRO_VFS_SEEK_POSITION_END);
+	end = filestream_tell(f);
+	filestream_seek(f, cur, RETRO_VFS_SEEK_POSITION_START);
 	return (end);
 }
 
@@ -157,7 +158,7 @@ static void msu1_audio_open (void)
 {
 	if (audioFile)
 	{
-		fclose(audioFile);
+		filestream_close(audioFile);
 		audioFile = NULL;
 	}
 
@@ -168,7 +169,7 @@ static void msu1_audio_open (void)
 		if (fsz >= 8)
 		{
 			uint32_t	header;
-			fseek(audioFile, 0, SEEK_SET);
+			filestream_seek(audioFile, 0, RETRO_VFS_SEEK_POSITION_START);
 			header = msu1_readm(audioFile, 4);
 			if (header == 0x4d535531)  /* "MSU1" */
 			{
@@ -187,7 +188,7 @@ static void msu1_audio_open (void)
 			}
 		}
 
-		fclose(audioFile);
+		filestream_close(audioFile);
 		audioFile = NULL;
 	}
 
@@ -202,13 +203,13 @@ static void msu1_data_open (void)
 {
 	if (dataFile)
 	{
-		fclose(dataFile);
+		filestream_close(dataFile);
 		dataFile = NULL;
 	}
 
 	dataFile = msu1_open_data();
 	if (dataFile)
-		fseek(dataFile, MSU1.MSU1_DataReadOffset, SEEK_SET);
+		filestream_seek(dataFile, MSU1.MSU1_DataReadOffset, RETRO_VFS_SEEK_POSITION_START);
 }
 
 /* Lifecycle ------------------------------------------------------------------ */
@@ -227,10 +228,10 @@ void S9xMSU1SetROMPath (const char *rom_path)
 
 uint8_t S9xMSU1ROMExists (void)
 {
-	FILE	*s = msu1_open_data();
+	RFILE *s = msu1_open_data();
 	if (s)
 	{
-		fclose(s);
+		filestream_close(s);
 		return (TRUE);
 	}
 
@@ -238,7 +239,7 @@ uint8_t S9xMSU1ROMExists (void)
 	s = msu1_open_track(0);
 	if (s)
 	{
-		fclose(s);
+		filestream_close(s);
 		return (TRUE);
 	}
 
@@ -286,8 +287,8 @@ void S9xMSU1Init (void)
 
 void S9xMSU1DeInit (void)
 {
-	if (dataFile)  { fclose(dataFile);  dataFile  = NULL; }
-	if (audioFile) { fclose(audioFile); audioFile = NULL; }
+	if (dataFile)  { filestream_close(dataFile);  dataFile  = NULL; }
+	if (audioFile) { filestream_close(audioFile); audioFile = NULL; }
 }
 
 /* MMIO ($2000-$2007) ---------------------------------------------------------
@@ -308,7 +309,7 @@ uint8_t S9xMSU1ReadPort (uint8_t port)
 			if (!dataFile)
 				return (0x00);
 			{
-				int c = fgetc(dataFile);
+				int c = filestream_getc(dataFile);
 				if (c == EOF)
 					return (0x00);
 				MSU1.MSU1_DataReadOffset++;
@@ -346,7 +347,7 @@ void S9xMSU1WritePort (uint8_t port, uint8_t byte)
 			MSU1.MSU1_DataSeekOffset = (MSU1.MSU1_DataSeekOffset & 0x00ffffff) | ((uint32_t) byte << 24);
 			MSU1.MSU1_DataReadOffset = MSU1.MSU1_DataSeekOffset;
 			if (dataFile)
-				fseek(dataFile, MSU1.MSU1_DataReadOffset, SEEK_SET);
+				filestream_seek(dataFile, MSU1.MSU1_DataReadOffset, RETRO_VFS_SEEK_POSITION_START);
 			break;
 
 		case 4:  /* $2004 track select low */
@@ -424,8 +425,8 @@ static int16_t msu1_audio_sample (void)
 	    audio_cursor + 2 > audio_buf_base + audio_buf_len)
 	{
 		size_t got;
-		fseek(audioFile, (long) audio_cursor, SEEK_SET);
-		got = fread(audio_buf, 1, MSU1_AUDIO_BUFSZ, audioFile);
+		filestream_seek(audioFile, (long) audio_cursor, RETRO_VFS_SEEK_POSITION_START);
+		got = filestream_read(audioFile, audio_buf, (int64_t)( 1)*( MSU1_AUDIO_BUFSZ));
 		audio_buf_base = audio_cursor;
 		audio_buf_len  = (uint32_t) got;
 		if (audio_buf_len < 2)
@@ -575,7 +576,7 @@ void S9xMSU1PreSaveState (void)
 	   data-stream offset is captured here so it can be re-seeked on load. */
 	MSU1.MSU1_AudioPlayOffset = audio_cursor;
 	if (dataFile)
-		MSU1.MSU1_DataReadOffset = (uint32_t) ftell(dataFile);
+		MSU1.MSU1_DataReadOffset = (uint32_t) filestream_tell(dataFile);
 }
 
 void S9xMSU1PostLoadState (void)
@@ -585,7 +586,7 @@ void S9xMSU1PostLoadState (void)
 	   MSU1_AudioPlayOffset and resets the read-ahead buffer. */
 	msu1_data_open();
 	if (dataFile)
-		fseek(dataFile, MSU1.MSU1_DataReadOffset, SEEK_SET);
+		filestream_seek(dataFile, MSU1.MSU1_DataReadOffset, RETRO_VFS_SEEK_POSITION_START);
 
 	msu1_audio_open();
 

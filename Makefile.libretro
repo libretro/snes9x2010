@@ -102,6 +102,9 @@ TARGET_NAME	:= snes9x2010
 LIBM		=
 
 ifeq ($(STATIC_LINKING),1)
+# Statically linked frontends compile their own libretro-common; the core
+# must not wire up the hybrid VFS there (see build/Makefile.common / libretro.c).
+FLAGS += -DSTATIC_LINKING
 EXT=a
 
 ifeq ($(platform), unix)

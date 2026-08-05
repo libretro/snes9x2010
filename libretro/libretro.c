@@ -186,6 +186,7 @@
 #include <libretro.h>
 #include <vfs/vfs.h>
 #include <streams/file_stream.h>
+#include <vfs/vfs_hybrid.h>
 #include "libretro_core_options.h"
 #include "hdpack.h"
 
@@ -816,14 +817,12 @@ void retro_set_environment(retro_environment_t cb)
 		{ 0, 0 }
 	};
 
-	struct retro_vfs_interface_info vfs_iface_info;
-
 	environ_cb = cb;
 
 	libretro_supports_option_categories = false;
 
 	libretro_set_core_options(environ_cb, &local_bool_val);
-  
+
         libretro_supports_option_categories = local_bool_val;
 
 	/* (No option-visibility callback: the bilinear and hires options
@@ -854,10 +853,19 @@ void retro_set_environment(retro_environment_t cb)
 		environ_cb(RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO, (void*)subsystems);
 	}
 
-	vfs_iface_info.required_interface_version = 1;
-	vfs_iface_info.iface                      = NULL;
-	if (environ_cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
-		filestream_vfs_init(&vfs_iface_info);
+#ifndef STATIC_LINKING
+	/*
+	   Hybrid VFS replaces the wholesale v1 adoption, and the sidecar
+	   loaders (MSU-1 data/audio, HD packs) now go through filestream
+	   instead of raw stdio - previously they bypassed the VFS entirely
+	   and were simply broken on sandboxed storage while everything
+	   else worked. Plain paths serve locally (no per-read frontend
+	   indirection - MSU-1 streams audio continuously); the frontend is
+	   consulted only for URIs or after local failure on sandboxed
+	   platforms. log_cb may be unset this early; NULL means no-log.
+	*/
+	vfs_hybrid_init(environ_cb, NULL);
+#endif
 }
 
 void retro_get_system_info(struct retro_system_info *info)
