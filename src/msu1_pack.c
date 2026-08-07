@@ -251,20 +251,24 @@ static uint32_t inflate_forward (struct msu1_pack_file *pf, uint8_t *out, uint32
 		if (!out && want > PACK_SKIP_BUFSZ)
 			want = PACK_SKIP_BUFSZ;
 
-		if (pf->in_pos >= pf->in_have)
+		/* Refill only while the entry still has compressed bytes. Running
+		   out of input is NOT end of stream: rinflate can hold decoded
+		   bytes that need no further input (the tail of the final block),
+		   so we must still call process() with an empty input buffer and
+		   let it flush. Declaring EOF here instead truncated every entry
+		   by whatever the decoder had buffered - the last read of a
+		   deflated track returned 0 bytes. */
+		if (pf->in_pos >= pf->in_have && pf->in_left > 0)
 		{
 			uint32_t chunk = pf->in_left;
 			if (chunk > PACK_IN_BUFSZ)
 				chunk = PACK_IN_BUFSZ;
-			if (chunk == 0)
-			{
-				pf->eof = TRUE;
-				break;
-			}
 			pf->in_have = (uint32_t) filestream_read(pf->file, pf->in_buf, (int64_t) chunk);
 			pf->in_pos  = 0;
 			if (pf->in_have == 0)
 			{
+				/* The central directory promised more data than the file
+				   holds: truncated pack. */
 				pf->eof = TRUE;
 				break;
 			}
@@ -291,7 +295,14 @@ static uint32_t inflate_forward (struct msu1_pack_file *pf, uint8_t *out, uint32
 			break;
 		}
 		if (read == 0 && wrote == 0)
+		{
+			/* No progress. With input still pending this means the caller's
+			   output window is full, which the loop condition handles; with
+			   the input drained the stream really is finished. */
+			if (pf->in_left == 0 && pf->in_pos >= pf->in_have)
+				pf->eof = TRUE;
 			break;
+		}
 	}
 
 	return (done);
