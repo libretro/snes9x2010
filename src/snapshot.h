@@ -181,7 +181,7 @@
 #define _SNAPSHOT_H_
 
 #define SNAPSHOT_MAGIC		"#!s9xsnp"
-#define SNAPSHOT_VERSION	9
+#define SNAPSHOT_VERSION	10
 
 #define SUCCESS			1
 #define WRONG_FORMAT		(-1)

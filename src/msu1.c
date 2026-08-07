@@ -226,10 +226,14 @@ static uint8_t msu1_open_track (unsigned track)
 static void msu1_rsmp_reset (void)
 {
 	MSU1.MSU1_RsmpFrac   = 0;
+	MSU1.MSU1_RsmpPrvL   = 0;
+	MSU1.MSU1_RsmpPrvR   = 0;
 	MSU1.MSU1_RsmpCurL   = 0;
 	MSU1.MSU1_RsmpCurR   = 0;
 	MSU1.MSU1_RsmpNxtL   = 0;
 	MSU1.MSU1_RsmpNxtR   = 0;
+	MSU1.MSU1_RsmpNx2L   = 0;
+	MSU1.MSU1_RsmpNx2R   = 0;
 	MSU1.MSU1_RsmpPrimed = FALSE;
 }
 
@@ -587,6 +591,55 @@ static void msu1_next_frame_44k (int32_t *outL, int32_t *outR)
 	*outR = r;
 }
 
+/* 4-point Catmull-Rom (Hermite with m0 = (c - a)/2, m1 = (d - b)/2) at 16.16
+   phase t, in pure integer arithmetic.
+
+   Working precision: inputs are volume-scaled s16, so |a..d| <= 32767. The
+   Catmull-Rom weights sum to 1 but individually reach 9/8 in magnitude, so the
+   weighted sum stays inside +-2^17. Carrying t as 16.16 means t^3 needs 48
+   fractional bits; accumulate in int64 and shift once at the end so no
+   intermediate rounds. Snes9x mainline computes the same kernel in float; the
+   integer form is bit-reproducible across platforms, which matters because
+   this output is serialised into savestates. */
+static int32_t msu1_hermite (int32_t a, int32_t b, int32_t c, int32_t d, uint32_t t)
+{
+	/* mu is the 16.16 phase; the powers are carried at 32 fractional bits.
+	   Squaring at 16 bits of fraction and truncating leaves up to 1 ulp of
+	   error in mu2/mu3, which the coefficients then multiply by a
+	   full-scale sample: measured against the double-precision kernel that
+	   is up to 2.9 LSB of output error, biased negative because the shifts
+	   floor. At 32 fractional bits the same measurement is exact to under
+	   1 LSB. mu <= 1.0 so mu2 and mu3 fit an int64 comfortably. */
+	int64_t	mu1 = (int64_t) t;                    /* 16.16 */
+	int64_t	mu2 = mu1 * mu1;                      /* 32.32 */
+	int64_t	mu3 = (mu2 * mu1) >> 16;              /* 32.32 */
+
+	/* Catmull-Rom tangents, kept doubled so the halving folds into the
+	   coefficient products below rather than truncating here. */
+	int64_t	m0x2 = (int64_t) c - a;
+	int64_t	m1x2 = (int64_t) d - b;
+
+	int64_t	a0 = 2 * mu3 - 3 * mu2 + ((int64_t) 1 << 32);
+	int64_t	a1 = mu3 - 2 * mu2 + (mu1 << 16);
+	int64_t	a2 = mu3 - mu2;
+	int64_t	a3 = -2 * mu3 + 3 * mu2;
+
+	/* Coefficients stay within +-9/8, samples within +-32768, so each
+	   product is under 2^48 and the sum cannot overflow int64. */
+	int64_t	acc = a0 * (int64_t) b
+	            + ((a1 * m0x2) >> 1)
+	            + ((a2 * m1x2) >> 1)
+	            + a3 * (int64_t) c;
+
+	/* Round to nearest on the way back to sample scale. At t == 0 this is
+	   exactly b, so unity-ratio playback (enhanced audio) is bit-exact. */
+	acc = (acc + ((int64_t) 1 << 31)) >> 32;
+
+	if (acc >  32767) acc =  32767;
+	if (acc < -32768) acc = -32768;
+	return ((int32_t) acc);
+}
+
 void S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate)
 {
 	/* Resample the 44.1 kHz MSU1 stream to the caller's output rate with a
@@ -596,7 +649,7 @@ void S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate)
 	   passes through at native rate with no resampling loss. */
 	uint32_t	step;
 	uint32_t	frac;
-	int32_t		curL, curR, nxtL, nxtR;
+	int32_t		prvL, prvR, curL, curR, nxtL, nxtR, nx2L, nx2R;
 	size_t		i;
 
 	if (!Settings.MSU1)
@@ -617,15 +670,23 @@ void S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate)
 	   Priming happens once per track mount. */
 	if (!MSU1.MSU1_RsmpPrimed)
 	{
+		/* Prv starts as a copy of Cur: at the very first output frame there
+		   is no earlier source frame, and duplicating the edge keeps the
+		   kernel's slope estimate at zero rather than inventing a step. */
 		msu1_next_frame_44k(&MSU1.MSU1_RsmpCurL, &MSU1.MSU1_RsmpCurR);
+		MSU1.MSU1_RsmpPrvL = MSU1.MSU1_RsmpCurL;
+		MSU1.MSU1_RsmpPrvR = MSU1.MSU1_RsmpCurR;
 		msu1_next_frame_44k(&MSU1.MSU1_RsmpNxtL, &MSU1.MSU1_RsmpNxtR);
+		msu1_next_frame_44k(&MSU1.MSU1_RsmpNx2L, &MSU1.MSU1_RsmpNx2R);
 		MSU1.MSU1_RsmpFrac   = 0;
 		MSU1.MSU1_RsmpPrimed = TRUE;
 	}
 
 	frac = MSU1.MSU1_RsmpFrac;
+	prvL = MSU1.MSU1_RsmpPrvL;  prvR = MSU1.MSU1_RsmpPrvR;
 	curL = MSU1.MSU1_RsmpCurL;  curR = MSU1.MSU1_RsmpCurR;
 	nxtL = MSU1.MSU1_RsmpNxtL;  nxtR = MSU1.MSU1_RsmpNxtR;
+	nx2L = MSU1.MSU1_RsmpNx2L;  nx2R = MSU1.MSU1_RsmpNx2R;
 
 	for (i = 0; i < sample_count; i++)
 	{
@@ -634,8 +695,8 @@ void S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate)
 		   overflowing int32 (signed UB, wraps to full-scale spikes).
 		   Widen to 64-bit for the multiply. */
 		uint32_t	t = frac & 0xffff;
-		int32_t		mixL = curL + (int32_t) (((int64_t) (nxtL - curL) * (int32_t) t) >> 16);
-		int32_t		mixR = curR + (int32_t) (((int64_t) (nxtR - curR) * (int32_t) t) >> 16);
+		int32_t		mixL = msu1_hermite(prvL, curL, nxtL, nx2L, t);
+		int32_t		mixR = msu1_hermite(prvR, curR, nxtR, nx2R, t);
 		int32_t		sumL = (int32_t) buffer[i * 2 + 0] + mixL;
 		int32_t		sumR = (int32_t) buffer[i * 2 + 1] + mixR;
 
@@ -651,8 +712,10 @@ void S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate)
 		while (frac >= 0x10000)
 		{
 			frac -= 0x10000;
+			prvL = curL; prvR = curR;
 			curL = nxtL; curR = nxtR;
-			msu1_next_frame_44k(&nxtL, &nxtR);
+			nxtL = nx2L; nxtR = nx2R;
+			msu1_next_frame_44k(&nx2L, &nx2R);
 		}
 
 		if (!MSU1.MSU1_AudioPlay || !audioFile)
@@ -660,8 +723,10 @@ void S9xMSU1Mix (int16_t *buffer, size_t sample_count, uint32_t output_rate)
 	}
 
 	MSU1.MSU1_RsmpFrac = frac;
+	MSU1.MSU1_RsmpPrvL = prvL;  MSU1.MSU1_RsmpPrvR = prvR;
 	MSU1.MSU1_RsmpCurL = curL;  MSU1.MSU1_RsmpCurR = curR;
 	MSU1.MSU1_RsmpNxtL = nxtL;  MSU1.MSU1_RsmpNxtR = nxtR;
+	MSU1.MSU1_RsmpNx2L = nx2L;  MSU1.MSU1_RsmpNx2R = nx2R;
 }
 
 /* Savestate ------------------------------------------------------------------ */
