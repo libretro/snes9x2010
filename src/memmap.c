@@ -695,10 +695,13 @@ static int ScoreHiROM (uint32_t calculated_size, uint8_t * rom,  uint8_t skip_he
 	if (calculated_size > 1024 * 1024 * 3)
 		score += 4;
 
-	/* buf[0xd7] < 7 claims a ROM smaller than 16KB: bogus header,
-	   penalize. Also avoids a negative shift count (UB, and the
-	   result differed across architectures). */
-	if (buf[0xd7] < 7 || (1 << (buf[0xd7] - 7)) > 48)
+	/* buf[0xd7] is a size exponent, meaningful only in 7..12 (16 KB..32 MB).
+	   Outside that the header is bogus, so penalize. Testing the range
+	   rather than shifting also keeps the shift count in bounds: this byte
+	   comes straight out of the ROM image, so a junk header could ask for a
+	   shift of up to 248, which is undefined and in practice differed
+	   across architectures. */
+	if (buf[0xd7] < 7 || buf[0xd7] > 12)
 		score -= 1;
 
 	if (!allASCII(&buf[0xb0], 6))
@@ -747,10 +750,13 @@ static int ScoreLoROM (uint32_t calculated_size, uint8_t * rom, uint8_t skip_hea
 	if (calculated_size <= 1024 * 1024 * 16)
 		score += 2;
 
-	/* buf[0xd7] < 7 claims a ROM smaller than 16KB: bogus header,
-	   penalize. Also avoids a negative shift count (UB, and the
-	   result differed across architectures). */
-	if (buf[0xd7] < 7 || (1 << (buf[0xd7] - 7)) > 48)
+	/* buf[0xd7] is a size exponent, meaningful only in 7..12 (16 KB..32 MB).
+	   Outside that the header is bogus, so penalize. Testing the range
+	   rather than shifting also keeps the shift count in bounds: this byte
+	   comes straight out of the ROM image, so a junk header could ask for a
+	   shift of up to 248, which is undefined and in practice differed
+	   across architectures. */
+	if (buf[0xd7] < 7 || buf[0xd7] > 12)
 		score -= 1;
 
 	if (!allASCII(&buf[0xb0], 6))
@@ -2204,7 +2210,18 @@ static uint8_t InitROM (void)
 	Memory.CalculatedChecksum = 0;
 
 	/* SRAM size */
+	/* SRAMSize is a header byte, so a bad dump or a hacked header can hold
+	   anything up to 255. Left unclamped the shift is undefined past 28, and
+	   the resulting mask outgrows the 512 KB SRAM allocation from SRAMSize
+	   10 upward, at which point every masked SRAM access runs off the end of
+	   the buffer. 9 is the largest value the allocation can represent. */
+	if (Memory.SRAMSize > 9)
+		Memory.SRAMSize = 9;
+
 	Memory.SRAMMask = Memory.SRAMSize ? ((1 << (Memory.SRAMSize + 3)) * 128) - 1 : 0;
+
+	if (Memory.SRAMMask >= 0x80000)
+		Memory.SRAMMask = 0x80000 - 1;
 
 	if (Memory.HiROM)
 	{
@@ -2344,7 +2361,12 @@ static uint8_t InitROM (void)
 	}
 
 	/* checksum */
-	if (!isChecksumOK || ((uint32_t) Memory.CalculatedSize > (uint32_t) (((1 << (Memory.ROMSize - 7)) * 128) * 1024)))
+	/* ROMSize is a header byte too: below 7 the shift count goes negative and
+	   above 12 the result overflows, both undefined. The comparison only
+	   drives a warning, so treat anything outside 7..12 as "header disagrees
+	   with the image". */
+	if (!isChecksumOK || Memory.ROMSize < 7 || Memory.ROMSize > 12 ||
+	    ((uint32_t) Memory.CalculatedSize > (uint32_t) (((1 << (Memory.ROMSize - 7)) * 128) * 1024)))
 	{
 	}
 
