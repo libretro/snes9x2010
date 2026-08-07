@@ -69,6 +69,20 @@ struct SMSU1
 	int32_t		MSU1_RsmpNxtL;
 	int32_t		MSU1_RsmpNxtR;
 	uint8_t		MSU1_RsmpPrimed;
+
+	/* Enhanced-audio (44.1 kHz pipeline) SPC upsampler state (snapshot v9).
+	   Owned and driven by the libretro layer, which is where that resampler
+	   lives, but parked here because struct MSU1 is what snapshot.c
+	   serialises and the enhanced path only exists on MSU-1 carts. It has to
+	   round-trip through savestates for the same reason MSU1_Rsmp* does:
+	   Preemptive Frames rolls the emulator back and replays, and any audio
+	   phase left un-rewound reseats mid-waveform on every rollback. */
+	uint64_t	MSU1_EnhFrac;	/* 32.32 phase between EnhCur and EnhNxt */
+	int32_t		MSU1_EnhCurL;
+	int32_t		MSU1_EnhCurR;
+	int32_t		MSU1_EnhNxtL;
+	int32_t		MSU1_EnhNxtR;
+	uint8_t		MSU1_EnhFill;	/* valid frames in the pair: 0..2 */
 };
 
 extern struct SMSU1	MSU1;

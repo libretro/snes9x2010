@@ -1004,7 +1004,13 @@ static FreezeData	SnapMSU1[] =
 	INT_ENTRY(8, MSU1_RsmpCurR),
 	INT_ENTRY(8, MSU1_RsmpNxtL),
 	INT_ENTRY(8, MSU1_RsmpNxtR),
-	INT_ENTRY(8, MSU1_RsmpPrimed)
+	INT_ENTRY(8, MSU1_RsmpPrimed),
+	INT_ENTRY(9, MSU1_EnhFrac),
+	INT_ENTRY(9, MSU1_EnhCurL),
+	INT_ENTRY(9, MSU1_EnhCurR),
+	INT_ENTRY(9, MSU1_EnhNxtL),
+	INT_ENTRY(9, MSU1_EnhNxtR),
+	INT_ENTRY(9, MSU1_EnhFill)
 };
 
 #undef STRUCT

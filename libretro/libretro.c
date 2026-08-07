@@ -955,10 +955,17 @@ static void audio_upload_samples(void)
 		   flattened the interpolation at the batch tail (l1 = l0 hold).
 		   Driving the loop by source consumption instead makes the seam
 		   exact and the long-run output count converge to
-		   in_frames * out_rate / in_rate with no truncation loss. */
-		static int16_t  enh_cur_l, enh_cur_r, enh_nxt_l, enh_nxt_r;
-		static uint64_t enh_frac;      /* 32.32 phase between cur and nxt */
-		static int      enh_fill;      /* valid frames in cur/nxt: 0..2 */
+		   in_frames * out_rate / in_rate with no truncation loss.
+
+		   The pair, the phase and the fill count live in struct MSU1 so
+		   snapshot.c carries them (v9); they are emulation-timeline state,
+		   not scratch, and Preemptive Frames rolls the timeline back. */
+		int16_t  enh_cur_l = (int16_t) MSU1.MSU1_EnhCurL;
+		int16_t  enh_cur_r = (int16_t) MSU1.MSU1_EnhCurR;
+		int16_t  enh_nxt_l = (int16_t) MSU1.MSU1_EnhNxtL;
+		int16_t  enh_nxt_r = (int16_t) MSU1.MSU1_EnhNxtR;
+		uint64_t enh_frac  = MSU1.MSU1_EnhFrac;
+		int      enh_fill  = (int) MSU1.MSU1_EnhFill;
 
 		int   in_frames  = n >> 1;
 		int   in_pos     = 0;
@@ -1028,6 +1035,13 @@ static void audio_upload_samples(void)
 				}
 			}
 		}
+
+		MSU1.MSU1_EnhCurL = enh_cur_l;
+		MSU1.MSU1_EnhCurR = enh_cur_r;
+		MSU1.MSU1_EnhNxtL = enh_nxt_l;
+		MSU1.MSU1_EnhNxtR = enh_nxt_r;
+		MSU1.MSU1_EnhFrac = enh_frac;
+		MSU1.MSU1_EnhFill = (uint8_t) enh_fill;
 
 		/* Mix MSU1 at the 44.1 kHz output rate (native: step == 1.0). */
 		if (out_frames > 0)

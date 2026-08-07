@@ -140,6 +140,20 @@ static void msu1_rsmp_reset (void)
 	MSU1.MSU1_RsmpPrimed = FALSE;
 }
 
+/* Discard the enhanced-audio (SPC -> 44.1 kHz) upsampler's in-flight frame
+   pair and phase. The libretro layer drives that resampler; the state lives in
+   struct MSU1 so snapshot.c carries it, and the reset lives here so reset and
+   savestate-validation paths have one place to clear it. */
+static void msu1_enh_reset (void)
+{
+	MSU1.MSU1_EnhFrac = 0;
+	MSU1.MSU1_EnhCurL = 0;
+	MSU1.MSU1_EnhCurR = 0;
+	MSU1.MSU1_EnhNxtL = 0;
+	MSU1.MSU1_EnhNxtR = 0;
+	MSU1.MSU1_EnhFill = 0;
+}
+
 /* Rebuild the STATUS byte from the individual flag fields (ares layout). */
 static void msu1_update_status (void)
 {
@@ -271,6 +285,7 @@ void S9xResetMSU1 (void)
 	MSU1.MSU1_DataBusy         = FALSE;
 
 	msu1_rsmp_reset();
+	msu1_enh_reset();
 	msu1_update_status();
 }
 
@@ -601,6 +616,15 @@ void S9xMSU1PostLoadState (void)
 	    MSU1.MSU1_RsmpNxtL < -32768 || MSU1.MSU1_RsmpNxtL > 32767 ||
 	    MSU1.MSU1_RsmpNxtR < -32768 || MSU1.MSU1_RsmpNxtR > 32767)
 		msu1_rsmp_reset();
+
+	/* Same treatment for the v9 enhanced-audio upsampler fields. */
+	if (MSU1.MSU1_EnhFill > 2 ||
+	    MSU1.MSU1_EnhFrac >= ((uint64_t) 1 << 32) ||
+	    MSU1.MSU1_EnhCurL < -32768 || MSU1.MSU1_EnhCurL > 32767 ||
+	    MSU1.MSU1_EnhCurR < -32768 || MSU1.MSU1_EnhCurR > 32767 ||
+	    MSU1.MSU1_EnhNxtL < -32768 || MSU1.MSU1_EnhNxtL > 32767 ||
+	    MSU1.MSU1_EnhNxtR < -32768 || MSU1.MSU1_EnhNxtR > 32767)
+		msu1_enh_reset();
 
 	msu1_update_status();
 }
