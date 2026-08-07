@@ -1835,6 +1835,34 @@ void retro_run(void)
 	audio_upload_samples();
 }
 
+/* Decide whether this (de)serialisation may take the fast in-place path.
+ *
+ * "Fast" here means the state is one the core itself produced moments ago and
+ * is about to consume again, so S9xUnfreezeFromStream can read the big blocks
+ * straight into VRAM/WRAM/SRAM/fillram instead of staging them through
+ * local copies. The staging exists so a truncated or corrupt state cannot
+ * half-apply, which matters for a file off disk and does not matter for
+ * runahead, preemptive frames or netplay rollback.
+ *
+ * RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT is the supported way to ask. Every
+ * context other than NORMAL is a frontend-internal state, and all three of
+ * them want the fast path. RETRO_AV_ENABLE_FAST_SAVESTATES carries the same
+ * information from the same frontend flag but is deprecated, so it is only
+ * the fallback for frontends that do not answer the context query. */
+static uint8_t savestate_wants_fast_path(void)
+{
+	enum retro_savestate_context context = RETRO_SAVESTATE_CONTEXT_NORMAL;
+	enum retro_av_enable_flags   av      = (enum retro_av_enable_flags) 0;
+
+	if (environ_cb(RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT, &context))
+		return (context != RETRO_SAVESTATE_CONTEXT_NORMAL) ? TRUE : FALSE;
+
+	if (environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &av))
+		return (0 != (av & RETRO_AV_ENABLE_FAST_SAVESTATES)) ? TRUE : FALSE;
+
+	return FALSE;
+}
+
 size_t retro_serialize_size(void)
 {
 	int32_t size = SnapshotSize();
@@ -1847,9 +1875,7 @@ size_t retro_serialize_size(void)
 
 bool retro_serialize(void *data, size_t size)
 {
-	int result = -1;
-	if (environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result))
-		Settings.FastSavestates = 0 != (result & 0x04);
+	Settings.FastSavestates = savestate_wants_fast_path();
 
 	S9xSetStreamBuffer((uint8_t*)data, (uint64_t)size);
 
@@ -1861,9 +1887,7 @@ bool retro_serialize(void *data, size_t size)
 
 bool retro_unserialize(const void * data, size_t size)
 {
-	int result = -1;
-	if (environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result))
-		Settings.FastSavestates = 0 != (result & 0x04);
+	Settings.FastSavestates = savestate_wants_fast_path();
 
 	S9xSetStreamBuffer((uint8_t*)data, (uint64_t)size);
 
