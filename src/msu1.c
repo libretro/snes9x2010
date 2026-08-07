@@ -35,6 +35,11 @@ static uint32_t		 audio_cursor = 0;               /* absolute byte offset of nex
 static uint8_t		 audio_buf[MSU1_AUDIO_BUFSZ];
 static uint32_t		 audio_buf_base = 0;             /* file offset of audio_buf[0] */
 static uint32_t		 audio_buf_len  = 0;             /* valid bytes in audio_buf */
+/* Track number audioFile currently holds, or ~0U when nothing is open. Lets a
+   savestate load skip the close/open/header-parse when the state names the
+   track that is already mounted - which is every load under Preemptive
+   Frames, up to once per displayed frame. */
+static uint32_t		 audio_open_track = ~0U;
 
 /* Path helpers ----------------------------------------------------------------
 
@@ -197,6 +202,7 @@ static void msu1_audio_open (void)
 				audio_cursor   = MSU1.MSU1_AudioPlayOffset;
 				audio_buf_base = 0;
 				audio_buf_len  = 0;
+				audio_open_track = MSU1.MSU1_CurrentTrack;
 				msu1_update_status();
 				return;
 			}
@@ -209,6 +215,7 @@ static void msu1_audio_open (void)
 	audio_size   = 0;
 	audio_cursor = 0;
 	audio_buf_len = 0;
+	audio_open_track = ~0U;
 	MSU1.MSU1_AudioError = TRUE;
 	msu1_update_status();
 }
@@ -304,6 +311,7 @@ void S9xMSU1DeInit (void)
 {
 	if (dataFile)  { filestream_close(dataFile);  dataFile  = NULL; }
 	if (audioFile) { filestream_close(audioFile); audioFile = NULL; }
+	audio_open_track = ~0U;
 }
 
 /* MMIO ($2000-$2007) ---------------------------------------------------------
@@ -596,14 +604,31 @@ void S9xMSU1PreSaveState (void)
 
 void S9xMSU1PostLoadState (void)
 {
-	/* Re-open the companion files and restore stream positions from the
-	   deserialised offsets. msu1_audio_open() seeds audio_cursor from
-	   MSU1_AudioPlayOffset and resets the read-ahead buffer. */
-	msu1_data_open();
+	/* Restore stream positions from the deserialised offsets, reopening only
+	   what actually has to be reopened. Under Preemptive Frames this runs once
+	   per displayed frame with dirty input; a close/open/header-parse per load
+	   is a frame-time spike on VFS-backed platforms, and dropping the read-ahead
+	   window forces a fresh 8 KB seek+read for a cursor that typically moved
+	   back only a few hundred bytes. Seeking an already-open handle is free, and
+	   the read-ahead buffer is content-addressed by audio_buf_base/audio_buf_len
+	   so msu1_audio_sample() re-validates it on its own. */
+	if (!dataFile)
+		msu1_data_open();
 	if (dataFile)
 		filestream_seek(dataFile, MSU1.MSU1_DataReadOffset, RETRO_VFS_SEEK_POSITION_START);
 
-	msu1_audio_open();
+	if (audioFile && audio_open_track == (uint32_t) MSU1.MSU1_CurrentTrack)
+	{
+		/* Same track already mounted: audio_size and MSU1_AudioLoopOffset are
+		   derived from this same file and MSU1_AudioLoopOffset is itself
+		   restored from the state, so only the play cursor needs reseating.
+		   This path also leaves MSU1_AudioError as deserialised rather than
+		   clearing it the way a reopen does, which is the more faithful
+		   restore. */
+		audio_cursor = MSU1.MSU1_AudioPlayOffset;
+	}
+	else
+		msu1_audio_open();
 
 	/* v8 states carry the interpolator state and replay byte-exactly. States
 	   older than v8 leave these fields untouched by the unfreezer; reject
