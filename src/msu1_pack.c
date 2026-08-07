@@ -1,0 +1,375 @@
+/***********************************************************************************
+  MSU1 pack (.msu1) reader for the snes9x2010 libretro core.
+
+  An MSU1 pack is an ordinary zip archive sitting next to the ROM as
+  "<basename>.msu1", holding the companion files that would otherwise be loose:
+
+    <anything>.msu          - data ROM
+    <anything>-<track>.pcm  - audio tracks
+
+  Entries are matched by filename suffix, the same rule mainline snes9x uses,
+  so the names inside the pack only have to end correctly.
+
+  This reads the zip itself - no archive library. The only dependency is
+  rinflate (libretro-common's cleanroom RFC 1951 decoder), which this core
+  already builds for rzip savestates.
+
+  Random access. MSU1 seeks: the data ROM is seeked by the game through $2000-3
+  and audio loops back to the loop point at end of track. Stored entries
+  (method 0) seek for free - they are a plain byte range of the pack. Deflated
+  entries (method 8) cannot be seeked, so backward seeks restart the inflate
+  from the entry's first byte and skip forward. That is the same cost mainline
+  pays through unzStream::revert, and forward-only playback - the normal case -
+  never triggers it.
+ ***********************************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "port.h"
+#include "msu1_pack.h"
+
+#include <streams/file_stream.h>
+#include <encodings/deflate.h>
+
+#define ZIP_EOCD_SIG          0x06054b50
+#define ZIP_CDIR_SIG          0x02014b50
+#define ZIP_LFH_SIG           0x04034b50
+#define ZIP_EOCD_MIN          22
+#define ZIP_EOCD_MAX_COMMENT  0xffff
+
+#define ZIP_METHOD_STORE      0
+#define ZIP_METHOD_DEFLATE    8
+
+#define PACK_IN_BUFSZ         16384
+#define PACK_SKIP_BUFSZ       16384
+
+static uint32_t rd32 (const uint8_t *p)
+{
+	return ((uint32_t) p[0]) | ((uint32_t) p[1] << 8) |
+	       ((uint32_t) p[2] << 16) | ((uint32_t) p[3] << 24);
+}
+
+static uint16_t rd16 (const uint8_t *p)
+{
+	return (uint16_t) (((uint16_t) p[0]) | ((uint16_t) p[1] << 8));
+}
+
+static int suffix_match (const char *name, const char *suffix)
+{
+	size_t nl = strlen(name);
+	size_t sl = strlen(suffix);
+	size_t i;
+
+	if (sl > nl)
+		return (FALSE);
+
+	name += nl - sl;
+	for (i = 0; i < sl; i++)
+	{
+		char a = name[i];
+		char b = suffix[i];
+		if (a >= 'A' && a <= 'Z') a = (char) (a - 'A' + 'a');
+		if (b >= 'A' && b <= 'Z') b = (char) (b - 'A' + 'a');
+		if (a != b)
+			return (FALSE);
+	}
+
+	return (TRUE);
+}
+
+/* Locate the end-of-central-directory record by scanning backwards from the
+   end of the file. The record is 22 bytes plus a comment of up to 64 KiB, so
+   the search window is bounded. */
+static int find_eocd (RFILE *f, long fsize, uint32_t *cdir_off, uint16_t *entries)
+{
+	long     window = ZIP_EOCD_MIN + ZIP_EOCD_MAX_COMMENT;
+	long     start;
+	uint8_t *buf;
+	long     got;
+	long     i;
+	int      found = FALSE;
+
+	if (fsize < ZIP_EOCD_MIN)
+		return (FALSE);
+
+	if (window > fsize)
+		window = fsize;
+
+	buf = (uint8_t *) malloc((size_t) window);
+	if (!buf)
+		return (FALSE);
+
+	start = fsize - window;
+	filestream_seek(f, start, RETRO_VFS_SEEK_POSITION_START);
+	got = (long) filestream_read(f, buf, (int64_t) window);
+	if (got < ZIP_EOCD_MIN)
+	{
+		free(buf);
+		return (FALSE);
+	}
+
+	for (i = got - ZIP_EOCD_MIN; i >= 0; i--)
+	{
+		if (rd32(buf + i) == ZIP_EOCD_SIG)
+		{
+			*entries  = rd16(buf + i + 10);
+			*cdir_off = rd32(buf + i + 16);
+			found = TRUE;
+			break;
+		}
+	}
+
+	free(buf);
+	return (found);
+}
+
+/* Walk the central directory looking for the first entry whose name ends in
+   `suffix`, and fill in `e`. */
+static int find_entry (RFILE *f, const char *suffix, struct msu1_pack_entry *e)
+{
+	long     fsize;
+	uint32_t cdir_off = 0;
+	uint16_t entries  = 0;
+	uint16_t n;
+	char     name[512];
+
+	filestream_seek(f, 0, RETRO_VFS_SEEK_POSITION_END);
+	fsize = (long) filestream_tell(f);
+
+	if (!find_eocd(f, fsize, &cdir_off, &entries))
+		return (FALSE);
+
+	if ((long) cdir_off >= fsize)
+		return (FALSE);
+
+	filestream_seek(f, (long) cdir_off, RETRO_VFS_SEEK_POSITION_START);
+
+	for (n = 0; n < entries; n++)
+	{
+		uint8_t  hdr[46];
+		uint16_t method, name_len, extra_len, comment_len;
+		uint32_t comp_size, uncomp_size, lfh_off;
+		long     next;
+
+		if (filestream_read(f, hdr, (int64_t) sizeof(hdr)) != (int64_t) sizeof(hdr))
+			return (FALSE);
+		if (rd32(hdr) != ZIP_CDIR_SIG)
+			return (FALSE);
+
+		method      = rd16(hdr + 10);
+		comp_size   = rd32(hdr + 20);
+		uncomp_size = rd32(hdr + 24);
+		name_len    = rd16(hdr + 28);
+		extra_len   = rd16(hdr + 30);
+		comment_len = rd16(hdr + 32);
+		lfh_off     = rd32(hdr + 42);
+
+		next = (long) filestream_tell(f) + name_len + extra_len + comment_len;
+
+		if (name_len < sizeof(name))
+		{
+			if (filestream_read(f, name, (int64_t) name_len) != (int64_t) name_len)
+				return (FALSE);
+			name[name_len] = '\0';
+
+			if (suffix_match(name, suffix) &&
+			    (method == ZIP_METHOD_STORE || method == ZIP_METHOD_DEFLATE))
+			{
+				uint8_t lfh[30];
+				/* The local header repeats name/extra lengths, and its extra
+				   field may differ from the central one, so the data offset
+				   has to come from here rather than from the directory. */
+				filestream_seek(f, (long) lfh_off, RETRO_VFS_SEEK_POSITION_START);
+				if (filestream_read(f, lfh, (int64_t) sizeof(lfh)) != (int64_t) sizeof(lfh))
+					return (FALSE);
+				if (rd32(lfh) != ZIP_LFH_SIG)
+					return (FALSE);
+
+				e->method      = method;
+				e->comp_size   = comp_size;
+				e->uncomp_size = uncomp_size;
+				e->data_off    = lfh_off + (uint32_t) sizeof(lfh)
+				               + rd16(lfh + 26) + rd16(lfh + 28);
+				return (TRUE);
+			}
+		}
+
+		filestream_seek(f, next, RETRO_VFS_SEEK_POSITION_START);
+	}
+
+	return (FALSE);
+}
+
+/* Throw away any inflate context and rewind the logical read position. */
+static void inflate_reset (struct msu1_pack_file *pf)
+{
+	if (pf->inf)
+	{
+		rinflate_free(pf->inf);
+		pf->inf = NULL;
+	}
+	pf->out_pos = 0;
+	pf->in_left = pf->entry.comp_size;
+	pf->in_have = 0;
+	pf->in_pos  = 0;
+	pf->eof     = FALSE;
+}
+
+static int inflate_start (struct msu1_pack_file *pf)
+{
+	inflate_reset(pf);
+
+	/* Raw deflate: zip entries carry no zlib header, hence negative window
+	   bits in the zlib convention rinflate follows. */
+	pf->inf = rinflate_new(-15);
+	if (!pf->inf)
+		return (FALSE);
+
+	filestream_seek(pf->file, (long) pf->entry.data_off, RETRO_VFS_SEEK_POSITION_START);
+	return (TRUE);
+}
+
+/* Inflate forward into `out` (which may be NULL to discard, when skipping to a
+   seek target). Returns bytes produced. */
+static uint32_t inflate_forward (struct msu1_pack_file *pf, uint8_t *out, uint32_t len)
+{
+	uint32_t done = 0;
+
+	if (!pf->inf && !inflate_start(pf))
+		return (0);
+
+	while (done < len && !pf->eof)
+	{
+		size_t   read = 0, wrote = 0;
+		uint8_t  scratch[PACK_SKIP_BUFSZ];
+		uint8_t *dst  = out ? (out + done) : scratch;
+		uint32_t want = len - done;
+		int      ret;
+
+		if (!out && want > PACK_SKIP_BUFSZ)
+			want = PACK_SKIP_BUFSZ;
+
+		if (pf->in_pos >= pf->in_have)
+		{
+			uint32_t chunk = pf->in_left;
+			if (chunk > PACK_IN_BUFSZ)
+				chunk = PACK_IN_BUFSZ;
+			if (chunk == 0)
+			{
+				pf->eof = TRUE;
+				break;
+			}
+			pf->in_have = (uint32_t) filestream_read(pf->file, pf->in_buf, (int64_t) chunk);
+			pf->in_pos  = 0;
+			if (pf->in_have == 0)
+			{
+				pf->eof = TRUE;
+				break;
+			}
+			pf->in_left -= pf->in_have;
+		}
+
+		rinflate_set_in(pf->inf, pf->in_buf + pf->in_pos, pf->in_have - pf->in_pos);
+		rinflate_set_out(pf->inf, dst, want);
+
+		ret = rinflate_process(pf->inf, &read, &wrote);
+
+		pf->in_pos += (uint32_t) read;
+		done       += (uint32_t) wrote;
+		pf->out_pos += (uint32_t) wrote;
+
+		if (ret == RDEFLATE_PROCESS_ERROR)
+		{
+			pf->eof = TRUE;
+			break;
+		}
+		if (ret == RDEFLATE_PROCESS_END)
+		{
+			pf->eof = TRUE;
+			break;
+		}
+		if (read == 0 && wrote == 0)
+			break;
+	}
+
+	return (done);
+}
+
+int msu1_pack_open (struct msu1_pack_file *pf, const char *pack_path, const char *suffix)
+{
+	memset(pf, 0, sizeof(*pf));
+
+	pf->file = filestream_open(pack_path, RETRO_VFS_FILE_ACCESS_READ,
+	                           RETRO_VFS_FILE_ACCESS_HINT_NONE);
+	if (!pf->file)
+		return (FALSE);
+
+	if (!find_entry(pf->file, suffix, &pf->entry))
+	{
+		filestream_close(pf->file);
+		pf->file = NULL;
+		return (FALSE);
+	}
+
+	pf->in_left = pf->entry.comp_size;
+	return (TRUE);
+}
+
+void msu1_pack_close (struct msu1_pack_file *pf)
+{
+	if (pf->inf)
+	{
+		rinflate_free(pf->inf);
+		pf->inf = NULL;
+	}
+	if (pf->file)
+	{
+		filestream_close(pf->file);
+		pf->file = NULL;
+	}
+}
+
+uint32_t msu1_pack_size (const struct msu1_pack_file *pf)
+{
+	return (pf->entry.uncomp_size);
+}
+
+uint32_t msu1_pack_read (struct msu1_pack_file *pf, uint32_t offset, uint8_t *out, uint32_t len)
+{
+	if (!pf->file)
+		return (0);
+
+	if (offset >= pf->entry.uncomp_size)
+		return (0);
+
+	if (len > pf->entry.uncomp_size - offset)
+		len = pf->entry.uncomp_size - offset;
+
+	if (pf->entry.method == ZIP_METHOD_STORE)
+	{
+		filestream_seek(pf->file, (long) (pf->entry.data_off + offset),
+		                RETRO_VFS_SEEK_POSITION_START);
+		return ((uint32_t) filestream_read(pf->file, out, (int64_t) len));
+	}
+
+	/* Deflated: forward-only. A backward seek restarts the stream. */
+	if (!pf->inf || offset < pf->out_pos)
+	{
+		if (!inflate_start(pf))
+			return (0);
+	}
+
+	while (pf->out_pos < offset && !pf->eof)
+	{
+		uint32_t skip = offset - pf->out_pos;
+		if (inflate_forward(pf, NULL, skip) == 0)
+			break;
+	}
+
+	if (pf->out_pos != offset)
+		return (0);
+
+	return (inflate_forward(pf, out, len));
+}
