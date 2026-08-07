@@ -234,7 +234,7 @@ void linearFree(void* mem);
 #define VIDEO_REFRESH_RATE_NTSC (NTSC_MASTER_CLOCK / (SNES_CYCLES_PER_SCANLINE * SNES_MAX_NTSC_VCOUNTER))
 
 /* Pre-zeroed silence buffer used in place of real SPC output when
-   audio_muted is set. Sized for one worst-case PAL frame at the
+   audio_hard_disabled is set. Sized for one worst-case PAL frame at the
    highest effective SPC rate (ticks=4 speedup, ~651 stereo). The
    '+ a bit' rounds up to a tidy power of two. RetroArch's audio_batch_cb
    only reads (frame_count * 2) shorts, so over-sizing is harmless and
@@ -258,13 +258,24 @@ void S9xSetStreamBuffer(uint8_t *buffer, uint64_t size)
 	s9x_stream_buffer_size = size;
 }
 
-/* Set when the frontend has signalled that audio should not be played
-   (either user has disabled audio or a frontend-controlled fast-forward
-   path has set RETRO_AVENABLE_HARD_DISABLE_AUDIO). When set, we still
-   call audio_batch_cb every frame - skipping it would let RetroArch's
-   audio ring drain and pull DRC out of steady-state tracking - but
-   substitute the silence buffer for the SPC's actual output. */
-static bool audio_muted;
+/* Set when the frontend has signalled RETRO_AV_ENABLE_HARD_DISABLE_AUDIO,
+   i.e. "you may skip audio work entirely this frame". That also sets
+   Settings.HardDisableAudio, so the APU does not run and the landing buffer
+   holds stale garbage; we still call audio_batch_cb every frame - skipping it
+   would let RetroArch's audio ring drain and pull DRC out of steady-state
+   tracking - but substitute the silence buffer for the SPC's output.
+
+   Deliberately NOT keyed off a clear RETRO_AV_ENABLE_AUDIO. That bit only
+   means "the frontend will discard these samples"; the frontend keeps the
+   resulting core state. Preemptive Frames (runahead without a second
+   instance) replays frames with audio suspended but hard-disable clear, and
+   the state left behind by those replays is the state the emulation carries
+   forward. Skipping audio generation there freezes every audio-side cursor -
+   the MSU-1 play offset above all - while the CPU/APU advance, so the MSU-1
+   stream falls a replay window behind on each rollback and, under continuous
+   input, stops progressing altogether. Suspension must cost output, never
+   state. */
+static bool audio_hard_disabled;
 
 /* MSU-1 Enhanced Audio: when enabled AND an MSU1 cart is loaded, the whole
    output pipeline runs at 44.1 kHz (the SPC's ~32040 Hz output is resampled up
@@ -891,10 +902,10 @@ static void audio_upload_samples(void)
 	if (n <= 0)
 		return;
 
-	if (audio_muted || !msu1_enhanced_active())
+	if (audio_hard_disabled || !msu1_enhanced_active())
 		msu1_enh_running = false;
 
-	if (audio_muted)
+	if (audio_hard_disabled)
 	{
 		src = mute_buffer;
 
@@ -929,7 +940,7 @@ static void audio_upload_samples(void)
 	   mixes in at its native rate (no downsample), and the 44.1 kHz result
 	   ships to the frontend. Only taken when an MSU1 cart is loaded and the
 	   option is on; every other game skips this entirely. */
-	if (!audio_muted && msu1_enhanced_active())
+	if (!audio_hard_disabled && msu1_enhanced_active())
 	{
 		/* 44.1 kHz needs more room per frame than the 32 kHz mute buffer:
 		   PAL worst case is 44100/50 = 882 frames, plus up to ~1.6% for the
@@ -1032,7 +1043,7 @@ static void audio_upload_samples(void)
 	   pointer into the SPC landing buffer, so when MSU1 is streaming we copy
 	   the SPC output into a writable scratch buffer, add the (downsampled) MSU1
 	   stream, and ship that. No-op for non-MSU1 carts and when nothing plays. */
-	if (!audio_muted && Settings.MSU1 && MSU1.MSU1_AudioPlay)
+	if (!audio_hard_disabled && Settings.MSU1 && MSU1.MSU1_AudioPlay)
 	{
 		static int16_t msu_mix_buffer[MUTE_BUFFER_FRAMES * 2];
 		int frames = n >> 1;
@@ -1741,18 +1752,20 @@ void retro_run(void)
 	okay = (environ_cb(RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE, &result));
 	if (okay)
 	{
-		bool audioEnabled = 0 != (result & 0x02);
 		bool videoEnabled = 0 != (result & 0x01);
 		bool hardDisableAudio = 0 != (result & 0x08);
 		IPPU.RenderThisFrame = videoEnabled;
 
-		audio_muted = !audioEnabled || hardDisableAudio;
+		/* RETRO_AV_ENABLE_AUDIO (0x02) is intentionally ignored: it says the
+		   frontend will throw these samples away, not that the core may stop
+		   producing them. See audio_hard_disabled. */
+		audio_hard_disabled = hardDisableAudio;
 		Settings.HardDisableAudio = hardDisableAudio;
 	}
 	else
 	{
 		IPPU.RenderThisFrame = true;
-		audio_muted = false;
+		audio_hard_disabled = false;
 		Settings.HardDisableAudio = false;
 	}
 
