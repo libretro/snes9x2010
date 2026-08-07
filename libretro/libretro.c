@@ -328,10 +328,6 @@ static struct
 	int16_t retro_mouse_state[2][2];
 	int16_t retro_justifier_state[2][2];
 	int16_t retro_scope_state[2];
-	uint8_t turbo_state[5];
-	uint8_t turbo_delay;
-	uint8_t turbo_enable;
-	bool switch_state;
 } input_vars;
 
 static uint8_t aspect_ratio_mode = ASPECT_RATIO_4_3;
@@ -563,18 +559,6 @@ static void check_variables(bool first_run)
 			reset_sfx = true;
 		}
 	}
-
-   	var.key = "snes9x_2010_turbodelay";
-   	var.value = NULL;
-   	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   	{
-      		if (strcmp(var.value, "medium") == 0)
-        		input_vars.turbo_delay = 5;
-      		else if (strcmp(var.value, "slow") == 0)
-        		input_vars.turbo_delay = 7;
-      		else
-        		input_vars.turbo_delay = 3;
-   	}
 
 	var.key = "snes9x_2010_overclock_cycles";
 	var.value = NULL;
@@ -1486,8 +1470,6 @@ uint16_t snes_lut[] = {
 	SNES_TR_MASK		// 16
 };
 
-#define SWITCH_L2	(input_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2))
-#define PRESSED_R2 	(input_cb(port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2))
 
 static void report_buttons(void)
 {
@@ -1522,38 +1504,6 @@ static void report_buttons(void)
 						joypad[port] |= button_press;
 					else
 						joypad[port] &= ~button_press;
-				}
-
-				if (input_vars.turbo_enable == 1)
-				{
-					if (PRESSED_R2)
-					{
-						if (input_vars.turbo_state[port])
-							input_vars.turbo_state[port]--;
-						else
-						{
-							input_vars.turbo_state[port] = input_vars.turbo_delay;
-							joypad[port] |= 0x4000;		// Button Y
-						}
-					}
-					else
-						input_vars.turbo_state[port] = 0;
-				}
-
-				if (input_vars.turbo_enable == 2)
-				{
-					if (PRESSED_R2)
-					{
-						if (input_vars.turbo_state[port])
-							input_vars.turbo_state[port]--;
-						else
-						{
-							input_vars.turbo_state[port] = input_vars.turbo_delay;
-							joypad[port] |= 0x8000;		// Button B
-						}
-					}
-					else
-						input_vars.turbo_state[port] = 0;
 				}
 			}
 			break;
@@ -1619,36 +1569,7 @@ static void report_buttons(void)
 			break;
 		}
 	}
-
-   	if (SWITCH_L2 && !input_vars.switch_state)
-   	{
-		struct retro_message message;
-        input_vars.switch_state = true;
-		message.frames = 120;
-		message.msg = NULL;
-
-		switch (input_vars.turbo_enable)
-		{
-			case 0:
-				input_vars.turbo_enable = 1;
-				message.msg = "The button Y is mapped to R2 and autofire enabled.";
-			break;
-			case 1:
-				input_vars.turbo_enable = 2;
-				message.msg = "The button B is mapped to R2 and autofire enabled.";
-			break;
-			case 2:
-				input_vars.turbo_enable = 0;
-				message.msg = "The button mapping has been cancelled.";
-			break;
-		}
-		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, (void *)&message);
-   	}
-   	else if (!SWITCH_L2 && input_vars.switch_state)
-		input_vars.switch_state = false;
 }
-#undef SWITCH_L2
-#undef PRESSED_R2
 
 /* Direct-render path for RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER.
  *
@@ -2034,8 +1955,6 @@ static void init_descriptors(void)
 		{ INDEX, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,    "Start" },
 
 	struct retro_input_descriptor desc[] = {
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,     "Switch Autofire Button" },
-		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,     "AutoFire Button" },
 		describe_buttons(0)
 		describe_buttons(1)
 		describe_buttons(2)

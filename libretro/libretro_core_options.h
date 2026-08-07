@@ -124,21 +124,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "auto"
    },
    {
-      "snes9x_2010_turbodelay",
-      "Set Autofire Pulse",
-      NULL,
-      "Fire interval: medium - 6 frames, fast - 4 frames, slow - 8 frames.",
-      NULL,
-      NULL,
-      {
-         { "medium", "Medium" },
-         { "fast", "Fast" },
-         { "slow", "Slow "},
-         { NULL, NULL },
-      },
-      "medium"
-   },
-   {
       "snes9x_2010_blargg",
       "Blargg NTSC Filter",
       NULL,
