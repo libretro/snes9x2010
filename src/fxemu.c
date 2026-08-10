@@ -238,6 +238,7 @@ static void fx_cache (void)
 	if (GSU.vCacheBaseReg != c || !GSU.bCacheActive)
 	{
 		GSU.vCacheFlags = 0;
+		GSU.vHwFillMask = 0;
 		GSU.vCacheBaseReg = c;
 		GSU.bCacheActive = TRUE;
 	}
@@ -4638,6 +4639,84 @@ static uint8_t	fx_OpcodeCycles[1024];	/* indexed by (vStatusReg & 0x300) | opcod
 static uint32_t	fx_multWait;
 static int	fx_cycleTableReady = 0;
 
+/* --- Hardware-derived GSU timing (backported from snes9xgit mainline) ---------
+ * When fx_hw_timing is 1 the per-line budget is a flat 1364 master-cycle slice
+ * and each instruction is charged its approximate real GSU cycle cost, with the
+ * CLSR scaling carried by the costs rather than by doubling the budget:
+ *
+ *    cache-hit fetch     CLSR ? 1 : 2     per pipe byte
+ *    cache line fill     16 x (5 or 6)    charged once per 16-byte line
+ *    uncached fetch      CLSR ? 5 : 6     per pipe byte
+ *    memory byte access  CLSR ? 5 : 6     (ldb/stb/getb*); word ops charge two
+ *    plot                fetch + amortized flush (2/3.5/6 cycles at 2/4/8bpp)
+ *    mult/umult          MS0 ? 1 : 2      fmult/lmult (MS0 ? 3 : 7) x CLSR scale
+ *
+ * These constants match ares (sfc/coprocessor/superfx) and MiSTer (GSU.vhd
+ * ROM_CYCLES/RAM_CYCLES) wait states; memory latency improves only 6 -> 5 at
+ * 21 MHz because the ROM/RAM is the bound, which a doubled budget cannot
+ * express.  The fetch charge is cache-aware and paid per pipe byte, so
+ * multi-byte instructions (ibt/iwt/lm/sm/lms/sms, branches) pay for their
+ * operand fetches exactly as upstream does.  When enabled this supersedes the
+ * fx_cycle_accuracy toggle. */
+int		fx_hw_timing = 0;		/* 0 = legacy/cycle-accuracy budgets, 1 = hardware costs */
+uint32_t	SuperFXHwTimingPct = 100;	/* overclock percentage applied to the flat budget */
+static uint8_t	fx_HwLen[1024];			/* pipe bytes per opcode (fetch cost multiplier) */
+static uint8_t	fx_HwExec[2][1024];		/* static memory-access cost per opcode, [CLSR] */
+static int	fx_hwTablesReady = 0;
+
+static void fx_initHwTables (void)
+{
+	int alt, op, cs;
+
+	for (op = 0; op < 1024; op++)
+	{
+		fx_HwLen[op]     = 1;
+		fx_HwExec[0][op] = 0;
+		fx_HwExec[1][op] = 0;
+	}
+
+	for (cs = 0; cs < 2; cs++)
+	{
+		uint8_t mem = cs ? 5 : 6;
+
+		for (alt = 0; alt < 4; alt++)
+		{
+			int b = alt << 8;
+
+			for (op = 0x30; op <= 0x3b; op++)	/* stw (even alt) / stb (odd alt) */
+				fx_HwExec[cs][b | op] = (alt & 1) ? mem : (uint8_t) (mem << 1);
+			for (op = 0x40; op <= 0x4b; op++)	/* ldw (even alt) / ldb (odd alt) */
+				fx_HwExec[cs][b | op] = (alt & 1) ? mem : (uint8_t) (mem << 1);
+
+			fx_HwExec[cs][b | 0x90] = (uint8_t) (mem << 1);	/* sbk */
+			fx_HwExec[cs][b | 0xef] = mem;			/* getb/getbh/getbl/getbs */
+
+			if (alt != 0)
+			{
+				for (op = 0xa0; op <= 0xaf; op++)	/* lms/sms */
+					fx_HwExec[cs][b | op] = (uint8_t) (mem << 1);
+				for (op = 0xf0; op <= 0xff; op++)	/* lm/sm */
+					fx_HwExec[cs][b | op] = (uint8_t) (mem << 1);
+			}
+		}
+	}
+
+	/* Pipe bytes per instruction: fetch cost applies to operand bytes too. */
+	for (alt = 0; alt < 4; alt++)
+	{
+		int b = alt << 8;
+
+		for (op = 0x05; op <= 0x0f; op++)	/* branches: opcode + offset */
+			fx_HwLen[b | op] = 2;
+		for (op = 0xa0; op <= 0xaf; op++)	/* ibt/lms/sms: opcode + 1 */
+			fx_HwLen[b | op] = 2;
+		for (op = 0xf0; op <= 0xff; op++)	/* iwt/lm/sm: opcode + 2 */
+			fx_HwLen[b | op] = 3;
+	}
+
+	fx_hwTablesReady = 1;
+}
+
 static void fx_initCycleTable (void)
 {
 	int alt, op;
@@ -4671,6 +4750,7 @@ void S9xSuperFXExec (void)
 	fx_readRegisterSpace();
 
 	if (fx_cycle_accuracy && !fx_cycleTableReady) fx_initCycleTable();
+	if (fx_hw_timing && !fx_hwTablesReady) fx_initHwTables();
 	fx_multWait = (GSU.pvRegisters[GSU_CFGR] & 0x20) ? 0 : 1;
    
 	/* Check if we start inside the cache*/
@@ -4686,7 +4766,77 @@ void S9xSuperFXExec (void)
 		CF(IRQ);
       
 		/* GSU executions functions*/
-		if (!fx_cycle_accuracy)
+		if (fx_hw_timing)
+		{
+			/* Hardware-derived costs (see fx_initHwTables above): flat
+			   1364 master-cycle line budget, CLSR carried by the costs,
+			   cache-aware fetch charged per pipe byte. */
+			uint32_t cs        = (Memory.FillRAM[0x3000 + GSU_CLSR] & 1);
+			uint32_t costMem   = cs ? 5 : 6;
+			uint32_t costCache = cs ? 1 : 2;
+			uint32_t ms0       = GSU.pvRegisters[GSU_CFGR] & 0x20;
+			uint32_t costMult  = ms0 ? 1 : 2;
+			uint32_t costFmult = (ms0 ? 3 : 7) << (cs ? 0 : 1);
+			uint32_t costPlot, costRpix;
+
+			switch (GSU.vMode)
+			{
+				case 0:		/* 2bpp */
+					costPlot = ((costMem << 1) >> 3) + 1;
+					costRpix = costMem << 1;
+					break;
+				case 3:		/* 8bpp */
+					costPlot = costMem + 1;
+					costRpix = costMem << 3;
+					break;
+				default:	/* 4bpp and OBJ (4bpp char format) */
+					costPlot = ((costMem << 2) >> 3) + 1;
+					costRpix = costMem << 2;
+					break;
+			}
+
+			GSU.vCounter = (uint32_t) ((uint64_t) SNES_CYCLES_PER_SCANLINE
+			                           * SuperFXHwTimingPct / 100);
+			while (TF(G) && GSU.vCounter > 0)
+			{
+				uint32_t vOpcode, idx, cost, fetch, fca;
+				uint32_t r15pre = (uint32_t) R15;
+
+				vOpcode = (uint32_t) PIPE;
+				FETCHPIPE;
+				idx = (GSU.vStatusReg & 0x300) | vOpcode;
+				(*fx_OpcodeTable[idx])();
+
+				/* Cache-aware fetch charge (per pipe byte). */
+				fca = (uint32_t) (uint16_t) (r15pre - GSU.vCacheBaseReg);
+				if (GSU.bCacheActive && fca < 512)
+				{
+					uint32_t bit = 1U << (fca >> 4);
+
+					fetch = costCache;
+					if (!(GSU.vHwFillMask & bit))
+					{
+						GSU.vHwFillMask |= bit;
+						fetch += costMem << 4;	/* 16-byte line fill */
+					}
+				}
+				else
+					fetch = costMem;
+
+				cost = fetch * fx_HwLen[idx];
+				if (vOpcode == 0x4c)
+					cost += ((idx >> 8) & 1) ? costRpix : costPlot;
+				else if ((vOpcode & 0xf0) == 0x80)
+					cost += costMult;	/* mult/umult, reg and imm */
+				else if (vOpcode == 0x9f)
+					cost += costFmult;	/* fmult/lmult */
+				else
+					cost += fx_HwExec[cs][idx];
+
+				GSU.vCounter = (GSU.vCounter > cost) ? (GSU.vCounter - cost) : 0;
+			}
+		}
+		else if (!fx_cycle_accuracy)
 		{
 			GSU.vCounter = nInstructions;
 			while (TF(G) && GSU.vCounter-- > 0)

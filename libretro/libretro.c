@@ -329,6 +329,8 @@ static bool update_audio_latency = false;
 extern s9xcommand_t keymap[1024];
 bool overclock_cycles = false;
 extern int fx_cycle_accuracy; /* fxemu.c SuperFX cycle-cost toggle */
+extern int fx_hw_timing;      /* fxemu.c hardware-derived GSU timing toggle */
+extern uint32_t SuperFXHwTimingPct;
 bool reduce_sprite_flicker = false;
 bool pseudo_hires_blend = false;
 extern uint16_t joypad[8];
@@ -556,7 +558,22 @@ static void check_variables(bool first_run)
 		 * and this value feeds the per-line instruction budget, so it must be
 		 * bit-identical across platforms for deterministic SuperFX execution. */
 		Settings.SuperFXSpeedPerLine = 625500u * (uint32_t)freq;
+		/* The hardware timing mode scales its flat 1364-cycle line budget
+		   from the same option: 10 MHz (the default) == 100%. */
+		SuperFXHwTimingPct = (uint32_t) freq * 10;
 		reset_sfx = true;
+	}
+
+	var.key = "snes9x_2010_superfx_timing";
+	var.value = NULL;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		int newval = (!strcmp(var.value, "hardware")) ? 1 : 0;
+		if (newval != fx_hw_timing)
+		{
+			fx_hw_timing = newval;
+			reset_sfx = true;
+		}
 	}
 
 	var.key = "snes9x_2010_superfx_cycle_accuracy";

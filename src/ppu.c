@@ -3135,6 +3135,7 @@ static void S9xSetSuperFX (uint8_t byte, uint16_t address)
 				{
 					/* FX Flush cache */
 					GSU.vCacheFlags = 0;
+					GSU.vHwFillMask = 0;
 					GSU.vCacheBaseReg = 0;
 					GSU.bCacheActive = FALSE;
 				}

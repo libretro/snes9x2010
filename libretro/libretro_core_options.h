@@ -225,6 +225,20 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "disabled"
    },
    {
+      "snes9x_2010_superfx_timing",
+      "SuperFX Timing Model (Experimental)",
+      NULL,
+      "'Legacy' keeps the shipped per-line budgets (including the cycle-accuracy toggle below). 'Hardware-derived' charges each instruction its approximate real GSU cycle cost (cache-aware fetches, 5-cycle memory accesses, amortized plot flushes), matching ares/MiSTer wait states; backported from mainline Snes9x. When set to 'Hardware-derived', the cycle-accuracy toggle is ignored. Works together with the SuperFX Overclock option.",
+      NULL,
+      "hacks",
+      {
+         { "legacy",   "Legacy" },
+         { "hardware", "Hardware-derived" },
+         { NULL, NULL },
+      },
+      "legacy"
+   },
+   {
       "snes9x_2010_superfx_cycle_accuracy",
       "SuperFX Cycle Accuracy",
       NULL,

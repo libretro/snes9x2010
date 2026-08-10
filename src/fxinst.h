@@ -381,6 +381,12 @@ struct FxRegs_s
 	uint32_t	vSCBRDirty;				/* If SCBR is written, our cached screen pointers need updating */
 	
 	uint8_t	*avRegAddr;				/* To reference avReg in snapshot.cpp */
+
+	uint32_t	vHwFillMask;			/* Hardware-timing billing state: cache lines that have
+						   already been charged their 16-byte fill cost.  Not
+						   serialized (snapshot.c lists fields explicitly), so
+						   after a savestate load line fills are re-charged once;
+						   the mispricing is bounded and one-time. */
 };
 
 extern struct FxRegs_s	GSU;
