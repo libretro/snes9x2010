@@ -2425,9 +2425,16 @@ static uint8_t InitROM (void)
 
 	Timings.APUSpeedup = 0;
 	Timings.APUAllowTimeOverflow = FALSE;
+	fx_cel_delay = 0;
 
 	if (!Settings.DisableGameSpecificHacks)
 	{
+		/* Winter Gold: hold the GSU pose-cel publish from CPU view for one
+		   frame at the race-start handshake (snes9xgit#533; see
+		   S9xSuperFXCelDelayTick). */
+		if (MATCH_NA("FX SKIING NINTENDO 96"))
+			fx_cel_delay = 312;
+
 		if (MATCH_ID("AVCJ"))                                      /* Rendering Ranger R2*/
 			Timings.APUSpeedup = 4;
 

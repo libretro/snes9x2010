@@ -939,17 +939,22 @@ static void fx_rpix_2bit (void)
 	uint8_t *a, v;
 
 	R15++;
-	CLRFLAGS;
 
 	a = GSU.apvScreen[y >> 3] + GSU.x[x >> 3] + ((y & 7) << 1);
 	v = 128 >> (x & 7);
 
+	/* CLRFLAGS resets pvDreg/pvSreg to R0, so it must not run until the
+	   result has been stored and TESTR14 has seen the real destination:
+	   with a TO rn prefix the read lands in rn, and TO R14 re-triggers the
+	   ROM buffer, exactly as every other DREG-writing op orders it
+	   (upstream snes9xgit#1055 / #1056). */
 	DREG = 0;
 	DREG |= ((uint32_t) ((a[0] & v) != 0)) << 0;
 	DREG |= ((uint32_t) ((a[1] & v) != 0)) << 1;
 	GSU.vSign = DREG;
 	GSU.vZero = DREG;
 	TESTR14;
+	CLRFLAGS;
 }
 
 /* 4c - plot - plot pixel with R1, R2 as x, y and the color register as the color*/
@@ -1004,7 +1009,6 @@ static void fx_rpix_4bit (void)
 	uint8_t	v;
 
 	R15++;
-	CLRFLAGS;
 
 	a = GSU.apvScreen[y >> 3] + GSU.x[x >> 3] + ((y & 7) << 1);
 	v = 128 >> (x & 7);
@@ -1017,6 +1021,7 @@ static void fx_rpix_4bit (void)
 	GSU.vSign = DREG;
 	GSU.vZero = DREG;
 	TESTR14;
+	CLRFLAGS;
 }
 
 /* 4c - plot - plot pixel with R1, R2 as x, y and the color register as the color*/
@@ -1087,7 +1092,6 @@ static void fx_rpix_8bit (void)
 	uint8_t *a, v;
 
 	R15++;
-	CLRFLAGS;
 
 	a = GSU.apvScreen[y >> 3] + GSU.x[x >> 3] + ((y & 7) << 1);
 	v = 128 >> (x & 7);
@@ -1104,6 +1108,7 @@ static void fx_rpix_8bit (void)
 	GSU.vSign = DREG;
 	GSU.vZero = DREG;
 	TESTR14;
+	CLRFLAGS;
 }
 
 /* 4c - plot - plot pixel with R1, R2 as x, y and the color register as the color*/
@@ -4551,7 +4556,56 @@ void S9xResetSuperFX (void)
                                       * SNES_CYCLES_PER_SCANLINE / master_clock);
    SuperFX.oneLineDone = FALSE;
    SuperFX.vFlags = 0;
+   GSU.vCelHoldLines = 0;
+   GSU.vCelHeld = 0;
    FxReset(&SuperFX);
+}
+
+/* Winter Gold (snes9xgit#533, backported from snes9xgit mainline via
+ * libretro/snes9x): at the race-start pose switch the game polls the
+ * GSU-published pose cel at $70:EBC0 once per frame (V ~ 159) and commits the
+ * skier arrangement from it.  On hardware the heavy course-load render keeps
+ * the GSU busy one frame longer than the scanline-batch model, so that poll
+ * still reads 0 ("not ready" -> skier parked, one blank frame) where snes9x
+ * already shows the published cel ("ready" -> a stale arrangement is committed
+ * over the new pose tiles: the long-standing garbled skier).  Hold CPU
+ * visibility of the 0 -> nonzero publish transition for fx_cel_delay lines
+ * (312 = one frame), matching hardware behaviour measured frame-by-frame
+ * against a Mesen2 trace.  The transition only occurs in race-start
+ * handshakes, so the shim is inert during normal play, and the delay is only
+ * nonzero for that one ROM (the game-specific hacks block in InitROM).
+ *
+ * Ticked from the per-line event in cpuexec, NOT from S9xSuperFXExec: the
+ * exec is only called with GO set, and the publish happens precisely when the
+ * GSU stops, so a hold counted there would freeze the moment it mattered. */
+int fx_cel_delay = 0;	/* lines to hold the publish; set from InitROM */
+
+void S9xSuperFXCelDelayTick (void)
+{
+	uint8_t *cel;
+
+	if (fx_cel_delay <= 0)
+		return;
+
+	cel = &GSU.pvRam[0xEBC0];
+
+	if (GSU.vCelHoldLines > 0)
+	{
+		if (*cel != 0)		/* capture any republish during the hold */
+			GSU.vCelHeld = *cel;
+		*cel = 0;
+		GSU.vCelHoldLines--;
+		if (GSU.vCelHoldLines == 0)
+			*cel = GSU.vCelHeld;
+	}
+	else if (GSU.vCelHeld == 0 && *cel != 0)
+	{
+		GSU.vCelHeld = *cel;
+		*cel = 0;
+		GSU.vCelHoldLines = (uint32_t) fx_cel_delay;
+	}
+	else
+		GSU.vCelHeld = *cel;
 }
 
 static uint8_t fx_checkStartAddress (void)

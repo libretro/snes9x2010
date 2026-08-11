@@ -174,6 +174,8 @@ extern uint32_t SuperFXHwTimingPct;     /* overclock percentage for the hardware
 extern struct FxInfo_s	SuperFX;
 
 void S9xResetSuperFX (void);
+void S9xSuperFXCelDelayTick (void);
+extern int fx_cel_delay;
 void S9xSuperFXExec (void);
 
 #endif

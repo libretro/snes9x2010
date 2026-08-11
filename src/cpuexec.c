@@ -967,6 +967,11 @@ void S9xDoHEventProcessing (void)
 			if (Settings.SuperFX && !SuperFX.oneLineDone && CHECK_EXEC_SUPERFX())
 				S9xSuperFXExec();
 			SuperFX.oneLineDone = FALSE; /* do this even without SFX */
+			/* Ticks every line, whether or not the GSU ran; see the comment
+			   on the function for why it cannot live in the exec above.
+			   No-op unless fx_cel_delay is set. */
+			if (Settings.SuperFX)
+				S9xSuperFXCelDelayTick();
 
 			S9xAPUExecute();
 			CPU.Cycles -= Timings.H_Max;
