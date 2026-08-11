@@ -204,14 +204,60 @@
 #endif
 
 #ifndef MSB_FIRST
-/* Little-endian host: SNES memory layout matches the host, so word
- * accesses are plain (possibly unaligned) loads and stores. */
-#define READ_WORD(s)		(*(uint16_t *) (s))
-#define WRITE_WORD(s, d)	(*(uint16_t *) (s) = (uint16_t) (d))
-#define READ_3WORD(s)		(*(uint32_t *) (s) & 0x00ffffff)
-#define READ_DWORD(s)		(*(uint32_t *) (s))
-#define WRITE_3WORD(s, d)	(*(uint16_t *) (s) = (uint16_t) (d), \
-				 *((uint8_t *) (s) + 2) = (uint8_t) ((d) >> 16))
+/* Little-endian host: SNES memory layout matches the host, but the
+ * emulated buses issue unaligned word accesses constantly (65816
+ * immediate operand fetches, VRAM/WRAM word I/O), so plain
+ * *(uint16_t *) casts are undefined behaviour.  memcpy through an
+ * inline helper is the canonical form GCC, Clang and MSVC all lower to
+ * a single unaligned load/store, it neither trips UBSan nor defeats
+ * alias analysis around the stores, and __inline__/__inline is
+ * accepted by all supported compilers in C89 mode.  READ_3WORD also no
+ * longer reads a fourth byte and masks it off, removing a latent
+ * one-byte overread at buffer ends. */
+#include <string.h>
+
+#if defined(_MSC_VER)
+#define S9X_ACCESS_INLINE static __inline
+#else
+#define S9X_ACCESS_INLINE static __inline__
+#endif
+
+S9X_ACCESS_INLINE uint16_t s9x_read_word (const void *s)
+{
+	uint16_t v;
+	memcpy(&v, s, 2);
+	return (v);
+}
+
+S9X_ACCESS_INLINE uint32_t s9x_read_3word (const void *s)
+{
+	uint32_t v = 0;
+	memcpy(&v, s, 3);
+	return (v);
+}
+
+S9X_ACCESS_INLINE uint32_t s9x_read_dword (const void *s)
+{
+	uint32_t v;
+	memcpy(&v, s, 4);
+	return (v);
+}
+
+S9X_ACCESS_INLINE void s9x_write_word (void *s, uint16_t d)
+{
+	memcpy(s, &d, 2);
+}
+
+S9X_ACCESS_INLINE void s9x_write_3word (void *s, uint32_t d)
+{
+	memcpy(s, &d, 3);
+}
+
+#define READ_WORD(s)		s9x_read_word(s)
+#define WRITE_WORD(s, d)	s9x_write_word((s), (uint16_t) (d))
+#define READ_3WORD(s)		s9x_read_3word(s)
+#define READ_DWORD(s)		s9x_read_dword(s)
+#define WRITE_3WORD(s, d)	s9x_write_3word((s), (uint32_t) (d))
 #else
 /* Big-endian host: SNES data is little endian, so it must be byte
  * swapped. PowerPC has byte-reversed load/store instructions; use them
