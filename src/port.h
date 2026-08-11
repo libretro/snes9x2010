@@ -231,9 +231,15 @@ S9X_ACCESS_INLINE uint16_t s9x_read_word (const void *s)
 
 S9X_ACCESS_INLINE uint32_t s9x_read_3word (const void *s)
 {
-	uint32_t v = 0;
-	memcpy(&v, s, 3);
-	return (v);
+	/* Word + byte composition rather than memcpy(&v, s, 3): compilers do
+	   not merge 3-byte memcpy into a load and instead spill through a
+	   stack temporary (with a stack-protector round trip where enabled),
+	   ~15 instructions where the forms below are 3-4.  Verified on GCC
+	   x86-64 and aarch64 at -O3. */
+	uint16_t lo;
+
+	memcpy(&lo, s, 2);
+	return ((uint32_t) lo | ((uint32_t) *((const uint8_t *) s + 2) << 16));
 }
 
 S9X_ACCESS_INLINE uint32_t s9x_read_dword (const void *s)
@@ -250,7 +256,10 @@ S9X_ACCESS_INLINE void s9x_write_word (void *s, uint16_t d)
 
 S9X_ACCESS_INLINE void s9x_write_3word (void *s, uint32_t d)
 {
-	memcpy(s, &d, 3);
+	uint16_t lo = (uint16_t) d;
+
+	memcpy(s, &lo, 2);
+	*((uint8_t *) s + 2) = (uint8_t) (d >> 16);
 }
 
 #define READ_WORD(s)		s9x_read_word(s)
