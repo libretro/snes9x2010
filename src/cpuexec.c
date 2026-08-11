@@ -471,8 +471,8 @@ static void RenderLine (uint8_t C)
 	}
 	else
 	{
-		// if we're not rendering this frame, we still need to update this
-		// XXX: Check ForceBlank? Or anything else?
+		/* if we're not rendering this frame, we still need to update this
+		   XXX: Check ForceBlank? Or anything else? */
 		if (IPPU.OBJChanged)
 			SetupOBJ();
 		PPU.RangeTimeOver |= GFX.OBJLines[C].RTOFlags;
@@ -966,7 +966,7 @@ void S9xDoHEventProcessing (void)
 		case HC_HCOUNTER_MAX_EVENT:
 			if (Settings.SuperFX && !SuperFX.oneLineDone && CHECK_EXEC_SUPERFX())
 				S9xSuperFXExec();
-			SuperFX.oneLineDone = FALSE; // do this even without SFX
+			SuperFX.oneLineDone = FALSE; /* do this even without SFX */
 
 			S9xAPUExecute();
 			CPU.Cycles -= Timings.H_Max;

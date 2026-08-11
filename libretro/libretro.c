@@ -389,7 +389,7 @@ static void *owned_screen_buffer  = NULL;
 static void *owned_ntsc_buffer    = NULL;
 static uint32_t retro_devices[2];
 
-// filter
+/* filter */
 static int snes_ntsc_filter = 0;
 static snes_ntsc_t snes_ntsc;
 static snes_ntsc_setup_t ntsc_setup;
@@ -741,7 +741,7 @@ static void check_variables(bool first_run)
 	     (Settings.ForcePAL  != prev_force_pal)))
       retro_set_audio_buff_status_cb();
 
-//
+/*  */
 	if (old_filter != snes_ntsc_filter)
 		snes_ntsc_init(&snes_ntsc, &ntsc_setup);
 
@@ -1522,18 +1522,18 @@ void retro_reset (void)
 }
 
 uint16_t snes_lut[] = {
-	SNES_B_MASK,		// 32768
-	SNES_Y_MASK,		// 16384
-	SNES_SELECT_MASK,	// 8192
-	SNES_START_MASK,	// 4096
-	SNES_UP_MASK,		// 2048
-	SNES_DOWN_MASK,		// 1024
-	SNES_LEFT_MASK,		// 512
-	SNES_RIGHT_MASK,	// 256
-	SNES_A_MASK,		// 128
-	SNES_X_MASK,		// 64
-	SNES_TL_MASK,		// 32
-	SNES_TR_MASK		// 16
+	SNES_B_MASK,		/* 32768 */
+	SNES_Y_MASK,		/* 16384 */
+	SNES_SELECT_MASK,	/* 8192 */
+	SNES_START_MASK,	/* 4096 */
+	SNES_UP_MASK,		/* 2048 */
+	SNES_DOWN_MASK,		/* 1024 */
+	SNES_LEFT_MASK,		/* 512 */
+	SNES_RIGHT_MASK,	/* 256 */
+	SNES_A_MASK,		/* 128 */
+	SNES_X_MASK,		/* 64 */
+	SNES_TL_MASK,		/* 32 */
+	SNES_TR_MASK		/* 16 */
 };
 
 
