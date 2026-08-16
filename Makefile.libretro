@@ -570,6 +570,21 @@ else
 	WARNINGS_DEFINES = -Wall -Wextra -Wno-sign-compare -Wno-unused-parameter
 endif
 
+# The emulated machine's memory is one byte array reinterpreted through
+# every width the SNES buses use, so the tree violates C type-based
+# aliasing rules by design.  GCC 9 applies those rules across
+# translation units during LTO, and in the sibling libretro/snes9x tree
+# that combination miscompiles the sprite/tile path badly enough to
+# garble Yoshi's Island in shipped nightlies.  No such divergence is
+# currently reproducible here, but this fork shares the lineage, the
+# same class of type punning and the same LTO-by-default build, so opt
+# out of type-based aliasing rather than rely on which compiler happens
+# not to exploit it.  MSVC is excluded: no equivalent switch, and it
+# does not perform this class of optimisation by default.
+ifeq (,$(findstring msvc,$(platform)))
+	COMMON_DEFINES += -fno-strict-aliasing
+endif
+
 COMMON_DEFINES += $(CODE_DEFINES) $(WARNINGS_DEFINES) $(fpic) $(LTO)
 LDFLAGS += $(LTO)
 
