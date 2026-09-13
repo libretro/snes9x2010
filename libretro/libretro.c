@@ -287,6 +287,7 @@ static bool audio_hard_disabled;
    load" description true instead of aspirational. The active rate is only
    raised when MSU1 is actually present. */
 #define MSU1_ENHANCED_RATE 44100
+static bool threaded_ppu_pref = false;
 static bool msu1_enhanced_pref    = true;
 static bool msu1_enhanced_latched = false;
 
@@ -502,6 +503,13 @@ static void check_variables(bool first_run)
 	}
 	else
 		dsp_interp_mode = DSP_INTERP_GAUSSIAN;
+
+	var.key = "snes9x_2010_threaded_ppu";
+	var.value = NULL;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+		threaded_ppu_pref = (strcmp(var.value, "enabled") == 0);
+	else
+		threaded_ppu_pref = false;
 
 	var.key = "snes9x_2010_msu1_enhanced_audio";
 	var.value = NULL;
@@ -1451,7 +1459,8 @@ void retro_init(void)
 	owned_ntsc_buffer   = ntsc_screen_buffer;
 	S9xGraphicsInit();
 #if defined(HAVE_THREADS)
-	S9xRenderThreadStart();
+	if (threaded_ppu_pref)
+		S9xRenderThreadStart();
 #endif
 
 	retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
@@ -1524,6 +1533,10 @@ void retro_deinit(void)
 
 void retro_reset (void)
 {
+	/* Nothing may still be owed when the state it would draw from is
+	   thrown away.  A frame boundary has normally emptied the queue
+	   already; this does not rely on that. */
+	S9xRenderDrain();
 	S9xSoftReset();
 }
 

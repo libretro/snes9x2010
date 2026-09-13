@@ -107,6 +107,20 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "enabled"
    },
    {
+      "snes9x_2010_threaded_ppu",
+      "Threaded Renderer",
+      NULL,
+      "Draw the picture on a second thread, a scanline range at a time, while the CPU runs on. Output is identical either way. Worth it where there is a spare core to draw on; on a single-core machine it only adds the cost of handing work across. Changing this takes effect on the next content load.",
+      NULL,
+      NULL,
+      {
+         { "disabled", NULL },
+         { "enabled",  NULL },
+         { NULL, NULL },
+      },
+      "disabled"
+   },
+   {
       "snes9x_2010_aspect",
       "Preferred Aspect Ratio",
       NULL,

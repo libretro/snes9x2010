@@ -1403,6 +1403,10 @@ uint8_t S9xFreezeGame (void)
 {
 	STREAM	stream = NULL;
 
+	/* The renderer writes state a snapshot saves, so it must have
+	   finished before one is taken or loaded. */
+	S9xRenderDrain();
+
 	if (S9xOpenSnapshotFile(&stream, 1))
 	{
 		S9xFreezeToStream(stream);
@@ -1417,6 +1421,8 @@ uint8_t S9xFreezeGame (void)
 uint8_t S9xUnfreezeGame (void)
 {
 	STREAM stream = NULL;
+
+	S9xRenderDrain();
 
 	if (S9xOpenSnapshotFile(&stream, 0))
 	{
