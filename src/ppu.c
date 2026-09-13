@@ -2412,43 +2412,17 @@ static void S9xComputeClipWindows (void)
 	}
 }
 
-void S9xUpdateScreen (void)
+/* Mid-frame resolution promotion.
+ *
+ * Kept apart from the drawing because none of it belongs to a rendered
+ * span: it widens or doubles the frame, abandons any direct-render
+ * redirect the frontend handed us, and reads back and rewrites pixels
+ * already drawn.  A renderer that does not run in step with the CPU
+ * has to do this on the CPU's side, once the drawing it would disturb
+ * has finished.
+ */
+static void S9xPromoteResolution (void)
 {
-   /* Taken here for now, so the snapshot and the live registers are
-    * the same thing and the change is provably inert. It moves to the
-    * point the span is recorded once the whole renderer reads it. */
-   S9xSnapshotRenderRegs(&S9xRenderRegs);
-
-	/* clip and Offset are referenced from inside the DRAW_BACKDROP_NO_MATH
-	   and DrawBackdrop macros below, which inline into this function's
-	   scope. They look unused at this declaration point but the macros
-	   need them. */
-	int clip;
-	uint32_t Offset;
-
-	if (IPPU.OBJChanged || IPPU.InterlaceOBJ)
-		SetupOBJ();
-
-	/* XXX: Check ForceBlank? Or anything else? */
-	PPU.RangeTimeOver |= GFX.OBJLines[GFX.EndY].RTOFlags;
-
-	GFX.StartY = IPPU.PreviousLine;
-	if ((GFX.EndY = IPPU.CurrentLine - 1) >= PPU.ScreenHeight)
-		GFX.EndY = PPU.ScreenHeight - 1;
-
-	if (!PPU.ForcedBlanking)
-	{
-		/* If force blank, may as well completely skip all this. 
-		
-		   We only did the OBJ because (AFAWK) the RTO flags are 
-		   updated even during force-blank. */
-
-		if (PPU.RecomputeClipWindows)
-		{
-			S9xComputeClipWindows();
-			PPU.RecomputeClipWindows = FALSE;
-		}
-
 		if(Settings.SupportHiRes)
 		{
 		if (!IPPU.DoubleWidthPixels && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires
@@ -2515,6 +2489,46 @@ void S9xUpdateScreen (void)
 				memmove(GFX.Screen + y * GFX.PPL, GFX.Screen + y * GFX.RealPPL, IPPU.RenderedScreenWidth * sizeof(uint16_t));
 		}
 		}
+}
+
+void S9xUpdateScreen (void)
+{
+   /* Taken here for now, so the snapshot and the live registers are
+    * the same thing and the change is provably inert. It moves to the
+    * point the span is recorded once the whole renderer reads it. */
+   S9xSnapshotRenderRegs(&S9xRenderRegs);
+
+	/* clip and Offset are referenced from inside the DRAW_BACKDROP_NO_MATH
+	   and DrawBackdrop macros below, which inline into this function's
+	   scope. They look unused at this declaration point but the macros
+	   need them. */
+	int clip;
+	uint32_t Offset;
+
+	if (IPPU.OBJChanged || IPPU.InterlaceOBJ)
+		SetupOBJ();
+
+	/* XXX: Check ForceBlank? Or anything else? */
+	PPU.RangeTimeOver |= GFX.OBJLines[GFX.EndY].RTOFlags;
+
+	GFX.StartY = IPPU.PreviousLine;
+	if ((GFX.EndY = IPPU.CurrentLine - 1) >= PPU.ScreenHeight)
+		GFX.EndY = PPU.ScreenHeight - 1;
+
+	if (!PPU.ForcedBlanking)
+	{
+		/* If force blank, may as well completely skip all this. 
+		
+		   We only did the OBJ because (AFAWK) the RTO flags are 
+		   updated even during force-blank. */
+
+		if (PPU.RecomputeClipWindows)
+		{
+			S9xComputeClipWindows();
+			PPU.RecomputeClipWindows = FALSE;
+		}
+
+		S9xPromoteResolution();
 
 		if(!PPU.SFXSpeedupHack)
 		{

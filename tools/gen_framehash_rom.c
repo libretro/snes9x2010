@@ -161,6 +161,8 @@ int main(int argc, char **argv)
    lda_sta(0x31, 0x2106);   /* mosaic on BG1 only, so BG2 still
                              * exercises the plain background
                              * renderer rather than the mosaic one */
+   lda_sta(0x08, 0x2133);   /* pseudo-hires: the only thing here that
+                             * reaches mid-frame resolution promotion */
    lda_sta(0x0F, 0x2100);   /* visible, full brightness            */
 
    e(0x9C); e(0x00); e(0x00);        /* STZ $00  frame counter     */
