@@ -2491,29 +2491,22 @@ static void S9xPromoteResolution (void)
 		}
 }
 
-void S9xUpdateScreen (void)
+/* Draw one span.
+ *
+ * Everything here reads the span's own register snapshot and the
+ * memories the PPU draws from, and writes only the frame buffer and
+ * the renderer's own caches, so it does not have to happen at the
+ * moment the span was recorded.  Promotion is the caller's job,
+ * because it disturbs pixels this has already drawn.
+ */
+static void S9xRenderSpan (void)
 {
-   /* Taken here for now, so the snapshot and the live registers are
-    * the same thing and the change is provably inert. It moves to the
-    * point the span is recorded once the whole renderer reads it. */
-   S9xSnapshotRenderRegs(&S9xRenderRegs);
-
-	/* clip and Offset are referenced from inside the DRAW_BACKDROP_NO_MATH
-	   and DrawBackdrop macros below, which inline into this function's
-	   scope. They look unused at this declaration point but the macros
-	   need them. */
+	/* clip and Offset are referenced from inside the
+	   DRAW_BACKDROP_NO_MATH and DrawBackdrop macros below, which inline
+	   into this function's scope.  They look unused at this declaration
+	   point but the macros need them. */
 	int clip;
 	uint32_t Offset;
-
-	if (IPPU.OBJChanged || IPPU.InterlaceOBJ)
-		SetupOBJ();
-
-	/* XXX: Check ForceBlank? Or anything else? */
-	PPU.RangeTimeOver |= GFX.OBJLines[GFX.EndY].RTOFlags;
-
-	GFX.StartY = IPPU.PreviousLine;
-	if ((GFX.EndY = IPPU.CurrentLine - 1) >= PPU.ScreenHeight)
-		GFX.EndY = PPU.ScreenHeight - 1;
 
 	if (!PPU.ForcedBlanking)
 	{
@@ -2528,7 +2521,6 @@ void S9xUpdateScreen (void)
 			PPU.RecomputeClipWindows = FALSE;
 		}
 
-		S9xPromoteResolution();
 
 		if(!PPU.SFXSpeedupHack)
 		{
@@ -2560,6 +2552,29 @@ void S9xUpdateScreen (void)
 		for ( l = GFX.StartY; l <= GFX.EndY; l++, GFX.S += GFX.PPL)
 			memset(GFX.S, 0, IPPU.RenderedScreenWidth * sizeof(uint16_t));
 	}
+}
+
+void S9xUpdateScreen (void)
+{
+   /* Taken here for now, so the snapshot and the live registers are
+    * the same thing and the change is provably inert.  It moves to the
+    * point the span is recorded once the whole renderer reads it. */
+   S9xSnapshotRenderRegs(&S9xRenderRegs);
+
+	if (IPPU.OBJChanged || IPPU.InterlaceOBJ)
+		SetupOBJ();
+
+	/* XXX: Check ForceBlank? Or anything else? */
+	PPU.RangeTimeOver |= GFX.OBJLines[GFX.EndY].RTOFlags;
+
+	GFX.StartY = IPPU.PreviousLine;
+	if ((GFX.EndY = IPPU.CurrentLine - 1) >= PPU.ScreenHeight)
+		GFX.EndY = PPU.ScreenHeight - 1;
+
+	if (!PPU.ForcedBlanking)
+		S9xPromoteResolution();
+
+	S9xRenderSpan();
 
 	IPPU.PreviousLine = IPPU.CurrentLine;
 }
