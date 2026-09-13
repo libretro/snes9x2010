@@ -197,9 +197,14 @@ int main(int argc, char **argv)
    e(0x8D); e(0x0D); e(0x21); e(0x8D); e(0x0D); e(0x21);  /* BG1HOFS */
    e(0x8D); e(0x0F); e(0x21); e(0x8D); e(0x0F); e(0x21);  /* BG2HOFS */
 
+   /* Backdrop low byte comes from STAT77, so the range-over flag the
+    * renderer produces is read back by the CPU and lands in a pixel.
+    * Nothing else here reads a PPU status register. */
    e(0x9C); e(0x21); e(0x21);        /* STZ $2121                  */
+   e(0xAD); e(0x3E); e(0x21);        /* LDA $213E                  */
+   e(0x8D); e(0x22); e(0x21);        /* backdrop low               */
    e(0xA5); e(0x00);
-   e(0x8D); e(0x22); e(0x21); e(0x8D); e(0x22); e(0x21);  /* backdrop */
+   e(0x8D); e(0x22); e(0x21);        /* backdrop high              */
    e(0xE6); e(0x00);                 /* INC $00                    */
    bra(M);
 
