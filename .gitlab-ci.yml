@@ -113,12 +113,24 @@ include:
 # Stages for building
 stages:
   - build-prepare
+  - test
   - build-shared
   - build-static
 
 ##############################################################################
 #################################### STAGES ##################################
 ##############################################################################
+#
+#################################### TESTS ###################################
+# Exhaustive check of the S-DSP counter divisibility table in src/apu.c
+# against a plain modulo over the whole input domain.
+verify-dsp-counter:
+  stage: test
+  image: gcc:latest
+  script:
+    - cc -std=c89 -pedantic -Wall -W -O2 -o verify_dsp_counter tools/verify_dsp_counter.c
+    - ./verify_dsp_counter
+
 #
 ################################### DESKTOPS #################################
 # Windows 64-bit

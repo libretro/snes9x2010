@@ -725,53 +725,72 @@ static INLINE int dsp_interpolate_sinc( dsp_voice_t *v )
 
 /* Counters */
 
-/* Number of samples per counter event.
- * All rates are evently divisible by counter range 
- * (0x7800, 30720, or 2048 * 5 * 3).
+/* The envelope and noise clocks fire when (counter + offset) is an exact
+ * multiple of that rate's period.  Only the zero test is ever needed, so
+ * each rate carries a Granlund-Montgomery divisibility triple instead of a
+ * divisor: for period p = 2^shift * q with q odd, x is divisible by p iff
+ * rotating (x * q^-1 mod 2^32) right by shift lands at or below limit.
+ * That is two multiplies and a rotate against a variable-divisor modulo.
  *
- * Note that counter_rates[0] is a special case,
- * which never triggers. */
+ * COUNTER_RANGE is 30720 (2048 * 5 * 3); every period divides it, and rate 0
+ * carries period 30721 with offset 1 so that it can never fire.
+ *
+ * tools/verify_dsp_counter.c regenerates this table from the period list and
+ * checks the triples against the modulo across the whole input domain.
+ */
 #define COUNTER_RANGE 30720
 
-static unsigned const counter_rates [32] =
+typedef struct
 {
-      COUNTER_RANGE + 1, 2048, 1536,
-	1280, 1024,  768,
-	 640,  512,  384,
-	 320,  256,  192,
-	 160,  128,   96,
-	  80,   64,   48,
-	  40,   32,   24,
-	  20,   16,   12,
-	  10,    8,    6,
-	   5,    4,    3,
-	         2,
-	         1
+	uint32_t inv;      /* q^-1 mod 2^32, q = period with twos factored out */
+	uint32_t limit;    /* (2^32 - 1) / period                              */
+	uint32_t offset;   /* counter offset from zero for this rate           */
+	uint32_t shift;    /* number of twos factored out of the period        */
+} dsp_counter_t;
+
+static const dsp_counter_t dsp_counters [32] =
+{
+	{ 0x383F8801u, 0x0002221Du,     1u,  0u },   /* rate 30721 */
+	{ 0x00000001u, 0x001FFFFFu,     0u, 11u },   /* rate  2048 */
+	{ 0xAAAAAAABu, 0x002AAAAAu,  1040u,  9u },   /* rate  1536 */
+	{ 0xCCCCCCCDu, 0x00333333u,   536u,  8u },   /* rate  1280 */
+	{ 0x00000001u, 0x003FFFFFu,     0u, 10u },   /* rate  1024 */
+	{ 0xAAAAAAABu, 0x00555555u,  1040u,  8u },   /* rate   768 */
+	{ 0xCCCCCCCDu, 0x00666666u,   536u,  7u },   /* rate   640 */
+	{ 0x00000001u, 0x007FFFFFu,     0u,  9u },   /* rate   512 */
+	{ 0xAAAAAAABu, 0x00AAAAAAu,  1040u,  7u },   /* rate   384 */
+	{ 0xCCCCCCCDu, 0x00CCCCCCu,   536u,  6u },   /* rate   320 */
+	{ 0x00000001u, 0x00FFFFFFu,     0u,  8u },   /* rate   256 */
+	{ 0xAAAAAAABu, 0x01555555u,  1040u,  6u },   /* rate   192 */
+	{ 0xCCCCCCCDu, 0x01999999u,   536u,  5u },   /* rate   160 */
+	{ 0x00000001u, 0x01FFFFFFu,     0u,  7u },   /* rate   128 */
+	{ 0xAAAAAAABu, 0x02AAAAAAu,  1040u,  5u },   /* rate    96 */
+	{ 0xCCCCCCCDu, 0x03333333u,   536u,  4u },   /* rate    80 */
+	{ 0x00000001u, 0x03FFFFFFu,     0u,  6u },   /* rate    64 */
+	{ 0xAAAAAAABu, 0x05555555u,  1040u,  4u },   /* rate    48 */
+	{ 0xCCCCCCCDu, 0x06666666u,   536u,  3u },   /* rate    40 */
+	{ 0x00000001u, 0x07FFFFFFu,     0u,  5u },   /* rate    32 */
+	{ 0xAAAAAAABu, 0x0AAAAAAAu,  1040u,  3u },   /* rate    24 */
+	{ 0xCCCCCCCDu, 0x0CCCCCCCu,   536u,  2u },   /* rate    20 */
+	{ 0x00000001u, 0x0FFFFFFFu,     0u,  4u },   /* rate    16 */
+	{ 0xAAAAAAABu, 0x15555555u,  1040u,  2u },   /* rate    12 */
+	{ 0xCCCCCCCDu, 0x19999999u,   536u,  1u },   /* rate    10 */
+	{ 0x00000001u, 0x1FFFFFFFu,     0u,  3u },   /* rate     8 */
+	{ 0xAAAAAAABu, 0x2AAAAAAAu,  1040u,  1u },   /* rate     6 */
+	{ 0xCCCCCCCDu, 0x33333333u,   536u,  0u },   /* rate     5 */
+	{ 0x00000001u, 0x3FFFFFFFu,     0u,  2u },   /* rate     4 */
+	{ 0xAAAAAAABu, 0x55555555u,  1040u,  0u },   /* rate     3 */
+	{ 0x00000001u, 0x7FFFFFFFu,     0u,  1u },   /* rate     2 */
+	{ 0x00000001u, 0xFFFFFFFFu,     0u,  0u },   /* rate     1 */
 };
 
-/* Counter offset from zero.
- *
- * Counters do not appear to be aligned at zero
- * for all rates.
- */
-
-static unsigned const counter_offsets [32] =
+static INLINE int dsp_counter_fired ( int rate )
 {
-	  1, 0, 1040,
-	536, 0, 1040,
-	536, 0, 1040,
-	536, 0, 1040,
-	536, 0, 1040,
-	536, 0, 1040,
-	536, 0, 1040,
-	536, 0, 1040,
-	536, 0, 1040,
-	536, 0, 1040,
-	     0,
-	     0
-};
-
-#define READ_COUNTER(rate) (((unsigned) dsp_m.counter + counter_offsets [rate]) % counter_rates [rate])
+	const dsp_counter_t *d = &dsp_counters [rate];
+	uint32_t v = ((uint32_t) dsp_m.counter + d->offset) * d->inv;
+	v = (v >> d->shift) | (v << ((32u - d->shift) & 31u));
+	return v <= d->limit;
+}
 
 /* Envelope */
 
@@ -840,7 +859,7 @@ static INLINE void dsp_run_envelope( dsp_voice_t* v )
 			v->env_mode = ENV_DECAY;
 	}
 
-	if (!READ_COUNTER( rate ))
+	if ( dsp_counter_fired( rate ) )
 		v->env = env; /* nothing else is controlled by the counter */
 }
 
@@ -925,7 +944,7 @@ static INLINE void dsp_misc_30 (void)
 		dsp_m.counter = COUNTER_RANGE - 1;
 	
 	/* Noise */
-	if ( !READ_COUNTER( dsp_m.regs[R_FLG] & 0x1F ) )
+	if ( dsp_counter_fired( dsp_m.regs[R_FLG] & 0x1F ) )
 	{
 		int feedback = (dsp_m.noise << 13) ^ (dsp_m.noise << 14);
 		dsp_m.noise = (feedback & 0x4000) ^ (dsp_m.noise >> 1);
