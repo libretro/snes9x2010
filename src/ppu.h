@@ -544,6 +544,17 @@ struct SRenderRegs
    uint8_t RenderSub;
    uint8_t RecomputeClipWindows;
    uint16_t RenderedScreenWidth;
+
+   /* Where the span goes and how the frame is laid out.  Captured
+    * separately from the registers because resolution promotion sits
+    * between the two and is what decides the pitch. */
+   uint16_t *Screen;
+   uint32_t  StartY;
+   uint32_t  EndY;
+   uint32_t  PPL;
+   uint32_t  RealPPL;
+   uint8_t   DoInterlace;
+   uint8_t   InterlaceFrame;
 };
 
 #define S9xRenderFillRAM(addr) (S9xCurRenderRegs->FillRAM[(addr) - 0x2100])
@@ -552,6 +563,7 @@ extern struct SRenderRegs        S9xRenderRegs;
 extern const struct SRenderRegs *S9xCurRenderRegs;
 
 void S9xSnapshotRenderRegs (struct SRenderRegs *out);
+void S9xSnapshotRenderGeometry (struct SRenderRegs *out);
 
 #define FLUSH_REDRAW() \
 	if (IPPU.PreviousLine != IPPU.CurrentLine) \

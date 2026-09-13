@@ -2131,6 +2131,20 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out)
    out->RenderedScreenWidth  = IPPU.RenderedScreenWidth;
 }
 
+/* Taken after resolution promotion, which is what sets the pitch and
+ * may have handed us a different buffer than the one the span was
+ * recorded against. */
+void S9xSnapshotRenderGeometry (struct SRenderRegs *out)
+{
+   out->Screen         = GFX.Screen;
+   out->StartY         = GFX.StartY;
+   out->EndY           = GFX.EndY;
+   out->PPL            = GFX.PPL;
+   out->RealPPL        = GFX.RealPPL;
+   out->DoInterlace    = GFX.DoInterlace;
+   out->InterlaceFrame = GFX.InterlaceFrame;
+}
+
 static INLINE uint8_t CalcWindowMask (int i, uint8_t W1, uint8_t W2)
 {
 	if (!S9xCurRenderRegs->ClipWindow1Enable[i])
@@ -2552,11 +2566,11 @@ static void S9xRenderSpan (void)
 	else
 	{
 		uint32_t l;
-		GFX.S = GFX.Screen + GFX.StartY * GFX.PPL;
-		if (GFX.DoInterlace && GFX.InterlaceFrame)
-			GFX.S += GFX.RealPPL;
+		GFX.S = S9xCurRenderRegs->Screen + S9xCurRenderRegs->StartY * S9xCurRenderRegs->PPL;
+		if (S9xCurRenderRegs->DoInterlace && S9xCurRenderRegs->InterlaceFrame)
+			GFX.S += S9xCurRenderRegs->RealPPL;
 
-		for ( l = GFX.StartY; l <= GFX.EndY; l++, GFX.S += GFX.PPL)
+		for ( l = S9xCurRenderRegs->StartY; l <= S9xCurRenderRegs->EndY; l++, GFX.S += S9xCurRenderRegs->PPL)
 			memset(GFX.S, 0, S9xCurRenderRegs->RenderedScreenWidth * sizeof(uint16_t));
 	}
 }
@@ -2586,6 +2600,8 @@ void S9xUpdateScreen (void)
 
 	if (!PPU.ForcedBlanking)
 		S9xPromoteResolution();
+
+	S9xSnapshotRenderGeometry(&S9xRenderRegs);
 
 	S9xRenderSpan();
 
