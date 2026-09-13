@@ -369,7 +369,7 @@ void SetupOBJ (void)
    }
 
 	inc = S9xCurRenderRegs->InterlaceOBJ ? 2 : 1;
-	startline = (S9xCurRenderRegs->InterlaceOBJ && GFX.InterlaceFrame) ? 1 : 0;
+	startline = (S9xCurRenderRegs->InterlaceOBJ && S9xCurRenderRegs->InterlaceFrame) ? 1 : 0;
 
 	/* OK, we have three cases here. Either there's no priority, priority 
 	   is normal FirstSprite, or priority is FirstSprite+Y. The first two 
@@ -565,7 +565,7 @@ static void DrawOBJS (int D)
 	void (*DrawClippedTile) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) = NULL;
 
 	PixWidth = S9xCurRenderRegs->QuadWidthPixels ? 4 : (S9xCurRenderRegs->DoubleWidthPixels ? 2 : 1);
-	BG.InterlaceLine = GFX.InterlaceFrame ? 8 : 0;
+	BG.InterlaceLine = S9xCurRenderRegs->InterlaceFrame ? 8 : 0;
 	GFX.Z1 = 2;
 
 	{
@@ -588,14 +588,14 @@ static void DrawOBJS (int D)
 	uint32_t BatchL;
 	uint8_t batch_cfg = (PixWidth == 1 && !S9xCurRenderRegs->Interlace && !S9xCurRenderRegs->InterlaceOBJ);
 
-	for ( Y = GFX.StartY, Offset = Y * GFX.PPL; Y <= GFX.EndY; Y += BatchL, Offset += BatchL * GFX.PPL)
+	for ( Y = S9xCurRenderRegs->StartY, Offset = Y * S9xCurRenderRegs->PPL; Y <= S9xCurRenderRegs->EndY; Y += BatchL, Offset += BatchL * S9xCurRenderRegs->PPL)
 	{
 		int I, tiles;
 
 		BatchL = 1;
 		if (batch_cfg)
 		{
-			while (Y + BatchL <= GFX.EndY && BatchL < 8 &&
+			while (Y + BatchL <= S9xCurRenderRegs->EndY && BatchL < 8 &&
 			       GFX.OBJLines[Y].Tiles == GFX.OBJLines[Y + BatchL].Tiles)
 			{
 				int k, eq = 1;
@@ -704,7 +704,7 @@ static void DrawOBJS (int D)
 						{
 							DrawTile(BaseTile | TileX, O, TileLine, Span1);
 							if (Span2)
-								DrawTile(BaseTile2 | TileX, O + Span1 * GFX.PPL, 0, Span2);
+								DrawTile(BaseTile2 | TileX, O + Span1 * S9xCurRenderRegs->PPL, 0, Span2);
 						}
 						x += 8;
 					}
@@ -715,7 +715,7 @@ static void DrawOBJS (int D)
 						{
 							DrawClippedTile(BaseTile | TileX, O, x - X, w, TileLine, Span1);
 							if (Span2)
-								DrawClippedTile(BaseTile2 | TileX, O + Span1 * GFX.PPL, x - X, w, 0, Span2);
+								DrawClippedTile(BaseTile2 | TileX, O + Span1 * S9xCurRenderRegs->PPL, x - X, w, 0, Span2);
 						}
 						x += w;
 					}
@@ -769,7 +769,7 @@ static void DrawBackground (int bg, uint8_t Zh, uint8_t Zl)
 			DrawClippedTile = GFX.DrawClippedTileNomath;
 		}
 
-		for ( Y = GFX.StartY; Y <= GFX.EndY; Y += Lines)
+		for ( Y = S9xCurRenderRegs->StartY; Y <= S9xCurRenderRegs->EndY; Y += Lines)
 		{
 			uint32_t Y2, VOffset, HOffset, TilemapRow, Left, Right, Offset, HPos, HTile, Width;
 			uint32_t t1 = 0;
@@ -779,7 +779,7 @@ static void DrawBackground (int bg, uint8_t Zh, uint8_t Zl)
 			uint16_t  *b2 = SC1;
 			int VirtAlign;
 
-			Y2 = HiresInterlace ? Y * 2 + GFX.InterlaceFrame : Y;
+			Y2 = HiresInterlace ? Y * 2 + S9xCurRenderRegs->InterlaceFrame : Y;
 			VOffset = LineData[Y].BG[bg].VOffset + HiresInterlace;
 			HOffset = LineData[Y].BG[bg].HOffset;
 			VirtAlign = ((Y2 + VOffset) & 7) >> HiresInterlace;
@@ -790,8 +790,8 @@ static void DrawBackground (int bg, uint8_t Zh, uint8_t Zl)
 					break;
 			}
 
-			if (Y + Lines > GFX.EndY)
-				Lines = GFX.EndY - Y + 1;
+			if (Y + Lines > S9xCurRenderRegs->EndY)
+				Lines = S9xCurRenderRegs->EndY - Y + 1;
 
 			VirtAlign <<= 3;
 
@@ -815,7 +815,7 @@ static void DrawBackground (int bg, uint8_t Zh, uint8_t Zl)
 
 			Left   = GFX.Clip[bg].Left[clip];
 			Right  = GFX.Clip[bg].Right[clip];
-			Offset = Left * PixWidth + Y * GFX.PPL;
+			Offset = Left * PixWidth + Y * S9xCurRenderRegs->PPL;
 			HPos   = (HOffset + Left) & OffsetMask;
 			HTile  = HPos >> 3;
 
@@ -949,7 +949,7 @@ static void DrawBackground (int bg, uint8_t Zh, uint8_t Zl)
  * ScreenColors per-call via ClipColors ? BlackColourMap :
  * RealScreenColors, since BlackColourMap is private to tile.c. */
 #define DRAW_BACKDROP_NO_MATH() \
-	Offset = GFX.StartY * GFX.PPL; \
+	Offset = S9xCurRenderRegs->StartY * S9xCurRenderRegs->PPL; \
 	GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors; \
 	for ( clip = 0; clip < GFX.Clip[5].Count; clip++) \
 	{ \
@@ -958,7 +958,7 @@ static void DrawBackground (int bg, uint8_t Zh, uint8_t Zl)
 	}
 
 #define DrawBackdrop() \
-	Offset = GFX.StartY * GFX.PPL; \
+	Offset = S9xCurRenderRegs->StartY * S9xCurRenderRegs->PPL; \
 	GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors; \
 	for ( clip = 0; clip < GFX.Clip[5].Count; clip++) \
 	{ \
@@ -997,7 +997,7 @@ static void DrawBackgroundMosaic (int bg, uint8_t Zh, uint8_t Zl)
 	PixWidth = S9xCurRenderRegs->QuadWidthPixels ? 4 : (S9xCurRenderRegs->DoubleWidthPixels ? 2 : 1);
 	HiresInterlace = S9xCurRenderRegs->Interlace && S9xCurRenderRegs->DoubleWidthPixels;
 
-	MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % S9xCurRenderRegs->Mosaic;
+	MosaicStart = ((uint32_t) S9xCurRenderRegs->StartY - S9xCurRenderRegs->MosaicStart) % S9xCurRenderRegs->Mosaic;
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
@@ -1008,7 +1008,7 @@ static void DrawBackgroundMosaic (int bg, uint8_t Zh, uint8_t Zl)
 		else
 			DrawPix = GFX.DrawMosaicPixelNomath;
 
-		for ( Y = GFX.StartY - MosaicStart; Y <= GFX.EndY; Y += S9xCurRenderRegs->Mosaic)
+		for ( Y = S9xCurRenderRegs->StartY - MosaicStart; Y <= S9xCurRenderRegs->EndY; Y += S9xCurRenderRegs->Mosaic)
 		{
 			uint32_t	Y2, VOffset, HOffset, TilemapRow,
 			Left, Right, Offset, HPos, HTile, Width;
@@ -1024,8 +1024,8 @@ static void DrawBackgroundMosaic (int bg, uint8_t Zh, uint8_t Zl)
 			HOffset = LineData[Y].BG[bg].HOffset;
 
 			Lines = S9xCurRenderRegs->Mosaic - MosaicStart;
-			if (Y + MosaicStart + Lines > GFX.EndY)
-				Lines = GFX.EndY - Y - MosaicStart + 1;
+			if (Y + MosaicStart + Lines > S9xCurRenderRegs->EndY)
+				Lines = S9xCurRenderRegs->EndY - Y - MosaicStart + 1;
 
 			VirtAlign = (((Y2 + VOffset) & 7) >> HiresInterlace) << 3;
 
@@ -1049,7 +1049,7 @@ static void DrawBackgroundMosaic (int bg, uint8_t Zh, uint8_t Zl)
 
 			Left   = GFX.Clip[bg].Left[clip];
 			Right  = GFX.Clip[bg].Right[clip];
-			Offset = Left * PixWidth + (Y + MosaicStart) * GFX.PPL;
+			Offset = Left * PixWidth + (Y + MosaicStart) * S9xCurRenderRegs->PPL;
 			HPos   = (HOffset + Left - (Left % S9xCurRenderRegs->Mosaic)) & OffsetMask;
 			HTile  = HPos >> 3;
 
@@ -1186,7 +1186,7 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 		else
 			DrawClippedTile = GFX.DrawClippedTileNomath;
 
-		for ( Y = GFX.StartY; Y <= GFX.EndY; Y += BatchLines)
+		for ( Y = S9xCurRenderRegs->StartY; Y <= S9xCurRenderRegs->EndY; Y += BatchLines)
 		{
 			uint32_t Y2, VOff, HOff, HOffsetRow, VOffsetRow,
 			Left, Right, Offset, LineHOffset, Width;
@@ -1211,7 +1211,7 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 			BatchLines = 1;
 			if (PixWidth == 1 && !S9xCurRenderRegs->Interlace)
 			{
-				while (Y + BatchLines <= GFX.EndY && BatchLines < 8 &&
+				while (Y + BatchLines <= S9xCurRenderRegs->EndY && BatchLines < 8 &&
 				       LineData[Y].BG[2].VOffset  == LineData[Y + BatchLines].BG[2].VOffset  &&
 				       LineData[Y].BG[2].HOffset  == LineData[Y + BatchLines].BG[2].HOffset  &&
 				       LineData[Y].BG[bg].VOffset == LineData[Y + BatchLines].BG[bg].VOffset &&
@@ -1219,7 +1219,7 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 					BatchLines++;
 			}
 
-			Y2 = HiresInterlace ? Y * 2 + GFX.InterlaceFrame : Y;
+			Y2 = HiresInterlace ? Y * 2 + S9xCurRenderRegs->InterlaceFrame : Y;
 			VOff = LineData[Y].BG[2].VOffset - 1;
 			HOff = LineData[Y].BG[2].HOffset;
 			HOffsetRow = VOff >> Offset2Shift;
@@ -1239,7 +1239,7 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 
 			Left  = GFX.Clip[bg].Left[clip];
 			Right = GFX.Clip[bg].Right[clip];
-			Offset = Left * PixWidth + Y * GFX.PPL;
+			Offset = Left * PixWidth + Y * S9xCurRenderRegs->PPL;
 			LineHOffset = LineData[Y].BG[bg].HOffset;
 			left_edge = (Left < (8 - (LineHOffset & 7)));
 			Width = Right - Left;
@@ -1431,7 +1431,7 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 						else
 							Drawn2 = TILE_PLUS(Tile2, 1 - (HTile & 1));
 
-						DrawClippedTile(Drawn2, Offset + Span1 * GFX.PPL, l, w, 0, BatchLines - Span1);
+						DrawClippedTile(Drawn2, Offset + Span1 * S9xCurRenderRegs->PPL, l, w, 0, BatchLines - Span1);
 					}
 				}
 
@@ -1485,7 +1485,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 	PixWidth = S9xCurRenderRegs->QuadWidthPixels ? 4 : (S9xCurRenderRegs->DoubleWidthPixels ? 2 : 1);
 	HiresInterlace = S9xCurRenderRegs->Interlace && S9xCurRenderRegs->DoubleWidthPixels;
 
-	MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % S9xCurRenderRegs->Mosaic;
+	MosaicStart = ((uint32_t) S9xCurRenderRegs->StartY - S9xCurRenderRegs->MosaicStart) % S9xCurRenderRegs->Mosaic;
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
@@ -1496,7 +1496,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 		else
 			DrawPix = GFX.DrawMosaicPixelNomath;
 
-		for ( Y = GFX.StartY - MosaicStart; Y <= GFX.EndY; Y += S9xCurRenderRegs->Mosaic)
+		for ( Y = S9xCurRenderRegs->StartY - MosaicStart; Y <= S9xCurRenderRegs->EndY; Y += S9xCurRenderRegs->Mosaic)
 		{
 			uint32_t Y2, VOff, HOff, HOffsetRow, VOffsetRow,
 			Left, Right, Offset, LineHOffset, Width;
@@ -1509,8 +1509,8 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 			HOff = LineData[Y].BG[2].HOffset;
 
 			Lines = S9xCurRenderRegs->Mosaic - MosaicStart;
-			if (Y + MosaicStart + Lines > GFX.EndY)
-				Lines = GFX.EndY - Y - MosaicStart + 1;
+			if (Y + MosaicStart + Lines > S9xCurRenderRegs->EndY)
+				Lines = S9xCurRenderRegs->EndY - Y - MosaicStart + 1;
 
 			HOffsetRow = VOff >> Offset2Shift;
 			VOffsetRow = (VOff + VOffOff) >> Offset2Shift;
@@ -1533,7 +1533,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 
 			Left =  GFX.Clip[bg].Left[clip];
 			Right = GFX.Clip[bg].Right[clip];
-			Offset = Left * PixWidth + (Y + MosaicStart) * GFX.PPL;
+			Offset = Left * PixWidth + (Y + MosaicStart) * S9xCurRenderRegs->PPL;
 			LineHOffset = LineData[Y].BG[bg].HOffset;
 			left_edge = (Left < (8 - (LineHOffset & 7)));
 			Width = Right - Left;
@@ -1772,7 +1772,7 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 
 	BG.EnableMath = 0;
 
-	GFX.S = GFX.Screen;
+	GFX.S = S9xCurRenderRegs->Screen;
 	GFX.DB = GFX.ZBuffer;
 	GFX.Clip = IPPU.Clip[0];
 	BGActive = S9xRenderFillRAM(0x212c);
@@ -1853,9 +1853,9 @@ static INLINE void RenderScreen (uint8_t sub)
 
 	if (!sub)
 	{
-		GFX.S = GFX.Screen;
-		if (GFX.DoInterlace && GFX.InterlaceFrame)
-			GFX.S += GFX.RealPPL;
+		GFX.S = S9xCurRenderRegs->Screen;
+		if (S9xCurRenderRegs->DoInterlace && S9xCurRenderRegs->InterlaceFrame)
+			GFX.S += S9xCurRenderRegs->RealPPL;
 		GFX.DB = GFX.ZBuffer;
 		D = 32;
 	}
@@ -2723,6 +2723,21 @@ void S9xUpdateScreen (void)
 
 	span_queue[span_recorded % S9X_SPAN_QUEUE] = S9xRenderRegs;
 	span_recorded++;
+
+	/* Drawn where it is recorded, for now.
+	 *
+	 * Holding a span back changes what is drawn, and the test ROM that
+	 * said otherwise was reading a status register every pass of its
+	 * frame loop, which drained the queue 346000 times over 600 frames
+	 * and left nothing deferred to be wrong. Reading it at a rate a
+	 * game might showed the difference at once.
+	 *
+	 * One cause is fixed above: the object and background renderers
+	 * were reading the frame geometry out of GFX rather than out of the
+	 * span. At least one more read like that is left, so the queue runs
+	 * empty until it is found -- the snapshot and the queue are still
+	 * exercised, they simply cannot be stale. */
+	S9xRenderDrain();
 
 	IPPU.PreviousLine = IPPU.CurrentLine;
 }
