@@ -2724,20 +2724,7 @@ void S9xUpdateScreen (void)
 	span_queue[span_recorded % S9X_SPAN_QUEUE] = S9xRenderRegs;
 	span_recorded++;
 
-	/* Drawn where it is recorded, for now.
-	 *
-	 * Holding a span back changes what is drawn, and the test ROM that
-	 * said otherwise was reading a status register every pass of its
-	 * frame loop, which drained the queue 346000 times over 600 frames
-	 * and left nothing deferred to be wrong. Reading it at a rate a
-	 * game might showed the difference at once.
-	 *
-	 * One cause is fixed above: the object and background renderers
-	 * were reading the frame geometry out of GFX rather than out of the
-	 * span. At least one more read like that is left, so the queue runs
-	 * empty until it is found -- the snapshot and the queue are still
-	 * exercised, they simply cannot be stale. */
-	S9xRenderDrain();
+
 
 	IPPU.PreviousLine = IPPU.CurrentLine;
 }
