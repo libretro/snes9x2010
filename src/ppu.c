@@ -3234,8 +3234,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case MEM_PPU_INIDISP: /* INIDISP */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					if (PPU.Brightness != (Byte & 0xf))
 					{
@@ -3272,8 +3271,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case MEM_PPU_OBSEL: /* OBSEL */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.OBJNameBase = (Byte & 3) << 14;
 					PPU.OBJNameSelect = ((Byte >> 3) & 3) << 13;
@@ -3329,8 +3327,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case MEM_PPU_BGMODE: /* BGMODE */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.BG[0].BGSize = (Byte >> 4) & 1;
 					PPU.BG[1].BGSize = (Byte >> 5) & 1;
@@ -3347,8 +3344,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case MEM_PPU_MOSAIC: /* MOSAIC */
 				if (execute && PPU.DisableMosaicHack)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.MosaicStart = CPU.V_Counter;
 					if (PPU.MosaicStart > PPU.ScreenHeight)
@@ -3369,8 +3365,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 				if (execute)
 				{
 					uint32_t bg_mode;
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					bg_mode = Address - MEM_PPU_BG1SC;
 
@@ -3382,8 +3377,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case MEM_PPU_BG12NBA: /* BG12NBA */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.BG[0].NameBase = (Byte & 7) << 12;
 					PPU.BG[1].NameBase = ((Byte >> 4) & 7) << 12;
@@ -3394,8 +3388,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case MEM_PPU_BG34NBA: /* BG34NBA */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.BG[2].NameBase = (Byte & 7) << 12;
 					PPU.BG[3].NameBase = ((Byte >> 4) & 7) << 12;
@@ -3526,8 +3519,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x211a: /* M7SEL */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.Mode7Repeat = Byte >> 6;
 					if (PPU.Mode7Repeat == 1)
@@ -3583,8 +3575,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x2123: /* W12SEL */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.ClipWindow1Enable[0] = !!(Byte & 0x02);
 					PPU.ClipWindow1Enable[1] = !!(Byte & 0x20);
@@ -3602,8 +3593,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x2124: /* W34SEL */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.ClipWindow1Enable[2] = !!(Byte & 0x02);
 					PPU.ClipWindow1Enable[3] = !!(Byte & 0x20);
@@ -3621,8 +3611,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x2125: /* WOBJSEL */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.ClipWindow1Enable[4] = !!(Byte & 0x02);
 					PPU.ClipWindow1Enable[5] = !!(Byte & 0x20);
@@ -3640,8 +3629,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x2126: /* WH0 */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.Window1Left = Byte;
 					PPU.RecomputeClipWindows = TRUE;
@@ -3652,8 +3640,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x2127: /* WH1 */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.Window1Right = Byte;
 					PPU.RecomputeClipWindows = TRUE;
@@ -3664,8 +3651,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x2128: /* WH2 */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.Window2Left = Byte;
 					PPU.RecomputeClipWindows = TRUE;
@@ -3676,8 +3662,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x2129: /* WH3 */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.Window2Right = Byte;
 					PPU.RecomputeClipWindows = TRUE;
@@ -3688,8 +3673,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x212a: /* WBGLOG */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.ClipWindowOverlapLogic[0] = (Byte & 0x03);
 					PPU.ClipWindowOverlapLogic[1] = (Byte & 0x0c) >> 2;
@@ -3703,8 +3687,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x212b: /* WOBJLOG */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.ClipWindowOverlapLogic[4] = (Byte & 0x03);
 					PPU.ClipWindowOverlapLogic[5] = (Byte & 0x0c) >> 2;
@@ -3720,8 +3703,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case MEM_PPU_CGWSEL: /* CGWSEL */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 
 					PPU.RecomputeClipWindows = TRUE;
 				}
@@ -3731,8 +3713,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case MEM_PPU_CGADSUB: /* CGADSUB */
 				if (execute)
 				{
-					if (IPPU.PreviousLine != IPPU.CurrentLine)
-						S9xUpdateScreen();
+					FLUSH_REDRAW();
 				}
 
 				break;
@@ -3740,8 +3721,8 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 			case 0x2132: /* COLDATA */
 				if (execute)
 				{
-					if ((IPPU.PreviousLine != IPPU.CurrentLine) & coldata_update_screen)
-						S9xUpdateScreen();
+					if (coldata_update_screen)
+						FLUSH_REDRAW();
 
 					if (Byte & 0x80)
 						PPU.FixedColourBlue  = Byte & 0x1f;
@@ -3768,8 +3749,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 				{
 					if ((Memory.FillRAM[MEM_PPU_SETINI] ^ Byte) & 8)
 					{
-						if (IPPU.PreviousLine != IPPU.CurrentLine)
-							S9xUpdateScreen();
+						FLUSH_REDRAW();
 
 						IPPU.PseudoHires = Byte & 8;
 					}
@@ -3787,8 +3767,7 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 
 					if ((Memory.FillRAM[MEM_PPU_SETINI] ^ Byte) & 3)
 					{
-						if (IPPU.PreviousLine != IPPU.CurrentLine)
-							S9xUpdateScreen();
+						FLUSH_REDRAW();
 
 						if ((Memory.FillRAM[MEM_PPU_SETINI] ^ Byte) & 2)
 							IPPU.OBJChanged = TRUE;
