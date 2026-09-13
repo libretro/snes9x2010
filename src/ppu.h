@@ -532,7 +532,21 @@ struct SRenderRegs
     */
    uint16_t ScreenColors[256];
    struct SOBJ OBJ[128];
+
+   /* The five PPU registers the renderer reads straight out of FillRAM
+    * -- main and sub screen designation, the two colour-math registers
+    * and SETINI -- indexed the same way, so the call sites read the
+    * same as they did. */
+   uint8_t FillRAM[0x34];   /* $2100..$2133 */
+
+   uint8_t ForcedBlanking;
+   uint8_t SFXSpeedupHack;
+   uint8_t RenderSub;
+   uint8_t RecomputeClipWindows;
+   uint16_t RenderedScreenWidth;
 };
+
+#define S9xRenderFillRAM(addr) (S9xCurRenderRegs->FillRAM[(addr) - 0x2100])
 
 extern struct SRenderRegs        S9xRenderRegs;
 extern const struct SRenderRegs *S9xCurRenderRegs;

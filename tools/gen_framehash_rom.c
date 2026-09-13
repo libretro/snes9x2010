@@ -187,6 +187,12 @@ int main(int argc, char **argv)
    patch(b_m1, m1); patch(b_m2, m2); patch(b_m4, m4);
    patch(b_s1, set); patch(b_s2, set); patch(b_s3, set);
 
+   /* Toggle forced blank from the counter.  Nothing else here reaches
+    * the path that blanks a span instead of drawing it. */
+   e(0xA5); e(0x00); e(0x29); e(0x80);    /* LDA $00 ; AND #$80      */
+   e(0x09); e(0x0F);                      /* ORA #$0F  keep brightness */
+   e(0x8D); e(0x00); e(0x21);             /* STA $2100               */
+
    e(0xA5); e(0x00);                 /* LDA $00                    */
    e(0x8D); e(0x0D); e(0x21); e(0x8D); e(0x0D); e(0x21);  /* BG1HOFS */
    e(0x8D); e(0x0F); e(0x21); e(0x8D); e(0x0F); e(0x21);  /* BG2HOFS */

@@ -1698,8 +1698,8 @@ static INLINE void DrawBackgroundMode7 (int bg, void (*DrawMath) (uint32_t, uint
 
 static INLINE void RenderScreen_SFXSpeedupHack(void)
 {
-	uint8_t	BGActive = Memory.FillRAM[0x212d];
-	int	D = (Memory.FillRAM[0x2130] & 2) << 4; /* 'do math' depth flag */
+	uint8_t	BGActive = S9xRenderFillRAM(0x212d);
+	int	D = (S9xRenderFillRAM(0x2130) & 2) << 4; /* 'do math' depth flag */
 
 	GFX.S = GFX.SubScreen;
 	GFX.DB = GFX.SubZBuffer;
@@ -1775,14 +1775,14 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 	GFX.S = GFX.Screen;
 	GFX.DB = GFX.ZBuffer;
 	GFX.Clip = IPPU.Clip[0];
-	BGActive = Memory.FillRAM[0x212c];
+	BGActive = S9xRenderFillRAM(0x212c);
 	D = 32;
 
 	if (BGActive & 0x10)
 	{
 		BG.TileAddress = S9xCurRenderRegs->OBJNameBase;
 		BG.NameSelect = S9xCurRenderRegs->OBJNameSelect;
-		BG.EnableMath = (Memory.FillRAM[0x2131] & 0x10);
+		BG.EnableMath = (S9xRenderFillRAM(0x2131) & 0x10);
 		BG.StartPalette = 128;
 		S9xSelectTileConverter_Depth4();
 		S9xSelectTileRenderers_SFXSpeedup();
@@ -1796,7 +1796,7 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth2(); \
 			DrawBackground(n, D + Zh, D + Zl); \
@@ -1806,7 +1806,7 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
 			DrawBackground(n, D + Zh, D + Zl); \
@@ -1816,7 +1816,7 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
 			BG.OffsetSizeH = BG.OffsetSizeV = (S9xCurRenderRegs->BG[2].BGSize) ? 16 : 8; \
@@ -1841,7 +1841,7 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 	#undef DO_BG_DEPTH4_OFFSET0
 	#undef DO_BG_DEPTH4_OFFSET1
 
-	BG.EnableMath = (Memory.FillRAM[0x2131] & 0x20);
+	BG.EnableMath = (S9xRenderFillRAM(0x2131) & 0x20);
 }
 
 static INLINE void RenderScreen (uint8_t sub)
@@ -1863,14 +1863,14 @@ static INLINE void RenderScreen (uint8_t sub)
 	{
 		GFX.S = GFX.SubScreen;
 		GFX.DB = GFX.SubZBuffer;
-		D = (Memory.FillRAM[0x2130] & 2) << 4; /* 'do math' depth flag */
+		D = (S9xRenderFillRAM(0x2130) & 2) << 4; /* 'do math' depth flag */
 	}
 
 	if (BGActive & 0x10)
 	{
 		BG.TileAddress = S9xCurRenderRegs->OBJNameBase;
 		BG.NameSelect = S9xCurRenderRegs->OBJNameSelect;
-		BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x10);
+		BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & 0x10);
 		BG.StartPalette = 128;
 		S9xSelectTileConverter(4, FALSE, sub, FALSE);
 		S9xSelectTileRenderers(S9xCurRenderRegs->BGMode, sub, TRUE);
@@ -1884,7 +1884,7 @@ static INLINE void RenderScreen (uint8_t sub)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth2(); \
@@ -1899,7 +1899,7 @@ static INLINE void RenderScreen (uint8_t sub)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
@@ -1914,7 +1914,7 @@ static INLINE void RenderScreen (uint8_t sub)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth8(); \
@@ -1929,7 +1929,7 @@ static INLINE void RenderScreen (uint8_t sub)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth2(); \
@@ -1947,7 +1947,7 @@ static INLINE void RenderScreen (uint8_t sub)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
@@ -1965,7 +1965,7 @@ static INLINE void RenderScreen (uint8_t sub)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth8(); \
@@ -1983,7 +1983,7 @@ static INLINE void RenderScreen (uint8_t sub)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = 8; \
 			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter(depth, 1, sub, S9xCurRenderRegs->BGMosaic[n]); \
@@ -1997,7 +1997,7 @@ static INLINE void RenderScreen (uint8_t sub)
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
-			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
+			BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & (1 << n)); \
 			BG.TileSizeH = 8; \
 			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter(depth, hires, sub, S9xCurRenderRegs->BGMosaic[n]); \
@@ -2053,13 +2053,13 @@ static INLINE void RenderScreen (uint8_t sub)
 		case 7:
 			if (BGActive & 0x01)
 			{
-				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 1);
+				BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & 1);
 				DrawBackgroundMode7(0, GFX.DrawMode7BG1Math, GFX.DrawMode7BG1Nomath, D);
 			}
 
-			if ((Memory.FillRAM[0x2133] & 0x40) && (BGActive & 0x02))
+			if ((S9xRenderFillRAM(0x2133) & 0x40) && (BGActive & 0x02))
 			{
-				BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 2);
+				BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & 2);
 				DrawBackgroundMode7(1, GFX.DrawMode7BG2Math, GFX.DrawMode7BG2Nomath, D);
 			}
 			break;
@@ -2074,7 +2074,7 @@ static INLINE void RenderScreen (uint8_t sub)
 	#undef DO_BG_HIRES1_OFFSET0
 	#undef DO_BG_HIRES1_OFFSET1
 
-	BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x20);
+	BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & 0x20);
 }
 
 struct SRenderRegs        S9xRenderRegs;
@@ -2122,6 +2122,13 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out)
 
    memcpy(out->ScreenColors, IPPU.ScreenColors, sizeof(out->ScreenColors));
    memcpy(out->OBJ,          PPU.OBJ,           sizeof(out->OBJ));
+   memcpy(out->FillRAM,      &Memory.FillRAM[0x2100], sizeof(out->FillRAM));
+
+   out->ForcedBlanking       = PPU.ForcedBlanking;
+   out->SFXSpeedupHack       = PPU.SFXSpeedupHack;
+   out->RenderSub            = PPU.RenderSub;
+   out->RecomputeClipWindows = PPU.RecomputeClipWindows;
+   out->RenderedScreenWidth  = IPPU.RenderedScreenWidth;
 }
 
 static INLINE uint8_t CalcWindowMask (int i, uint8_t W1, uint8_t W2)
@@ -2511,29 +2518,26 @@ static void S9xRenderSpan (void)
 	int clip;
 	uint32_t Offset;
 
-	if (!PPU.ForcedBlanking)
+	if (!S9xCurRenderRegs->ForcedBlanking)
 	{
 		/* If force blank, may as well completely skip all this. 
 		
 		   We only did the OBJ because (AFAWK) the RTO flags are 
 		   updated even during force-blank. */
 
-		if (PPU.RecomputeClipWindows)
-		{
+		if (S9xCurRenderRegs->RecomputeClipWindows)
 			S9xComputeClipWindows();
-			PPU.RecomputeClipWindows = FALSE;
-		}
 
 
-		if(!PPU.SFXSpeedupHack)
+		if(!S9xCurRenderRegs->SFXSpeedupHack)
 		{
-			if (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires ||
-					((Memory.FillRAM[0x2130] & 0x30) != 0x30 && (Memory.FillRAM[0x2130] & 2) && (Memory.FillRAM[0x2131] & 0x3f) && (Memory.FillRAM[0x212d] & 0x1f)))
+			if (S9xCurRenderRegs->BGMode == 5 || S9xCurRenderRegs->BGMode == 6 || S9xCurRenderRegs->PseudoHires ||
+					((S9xRenderFillRAM(0x2130) & 0x30) != 0x30 && (S9xRenderFillRAM(0x2130) & 2) && (S9xRenderFillRAM(0x2131) & 0x3f) && (S9xRenderFillRAM(0x212d) & 0x1f)))
 			{
 				/* If hires (Mode 5/6 or pseudo-hires) or math is to be done
 				   involving the subscreen, then we need to render the subscreen... */
 				RenderScreen(TRUE);
-				if(PPU.RenderSub)
+				if(S9xCurRenderRegs->RenderSub)
 				{
 					DRAW_BACKDROP_NO_MATH();
 				}
@@ -2553,7 +2557,7 @@ static void S9xRenderSpan (void)
 			GFX.S += GFX.RealPPL;
 
 		for ( l = GFX.StartY; l <= GFX.EndY; l++, GFX.S += GFX.PPL)
-			memset(GFX.S, 0, IPPU.RenderedScreenWidth * sizeof(uint16_t));
+			memset(GFX.S, 0, S9xCurRenderRegs->RenderedScreenWidth * sizeof(uint16_t));
 	}
 }
 
@@ -2563,6 +2567,12 @@ void S9xUpdateScreen (void)
     * the same thing and the change is provably inert.  It moves to the
     * point the span is recorded once the whole renderer reads it. */
    S9xSnapshotRenderRegs(&S9xRenderRegs);
+
+	/* The span carries the recompute latch, so clearing it belongs with
+	   recording the span rather than with drawing it: the drawing may
+	   happen later and must not decide for the next span. */
+	if (!PPU.ForcedBlanking)
+		PPU.RecomputeClipWindows = FALSE;
 
 	if (IPPU.OBJChanged || IPPU.InterlaceOBJ)
 		SetupOBJ();

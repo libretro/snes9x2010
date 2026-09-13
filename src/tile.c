@@ -13715,7 +13715,7 @@ static void DrawMode7BG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -13796,7 +13796,7 @@ static void DrawMode7BG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -13877,7 +13877,7 @@ static void DrawMode7BG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, 
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -13958,7 +13958,7 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14039,7 +14039,7 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14120,7 +14120,7 @@ static void DrawMode7BG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Rig
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14201,7 +14201,7 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14282,7 +14282,7 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14363,7 +14363,7 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14458,7 +14458,7 @@ static void DrawMode7BG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14539,7 +14539,7 @@ static void DrawMode7BG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14620,7 +14620,7 @@ static void DrawMode7BG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, 
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14701,7 +14701,7 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14782,7 +14782,7 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14863,7 +14863,7 @@ static void DrawMode7BG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Rig
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -14944,7 +14944,7 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15025,7 +15025,7 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15106,7 +15106,7 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15201,7 +15201,7 @@ static void DrawMode7BG1_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15282,7 +15282,7 @@ static void DrawMode7BG1Add_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15363,7 +15363,7 @@ static void DrawMode7BG1AddBrightness_Hires (uint32_t Left, uint32_t Right, int 
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15444,7 +15444,7 @@ static void DrawMode7BG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15525,7 +15525,7 @@ static void DrawMode7BG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15606,7 +15606,7 @@ static void DrawMode7BG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, 
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15687,7 +15687,7 @@ static void DrawMode7BG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15768,7 +15768,7 @@ static void DrawMode7BG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -15849,7 +15849,7 @@ static void DrawMode7BG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
     uint32_t x, Line, Offset;
     int aa, cc, startx;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -18027,7 +18027,7 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -18153,7 +18153,7 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -18279,7 +18279,7 @@ static void DrawMode7MosaicBG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t R
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -18405,7 +18405,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -18531,7 +18531,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -18657,7 +18657,7 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -18783,7 +18783,7 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -18909,7 +18909,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -19035,7 +19035,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -19175,7 +19175,7 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -19301,7 +19301,7 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -19427,7 +19427,7 @@ static void DrawMode7MosaicBG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t R
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -19553,7 +19553,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -19679,7 +19679,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -19805,7 +19805,7 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -19931,7 +19931,7 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -20057,7 +20057,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -20183,7 +20183,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -20323,7 +20323,7 @@ static void DrawMode7MosaicBG1_Hires (uint32_t Left, uint32_t Right, int D)
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -20449,7 +20449,7 @@ static void DrawMode7MosaicBG1Add_Hires (uint32_t Left, uint32_t Right, int D)
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -20575,7 +20575,7 @@ static void DrawMode7MosaicBG1AddBrightness_Hires (uint32_t Left, uint32_t Right
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -20701,7 +20701,7 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -20827,7 +20827,7 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -20953,7 +20953,7 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t R
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -21079,7 +21079,7 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -21205,7 +21205,7 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -21331,7 +21331,7 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
     int32_t h, w, x, MLeft, MRight;
     int aa, cc, startx, StartY, HMosaic, VMosaic, MosaicStart;
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -24802,7 +24802,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -24968,7 +24968,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -25134,7 +25134,7 @@ static void DrawMode7BG1HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -25300,7 +25300,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -25466,7 +25466,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -25632,7 +25632,7 @@ static void DrawMode7BG1HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -25798,7 +25798,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -25964,7 +25964,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -26130,7 +26130,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     int aa, cc, aa_h, cc_h, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -27812,7 +27812,7 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -27960,7 +27960,7 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -28108,7 +28108,7 @@ static void DrawMode7BG1HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -28256,7 +28256,7 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -28404,7 +28404,7 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -28552,7 +28552,7 @@ static void DrawMode7BG1HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -28700,7 +28700,7 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -28848,7 +28848,7 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -28996,7 +28996,7 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     int aa, cc, aa_q, cc_q, startx;
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -30517,7 +30517,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -30653,7 +30653,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -30789,7 +30789,7 @@ static void DrawMode7BG1BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -30925,7 +30925,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -31061,7 +31061,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -31197,7 +31197,7 @@ static void DrawMode7BG1BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -31333,7 +31333,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -31469,7 +31469,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -31605,7 +31605,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -32985,7 +32985,7 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -33098,7 +33098,7 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -33211,7 +33211,7 @@ static void DrawMode7BG1BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -33324,7 +33324,7 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -33437,7 +33437,7 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -33550,7 +33550,7 @@ static void DrawMode7BG1BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -33663,7 +33663,7 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -33776,7 +33776,7 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -33889,7 +33889,7 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -35039,7 +35039,7 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -35138,7 +35138,7 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -35237,7 +35237,7 @@ static void DrawMode7BG1BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -35336,7 +35336,7 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -35435,7 +35435,7 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -35534,7 +35534,7 @@ static void DrawMode7BG1BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -35633,7 +35633,7 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -35732,7 +35732,7 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -35831,7 +35831,7 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
     uint8_t smooth = (Settings.Mode7HiresBilinear == 2);
 
     GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors;
-    if ((Memory.FillRAM[0x2130] & 1))
+    if ((S9xRenderFillRAM(0x2130) & 1))
     {
         if (IPPU.DirectColourMapsNeedRebuild)
             S9xBuildDirectColourMaps();
@@ -36804,11 +36804,11 @@ void S9xSelectTileRenderers_SFXSpeedup (void)
 	GFX.DrawClippedTileNomath = Renderers_DrawClippedTile16Normal1x1[0];
 	GFX.DrawBackdropNomath    = Renderers_DrawBackdrop16Normal1x1[0];
 
-	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
-	if (Memory.FillRAM[0x2131] & 0x40)
+	i = (S9xRenderFillRAM(0x2131) & 0x80) ? 4 : 1;
+	if (S9xRenderFillRAM(0x2131) & 0x40)
 	{
 		i++;
-		if (Memory.FillRAM[0x2130] & 2)
+		if (S9xRenderFillRAM(0x2130) & 2)
 			i++;
 	}
 
@@ -36997,11 +36997,11 @@ void S9xSelectTileRenderers (int BGMode, uint8_t sub, uint8_t obj)
 	 * tables: 0 = no math, 1 = Add, 2 = AddF1_2, 3 = AddS1_2,
 	 * 4 = Sub, 5 = SubF1_2, 6 = SubS1_2. CGADSUB ($2131) bits decide
 	 * which op is active this frame. */
-	i = (Memory.FillRAM[0x2131] & 0x80) ? 4 : 1;
-	if (Memory.FillRAM[0x2131] & 0x40)
+	i = (S9xRenderFillRAM(0x2131) & 0x80) ? 4 : 1;
+	if (S9xRenderFillRAM(0x2131) & 0x40)
 	{
 		i++;
-		if (Memory.FillRAM[0x2130] & 2)
+		if (S9xRenderFillRAM(0x2130) & 2)
 			i++;
 	}
 
@@ -37058,7 +37058,7 @@ void S9xSelectTileConverter_Depth8 (void)
 	BG.TileShift        = 6;
 	BG.PaletteShift     = 0;
 	BG.PaletteMask      = 0;
-	BG.DirectColourMode = Memory.FillRAM[0x2130] & 1;
+	BG.DirectColourMode = S9xRenderFillRAM(0x2130) & 1;
 }
 
 void S9xSelectTileConverter (int depth, uint8_t hires, uint8_t sub, uint8_t mosaic)
@@ -37072,7 +37072,7 @@ void S9xSelectTileConverter (int depth, uint8_t hires, uint8_t sub, uint8_t mosa
 			BG.TileShift        = 6;
 			BG.PaletteShift     = 0;
 			BG.PaletteMask      = 0;
-			BG.DirectColourMode = Memory.FillRAM[0x2130] & 1;
+			BG.DirectColourMode = S9xRenderFillRAM(0x2130) & 1;
 
 			break;
 
