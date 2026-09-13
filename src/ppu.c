@@ -3128,6 +3128,11 @@ void S9xFixColourBrightness (void)
 {
 	int i;
 
+	/* Before the table changes, not after.  A span recorded under the
+	   old brightness has to be drawn under it, and the resync at the
+	   end of this function is too late for that. */
+	S9xRenderDrain();
+
 	IPPU.XB = mul_brightness[PPU.Brightness];
 
 	/* Cap table for COLOR_ADD_BRIGHTNESS: the sum of two brightness-scaled
