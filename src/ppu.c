@@ -354,12 +354,12 @@ void SetupOBJ (void)
 	int	Height, Y_two, SmallWidth, SmallHeight, LargeWidth, LargeHeight, inc, startline;
 	uint8_t	S, Y_one, line;
 
-	if(PPU.OBJSizeSelect < 8)
+	if(S9xCurRenderRegs->OBJSizeSelect < 8)
 	{
-		SmallWidth	= objsize_array[PPU.OBJSizeSelect][0];
-		SmallHeight	= objsize_array[PPU.OBJSizeSelect][1];
-		LargeWidth	= objsize_array[PPU.OBJSizeSelect][2];
-		LargeHeight	= objsize_array[PPU.OBJSizeSelect][3];
+		SmallWidth	= objsize_array[S9xCurRenderRegs->OBJSizeSelect][0];
+		SmallHeight	= objsize_array[S9xCurRenderRegs->OBJSizeSelect][1];
+		LargeWidth	= objsize_array[S9xCurRenderRegs->OBJSizeSelect][2];
+		LargeHeight	= objsize_array[S9xCurRenderRegs->OBJSizeSelect][3];
    }else{
       /* default */
       SmallWidth	= objsize_array[4][0];
@@ -368,8 +368,8 @@ void SetupOBJ (void)
       LargeHeight	= objsize_array[4][3];
    }
 
-	inc = IPPU.InterlaceOBJ ? 2 : 1;
-	startline = (IPPU.InterlaceOBJ && GFX.InterlaceFrame) ? 1 : 0;
+	inc = S9xCurRenderRegs->InterlaceOBJ ? 2 : 1;
+	startline = (S9xCurRenderRegs->InterlaceOBJ && GFX.InterlaceFrame) ? 1 : 0;
 
 	/* OK, we have three cases here. Either there's no priority, priority 
 	   is normal FirstSprite, or priority is FirstSprite+Y. The first two 
@@ -378,7 +378,7 @@ void SetupOBJ (void)
 	   So we split them up. */
 
 
-	if (!PPU.OAMPriorityRotation || !(PPU.OAMFlip & PPU.OAMAddr & 1)) /* normal case*/
+	if (!S9xCurRenderRegs->OAMPriorityRotation || !(S9xCurRenderRegs->OAMFlip & S9xCurRenderRegs->OAMAddr & 1)) /* normal case*/
 	{
 		int i, j;
 		uint8_t	LineOBJ[SNES_HEIGHT_EXTENDED], FirstSprite;
@@ -393,7 +393,7 @@ void SetupOBJ (void)
 				GFX.OBJLines[i].OBJ[j].Sprite = -1;
 		}
 
-		FirstSprite = PPU.FirstSprite;
+		FirstSprite = S9xCurRenderRegs->FirstSprite;
 		S = FirstSprite;
 
 		do
@@ -521,7 +521,7 @@ void SetupOBJ (void)
 			GFX.OBJLines[Y_two].RTOFlags = Y_two ? GFX.OBJLines[Y_two - 1].RTOFlags : 0;
 			GFX.OBJLines[Y_two].Tiles = (reduce_sprite_flicker ? 60 : 34);
 
-			FirstSprite = (PPU.FirstSprite + Y_two) & 0x7f;
+			FirstSprite = (S9xCurRenderRegs->FirstSprite + Y_two) & 0x7f;
 			S = FirstSprite;
 			j = 0;
 
@@ -564,7 +564,7 @@ static void DrawOBJS (int D)
 	void (*DrawTile) (uint32_t, uint32_t, uint32_t, uint32_t) = NULL;
 	void (*DrawClippedTile) (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t) = NULL;
 
-	PixWidth = IPPU.QuadWidthPixels ? 4 : (IPPU.DoubleWidthPixels ? 2 : 1);
+	PixWidth = S9xCurRenderRegs->QuadWidthPixels ? 4 : (S9xCurRenderRegs->DoubleWidthPixels ? 2 : 1);
 	BG.InterlaceLine = GFX.InterlaceFrame ? 8 : 0;
 	GFX.Z1 = 2;
 
@@ -586,7 +586,7 @@ static void DrawOBJS (int D)
 	 * crosses its 8-row tile band renders as two spans, the second
 	 * band-aligned with the tile row group re-derived. */
 	uint32_t BatchL;
-	uint8_t batch_cfg = (PixWidth == 1 && !IPPU.Interlace && !IPPU.InterlaceOBJ);
+	uint8_t batch_cfg = (PixWidth == 1 && !S9xCurRenderRegs->Interlace && !S9xCurRenderRegs->InterlaceOBJ);
 
 	for ( Y = GFX.StartY, Offset = Y * GFX.PPL; Y <= GFX.EndY; Y += BatchL, Offset += BatchL * GFX.PPL)
 	{
@@ -736,23 +736,23 @@ static void DrawBackground (int bg, uint8_t Zh, uint8_t Zl)
 	uint16_t	*SC0, *SC1, *SC2, *SC3;
 	uint8_t HiresInterlace;
 
-	BG.TileAddress = PPU.BG[bg].NameBase << 1;
+	BG.TileAddress = S9xCurRenderRegs->BG[bg].NameBase << 1;
 
-	SC0 = (uint16_t *) &Memory.VRAM[PPU.BG[bg].SCBase << 1];
-	SC1 = (PPU.BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
+	SC0 = (uint16_t *) &Memory.VRAM[S9xCurRenderRegs->BG[bg].SCBase << 1];
+	SC1 = (S9xCurRenderRegs->BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
 	if (SC1 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC1 -= 0x8000;
-	SC2 = (PPU.BG[bg].SCSize & 2) ? SC1 + 1024 : SC0;
+	SC2 = (S9xCurRenderRegs->BG[bg].SCSize & 2) ? SC1 + 1024 : SC0;
 	if (SC2 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC2 -= 0x8000;
-	SC3 = (PPU.BG[bg].SCSize & 1) ? SC2 + 1024 : SC2;
+	SC3 = (S9xCurRenderRegs->BG[bg].SCSize & 1) ? SC2 + 1024 : SC2;
 	if (SC3 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC3 -= 0x8000;
 
 	OffsetMask  = (BG.TileSizeH == 16) ? 0x3ff : 0x1ff;
 	OffsetShift = (BG.TileSizeV == 16) ? 4 : 3;
-	PixWidth = IPPU.QuadWidthPixels ? 4 : (IPPU.DoubleWidthPixels ? 2 : 1);
-	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
+	PixWidth = S9xCurRenderRegs->QuadWidthPixels ? 4 : (S9xCurRenderRegs->DoubleWidthPixels ? 2 : 1);
+	HiresInterlace = S9xCurRenderRegs->Interlace && S9xCurRenderRegs->DoubleWidthPixels;
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
@@ -979,25 +979,25 @@ static void DrawBackgroundMosaic (int bg, uint8_t Zh, uint8_t Zl)
 	int	clip, Lines, OffsetMask, OffsetShift, PixWidth, MosaicStart;
 	uint8_t HiresInterlace;
 
-	BG.TileAddress = PPU.BG[bg].NameBase << 1;
+	BG.TileAddress = S9xCurRenderRegs->BG[bg].NameBase << 1;
 
-	SC0 = (uint16_t *) &Memory.VRAM[PPU.BG[bg].SCBase << 1];
-	SC1 = (PPU.BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
+	SC0 = (uint16_t *) &Memory.VRAM[S9xCurRenderRegs->BG[bg].SCBase << 1];
+	SC1 = (S9xCurRenderRegs->BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
 	if (SC1 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC1 -= 0x8000;
-	SC2 = (PPU.BG[bg].SCSize & 2) ? SC1 + 1024 : SC0;
+	SC2 = (S9xCurRenderRegs->BG[bg].SCSize & 2) ? SC1 + 1024 : SC0;
 	if (SC2 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC2 -= 0x8000;
-	SC3 = (PPU.BG[bg].SCSize & 1) ? SC2 + 1024 : SC2;
+	SC3 = (S9xCurRenderRegs->BG[bg].SCSize & 1) ? SC2 + 1024 : SC2;
 	if (SC3 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC3 -= 0x8000;
 
 	OffsetMask  = (BG.TileSizeH == 16) ? 0x3ff : 0x1ff;
 	OffsetShift = (BG.TileSizeV == 16) ? 4 : 3;
-	PixWidth = IPPU.QuadWidthPixels ? 4 : (IPPU.DoubleWidthPixels ? 2 : 1);
-	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
+	PixWidth = S9xCurRenderRegs->QuadWidthPixels ? 4 : (S9xCurRenderRegs->DoubleWidthPixels ? 2 : 1);
+	HiresInterlace = S9xCurRenderRegs->Interlace && S9xCurRenderRegs->DoubleWidthPixels;
 
-	MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % PPU.Mosaic;
+	MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % S9xCurRenderRegs->Mosaic;
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
@@ -1008,7 +1008,7 @@ static void DrawBackgroundMosaic (int bg, uint8_t Zh, uint8_t Zl)
 		else
 			DrawPix = GFX.DrawMosaicPixelNomath;
 
-		for ( Y = GFX.StartY - MosaicStart; Y <= GFX.EndY; Y += PPU.Mosaic)
+		for ( Y = GFX.StartY - MosaicStart; Y <= GFX.EndY; Y += S9xCurRenderRegs->Mosaic)
 		{
 			uint32_t	Y2, VOffset, HOffset, TilemapRow,
 			Left, Right, Offset, HPos, HTile, Width;
@@ -1023,7 +1023,7 @@ static void DrawBackgroundMosaic (int bg, uint8_t Zh, uint8_t Zl)
 			VOffset = LineData[Y].BG[bg].VOffset + HiresInterlace;
 			HOffset = LineData[Y].BG[bg].HOffset;
 
-			Lines = PPU.Mosaic - MosaicStart;
+			Lines = S9xCurRenderRegs->Mosaic - MosaicStart;
 			if (Y + MosaicStart + Lines > GFX.EndY)
 				Lines = GFX.EndY - Y - MosaicStart + 1;
 
@@ -1050,7 +1050,7 @@ static void DrawBackgroundMosaic (int bg, uint8_t Zh, uint8_t Zl)
 			Left   = GFX.Clip[bg].Left[clip];
 			Right  = GFX.Clip[bg].Right[clip];
 			Offset = Left * PixWidth + (Y + MosaicStart) * GFX.PPL;
-			HPos   = (HOffset + Left - (Left % PPU.Mosaic)) & OffsetMask;
+			HPos   = (HOffset + Left - (Left % S9xCurRenderRegs->Mosaic)) & OffsetMask;
 			HTile  = HPos >> 3;
 
 			if (BG.TileSizeH == 8)
@@ -1074,7 +1074,7 @@ static void DrawBackgroundMosaic (int bg, uint8_t Zh, uint8_t Zl)
 
 			while (Left < Right)
 			{
-				uint32_t	w = PPU.Mosaic - (Left % PPU.Mosaic);
+				uint32_t	w = S9xCurRenderRegs->Mosaic - (Left % S9xCurRenderRegs->Mosaic);
 				if (w > Width)
 					w = Width;
 
@@ -1094,7 +1094,7 @@ static void DrawBackgroundMosaic (int bg, uint8_t Zh, uint8_t Zl)
 						DrawPix(TILE_PLUS(Tile, 1 - (HTile & 1)), Offset, VirtAlign, HPos & 7, w, Lines);
 				}
 
-				HPos += PPU.Mosaic;
+				HPos += S9xCurRenderRegs->Mosaic;
 
 				while (HPos >= 8)
 				{
@@ -1143,27 +1143,27 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 	uint16_t	*SC0, *SC1, *SC2, *SC3;
 	uint16_t	*BPS0, *BPS1, *BPS2, *BPS3;
 
-	BG.TileAddress = PPU.BG[bg].NameBase << 1;
+	BG.TileAddress = S9xCurRenderRegs->BG[bg].NameBase << 1;
 
-	BPS0 = (uint16_t *) &Memory.VRAM[PPU.BG[2].SCBase << 1];
-	BPS1 = (PPU.BG[2].SCSize & 1) ? BPS0 + 1024 : BPS0;
+	BPS0 = (uint16_t *) &Memory.VRAM[S9xCurRenderRegs->BG[2].SCBase << 1];
+	BPS1 = (S9xCurRenderRegs->BG[2].SCSize & 1) ? BPS0 + 1024 : BPS0;
 	if (BPS1 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		BPS1 -= 0x8000;
-	BPS2 = (PPU.BG[2].SCSize & 2) ? BPS1 + 1024 : BPS0;
+	BPS2 = (S9xCurRenderRegs->BG[2].SCSize & 2) ? BPS1 + 1024 : BPS0;
 	if (BPS2 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		BPS2 -= 0x8000;
-	BPS3 = (PPU.BG[2].SCSize & 1) ? BPS2 + 1024 : BPS2;
+	BPS3 = (S9xCurRenderRegs->BG[2].SCSize & 1) ? BPS2 + 1024 : BPS2;
 	if (BPS3 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		BPS3 -= 0x8000;
 
-	SC0 = (uint16_t *) &Memory.VRAM[PPU.BG[bg].SCBase << 1];
-	SC1 = (PPU.BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
+	SC0 = (uint16_t *) &Memory.VRAM[S9xCurRenderRegs->BG[bg].SCBase << 1];
+	SC1 = (S9xCurRenderRegs->BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
 	if (SC1 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC1 -= 0x8000;
-	SC2 = (PPU.BG[bg].SCSize & 2) ? SC1 + 1024 : SC0;
+	SC2 = (S9xCurRenderRegs->BG[bg].SCSize & 2) ? SC1 + 1024 : SC0;
 	if (SC2 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC2 -= 0x8000;
-	SC3 = (PPU.BG[bg].SCSize & 1) ? SC2 + 1024 : SC2;
+	SC3 = (S9xCurRenderRegs->BG[bg].SCSize & 1) ? SC2 + 1024 : SC2;
 	if (SC3 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC3 -= 0x8000;
 
@@ -1172,8 +1172,8 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 	Offset2Mask  = (BG.OffsetSizeH == 16) ? 0x3ff : 0x1ff;
 	Offset2Shift = (BG.OffsetSizeV == 16) ? 4 : 3;
 	OffsetEnableMask = 0x2000 << bg;
-	PixWidth = IPPU.QuadWidthPixels ? 4 : (IPPU.DoubleWidthPixels ? 2 : 1);
-	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
+	PixWidth = S9xCurRenderRegs->QuadWidthPixels ? 4 : (S9xCurRenderRegs->DoubleWidthPixels ? 2 : 1);
+	HiresInterlace = S9xCurRenderRegs->Interlace && S9xCurRenderRegs->DoubleWidthPixels;
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
@@ -1209,7 +1209,7 @@ static void DrawBackgroundOffset (int bg, uint8_t Zh, uint8_t Zl, int VOffOff)
 			 * stepping and VirtAlign halving are not corpus-verifiable
 			 * here, and they are rare in OPT modes. */
 			BatchLines = 1;
-			if (PixWidth == 1 && !IPPU.Interlace)
+			if (PixWidth == 1 && !S9xCurRenderRegs->Interlace)
 			{
 				while (Y + BatchLines <= GFX.EndY && BatchLines < 8 &&
 				       LineData[Y].BG[2].VOffset  == LineData[Y + BatchLines].BG[2].VOffset  &&
@@ -1453,27 +1453,27 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 	uint16_t	*SC0, *SC1, *SC2, *SC3, *BPS0, *BPS1, *BPS2, *BPS3;
 	uint8_t HiresInterlace;
 
-	BG.TileAddress = PPU.BG[bg].NameBase << 1;
+	BG.TileAddress = S9xCurRenderRegs->BG[bg].NameBase << 1;
 
-	BPS0 = (uint16_t *) &Memory.VRAM[PPU.BG[2].SCBase << 1];
-	BPS1 = (PPU.BG[2].SCSize & 1) ? BPS0 + 1024 : BPS0;
+	BPS0 = (uint16_t *) &Memory.VRAM[S9xCurRenderRegs->BG[2].SCBase << 1];
+	BPS1 = (S9xCurRenderRegs->BG[2].SCSize & 1) ? BPS0 + 1024 : BPS0;
 	if (BPS1 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		BPS1 -= 0x8000;
-	BPS2 = (PPU.BG[2].SCSize & 2) ? BPS1 + 1024 : BPS0;
+	BPS2 = (S9xCurRenderRegs->BG[2].SCSize & 2) ? BPS1 + 1024 : BPS0;
 	if (BPS2 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		BPS2 -= 0x8000;
-	BPS3 = (PPU.BG[2].SCSize & 1) ? BPS2 + 1024 : BPS2;
+	BPS3 = (S9xCurRenderRegs->BG[2].SCSize & 1) ? BPS2 + 1024 : BPS2;
 	if (BPS3 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		BPS3 -= 0x8000;
 
-	SC0 = (uint16_t *) &Memory.VRAM[PPU.BG[bg].SCBase << 1];
-	SC1 = (PPU.BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
+	SC0 = (uint16_t *) &Memory.VRAM[S9xCurRenderRegs->BG[bg].SCBase << 1];
+	SC1 = (S9xCurRenderRegs->BG[bg].SCSize & 1) ? SC0 + 1024 : SC0;
 	if (SC1 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC1 -= 0x8000;
-	SC2 = (PPU.BG[bg].SCSize & 2) ? SC1 + 1024 : SC0;
+	SC2 = (S9xCurRenderRegs->BG[bg].SCSize & 2) ? SC1 + 1024 : SC0;
 	if (SC2 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC2 -= 0x8000;
-	SC3 = (PPU.BG[bg].SCSize & 1) ? SC2 + 1024 : SC2;
+	SC3 = (S9xCurRenderRegs->BG[bg].SCSize & 1) ? SC2 + 1024 : SC2;
 	if (SC3 >= (uint16_t *) (Memory.VRAM + 0x10000))
 		SC3 -= 0x8000;
 
@@ -1482,10 +1482,10 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 	Offset2Mask  = (BG.OffsetSizeH == 16) ? 0x3ff : 0x1ff;
 	Offset2Shift = (BG.OffsetSizeV == 16) ? 4 : 3;
 	OffsetEnableMask = 0x2000 << bg;
-	PixWidth = IPPU.QuadWidthPixels ? 4 : (IPPU.DoubleWidthPixels ? 2 : 1);
-	HiresInterlace = IPPU.Interlace && IPPU.DoubleWidthPixels;
+	PixWidth = S9xCurRenderRegs->QuadWidthPixels ? 4 : (S9xCurRenderRegs->DoubleWidthPixels ? 2 : 1);
+	HiresInterlace = S9xCurRenderRegs->Interlace && S9xCurRenderRegs->DoubleWidthPixels;
 
-	MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % PPU.Mosaic;
+	MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % S9xCurRenderRegs->Mosaic;
 
 	for ( clip = 0; clip < GFX.Clip[bg].Count; clip++)
 	{
@@ -1496,7 +1496,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 		else
 			DrawPix = GFX.DrawMosaicPixelNomath;
 
-		for ( Y = GFX.StartY - MosaicStart; Y <= GFX.EndY; Y += PPU.Mosaic)
+		for ( Y = GFX.StartY - MosaicStart; Y <= GFX.EndY; Y += S9xCurRenderRegs->Mosaic)
 		{
 			uint32_t Y2, VOff, HOff, HOffsetRow, VOffsetRow,
 			Left, Right, Offset, LineHOffset, Width;
@@ -1508,7 +1508,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 			VOff = LineData[Y].BG[2].VOffset - 1;
 			HOff = LineData[Y].BG[2].HOffset;
 
-			Lines = PPU.Mosaic - MosaicStart;
+			Lines = S9xCurRenderRegs->Mosaic - MosaicStart;
 			if (Y + MosaicStart + Lines > GFX.EndY)
 				Lines = GFX.EndY - Y - MosaicStart + 1;
 
@@ -1626,7 +1626,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 				b1 += (TilemapRow & 0x1f) << 5;
 				b2 += (TilemapRow & 0x1f) << 5;
 
-				HPos = (HOffset + Left - (Left % PPU.Mosaic)) & OffsetMask;
+				HPos = (HOffset + Left - (Left % S9xCurRenderRegs->Mosaic)) & OffsetMask;
 				HTile = HPos >> 3;
 
 				if (BG.TileSizeH == 8)
@@ -1644,7 +1644,7 @@ static void DrawBackgroundOffsetMosaic (int bg, uint8_t Zh, uint8_t Zl, int VOff
 						t = b1 + (HTile >> 1);
 				}
 
-				w = PPU.Mosaic - (Left % PPU.Mosaic);
+				w = S9xCurRenderRegs->Mosaic - (Left % S9xCurRenderRegs->Mosaic);
 
 				if (w > Width)
 					w = Width;
@@ -1707,8 +1707,8 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 
 	if (BGActive & 0x10)
 	{
-		BG.TileAddress = PPU.OBJNameBase;
-		BG.NameSelect = PPU.OBJNameSelect;
+		BG.TileAddress = S9xCurRenderRegs->OBJNameBase;
+		BG.NameSelect = S9xCurRenderRegs->OBJNameSelect;
 		BG.EnableMath = 0;
 		BG.StartPalette = 128;
 		S9xSelectTileConverter_Depth4();
@@ -1724,8 +1724,8 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = 0; \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth2(); \
 			DrawBackground(n, D + Zh, D + Zl); \
 		}
@@ -1735,8 +1735,8 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = 0; \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
 			DrawBackground(n, D + Zh, D + Zl); \
 		}
@@ -1746,18 +1746,18 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = 0; \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
-			BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeH = BG.OffsetSizeV = (S9xCurRenderRegs->BG[2].BGSize) ? 16 : 8; \
 		}
 
-	switch (PPU.BGMode)
+	switch (S9xCurRenderRegs->BGMode)
 	{
 		case 1:
 			DO_BG_DEPTH4_OFFSET0(0,  0, 4, FALSE, FALSE, 15, 11, 0);
 			DO_BG_DEPTH4_OFFSET0(1,  0, 4, FALSE, FALSE, 14, 10, 0);
-			DO_BG_DEPTH2(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			DO_BG_DEPTH2(2,  0, 2, FALSE, FALSE, (S9xCurRenderRegs->BG3Priority ? 17 : 7), 3, 0);
 			break;
 
 		case 2:
@@ -1780,8 +1780,8 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 
 	if (BGActive & 0x10)
 	{
-		BG.TileAddress = PPU.OBJNameBase;
-		BG.NameSelect = PPU.OBJNameSelect;
+		BG.TileAddress = S9xCurRenderRegs->OBJNameBase;
+		BG.NameSelect = S9xCurRenderRegs->OBJNameSelect;
 		BG.EnableMath = (Memory.FillRAM[0x2131] & 0x10);
 		BG.StartPalette = 128;
 		S9xSelectTileConverter_Depth4();
@@ -1797,7 +1797,7 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth2(); \
 			DrawBackground(n, D + Zh, D + Zl); \
 		}
@@ -1807,7 +1807,7 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
 			DrawBackground(n, D + Zh, D + Zl); \
 		}
@@ -1817,18 +1817,18 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
-			BG.OffsetSizeH = BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeH = BG.OffsetSizeV = (S9xCurRenderRegs->BG[2].BGSize) ? 16 : 8; \
 			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
 		}
 
-	switch (PPU.BGMode)
+	switch (S9xCurRenderRegs->BGMode)
 	{
 		case 1:
 			DO_BG_DEPTH4_OFFSET0(0,  0, 4, FALSE, FALSE, 15, 11, 0);
 			DO_BG_DEPTH4_OFFSET0(1,  0, 4, FALSE, FALSE, 14, 10, 0);
-			DO_BG_DEPTH2(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			DO_BG_DEPTH2(2,  0, 2, FALSE, FALSE, (S9xCurRenderRegs->BG3Priority ? 17 : 7), 3, 0);
 			break;
 
 		case 2:
@@ -1868,28 +1868,28 @@ static INLINE void RenderScreen (uint8_t sub)
 
 	if (BGActive & 0x10)
 	{
-		BG.TileAddress = PPU.OBJNameBase;
-		BG.NameSelect = PPU.OBJNameSelect;
+		BG.TileAddress = S9xCurRenderRegs->OBJNameBase;
+		BG.NameSelect = S9xCurRenderRegs->OBJNameSelect;
 		BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x10);
 		BG.StartPalette = 128;
 		S9xSelectTileConverter(4, FALSE, sub, FALSE);
-		S9xSelectTileRenderers(PPU.BGMode, sub, TRUE);
+		S9xSelectTileRenderers(S9xCurRenderRegs->BGMode, sub, TRUE);
 		DrawOBJS(D + 4);
 	}
 
 	BG.NameSelect = 0;
-	S9xSelectTileRenderers(PPU.BGMode, sub, FALSE);
+	S9xSelectTileRenderers(S9xCurRenderRegs->BGMode, sub, FALSE);
 
 	#define DO_BG_HIRES0_OFFSET0_D2(n, pal, depth, hires, offset, Zh, Zl, voffoff) \
 		if (BGActive & (1 << n)) \
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth2(); \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
+			if (S9xCurRenderRegs->BGMosaic[n] && (S9xCurRenderRegs->Mosaic > 1)) \
 				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 			else \
 				DrawBackground(n, D + Zh, D + Zl); \
@@ -1900,11 +1900,11 @@ static INLINE void RenderScreen (uint8_t sub)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
+			if (S9xCurRenderRegs->BGMosaic[n] && (S9xCurRenderRegs->Mosaic > 1)) \
 				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 			else \
 				DrawBackground(n, D + Zh, D + Zl); \
@@ -1915,11 +1915,11 @@ static INLINE void RenderScreen (uint8_t sub)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth8(); \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
+			if (S9xCurRenderRegs->BGMosaic[n] && (S9xCurRenderRegs->Mosaic > 1)) \
 				DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 			else \
 				DrawBackground(n, D + Zh, D + Zl); \
@@ -1930,14 +1930,14 @@ static INLINE void RenderScreen (uint8_t sub)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth2(); \
 			\
-			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
-			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeH = (S9xCurRenderRegs->BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeV = (S9xCurRenderRegs->BG[2].BGSize) ? 16 : 8; \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
+			if (S9xCurRenderRegs->BGMosaic[n] && (S9xCurRenderRegs->Mosaic > 1)) \
 			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 			else \
 			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
@@ -1948,14 +1948,14 @@ static INLINE void RenderScreen (uint8_t sub)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth4(); \
 			\
-			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
-			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeH = (S9xCurRenderRegs->BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeV = (S9xCurRenderRegs->BG[2].BGSize) ? 16 : 8; \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
+			if (S9xCurRenderRegs->BGMosaic[n] && (S9xCurRenderRegs->Mosaic > 1)) \
 			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 			else \
 			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
@@ -1966,14 +1966,14 @@ static INLINE void RenderScreen (uint8_t sub)
 		{ \
 			BG.StartPalette = pal; \
 			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
-			BG.TileSizeH = (PPU.BG[n].BGSize) ? 16 : 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeH = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
 			S9xSelectTileConverter_Depth8(); \
 			\
-			BG.OffsetSizeH = (PPU.BG[2].BGSize) ? 16 : 8; \
-			BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeH = (S9xCurRenderRegs->BG[2].BGSize) ? 16 : 8; \
+			BG.OffsetSizeV = (S9xCurRenderRegs->BG[2].BGSize) ? 16 : 8; \
 			\
-			if (PPU.BGMosaic[n] && (PPU.Mosaic > 1)) \
+			if (S9xCurRenderRegs->BGMosaic[n] && (S9xCurRenderRegs->Mosaic > 1)) \
 			DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 			else \
 			DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
@@ -1985,9 +1985,9 @@ static INLINE void RenderScreen (uint8_t sub)
 			BG.StartPalette = pal; \
 			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
 			BG.TileSizeH = 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter(depth, 1, sub, PPU.BGMosaic[n]); \
-				if (PPU.BGMosaic[n]) \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter(depth, 1, sub, S9xCurRenderRegs->BGMosaic[n]); \
+				if (S9xCurRenderRegs->BGMosaic[n]) \
 					DrawBackgroundMosaic(n, D + Zh, D + Zl); \
 				else \
 					DrawBackground(n, D + Zh, D + Zl); \
@@ -1999,19 +1999,19 @@ static INLINE void RenderScreen (uint8_t sub)
 			BG.StartPalette = pal; \
 			BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & (1 << n)); \
 			BG.TileSizeH = 8; \
-			BG.TileSizeV = (PPU.BG[n].BGSize) ? 16 : 8; \
-			S9xSelectTileConverter(depth, hires, sub, PPU.BGMosaic[n]); \
+			BG.TileSizeV = (S9xCurRenderRegs->BG[n].BGSize) ? 16 : 8; \
+			S9xSelectTileConverter(depth, hires, sub, S9xCurRenderRegs->BGMosaic[n]); \
 			\
 				BG.OffsetSizeH = 8; \
-				BG.OffsetSizeV = (PPU.BG[2].BGSize) ? 16 : 8; \
+				BG.OffsetSizeV = (S9xCurRenderRegs->BG[2].BGSize) ? 16 : 8; \
 				\
-				if (PPU.BGMosaic[n]) \
+				if (S9xCurRenderRegs->BGMosaic[n]) \
 					DrawBackgroundOffsetMosaic(n, D + Zh, D + Zl, voffoff); \
 				else \
 					DrawBackgroundOffset(n, D + Zh, D + Zl, voffoff); \
 		}
 
-	switch (PPU.BGMode)
+	switch (S9xCurRenderRegs->BGMode)
 	{
 		case 0:
 			DO_BG_HIRES0_OFFSET0_D2(0,  0, 2, FALSE, FALSE, 15, 11, 0);
@@ -2023,7 +2023,7 @@ static INLINE void RenderScreen (uint8_t sub)
 		case 1:
 			DO_BG_HIRES0_OFFSET0_D4(0,  0, 4, FALSE, FALSE, 15, 11, 0);
 			DO_BG_HIRES0_OFFSET0_D4(1,  0, 4, FALSE, FALSE, 14, 10, 0);
-			DO_BG_HIRES0_OFFSET0_D2(2,  0, 2, FALSE, FALSE, (PPU.BG3Priority ? 17 : 7), 3, 0);
+			DO_BG_HIRES0_OFFSET0_D2(2,  0, 2, FALSE, FALSE, (S9xCurRenderRegs->BG3Priority ? 17 : 7), 3, 0);
 			break;
 
 		case 2:
@@ -2093,6 +2093,26 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out)
    out->Window2Left          = PPU.Window2Left;
    out->Window2Right = PPU.Window2Right;
    out->FullClipping = PPU.FullClipping;
+
+   memcpy(out->BG,       PPU.BG,       sizeof(out->BG));
+   memcpy(out->BGMosaic, PPU.BGMosaic, sizeof(out->BGMosaic));
+
+   out->OBJNameBase         = PPU.OBJNameBase;
+   out->OBJNameSelect       = PPU.OBJNameSelect;
+   out->OAMAddr             = PPU.OAMAddr;
+   out->BGMode              = PPU.BGMode;
+   out->BG3Priority         = PPU.BG3Priority;
+   out->OBJSizeSelect       = PPU.OBJSizeSelect;
+   out->OAMPriorityRotation = PPU.OAMPriorityRotation;
+   out->OAMFlip             = PPU.OAMFlip;
+   out->FirstSprite         = PPU.FirstSprite;
+   out->Mosaic              = PPU.Mosaic;
+   out->MosaicStart         = PPU.MosaicStart;
+
+   out->Interlace           = IPPU.Interlace;
+   out->InterlaceOBJ        = IPPU.InterlaceOBJ;
+   out->DoubleWidthPixels   = IPPU.DoubleWidthPixels;
+   out->QuadWidthPixels     = IPPU.QuadWidthPixels;
 }
 
 static INLINE uint8_t CalcWindowMask (int i, uint8_t W1, uint8_t W2)

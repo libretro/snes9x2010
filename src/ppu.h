@@ -479,6 +479,40 @@ struct SRenderRegs
    uint8_t Window2Left;
    uint8_t Window2Right;
    uint8_t FullClipping;
+
+   /* Background and object registers.  PPU.OBJ[] and the palette are
+    * deliberately absent: they are tables the size of the rest of this
+    * struct several times over and they change an entry at a time, so
+    * they want their own incremental commands rather than a copy per
+    * span. */
+   struct
+   {
+      uint16_t SCBase;
+      uint16_t HOffset;
+      uint16_t VOffset;
+      uint16_t NameBase;
+      uint16_t SCSize;
+      uint8_t  BGSize;
+   } BG[4];
+
+   uint16_t OBJNameBase;
+   uint16_t OBJNameSelect;
+   uint16_t OAMAddr;
+
+   uint8_t BGMode;
+   uint8_t BG3Priority;
+   uint8_t BGMosaic[4];
+   uint8_t OBJSizeSelect;
+   uint8_t OAMPriorityRotation;
+   uint8_t OAMFlip;
+   uint8_t FirstSprite;
+   uint8_t Mosaic;
+   uint8_t MosaicStart;
+
+   uint8_t Interlace;
+   uint8_t InterlaceOBJ;
+   uint8_t DoubleWidthPixels;
+   uint8_t QuadWidthPixels;
 };
 
 extern struct SRenderRegs        S9xRenderRegs;
