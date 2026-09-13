@@ -2532,6 +2532,12 @@ static void S9xRenderSpan (void)
 	int clip;
 	uint32_t Offset;
 
+	if (S9xCurRenderRegs->SetupOBJ)
+		SetupOBJ();
+
+	/* XXX: Check ForceBlank? Or anything else? */
+	PPU.RangeTimeOver |= GFX.OBJLines[S9xCurRenderRegs->RTOLine].RTOFlags;
+
 	if (!S9xCurRenderRegs->ForcedBlanking)
 	{
 		/* If force blank, may as well completely skip all this. 
@@ -2588,11 +2594,13 @@ void S9xUpdateScreen (void)
 	if (!PPU.ForcedBlanking)
 		PPU.RecomputeClipWindows = FALSE;
 
-	if (IPPU.OBJChanged || IPPU.InterlaceOBJ)
-		SetupOBJ();
-
-	/* XXX: Check ForceBlank? Or anything else? */
-	PPU.RangeTimeOver |= GFX.OBJLines[GFX.EndY].RTOFlags;
+	/* Both of these used to happen here and now happen when the span is
+	   drawn, so what they depend on is latched instead.  The range-over
+	   line is sampled before GFX.EndY moves, because the accumulation
+	   has always used the end of the previous span. */
+	S9xRenderRegs.SetupOBJ = (IPPU.OBJChanged || IPPU.InterlaceOBJ);
+	S9xRenderRegs.RTOLine  = GFX.EndY;
+	IPPU.OBJChanged        = FALSE;
 
 	GFX.StartY = IPPU.PreviousLine;
 	if ((GFX.EndY = IPPU.CurrentLine - 1) >= PPU.ScreenHeight)

@@ -555,6 +555,13 @@ struct SRenderRegs
    uint32_t  RealPPL;
    uint8_t   DoInterlace;
    uint8_t   InterlaceFrame;
+
+   /* Whether this span has to rebuild the object lists before it draws,
+    * and the line whose range-over flags it accumulates. That line is
+    * the end of the span before it, which is what the accumulation has
+    * always used. */
+   uint8_t   SetupOBJ;
+   uint32_t  RTOLine;
 };
 
 #define S9xRenderFillRAM(addr) (S9xCurRenderRegs->FillRAM[(addr) - 0x2100])
