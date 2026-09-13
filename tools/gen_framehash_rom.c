@@ -26,43 +26,171 @@
 static unsigned char rom[ROM_BYTES];
 static unsigned      n;
 
-static void emit(int b)
+static void e(int b)
 {
    rom[n++] = (unsigned char)b;
+}
+
+/* absolute operand of the instruction just emitted */
+static void w(int addr)
+{
+   e(addr & 0xFF);
+   e(addr >> 8);
+}
+
+static void sta(int addr)   /* STA abs */
+{
+   e(0x8D); w(addr);
+}
+
+static void stx(int addr)   /* STX abs */
+{
+   e(0x8E); w(addr);
+}
+
+static void lda_sta(int val, int addr)
+{
+   e(0xA9); e(val); e(0x8D); w(addr);
+}
+
+static void bne(unsigned target)
+{
+   e(0xD0);
+   e((int)((target - (n + 1)) & 0xFF));
+}
+
+static void bra(unsigned target)
+{
+   e(0x80);
+   e((int)((target - (n + 1)) & 0xFF));
+}
+
+static void patch(unsigned at, unsigned target)
+{
+   rom[at + 1] = (unsigned char)((target - (at + 2)) & 0xFF);
 }
 
 int main(int argc, char **argv)
 {
    const char *out = (argc > 1) ? argv[1] : "framehash_test.sfc";
    const char *title = "FRAMEHASH TEST ROM   ";   /* exactly 21 bytes */
-   unsigned    loop, here, i;
+   unsigned    L, M, set, m1, m2, m4;
+   unsigned    b_m1, b_m2, b_m4, b_s1, b_s2, b_s3;
+   unsigned    i;
    unsigned    checksum = 0, complement;
    FILE       *f;
 
    memset(rom, 0, sizeof(rom));
 
-   emit(0x78);                     /* SEI                             */
-   emit(0x18);                     /* CLC                             */
-   emit(0xFB);                     /* XCE          -> native mode     */
-   emit(0xE2); emit(0x30);         /* SEP #$30     -> 8-bit A, X, Y   */
-   emit(0x9C); emit(0x00); emit(0x42);  /* STZ $4200  no NMI/IRQ      */
-   emit(0xA9); emit(0x8F);         /* LDA #$8F                        */
-   emit(0x8D); emit(0x00); emit(0x21);  /* STA $2100  force blank     */
-   emit(0xA9); emit(0x01);         /* LDA #$01                        */
-   emit(0x8D); emit(0x05); emit(0x21);  /* STA $2105  BG mode 1       */
-   emit(0xA9); emit(0x01);         /* LDA #$01                        */
-   emit(0x8D); emit(0x2C); emit(0x21);  /* STA $212C  BG1 on main     */
-   emit(0xA9); emit(0x0F);         /* LDA #$0F                        */
-   emit(0x8D); emit(0x00); emit(0x21);  /* STA $2100  visible, full   */
-   emit(0xA9); emit(0x00);         /* LDA #$00     -> colour counter  */
+   /* --- init --------------------------------------------------- */
+   e(0x78);                          /* SEI                        */
+   e(0x18); e(0xFB);                 /* CLC ; XCE  -> native       */
+   e(0xC2); e(0x30);                 /* REP #$30   -> 16-bit A,X,Y */
+   e(0xA2); e(0xFF); e(0x1F); e(0x1B);    /* LDX #$1FFF ; TXS      */
+   e(0xE2); e(0x20);                 /* SEP #$20   -> 8-bit A      */
+   e(0x9C); e(0x00); e(0x42);        /* STZ $4200  no NMI/IRQ      */
+   e(0xA9); e(0x8F); sta(0x2100);      /* force blank                */
 
-   loop = n;
-   emit(0x9C); emit(0x21); emit(0x21);  /* STZ $2121  CGRAM addr 0    */
-   emit(0x8D); emit(0x22); emit(0x21);  /* STA $2122  backdrop low    */
-   emit(0x8D); emit(0x22); emit(0x21);  /* STA $2122  backdrop high   */
-   emit(0x1A);                          /* INC A                      */
-   here = n + 2;
-   emit(0x80); emit((int)((loop - here) & 0xFF));   /* BRA loop       */
+   /* VRAM: $2000 words of tile and tilemap data. */
+   e(0xA9); e(0x80); sta(0x2115);      /* VMAIN: step after $2119    */
+   e(0xA2); e(0x00); e(0x00); stx(0x2116);  /* VRAM address 0        */
+   e(0xA0); e(0x00); e(0x20);        /* LDY #$2000                 */
+   e(0xA9); e(0x01);                 /* LDA #$01                   */
+   L = n;
+   e(0x8D); e(0x18); e(0x21);        /* STA $2118                  */
+   e(0x49); e(0xA5);                 /* EOR #$A5                   */
+   e(0x8D); e(0x19); e(0x21);        /* STA $2119                  */
+   e(0x49); e(0xA5);                 /* EOR #$A5                   */
+   e(0x1A); e(0x88);                 /* INC A ; DEY                */
+   bne(L);
+
+   /* CGRAM: all 256 entries. */
+   e(0x9C); e(0x21); e(0x21);        /* STZ $2121                  */
+   e(0xA2); e(0x00); e(0x01);        /* LDX #$0100                 */
+   e(0xA9); e(0x13);                 /* LDA #$13                   */
+   L = n;
+   e(0x8D); e(0x22); e(0x21); e(0x49); e(0x5A);
+   e(0x8D); e(0x22); e(0x21); e(0x49); e(0x5A);
+   e(0x1A); e(0xCA);                 /* INC A ; DEX                */
+   bne(L);
+
+   /* OAM: 128 sprites of X, Y, tile, attributes.  Priority 3 is
+    * forced into the attribute byte, otherwise every sprite sits
+    * under the opaque backgrounds and the OBJ renderer contributes
+    * nothing to the image at all. */
+   e(0x9C); e(0x02); e(0x21); e(0x9C); e(0x03); e(0x21);
+   e(0xA2); e(0x80); e(0x00);        /* LDX #$0080                 */
+   e(0xA9); e(0x07);                 /* LDA #$07                   */
+   L = n;
+   e(0x8D); e(0x04); e(0x21); e(0x1A);    /* X                     */
+   e(0x8D); e(0x04); e(0x21); e(0x1A);    /* Y                     */
+   e(0x8D); e(0x04); e(0x21); e(0x1A);    /* tile                  */
+   e(0x48); e(0x09); e(0x30);        /* PHA ; ORA #$30             */
+   e(0x8D); e(0x04); e(0x21);        /* attributes                 */
+   e(0x68); e(0x1A); e(0xCA);        /* PLA ; INC A ; DEX          */
+   bne(L);
+   e(0xA2); e(0x20); e(0x00);        /* LDX #$0020  high table     */
+   L = n;
+   e(0x8D); e(0x04); e(0x21); e(0x1A); e(0xCA);
+   bne(L);
+
+   lda_sta(0x09, 0x2105);   /* BG mode 1, BG3 priority             */
+   lda_sta(0x00, 0x2107);   /* BG1 tilemap $0000                   */
+   lda_sta(0x04, 0x2108);   /* BG2 tilemap $0800                   */
+   lda_sta(0x08, 0x2109);   /* BG3 tilemap $1000                   */
+   lda_sta(0x00, 0x210B);   /* BG1/BG2 character base              */
+   lda_sta(0x60, 0x2101);   /* OBJ size, name base inside the fill */
+   lda_sta(0x13, 0x212C);   /* BG1, BG2, OBJ on the main screen    */
+   lda_sta(0x02, 0x212D);   /* BG2 on the subscreen                */
+   lda_sta(0x01, 0x2123);   /* BG1 inside window 1                 */
+   lda_sta(0x40, 0x2126);   /* window 1 left                       */
+   lda_sta(0xC0, 0x2127);   /* window 1 right                      */
+   lda_sta(0x01, 0x212E);   /* window masks the main screen BG1    */
+   lda_sta(0x02, 0x2130);   /* colour math against the subscreen   */
+   lda_sta(0x23, 0x2131);   /* add, BG1 and BG2                    */
+
+   /* Mode 7 matrix: identity, each register low byte then high. */
+   e(0xA9); e(0x00); sta(0x211B); e(0xA9); e(0x01); sta(0x211B);
+   e(0xA9); e(0x00); sta(0x211C); e(0xA9); e(0x00); sta(0x211C);
+   e(0xA9); e(0x00); sta(0x211D); e(0xA9); e(0x00); sta(0x211D);
+   e(0xA9); e(0x00); sta(0x211E); e(0xA9); e(0x01); sta(0x211E);
+
+   lda_sta(0x31, 0x2106);   /* mosaic on BG1 only, so BG2 still
+                             * exercises the plain background
+                             * renderer rather than the mosaic one */
+   lda_sta(0x0F, 0x2100);   /* visible, full brightness            */
+
+   e(0x9C); e(0x00); e(0x00);        /* STZ $00  frame counter     */
+
+   /* --- per-frame loop ------------------------------------------ */
+   M = n;
+
+   /* Cycle BG mode 1, 2, 4 and 7 on bits 6-5 of the counter.  Modes
+    * 2 and 4 reach the offset-change renderer and mode 7 a third
+    * one, none of which the plain path covers. */
+   e(0xA5); e(0x00);                 /* LDA $00                    */
+   e(0x29); e(0x60);                 /* AND #$60                   */
+   b_m1 = n; e(0xF0); e(0x00);       /* BEQ m1                     */
+   e(0xC9); e(0x20); b_m2 = n; e(0xF0); e(0x00);
+   e(0xC9); e(0x40); b_m4 = n; e(0xF0); e(0x00);
+   e(0xA9); e(0x07); b_s1 = n; e(0x80); e(0x00);   /* mode 7       */
+   m4 = n; e(0xA9); e(0x04); b_s2 = n; e(0x80); e(0x00);
+   m2 = n; e(0xA9); e(0x02); b_s3 = n; e(0x80); e(0x00);
+   m1 = n; e(0xA9); e(0x09);
+   set = n;
+   e(0x8D); e(0x05); e(0x21);        /* STA $2105                  */
+   patch(b_m1, m1); patch(b_m2, m2); patch(b_m4, m4);
+   patch(b_s1, set); patch(b_s2, set); patch(b_s3, set);
+
+   e(0xA5); e(0x00);                 /* LDA $00                    */
+   e(0x8D); e(0x0D); e(0x21); e(0x8D); e(0x0D); e(0x21);  /* BG1HOFS */
+   e(0x8D); e(0x0F); e(0x21); e(0x8D); e(0x0F); e(0x21);  /* BG2HOFS */
+
+   e(0x9C); e(0x21); e(0x21);        /* STZ $2121                  */
+   e(0xA5); e(0x00);
+   e(0x8D); e(0x22); e(0x21); e(0x8D); e(0x22); e(0x21);  /* backdrop */
+   e(0xE6); e(0x00);                 /* INC $00                    */
+   bra(M);
 
    memcpy(rom + 0x7FC0, title, 21);
    rom[0x7FD5] = 0x20;   /* LoROM, slow ROM                           */
@@ -102,7 +230,7 @@ int main(int argc, char **argv)
    }
 
    fclose(f);
-   printf("%s: %u bytes, %u bytes of code, loop at $%04X\n",
-         out, (unsigned)sizeof(rom), n, 0x8000 + loop);
+   printf("%s: %u bytes, %u bytes of code, frame loop at $%04X\n",
+         out, (unsigned)sizeof(rom), n, 0x8000 + M);
    return 0;
 }
