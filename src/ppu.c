@@ -1846,7 +1846,7 @@ static INLINE void RenderScreen_SFXSpeedupHack(void)
 
 static INLINE void RenderScreen (uint8_t sub)
 {
-	uint8_t	BGActive = Memory.FillRAM[0x212c+sub];
+	uint8_t	BGActive = S9xRenderFillRAM(0x212c+sub);
 	int		D;
 
 	GFX.Clip = IPPU.Clip[sub];
