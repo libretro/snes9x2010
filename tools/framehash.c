@@ -28,6 +28,29 @@
  *                  render path is the one under test.  Off by default,
  *                  because the two paths are separate code and a run
  *                  should say which one it covered.
+ *   --replay N     every N frames, save the state, run N frames and
+ *                  remember what they produced, restore, and run the
+ *                  same N frames again.  The two passes must agree.
+ *                  Restoring a state over the one it was taken from
+ *                  proves nothing -- it is a no-op even if the restore
+ *                  does nothing at all -- so the state has to be
+ *                  carried across frames that changed it.  This is the
+ *                  property runahead and netplay rest on.  0 disables.
+ *
+ *                  Audio disagreeing is a failure.  Video disagreeing
+ *                  is reported and is not, because a snapshot does not
+ *                  carry the frame buffer: the second pass starts from
+ *                  whatever the first left there, so any pixel a frame
+ *                  does not write itself differs.  snes9x upstream
+ *                  does the same, so this reports the gap rather than
+ *                  calling it a regression.  Fixing it means putting
+ *                  the buffer in the snapshot, which costs half a
+ *                  megabyte on a path runahead walks every frame.
+ *
+ *                  The audio digest of a --replay run matches a plain
+ *                  one and can be compared against it directly.  The
+ *                  video digest cannot: once a window has diverged the
+ *                  buffer stays diverged for the frames after it.
  *   --quiet        digests only, no core log output
  *
  * The digest is FNV-1a over the visible pixels only -- width * 2 bytes
@@ -84,6 +107,8 @@ static unsigned frame_no;
 static int      opt_swfb;
 static int      opt_quiet;
 static unsigned opt_start;
+static int      replay_failed;
+static unsigned replay_video_differs;
 
 /* Last frame's pixels, so a duplicate frame hashes what would have
  * been shown rather than nothing. */
@@ -243,6 +268,9 @@ struct fh_core
    bool   (*load_game)(const struct retro_game_info*);
    void   (*unload_game)(void);
    void   (*run)(void);
+   size_t (*serialize_size)(void);
+   bool   (*serialize)(void*, size_t);
+   bool   (*unserialize)(const void*, size_t);
 };
 
 static int fh_bind(FH_HANDLE h, struct fh_core *c)
@@ -260,9 +288,12 @@ static int fh_bind(FH_HANDLE h, struct fh_core *c)
       { "retro_get_system_av_info",      NULL },
       { "retro_load_game",               NULL },
       { "retro_unload_game",             NULL },
-      { "retro_run",                     NULL }
+      { "retro_run",                     NULL },
+      { "retro_serialize_size",          NULL },
+      { "retro_serialize",               NULL },
+      { "retro_unserialize",             NULL }
    };
-   void **slots[13];
+   void **slots[16];
    size_t i;
 
    slots[0]  = (void**)&c->init;
@@ -278,6 +309,9 @@ static int fh_bind(FH_HANDLE h, struct fh_core *c)
    slots[10] = (void**)&c->load_game;
    slots[11] = (void**)&c->unload_game;
    slots[12] = (void**)&c->run;
+   slots[13] = (void**)&c->serialize_size;
+   slots[14] = (void**)&c->serialize;
+   slots[15] = (void**)&c->unserialize;
 
    for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
    {
@@ -339,7 +373,7 @@ static void usage(void)
 {
    fprintf(stderr,
       "usage: framehash <core> <rom> [--frames N] [--interval N]\n"
-      "                 [--start N] [--swfb] [--quiet]\n");
+      "                 [--start N] [--replay N] [--swfb] [--quiet]\n");
 }
 
 int main(int argc, char **argv)
@@ -353,6 +387,9 @@ int main(int argc, char **argv)
    size_t                    rom_size;
    unsigned                  frames   = 3600;
    unsigned                  interval = 60;
+   unsigned                  replay   = 0;
+   unsigned char            *state    = NULL;
+   size_t                    state_size = 0;
    int                       i;
 
    if (argc < 3)
@@ -367,6 +404,8 @@ int main(int argc, char **argv)
          frames = (unsigned)strtoul(argv[++i], NULL, 0);
       else if (!strcmp(argv[i], "--interval") && i + 1 < argc)
          interval = (unsigned)strtoul(argv[++i], NULL, 0);
+      else if (!strcmp(argv[i], "--replay") && i + 1 < argc)
+         replay = (unsigned)strtoul(argv[++i], NULL, 0);
       else if (!strcmp(argv[i], "--start") && i + 1 < argc)
          opt_start = (unsigned)strtoul(argv[++i], NULL, 0);
       else if (!strcmp(argv[i], "--swfb"))
@@ -441,9 +480,73 @@ int main(int argc, char **argv)
             argv[2], av.geometry.base_width, av.geometry.base_height,
             opt_swfb ? "on" : "off", opt_start);
 
+   if (replay)
+   {
+      state_size = core.serialize_size();
+      if (!state_size || !(state = (unsigned char*)malloc(state_size)))
+      {
+         fprintf(stderr, "framehash: no serialize buffer\n");
+         replay = 0;
+      }
+   }
+
    for (frame_no = 1; frame_no <= frames; frame_no++)
    {
       core.run();
+
+      if (replay && (frame_no % replay) == 0 && frame_no + replay <= frames)
+      {
+         fh_u64   before_v = video_hash, before_a = audio_hash;
+         fh_u64   first_v,  first_a;
+         unsigned mark = frame_no, k;
+
+         if (!core.serialize(state, state_size))
+         {
+            fprintf(stderr, "framehash: serialize failed at frame %u\n",
+                  frame_no);
+            replay = 0;
+            continue;
+         }
+
+         for (k = 0; k < replay; k++)
+         {
+            frame_no++;
+            core.run();
+         }
+         first_v = video_hash;
+         first_a = audio_hash;
+
+         if (!core.unserialize(state, state_size))
+         {
+            fprintf(stderr, "framehash: unserialize failed at frame %u\n",
+                  mark);
+            replay = 0;
+            continue;
+         }
+
+         /* Second pass over the same frames, from the restored state. */
+         video_hash = before_v;
+         audio_hash = before_a;
+         frame_no   = mark;
+         for (k = 0; k < replay; k++)
+         {
+            frame_no++;
+            core.run();
+         }
+
+         if (audio_hash != first_a)
+         {
+            printf("REPLAY AUDIO MISMATCH after frame %u: "
+                   "%016llx vs %016llx\n",
+                   mark, first_a, audio_hash);
+            replay_failed = 1;
+         }
+         else if (video_hash != first_v)
+         {
+            replay_video_differs++;
+            video_hash = first_v;   /* keep the run comparable */
+         }
+      }
 
       if ((frame_no % interval) == 0)
          printf("frame %6u  video %016llx  audio %016llx\n",
@@ -453,10 +556,15 @@ int main(int argc, char **argv)
    printf("total  %6u  video %016llx  audio %016llx\n",
          frames, video_hash, audio_hash);
 
+   if (replay_video_differs)
+      printf("# %u replay windows differed in video only: the frame "
+             "buffer is not in a snapshot\n", replay_video_differs);
+
+   free(state);
    core.unload_game();
    core.deinit();
    FH_CLOSE(h);
    free(last_frame);
    free(rom);
-   return 0;
+   return replay_failed;
 }
