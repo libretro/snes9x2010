@@ -2085,6 +2085,72 @@ static INLINE void RenderScreen (uint8_t sub)
  */
 #define S9X_SPAN_QUEUE 272
 
+/* Palette and object-table updates waiting to be applied.
+ *
+ * Both tables are maintained an entry at a time by register writes and
+ * read only by the renderer, and every write that matters ends the
+ * span before it changes anything.  Recording the change here keeps it
+ * in step with the spans either side of it, and costs an entry rather
+ * than a copy of the whole table per span.  A recorder that finds the
+ * ring full draws what is owed, which empties it. */
+#define S9X_UPDATE_QUEUE 2048
+
+#define S9X_UPD_PALETTE 0
+#define S9X_UPD_OBJECT  1
+
+struct SRenderUpdate
+{
+   struct SOBJ obj;
+   uint16_t    idx;
+   uint16_t    val;
+   uint8_t     kind;
+};
+
+static struct SRenderUpdate upd_queue[S9X_UPDATE_QUEUE];
+static unsigned             upd_recorded;
+static unsigned             upd_applied;
+static uint16_t             rs_palette[256];
+static struct SOBJ          rs_obj[128];
+
+static struct SRenderUpdate *record_update (void)
+{
+   struct SRenderUpdate *u;
+
+   if (upd_recorded - upd_applied >= S9X_UPDATE_QUEUE)
+      S9xRenderDrain();
+
+   u = &upd_queue[upd_recorded % S9X_UPDATE_QUEUE];
+   upd_recorded++;
+   return u;
+}
+
+void S9xRecordPaletteWrite (unsigned idx)
+{
+   struct SRenderUpdate *u = record_update();
+   u->kind = S9X_UPD_PALETTE;
+   u->idx  = (uint16_t)idx;
+   u->val  = IPPU.ScreenColors[idx];
+}
+
+void S9xRecordObjectWrite (unsigned idx)
+{
+   struct SRenderUpdate *u = record_update();
+   u->kind = S9X_UPD_OBJECT;
+   u->idx  = (uint16_t)idx;
+   u->obj  = PPU.OBJ[idx];
+}
+
+/* Used where a table is rebuilt or restored wholesale -- reset, a
+ * brightness change, a loaded snapshot -- which is rare enough that
+ * emptying the queue costs less than recording every entry. */
+void S9xResyncRenderTables (void)
+{
+   S9xRenderDrain();
+   memcpy(rs_palette, IPPU.ScreenColors, sizeof(rs_palette));
+   memcpy(rs_obj,     PPU.OBJ,           sizeof(rs_obj));
+   upd_applied = upd_recorded;
+}
+
 static struct SRenderRegs span_queue[S9X_SPAN_QUEUE];
 static unsigned           span_recorded;
 static unsigned           span_drawn;
@@ -2132,8 +2198,9 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out)
    out->Mode7Repeat         = PPU.Mode7Repeat;
    out->Brightness          = PPU.Brightness;
 
-   memcpy(out->ScreenColors, IPPU.ScreenColors, sizeof(out->ScreenColors));
-   memcpy(out->OBJ,          PPU.OBJ,           sizeof(out->OBJ));
+   out->ScreenColors = rs_palette;
+   out->OBJ          = rs_obj;
+   out->UpdateAt     = upd_recorded;
    memcpy(out->FillRAM,      &Memory.FillRAM[0x2100], sizeof(out->FillRAM));
 
    out->ForcedBlanking       = PPU.ForcedBlanking;
@@ -2602,6 +2669,19 @@ void S9xRenderDrain (void)
    while (span_drawn != span_recorded)
    {
       S9xCurRenderRegs = &span_queue[span_drawn % S9X_SPAN_QUEUE];
+
+      while (upd_applied != S9xCurRenderRegs->UpdateAt)
+      {
+         const struct SRenderUpdate *u =
+            &upd_queue[upd_applied % S9X_UPDATE_QUEUE];
+
+         if (u->kind == S9X_UPD_PALETTE)
+            rs_palette[u->idx] = u->val;
+         else
+            rs_obj[u->idx] = u->obj;
+         upd_applied++;
+      }
+
       S9xRenderSpan();
       span_drawn++;
    }
@@ -3063,6 +3143,8 @@ void S9xFixColourBrightness (void)
 	GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed],
 	                              IPPU.XB[PPU.FixedColourGreen],
 	                              IPPU.XB[PPU.FixedColourBlue]);
+
+	S9xResyncRenderTables();
 }
 
 static INLINE void REGISTER_2122 (uint8_t Byte)
@@ -3081,6 +3163,7 @@ static INLINE void REGISTER_2122 (uint8_t Byte)
 				 IPPU.XB[(PPU.CGDATA[PPU.CGADD] >> 5) & 0x1f],
 				 IPPU.XB[(Byte >> 2) & 0x1f]
 				);
+			S9xRecordPaletteWrite(PPU.CGADD);
 		}
 
 		PPU.CGADD++;
@@ -3099,6 +3182,7 @@ static INLINE void REGISTER_2122 (uint8_t Byte)
 				 IPPU.XB[(PPU.CGDATA[PPU.CGADD] >> 5) & 0x1f],
 				 IPPU.XB[(PPU.CGDATA[PPU.CGADD] >> 10) & 0x1f]
 				);
+			S9xRecordPaletteWrite(PPU.CGADD);
 		}
 	}
 
@@ -3200,6 +3284,14 @@ static INLINE void REGISTER_2104 (uint8_t Byte)
 			pObj++->Size = Byte & 32;
 			pObj->HPos = (pObj->HPos & 0xFF) | SignExtend[(Byte >> 6) & 1];
 			pObj->Size = Byte & 128;
+
+			{
+				unsigned base = (addr & 0x1f) * 4;
+				S9xRecordObjectWrite(base);
+				S9xRecordObjectWrite(base + 1);
+				S9xRecordObjectWrite(base + 2);
+				S9xRecordObjectWrite(base + 3);
+			}
 		}
 
 		PPU.OAMFlip ^= 1;
@@ -3260,6 +3352,10 @@ static INLINE void REGISTER_2104 (uint8_t Byte)
 				/* Sprite Y position */
 				PPU.OBJ[addr].VPos = highbyte;
 			}
+
+			/* addr holds the entry index by now, and OAMAddr has not
+			   been stepped yet. */
+			S9xRecordObjectWrite(addr);
 		}
 
 		PPU.OAMFlip &= ~1;
@@ -3269,6 +3365,7 @@ static INLINE void REGISTER_2104 (uint8_t Byte)
 			PPU.FirstSprite = (PPU.OAMAddr & 0xfe) >> 1;
 			IPPU.OBJChanged = TRUE;
 		}
+
 	}
 }
 

@@ -530,8 +530,13 @@ struct SRenderRegs
     * span can be drawn away from the moment it was recorded at all;
     * shrinking this back out is a change the digests can then guard.
     */
-   uint16_t ScreenColors[256];
-   struct SOBJ OBJ[128];
+   /* The palette and the object table belong to the renderer now.  A
+    * span points at them and says how far through the recorded updates
+    * it wants them brought, rather than carrying two kilobytes of copy
+    * apiece. */
+   const uint16_t    *ScreenColors;
+   const struct SOBJ *OBJ;
+   unsigned           UpdateAt;
 
    /* The five PPU registers the renderer reads straight out of FillRAM
     * -- main and sub screen designation, the two colour-math registers
@@ -575,6 +580,9 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out);
  * the renderer produces, or writes what it is going to read, calls this
  * first. */
 void S9xRenderDrain (void);
+void S9xRecordPaletteWrite (unsigned idx);
+void S9xRecordObjectWrite (unsigned idx);
+void S9xResyncRenderTables (void);
 void S9xSnapshotRenderGeometry (struct SRenderRegs *out);
 
 #define FLUSH_REDRAW() \
