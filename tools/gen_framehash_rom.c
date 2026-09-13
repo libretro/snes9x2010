@@ -76,6 +76,7 @@ int main(int argc, char **argv)
    const char *title = "FRAMEHASH TEST ROM   ";   /* exactly 21 bytes */
    unsigned    L, M, set, m1, m2, m4;
    unsigned    b_m1, b_m2, b_m4, b_s1, b_s2, b_s3;
+   unsigned    b_st, st_skip;
    unsigned    i;
    unsigned    checksum = 0, complement;
    FILE       *f;
@@ -199,12 +200,22 @@ int main(int argc, char **argv)
 
    /* Backdrop low byte comes from STAT77, so the range-over flag the
     * renderer produces is read back by the CPU and lands in a pixel.
-    * Nothing else here reads a PPU status register. */
+    * Nothing else here reads a PPU status register.
+    *
+    * Only on one iteration in 64.  Reading a status register is a
+    * barrier for a renderer that runs behind the CPU, and a loop that
+    * reads one every pass is not a game, it is a benchmark of the
+    * barrier. */
+   e(0xA5); e(0x00);                 /* LDA $00                    */
+   e(0x29); e(0x3F);                 /* AND #$3F                   */
+   b_st = n; e(0xD0); e(0x00);       /* BNE skip                   */
    e(0x9C); e(0x21); e(0x21);        /* STZ $2121                  */
    e(0xAD); e(0x3E); e(0x21);        /* LDA $213E                  */
    e(0x8D); e(0x22); e(0x21);        /* backdrop low               */
    e(0xA5); e(0x00);
    e(0x8D); e(0x22); e(0x21);        /* backdrop high              */
+   st_skip = n;
+   patch(b_st, st_skip);
    e(0xE6); e(0x00);                 /* INC $00                    */
    bra(M);
 
