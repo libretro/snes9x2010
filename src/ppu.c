@@ -2077,6 +2077,18 @@ static INLINE void RenderScreen (uint8_t sub)
 	BG.EnableMath = !sub && (S9xRenderFillRAM(0x2131) & 0x20);
 }
 
+/* Spans recorded but not yet drawn.
+ *
+ * A span ends at a scanline boundary, so a frame cannot produce more
+ * than one per line; the queue is sized for a tall frame with room to
+ * spare and a recorder that finds it full simply draws what is there.
+ */
+#define S9X_SPAN_QUEUE 272
+
+static struct SRenderRegs span_queue[S9X_SPAN_QUEUE];
+static unsigned           span_recorded;
+static unsigned           span_drawn;
+
 struct SRenderRegs        S9xRenderRegs;
 const struct SRenderRegs *S9xCurRenderRegs = &S9xRenderRegs;
 
@@ -2463,6 +2475,7 @@ static void S9xPromoteResolution (void)
 			   afterwards GFX.Screen points at the persistent buffer
 			   sized for max width, with the partial render copied
 			   into it. */
+			S9xRenderDrain();  /* rewrites pixels already drawn */
 			S9xLibretroSwFbAbort();
 
 			/* Have to back out of the regular speed hack */
@@ -2502,6 +2515,7 @@ static void S9xPromoteResolution (void)
 
 			/* Same for mid-frame height promotion: acquired buffer
 			   is sized for unpromoted height. */
+			S9xRenderDrain();  /* rewrites pixels already drawn */
 			S9xLibretroSwFbAbort();
 
 			IPPU.DoubleHeightPixels = TRUE;
@@ -2523,6 +2537,8 @@ static void S9xPromoteResolution (void)
  * moment the span was recorded.  Promotion is the caller's job,
  * because it disturbs pixels this has already drawn.
  */
+void S9xRenderDrain (void);
+
 static void S9xRenderSpan (void)
 {
 	/* clip and Offset are referenced from inside the
@@ -2581,6 +2597,17 @@ static void S9xRenderSpan (void)
 	}
 }
 
+void S9xRenderDrain (void)
+{
+   while (span_drawn != span_recorded)
+   {
+      S9xCurRenderRegs = &span_queue[span_drawn % S9X_SPAN_QUEUE];
+      S9xRenderSpan();
+      span_drawn++;
+   }
+   S9xCurRenderRegs = &S9xRenderRegs;
+}
+
 void S9xUpdateScreen (void)
 {
    /* Taken here for now, so the snapshot and the live registers are
@@ -2611,7 +2638,11 @@ void S9xUpdateScreen (void)
 
 	S9xSnapshotRenderGeometry(&S9xRenderRegs);
 
-	S9xRenderSpan();
+	if (span_recorded - span_drawn >= S9X_SPAN_QUEUE)
+		S9xRenderDrain();
+
+	span_queue[span_recorded % S9X_SPAN_QUEUE] = S9xRenderRegs;
+	span_recorded++;
 
 	IPPU.PreviousLine = IPPU.CurrentLine;
 }
@@ -2671,6 +2702,9 @@ void S9xMode7VertResample (void)
 	int32_t y, m7_start;
 	uint32_t ppl;
 	uint32_t width;
+
+	/* Rewrites the whole frame, so nothing may still be owed. */
+	S9xRenderDrain();
 
 	if (IPPU.M7VertStartY < 0)
 		return;
@@ -3078,6 +3112,10 @@ static INLINE void REGISTER_2118 (uint8_t Byte)
 {
 	uint32_t	address, rem;
 
+	/* VRAM is read out of memory by the renderer rather than
+	   carried with a span, so it may not change while one is owed. */
+	S9xRenderDrain();
+
 	if (PPU.VMA.FullGraphicCount)
 	{
 		rem = PPU.VMA.Address & PPU.VMA.Mask1;
@@ -3108,6 +3146,10 @@ static INLINE void REGISTER_2118 (uint8_t Byte)
 static INLINE void REGISTER_2119 (uint8_t Byte)
 {
 	uint32_t	address, rem;
+
+	/* VRAM is read out of memory by the renderer rather than
+	   carried with a span, so it may not change while one is owed. */
+	S9xRenderDrain();
 
 	if (PPU.VMA.FullGraphicCount)
 	{
@@ -4203,6 +4245,7 @@ uint8_t S9xGetPPU (uint16_t Address)
 
 			case 0x213e: /* STAT77*/
 				FLUSH_REDRAW();
+				S9xRenderDrain();
 				byte = (PPU.OpenBus1 & 0x10) | PPU.RangeTimeOver | MAX_5C77_VERSION;
 				return (PPU.OpenBus1 = byte);
 

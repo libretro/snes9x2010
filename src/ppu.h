@@ -570,6 +570,11 @@ extern struct SRenderRegs        S9xRenderRegs;
 extern const struct SRenderRegs *S9xCurRenderRegs;
 
 void S9xSnapshotRenderRegs (struct SRenderRegs *out);
+
+/* Draw every span recorded and not yet drawn.  Anything that reads what
+ * the renderer produces, or writes what it is going to read, calls this
+ * first. */
+void S9xRenderDrain (void);
 void S9xSnapshotRenderGeometry (struct SRenderRegs *out);
 
 #define FLUSH_REDRAW() \

@@ -396,6 +396,10 @@ static INLINE void speedhacks_manager (void)
 
 static void S9xEndScreenRefresh (void)
 {
+	/* The frame goes to the frontend after this; everything recorded
+	   for it has to have been drawn. */
+	S9xRenderDrain();
+
 	/* Advance the SPC7110 RTC on the emulated frame clock (no-op unless
 	 * an SPC7110+RTC cart is loaded). One tick per emulated frame keeps
 	 * the in-game clock running on emulated time rather than host time. */
