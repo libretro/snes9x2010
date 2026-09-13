@@ -47,6 +47,16 @@ SOURCES_C := $(CORE_DIR)/src/apu.c \
 # symbols. Keep it outside the STATIC_LINKING guard below.
 SOURCES_C += $(LIBRETRO_COMM_DIR)/streams/memory_stream.c
 
+# The threaded PPU.  Like memory_stream these are consumed by the core
+# itself rather than by the frontend, so they stay outside the
+# STATIC_LINKING guard.  A platform without threads simply does not
+# define HAVE_THREADS and the core builds the renderer synchronously.
+ifneq ($(HAVE_THREADS),0)
+CFLAGS    += -DHAVE_THREADS
+SOURCES_C += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+             $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
+endif
+
 # The image loaders below (and their stream support) also exist
 # inside statically linked RetroArch builds - rpng, image_transfer,
 # trans_stream*, rzip_stream, interface_stream, encoding_crc32 and

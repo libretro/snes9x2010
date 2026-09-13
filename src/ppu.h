@@ -536,7 +536,7 @@ struct SRenderRegs
     * apiece. */
    const uint16_t    *ScreenColors;
    const struct SOBJ *OBJ;
-   unsigned           UpdateAt;
+   size_t             UpdateAt;
 
    /* The five PPU registers the renderer reads straight out of FillRAM
     * -- main and sub screen designation, the two colour-math registers
@@ -580,6 +580,10 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out);
  * the renderer produces, or writes what it is going to read, calls this
  * first. */
 void S9xRenderDrain (void);
+#if defined(HAVE_THREADS)
+void S9xRenderThreadStart(void);
+void S9xRenderThreadStop(void);
+#endif
 void S9xRecordPaletteWrite (unsigned idx);
 void S9xRecordObjectWrite (unsigned idx);
 void S9xResyncRenderTables (void);

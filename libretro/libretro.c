@@ -1450,6 +1450,9 @@ void retro_init(void)
 	owned_screen_buffer = GFX.Screen;
 	owned_ntsc_buffer   = ntsc_screen_buffer;
 	S9xGraphicsInit();
+#if defined(HAVE_THREADS)
+	S9xRenderThreadStart();
+#endif
 
 	retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
 	retro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD);
@@ -1485,6 +1488,9 @@ void retro_deinit(void)
 	}
 
 	Deinit();
+#if defined(HAVE_THREADS)
+	S9xRenderThreadStop();
+#endif
 	S9xGraphicsDeinit();
 	S9xUnmapAllControls();
 #if defined(_3DS)

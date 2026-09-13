@@ -192,6 +192,11 @@
 #include "display.h"
 #include "sdd1emu.h"
 #include "spc7110emu.h"
+#include <retro_atomic.h>
+#if defined(HAVE_THREADS)
+#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#endif
 #include "ppu.h"
 #include "msu1.h"
 #include "tile.h"
@@ -553,7 +558,8 @@ void SetupOBJ (void)
 		}
 	}
 
-	IPPU.OBJChanged = FALSE;
+	/* Cleared where the span is recorded instead: this runs on the
+	   renderer's side, and the flag belongs to the CPU. */
 }
 
 
@@ -784,7 +790,12 @@ static void DrawBackground (int bg, uint8_t Zh, uint8_t Zl)
 			HOffset = LineData[Y].BG[bg].HOffset;
 			VirtAlign = ((Y2 + VOffset) & 7) >> HiresInterlace;
 
-			for (Lines = 1; Lines < GFX.LinesPerTile - VirtAlign; Lines++)
+			/* Stops at the span's last line rather than reading past it.
+			   Lines is clamped to EndY below in any case, so this only
+			   declines to read scanline state the span does not own --
+			   state the CPU may be writing while this draws. */
+			for (Lines = 1; Lines < GFX.LinesPerTile - VirtAlign
+					&& Y + Lines <= S9xCurRenderRegs->EndY; Lines++)
 			{
 				if ((VOffset != LineData[Y + Lines].BG[bg].VOffset) || (HOffset != LineData[Y + Lines].BG[bg].HOffset))
 					break;
@@ -2085,6 +2096,29 @@ static INLINE void RenderScreen (uint8_t sub)
  */
 #define S9X_SPAN_QUEUE 272
 
+#if defined(HAVE_THREADS)
+/* The renderer on its own thread.
+ *
+ * The queue is what the two sides agree on: the CPU publishes a span by
+ * advancing span_recorded, the renderer claims one by advancing
+ * span_drawn, and neither reads the other's counter for anything but
+ * how far the other has got.  Everything a span needs travels in it, so
+ * the only ordering that matters is that the span is written before the
+ * counter that publishes it, and read after the counter that claims it.
+ *
+ * Each side parks on an eventcount rather than spinning: the renderer
+ * when it has drawn everything owed, the CPU when it needs a barrier
+ * and the renderer is behind.  Notifying with nobody parked costs a
+ * handful of nanoseconds, which is why it is done unconditionally. */
+static retro_atomic_size_t rt_recorded;
+static retro_atomic_size_t rt_drawn;
+static retro_eventcount_t  rt_work;    /* a span was published   */
+static retro_eventcount_t  rt_done;    /* a span was drawn       */
+static retro_atomic_int_t  rt_quit;
+static sthread_t          *rt_thread;
+static int                 rt_running;
+#endif
+
 /* Palette and object-table updates waiting to be applied.
  *
  * Both tables are maintained an entry at a time by register writes and
@@ -2107,21 +2141,34 @@ struct SRenderUpdate
 };
 
 static struct SRenderUpdate upd_queue[S9X_UPDATE_QUEUE];
-static unsigned             upd_recorded;
-static unsigned             upd_applied;
+/* Written by the CPU, read by whoever is drawing: the entries go in
+ * before the counter that publishes them and are read after the
+ * counter that claims them. */
+static retro_atomic_size_t  upd_recorded;
+static retro_atomic_size_t  upd_applied;
 static uint16_t             rs_palette[256];
 static struct SOBJ          rs_obj[128];
 
 static struct SRenderUpdate *record_update (void)
 {
-   struct SRenderUpdate *u;
+   size_t rec = retro_atomic_load_relaxed_size(&upd_recorded);
 
-   if (upd_recorded - upd_applied >= S9X_UPDATE_QUEUE)
+   /* An entry not yet applied may not be overwritten, so a full ring
+    * waits for the renderer rather than wrapping over it. */
+   if (rec - retro_atomic_load_acquire_size(&upd_applied)
+         >= S9X_UPDATE_QUEUE)
+   {
       S9xRenderDrain();
+      rec = retro_atomic_load_relaxed_size(&upd_recorded);
+   }
 
-   u = &upd_queue[upd_recorded % S9X_UPDATE_QUEUE];
-   upd_recorded++;
-   return u;
+   return &upd_queue[rec % S9X_UPDATE_QUEUE];
+}
+
+static void publish_update (void)
+{
+   retro_atomic_store_release_size(&upd_recorded,
+         retro_atomic_load_relaxed_size(&upd_recorded) + 1);
 }
 
 void S9xRecordPaletteWrite (unsigned idx)
@@ -2130,6 +2177,7 @@ void S9xRecordPaletteWrite (unsigned idx)
    u->kind = S9X_UPD_PALETTE;
    u->idx  = (uint16_t)idx;
    u->val  = IPPU.ScreenColors[idx];
+   publish_update();
 }
 
 void S9xRecordObjectWrite (unsigned idx)
@@ -2138,6 +2186,7 @@ void S9xRecordObjectWrite (unsigned idx)
    u->kind = S9X_UPD_OBJECT;
    u->idx  = (uint16_t)idx;
    u->obj  = PPU.OBJ[idx];
+   publish_update();
 }
 
 /* Used where a table is rebuilt or restored wholesale -- reset, a
@@ -2148,7 +2197,8 @@ void S9xResyncRenderTables (void)
    S9xRenderDrain();
    memcpy(rs_palette, IPPU.ScreenColors, sizeof(rs_palette));
    memcpy(rs_obj,     PPU.OBJ,           sizeof(rs_obj));
-   upd_applied = upd_recorded;
+   retro_atomic_store_release_size(&upd_applied,
+         retro_atomic_load_relaxed_size(&upd_recorded));
 }
 
 static struct SRenderRegs span_queue[S9X_SPAN_QUEUE];
@@ -2200,7 +2250,7 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out)
 
    out->ScreenColors = rs_palette;
    out->OBJ          = rs_obj;
-   out->UpdateAt     = upd_recorded;
+   out->UpdateAt     = retro_atomic_load_relaxed_size(&upd_recorded);
    memcpy(out->FillRAM,      &Memory.FillRAM[0x2100], sizeof(out->FillRAM));
 
    out->ForcedBlanking       = PPU.ForcedBlanking;
@@ -2664,24 +2714,146 @@ static void S9xRenderSpan (void)
 	}
 }
 
+void S9xApplyRenderUpdates(size_t upto);
+
+#if defined(HAVE_THREADS)
+static void S9xRenderThread(void *unused)
+{
+   (void)unused;
+
+   for (;;)
+   {
+      size_t drawn = retro_atomic_load_relaxed_size(&rt_drawn);
+      size_t rec   = retro_atomic_load_acquire_size(&rt_recorded);
+
+      if (drawn == rec)
+      {
+         int key;
+
+         if (retro_atomic_load_acquire_int(&rt_quit))
+            return;
+
+         key = retro_eventcount_prepare_wait(&rt_work);
+
+         if (retro_atomic_load_acquire_size(&rt_recorded) != drawn
+               || retro_atomic_load_acquire_int(&rt_quit))
+         {
+            retro_eventcount_cancel_wait(&rt_work);
+            continue;
+         }
+
+         retro_eventcount_commit_wait(&rt_work, key);
+         continue;
+      }
+
+      S9xCurRenderRegs = &span_queue[drawn % S9X_SPAN_QUEUE];
+      S9xApplyRenderUpdates(S9xCurRenderRegs->UpdateAt);
+      S9xRenderSpan();
+
+      retro_atomic_store_release_size(&rt_drawn, drawn + 1);
+      retro_eventcount_notify(&rt_done);
+   }
+}
+
+void S9xRenderThreadStart(void)
+{
+   if (rt_running)
+      return;
+
+   retro_atomic_size_init(&rt_recorded, span_recorded);
+   retro_atomic_size_init(&rt_drawn,    span_drawn);
+   retro_atomic_int_init(&rt_quit, 0);
+
+   if (!retro_eventcount_init(&rt_work))
+      return;
+   if (!retro_eventcount_init(&rt_done))
+   {
+      retro_eventcount_free(&rt_work);
+      return;
+   }
+
+   rt_thread = sthread_create(S9xRenderThread, NULL);
+   if (!rt_thread)
+   {
+      retro_eventcount_free(&rt_done);
+      retro_eventcount_free(&rt_work);
+      return;
+   }
+   rt_running = 1;
+}
+
+void S9xRenderThreadStop(void)
+{
+   if (!rt_running)
+      return;
+
+   S9xRenderDrain();
+   retro_atomic_store_release_int(&rt_quit, 1);
+   retro_eventcount_notify(&rt_work);
+   sthread_join(rt_thread);
+
+   retro_eventcount_free(&rt_done);
+   retro_eventcount_free(&rt_work);
+   rt_thread  = NULL;
+   rt_running = 0;
+}
+#endif
+
+/* Bring the renderer's tables up to the point a span wants them.  Only
+ * ever called from whichever side is drawing. */
+void S9xApplyRenderUpdates(size_t upto)
+{
+   size_t at = retro_atomic_load_relaxed_size(&upd_applied);
+
+   while (at != upto)
+   {
+      const struct SRenderUpdate *u = &upd_queue[at % S9X_UPDATE_QUEUE];
+
+      if (u->kind == S9X_UPD_PALETTE)
+         rs_palette[u->idx] = u->val;
+      else
+         rs_obj[u->idx] = u->obj;
+      at++;
+   }
+   retro_atomic_store_release_size(&upd_applied, at);
+}
+
 void S9xRenderDrain (void)
 {
+#if defined(HAVE_THREADS)
+   if (rt_running)
+   {
+      /* Wait for the renderer to catch up rather than draw anything
+       * here: the two must not both be walking the queue. */
+      for (;;)
+      {
+         size_t rec = retro_atomic_load_relaxed_size(&rt_recorded);
+         int    key;
+
+         if (retro_atomic_load_acquire_size(&rt_drawn) == rec)
+            break;
+
+         key = retro_eventcount_prepare_wait(&rt_done);
+
+         if (retro_atomic_load_acquire_size(&rt_drawn) == rec)
+         {
+            retro_eventcount_cancel_wait(&rt_done);
+            break;
+         }
+
+         retro_eventcount_commit_wait(&rt_done, key);
+      }
+
+      span_drawn       = span_recorded;
+      S9xCurRenderRegs = &S9xRenderRegs;
+      return;
+   }
+#endif
+
    while (span_drawn != span_recorded)
    {
       S9xCurRenderRegs = &span_queue[span_drawn % S9X_SPAN_QUEUE];
-
-      while (upd_applied != S9xCurRenderRegs->UpdateAt)
-      {
-         const struct SRenderUpdate *u =
-            &upd_queue[upd_applied % S9X_UPDATE_QUEUE];
-
-         if (u->kind == S9X_UPD_PALETTE)
-            rs_palette[u->idx] = u->val;
-         else
-            rs_obj[u->idx] = u->obj;
-         upd_applied++;
-      }
-
+      S9xApplyRenderUpdates(S9xCurRenderRegs->UpdateAt);
       S9xRenderSpan();
       span_drawn++;
    }
@@ -2723,6 +2895,15 @@ void S9xUpdateScreen (void)
 
 	span_queue[span_recorded % S9X_SPAN_QUEUE] = S9xRenderRegs;
 	span_recorded++;
+
+#if defined(HAVE_THREADS)
+	if (rt_running)
+	{
+		/* The span is written before the counter that publishes it. */
+		retro_atomic_store_release_size(&rt_recorded, span_recorded);
+		retro_eventcount_notify(&rt_work);
+	}
+#endif
 
 
 
