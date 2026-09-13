@@ -457,6 +457,35 @@ void S9xDoAutoJoypad (void);
 #define MAX_5C78_VERSION	0x03
 #define MAX_5A22_VERSION	0x02
 
+/* The register state a rendered span depends on.
+ *
+ * A span is recorded when a mid-frame write ends it, and rendered from
+ * this rather than from the live registers, so that recording and
+ * rendering need not happen at the same moment.  Only the window and
+ * clip registers are carried so far; the rest of the renderer still
+ * reads the live state, which is why a span is still drained the
+ * instant it is recorded.
+ */
+struct SRenderRegs
+{
+   uint8_t ClipCounts[6];
+   uint8_t ClipWindowOverlapLogic[6];
+   uint8_t ClipWindow1Enable[6];
+   uint8_t ClipWindow2Enable[6];
+   uint8_t ClipWindow1Inside[6];
+   uint8_t ClipWindow2Inside[6];
+   uint8_t Window1Left;
+   uint8_t Window1Right;
+   uint8_t Window2Left;
+   uint8_t Window2Right;
+   uint8_t FullClipping;
+};
+
+extern struct SRenderRegs        S9xRenderRegs;
+extern const struct SRenderRegs *S9xCurRenderRegs;
+
+void S9xSnapshotRenderRegs (struct SRenderRegs *out);
+
 #define FLUSH_REDRAW() \
 	if (IPPU.PreviousLine != IPPU.CurrentLine) \
 		S9xUpdateScreen();

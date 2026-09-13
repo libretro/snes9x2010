@@ -142,7 +142,8 @@ int main(int argc, char **argv)
    lda_sta(0x60, 0x2101);   /* OBJ size, name base inside the fill */
    lda_sta(0x13, 0x212C);   /* BG1, BG2, OBJ on the main screen    */
    lda_sta(0x02, 0x212D);   /* BG2 on the subscreen                */
-   lda_sta(0x01, 0x2123);   /* BG1 inside window 1                 */
+   lda_sta(0x02, 0x2123);   /* BG1 masked by window 1 (bit 1 enables;
+                             * bit 0 would only invert it)          */
    lda_sta(0x40, 0x2126);   /* window 1 left                       */
    lda_sta(0xC0, 0x2127);   /* window 1 right                      */
    lda_sta(0x01, 0x212E);   /* window masks the main screen BG1    */

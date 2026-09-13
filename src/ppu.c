@@ -2077,32 +2077,50 @@ static INLINE void RenderScreen (uint8_t sub)
 	BG.EnableMath = !sub && (Memory.FillRAM[0x2131] & 0x20);
 }
 
+struct SRenderRegs        S9xRenderRegs;
+const struct SRenderRegs *S9xCurRenderRegs = &S9xRenderRegs;
+
+void S9xSnapshotRenderRegs (struct SRenderRegs *out)
+{
+   memcpy(out->ClipCounts,             PPU.ClipCounts,             6);
+   memcpy(out->ClipWindowOverlapLogic, PPU.ClipWindowOverlapLogic, 6);
+   memcpy(out->ClipWindow1Enable,      PPU.ClipWindow1Enable,      6);
+   memcpy(out->ClipWindow2Enable,      PPU.ClipWindow2Enable,      6);
+   memcpy(out->ClipWindow1Inside,      PPU.ClipWindow1Inside,      6);
+   memcpy(out->ClipWindow2Inside,      PPU.ClipWindow2Inside,      6);
+   out->Window1Left          = PPU.Window1Left;
+   out->Window1Right         = PPU.Window1Right;
+   out->Window2Left          = PPU.Window2Left;
+   out->Window2Right = PPU.Window2Right;
+   out->FullClipping = PPU.FullClipping;
+}
+
 static INLINE uint8_t CalcWindowMask (int i, uint8_t W1, uint8_t W2)
 {
-	if (!PPU.ClipWindow1Enable[i])
+	if (!S9xCurRenderRegs->ClipWindow1Enable[i])
 	{
-		if (!PPU.ClipWindow2Enable[i])
+		if (!S9xCurRenderRegs->ClipWindow2Enable[i])
 			return (0);
-		else if (!PPU.ClipWindow2Inside[i])
+		else if (!S9xCurRenderRegs->ClipWindow2Inside[i])
          return (~W2);
       return (W2);
 	}
 	else
 	{
-		if (!PPU.ClipWindow2Enable[i])
+		if (!S9xCurRenderRegs->ClipWindow2Enable[i])
 		{
-			if (!PPU.ClipWindow1Inside[i])
+			if (!S9xCurRenderRegs->ClipWindow1Inside[i])
 				return (~W1);
 			return (W1);
 		}
 		else
 		{
-			if (!PPU.ClipWindow1Inside[i])
+			if (!S9xCurRenderRegs->ClipWindow1Inside[i])
 				W1 = ~W1;
-			if (!PPU.ClipWindow2Inside[i])
+			if (!S9xCurRenderRegs->ClipWindow2Inside[i])
 				W2 = ~W2;
 
-			switch (PPU.ClipWindowOverlapLogic[i])
+			switch (S9xCurRenderRegs->ClipWindowOverlapLogic[i])
 			{
 				case 0: /* OR */
 					return (W1 | W2);
@@ -2243,34 +2261,34 @@ static void S9xComputeClipWindows (void)
 	/* Calculate window regions. We have at most 5 regions, because we have 6 control points*/
 	/* (screen edges, window 1 left & right, and window 2 left & right).*/
 
-	if (PPU.Window1Left <= PPU.Window1Right)
+	if (S9xCurRenderRegs->Window1Left <= S9xCurRenderRegs->Window1Right)
 	{
-		if (PPU.Window1Left > 0)
+		if (S9xCurRenderRegs->Window1Left > 0)
 		{
-			windows[1] = PPU.Window1Left;
+			windows[1] = S9xCurRenderRegs->Window1Left;
 			n_regions = 2;
 		}
 
-		if (PPU.Window1Right < 255)
+		if (S9xCurRenderRegs->Window1Right < 255)
 		{
-			windows[n_regions] = PPU.Window1Right + 1;
+			windows[n_regions] = S9xCurRenderRegs->Window1Right + 1;
 			n_regions++;
 		}
 	}
 
-	if (PPU.Window2Left <= PPU.Window2Right)
+	if (S9xCurRenderRegs->Window2Left <= S9xCurRenderRegs->Window2Right)
 	{
 		for (i = 0; i <= n_regions; i++)
 		{
-			if (PPU.Window2Left == windows[i])
+			if (S9xCurRenderRegs->Window2Left == windows[i])
 				break;
 
-			if (PPU.Window2Left <  windows[i])
+			if (S9xCurRenderRegs->Window2Left <  windows[i])
 			{
 				for (j = n_regions; j >= i; j--)
 					windows[j + 1] = windows[j];
 
-				windows[i] = PPU.Window2Left;
+				windows[i] = S9xCurRenderRegs->Window2Left;
 				n_regions++;
 				break;
 			}
@@ -2278,15 +2296,15 @@ static void S9xComputeClipWindows (void)
 
 		for (; i <= n_regions; i++)
 		{
-			if (PPU.Window2Right + 1 == windows[i])
+			if (S9xCurRenderRegs->Window2Right + 1 == windows[i])
 				break;
 
-			if (PPU.Window2Right + 1 <  windows[i])
+			if (S9xCurRenderRegs->Window2Right + 1 <  windows[i])
 			{
 				for (j = n_regions; j >= i; j--)
 					windows[j + 1] = windows[j];
 
-				windows[i] = PPU.Window2Right + 1;
+				windows[i] = S9xCurRenderRegs->Window2Right + 1;
 				n_regions++;
 				break;
 			}
@@ -2298,17 +2316,17 @@ static void S9xComputeClipWindows (void)
 	W1 = 0;
 	W2 = 0;
 
-	if (PPU.Window1Left <= PPU.Window1Right)
+	if (S9xCurRenderRegs->Window1Left <= S9xCurRenderRegs->Window1Right)
 	{
-		for (i = 0; windows[i] != PPU.Window1Left; i++) ;
-		for (j = i; windows[j] != PPU.Window1Right + 1; j++) ;
+		for (i = 0; windows[i] != S9xCurRenderRegs->Window1Left; i++) ;
+		for (j = i; windows[j] != S9xCurRenderRegs->Window1Right + 1; j++) ;
 		W1 = region_map[i][j];
 	}
 
-	if (PPU.Window2Left <= PPU.Window2Right)
+	if (S9xCurRenderRegs->Window2Left <= S9xCurRenderRegs->Window2Right)
 	{
-		for (i = 0; windows[i] != PPU.Window2Left; i++) ;
-		for (j = i; windows[j] != PPU.Window2Right + 1; j++) ;
+		for (i = 0; windows[i] != S9xCurRenderRegs->Window2Left; i++) ;
+		for (j = i; windows[j] != S9xCurRenderRegs->Window2Right + 1; j++) ;
 		W2 = region_map[i][j];
 	}
 
@@ -2343,7 +2361,7 @@ static void S9xComputeClipWindows (void)
 
 	/* Store backdrop clip window (draw everywhere color window allows)*/
 
-	if(PPU.FullClipping)
+	if(S9xCurRenderRegs->FullClipping)
 	{
 		StoreWindowRegions_StoreMode1_Mask0(IPPU.Clip[0][5], IPPU.Clip[1][5]);
 	}
@@ -2370,6 +2388,11 @@ static void S9xComputeClipWindows (void)
 
 void S9xUpdateScreen (void)
 {
+   /* Taken here for now, so the snapshot and the live registers are
+    * the same thing and the change is provably inert. It moves to the
+    * point the span is recorded once the whole renderer reads it. */
+   S9xSnapshotRenderRegs(&S9xRenderRegs);
+
 	/* clip and Offset are referenced from inside the DRAW_BACKDROP_NO_MATH
 	   and DrawBackdrop macros below, which inline into this function's
 	   scope. They look unused at this declaration point but the macros
