@@ -402,13 +402,13 @@ void SetupOBJ (void)
 			GFX.OBJWidths[S] = SmallWidth;
 			Height = SmallHeight;
 
-			if (PPU.OBJ[S].Size)
+			if (S9xCurRenderRegs->OBJ[S].Size)
 			{
 				GFX.OBJWidths[S] = LargeWidth;
 				Height = LargeHeight;
 			}
 
-			HPos = PPU.OBJ[S].HPos;
+			HPos = S9xCurRenderRegs->OBJ[S].HPos;
 			if (HPos == -256)
 				HPos = 0;
 
@@ -422,7 +422,7 @@ void SetupOBJ (void)
 				else
 					GFX.OBJVisibleTiles[S] = GFX.OBJWidths[S] >> 3;
 
-				Y_one = (uint8_t) (PPU.OBJ[S].VPos & 0xff);
+				Y_one = (uint8_t) (S9xCurRenderRegs->OBJ[S].VPos & 0xff);
 				for (line = startline; line < Height; Y_one++, line += inc)
 				{
 					if (Y_one >= SNES_HEIGHT_EXTENDED)
@@ -441,7 +441,7 @@ void SetupOBJ (void)
 					GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Sprite = S;
 					GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Line = line;
 
-					if (PPU.OBJ[S].VFlip)
+					if (S9xCurRenderRegs->OBJ[S].VFlip)
 						/* Yes, Width not Height. It so happens that the*/
 						/* sprites with H=2*W flip as two WxW sprites.*/
 						GFX.OBJLines[Y_one].OBJ[LineOBJ[Y_one]].Line ^= (GFX.OBJWidths[S] - 1);
@@ -466,11 +466,11 @@ void SetupOBJ (void)
 
 		for (S = 0; S < 128; S++)
 		{
-         int HPos = PPU.OBJ[S].HPos;
+         int HPos = S9xCurRenderRegs->OBJ[S].HPos;
          if (HPos == -256)
             HPos = 256;
 
-			if (PPU.OBJ[S].Size)
+			if (S9xCurRenderRegs->OBJ[S].Size)
 			{
 				GFX.OBJWidths[S] = LargeWidth;
 				Height = LargeHeight;
@@ -491,7 +491,7 @@ void SetupOBJ (void)
 				else
 					GFX.OBJVisibleTiles[S] = GFX.OBJWidths[S] >> 3;
 
-				Y_one = (uint8_t) (PPU.OBJ[S].VPos & 0xff);
+				Y_one = (uint8_t) (S9xCurRenderRegs->OBJ[S].VPos & 0xff);
 				for (line = startline; line < Height; Y_one++, line += inc)
 				{
 					if (Y_one >= SNES_HEIGHT_EXTENDED)
@@ -503,7 +503,7 @@ void SetupOBJ (void)
                   AnyOBJOnLine[Y_one] = TRUE;
                }
 
-					if (PPU.OBJ[S].VFlip)
+					if (S9xCurRenderRegs->OBJ[S].VFlip)
 						/* Yes, Width not Height. It so happens that the*/
 						/* sprites with H=2*W flip as two WxW sprites.*/
 						OBJOnLine[Y_one][S] ^= (GFX.OBJWidths[S] - 1);
@@ -635,8 +635,8 @@ static void DrawOBJS (int D)
 				continue;
 
 			Line0 = GFX.OBJLines[Y].OBJ[I].Line;
-			BaseTile = (((Line0 << 1) + (PPU.OBJ[S].Name & 0xf0)) & 0xf0) | (PPU.OBJ[S].Name & 0x100) | (PPU.OBJ[S].Palette << 10);
-			TileX = PPU.OBJ[S].Name & 0x0f;
+			BaseTile = (((Line0 << 1) + (S9xCurRenderRegs->OBJ[S].Name & 0xf0)) & 0xf0) | (S9xCurRenderRegs->OBJ[S].Name & 0x100) | (S9xCurRenderRegs->OBJ[S].Palette << 10);
+			TileX = S9xCurRenderRegs->OBJ[S].Name & 0x0f;
 			TileLine = (Line0 & 7) * 8;
 			TileInc = 1;
 
@@ -644,9 +644,9 @@ static void DrawOBJS (int D)
 			if (Span1 > BatchL)
 				Span1 = BatchL;
 			Span2 = BatchL - Span1;
-			BaseTile2 = ((((Line0 + Span1) << 1) + (PPU.OBJ[S].Name & 0xf0)) & 0xf0) | (PPU.OBJ[S].Name & 0x100) | (PPU.OBJ[S].Palette << 10);
+			BaseTile2 = ((((Line0 + Span1) << 1) + (S9xCurRenderRegs->OBJ[S].Name & 0xf0)) & 0xf0) | (S9xCurRenderRegs->OBJ[S].Name & 0x100) | (S9xCurRenderRegs->OBJ[S].Palette << 10);
 
-			if (PPU.OBJ[S].HFlip)
+			if (S9xCurRenderRegs->OBJ[S].HFlip)
 			{
 				TileX = (TileX + (GFX.OBJWidths[S] >> 3) - 1) & 0x0f;
 				BaseTile |= H_FLIP;
@@ -654,17 +654,17 @@ static void DrawOBJS (int D)
 				TileInc = -1;
 			}
 
-			GFX.Z2 = D + PPU.OBJ[S].Priority * 4;
+			GFX.Z2 = D + S9xCurRenderRegs->OBJ[S].Priority * 4;
 
 			DrawMode = 3;
 			clip = 0;
 			next_clip = -1000;
-			X = PPU.OBJ[S].HPos;
+			X = S9xCurRenderRegs->OBJ[S].HPos;
 
 			if (X == -256)
 				X = 256;
 
-			for ( t = tiles, O = Offset + X * PixWidth; X <= 256 && X < PPU.OBJ[S].HPos + GFX.OBJWidths[S]; TileX = (TileX + TileInc) & 0x0f, X += 8, O += 8 * PixWidth)
+			for ( t = tiles, O = Offset + X * PixWidth; X <= 256 && X < S9xCurRenderRegs->OBJ[S].HPos + GFX.OBJWidths[S]; TileX = (TileX + TileInc) & 0x0f, X += 8, O += 8 * PixWidth)
 			{
 				if (X < -7 || --t < 0 || X == 256)
 					continue;
@@ -685,7 +685,7 @@ static void DrawOBJS (int D)
 							next_clip = GFX.Clip[4].Right[clip - 1];
 							GFX.ClipColors = !(DrawMode & 1);
 
-							if (BG.EnableMath && (PPU.OBJ[S].Palette & 4) && (DrawMode & 2))
+							if (BG.EnableMath && (S9xCurRenderRegs->OBJ[S].Palette & 4) && (DrawMode & 2))
 							{
 								DrawTile = GFX.DrawTileMath;
 								DrawClippedTile = GFX.DrawClippedTileMath;
@@ -944,13 +944,13 @@ static void DrawBackground (int bg, uint8_t Zh, uint8_t Zl)
 /* RealScreenColors invariant across the whole backdrop pass: backdrop
  * has no per-tile palette slice (unlike SELECT_PALETTE for regular
  * tiles) and no Direct Colour Mode (unlike Mode 7), so it's always
- * IPPU.ScreenColors. Hoist out of the per-clip-region loop and out
+ * S9xCurRenderRegs->ScreenColors. Hoist out of the per-clip-region loop and out
  * of the 28 individual backdrop renderers. The renderers still pick
  * ScreenColors per-call via ClipColors ? BlackColourMap :
  * RealScreenColors, since BlackColourMap is private to tile.c. */
 #define DRAW_BACKDROP_NO_MATH() \
 	Offset = GFX.StartY * GFX.PPL; \
-	GFX.RealScreenColors = IPPU.ScreenColors; \
+	GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors; \
 	for ( clip = 0; clip < GFX.Clip[5].Count; clip++) \
 	{ \
 		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1); \
@@ -959,7 +959,7 @@ static void DrawBackground (int bg, uint8_t Zh, uint8_t Zl)
 
 #define DrawBackdrop() \
 	Offset = GFX.StartY * GFX.PPL; \
-	GFX.RealScreenColors = IPPU.ScreenColors; \
+	GFX.RealScreenColors = S9xCurRenderRegs->ScreenColors; \
 	for ( clip = 0; clip < GFX.Clip[5].Count; clip++) \
 	{ \
 		GFX.ClipColors = !(GFX.Clip[5].DrawMode[clip] & 1); \
@@ -2119,6 +2119,9 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out)
    out->Mode7VFlip          = PPU.Mode7VFlip;
    out->Mode7Repeat         = PPU.Mode7Repeat;
    out->Brightness          = PPU.Brightness;
+
+   memcpy(out->ScreenColors, IPPU.ScreenColors, sizeof(out->ScreenColors));
+   memcpy(out->OBJ,          PPU.OBJ,           sizeof(out->OBJ));
 }
 
 static INLINE uint8_t CalcWindowMask (int i, uint8_t W1, uint8_t W2)

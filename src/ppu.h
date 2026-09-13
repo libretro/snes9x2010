@@ -522,6 +522,16 @@ struct SRenderRegs
    uint8_t Mode7VFlip;
    uint8_t Mode7Repeat;
    uint8_t Brightness;
+
+   /* The palette and the object table.  Both are caches the register
+    * writes maintain an entry at a time and only the renderer reads,
+    * so carrying them whole in every span is the wrong shape and they
+    * want their own incremental commands.  They are here so that a
+    * span can be drawn away from the moment it was recorded at all;
+    * shrinking this back out is a change the digests can then guard.
+    */
+   uint16_t ScreenColors[256];
+   struct SOBJ OBJ[128];
 };
 
 extern struct SRenderRegs        S9xRenderRegs;
