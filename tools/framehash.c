@@ -51,6 +51,9 @@
  *                  one and can be compared against it directly.  The
  *                  video digest cannot: once a window has diverged the
  *                  buffer stays diverged for the frames after it.
+ *   --option K=V   answer the core's request for option K with V.
+ *                  Repeatable.  Anything not named keeps the core's
+ *                  own default, so a plain run stays reproducible.
  *   --quiet        digests only, no core log output
  *
  * The digest is FNV-1a over the visible pixels only -- width * 2 bytes
@@ -107,6 +110,11 @@ static unsigned frame_no;
 static int      opt_swfb;
 static int      opt_quiet;
 static unsigned opt_start;
+
+#define FH_MAX_OPTIONS 16
+static const char *opt_key[FH_MAX_OPTIONS];
+static const char *opt_val[FH_MAX_OPTIONS];
+static unsigned    opt_count;
 static int      replay_failed;
 static unsigned replay_video_differs;
 
@@ -150,10 +158,25 @@ static bool fh_environment(unsigned cmd, void *data)
          return true;
 
       case RETRO_ENVIRONMENT_GET_VARIABLE:
-         /* Every option at its default, so a run is reproducible
-          * without carrying a config file alongside it. */
-         ((struct retro_variable*)data)->value = NULL;
+      {
+         /* Every option at its default unless --option named it, so a
+          * run is reproducible without carrying a config file
+          * alongside it, and an option-gated path can still be
+          * reached without editing the core to reach it. */
+         struct retro_variable *v = (struct retro_variable*)data;
+         unsigned i;
+
+         for (i = 0; i < opt_count; i++)
+         {
+            if (strcmp(v->key, opt_key[i]) == 0)
+            {
+               v->value = opt_val[i];
+               return true;
+            }
+         }
+         v->value = NULL;
          return false;
+      }
 
       case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
          *(bool*)data = false;
@@ -373,7 +396,8 @@ static void usage(void)
 {
    fprintf(stderr,
       "usage: framehash <core> <rom> [--frames N] [--interval N]\n"
-      "                 [--start N] [--replay N] [--swfb] [--quiet]\n");
+      "                 [--start N] [--replay N] [--option K=V]\n"
+      "                 [--swfb] [--quiet]\n");
 }
 
 int main(int argc, char **argv)
@@ -406,6 +430,21 @@ int main(int argc, char **argv)
          interval = (unsigned)strtoul(argv[++i], NULL, 0);
       else if (!strcmp(argv[i], "--replay") && i + 1 < argc)
          replay = (unsigned)strtoul(argv[++i], NULL, 0);
+      else if (!strcmp(argv[i], "--option") && i + 1 < argc)
+      {
+         char *kv = argv[++i];
+         char *eq = strchr(kv, '=');
+
+         if (!eq || opt_count >= FH_MAX_OPTIONS)
+         {
+            fprintf(stderr, "framehash: bad --option %s\n", kv);
+            return 2;
+         }
+         *eq = '\0';
+         opt_key[opt_count] = kv;
+         opt_val[opt_count] = eq + 1;
+         opt_count++;
+      }
       else if (!strcmp(argv[i], "--start") && i + 1 < argc)
          opt_start = (unsigned)strtoul(argv[++i], NULL, 0);
       else if (!strcmp(argv[i], "--swfb"))
