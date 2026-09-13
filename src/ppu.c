@@ -2113,6 +2113,12 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out)
    out->InterlaceOBJ        = IPPU.InterlaceOBJ;
    out->DoubleWidthPixels   = IPPU.DoubleWidthPixels;
    out->QuadWidthPixels     = IPPU.QuadWidthPixels;
+   out->PseudoHires         = IPPU.PseudoHires;
+
+   out->Mode7HFlip          = PPU.Mode7HFlip;
+   out->Mode7VFlip          = PPU.Mode7VFlip;
+   out->Mode7Repeat         = PPU.Mode7Repeat;
+   out->Brightness          = PPU.Brightness;
 }
 
 static INLINE uint8_t CalcWindowMask (int i, uint8_t W1, uint8_t W2)

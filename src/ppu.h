@@ -513,6 +513,15 @@ struct SRenderRegs
    uint8_t InterlaceOBJ;
    uint8_t DoubleWidthPixels;
    uint8_t QuadWidthPixels;
+   uint8_t PseudoHires;
+
+   /* Tile drawing.  IPPU.XB and the direct colour maps stay live: the
+    * renderer builds them itself, so they are its own state rather
+    * than something a span carries in. */
+   uint8_t Mode7HFlip;
+   uint8_t Mode7VFlip;
+   uint8_t Mode7Repeat;
+   uint8_t Brightness;
 };
 
 extern struct SRenderRegs        S9xRenderRegs;

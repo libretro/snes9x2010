@@ -589,7 +589,7 @@ static const uint16_t BlackColourMap[256] = {0};
 static void S9xBuildDirectColourMaps (void)
 {
    uint32_t p, c;
-	IPPU.XB = mul_brightness[PPU.Brightness];
+	IPPU.XB = mul_brightness[S9xCurRenderRegs->Brightness];
 
 	for (p = 0; p < 8; p++)
 		for (c = 0; c < 256; c++)
@@ -11466,7 +11466,7 @@ static void DrawBackdrop16AddBrightness_Normal1x1 (uint32_t Offset, uint32_t Lef
 {
     /* Scalar only: the SSE2 backdrop kernel implements the plain
      * saturating ADD and cannot express the brightness cap. This
-     * path only runs with color math at PPU.Brightness < 15. */
+     * path only runs with color math at S9xCurRenderRegs->Brightness < 15. */
     uint32_t l, x;
     uint16_t main_color, fixed;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -11687,7 +11687,7 @@ static void DrawBackdrop16AddS1_2Brightness_Normal1x1 (uint32_t Offset, uint32_t
 {
     /* Scalar only: the SSE2 backdrop kernel implements the plain
      * saturating ADD and cannot express the brightness cap. This
-     * path only runs with color math at PPU.Brightness < 15. */
+     * path only runs with color math at S9xCurRenderRegs->Brightness < 15. */
     uint32_t l, x;
     uint16_t main_color, fixed;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12179,7 +12179,7 @@ static void DrawBackdrop16AddBrightness_Normal2x1 (uint32_t Offset, uint32_t Lef
 {
     /* Scalar only: the SSE2 backdrop kernel implements the plain
      * saturating ADD and cannot express the brightness cap. This
-     * path only runs with color math at PPU.Brightness < 15. */
+     * path only runs with color math at S9xCurRenderRegs->Brightness < 15. */
     uint32_t l, x;
     uint16_t main_color, fixed;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -12396,7 +12396,7 @@ static void DrawBackdrop16AddS1_2Brightness_Normal2x1 (uint32_t Offset, uint32_t
 {
     /* Scalar only: the SSE2 backdrop kernel implements the plain
      * saturating ADD and cannot express the brightness cap. This
-     * path only runs with color math at PPU.Brightness < 15. */
+     * path only runs with color math at S9xCurRenderRegs->Brightness < 15. */
     uint32_t l, x;
     uint16_t main_color, fixed;
     GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
@@ -13123,7 +13123,7 @@ extern struct SLineMatrixData	LineMatrixData[240];
 	}
 
 /* Look up four corners from the fill tile (tile 0) - used when the
-   sample is out-of-range and PPU.Mode7Repeat == 3. The corner index
+   sample is out-of-range and S9xCurRenderRegs->Mode7Repeat == 3. The corner index
    into the fill tile is (X & 7, Y & 7) which always falls within
    the same 8x8 fill tile, so this is a single TileData lookup with
    four pixel reads.
@@ -13564,7 +13564,7 @@ static INLINE int m7hr_blend_stable(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, ui
  * Native: one sample per native pixel; no horizontal upsampling.
  * Mosaic: same sample model but each computed pixel is replicated
  * across an HMosaic-by-VMosaic block. Block sizes come from
- * PPU.Mosaic; per-BG enable from PPU.BGMosaic[BG_INDEX] where
+ * S9xCurRenderRegs->Mosaic; per-BG enable from S9xCurRenderRegs->BGMosaic[BG_INDEX] where
  * BG_INDEX is 0 for BG1 and 1 for BG2.
  *
  * Each NAME1 family emits three NAME2 variants -- Normal1x1,
@@ -13666,7 +13666,7 @@ static INLINE int m7hr_blend_stable(uint8_t p_tl, uint8_t p_tr, uint8_t p_bl, ui
  *   the source pixel and selects 11 vs 3 accordingly). MASK
  *   constrains the palette index range (BG2 = 7-bit palette).
  *
- * The two PPU.Mode7Repeat sub-paths share most of the inner-loop
+ * The two S9xCurRenderRegs->Mode7Repeat sub-paths share most of the inner-loop
  * arithmetic; the wrap path masks (X, Y) to 10 bits while the
  * fallback path checks for (X, Y) outside the [0, 1024) tile field.
  *
@@ -13733,12 +13733,12 @@ static void DrawMode7BG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -13753,7 +13753,7 @@ static void DrawMode7BG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -13780,7 +13780,7 @@ static void DrawMode7BG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -13814,12 +13814,12 @@ static void DrawMode7BG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -13834,7 +13834,7 @@ static void DrawMode7BG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -13861,7 +13861,7 @@ static void DrawMode7BG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -13895,12 +13895,12 @@ static void DrawMode7BG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -13915,7 +13915,7 @@ static void DrawMode7BG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, 
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -13942,7 +13942,7 @@ static void DrawMode7BG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -13976,12 +13976,12 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -13996,7 +13996,7 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14023,7 +14023,7 @@ static void DrawMode7BG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14057,12 +14057,12 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14077,7 +14077,7 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14104,7 +14104,7 @@ static void DrawMode7BG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14138,12 +14138,12 @@ static void DrawMode7BG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Rig
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14158,7 +14158,7 @@ static void DrawMode7BG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Rig
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14185,7 +14185,7 @@ static void DrawMode7BG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Rig
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14219,12 +14219,12 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14239,7 +14239,7 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14266,7 +14266,7 @@ static void DrawMode7BG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14300,12 +14300,12 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14320,7 +14320,7 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14347,7 +14347,7 @@ static void DrawMode7BG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14381,12 +14381,12 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14401,7 +14401,7 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14428,7 +14428,7 @@ static void DrawMode7BG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14476,12 +14476,12 @@ static void DrawMode7BG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14496,7 +14496,7 @@ static void DrawMode7BG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14523,7 +14523,7 @@ static void DrawMode7BG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14557,12 +14557,12 @@ static void DrawMode7BG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14577,7 +14577,7 @@ static void DrawMode7BG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14604,7 +14604,7 @@ static void DrawMode7BG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14638,12 +14638,12 @@ static void DrawMode7BG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14658,7 +14658,7 @@ static void DrawMode7BG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, 
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14685,7 +14685,7 @@ static void DrawMode7BG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14719,12 +14719,12 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14739,7 +14739,7 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14766,7 +14766,7 @@ static void DrawMode7BG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14800,12 +14800,12 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14820,7 +14820,7 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14847,7 +14847,7 @@ static void DrawMode7BG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14881,12 +14881,12 @@ static void DrawMode7BG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Rig
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14901,7 +14901,7 @@ static void DrawMode7BG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Rig
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -14928,7 +14928,7 @@ static void DrawMode7BG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Rig
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -14962,12 +14962,12 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -14982,7 +14982,7 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15009,7 +15009,7 @@ static void DrawMode7BG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15043,12 +15043,12 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15063,7 +15063,7 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15090,7 +15090,7 @@ static void DrawMode7BG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15124,12 +15124,12 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15144,7 +15144,7 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15171,7 +15171,7 @@ static void DrawMode7BG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15219,12 +15219,12 @@ static void DrawMode7BG1_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15239,7 +15239,7 @@ static void DrawMode7BG1_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15266,7 +15266,7 @@ static void DrawMode7BG1_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15300,12 +15300,12 @@ static void DrawMode7BG1Add_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15320,7 +15320,7 @@ static void DrawMode7BG1Add_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15347,7 +15347,7 @@ static void DrawMode7BG1Add_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15381,12 +15381,12 @@ static void DrawMode7BG1AddBrightness_Hires (uint32_t Left, uint32_t Right, int 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15401,7 +15401,7 @@ static void DrawMode7BG1AddBrightness_Hires (uint32_t Left, uint32_t Right, int 
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15428,7 +15428,7 @@ static void DrawMode7BG1AddBrightness_Hires (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15462,12 +15462,12 @@ static void DrawMode7BG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15482,7 +15482,7 @@ static void DrawMode7BG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15509,7 +15509,7 @@ static void DrawMode7BG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15543,12 +15543,12 @@ static void DrawMode7BG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15563,7 +15563,7 @@ static void DrawMode7BG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15590,7 +15590,7 @@ static void DrawMode7BG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15624,12 +15624,12 @@ static void DrawMode7BG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15644,7 +15644,7 @@ static void DrawMode7BG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, 
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15671,7 +15671,7 @@ static void DrawMode7BG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15705,12 +15705,12 @@ static void DrawMode7BG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15725,7 +15725,7 @@ static void DrawMode7BG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15752,7 +15752,7 @@ static void DrawMode7BG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15786,12 +15786,12 @@ static void DrawMode7BG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15806,7 +15806,7 @@ static void DrawMode7BG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15833,7 +15833,7 @@ static void DrawMode7BG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15867,12 +15867,12 @@ static void DrawMode7BG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15887,7 +15887,7 @@ static void DrawMode7BG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -15914,7 +15914,7 @@ static void DrawMode7BG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -15956,12 +15956,12 @@ static void DrawMode7BG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -15976,7 +15976,7 @@ static void DrawMode7BG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16003,7 +16003,7 @@ static void DrawMode7BG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16031,12 +16031,12 @@ static void DrawMode7BG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16051,7 +16051,7 @@ static void DrawMode7BG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16078,7 +16078,7 @@ static void DrawMode7BG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16106,12 +16106,12 @@ static void DrawMode7BG2AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16126,7 +16126,7 @@ static void DrawMode7BG2AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, 
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16153,7 +16153,7 @@ static void DrawMode7BG2AddBrightness_Normal1x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16181,12 +16181,12 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16201,7 +16201,7 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16228,7 +16228,7 @@ static void DrawMode7BG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16256,12 +16256,12 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16276,7 +16276,7 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16303,7 +16303,7 @@ static void DrawMode7BG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16331,12 +16331,12 @@ static void DrawMode7BG2AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Rig
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16351,7 +16351,7 @@ static void DrawMode7BG2AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Rig
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16378,7 +16378,7 @@ static void DrawMode7BG2AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t Rig
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16406,12 +16406,12 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16426,7 +16426,7 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16453,7 +16453,7 @@ static void DrawMode7BG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16481,12 +16481,12 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16501,7 +16501,7 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16528,7 +16528,7 @@ static void DrawMode7BG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16556,12 +16556,12 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16576,7 +16576,7 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16603,7 +16603,7 @@ static void DrawMode7BG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16645,12 +16645,12 @@ static void DrawMode7BG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16665,7 +16665,7 @@ static void DrawMode7BG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16692,7 +16692,7 @@ static void DrawMode7BG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16720,12 +16720,12 @@ static void DrawMode7BG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16740,7 +16740,7 @@ static void DrawMode7BG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16767,7 +16767,7 @@ static void DrawMode7BG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16795,12 +16795,12 @@ static void DrawMode7BG2AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16815,7 +16815,7 @@ static void DrawMode7BG2AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, 
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16842,7 +16842,7 @@ static void DrawMode7BG2AddBrightness_Normal2x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16870,12 +16870,12 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16890,7 +16890,7 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16917,7 +16917,7 @@ static void DrawMode7BG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -16945,12 +16945,12 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -16965,7 +16965,7 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -16992,7 +16992,7 @@ static void DrawMode7BG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17020,12 +17020,12 @@ static void DrawMode7BG2AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Rig
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17040,7 +17040,7 @@ static void DrawMode7BG2AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Rig
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17067,7 +17067,7 @@ static void DrawMode7BG2AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32_t Rig
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17095,12 +17095,12 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17115,7 +17115,7 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17142,7 +17142,7 @@ static void DrawMode7BG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17170,12 +17170,12 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17190,7 +17190,7 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17217,7 +17217,7 @@ static void DrawMode7BG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17245,12 +17245,12 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17265,7 +17265,7 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17292,7 +17292,7 @@ static void DrawMode7BG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17334,12 +17334,12 @@ static void DrawMode7BG2_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17354,7 +17354,7 @@ static void DrawMode7BG2_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17381,7 +17381,7 @@ static void DrawMode7BG2_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17409,12 +17409,12 @@ static void DrawMode7BG2Add_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17429,7 +17429,7 @@ static void DrawMode7BG2Add_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17456,7 +17456,7 @@ static void DrawMode7BG2Add_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17484,12 +17484,12 @@ static void DrawMode7BG2AddBrightness_Hires (uint32_t Left, uint32_t Right, int 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17504,7 +17504,7 @@ static void DrawMode7BG2AddBrightness_Hires (uint32_t Left, uint32_t Right, int 
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17531,7 +17531,7 @@ static void DrawMode7BG2AddBrightness_Hires (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17559,12 +17559,12 @@ static void DrawMode7BG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17579,7 +17579,7 @@ static void DrawMode7BG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17606,7 +17606,7 @@ static void DrawMode7BG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17634,12 +17634,12 @@ static void DrawMode7BG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17654,7 +17654,7 @@ static void DrawMode7BG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17681,7 +17681,7 @@ static void DrawMode7BG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17709,12 +17709,12 @@ static void DrawMode7BG2AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17729,7 +17729,7 @@ static void DrawMode7BG2AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, 
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17756,7 +17756,7 @@ static void DrawMode7BG2AddS1_2Brightness_Hires (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17784,12 +17784,12 @@ static void DrawMode7BG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17804,7 +17804,7 @@ static void DrawMode7BG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17831,7 +17831,7 @@ static void DrawMode7BG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17859,12 +17859,12 @@ static void DrawMode7BG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17879,7 +17879,7 @@ static void DrawMode7BG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17906,7 +17906,7 @@ static void DrawMode7BG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -17934,12 +17934,12 @@ static void DrawMode7BG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t Pix;
         uint8_t starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -17954,7 +17954,7 @@ static void DrawMode7BG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
         xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = Left; x < Right; x++, AA += aa, CC += cc)
             {
@@ -17981,7 +17981,7 @@ static void DrawMode7BG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -18011,11 +18011,11 @@ static void (*Renderers_DrawMode7BG2Hires[9]) (uint32_t, uint32_t, int) =
  * one (BG, NAME2, math) combination. Same overall shape as native
  * Mode 7 but with mosaic block-replication around each per-pixel
  * matrix sample: a single sample is repeated horizontally and
- * vertically across a PPU.Mosaic-sized block.
+ * vertically across a S9xCurRenderRegs->Mosaic-sized block.
  *
  * Per-BG bake-ins are the same as native Mode 7 (Z, MASK, DC) plus
  * BG_INDEX baked in as 0 (BG1) or 1 (BG2) for the
- * PPU.BGMosaic[BG_INDEX] read that gates this BG's mosaic path.
+ * S9xCurRenderRegs->BGMosaic[BG_INDEX] read that gates this BG's mosaic path.
  *
  * Two BG x 3 NAME2 x 7 math = 42 functions plus 6 dispatch arrays. */
 
@@ -18040,15 +18040,15 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -18067,12 +18067,12 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -18088,7 +18088,7 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -18128,7 +18128,7 @@ static void DrawMode7MosaicBG1_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -18166,15 +18166,15 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -18193,12 +18193,12 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -18214,7 +18214,7 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -18254,7 +18254,7 @@ static void DrawMode7MosaicBG1Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -18292,15 +18292,15 @@ static void DrawMode7MosaicBG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t R
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -18319,12 +18319,12 @@ static void DrawMode7MosaicBG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t R
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -18340,7 +18340,7 @@ static void DrawMode7MosaicBG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t R
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -18380,7 +18380,7 @@ static void DrawMode7MosaicBG1AddBrightness_Normal1x1 (uint32_t Left, uint32_t R
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -18418,15 +18418,15 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -18445,12 +18445,12 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -18466,7 +18466,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -18506,7 +18506,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -18544,15 +18544,15 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -18571,12 +18571,12 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -18592,7 +18592,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -18632,7 +18632,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -18670,15 +18670,15 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -18697,12 +18697,12 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -18718,7 +18718,7 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -18758,7 +18758,7 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -18796,15 +18796,15 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -18823,12 +18823,12 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -18844,7 +18844,7 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -18884,7 +18884,7 @@ static void DrawMode7MosaicBG1Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -18922,15 +18922,15 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -18949,12 +18949,12 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -18970,7 +18970,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -19010,7 +19010,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -19048,15 +19048,15 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -19075,12 +19075,12 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -19096,7 +19096,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -19136,7 +19136,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -19188,15 +19188,15 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -19215,12 +19215,12 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -19236,7 +19236,7 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -19276,7 +19276,7 @@ static void DrawMode7MosaicBG1_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -19314,15 +19314,15 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -19341,12 +19341,12 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -19362,7 +19362,7 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -19402,7 +19402,7 @@ static void DrawMode7MosaicBG1Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -19440,15 +19440,15 @@ static void DrawMode7MosaicBG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t R
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -19467,12 +19467,12 @@ static void DrawMode7MosaicBG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t R
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -19488,7 +19488,7 @@ static void DrawMode7MosaicBG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t R
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -19528,7 +19528,7 @@ static void DrawMode7MosaicBG1AddBrightness_Normal2x1 (uint32_t Left, uint32_t R
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -19566,15 +19566,15 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -19593,12 +19593,12 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -19614,7 +19614,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -19654,7 +19654,7 @@ static void DrawMode7MosaicBG1AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -19692,15 +19692,15 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -19719,12 +19719,12 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -19740,7 +19740,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -19780,7 +19780,7 @@ static void DrawMode7MosaicBG1AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -19818,15 +19818,15 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -19845,12 +19845,12 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -19866,7 +19866,7 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -19906,7 +19906,7 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -19944,15 +19944,15 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -19971,12 +19971,12 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -19992,7 +19992,7 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -20032,7 +20032,7 @@ static void DrawMode7MosaicBG1Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -20070,15 +20070,15 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -20097,12 +20097,12 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -20118,7 +20118,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -20158,7 +20158,7 @@ static void DrawMode7MosaicBG1SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -20196,15 +20196,15 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -20223,12 +20223,12 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -20244,7 +20244,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -20284,7 +20284,7 @@ static void DrawMode7MosaicBG1SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -20336,15 +20336,15 @@ static void DrawMode7MosaicBG1_Hires (uint32_t Left, uint32_t Right, int D)
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -20363,12 +20363,12 @@ static void DrawMode7MosaicBG1_Hires (uint32_t Left, uint32_t Right, int D)
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -20384,7 +20384,7 @@ static void DrawMode7MosaicBG1_Hires (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -20424,7 +20424,7 @@ static void DrawMode7MosaicBG1_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -20462,15 +20462,15 @@ static void DrawMode7MosaicBG1Add_Hires (uint32_t Left, uint32_t Right, int D)
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -20489,12 +20489,12 @@ static void DrawMode7MosaicBG1Add_Hires (uint32_t Left, uint32_t Right, int D)
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -20510,7 +20510,7 @@ static void DrawMode7MosaicBG1Add_Hires (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -20550,7 +20550,7 @@ static void DrawMode7MosaicBG1Add_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -20588,15 +20588,15 @@ static void DrawMode7MosaicBG1AddBrightness_Hires (uint32_t Left, uint32_t Right
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -20615,12 +20615,12 @@ static void DrawMode7MosaicBG1AddBrightness_Hires (uint32_t Left, uint32_t Right
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -20636,7 +20636,7 @@ static void DrawMode7MosaicBG1AddBrightness_Hires (uint32_t Left, uint32_t Right
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -20676,7 +20676,7 @@ static void DrawMode7MosaicBG1AddBrightness_Hires (uint32_t Left, uint32_t Right
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -20714,15 +20714,15 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -20741,12 +20741,12 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -20762,7 +20762,7 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -20802,7 +20802,7 @@ static void DrawMode7MosaicBG1AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -20840,15 +20840,15 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -20867,12 +20867,12 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -20888,7 +20888,7 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -20928,7 +20928,7 @@ static void DrawMode7MosaicBG1AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -20966,15 +20966,15 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t R
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -20993,12 +20993,12 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t R
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -21014,7 +21014,7 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t R
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -21054,7 +21054,7 @@ static void DrawMode7MosaicBG1AddS1_2Brightness_Hires (uint32_t Left, uint32_t R
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -21092,15 +21092,15 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -21119,12 +21119,12 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -21140,7 +21140,7 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -21180,7 +21180,7 @@ static void DrawMode7MosaicBG1Sub_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -21218,15 +21218,15 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -21245,12 +21245,12 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -21266,7 +21266,7 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -21306,7 +21306,7 @@ static void DrawMode7MosaicBG1SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -21344,15 +21344,15 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -21371,12 +21371,12 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -21392,7 +21392,7 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -21432,7 +21432,7 @@ static void DrawMode7MosaicBG1SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -21478,15 +21478,15 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -21505,12 +21505,12 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -21526,7 +21526,7 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -21566,7 +21566,7 @@ static void DrawMode7MosaicBG2_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -21598,15 +21598,15 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -21625,12 +21625,12 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -21646,7 +21646,7 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -21686,7 +21686,7 @@ static void DrawMode7MosaicBG2Add_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -21718,15 +21718,15 @@ static void DrawMode7MosaicBG2AddBrightness_Normal1x1 (uint32_t Left, uint32_t R
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -21745,12 +21745,12 @@ static void DrawMode7MosaicBG2AddBrightness_Normal1x1 (uint32_t Left, uint32_t R
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -21766,7 +21766,7 @@ static void DrawMode7MosaicBG2AddBrightness_Normal1x1 (uint32_t Left, uint32_t R
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -21806,7 +21806,7 @@ static void DrawMode7MosaicBG2AddBrightness_Normal1x1 (uint32_t Left, uint32_t R
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -21838,15 +21838,15 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -21865,12 +21865,12 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -21886,7 +21886,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -21926,7 +21926,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -21958,15 +21958,15 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -21985,12 +21985,12 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -22006,7 +22006,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -22046,7 +22046,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -22078,15 +22078,15 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -22105,12 +22105,12 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -22126,7 +22126,7 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -22166,7 +22166,7 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Normal1x1 (uint32_t Left, uint32
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -22198,15 +22198,15 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -22225,12 +22225,12 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -22246,7 +22246,7 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -22286,7 +22286,7 @@ static void DrawMode7MosaicBG2Sub_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -22318,15 +22318,15 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -22345,12 +22345,12 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -22366,7 +22366,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -22406,7 +22406,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -22438,15 +22438,15 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -22465,12 +22465,12 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -22486,7 +22486,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -22526,7 +22526,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -22572,15 +22572,15 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -22599,12 +22599,12 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -22620,7 +22620,7 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -22660,7 +22660,7 @@ static void DrawMode7MosaicBG2_Normal2x1 (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -22692,15 +22692,15 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -22719,12 +22719,12 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -22740,7 +22740,7 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -22780,7 +22780,7 @@ static void DrawMode7MosaicBG2Add_Normal2x1 (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -22812,15 +22812,15 @@ static void DrawMode7MosaicBG2AddBrightness_Normal2x1 (uint32_t Left, uint32_t R
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -22839,12 +22839,12 @@ static void DrawMode7MosaicBG2AddBrightness_Normal2x1 (uint32_t Left, uint32_t R
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -22860,7 +22860,7 @@ static void DrawMode7MosaicBG2AddBrightness_Normal2x1 (uint32_t Left, uint32_t R
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -22900,7 +22900,7 @@ static void DrawMode7MosaicBG2AddBrightness_Normal2x1 (uint32_t Left, uint32_t R
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -22932,15 +22932,15 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -22959,12 +22959,12 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -22980,7 +22980,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -23020,7 +23020,7 @@ static void DrawMode7MosaicBG2AddF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -23052,15 +23052,15 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -23079,12 +23079,12 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -23100,7 +23100,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -23140,7 +23140,7 @@ static void DrawMode7MosaicBG2AddS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -23172,15 +23172,15 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -23199,12 +23199,12 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -23220,7 +23220,7 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -23260,7 +23260,7 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Normal2x1 (uint32_t Left, uint32
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -23292,15 +23292,15 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -23319,12 +23319,12 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -23340,7 +23340,7 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -23380,7 +23380,7 @@ static void DrawMode7MosaicBG2Sub_Normal2x1 (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -23412,15 +23412,15 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -23439,12 +23439,12 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -23460,7 +23460,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -23500,7 +23500,7 @@ static void DrawMode7MosaicBG2SubF1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -23532,15 +23532,15 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -23559,12 +23559,12 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -23580,7 +23580,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -23620,7 +23620,7 @@ static void DrawMode7MosaicBG2SubS1_2_Normal2x1 (uint32_t Left, uint32_t Right, 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -23666,15 +23666,15 @@ static void DrawMode7MosaicBG2_Hires (uint32_t Left, uint32_t Right, int D)
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -23693,12 +23693,12 @@ static void DrawMode7MosaicBG2_Hires (uint32_t Left, uint32_t Right, int D)
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -23714,7 +23714,7 @@ static void DrawMode7MosaicBG2_Hires (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -23754,7 +23754,7 @@ static void DrawMode7MosaicBG2_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -23786,15 +23786,15 @@ static void DrawMode7MosaicBG2Add_Hires (uint32_t Left, uint32_t Right, int D)
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -23813,12 +23813,12 @@ static void DrawMode7MosaicBG2Add_Hires (uint32_t Left, uint32_t Right, int D)
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -23834,7 +23834,7 @@ static void DrawMode7MosaicBG2Add_Hires (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -23874,7 +23874,7 @@ static void DrawMode7MosaicBG2Add_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -23906,15 +23906,15 @@ static void DrawMode7MosaicBG2AddBrightness_Hires (uint32_t Left, uint32_t Right
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -23933,12 +23933,12 @@ static void DrawMode7MosaicBG2AddBrightness_Hires (uint32_t Left, uint32_t Right
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -23954,7 +23954,7 @@ static void DrawMode7MosaicBG2AddBrightness_Hires (uint32_t Left, uint32_t Right
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -23994,7 +23994,7 @@ static void DrawMode7MosaicBG2AddBrightness_Hires (uint32_t Left, uint32_t Right
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -24026,15 +24026,15 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -24053,12 +24053,12 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -24074,7 +24074,7 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -24114,7 +24114,7 @@ static void DrawMode7MosaicBG2AddF1_2_Hires (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -24146,15 +24146,15 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -24173,12 +24173,12 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -24194,7 +24194,7 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -24234,7 +24234,7 @@ static void DrawMode7MosaicBG2AddS1_2_Hires (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -24266,15 +24266,15 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Hires (uint32_t Left, uint32_t R
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -24293,12 +24293,12 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Hires (uint32_t Left, uint32_t R
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -24314,7 +24314,7 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Hires (uint32_t Left, uint32_t R
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -24354,7 +24354,7 @@ static void DrawMode7MosaicBG2AddS1_2Brightness_Hires (uint32_t Left, uint32_t R
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -24386,15 +24386,15 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -24413,12 +24413,12 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -24434,7 +24434,7 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -24474,7 +24474,7 @@ static void DrawMode7MosaicBG2Sub_Hires (uint32_t Left, uint32_t Right, int D)
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -24506,15 +24506,15 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -24533,12 +24533,12 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -24554,7 +24554,7 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -24594,7 +24594,7 @@ static void DrawMode7MosaicBG2SubF1_2_Hires (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -24626,15 +24626,15 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
     MosaicStart = 0;
     MLeft = Left;
     MRight = Right;
-    if (PPU.BGMosaic[0])
+    if (S9xCurRenderRegs->BGMosaic[0])
     {
-        VMosaic = PPU.Mosaic;
-        MosaicStart = ((uint32_t) GFX.StartY - PPU.MosaicStart) % VMosaic;
+        VMosaic = S9xCurRenderRegs->Mosaic;
+        MosaicStart = ((uint32_t) GFX.StartY - S9xCurRenderRegs->MosaicStart) % VMosaic;
         StartY -= MosaicStart;
     }
-    if (PPU.BGMosaic[1])
+    if (S9xCurRenderRegs->BGMosaic[1])
     {
-        HMosaic = PPU.Mosaic;
+        HMosaic = S9xCurRenderRegs->Mosaic;
         MLeft  -= MLeft  % HMosaic;
         MRight += HMosaic - 1;
         MRight -= MRight % HMosaic;
@@ -24653,12 +24653,12 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
         CentreX = ((int32_t) l->CentreX << 19) >> 19;
         CentreY = ((int32_t) l->CentreY << 19) >> 19;
         starty = Line + 1;
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
         DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = MRight - 1;
             aa = -l->MatrixA;
@@ -24674,7 +24674,7 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
         ctr = 1;
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             for ( x = MLeft; x < MRight; x++, AA += aa, CC += cc)
             {
@@ -24714,7 +24714,7 @@ static void DrawMode7MosaicBG2SubS1_2_Hires (uint32_t Left, uint32_t Right, int 
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
                 else
-                if (PPU.Mode7Repeat == 3)
+                if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     continue;
@@ -24822,7 +24822,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -24830,7 +24830,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -24848,7 +24848,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -24910,7 +24910,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -24938,7 +24938,7 @@ static void DrawMode7BG1HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -24988,7 +24988,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -24996,7 +24996,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -25014,7 +25014,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -25076,7 +25076,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25104,7 +25104,7 @@ static void DrawMode7BG1HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25154,7 +25154,7 @@ static void DrawMode7BG1HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -25162,7 +25162,7 @@ static void DrawMode7BG1HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -25180,7 +25180,7 @@ static void DrawMode7BG1HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -25242,7 +25242,7 @@ static void DrawMode7BG1HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25270,7 +25270,7 @@ static void DrawMode7BG1HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25320,7 +25320,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -25328,7 +25328,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -25346,7 +25346,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -25408,7 +25408,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25436,7 +25436,7 @@ static void DrawMode7BG1HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25486,7 +25486,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -25494,7 +25494,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -25512,7 +25512,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -25574,7 +25574,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25602,7 +25602,7 @@ static void DrawMode7BG1HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25652,7 +25652,7 @@ static void DrawMode7BG1HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -25660,7 +25660,7 @@ static void DrawMode7BG1HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -25678,7 +25678,7 @@ static void DrawMode7BG1HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -25740,7 +25740,7 @@ static void DrawMode7BG1HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25768,7 +25768,7 @@ static void DrawMode7BG1HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25818,7 +25818,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -25826,7 +25826,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -25844,7 +25844,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -25906,7 +25906,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25934,7 +25934,7 @@ static void DrawMode7BG1HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -25984,7 +25984,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -25992,7 +25992,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -26010,7 +26010,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -26072,7 +26072,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26100,7 +26100,7 @@ static void DrawMode7BG1HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26150,7 +26150,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -26158,7 +26158,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -26176,7 +26176,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -26238,7 +26238,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26266,7 +26266,7 @@ static void DrawMode7BG1HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26325,7 +26325,7 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -26333,7 +26333,7 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -26351,7 +26351,7 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -26413,7 +26413,7 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26441,7 +26441,7 @@ static void DrawMode7BG2HR_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26485,7 +26485,7 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -26493,7 +26493,7 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -26511,7 +26511,7 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -26573,7 +26573,7 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26601,7 +26601,7 @@ static void DrawMode7BG2HRAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26645,7 +26645,7 @@ static void DrawMode7BG2HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -26653,7 +26653,7 @@ static void DrawMode7BG2HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -26671,7 +26671,7 @@ static void DrawMode7BG2HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -26733,7 +26733,7 @@ static void DrawMode7BG2HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26761,7 +26761,7 @@ static void DrawMode7BG2HRAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26805,7 +26805,7 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -26813,7 +26813,7 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -26831,7 +26831,7 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -26893,7 +26893,7 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26921,7 +26921,7 @@ static void DrawMode7BG2HRAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -26965,7 +26965,7 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -26973,7 +26973,7 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -26991,7 +26991,7 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -27053,7 +27053,7 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -27081,7 +27081,7 @@ static void DrawMode7BG2HRAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -27125,7 +27125,7 @@ static void DrawMode7BG2HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -27133,7 +27133,7 @@ static void DrawMode7BG2HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -27151,7 +27151,7 @@ static void DrawMode7BG2HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -27213,7 +27213,7 @@ static void DrawMode7BG2HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -27241,7 +27241,7 @@ static void DrawMode7BG2HRAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -27285,7 +27285,7 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -27293,7 +27293,7 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -27311,7 +27311,7 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -27373,7 +27373,7 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -27401,7 +27401,7 @@ static void DrawMode7BG2HRSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -27445,7 +27445,7 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -27453,7 +27453,7 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -27471,7 +27471,7 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -27533,7 +27533,7 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -27561,7 +27561,7 @@ static void DrawMode7BG2HRSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -27605,7 +27605,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -27613,7 +27613,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -27631,7 +27631,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -27693,7 +27693,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -27721,7 +27721,7 @@ static void DrawMode7BG2HRSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                     M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                     b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                 else
                     do_draw = 0;
@@ -27832,7 +27832,7 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -27840,7 +27840,7 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -27858,7 +27858,7 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -27919,7 +27919,7 @@ static void DrawMode7BG1HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -27980,7 +27980,7 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -27988,7 +27988,7 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -28006,7 +28006,7 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -28067,7 +28067,7 @@ static void DrawMode7BG1HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -28128,7 +28128,7 @@ static void DrawMode7BG1HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -28136,7 +28136,7 @@ static void DrawMode7BG1HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -28154,7 +28154,7 @@ static void DrawMode7BG1HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -28215,7 +28215,7 @@ static void DrawMode7BG1HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -28276,7 +28276,7 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -28284,7 +28284,7 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -28302,7 +28302,7 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -28363,7 +28363,7 @@ static void DrawMode7BG1HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -28424,7 +28424,7 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -28432,7 +28432,7 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -28450,7 +28450,7 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -28511,7 +28511,7 @@ static void DrawMode7BG1HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -28572,7 +28572,7 @@ static void DrawMode7BG1HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -28580,7 +28580,7 @@ static void DrawMode7BG1HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -28598,7 +28598,7 @@ static void DrawMode7BG1HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -28659,7 +28659,7 @@ static void DrawMode7BG1HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -28720,7 +28720,7 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -28728,7 +28728,7 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -28746,7 +28746,7 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -28807,7 +28807,7 @@ static void DrawMode7BG1HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -28868,7 +28868,7 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -28876,7 +28876,7 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -28894,7 +28894,7 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -28955,7 +28955,7 @@ static void DrawMode7BG1HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -29016,7 +29016,7 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -29024,7 +29024,7 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -29042,7 +29042,7 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -29103,7 +29103,7 @@ static void DrawMode7BG1HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -29177,7 +29177,7 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -29185,7 +29185,7 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -29203,7 +29203,7 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -29264,7 +29264,7 @@ static void DrawMode7BG2HR4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -29319,7 +29319,7 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -29327,7 +29327,7 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -29345,7 +29345,7 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -29406,7 +29406,7 @@ static void DrawMode7BG2HR4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -29461,7 +29461,7 @@ static void DrawMode7BG2HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -29469,7 +29469,7 @@ static void DrawMode7BG2HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -29487,7 +29487,7 @@ static void DrawMode7BG2HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -29548,7 +29548,7 @@ static void DrawMode7BG2HR4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -29603,7 +29603,7 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -29611,7 +29611,7 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -29629,7 +29629,7 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -29690,7 +29690,7 @@ static void DrawMode7BG2HR4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -29745,7 +29745,7 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -29753,7 +29753,7 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -29771,7 +29771,7 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -29832,7 +29832,7 @@ static void DrawMode7BG2HR4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -29887,7 +29887,7 @@ static void DrawMode7BG2HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -29895,7 +29895,7 @@ static void DrawMode7BG2HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -29913,7 +29913,7 @@ static void DrawMode7BG2HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -29974,7 +29974,7 @@ static void DrawMode7BG2HR4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -30029,7 +30029,7 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -30037,7 +30037,7 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -30055,7 +30055,7 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -30116,7 +30116,7 @@ static void DrawMode7BG2HR4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -30171,7 +30171,7 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -30179,7 +30179,7 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -30197,7 +30197,7 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -30258,7 +30258,7 @@ static void DrawMode7BG2HR4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -30313,7 +30313,7 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         uint8_t Pix;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -30321,7 +30321,7 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -30339,7 +30339,7 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path: X & Y mask to 10 bits, no clipping. */
             for (x = Left; x < Right; x++)
@@ -30400,7 +30400,7 @@ static void DrawMode7BG2HR4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         M7tn = Mode7TileMap[((Y & ~7) << 4) + (X >> 3)];
                         b = Mode7Gfx[(M7tn << 6) + ((Y & 7) << 3) + (X & 7)];
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                         b = Mode7Gfx[((Y & 7) << 3) + (X & 7)];
                     else
                         do_draw = 0;
@@ -30536,7 +30536,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -30544,7 +30544,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -30562,7 +30562,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -30603,7 +30603,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         NOMATH, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -30628,7 +30628,7 @@ static void DrawMode7BG1BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         NOMATH, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -30672,7 +30672,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -30680,7 +30680,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -30698,7 +30698,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -30739,7 +30739,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -30764,7 +30764,7 @@ static void DrawMode7BG1BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -30808,7 +30808,7 @@ static void DrawMode7BG1BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -30816,7 +30816,7 @@ static void DrawMode7BG1BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -30834,7 +30834,7 @@ static void DrawMode7BG1BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -30875,7 +30875,7 @@ static void DrawMode7BG1BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
                         REGMATH, ADD_BRIGHTNESS,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -30900,7 +30900,7 @@ static void DrawMode7BG1BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
                         REGMATH, ADD_BRIGHTNESS,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -30944,7 +30944,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -30952,7 +30952,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -30970,7 +30970,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -31011,7 +31011,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHF1_2, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31036,7 +31036,7 @@ static void DrawMode7BG1BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHF1_2, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31080,7 +31080,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -31088,7 +31088,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -31106,7 +31106,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -31147,7 +31147,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHS1_2, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31172,7 +31172,7 @@ static void DrawMode7BG1BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHS1_2, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31216,7 +31216,7 @@ static void DrawMode7BG1BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -31224,7 +31224,7 @@ static void DrawMode7BG1BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -31242,7 +31242,7 @@ static void DrawMode7BG1BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -31283,7 +31283,7 @@ static void DrawMode7BG1BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
                         MATHS1_2, ADD_BRIGHTNESS,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31308,7 +31308,7 @@ static void DrawMode7BG1BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
                         MATHS1_2, ADD_BRIGHTNESS,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31352,7 +31352,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -31360,7 +31360,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -31378,7 +31378,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -31419,7 +31419,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, SUB,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31444,7 +31444,7 @@ static void DrawMode7BG1BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, SUB,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31488,7 +31488,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -31496,7 +31496,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -31514,7 +31514,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -31555,7 +31555,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHF1_2, SUB,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31580,7 +31580,7 @@ static void DrawMode7BG1BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHF1_2, SUB,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31624,7 +31624,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -31632,7 +31632,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -31650,7 +31650,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -31691,7 +31691,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHS1_2, SUB,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31716,7 +31716,7 @@ static void DrawMode7BG1BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHS1_2, SUB,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -31769,7 +31769,7 @@ static void DrawMode7BG2BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -31777,7 +31777,7 @@ static void DrawMode7BG2BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -31795,7 +31795,7 @@ static void DrawMode7BG2BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -31836,7 +31836,7 @@ static void DrawMode7BG2BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         NOMATH, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -31861,7 +31861,7 @@ static void DrawMode7BG2BL_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         NOMATH, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -31899,7 +31899,7 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -31907,7 +31907,7 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -31925,7 +31925,7 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -31966,7 +31966,7 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -31991,7 +31991,7 @@ static void DrawMode7BG2BLAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32029,7 +32029,7 @@ static void DrawMode7BG2BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -32037,7 +32037,7 @@ static void DrawMode7BG2BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -32055,7 +32055,7 @@ static void DrawMode7BG2BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -32096,7 +32096,7 @@ static void DrawMode7BG2BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
                         REGMATH, ADD_BRIGHTNESS,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32121,7 +32121,7 @@ static void DrawMode7BG2BLAddBrightness_Normal1x1 (uint32_t Left, uint32_t Right
                         REGMATH, ADD_BRIGHTNESS,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32159,7 +32159,7 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -32167,7 +32167,7 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -32185,7 +32185,7 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -32226,7 +32226,7 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHF1_2, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32251,7 +32251,7 @@ static void DrawMode7BG2BLAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHF1_2, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32289,7 +32289,7 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -32297,7 +32297,7 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -32315,7 +32315,7 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -32356,7 +32356,7 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHS1_2, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32381,7 +32381,7 @@ static void DrawMode7BG2BLAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHS1_2, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32419,7 +32419,7 @@ static void DrawMode7BG2BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -32427,7 +32427,7 @@ static void DrawMode7BG2BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -32445,7 +32445,7 @@ static void DrawMode7BG2BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -32486,7 +32486,7 @@ static void DrawMode7BG2BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
                         MATHS1_2, ADD_BRIGHTNESS,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32511,7 +32511,7 @@ static void DrawMode7BG2BLAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t R
                         MATHS1_2, ADD_BRIGHTNESS,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32549,7 +32549,7 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -32557,7 +32557,7 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -32575,7 +32575,7 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -32616,7 +32616,7 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, SUB,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32641,7 +32641,7 @@ static void DrawMode7BG2BLSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, SUB,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32679,7 +32679,7 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -32687,7 +32687,7 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -32705,7 +32705,7 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -32746,7 +32746,7 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHF1_2, SUB,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32771,7 +32771,7 @@ static void DrawMode7BG2BLSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHF1_2, SUB,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32809,7 +32809,7 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -32817,7 +32817,7 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -32835,7 +32835,7 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -32876,7 +32876,7 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHS1_2, SUB,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X1, Y1, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32901,7 +32901,7 @@ static void DrawMode7BG2BLSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, int 
                         MATHS1_2, SUB,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(X2, Y2, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -32958,8 +32958,8 @@ static void (*Renderers_DrawMode7BG2BLNormal1x1[9]) (uint32_t, uint32_t, int) =
  *
  * The four bilinear corner samples for each sub-pixel position
  * come from M7HR_LOOKUP_4 (in-range) or M7HR_LOOKUP_4_FILL (fill
- * mode, PPU.Mode7Repeat == 3). Samples that fall out of range
- * with PPU.Mode7Repeat in {1, 2} are clipped (no write).
+ * mode, S9xCurRenderRegs->Mode7Repeat == 3). Samples that fall out of range
+ * with S9xCurRenderRegs->Mode7Repeat in {1, 2} are clipped (no write).
  */
 
 /* Per-function bodies: explicit, fully inlined ----------------
@@ -33004,7 +33004,7 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -33012,7 +33012,7 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -33030,7 +33030,7 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -33071,7 +33071,7 @@ static void DrawMode7BG1BL4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                             NOMATH, ADD,
                             ((D + 7)), ((D + 7)), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0xff);
@@ -33117,7 +33117,7 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -33125,7 +33125,7 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -33143,7 +33143,7 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -33184,7 +33184,7 @@ static void DrawMode7BG1BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                             REGMATH, ADD,
                             ((D + 7)), ((D + 7)), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0xff);
@@ -33230,7 +33230,7 @@ static void DrawMode7BG1BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -33238,7 +33238,7 @@ static void DrawMode7BG1BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -33256,7 +33256,7 @@ static void DrawMode7BG1BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -33297,7 +33297,7 @@ static void DrawMode7BG1BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
                             REGMATH, ADD_BRIGHTNESS,
                             ((D + 7)), ((D + 7)), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0xff);
@@ -33343,7 +33343,7 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -33351,7 +33351,7 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -33369,7 +33369,7 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -33410,7 +33410,7 @@ static void DrawMode7BG1BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                             MATHF1_2, ADD,
                             ((D + 7)), ((D + 7)), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0xff);
@@ -33456,7 +33456,7 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -33464,7 +33464,7 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -33482,7 +33482,7 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -33523,7 +33523,7 @@ static void DrawMode7BG1BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                             MATHS1_2, ADD,
                             ((D + 7)), ((D + 7)), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0xff);
@@ -33569,7 +33569,7 @@ static void DrawMode7BG1BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -33577,7 +33577,7 @@ static void DrawMode7BG1BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -33595,7 +33595,7 @@ static void DrawMode7BG1BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -33636,7 +33636,7 @@ static void DrawMode7BG1BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
                             MATHS1_2, ADD_BRIGHTNESS,
                             ((D + 7)), ((D + 7)), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0xff);
@@ -33682,7 +33682,7 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -33690,7 +33690,7 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -33708,7 +33708,7 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -33749,7 +33749,7 @@ static void DrawMode7BG1BL4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                             REGMATH, SUB,
                             ((D + 7)), ((D + 7)), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0xff);
@@ -33795,7 +33795,7 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -33803,7 +33803,7 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -33821,7 +33821,7 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -33862,7 +33862,7 @@ static void DrawMode7BG1BL4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                             MATHF1_2, SUB,
                             ((D + 7)), ((D + 7)), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0xff);
@@ -33908,7 +33908,7 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -33916,7 +33916,7 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -33934,7 +33934,7 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -33975,7 +33975,7 @@ static void DrawMode7BG1BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                             MATHS1_2, SUB,
                             ((D + 7)), ((D + 7)), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0xff);
@@ -34031,7 +34031,7 @@ static void DrawMode7BG2BL4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -34039,7 +34039,7 @@ static void DrawMode7BG2BL4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -34057,7 +34057,7 @@ static void DrawMode7BG2BL4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -34098,7 +34098,7 @@ static void DrawMode7BG2BL4X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                             NOMATH, ADD,
                             ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0x7f);
@@ -34138,7 +34138,7 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -34146,7 +34146,7 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -34164,7 +34164,7 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -34205,7 +34205,7 @@ static void DrawMode7BG2BL4XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                             REGMATH, ADD,
                             ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0x7f);
@@ -34245,7 +34245,7 @@ static void DrawMode7BG2BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -34253,7 +34253,7 @@ static void DrawMode7BG2BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -34271,7 +34271,7 @@ static void DrawMode7BG2BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -34312,7 +34312,7 @@ static void DrawMode7BG2BL4XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
                             REGMATH, ADD_BRIGHTNESS,
                             ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0x7f);
@@ -34352,7 +34352,7 @@ static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -34360,7 +34360,7 @@ static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -34378,7 +34378,7 @@ static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -34419,7 +34419,7 @@ static void DrawMode7BG2BL4XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                             MATHF1_2, ADD,
                             ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0x7f);
@@ -34459,7 +34459,7 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -34467,7 +34467,7 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -34485,7 +34485,7 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -34526,7 +34526,7 @@ static void DrawMode7BG2BL4XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                             MATHS1_2, ADD,
                             ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0x7f);
@@ -34566,7 +34566,7 @@ static void DrawMode7BG2BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -34574,7 +34574,7 @@ static void DrawMode7BG2BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -34592,7 +34592,7 @@ static void DrawMode7BG2BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -34633,7 +34633,7 @@ static void DrawMode7BG2BL4XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
                             MATHS1_2, ADD_BRIGHTNESS,
                             ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0x7f);
@@ -34673,7 +34673,7 @@ static void DrawMode7BG2BL4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -34681,7 +34681,7 @@ static void DrawMode7BG2BL4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -34699,7 +34699,7 @@ static void DrawMode7BG2BL4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -34740,7 +34740,7 @@ static void DrawMode7BG2BL4XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                             REGMATH, SUB,
                             ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0x7f);
@@ -34780,7 +34780,7 @@ static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -34788,7 +34788,7 @@ static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -34806,7 +34806,7 @@ static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -34847,7 +34847,7 @@ static void DrawMode7BG2BL4XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                             MATHF1_2, SUB,
                             ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0x7f);
@@ -34887,7 +34887,7 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -34895,7 +34895,7 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -34913,7 +34913,7 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++)
@@ -34954,7 +34954,7 @@ static void DrawMode7BG2BL4XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                             MATHS1_2, SUB,
                             ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                     }
-                    else if (PPU.Mode7Repeat == 3)
+                    else if (S9xCurRenderRegs->Mode7Repeat == 3)
                     {
                         M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                            b_tl_raw_, VRAM1, 0x7f);
@@ -35058,7 +35058,7 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -35066,7 +35066,7 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -35082,7 +35082,7 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -35114,7 +35114,7 @@ static void DrawMode7BG1BL1X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         NOMATH, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -35157,7 +35157,7 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -35165,7 +35165,7 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -35181,7 +35181,7 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -35213,7 +35213,7 @@ static void DrawMode7BG1BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -35256,7 +35256,7 @@ static void DrawMode7BG1BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -35264,7 +35264,7 @@ static void DrawMode7BG1BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -35280,7 +35280,7 @@ static void DrawMode7BG1BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -35312,7 +35312,7 @@ static void DrawMode7BG1BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
                         REGMATH, ADD_BRIGHTNESS,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -35355,7 +35355,7 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -35363,7 +35363,7 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -35379,7 +35379,7 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -35411,7 +35411,7 @@ static void DrawMode7BG1BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         MATHF1_2, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -35454,7 +35454,7 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -35462,7 +35462,7 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -35478,7 +35478,7 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -35510,7 +35510,7 @@ static void DrawMode7BG1BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         MATHS1_2, ADD,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -35553,7 +35553,7 @@ static void DrawMode7BG1BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -35561,7 +35561,7 @@ static void DrawMode7BG1BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -35577,7 +35577,7 @@ static void DrawMode7BG1BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -35609,7 +35609,7 @@ static void DrawMode7BG1BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
                         MATHS1_2, ADD_BRIGHTNESS,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -35652,7 +35652,7 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -35660,7 +35660,7 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -35676,7 +35676,7 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -35708,7 +35708,7 @@ static void DrawMode7BG1BL1XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, SUB,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -35751,7 +35751,7 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -35759,7 +35759,7 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -35775,7 +35775,7 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -35807,7 +35807,7 @@ static void DrawMode7BG1BL1XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         MATHF1_2, SUB,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -35850,7 +35850,7 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -35858,7 +35858,7 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -35874,7 +35874,7 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -35906,7 +35906,7 @@ static void DrawMode7BG1BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         MATHS1_2, SUB,
                         ((D + 7)), ((D + 7)), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0xff);
@@ -35958,7 +35958,7 @@ static void DrawMode7BG2BL1X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -35966,7 +35966,7 @@ static void DrawMode7BG2BL1X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -35982,7 +35982,7 @@ static void DrawMode7BG2BL1X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -36014,7 +36014,7 @@ static void DrawMode7BG2BL1X_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         NOMATH, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -36051,7 +36051,7 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -36059,7 +36059,7 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -36075,7 +36075,7 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -36107,7 +36107,7 @@ static void DrawMode7BG2BL1XAdd_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -36144,7 +36144,7 @@ static void DrawMode7BG2BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -36152,7 +36152,7 @@ static void DrawMode7BG2BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -36168,7 +36168,7 @@ static void DrawMode7BG2BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -36200,7 +36200,7 @@ static void DrawMode7BG2BL1XAddBrightness_Normal1x1 (uint32_t Left, uint32_t Rig
                         REGMATH, ADD_BRIGHTNESS,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -36237,7 +36237,7 @@ static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -36245,7 +36245,7 @@ static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -36261,7 +36261,7 @@ static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -36293,7 +36293,7 @@ static void DrawMode7BG2BL1XAddF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         MATHF1_2, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -36330,7 +36330,7 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -36338,7 +36338,7 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -36354,7 +36354,7 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -36386,7 +36386,7 @@ static void DrawMode7BG2BL1XAddS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         MATHS1_2, ADD,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -36423,7 +36423,7 @@ static void DrawMode7BG2BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -36431,7 +36431,7 @@ static void DrawMode7BG2BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -36447,7 +36447,7 @@ static void DrawMode7BG2BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -36479,7 +36479,7 @@ static void DrawMode7BG2BL1XAddS1_2Brightness_Normal1x1 (uint32_t Left, uint32_t
                         MATHS1_2, ADD_BRIGHTNESS,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -36516,7 +36516,7 @@ static void DrawMode7BG2BL1XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -36524,7 +36524,7 @@ static void DrawMode7BG2BL1XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -36540,7 +36540,7 @@ static void DrawMode7BG2BL1XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -36572,7 +36572,7 @@ static void DrawMode7BG2BL1XSub_Normal1x1 (uint32_t Left, uint32_t Right, int D)
                         REGMATH, SUB,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -36609,7 +36609,7 @@ static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -36617,7 +36617,7 @@ static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -36633,7 +36633,7 @@ static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -36665,7 +36665,7 @@ static void DrawMode7BG2BL1XSubF1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         MATHF1_2, SUB,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -36702,7 +36702,7 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         int32_t CentreY = ((int32_t) l->CentreY << 19) >> 19;
         uint8_t starty = Line + 1;
 
-        if (PPU.Mode7VFlip)
+        if (S9xCurRenderRegs->Mode7VFlip)
             starty ^= 0xff;
         yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
         BB = ((l->MatrixB * starty) & ~63)
@@ -36710,7 +36710,7 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         DD = ((l->MatrixD * starty) & ~63)
            + ((l->MatrixD * yy)     & ~63) + (CentreY << 8);
 
-        if (PPU.Mode7HFlip)
+        if (S9xCurRenderRegs->Mode7HFlip)
         {
             startx = Right - 1;
             aa = -l->MatrixA;
@@ -36726,7 +36726,7 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
         AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
         CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
 
-        if (!PPU.Mode7Repeat)
+        if (!S9xCurRenderRegs->Mode7Repeat)
         {
             /* Wrap path. */
             for (x = Left; x < Right; x++, AA += aa, CC += cc)
@@ -36758,7 +36758,7 @@ static void DrawMode7BG2BL1XSubS1_2_Normal1x1 (uint32_t Left, uint32_t Right, in
                         MATHS1_2, SUB,
                         ((D + ((b & 0x80) ? 11 : 3))), ((D + ((b & 0x80) ? 11 : 3))), Offset, smooth);
                 }
-                else if (PPU.Mode7Repeat == 3)
+                else if (S9xCurRenderRegs->Mode7Repeat == 3)
                 {
                     M7HR_LOOKUP_4_FILL(Xs, Ys, p_tl, p_tr, p_bl, p_br,
                                        b_tl_raw_, VRAM1, 0x7f);
@@ -36816,8 +36816,8 @@ void S9xSelectTileRenderers_SFXSpeedup (void)
 	 * full-strength paths must clamp at the scaled maximum; slots 7/8
 	 * are the brightness-capped clones of slots 1/3 (see
 	 * COLOR_ADD_BRIGHTNESS). Mirrors mainline's IPPU.MaxBrightness
-	 * selection; PPU.Brightness carries the same value here. */
-	if (PPU.Brightness != 0xf)
+	 * selection; S9xCurRenderRegs->Brightness carries the same value here. */
+	if (S9xCurRenderRegs->Brightness != 0xf)
 	{
 		if (i == 1)
 			i = 7;
@@ -36841,12 +36841,12 @@ void S9xSelectTileRenderers (int BGMode, uint8_t sub, uint8_t obj)
 	void	(**DM7BG1)	(uint32_t, uint32_t, int);
 	void	(**DM7BG2)	(uint32_t, uint32_t, int);
 	int     i;
-	uint8_t   M7M1      = PPU.BGMosaic[0] && PPU.Mosaic > 1;
-	uint8_t   M7M2      = PPU.BGMosaic[1] && PPU.Mosaic > 1;
-	uint8_t   interlace = obj ? FALSE : IPPU.Interlace;
-	uint8_t   hires     = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
+	uint8_t   M7M1      = S9xCurRenderRegs->BGMosaic[0] && S9xCurRenderRegs->Mosaic > 1;
+	uint8_t   M7M2      = S9xCurRenderRegs->BGMosaic[1] && S9xCurRenderRegs->Mosaic > 1;
+	uint8_t   interlace = obj ? FALSE : S9xCurRenderRegs->Interlace;
+	uint8_t   hires     = !sub && (BGMode == 5 || BGMode == 6 || S9xCurRenderRegs->PseudoHires);
 
-	if (IPPU.QuadWidthPixels)		/* quad width (Mode 7 hires 4x) */
+	if (S9xCurRenderRegs->QuadWidthPixels)		/* quad width (Mode 7 hires 4x) */
 	{
 		DT     = Renderers_DrawTile16Normal4x1;
 		DCT    = Renderers_DrawClippedTile16Normal4x1;
@@ -36862,7 +36862,7 @@ void S9xSelectTileRenderers (int BGMode, uint8_t sub, uint8_t obj)
 		DM7BG2 = M7M2 ? Renderers_DrawMode7MosaicBG2Normal2x1 : Renderers_DrawMode7BG2Normal2x1;
 		GFX.LinesPerTile = 8;
 	}
-	else if (!IPPU.DoubleWidthPixels)	/* normal width */
+	else if (!S9xCurRenderRegs->DoubleWidthPixels)	/* normal width */
 	{
 		DT     = Renderers_DrawTile16Normal1x1;
 		DCT    = Renderers_DrawClippedTile16Normal1x1;
@@ -36942,7 +36942,7 @@ void S9xSelectTileRenderers (int BGMode, uint8_t sub, uint8_t obj)
 	   color math composition stays at native sample rate. */
 	if (BGMode == 7 && !sub)
 	{
-		if (Settings.Mode7Hires == 4 && IPPU.QuadWidthPixels)
+		if (Settings.Mode7Hires == 4 && S9xCurRenderRegs->QuadWidthPixels)
 		{
 			if (Settings.Mode7HiresBilinear)
 			{
@@ -36959,7 +36959,7 @@ void S9xSelectTileRenderers (int BGMode, uint8_t sub, uint8_t obj)
 					DM7BG2 = Renderers_DrawMode7BG2HR4XNormal1x1;
 			}
 		}
-		else if (Settings.Mode7Hires == 2 && IPPU.DoubleWidthPixels)
+		else if (Settings.Mode7Hires == 2 && S9xCurRenderRegs->DoubleWidthPixels)
 		{
 			if (Settings.Mode7HiresBilinear)
 			{
@@ -36976,7 +36976,7 @@ void S9xSelectTileRenderers (int BGMode, uint8_t sub, uint8_t obj)
 					DM7BG2 = Renderers_DrawMode7BG2HRNormal1x1;
 			}
 		}
-		else if (Settings.Mode7HiresBilinear && !IPPU.DoubleWidthPixels)
+		else if (Settings.Mode7HiresBilinear && !S9xCurRenderRegs->DoubleWidthPixels)
 		{
 			/* BL on at Hires=off: bilinear at native 1x width. */
 			if (!M7M1)
@@ -37009,8 +37009,8 @@ void S9xSelectTileRenderers (int BGMode, uint8_t sub, uint8_t obj)
 	 * full-strength paths must clamp at the scaled maximum; slots 7/8
 	 * are the brightness-capped clones of slots 1/3 (see
 	 * COLOR_ADD_BRIGHTNESS). Mirrors mainline's IPPU.MaxBrightness
-	 * selection; PPU.Brightness carries the same value here. */
-	if (PPU.Brightness != 0xf)
+	 * selection; S9xCurRenderRegs->Brightness carries the same value here. */
+	if (S9xCurRenderRegs->Brightness != 0xf)
 	{
 		if (i == 1)
 			i = 7;

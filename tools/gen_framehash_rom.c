@@ -147,7 +147,9 @@ int main(int argc, char **argv)
    lda_sta(0x40, 0x2126);   /* window 1 left                       */
    lda_sta(0xC0, 0x2127);   /* window 1 right                      */
    lda_sta(0x01, 0x212E);   /* window masks the main screen BG1    */
-   lda_sta(0x02, 0x2130);   /* colour math against the subscreen   */
+   lda_sta(0x03, 0x2130);   /* colour math against the subscreen, and
+                             * direct colour, which is the only thing
+                             * that reaches the palette-map builder    */
    lda_sta(0x23, 0x2131);   /* add, BG1 and BG2                    */
 
    /* Mode 7 matrix: identity, each register low byte then high. */
