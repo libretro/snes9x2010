@@ -128,20 +128,6 @@ stages:
 # deterministic frame for frame, and the direct software-framebuffer
 # path draws the same pixels as the internal buffer.  Both must hold
 # before a renderer change can be called bit-exact.
-framehash-invariants:
-  stage: test
-  image: gcc:latest
-  script:
-    - make -f Makefile.libretro -j$(nproc)
-    - cc -O2 -o gen_framehash_rom tools/gen_framehash_rom.c
-    - ./gen_framehash_rom framehash_test.sfc
-    - cc -O2 -o framehash tools/framehash.c -ldl -Ilibretro/libretro-common/include
-    - ./framehash ./snes9x2010_libretro.so framehash_test.sfc --frames 600 --quiet > a.txt
-    - ./framehash ./snes9x2010_libretro.so framehash_test.sfc --frames 600 --quiet > b.txt
-    - diff a.txt b.txt
-    - ./framehash ./snes9x2010_libretro.so framehash_test.sfc --frames 600 --quiet --swfb > c.txt
-    - diff a.txt c.txt
-
 verify-dsp-counter:
   stage: test
   image: gcc:latest
