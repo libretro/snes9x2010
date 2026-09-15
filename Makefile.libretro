@@ -229,6 +229,9 @@ else ifneq (,$(filter $(platform), ps3 psl1ght))
 	CFLAGS += -D__ppc__ -DMSB_FIRST -D__PS3__
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
+	# libretro-common's rthreads has no PSL1GHT backend and ps3dev's
+	# newlib leaves _POSIX_THREADS off.
+	HAVE_THREADS=0
 	ifeq ($(platform), psl1ght)
 		CFLAGS += -D__PSL1GHT__
 	endif
@@ -252,6 +255,8 @@ else ifeq ($(platform), dos)
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
 	CFLAGS += -march=i386
+	# djgpp has no threads.
+	HAVE_THREADS=0
 
 # Vita
 else ifeq ($(platform), vita)
@@ -276,6 +281,7 @@ else ifeq ($(platform), ctr)
    CFLAGS += -D_3DS
    STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
+	THREADS_FROM_FRONTEND=1
 
 # Raspberry Pi 2
 else ifeq ($(platform), rpi2)
@@ -405,6 +411,8 @@ else ifeq ($(platform), xenon)
 	CFLAGS += -D__LIBXENON__ -m32 -D__ppc__
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
+	# libxenon has no pthreads.
+	HAVE_THREADS=0
 
 # Nintendo Game Cube
 else ifeq ($(platform), ngc)
@@ -416,6 +424,8 @@ else ifeq ($(platform), ngc)
 	CFLAGS += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
+	# One Gekko core: a render thread would only add a handoff.
+	HAVE_THREADS=0
 
 # Nintendo Wii
 else ifeq ($(platform), wii)
@@ -427,6 +437,8 @@ else ifeq ($(platform), wii)
 	CFLAGS += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
+	# One Broadway core: a render thread would only add a handoff.
+	HAVE_THREADS=0
 
 # Nintendo WiiU
 else ifeq ($(platform), wiiu)
@@ -438,6 +450,7 @@ else ifeq ($(platform), wiiu)
 	CFLAGS += -ffunction-sections -fdata-sections -D__wiiu__ -D__wut__
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
+	THREADS_FROM_FRONTEND=1
 
 # ARM
 else ifneq (,$(findstring armv,$(platform)))
