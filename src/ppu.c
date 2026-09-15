@@ -178,6 +178,14 @@
 
 #include <stdlib.h>
 #include <string.h>
+/* Ahead of the emulator headers: on Windows retro_atomic.h brings in
+ * windows.h, and winnt.h's CONTEXT has R8 through R15 members that
+ * fxinst.h claims as macros for the GSU register file. */
+#include <retro_atomic.h>
+#if defined(HAVE_THREADS)
+#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#endif
 #include "snes9x.h"
 #include "memmap.h"
 #include "getset.h"
@@ -192,11 +200,6 @@
 #include "display.h"
 #include "sdd1emu.h"
 #include "spc7110emu.h"
-#include <retro_atomic.h>
-#if defined(HAVE_THREADS)
-#include <rthreads/rthreads.h>
-#include <rthreads/retro_eventcount.h>
-#endif
 #include "ppu.h"
 #include "msu1.h"
 #include "tile.h"
