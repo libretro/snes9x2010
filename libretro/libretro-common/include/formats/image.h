@@ -146,6 +146,15 @@ bool image_texture_load_buffer(struct texture_image *img,
    enum image_type_enum type, void *s, size_t len);
 
 bool image_texture_load(struct texture_image *img, const char *path);
+
+/* image_texture_load with an abort hook: both decode stages are
+ * incremental (one chunk / one pass per step) and @should_abort is
+ * asked between steps; returning true abandons the decode, which then
+ * fails cleanly. For decodes on worker threads that must stop promptly
+ * at shutdown or when their result is no longer wanted. @should_abort
+ * may be NULL. */
+bool image_texture_load_ex(struct texture_image *img, const char *path,
+      bool (*should_abort)(void *ud), void *ud);
 void image_texture_free(struct texture_image *img);
 
 /* Force a CPU decode of a compressed texture_image into ->pixels (RGBA8).
@@ -217,15 +226,20 @@ void *image_transfer_detach_anim_stream(void *data,
 bool image_transfer_is_valid(void *data, enum image_type_enum type);
 
 /* True if the last processed frame was written as packed XRGB2101010
- * (10-bit); only the video decoders can report this, for HDR sources. */
+ * (10-bit) rather than 8-bit RGBA: 10-bit was requested and the source
+ * could supply it.  Only PNG, WEBM and MP4 can report this; false for
+ * every other type. */
 bool image_transfer_is_10bit(void *data, enum image_type_enum type);
 
-/* Ask a video decoder to emit packed XRGB2101010 for 10-bit HDR sources
- * (still-image types ignore it). */
+/* Ask a decoder to emit packed XRGB2101010 instead of 8-bit RGBA.
+ * Honoured by PNG (16-bit-per-channel RGB sources) and by the video
+ * types (10-bit HDR sources); ignored by every other type, and by an
+ * 8-bit source of an honouring type. */
 void image_transfer_set_want_10bit(void *data, enum image_type_enum type,
       int want);
 
-/* Animation (animated images: WEBP, and the video track of WEBM).
+/* Animation.  The whole-buffer form below is animated WEBP only; the
+ * streaming form further down also covers APNG, WEBM and MP4.
  *
  * image_transfer_anim_new returns an opaque animation handle, or NULL
  * for still images / unsupported types, so a caller can try it first and
@@ -257,14 +271,20 @@ void *image_transfer_anim_stream_new(void *buf, size_t len,
 
 /* Progressive open over a partially-resident buffer: only the first
  * 'avail' bytes are guaranteed present.  On success the stream decodes
- * forward as far as 'avail' allows; raise it with
+ * forward as far as 'avail' allows; move the bound with
  * image_transfer_anim_stream_set_avail as more arrives.  need_more (may
  * be NULL) is set when the header/index needed to open is not yet
- * resident and a larger prefix should be retried.  Returns NULL for
- * types without a partial open (animated WEBP), so the caller keeps
- * the whole-buffer path for those. */
+ * resident and a larger prefix should be retried; NULL with it clear
+ * is conclusive (a still, or malformed).  Every streaming type (APNG,
+ * animated WEBP, WEBM, MP4) has a partial open; a type compiled out
+ * returns NULL with need_more clear. */
+/* need_lo/need_hi (optional): a precise byte range that unblocks a
+ * stalled progressive open, when the container can name one (MP4's
+ * box headers and moov body).  0/0 otherwise; the caller then grows
+ * the available prefix instead. */
 void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
-      size_t avail, enum image_type_enum type, int *need_more);
+      size_t avail, enum image_type_enum type, int *need_more,
+      size_t *need_lo, size_t *need_hi);
 
 void image_transfer_anim_stream_free(void *stream,
       enum image_type_enum type);
@@ -289,12 +309,19 @@ bool image_transfer_anim_stream_set_argb(void *stream,
 
 /* For decoding a still from a file whose read is still in progress:
  * declare how many leading bytes of the buffer are valid.  Monotonic.
- * Only the video types (WEBM, MP4) honour it - their process step
- * returns IMAGE_PROCESS_WAIT instead of erroring at the wall - and it
- * is a no-op for every other type, whose transfers must keep seeing
- * fully-resident buffers. */
+ * Honoured by PNG, JPEG, WEBM and MP4, which report the wall two
+ * different ways: the video types return IMAGE_PROCESS_WAIT from their
+ * process step, while PNG and JPEG stop iterating with
+ * image_transfer_need_more() true.  A no-op for BMP, TGA, WEBP and
+ * DDS, whose transfers must keep seeing fully-resident buffers. */
 void image_transfer_set_avail(void *data, enum image_type_enum type,
       size_t avail);
+
+/* Declare the output byte order before the transfer starts, so
+ * decoders that emit final pixels during transfer (JPEG's fused
+ * iterate+resample) can use the caller's order directly. */
+void image_transfer_set_rgba(void *data, enum image_type_enum type,
+      bool rgba);
 
 /* The stream-level counterpart, for an animation stream adopted from
  * a still whose file read was still in flight: the demuxer's byte
@@ -303,20 +330,39 @@ void image_transfer_set_avail(void *data, enum image_type_enum type,
  * read treats N as the end of the file and loops the animation
  * there, forever.  Call with the full length once the read
  * completes (or progressively, should a streaming consumer appear).
- * No-op for types without a byte wall (animated WEBP). */
+ * An exact store for every streaming type: a windowing feeder lowers
+ * it when it takes pages back, and the stream then refuses (NULL from
+ * next(), nothing consumed) a frame whose bytes lie past it. */
 void image_transfer_anim_stream_set_avail(void *stream,
       enum image_type_enum type, size_t avail);
 
 /* Bounded-memory streaming: media_floor is the fixed byte offset
- * where media data begins; consumed is the monotonic high-water byte
- * offset the decoder has read to.  A feeder keeps
- * [media_floor, consumed + lookahead) resident and can free below the
- * floor.  Both return 0 for a type with no byte cursor (animated
- * WEBP), which a caller reads as "not windowable - keep whole". */
+ * where media data begins; consumed is the byte offset the decoder's
+ * next read lands on, rising through a pass and dropping back to the
+ * floor on rewind.  A feeder keeps [consumed - margin, consumed +
+ * lookahead) resident and can free below that.  Every streaming type
+ * carries the cursor; 0 means the stream has not indexed anything
+ * yet (anchor at the floor).
+ *
+ * next_span names the byte range [lo, hi) the next frame occupies
+ * when the container indexes its frames (APNG, animated WEBP), so a
+ * feeder can make a frame larger than its lookahead resident before
+ * asking for it - without this a lossless 4K frame past the lookahead
+ * would never become readable and the stream would sit at the wall
+ * forever.  0/0 for the video types (packet-sized reads well inside
+ * any lookahead) and for a frame not indexed yet. */
 size_t image_transfer_anim_stream_media_floor(void *stream,
+      enum image_type_enum type);
+/* Container duration in nanoseconds for the video types, 0 for the
+ * frame-indexed ones (WEBP, APNG carry per-frame delays only) and
+ * when the file does not say. Lets a windowed reader size its
+ * lookahead to the bitrate instead of a fixed byte count. */
+int64_t image_transfer_anim_stream_duration_ns(void *stream,
       enum image_type_enum type);
 size_t image_transfer_anim_stream_consumed(void *stream,
       enum image_type_enum type);
+void image_transfer_anim_stream_next_span(void *stream,
+      enum image_type_enum type, size_t *lo, size_t *hi);
 
 /* Companion to the above for WEBM, whose timestamp pre-scan is
  * truncated by the wall (timestamps live in the block headers): once

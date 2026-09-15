@@ -51,10 +51,19 @@ SOURCES_C += $(LIBRETRO_COMM_DIR)/streams/memory_stream.c
 # itself rather than by the frontend, so they stay outside the
 # STATIC_LINKING guard.  A platform without threads simply does not
 # define HAVE_THREADS and the core builds the renderer synchronously.
+#
+# THREADS_FROM_FRONTEND=1 is for statically linked platforms whose
+# toolchain headers this Makefile cannot reach (3DS needs libctru, Wii U
+# needs wut): there the frontend's own copy of rthreads and the
+# eventcount is already in the link, so the core declares the threaded
+# path and calls into it instead of compiling a second copy it would
+# never pull out of the archive anyway.
 ifneq ($(HAVE_THREADS),0)
 CFLAGS    += -DHAVE_THREADS
+ifneq ($(THREADS_FROM_FRONTEND),1)
 SOURCES_C += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
              $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
+endif
 endif
 
 # The image loaders below (and their stream support) also exist
@@ -70,6 +79,8 @@ SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/formats/png/rpng.c \
 	$(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.c \
 	$(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \
+	$(LIBRETRO_COMM_DIR)/file/rpng_file.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
 	$(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c \
 	$(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
@@ -93,6 +104,7 @@ SOURCES_C += \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 endif
