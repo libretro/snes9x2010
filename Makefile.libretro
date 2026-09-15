@@ -229,9 +229,6 @@ else ifneq (,$(filter $(platform), ps3 psl1ght))
 	CFLAGS += -D__ppc__ -DMSB_FIRST -D__PS3__
 	STATIC_LINKING=1
 	STATIC_LINKING_LINK=1
-	# libretro-common's rthreads has no PSL1GHT backend and ps3dev's
-	# newlib leaves _POSIX_THREADS off.
-	HAVE_THREADS=0
 	ifeq ($(platform), psl1ght)
 		CFLAGS += -D__PSL1GHT__
 	endif
