@@ -148,6 +148,21 @@ int main(int argc, char **argv)
    lda_sta(0x40, 0x2126);   /* window 1 left                       */
    lda_sta(0xC0, 0x2127);   /* window 1 right                      */
    lda_sta(0x01, 0x212E);   /* window masks the main screen BG1    */
+
+   /* HDMA channel 0 rewrites window 1's left and right edge every few
+    * scanlines, from the table at $00:FE00 below.  This is the shape a
+    * game drives a window in: the clip registers change mid-frame, so
+    * every write ends a span and the span that follows has to be drawn
+    * with the window the game had set by then, not the one the frame
+    * started with.  Without it the window registers are written once
+    * before the first line and every span in the frame sees the same
+    * value, which is the one case that cannot tell the two apart. */
+   lda_sta(0x01, 0x4300);   /* B<-A, two registers, once per line  */
+   lda_sta(0x26, 0x4301);   /* starting at $2126                   */
+   lda_sta(0x00, 0x4302);   /* table at $00:FE00                   */
+   lda_sta(0xFE, 0x4303);
+   lda_sta(0x00, 0x4304);
+   lda_sta(0x01, 0x420C);   /* HDMA channel 0 on                   */
    lda_sta(0x03, 0x2130);   /* colour math against the subscreen, and
                              * direct colour, which is the only thing
                              * that reaches the palette-map builder    */
@@ -218,6 +233,23 @@ int main(int argc, char **argv)
    patch(b_st, st_skip);
    e(0xE6); e(0x00);                 /* INC $00                    */
    bra(M);
+
+   /* The HDMA window table at $00:FE00.  Fifteen entries of sixteen
+    * lines, each giving window 1 a left and a right edge.  The edges
+    * cross over half way down, so the inverted window -- left past
+    * right, which selects nothing -- is drawn as well. */
+   {
+      unsigned char *t = rom + 0x7E00;
+      unsigned       e_i;
+
+      for (e_i = 0; e_i < 15; e_i++)
+      {
+         *t++ = 16;                              /* lines in this entry */
+         *t++ = (unsigned char)(e_i * 16);       /* $2126 window 1 left  */
+         *t++ = (unsigned char)(255 - e_i * 16); /* $2127 window 1 right */
+      }
+      *t = 0;                                    /* end of table         */
+   }
 
    memcpy(rom + 0x7FC0, title, 21);
    rom[0x7FD5] = 0x20;   /* LoROM, slow ROM                           */

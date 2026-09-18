@@ -122,6 +122,14 @@ static unsigned replay_video_differs;
  * been shown rather than nothing. */
 static unsigned char *last_frame;
 static size_t         last_frame_bytes;
+static unsigned       last_w, last_h;
+
+/* A state to start from, and a frame to write out.  A digest says two
+ * runs differ; it does not say what the difference looks like, and a
+ * bug reported from a savestate deep inside a game is not reachable
+ * from a reset in any sane number of frames. */
+static const char    *opt_state;
+static const char    *opt_ppm;
 
 /* Offered to the core when --swfb is on.  Sized for the widest frame
  * the core can ask for. */
@@ -229,6 +237,9 @@ static void fh_video(const void *data, unsigned width, unsigned height,
       last_frame       = (unsigned char*)malloc(row * height);
       last_frame_bytes = last_frame ? row * height : 0;
    }
+
+   last_w = width;
+   last_h = height;
 
    for (y = 0; y < height; y++)
    {
@@ -447,6 +458,10 @@ int main(int argc, char **argv)
       }
       else if (!strcmp(argv[i], "--start") && i + 1 < argc)
          opt_start = (unsigned)strtoul(argv[++i], NULL, 0);
+      else if (!strcmp(argv[i], "--state") && i + 1 < argc)
+         opt_state = argv[++i];
+      else if (!strcmp(argv[i], "--ppm") && i + 1 < argc)
+         opt_ppm = argv[++i];
       else if (!strcmp(argv[i], "--swfb"))
          opt_swfb = 1;
       else if (!strcmp(argv[i], "--quiet"))
@@ -518,6 +533,38 @@ int main(int argc, char **argv)
             sys.library_version ? sys.library_version : "?",
             argv[2], av.geometry.base_width, av.geometry.base_height,
             opt_swfb ? "on" : "off", opt_start);
+
+   if (opt_state)
+   {
+      size_t         st_size = 0;
+      unsigned char *st      = fh_read_file(opt_state, &st_size);
+
+      if (!st)
+      {
+         fprintf(stderr, "framehash: cannot read %s\n", opt_state);
+         core.unload_game();
+         core.deinit();
+         FH_CLOSE(h);
+         free(rom);
+         return 1;
+      }
+
+      /* A state carries the core's own layout, so one written by a
+       * different build of the core is refused rather than guessed at. */
+      if (!core.unserialize(st, st_size))
+      {
+         fprintf(stderr, "framehash: core refused the state in %s\n",
+               opt_state);
+         free(st);
+         core.unload_game();
+         core.deinit();
+         FH_CLOSE(h);
+         free(rom);
+         return 1;
+      }
+
+      free(st);
+   }
 
    if (replay)
    {
@@ -598,6 +645,38 @@ int main(int argc, char **argv)
    if (replay_video_differs)
       printf("# %u replay windows differed in video only: the frame "
              "buffer is not in a snapshot\n", replay_video_differs);
+
+   if (opt_ppm && last_frame)
+   {
+      FILE *pf = fopen(opt_ppm, "wb");
+
+      if (pf)
+      {
+         unsigned x, y;
+
+         fprintf(pf, "P6\n%u %u\n255\n", last_w, last_h);
+
+         for (y = 0; y < last_h; y++)
+         {
+            const unsigned char *src = last_frame
+               + (size_t)y * last_w * sizeof(unsigned short);
+
+            for (x = 0; x < last_w; x++)
+            {
+               unsigned p = (unsigned)src[x * 2] | ((unsigned)src[x * 2 + 1] << 8);
+               unsigned r = (p >> 11) & 0x1f;
+               unsigned g = (p >>  5) & 0x3f;
+               unsigned b =  p        & 0x1f;
+
+               fputc((int)((r << 3) | (r >> 2)), pf);
+               fputc((int)((g << 2) | (g >> 4)), pf);
+               fputc((int)((b << 3) | (b >> 2)), pf);
+            }
+         }
+
+         fclose(pf);
+      }
+   }
 
    free(state);
    core.unload_game();
