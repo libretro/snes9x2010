@@ -2523,14 +2523,14 @@ static void S9xComputeClipWindows (void)
 	CW_math = 0;
 	CW = CalcWindowMask(5, W1, W2);
 
-	switch (Memory.FillRAM[0x2130] & 0xc0)
+	switch (S9xRenderFillRAM(0x2130) & 0xc0)
 	{
 		case 0x40:	CW_color = ~CW;		break;
 		case 0x80:	CW_color = CW;		break;
 		case 0xc0:	CW_color = 0xff;	break;
 	}
 
-	switch (Memory.FillRAM[0x2130] & 0x30)
+	switch (S9xRenderFillRAM(0x2130) & 0x30)
 	{
 		case 0x10:	CW_math  = ~CW;		break;
 		case 0x20:	CW_math  = CW;		break;
@@ -2562,9 +2562,9 @@ static void S9xComputeClipWindows (void)
 		mask_a = 0;
 		mask_b = 0;
 
-		if (Memory.FillRAM[0x212e] & (1 << j))
+		if (S9xRenderFillRAM(0x212e) & (1 << j))
 			mask_a = W;
-		if (Memory.FillRAM[0x212f] & (1 << j))
+		if (S9xRenderFillRAM(0x212f) & (1 << j))
 			mask_b = W;
 		
 		StoreWindowRegions_Sub0_StoreMode0(mask_a, IPPU.Clip[0][j]);
