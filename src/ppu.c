@@ -2242,8 +2242,6 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out)
 
    out->Interlace           = IPPU.Interlace;
    out->InterlaceOBJ        = IPPU.InterlaceOBJ;
-   out->DoubleWidthPixels   = IPPU.DoubleWidthPixels;
-   out->QuadWidthPixels     = IPPU.QuadWidthPixels;
    out->PseudoHires         = IPPU.PseudoHires;
 
    out->Mode7HFlip          = PPU.Mode7HFlip;
@@ -2260,21 +2258,27 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out)
    out->SFXSpeedupHack       = PPU.SFXSpeedupHack;
    out->RenderSub            = PPU.RenderSub;
    out->RecomputeClipWindows = PPU.RecomputeClipWindows;
-   out->RenderedScreenWidth  = IPPU.RenderedScreenWidth;
 }
 
 /* Taken after resolution promotion, which is what sets the pitch and
  * may have handed us a different buffer than the one the span was
- * recorded against. */
+ * recorded against.
+ *
+ * The three width fields belong here rather than with the registers:
+ * promotion is what decides them, so a span that promotes has to draw
+ * at the width its own pitch was sized for. */
 void S9xSnapshotRenderGeometry (struct SRenderRegs *out)
 {
-   out->Screen         = GFX.Screen;
-   out->StartY         = GFX.StartY;
-   out->EndY           = GFX.EndY;
-   out->PPL            = GFX.PPL;
-   out->RealPPL        = GFX.RealPPL;
-   out->DoInterlace    = GFX.DoInterlace;
-   out->InterlaceFrame = GFX.InterlaceFrame;
+   out->Screen             = GFX.Screen;
+   out->StartY             = GFX.StartY;
+   out->EndY               = GFX.EndY;
+   out->PPL                = GFX.PPL;
+   out->RealPPL            = GFX.RealPPL;
+   out->DoInterlace        = GFX.DoInterlace;
+   out->InterlaceFrame     = GFX.InterlaceFrame;
+   out->DoubleWidthPixels  = IPPU.DoubleWidthPixels;
+   out->QuadWidthPixels    = IPPU.QuadWidthPixels;
+   out->RenderedScreenWidth = IPPU.RenderedScreenWidth;
 }
 
 static INLINE uint8_t CalcWindowMask (int i, uint8_t W1, uint8_t W2)
