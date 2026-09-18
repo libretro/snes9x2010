@@ -2912,11 +2912,36 @@ void S9xUpdateScreen (void)
 	}
 	else
 #endif
+#if defined(S9X_SPAN_STRESS)
+	{
+		/* Build with -DS9X_SPAN_STRESS to leave the span in the queue
+		   and let a barrier draw it, which is what the render thread
+		   makes happen on its own. Everything a span is drawn from has
+		   to travel in it or be held still until it is drawn, and a
+		   build that draws every span where it is recorded cannot tell
+		   whether that is true. Render the same content under both and
+		   compare the digests:
+
+		     make -f Makefile.libretro
+		     cc -O2 -o framehash tools/framehash.c -ldl \
+		        -Ilibretro/libretro-common/include
+		     ./framehash snes9x2010_libretro.so game.sfc > a.txt
+		     make -f Makefile.libretro clean
+		     make -f Makefile.libretro CODE_DEFINES=-DS9X_SPAN_STRESS
+		     ./framehash snes9x2010_libretro.so game.sfc > b.txt
+		     diff a.txt b.txt
+
+		   They have to agree. Anything the renderer reads that the CPU
+		   can still change underneath it shows up here as a difference
+		   and nowhere else. */
+	}
+#else
 		/* Deferral exists to hand a span to the renderer thread.  With
 		   no thread to hand it to, the same thread draws it either way,
 		   and holding it only widens the window in which something it
 		   reads can change underneath it. */
 		S9xRenderDrain();
+#endif
 
 
 

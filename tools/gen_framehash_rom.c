@@ -162,7 +162,24 @@ int main(int argc, char **argv)
    lda_sta(0x00, 0x4302);   /* table at $00:FE00                   */
    lda_sta(0xFE, 0x4303);
    lda_sta(0x00, 0x4304);
-   lda_sta(0x01, 0x420C);   /* HDMA channel 0 on                   */
+   /* Channel 1 rewrites CGWSEL and channel 2 the two window-enable
+    * registers, also per scanline. Those three decide which clip
+    * regions the colour-math windows produce, so a renderer that reads
+    * them at the moment it draws rather than the moment the span was
+    * recorded produces different regions here and only here. */
+   lda_sta(0x00, 0x4310);   /* B<-A, one register, once per line   */
+   lda_sta(0x30, 0x4311);   /* $2130 CGWSEL                        */
+   lda_sta(0x00, 0x4312);   /* table at $00:FD00                   */
+   lda_sta(0xFD, 0x4313);
+   lda_sta(0x00, 0x4314);
+
+   lda_sta(0x01, 0x4320);   /* B<-A, two registers, once per line  */
+   lda_sta(0x2E, 0x4321);   /* $212E main, $212F sub window enable */
+   lda_sta(0x00, 0x4322);   /* table at $00:FC00                   */
+   lda_sta(0xFC, 0x4323);
+   lda_sta(0x00, 0x4324);
+
+   lda_sta(0x07, 0x420C);   /* HDMA channels 0, 1 and 2 on         */
    lda_sta(0x03, 0x2130);   /* colour math against the subscreen, and
                              * direct colour, which is the only thing
                              * that reaches the palette-map builder    */
@@ -249,6 +266,27 @@ int main(int argc, char **argv)
          *t++ = (unsigned char)(255 - e_i * 16); /* $2127 window 1 right */
       }
       *t = 0;                                    /* end of table         */
+
+      /* CGWSEL at $00:FD00. The low two bits keep the subscreen as the
+       * colour-math source and direct colour on, as the init does; the
+       * top four are what the clip regions are built from. */
+      t = rom + 0x7D00;
+      for (e_i = 0; e_i < 15; e_i++)
+      {
+         *t++ = 16;
+         *t++ = (unsigned char)((e_i << 4) | 0x03);
+      }
+      *t = 0;
+
+      /* Main and sub screen window enable at $00:FC00, five bits each. */
+      t = rom + 0x7C00;
+      for (e_i = 0; e_i < 15; e_i++)
+      {
+         *t++ = 16;
+         *t++ = (unsigned char)(e_i & 0x1f);        /* $212E main */
+         *t++ = (unsigned char)((e_i * 3) & 0x1f);  /* $212F sub  */
+      }
+      *t = 0;
    }
 
    memcpy(rom + 0x7FC0, title, 21);
