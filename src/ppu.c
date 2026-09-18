@@ -185,6 +185,7 @@
 #if defined(HAVE_THREADS)
 #include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
+#include <features/features_cpu.h>
 #endif
 #include "snes9x.h"
 #include "memmap.h"
@@ -2120,6 +2121,24 @@ static retro_eventcount_t  rt_done;    /* a span was drawn       */
 static retro_atomic_int_t  rt_quit;
 static sthread_t          *rt_thread;
 static int                 rt_running;
+
+/* How many times a side re-reads the other's counter before it parks.
+ *
+ * Parking costs a syscall and waking costs another, and a span is
+ * usually a few microseconds behind the counter that publishes it, so
+ * a waiter that looks again a few times often finds its work without
+ * going near the kernel.  It also has to be a caller-side loop rather
+ * than something the eventcount does: the futex backend commits
+ * straight to FUTEX_WAIT, and the asymmetric eventcount, which is the
+ * reason to want this, pays a process-wide barrier inside
+ * prepare_wait.  Both are reached only once the spin has given up.
+ *
+ * S9X_RT_SPIN is a starting number, not a measured one: it wants
+ * choosing against a real core on real content.  Zero disables the
+ * spin, which is what a single core gets, where the other side cannot
+ * run while this one turns and every iteration is waste. */
+#define S9X_RT_SPIN 256
+static unsigned rt_spin;
 #endif
 
 /* Palette and object-table updates waiting to be applied.
@@ -2737,8 +2756,20 @@ static void S9xRenderThread(void *unused)
       {
          int key;
 
+         unsigned spin;
+
          if (retro_atomic_load_acquire_int(&rt_quit))
             return;
+
+         for (spin = 0; spin < rt_spin; spin++)
+         {
+            if (retro_atomic_load_acquire_size(&rt_recorded) != drawn
+                  || retro_atomic_load_acquire_int(&rt_quit))
+               break;
+            retro_cpu_relax();
+         }
+         if (spin < rt_spin)
+            continue;
 
          key = retro_eventcount_prepare_wait(&rt_work);
 
@@ -2770,6 +2801,8 @@ void S9xRenderThreadStart(void)
    retro_atomic_size_init(&rt_recorded, span_recorded);
    retro_atomic_size_init(&rt_drawn,    span_drawn);
    retro_atomic_int_init(&rt_quit, 0);
+
+   rt_spin = (cpu_features_get_core_amount() > 1) ? S9X_RT_SPIN : 0;
 
    if (!retro_eventcount_init(&rt_work))
       return;
@@ -2837,8 +2870,19 @@ void S9xRenderDrain (void)
          size_t rec = retro_atomic_load_relaxed_size(&rt_recorded);
          int    key;
 
+         unsigned spin;
+
          if (retro_atomic_load_acquire_size(&rt_drawn) == rec)
             break;
+
+         for (spin = 0; spin < rt_spin; spin++)
+         {
+            if (retro_atomic_load_acquire_size(&rt_drawn) == rec)
+               break;
+            retro_cpu_relax();
+         }
+         if (spin < rt_spin)
+            continue;
 
          key = retro_eventcount_prepare_wait(&rt_done);
 
