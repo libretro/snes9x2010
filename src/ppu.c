@@ -2789,7 +2789,14 @@ static void S9xRenderThread(void *unused)
       S9xRenderSpan();
 
       retro_atomic_store_release_size(&rt_drawn, drawn + 1);
-      retro_eventcount_notify(&rt_done);
+
+      /* The barrier waits for the queue to empty rather than for each
+         span, so a notify before that wakes nobody and costs a fence
+         on every span. The CPU thread is the only recorder and it is
+         inside the barrier while it waits, so the count it is waiting
+         for cannot move while this is deciding. */
+      if (retro_atomic_load_acquire_size(&rt_recorded) == drawn + 1)
+         retro_eventcount_notify(&rt_done);
    }
 }
 
