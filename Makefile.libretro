@@ -119,7 +119,8 @@ ifeq ($(platform), unix)
 	EXT    ?= so
    TARGET := $(TARGET_NAME)_libretro$(PLAT).$(EXT)
 	fpic := -fPIC
-	LTO ?= -flto 
+	# LTO is opt-in: build with LTO=-flto to turn it on.
+	LTO ?=
 	SHARED := -shared -Wl,--version-script=libretro/link.T
 ifneq ($(findstring Haiku,$(shell uname -a)),)
 		LIBM :=
@@ -352,7 +353,6 @@ else ifeq ($(platform), classic_armv7_a7)
 	fpic := -fPIC
 	SHARED := -shared -Wl,--version-script=libretro/link.T -Wl,--no-undefined
 	CFLAGS += -Ofast \
-	-flto=4 -fwhole-program -fuse-linker-plugin \
 	-fdata-sections -ffunction-sections -Wl,--gc-sections \
 	-fno-stack-protector -fno-ident -fomit-frame-pointer \
 	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
@@ -384,7 +384,6 @@ TARGET := $(TARGET_NAME)_libretro.so
 	fpic := -fPIC
 	SHARED := -shared -Wl,--version-script=libretro/link.T -Wl,--no-undefined
 	CFLAGS += -Ofast \
-	-flto=4 -fwhole-program -fuse-linker-plugin \
 	-fdata-sections -ffunction-sections -Wl,--gc-sections \
 	-fno-stack-protector -fno-ident -fomit-frame-pointer \
 	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
