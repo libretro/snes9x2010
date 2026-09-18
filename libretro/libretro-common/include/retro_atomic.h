@@ -673,6 +673,12 @@ typedef size_t retro_atomic_size_t;
  * on the legacy x86 / Xbox 360 / Itanium paths.
  */
 
+#ifndef NOMINMAX
+#define NOMINMAX   /* MSVC defines min/max as macros in C++ too */
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 
 #if defined(_M_ARM) || defined(_M_ARM64)
@@ -824,7 +830,8 @@ typedef volatile intptr_t retro_atomic_size_t;
 #define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (intptr_t)(v))
 
-#define retro_atomic_load_acquire_int(p)  OSAtomicAdd32Barrier(0, (p))
+#define retro_atomic_load_acquire_int(p) \
+   OSAtomicAdd32Barrier(0, (retro_atomic_int_t*)(p))
 /* Relaxed int load/store: aligned native-width volatile access, which
  * is indivisible on every Apple target; unlike the barrier'd Add(0)
  * above it is neither an RMW nor a barrier. */
@@ -887,7 +894,7 @@ typedef volatile size_t retro_atomic_size_t;
  * The "load via fetch_and_add 0" / "store via lock+swap" idioms are the
  * canonical way to get an atomic load/store out of __sync. */
 #define retro_atomic_load_acquire_int(p) \
-   __sync_fetch_and_add((p), 0)
+   __sync_fetch_and_add((retro_atomic_int_t*)(p), 0)
 /* Relaxed int load/store: aligned volatile int access, no RMW and no
  * __sync_synchronize. */
 #define retro_atomic_load_relaxed_int(p)      (*(p))
@@ -904,7 +911,7 @@ typedef volatile size_t retro_atomic_size_t;
    __sync_fetch_and_and((p), (v))
 
 #define retro_atomic_load_acquire_size(p) \
-   __sync_fetch_and_add((p), (size_t)0)
+   __sync_fetch_and_add((retro_atomic_size_t*)(p), (size_t)0)
 /* Relaxed load: aligned volatile size_t read, no RMW. */
 #define retro_atomic_load_relaxed_size(p) (*(p))
 #define retro_atomic_store_relaxed_size(p, v) \
@@ -1058,6 +1065,13 @@ typedef volatile size_t retro_atomic_size_t;
 #define retro_atomic_fetch_sub_int(p, v) retro_atomic_fetch_sub_int_fb((p), (v))
 #define retro_atomic_fetch_or_int(p, v)  retro_atomic_fetch_or_int_fb((p), (v))
 #define retro_atomic_fetch_and_int(p, v) retro_atomic_fetch_and_int_fb((p), (v))
+/* Compare-and-swap, which this backend can only offer as a plain
+ * read-compare-write: correct where the fallback itself is - one core,
+ * or a platform whose only preemption is cooperative - and no worse
+ * than the loads and stores beside it. Callers that need a real CAS
+ * are on a backend that has one. */
+#define retro_atomic_cas_int(p, expected, desired) \
+   retro_atomic_cas_int_fb((p), (expected), (desired))
 
 static INLINE int retro_atomic_fetch_add_int_fb(retro_atomic_int_t *p, int v)
 {
@@ -1085,6 +1099,15 @@ static INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
    int old = *p;
    *p      = old & v;
    return old;
+}
+
+static INLINE bool retro_atomic_cas_int_fb(retro_atomic_int_t *p,
+      int expected, int desired)
+{
+   if (*p != expected)
+      return false;
+   *p = desired;
+   return true;
 }
 
 #define retro_atomic_load_acquire_size(p)        (*(p))
