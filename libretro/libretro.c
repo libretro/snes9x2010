@@ -1458,10 +1458,7 @@ void retro_init(void)
 	owned_screen_buffer = GFX.Screen;
 	owned_ntsc_buffer   = ntsc_screen_buffer;
 	S9xGraphicsInit();
-#if defined(HAVE_THREADS)
-	if (threaded_ppu_pref)
-		S9xRenderThreadStart();
-#endif
+
 
 	retro_set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
 	retro_set_controller_port_device(1, RETRO_DEVICE_JOYPAD);
@@ -2170,6 +2167,13 @@ bool retro_load_game(const struct retro_game_info *game)
 
 	msu1_latch_playback_rate();
 
+#if defined(HAVE_THREADS)
+	/* After check_variables, which is what reads the option: retro_init
+	   runs before the frontend has answered for any of them. */
+	if (threaded_ppu_pref)
+		S9xRenderThreadStart();
+#endif
+
 	return TRUE;
 }
 
@@ -2323,6 +2327,11 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
 
 void retro_unload_game (void)
 {
+#if defined(HAVE_THREADS)
+	/* With the content, so a load that follows starts from the option
+	   as it reads then rather than as it read for the last one. */
+	S9xRenderThreadStop();
+#endif
 	S9xHdPackDeinit();
 	/* See retro_deinit: with pause-on-menu disabled the frontend may
 	   tear down while a frame is mid-render. Unwind any active sw_fb
