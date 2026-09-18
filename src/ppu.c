@@ -2910,7 +2910,13 @@ void S9xUpdateScreen (void)
 		retro_atomic_store_release_size(&rt_recorded, span_recorded);
 		retro_eventcount_notify(&rt_work);
 	}
+	else
 #endif
+		/* Deferral exists to hand a span to the renderer thread.  With
+		   no thread to hand it to, the same thread draws it either way,
+		   and holding it only widens the window in which something it
+		   reads can change underneath it. */
+		S9xRenderDrain();
 
 
 
