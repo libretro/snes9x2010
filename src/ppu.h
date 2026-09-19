@@ -523,6 +523,12 @@ struct SRenderRegs
    uint8_t Mode7Repeat;
    uint8_t Brightness;
 
+   /* COLDATA, already brightness-scaled and packed.  GFX.FixedColour is
+    * the renderer's copy and is loaded from here at the top of each
+    * span; games that rewrite $2132 every line by HDMA (Axelay) would
+    * otherwise have it change under a span still being drawn. */
+   uint16_t FixedColour;
+
    /* The palette and the object table.  Both are caches the register
     * writes maintain an entry at a time and only the renderer reads,
     * so carrying them whole in every span is the wrong shape and they

@@ -2267,6 +2267,10 @@ void S9xSnapshotRenderRegs (struct SRenderRegs *out)
    out->Mode7VFlip          = PPU.Mode7VFlip;
    out->Mode7Repeat         = PPU.Mode7Repeat;
    out->Brightness          = PPU.Brightness;
+   /* IPPU.XB is safe to read here: a brightness change drains first. */
+   out->FixedColour         = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed],
+                                          IPPU.XB[PPU.FixedColourGreen],
+                                          IPPU.XB[PPU.FixedColourBlue]);
 
    out->ScreenColors = rs_palette;
    out->OBJ          = rs_obj;
@@ -2690,6 +2694,9 @@ static void S9xRenderSpan (void)
 	   point but the macros need them. */
 	int clip;
 	uint32_t Offset;
+
+	/* The renderer's own copy; see SRenderRegs.FixedColour. */
+	GFX.FixedColour = S9xCurRenderRegs->FixedColour;
 
 	if (S9xCurRenderRegs->SetupOBJ)
 		SetupOBJ();
@@ -3412,14 +3419,6 @@ void S9xFixColourBrightness (void)
 			 IPPU.XB[(PPU.CGDATA[i] >> 10) & 0x1f]
 			);
 	}
-
-	/* GFX.FixedColour depends on IPPU.XB; rebuild to keep it in sync.
-	 * Covers reset, snapshot unfreeze, and INIDISP brightness changes
-	 * that all call this function. COLDATA writes rebuild it directly
-	 * (see $2132 handler in S9xSetPPU). */
-	GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed],
-	                              IPPU.XB[PPU.FixedColourGreen],
-	                              IPPU.XB[PPU.FixedColourBlue]);
 
 	S9xResyncRenderTables();
 }
@@ -4262,15 +4261,9 @@ void S9xSetPPU (uint8_t Byte, uint16_t Address)
 					if (Byte & 0x20)
 						PPU.FixedColourRed   = Byte & 0x1f;
 
-					/* Rebuild packed RGB565 fixed colour eagerly. Used to
-					 * happen once per S9xUpdateScreen flush; doing it here
-					 * instead means it's only rebuilt when the inputs
-					 * actually change, not every flush. Brightness changes
-					 * (which also affect IPPU.XB) rebuild via
-					 * S9xFixColourBrightness. */
-					GFX.FixedColour = BUILD_PIXEL(IPPU.XB[PPU.FixedColourRed],
-					                              IPPU.XB[PPU.FixedColourGreen],
-					                              IPPU.XB[PPU.FixedColourBlue]);
+					/* The packed colour is built when a span is recorded
+					 * (S9xSnapshotRenderRegs); the renderer owns
+					 * GFX.FixedColour and this thread must not write it. */
 				}
 
 				break;
