@@ -234,7 +234,7 @@
  * COLOR_ADD macro; channels are extracted, added, clamped via the
  * subs_epu16 saturating-subtract identity min(x, K) = x - subs_epu16(x, K),
  * then repacked into RGB565. */
-static INLINE __m128i tile_color_add_sse2(__m128i c1, __m128i c2)
+static INLINE __m128i tile_color_add_cap_sse2(__m128i c1, __m128i c2, __m128i kcap)
 {
     /* Mainline-exact COLOR_ADD: all three channels are FIVE-bit lanes --
      * green input bit 5 is ignored ((c >> 6) & 0x1F) -- saturated at 31,
@@ -253,14 +253,25 @@ static INLINE __m128i tile_color_add_sse2(__m128i c1, __m128i c2)
     __m128i rs = _mm_add_epi16(r1, r2);
     __m128i gs = _mm_add_epi16(g1, g2);
     __m128i bs = _mm_add_epi16(b1, b2);
-    __m128i rsat = _mm_sub_epi16(rs, _mm_subs_epu16(rs, k31));
-    __m128i gsat = _mm_sub_epi16(gs, _mm_subs_epu16(gs, k31));
-    __m128i bsat = _mm_sub_epi16(bs, _mm_subs_epu16(bs, k31));
+    __m128i rsat = _mm_sub_epi16(rs, _mm_subs_epu16(rs, kcap));
+    __m128i gsat = _mm_sub_epi16(gs, _mm_subs_epu16(gs, kcap));
+    __m128i bsat = _mm_sub_epi16(bs, _mm_subs_epu16(bs, kcap));
     __m128i glsb = _mm_slli_epi16(_mm_and_si128(gsat, _mm_set1_epi16(0x10)), 1);
     return _mm_or_si128(_mm_or_si128(_mm_or_si128(_mm_slli_epi16(rsat, 11),
                                                   _mm_slli_epi16(gsat, 6)),
                                      bsat),
                         glsb);
+}
+
+/* kcap is the per-channel ceiling: 31 normally, IPPU.XB[31] when master
+ * brightness is below full. ScreenColors and FixedColour are already
+ * brightness-scaled, so a sum that stops at 31 comes out brighter than
+ * the brightest colour the screen can show at that brightness (Axelay
+ * stage 1's horizon, libretro/snes9x#315). brightness_cap[i] is
+ * min(i, XB[31]), so brightness_cap[63] is the ceiling itself. */
+static INLINE __m128i tile_color_add_sse2(__m128i c1, __m128i c2)
+{
+    return tile_color_add_cap_sse2(c1, c2, _mm_set1_epi16(0x1F));
 }
 
 /* Half-intensity add, RGB565 - pure bit-ALU, no table.
@@ -429,7 +440,7 @@ static INLINE __m128i tile_z2x1_sd_select_mask_sse2(__m128i sdb_loaded)
  * -mfloat-abi=hard on 32-bit ARM toolchains and natively on AArch64
  * toolchains. */
 
-static INLINE uint16x8_t tile_color_add_neon(uint16x8_t c1, uint16x8_t c2)
+static INLINE uint16x8_t tile_color_add_cap_neon(uint16x8_t c1, uint16x8_t c2, uint16x8_t kcap)
 {
     /* Mainline-exact COLOR_ADD; see the SSE2 twin for the rationale
      * (5-bit green lane, green LSB replicated from the top bit). */
@@ -444,14 +455,19 @@ static INLINE uint16x8_t tile_color_add_neon(uint16x8_t c1, uint16x8_t c2)
     uint16x8_t gs = vaddq_u16(g1, g2);
     uint16x8_t bs = vaddq_u16(b1, b2);
     /* min(x, K) = x - vqsubq_u16(x, K)  -- saturating-subtract trick. */
-    uint16x8_t rsat = vsubq_u16(rs, vqsubq_u16(rs, k31));
-    uint16x8_t gsat = vsubq_u16(gs, vqsubq_u16(gs, k31));
-    uint16x8_t bsat = vsubq_u16(bs, vqsubq_u16(bs, k31));
+    uint16x8_t rsat = vsubq_u16(rs, vqsubq_u16(rs, kcap));
+    uint16x8_t gsat = vsubq_u16(gs, vqsubq_u16(gs, kcap));
+    uint16x8_t bsat = vsubq_u16(bs, vqsubq_u16(bs, kcap));
     uint16x8_t glsb = vshlq_n_u16(vandq_u16(gsat, vdupq_n_u16(0x10)), 1);
     return vorrq_u16(vorrq_u16(vorrq_u16(vshlq_n_u16(rsat, 11),
                                          vshlq_n_u16(gsat, 6)),
                                bsat),
                      glsb);
+}
+
+static INLINE uint16x8_t tile_color_add_neon(uint16x8_t c1, uint16x8_t c2)
+{
+    return tile_color_add_cap_neon(c1, c2, vdupq_n_u16(0x1F));
 }
 
 static INLINE uint16x8_t tile_color_add_half_neon(uint16x8_t c1, uint16x8_t c2)
@@ -1466,7 +1482,7 @@ static INLINE void tile_draw_row_nomath_n1x1(uint8_t *db, uint16_t *s,
 static INLINE void tile_draw_row_regmath_add_n1x1(
     uint8_t *db, uint16_t *s, const uint8_t *bp, int hflip,
     uint8_t Z1, uint8_t Z2, const uint16_t *palette,
-    const uint8_t *subzbuf, const uint16_t *subscreen, uint16_t fixed_colour)
+    const uint8_t *subzbuf, const uint16_t *subscreen, uint16_t fixed_colour, uint16_t cap)
 {
     uint8_t  pix_buf[8] __attribute__((aligned(16)));
     uint16_t col_buf[8] __attribute__((aligned(16)));
@@ -1478,7 +1494,7 @@ static INLINE void tile_draw_row_regmath_add_n1x1(
     __m128i vSub    = _mm_loadu_si128((const __m128i *)subscreen);
     __m128i vFixed  = _mm_set1_epi16((short)fixed_colour);
     __m128i operand = tile_select_sub_or_fixed_sse2(sd, vSub, vFixed);
-    __m128i pix     = tile_color_add_sse2(colors, operand);
+    __m128i pix     = tile_color_add_cap_sse2(colors, operand, _mm_set1_epi16((short)cap));
     TILE_ROW_STORE_SSE2(db, s, mask8, mask16, db_load, Z2, pix);
 #else
     uint8x8_t mask8, db_load;
@@ -1489,7 +1505,7 @@ static INLINE void tile_draw_row_regmath_add_n1x1(
     uint16x8_t vSub    = vld1q_u16(subscreen);
     uint16x8_t vFixed  = vdupq_n_u16(fixed_colour);
     uint16x8_t operand = tile_select_sub_or_fixed_neon(sd, vSub, vFixed);
-    uint16x8_t pix     = tile_color_add_neon(colors, operand);
+    uint16x8_t pix     = tile_color_add_cap_neon(colors, operand, vdupq_n_u16(cap));
     TILE_ROW_STORE_NEON(db, s, mask8, mask16, db_load, Z2, pix);
 #endif
 }
@@ -1589,7 +1605,7 @@ static INLINE void tile_draw_row_maths12_add_n1x1(
     uint8_t *db, uint16_t *s, const uint8_t *bp, int hflip,
     uint8_t Z1, uint8_t Z2, const uint16_t *palette,
     const uint8_t *subzbuf, const uint16_t *subscreen,
-    uint16_t fixed_colour, int clip_colors)
+    uint16_t fixed_colour, int clip_colors, uint16_t cap)
 {
     uint8_t  pix_buf[8] __attribute__((aligned(16)));
     uint16_t col_buf[8] __attribute__((aligned(16)));
@@ -1603,10 +1619,10 @@ static INLINE void tile_draw_row_maths12_add_n1x1(
     __m128i pix;
     if (clip_colors) {
         __m128i operand = tile_select_sub_or_fixed_sse2(sd, vSub, vFixed);
-        pix = tile_color_add_sse2(colors, operand);
+        pix = tile_color_add_cap_sse2(colors, operand, _mm_set1_epi16((short)cap));
     } else {
         __m128i half = tile_color_add_half_sse2(colors, vSub);
-        __m128i full = tile_color_add_sse2(colors, vFixed);
+        __m128i full = tile_color_add_cap_sse2(colors, vFixed, _mm_set1_epi16((short)cap));
         const __m128i v20 = _mm_set1_epi8(0x20);
         __m128i sd_b8  = _mm_cmpeq_epi8(_mm_and_si128(sd, v20), v20);
         __m128i sd_b16 = _mm_unpacklo_epi8(sd_b8, sd_b8);
@@ -1625,10 +1641,10 @@ static INLINE void tile_draw_row_maths12_add_n1x1(
     uint16x8_t pix;
     if (clip_colors) {
         uint16x8_t operand = tile_select_sub_or_fixed_neon(sd, vSub, vFixed);
-        pix = tile_color_add_neon(colors, operand);
+        pix = tile_color_add_cap_neon(colors, operand, vdupq_n_u16(cap));
     } else {
         uint16x8_t half = tile_color_add_half_neon(colors, vSub);
-        uint16x8_t full = tile_color_add_neon(colors, vFixed);
+        uint16x8_t full = tile_color_add_cap_neon(colors, vFixed, vdupq_n_u16(cap));
         uint8x8_t  sd_b8  = vceq_u8(vand_u8(sd, vdup_n_u8(0x20)), vdup_n_u8(0x20));
         uint16x8_t sd_b16 = vreinterpretq_u16_u8(tile_neon_dup_each_byte(sd_b8));
         pix = vbslq_u16(sd_b16, half, full);
@@ -1798,7 +1814,7 @@ static void DrawTile16Add_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_t St
             tile_draw_row_regmath_add_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
                                               GFX.Z1, GFX.Z2, GFX.ScreenColors,
                                               GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
-                                              GFX.FixedColour);
+                                              GFX.FixedColour, 0x1f);
         }
         (void) Pix; (void) n;
     }
@@ -1879,7 +1895,7 @@ static void DrawTile16AddBrightness_Normal1x1 (uint32_t Tile, uint32_t Offset, u
             tile_draw_row_regmath_add_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
                                               GFX.Z1, GFX.Z2, GFX.ScreenColors,
                                               GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
-                                              GFX.FixedColour);
+                                              GFX.FixedColour, brightness_cap[63]);
         }
         (void) Pix; (void) n;
     }
@@ -2040,7 +2056,7 @@ static void DrawTile16AddS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, uint32_
             tile_draw_row_maths12_add_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
                                               GFX.Z1, GFX.Z2, GFX.ScreenColors,
                                               GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
-                                              GFX.FixedColour, GFX.ClipColors);
+                                              GFX.FixedColour, GFX.ClipColors, 0x1f);
         }
         (void) Pix; (void) n;
     }
@@ -2121,7 +2137,7 @@ static void DrawTile16AddS1_2Brightness_Normal1x1 (uint32_t Tile, uint32_t Offse
             tile_draw_row_maths12_add_n1x1(GFX.DB + Offset, GFX.S + Offset, bp, hflip,
                                               GFX.Z1, GFX.Z2, GFX.ScreenColors,
                                               GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
-                                              GFX.FixedColour, GFX.ClipColors);
+                                              GFX.FixedColour, GFX.ClipColors, brightness_cap[63]);
         }
         (void) Pix; (void) n;
     }
@@ -5681,7 +5697,7 @@ static void DrawClippedTile16Add_Normal1x1 (uint32_t Tile, uint32_t Offset, uint
                 GFX.DB + Offset, GFX.S + Offset, bp,
                 0, GFX.Z1, GFX.Z2, GFX.ScreenColors,
                 GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
-                GFX.FixedColour);
+                GFX.FixedColour, 0x1f);
         }
         return;
     }
@@ -5761,7 +5777,7 @@ static void DrawClippedTile16AddBrightness_Normal1x1 (uint32_t Tile, uint32_t Of
                 GFX.DB + Offset, GFX.S + Offset, bp,
                 0, GFX.Z1, GFX.Z2, GFX.ScreenColors,
                 GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
-                GFX.FixedColour);
+                GFX.FixedColour, brightness_cap[63]);
         }
         return;
     }
@@ -5944,7 +5960,7 @@ static void DrawClippedTile16AddS1_2_Normal1x1 (uint32_t Tile, uint32_t Offset, 
                 GFX.DB + Offset, GFX.S + Offset, bp,
                 0, GFX.Z1, GFX.Z2, GFX.ScreenColors,
                 GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
-                GFX.FixedColour, GFX.ClipColors);
+                GFX.FixedColour, GFX.ClipColors, 0x1f);
         }
         return;
     }
@@ -6024,7 +6040,7 @@ static void DrawClippedTile16AddS1_2Brightness_Normal1x1 (uint32_t Tile, uint32_
                 GFX.DB + Offset, GFX.S + Offset, bp,
                 0, GFX.Z1, GFX.Z2, GFX.ScreenColors,
                 GFX.SubZBuffer + Offset, GFX.SubScreen + Offset,
-                GFX.FixedColour, GFX.ClipColors);
+                GFX.FixedColour, GFX.ClipColors, brightness_cap[63]);
         }
         return;
     }
