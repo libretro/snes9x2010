@@ -201,6 +201,14 @@
 #define snprintf _snprintf
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
+#elif defined(__unix__) || defined(__APPLE__) || defined(__HAIKU__)
+/* POSIX puts strcasecmp/strncasecmp in <strings.h>.  <string.h> also
+ * declares them, but only for a profile that asks for the BSD or
+ * POSIX.1-2008 set, so a build passing -D_XOPEN_SOURCE=600 (the
+ * Debian/Launchpad packaging does) leaves MATCH_NC in memmap.c calling
+ * an implicitly declared function -- a warning on the compilers that
+ * still allow one, an error on GCC 14 and Clang 16 onwards. */
+#include <strings.h>
 #endif
 
 #ifndef MSB_FIRST
