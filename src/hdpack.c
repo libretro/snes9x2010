@@ -29,6 +29,7 @@
 #include <formats/rpng.h>
 
 #include <encodings/crc32.h>
+#include <file/file_path.h>
 #include <streams/file_stream.h>
 
 /* ------------------------------------------------------------------ */
@@ -349,7 +350,8 @@ static int hd_load_pack(const char *dir)
    RFILE *f;
    unsigned est;
 
-   sprintf(path, "%s/hires.txt", dir);
+   if (fill_pathname_join(path, dir, "hires.txt", sizeof(path)) >= sizeof(path))
+      return 0;
    f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!f)
       return 0;
@@ -402,15 +404,13 @@ static int hd_load_pack(const char *dir)
       {
          if (hd.n_images >= HD_MAX_IMAGES)
             continue;
-         /* bound the concatenation: a hostile hires.txt must not be
-          * able to overflow the path buffer */
-         if (strlen(dir) + 1 + strlen(line + 5) + 1 > sizeof(path))
+         if (fill_pathname_join(path, dir, line + 5, sizeof(path))
+               >= sizeof(path))
          {
             filestream_close(f);
             fprintf(stderr, "[hdpack] image path too long\n");
             return 0;
          }
-         sprintf(path, "%s/%s", dir, line + 5);
          if (!hd_load_image(path, &hd.images[hd.n_images]))
          {
             filestream_close(f);
@@ -1163,12 +1163,17 @@ static void hd_recorder_flush(void)
       }
    }
 
-   sprintf(path, "%s/tiles.png", hd_pack_dir);
-   if (!rpng_save_image_argb(path, sheet, w, h, w * 4))
-      fprintf(stderr, "[hdpack] recorder: failed to write %s\n", path);
+   if (fill_pathname_join(path, hd_pack_dir, "tiles.png", sizeof(path))
+         < sizeof(path))
+   {
+      if (!rpng_save_image_argb(path, sheet, w, h, w * 4))
+         fprintf(stderr, "[hdpack] recorder: failed to write %s\n", path);
+   }
    free(sheet);
 
-   sprintf(path, "%s/hires.txt", hd_pack_dir);
+   if (fill_pathname_join(path, hd_pack_dir, "hires.txt", sizeof(path))
+         >= sizeof(path))
+      return;
    f = filestream_open(path, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!f)
       return;
