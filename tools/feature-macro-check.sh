@@ -40,18 +40,10 @@ STRICT="-Werror=implicit-function-declaration -Werror=implicit-int -Werror=int-c
 
 # Profiles a packager can plausibly hand us.  "none" is the default
 # build and has to keep working; the rest are the strict ones.
-#
-# -D_POSIX_C_SOURCE=200112L is deliberately not in this list.  It is the
-# one profile that also hides strdup(), which five libretro-common
-# translation units call -- file_path.c, file_path_io.c, encoding_utf.c,
-# stdstring.c and vfs_implementation.c -- and an implicitly declared
-# strdup returns int, so the pointer is truncated on LP64 rather than
-# merely warned about.  That belongs upstream in RetroArch's
-# libretro-common, not in a core's vendored copy where the next sync
-# would drop it; add the profile here once it has landed there.
 PROFILES="none
 -D_XOPEN_SOURCE=600
 -D_XOPEN_SOURCE=700
+-D_POSIX_C_SOURCE=200112L
 -D_POSIX_C_SOURCE=200809L
 -D_GNU_SOURCE"
 
