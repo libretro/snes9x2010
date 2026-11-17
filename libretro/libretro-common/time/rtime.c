@@ -20,20 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#include <stdlib.h>
-#endif
-
 #include <string.h>
 
 #include <boolean.h>
 #include <retro_atomic.h>
 #include <time/rtime.h>
 
-#ifdef HAVE_THREADS
-/* TODO/FIXME - global */
-slock_t *rtime_localtime_lock = NULL;
+/* MS CRTs keep localtime()'s result per thread. Orbis libc exports
+ * localtime_s() in the C11 Annex K order, not localtime_r(), and fills
+ * only the nine int fields of a struct tm. Elsewhere localtime_r(),
+ * declared here because strict C89 headers hide it. */
+#if defined(HAVE_THREADS) && defined(ORBIS)
+#define RTIME_HAVE_LOCALTIME_S
+struct tm *localtime_s(const time_t *timep, struct tm *result);
+#elif defined(HAVE_THREADS) && !defined(_WIN32) && !defined(_XBOX)
+#define RTIME_HAVE_LOCALTIME_R
+struct tm *localtime_r(const time_t *timep, struct tm *result);
 #endif
 
 #if defined(__APPLE__) && defined(__MACH__)
@@ -418,14 +420,10 @@ static void rtime_sleep_deinit(void)
 }
 #endif
 
-/* Must be called before using rtime_localtime() */
+/* Must be called at program or core start */
 void rtime_init(void)
 {
    rtime_deinit();
-#ifdef HAVE_THREADS
-   if (!rtime_localtime_lock)
-      rtime_localtime_lock = slock_new();
-#endif
 }
 
 /* Must be called upon program termination */
@@ -434,33 +432,24 @@ void rtime_deinit(void)
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    rtime_sleep_deinit();
 #endif
-#ifdef HAVE_THREADS
-   if (rtime_localtime_lock)
-   {
-      slock_free(rtime_localtime_lock);
-      rtime_localtime_lock = NULL;
-   }
-#endif
 }
 
 /* Thread-safe wrapper for localtime() */
 struct tm *rtime_localtime(const time_t *timep, struct tm *result)
 {
-   struct tm *time_info = NULL;
-
-   /* Lock mutex */
-#ifdef HAVE_THREADS
-   slock_lock(rtime_localtime_lock);
+#if defined(RTIME_HAVE_LOCALTIME_R)
+   /* Through a copy: a failed conversion leaves result unwritten. */
+   struct tm tm_buf;
+   struct tm *time_info = localtime_r(timep, &tm_buf);
+#elif defined(RTIME_HAVE_LOCALTIME_S)
+   struct tm tm_buf;
+   struct tm *time_info;
+   memset(&tm_buf, 0, sizeof(tm_buf));
+   time_info = localtime_s(timep, &tm_buf);
+#else
+   struct tm *time_info = localtime(timep);
 #endif
-
-   time_info = localtime(timep);
    if (time_info)
       memcpy(result, time_info, sizeof(struct tm));
-
-   /* Unlock mutex */
-#ifdef HAVE_THREADS
-   slock_unlock(rtime_localtime_lock);
-#endif
-
    return result;
 }

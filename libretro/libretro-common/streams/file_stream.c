@@ -47,6 +47,10 @@
 #include <vfs/vfs_implementation.h>
 #include <string/rstrtod.h>
 
+#if defined(VFS_DESCRIPTOR_READ_ALIGN)
+#include <malloc.h>
+#endif
+
 #define VFS_ERROR_RETURN_VALUE -1
 
 /* Size of the per-handle sequential lookahead buffer filled by
@@ -108,6 +112,10 @@ struct RFILE
 {
    struct retro_vfs_file_handle *hfile;
    bool err_flag;
+   /* Opened for reading with RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS:
+    * the open asked for the file mapped, so a v7 frontend's mapping of
+    * it is what filestream_get_mapped_ptr() hands over */
+   bool map_hint;
    /* Set once filestream_rbuf_fill() has seen this handle's tell()
     * fail, so it stops asking: unlatched, the fallback pays a failed
     * tell() per byte on top of the one-byte read, which is more work
@@ -152,6 +160,9 @@ struct RFILE
    size_t rbuf_len;
    size_t rbuf_pos;
    int64_t rbuf_file_off;
+   /* filestream_vprintf()'s, grown to the longest line printed */
+   char *pbuf;
+   size_t pbuf_cap;
    /* C89 7.9.5.3: on an update stream, output followed by input (or
     * input followed by output, short of EOF) requires an intervening
     * file positioning or flush call.  Backends over stdio really do
@@ -190,6 +201,19 @@ static retro_vfs_rename_t filestream_rename_cb     = NULL;
 static retro_vfs_copy_begin_t filestream_copy_begin_cb = NULL;
 static retro_vfs_copy_step_t  filestream_copy_step_cb  = NULL;
 static retro_vfs_copy_close_t filestream_copy_close_cb = NULL;
+static retro_vfs_read_at_t  filestream_read_at_cb  = NULL;
+static retro_vfs_write_at_t filestream_write_at_cb = NULL;
+/* VFS API v7. NULL where a frontend before it owns the files: each
+ * wrapper then answers "can't be told" rather than run the local _impl
+ * behind the frontend's back. */
+static retro_vfs_view_t           filestream_view_cb           = NULL;
+static retro_vfs_map_t            filestream_map_cb            = NULL;
+static retro_vfs_identity_t       filestream_identity_cb       = NULL;
+static retro_vfs_stat_identity_t  filestream_stat_identity_cb  = NULL;
+static retro_vfs_volume_t         filestream_volume_cb         = NULL;
+static retro_vfs_stat_volume_t    filestream_stat_volume_cb    = NULL;
+static retro_vfs_verity_measure_t filestream_verity_measure_cb = NULL;
+static retro_vfs_verity_enable_t  filestream_verity_enable_cb  = NULL;
 static bool filestream_copy_unavailable                = false;
 
 /* VFS Initialization */
@@ -214,6 +238,16 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_copy_begin_cb = NULL;
    filestream_copy_step_cb  = NULL;
    filestream_copy_close_cb = NULL;
+   filestream_read_at_cb    = NULL;
+   filestream_write_at_cb   = NULL;
+   filestream_view_cb           = NULL;
+   filestream_map_cb            = NULL;
+   filestream_identity_cb       = NULL;
+   filestream_stat_identity_cb  = NULL;
+   filestream_volume_cb         = NULL;
+   filestream_stat_volume_cb    = NULL;
+   filestream_verity_measure_cb = NULL;
+   filestream_verity_enable_cb  = NULL;
    filestream_copy_unavailable = false;
 
    if (
@@ -244,6 +278,26 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    }
    else
       filestream_copy_unavailable = true;
+
+   /* v6: positional I/O; a frontend before it has none to offer */
+   if (vfs_info->required_interface_version >= 6)
+   {
+      filestream_read_at_cb  = vfs_iface->read_at;
+      filestream_write_at_cb = vfs_iface->write_at;
+   }
+
+   /* v7: lent reads, mappings, identity, volume, fs-verity */
+   if (vfs_info->required_interface_version >= 7)
+   {
+      filestream_view_cb           = vfs_iface->view;
+      filestream_map_cb            = vfs_iface->map;
+      filestream_identity_cb       = vfs_iface->identity;
+      filestream_stat_identity_cb  = vfs_iface->stat_identity;
+      filestream_volume_cb         = vfs_iface->volume;
+      filestream_stat_volume_cb    = vfs_iface->stat_volume;
+      filestream_verity_measure_cb = vfs_iface->verity_measure;
+      filestream_verity_enable_cb  = vfs_iface->verity_enable;
+   }
 }
 
 /* Callback wrappers */
@@ -258,8 +312,7 @@ bool filestream_exists(const char *path)
          RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return false;
 
-   if (filestream_close(dummy) != 0)
-      free(dummy);
+   filestream_close(dummy);
 
    dummy = NULL;
    return true;
@@ -449,6 +502,8 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
    }
 
    output->err_flag      = false;
+   output->map_hint      = (hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
+      && mode == RETRO_VFS_FILE_ACCESS_READ;
    output->rbuf_no_tell  = false;
    output->hfile         = fp;
    output->rbuf          = NULL;
@@ -456,6 +511,8 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
    output->rbuf_len      = 0;
    output->rbuf_pos      = 0;
    output->rbuf_file_off = 0;
+   output->pbuf          = NULL;
+   output->pbuf_cap      = 0;
    output->last_io       = FILESTREAM_LAST_IO_NONE;
    return output;
 }
@@ -1641,10 +1698,9 @@ int filestream_rename(const char *old_path, const char *new_path)
    return retro_vfs_file_rename_impl(old_path, new_path);
 }
 
-/* v1-only frontends: copy through their open/read/write.  Large
- * heap buffer rather than the historical 256-byte stack one; the
- * destination directory is created before the destination is opened,
- * which the old order got backwards. */
+/* v1-only frontends: copy through their open/read/write, a large heap
+ * buffer at a time.  The destination directory is created before the
+ * destination is opened. */
 static int filestream_copy_loop(const char *src, const char *dst)
 {
    char   *buf                = NULL;
@@ -1653,12 +1709,14 @@ static int filestream_copy_loop(const char *src, const char *dst)
    int     ret                = -1;
    RFILE  *fp_src             = NULL;
    RFILE  *fp_dst             = NULL;
-   char    path_dst[PATH_MAX_LENGTH];
+   char   *path_dst;
 
-   if (!(buf = (char*)malloc(buf_len)))
+   /* The copy buffer, then the destination's directory. */
+   if (!(buf = (char*)malloc(buf_len + PATH_MAX_LENGTH)))
       return -1;
+   path_dst = buf + buf_len;
 
-   strlcpy(path_dst, dst, sizeof(path_dst));
+   strlcpy(path_dst, dst, PATH_MAX_LENGTH);
    path_basedir(path_dst);
    if (!path_is_directory(path_dst))
       path_mkdir(path_dst);
@@ -1668,7 +1726,7 @@ static int filestream_copy_loop(const char *src, const char *dst)
    if (!fp_src)
       goto end;
    fp_dst = filestream_open(dst, RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
    if (!fp_dst)
       goto end;
 
@@ -1721,12 +1779,35 @@ int filestream_copy_close(struct retro_vfs_copy_handle *handle)
 
 /* Pre-v5 helper, kept for its existing callers.  Blocks by design;
  * new code uses filestream_copy_begin/poll/close. */
+/* The VFS copy, run to the end: the platform's own primitive where
+ * there is one (copy_file_range, clonefile), so the bytes never enter
+ * user space.  Returns 1 when copied, -1 when the copy failed, and 0
+ * when it could not start: no VFS v5 behind a core, or a target that
+ * cannot be removed to make way (on Windows, one that another process
+ * holds open), which the loop may still write in place. */
+static int filestream_copy_vfs(const char *src, const char *dst)
+{
+   int status;
+   struct retro_vfs_copy_handle *h = filestream_copy_begin(src, dst,
+         RETRO_VFS_COPY_OVERWRITE);
+   if (!h)
+      return 0;
+   do
+   {
+      status = filestream_copy_step(h, (int64_t)1 << 40, NULL, NULL);
+   } while (status == RETRO_VFS_COPY_RUNNING);
+   return filestream_copy_close(h) == 0 ? 1 : -1;
+}
+
 int filestream_copy(const char *src, const char *dst)
 {
+   int ret;
    if (!src || !*src || !dst || !*dst || string_is_equal(src, dst))
       return -1;
    if (!path_is_valid(src) || path_is_directory(src) || path_is_directory(dst))
       return -1;
+   if ((ret = filestream_copy_vfs(src, dst)) != 0)
+      return ret > 0 ? 0 : -1;
    return filestream_copy_loop(src, dst);
 }
 
@@ -1777,8 +1858,6 @@ const char* filestream_get_path(RFILE *stream)
 bool filestream_matches_buf(const char *path, const void *data, size_t len)
 {
    const uint8_t *mem     = (const uint8_t*)data;
-   const uint8_t *map     = NULL;
-   int64_t        map_len = 0;
    bool           match   = false;
    RFILE         *file;
 
@@ -1795,33 +1874,22 @@ bool filestream_matches_buf(const char *path, const void *data, size_t len)
    if (filestream_get_size(file) != (int64_t)len)
       goto done;
 
-   if ((map = filestream_get_mapped_ptr(file, &map_len)))
    {
-      /* A view that does not span the file would compare the wrong
-       * bytes; fall through to the copying path rather than guess. */
-      if (map_len == (int64_t)len)
-      {
-         match = (len == 0) || (memcmp(map, mem, len) == 0);
-         goto done;
-      }
-      if (filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START) != 0)
-         goto done;
-   }
-
-   {
-      /* FILESTREAM_MATCHES_BUF_WINDOW, which is sized by the smallest
-       * thread stack in the tree rather than by throughput.  GEKKO
-       * threads get 8 KiB (STACKSIZE in rthreads.c), 3DS and PSP
-       * 32 KiB and Vita 64 KiB - and this is libretro-common API, so
-       * a caller on a spawned thread is not hypothetical.  The 8 KiB
-       * floor is GEKKO's.
+      /* Compared where it lies when the stream can lend it - the
+       * mapping, which covers the whole file in one call, or a network
+       * stream's read-ahead - and through FILESTREAM_MATCHES_BUF_WINDOW
+       * otherwise.  The window is sized by the smallest thread stack in
+       * the tree rather than by throughput.  GEKKO threads get 8 KiB
+       * (STACKSIZE in rthreads.c), 3DS and PSP 32 KiB and Vita 64 KiB -
+       * and this is libretro-common API, so a caller on a spawned
+       * thread is not hypothetical.  The 8 KiB floor is GEKKO's.
        *
        * Bigger reads are faster, and at or above the VFS's own 64 KiB
        * stdio buffer they skip it entirely: measured on the unchanged
        * case, which reads every byte, 1 KiB against 4 KiB against
        * 64 KiB is 1753 / 1432 / 1153 us on an 8 MiB file.  The
        * platforms paying that are the ones with no memory mapping -
-       * the mapped branch above copies nothing - which are the same
+       * a mapping copies nothing - which are the same
        * ones with the 8 KiB stacks, and this runs when a save is
        * written rather than in a frame. */
       uint8_t window[FILESTREAM_MATCHES_BUF_WINDOW];
@@ -1830,21 +1898,31 @@ bool filestream_matches_buf(const char *path, const void *data, size_t len)
       match = true;
       while (off < len)
       {
-         int64_t got;
-         size_t  want = len - off;
+         const uint8_t *ptr = NULL;
+         int64_t        got = filestream_view(file,
+               (int64_t)(len - off), &ptr);
 
-         if (want > sizeof(window))
-            want = sizeof(window);
-
-         if ((got = filestream_read(file, window, (int64_t)want))
-               != (int64_t)want)
+         if (got < 0)
+         {
+            size_t want = len - off;
+            if (want > sizeof(window))
+               want = sizeof(window);
+            if ((got = filestream_read(file, window, (int64_t)want))
+                  != (int64_t)want)
+            {
+               match = false;
+               break;
+            }
+            ptr = window;
+         }
+         else if (!got)
          {
             match = false;
             break;
          }
          /* Stop at the first difference: the caller asked a yes/no
           * question and a 'no' is final. */
-         if (memcmp(window, mem + off, (size_t)got) != 0)
+         if (memcmp(ptr, mem + off, (size_t)got) != 0)
          {
             match = false;
             break;
@@ -1855,7 +1933,7 @@ bool filestream_matches_buf(const char *path, const void *data, size_t len)
 
 done:
    if (filestream_close(file) != 0)
-      free(file);
+      match = false;
    return match;
 }
 
@@ -1871,6 +1949,28 @@ void filestream_set_mapped_ptr_cb(filestream_mapped_ptr_cb_t cb)
    filestream_mapped_ptr_cb = cb;
 }
 
+static filestream_prefetch_cb_t filestream_prefetch_cb;
+
+void filestream_set_prefetch_cb(filestream_prefetch_cb_t cb)
+{
+   filestream_prefetch_cb = cb;
+}
+
+void filestream_prefetch(RFILE *stream, uint64_t offset, uint64_t len)
+{
+   if (!stream || !stream->hfile)
+      return;
+   /* no such request in the libretro VFS interface */
+   if (filestream_read_cb)
+   {
+      if (filestream_prefetch_cb)
+         filestream_prefetch_cb(stream->hfile, offset, len);
+      return;
+   }
+   retro_vfs_file_prefetch_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, offset, len);
+}
+
 const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len)
 {
    if (len)
@@ -1881,12 +1981,72 @@ const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len)
    {
       if (filestream_mapped_ptr_cb)
          return filestream_mapped_ptr_cb(stream->hfile, len);
-      /* A frontend- or core-supplied VFS is driven entirely through
-       * the callbacks and has no mapping this side of them. */
+      /* A v7 frontend lends its mapping of a file opened to be mapped,
+       * the one its open made; any other stream, or an older frontend,
+       * has none this side of the callbacks. */
+      if (stream->map_hint && filestream_map_cb)
+         return filestream_map_cb(stream->hfile, len);
       return NULL;
    }
    return retro_vfs_file_get_mapped_ptr_impl(
          (libretro_vfs_implementation_file*)stream->hfile, len);
+}
+
+int64_t filestream_view(RFILE *stream, int64_t len, const uint8_t **ptr)
+{
+   if (!stream || !ptr || len < 0)
+      return -1;
+   if (!len)
+      return 0;
+
+   if (stream->rbuf_pos < stream->rbuf_len)
+   {
+      size_t n = stream->rbuf_len - stream->rbuf_pos;
+      if ((uint64_t)len < (uint64_t)n)
+         n = (size_t)len;
+      *ptr              = stream->rbuf + stream->rbuf_pos;
+      stream->rbuf_pos += n;
+      /* emptied, it is refilled only by the next gets/getc */
+      if (stream->rbuf_pos == stream->rbuf_len)
+      {
+         stream->rbuf_pos = 0;
+         stream->rbuf_len = 0;
+      }
+      return (int64_t)n;
+   }
+
+   if (stream->last_io == FILESTREAM_LAST_IO_WRITE)
+      filestream_raw_seek(stream, 0, RETRO_VFS_SEEK_POSITION_CURRENT);
+   stream->last_io = FILESTREAM_LAST_IO_READ;
+
+   if (filestream_read_cb)
+   {
+      /* a frontend's mapping, which starts at the start of the file */
+      int64_t        mlen = 0;
+      int64_t        pos;
+      const uint8_t *map;
+      /* v7: the frontend lends them itself */
+      if (filestream_view_cb)
+      {
+         int64_t got = filestream_view_cb(stream->hfile, (uint64_t)len, ptr);
+         if (got >= 0 || !filestream_mapped_ptr_cb)
+            return got;
+      }
+      map = filestream_mapped_ptr_cb
+         ? filestream_mapped_ptr_cb(stream->hfile, &mlen) : NULL;
+      if (!map || (pos = filestream_raw_tell(stream)) < 0 || pos >= mlen)
+         return -1;
+      if (len > mlen - pos)
+         len = mlen - pos;
+      if (filestream_raw_seek(stream, pos + len,
+               RETRO_VFS_SEEK_POSITION_START) < 0)
+         return -1;
+      *ptr = map + pos;
+      return len;
+   }
+   return retro_vfs_file_view_impl(
+         (libretro_vfs_implementation_file*)stream->hfile,
+         (uint64_t)len, ptr);
 }
 
 int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
@@ -1918,6 +2078,169 @@ int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
    return output;
 }
 
+const uint8_t *filestream_map(RFILE *stream, int64_t *len)
+{
+   if (len)
+      *len = 0;
+   if (!stream)
+      return NULL;
+   if (filestream_read_cb)
+      return filestream_map_cb ? filestream_map_cb(stream->hfile, len) : NULL;
+   return retro_vfs_file_map_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, len);
+}
+
+bool filestream_identity(RFILE *stream, struct retro_vfs_file_identity *id)
+{
+   if (!id)
+      return false;
+   memset(id, 0, sizeof(*id));
+   if (!stream)
+      return false;
+   if (filestream_read_cb)
+      return filestream_identity_cb
+         && filestream_identity_cb(stream->hfile, id);
+   return retro_vfs_file_identity_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, id);
+}
+
+int filestream_stat_identity(const char *path,
+      struct retro_vfs_file_identity *id)
+{
+   if (!id)
+      return -1;
+   memset(id, 0, sizeof(*id));
+   if (filestream_read_cb)
+      return filestream_stat_identity_cb
+         ? filestream_stat_identity_cb(path, id) : -1;
+   return retro_vfs_stat_identity_impl(path, id);
+}
+
+bool filestream_volume(RFILE *stream, unsigned want,
+      struct retro_vfs_volume *vol)
+{
+   if (!vol)
+      return false;
+   memset(vol, 0, sizeof(*vol));
+   if (!stream)
+      return false;
+   if (filestream_read_cb)
+      return filestream_volume_cb
+         && filestream_volume_cb(stream->hfile, want, vol);
+   return retro_vfs_file_volume_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, want, vol);
+}
+
+int filestream_stat_volume(const char *path, unsigned want,
+      struct retro_vfs_volume *vol)
+{
+   if (!vol)
+      return -1;
+   memset(vol, 0, sizeof(*vol));
+   if (filestream_read_cb)
+      return filestream_stat_volume_cb
+         ? filestream_stat_volume_cb(path, want, vol) : -1;
+   return retro_vfs_stat_volume_impl(path, want, vol);
+}
+
+size_t filestream_verity_measure(RFILE *stream, uint8_t *digest, size_t cap)
+{
+   if (!stream || !digest)
+      return 0;
+   if (filestream_read_cb)
+      return filestream_verity_measure_cb
+         ? filestream_verity_measure_cb(stream->hfile, digest, cap) : 0;
+   return retro_vfs_file_verity_measure_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, digest, cap);
+}
+
+int filestream_verity_enable(RFILE *stream)
+{
+   if (!stream)
+      return -1;
+   if (filestream_read_cb)
+      return filestream_verity_enable_cb
+         ? filestream_verity_enable_cb(stream->hfile) : 0;
+   return retro_vfs_file_verity_enable_impl(
+         (libretro_vfs_implementation_file*)stream->hfile);
+}
+
+int64_t filestream_read_at(RFILE *stream, void *data, int64_t len,
+      int64_t offset)
+{
+   if (!stream || len < 0)
+      return -1;
+   /* The file itself, at the offset: the stream's position, its
+    * read-ahead and its last operation are not touched, which is what
+    * lets several threads call this at once */
+   if (filestream_read_cb)
+      return filestream_read_at_cb
+         ? filestream_read_at_cb(stream->hfile, data, (uint64_t)len, offset)
+         : -1;
+   return retro_vfs_file_read_at_impl(
+         (libretro_vfs_implementation_file*)stream->hfile,
+         data, (uint64_t)len, offset);
+}
+
+int64_t filestream_write_at(RFILE *stream, const void *data, int64_t len,
+      int64_t offset)
+{
+   if (!stream || len < 0)
+      return -1;
+   if (filestream_write_cb)
+      return filestream_write_at_cb
+         ? filestream_write_at_cb(stream->hfile, data, (uint64_t)len, offset)
+         : -1;
+   return retro_vfs_file_write_at_impl(
+         (libretro_vfs_implementation_file*)stream->hfile,
+         data, (uint64_t)len, offset);
+}
+
+int64_t filestream_writev(RFILE *stream,
+      const struct retro_vfs_span *spans, size_t count)
+{
+   int64_t output = 0;
+   size_t  i;
+
+   if (!stream || (count && !spans))
+      return -1;
+
+   /* As filestream_write: back on the logical position first */
+   filestream_rbuf_discard(stream);
+   if (stream->last_io == FILESTREAM_LAST_IO_READ)
+      filestream_raw_seek(stream, 0, RETRO_VFS_SEEK_POSITION_CURRENT);
+   stream->last_io = FILESTREAM_LAST_IO_WRITE;
+
+   if (!filestream_write_cb)
+      output = retro_vfs_file_writev_impl(
+            (libretro_vfs_implementation_file*)stream->hfile, spans, count);
+   else
+   {
+      /* A core's VFS has no gathered write: one piece at a time */
+      for (i = 0; i < count; i++)
+      {
+         int64_t one;
+         if (!spans[i].len)
+            continue;
+         if ((one = filestream_write_cb(stream->hfile, spans[i].data,
+                     (uint64_t)spans[i].len)) < 0)
+         {
+            if (!output)
+               output = VFS_ERROR_RETURN_VALUE;
+            break;
+         }
+         output += one;
+         if ((uint64_t)one < spans[i].len)
+            break;
+      }
+   }
+
+   if (output == VFS_ERROR_RETURN_VALUE)
+      stream->err_flag = true;
+
+   return output;
+}
+
 int filestream_putc(RFILE *stream, int c)
 {
    char c_char = (char)c;
@@ -1928,16 +2251,48 @@ int filestream_putc(RFILE *stream, int c)
       : EOF;
 }
 
+#define FILESTREAM_PRINTF_CAP 1024
+
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 {
-   static char buffer[8 * 1024];
-   int _len = vsnprintf(buffer, sizeof(buffer),
-         format, args);
+   va_list args_copy;
+   int     _len;
+
+   if (!stream)
+      return -1;
+   if (!stream->pbuf)
+   {
+      if (!(stream->pbuf = (char*)malloc(FILESTREAM_PRINTF_CAP)))
+         return -1;
+      stream->pbuf_cap = FILESTREAM_PRINTF_CAP;
+   }
+
+#ifdef __va_copy
+   __va_copy(args_copy, args);
+#else
+   va_copy(args_copy, args);
+#endif
+   _len = vsnprintf(stream->pbuf, stream->pbuf_cap, format, args);
+   /* a longer line: once more, into room for it, kept for the next */
+   if (_len >= 0 && (size_t)_len >= stream->pbuf_cap)
+   {
+      char *grown = (char*)malloc((size_t)_len + 1);
+      if (grown)
+      {
+         free(stream->pbuf);
+         stream->pbuf     = grown;
+         stream->pbuf_cap = (size_t)_len + 1;
+         vsnprintf(stream->pbuf, stream->pbuf_cap, format, args_copy);
+      }
+      else
+         _len = -1;
+   }
+   va_end(args_copy);
    if (_len < 0)
       return -1;
-   else if (_len == 0)
+   if (_len == 0)
       return 0;
-   return (int)filestream_write(stream, buffer, _len);
+   return (int)filestream_write(stream, stream->pbuf, _len);
 }
 
 int filestream_printf(RFILE *stream, const char* format, ...)
@@ -1966,11 +2321,10 @@ int filestream_close(RFILE *stream)
       output = retro_vfs_file_close_impl(
             (libretro_vfs_implementation_file*)fp);
 
-   if (output == 0)
-   {
-      free(stream->rbuf);
-      free(stream);
-   }
+   /* VFS close consumes the handle even on failure (VFS API v1). */
+   free(stream->rbuf);
+   free(stream->pbuf);
+   free(stream);
 
    return output;
 }
@@ -2049,9 +2403,13 @@ static int64_t filestream_read_file_to_eof(RFILE *file, void **buf)
 
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 {
+   int close_result;
    int64_t ret              = 0;
    int64_t content_buf_size = 0;
    void *content_buf        = NULL;
+#if defined(VFS_DESCRIPTOR_READ_ALIGN)
+   size_t content_buf_cap   = 0;
+#endif
    /* This function is the definition of a bulk sequential read: open,
     * take the whole file in one go, close.  Saying so lets the VFS
     * skip a read buffer that cannot be reused - the bytes are already
@@ -2088,8 +2446,10 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
       if ((ret = filestream_read_file_to_eof(file, &content_buf)) < 0)
          goto error;
 
-      if (filestream_close(file) != 0)
-         free(file);
+      close_result = filestream_close(file);
+      file = NULL;
+      if (close_result != 0)
+         goto error;
 
       *buf = content_buf;
       if (len)
@@ -2121,8 +2481,19 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
          || (uint64_t)content_buf_size >  FILESTREAM_READ_FILE_MAX)
       goto error;
 
+#if defined(VFS_DESCRIPTOR_READ_ALIGN)
+   /* Whole lines from a line boundary, with a line past them for the
+    * terminator, so each request below can ask for whole lines and
+    * the read lands in place. memalign()ed storage is what free()
+    * takes on the targets that set this. */
+   content_buf_cap = (((size_t)content_buf_size + VFS_DESCRIPTOR_READ_ALIGN - 1)
+         & ~(size_t)(VFS_DESCRIPTOR_READ_ALIGN - 1)) + VFS_DESCRIPTOR_READ_ALIGN;
+   if (!(content_buf = memalign(VFS_DESCRIPTOR_READ_ALIGN, content_buf_cap)))
+      goto error;
+#else
    if (!(content_buf = malloc((size_t)content_buf_size + 1)))
       goto error;
+#endif
 
    /* Read in a loop rather than trusting a single call to satisfy the
     * whole request.  A read is permitted to come up short and try
@@ -2149,6 +2520,16 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 
       if (want > FILESTREAM_BULK_READ_MAX)
          want = FILESTREAM_BULK_READ_MAX;
+#if defined(VFS_DESCRIPTOR_READ_ALIGN)
+      /* Up to the next whole line: the file ends inside it and the
+       * read stops there. The terminator's line stays out of reach. */
+      want = (want + VFS_DESCRIPTOR_READ_ALIGN - 1)
+            & ~(int64_t)(VFS_DESCRIPTOR_READ_ALIGN - 1);
+      if ((uint64_t)want > (uint64_t)(content_buf_cap
+               - VFS_DESCRIPTOR_READ_ALIGN) - (uint64_t)ret)
+         want = (int64_t)(content_buf_cap - VFS_DESCRIPTOR_READ_ALIGN
+               - (size_t)ret);
+#endif
 
       if ((got = filestream_read(file, (uint8_t*)content_buf + ret, want)) < 0)
          goto error;
@@ -2171,8 +2552,10 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    if (ret == 0)
       goto error;
 
-   if (filestream_close(file) != 0)
-      free(file);
+   close_result = filestream_close(file);
+   file = NULL;
+   if (close_result != 0)
+      goto error;
 
    *buf    = content_buf;
 
@@ -2186,8 +2569,8 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    return 1;
 
 error:
-   if (filestream_close(file) != 0)
-      free(file);
+   if (file)
+      filestream_close(file);
    if (content_buf)
       free(content_buf);
    if (len)
@@ -2209,75 +2592,127 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
    if (!file)
       return false;
    ret = filestream_write(file, data, size);
+   return filestream_close(file) == 0 && ret == size;
+}
+
+/* <path>.tmp, the sibling an atomic write goes through; NULL on OOM */
+static char *filestream_atomic_temp_path(const char *path)
+{
+   size_t path_len = strlen(path);
+   char *temp_path = (char*)malloc(path_len + sizeof(".tmp"));
+   if (!temp_path)
+      return NULL;
+   memcpy(temp_path, path, path_len);
+   memcpy(temp_path + path_len, ".tmp", sizeof(".tmp"));
+   return temp_path;
+}
+
+RFILE *filestream_open_atomic(const char *path)
+{
+   RFILE *file;
+   char *temp_path;
+
+   if (!path || !*path)
+      return NULL;
+   if (!(temp_path = filestream_atomic_temp_path(path)))
+      return NULL;
+
+   file = filestream_open(temp_path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+   free(temp_path);
+   return file;
+}
+
+bool filestream_atomic_temp_name(char *s, size_t len, const char *path)
+{
+   size_t path_len;
+   if (!s || !path || !*path)
+      return false;
+   path_len = strlen(path);
+   if (path_len + sizeof(".tmp") > len)
+      return false;
+   memcpy(s, path, path_len);
+   memcpy(s + path_len, ".tmp", sizeof(".tmp"));
+   return true;
+}
+
+int filestream_commit_atomic(RFILE *file, const char *path, bool ok)
+{
+   if (!file)
+      return -1;
+
+   /* A buffered write reports a full disk at close, not at write,
+    * so both have to agree before the rename goes ahead. */
    if (filestream_close(file) != 0)
-      free(file);
-   return (ret == size);
+      ok = false;
+
+   return filestream_finish_atomic(path, ok);
+}
+
+int filestream_finish_atomic(const char *path, bool ok)
+{
+   char *temp_path;
+
+   if (!path || !*path || !(temp_path = filestream_atomic_temp_path(path)))
+      return -1;
+
+   if (!ok)
+   {
+      filestream_delete(temp_path);
+      free(temp_path);
+      return -1;
+   }
+
+   if (filestream_rename(temp_path, path) == 0)
+   {
+      free(temp_path);
+      return 0;
+   }
+
+   /* The built-in rename replaces the destination on every platform,
+    * and puts it back when its replacement cannot be moved in, so a
+    * failure there leaves the old file as it was.  A frontend's
+    * rename may refuse an existing destination, as the libretro VFS
+    * API allows, so that one needs the target gone first. */
+   if (filestream_rename_cb)
+   {
+      filestream_delete(path);
+      if (filestream_rename(temp_path, path) == 0)
+      {
+         free(temp_path);
+         return 0;
+      }
+   }
+
+   free(temp_path);
+   return 1;
 }
 
 bool filestream_write_file_atomic(const char *path,
       const void *data, int64_t size)
 {
-   int64_t  ret       = 0;
-   size_t   path_len  = 0;
-   char    *temp_path = NULL;
-   RFILE   *file      = NULL;
+   int ret;
+   RFILE *file = filestream_open_atomic(path);
 
-   if (!path || !*path)
-      return false;
-
-   path_len  = strlen(path);
-   temp_path = (char*)malloc(path_len + sizeof(".tmp"));
-   if (!temp_path)
-      return false;
-   memcpy(temp_path, path, path_len);
-   memcpy(temp_path + path_len, ".tmp", sizeof(".tmp"));
-
-   file = filestream_open(temp_path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
    if (!file)
-   {
-      free(temp_path);
       return false;
-   }
 
-   ret = filestream_write(file, data, size);
+   ret = filestream_commit_atomic(file, path,
+         filestream_write(file, data, size) == size);
 
-   /* A buffered write reports a full disk at close, not at write,
-    * so both have to agree before the rename goes ahead. */
-   if (filestream_close(file) != 0)
+   /* Written but not renamed into place */
+   if (ret == 1)
    {
-      free(file);
-      filestream_delete(temp_path);
-      free(temp_path);
-      return false;
+      char *temp_path = filestream_atomic_temp_path(path);
+      if (temp_path)
+      {
+         filestream_delete(temp_path);
+         free(temp_path);
+      }
    }
 
-   if (ret != size)
-   {
-      filestream_delete(temp_path);
-      free(temp_path);
-      return false;
-   }
-
-   if (filestream_rename(temp_path, path) == 0)
-   {
-      free(temp_path);
-      return true;
-   }
-
-   /* POSIX rename replaces the destination; the Win32 one refuses an
-    * existing destination, so it needs the target gone first. */
-   filestream_delete(path);
-   if (filestream_rename(temp_path, path) == 0)
-   {
-      free(temp_path);
-      return true;
-   }
-
-   filestream_delete(temp_path);
-   free(temp_path);
-   return false;
+   return ret == 0;
 }
 
 char *filestream_getline(RFILE *stream)

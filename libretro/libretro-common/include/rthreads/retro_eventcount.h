@@ -112,13 +112,31 @@
  *                        be had - no ntdll entry points and no TLS index
  *                        left for the event - the object falls back to
  *                        the scond backend below rather than failing.
+ *   Switch               the Horizon address arbiter (svcWaitForAddress /
+ *                        svcSignalToAddress), the futex shape, on
+ *                        firmware 4.0.0 and newer; the scond backend
+ *                        below on older firmware, decided at init.
+ *   macOS / iOS / BSDs   the same waiter list, slept on with a semaphore
+ *                        of the waiting thread's own - a Mach semaphore
+ *                        on Darwin, a POSIX one on the BSDs - kept for
+ *                        the thread's life.  Every call is in Mac OS X
+ *                        10.4's headers, so one binary runs from there
+ *                        up; no mutex, and one signal per parked waiter.
+ *   3DS                  the 3DS address arbiter (svcArbitrateAddress),
+ *                        the futex shape with a less-than comparison,
+ *                        which the climbing epoch turns into an equal.
+ *   Vita / PS3 / Wii U   the same list, slept on with a kernel semaphore
+ *                        (an auto-reset OSEvent on the Wii U) drawn from
+ *                        a lock-free pool for the length of the park,
+ *                        since their threads have no storage of their
+ *                        own to keep one in.
  *   everything else      rthreads scond, with the lock taken only across
  *                        the sleep itself
  *
  * The scond backend is not a degraded mode; it is correct and it is what
- * macOS, the BSDs and the console ports use.  What it costs is one lock
- * acquisition per notify while a consumer is parked, which is the case
- * where a syscall was going to happen anyway.
+ * the console ports use.  What it costs is one lock acquisition per
+ * notify while a consumer is parked, which is the case where a syscall
+ * was going to happen anyway.
  *
  * Where the atomics themselves are not lock-free, the handshake that
  * lets notify skip the lock cannot be relied on, so that build takes the
@@ -140,13 +158,37 @@ typedef struct retro_eventcount
 {
    struct slock       *lock;    /* NULL unless the backend needs a condvar   */
    struct scond       *cond;    /* NULL unless the backend needs a condvar   */
-#if defined(_WIN32) && !defined(_XBOX) && defined(RETRO_ATOMIC_HAS_PTR)
-   /* Win32 keeps its own waiter list: the blocks live on the waiters'
-    * stacks and the low bit of the head is the list's spin lock.  No
+#if defined(RETRO_ATOMIC_HAS_PTR)
+   /* Win32, Darwin and the BSDs keep their own waiter list: the blocks
+    * live on the waiters' stacks and the low bit of the head is the
+    * list's spin bit, held for the instructions of one link.  No
     * caller mutex is involved, which is the whole point of it -- a
-    * condition variable would re-acquire one on every wake. */
+    * condition variable would re-acquire one on every wake.  Present
+    * wherever the pointer atomics are, so a forced backend on another
+    * host has it too; unused by the futex and scond backends. */
    retro_atomic_ptr_t  waitlist;
 #endif
+   /* One cache line on purpose, and measured that way. The notifier
+    * writes epoch and reads waiters; a waiter writes waiters and reads
+    * epoch, and both writes are sequentially-consistent
+    * read-modify-writes, so on one line the two sides take it exclusive
+    * in turn. Padding them apart looks like the obvious fix and is not:
+    * each side reads BOTH cursors on every operation, so separated,
+    * each pays two lines where one served.
+    *
+    * Measured on 32 cores, shared against padded, medians over nine
+    * rounds: with the operations punctuating real work - which is what
+    * every caller in the tree does, a notify after a frame or a slice -
+    * no difference at all, 1.00 with the bracket inside a percent,
+    * whether one waiter or four. In a tight loop the direction is not
+    * even consistent: one notifier and one waiter lose a third of the
+    * notify rate when separated (0.67), four waiters gain a seventh
+    * (1.13). Neither regime is a caller here, and the padding would
+    * cost the video ring's own shape - one notifier, one waiter - for
+    * nothing.
+    *
+    * retro_spsc pads its cursors because its two sides read only their
+    * own; this does not, because both sides read both. */
    retro_atomic_int_t  epoch;   /* bumped once per notify                    */
    retro_atomic_int_t  waiters; /* threads inside a prepare/commit window    */
 } retro_eventcount_t;
@@ -163,6 +205,12 @@ typedef struct retro_eventcount
  */
 bool retro_eventcount_init(retro_eventcount_t *ec);
 
+/* As init, but fail before allocating a mutex/condition-variable fallback.
+ * Required by owners whose threading contract permits lock-free parking only.
+ * On failure the object must not be used or passed to free. */
+bool retro_eventcount_init_lock_free(retro_eventcount_t *ec);
+
+
 /**
  * retro_eventcount_free:
  * @ec : object to release.
@@ -171,6 +219,16 @@ bool retro_eventcount_init(retro_eventcount_t *ec);
  * call on @ec.  Safe on a zeroed object and on one init failed for.
  */
 void retro_eventcount_free(retro_eventcount_t *ec);
+
+/**
+ * retro_eventcount_thread_cleanup:
+ *
+ * Releases this thread's cached backend event, timer or semaphore after its
+ * last wait returns. Call before an owning thread exits or its module unloads.
+ * Safe before init and on repeated calls; later waits may recreate the cache.
+ * Other threads' caches and eventcount objects are unchanged.
+ */
+void retro_eventcount_thread_cleanup(void);
 
 /**
  * retro_eventcount_notify:
@@ -226,24 +284,30 @@ void retro_eventcount_commit_wait(retro_eventcount_t *ec, int key);
  *               polls.  A bound long enough to overflow the backend's
  *               own unit is clamped, never wrapped.
  *
- * As retro_eventcount_commit_wait(), bounded in time.
+ * As retro_eventcount_commit_wait(), bounded in time. Nonpositive bounds
+ * only check the epoch and close the registered wait.
  *
  * @return true if @ec was notified, false if the bound expired.  A
  * spurious early return reports true, so the caller's loop still owns
  * the decision.
  */
+#ifndef RETRO_DISABLE_HOST_CLOCK
 bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
       int key, int64_t timeout_us);
+#endif
 
 /**
  * retro_eventcount_spin_iters:
  *
- * @return how many times a waiter spins on its flag word before it
+ * @return how many times a waiter polls eventcount state before it
  * commits to the kernel, as this build resolved it.  Zero on a
  * uniprocessor, where the spin is skipped.  For logs and benchmarks;
  * on Windows it is only meaningful after the first
  * retro_eventcount_init().
  */
+/* RETRO_EVENTCOUNT_FIXED_SPIN selects an iteration-only default at build
+ * time. It bypasses host clock calibration; an explicit iteration-count
+ * environment override remains available. */
 unsigned retro_eventcount_spin_iters(void);
 
 /**

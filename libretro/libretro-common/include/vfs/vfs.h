@@ -27,6 +27,14 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 #include <stdint.h>
+#include <retro_atomic.h>
+
+/* Windows positional I/O keeps a second handle in a pointer atomic; the
+ * volatile backend (a PS2 TU forced onto it, built with MinGW in the
+ * samples) has none, and positional I/O falls back there. */
+#if defined(_WIN32) && !defined(RETRO_ATOMIC_BACKEND_VOLATILE)
+#define VFS_HAVE_AT_HANDLE 1
+#endif
 
 #ifdef RARCH_INTERNAL
 #ifndef VFS_FRONTEND
@@ -41,9 +49,12 @@ typedef void* HANDLE;
 #endif
 
 #ifdef HAVE_CDROM
+struct cdrom_toc;
 typedef struct
 {
    int64_t byte_pos;
+   uint64_t disc_bytes; /* cooked 2048-byte image; zero for CD paths */
+   struct cdrom_toc *toc;
    char *cue_buf;
    size_t cue_len;
    unsigned cur_lba;
@@ -55,6 +66,10 @@ typedef struct
    unsigned char last_frame[2352];
    char drive;
    bool last_frame_valid;
+   bool logical_blocks;
+   bool device_only;
+   bool media_changed; /* bound geometry is stale; reopen before reading */
+   bool io_error;
 } vfs_cdrom_t;
 #endif
 
@@ -83,15 +98,40 @@ typedef struct
  * Listed rather than assumed: the descriptor path compiles everywhere
  * but has only ever run on the mapping targets, so a platform joins
  * this list once its open()/read()/lseek() have been exercised.  A
- * target that is not listed keeps the behaviour it has today. */
+ * target that is not listed keeps the behaviour it has today.
+ *
+ * The POSIX desktops are listed for themselves too: RetroArch reaches
+ * the path on them with HAVE_MMAP, and a core built without it (most
+ * are) gets the same descriptor reads, and with them the identity,
+ * volume and fs-verity answers a stream needs a descriptor for. */
 #ifndef VFS_HAVE_DESCRIPTOR_IO
 #if defined(VFS_HAVE_FILE_MAPPING) \
+ || ((defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+      || defined(__NetBSD__) || defined(__OpenBSD__) \
+      || defined(__DragonFly__)) \
+     && !defined(ORBIS) && !defined(PS2) && !defined(PSP) \
+     && !defined(VITA) && !defined(__SWITCH__) && !defined(GEKKO) \
+     && !defined(_3DS) && !defined(WIIU)) \
  || defined(VITA) \
  || defined(_3DS) \
- || defined(WIIU) \
- || defined(__SWITCH__)
+ || (defined(WIIU) && defined(HAVE_WIIU_DESCRIPTOR_IO)) \
+ || defined(__SWITCH__) \
+ || defined(GEKKO) \
+ || defined(PSP) \
+ || defined(PS2)
 #define VFS_HAVE_DESCRIPTOR_IO 1
 #endif
+#endif
+
+/* Wii U takes the descriptor path only when built with
+ * HAVE_WIIU_DESCRIPTOR_IO (Makefile.wiiu), until it has run on
+ * hardware. Its SD reads land by DMA in whole cache lines, so a
+ * whole-file read there allocates its buffer on a line and asks for
+ * whole lines, which lets the read land in place in one FS call;
+ * VFS_DESCRIPTOR_READ_ALIGN is that line. */
+#if defined(WIIU) && defined(HAVE_WIIU_DESCRIPTOR_IO) \
+ && !defined(VFS_DESCRIPTOR_READ_ALIGN)
+#define VFS_DESCRIPTOR_READ_ALIGN 64
 #endif
 
 /* Descriptor-backed I/O for one-shot writers as well: a stream opened
@@ -107,18 +147,47 @@ typedef struct
  * and an fstat on top of that.  On an SD card every extra stat is a
  * directory lookup, so a bulk extraction pays for all of it per
  * member. */
+/* The desktops (the file mapping targets) take it too, for streams
+ * opened to read and write as well as to write: a caller that writes
+ * in big pieces, or reads and writes a file in place as an emulated
+ * file system does, gets its bytes to and from the descriptor without
+ * a copy through a stdio buffer, and its writes are in the file for
+ * every other handle at once, with no flush.  A caller that writes in
+ * small pieces leaves the hint off and keeps the buffer. */
 #ifndef VFS_HAVE_DESCRIPTOR_WRITE
-#if defined(VITA)
+#if defined(VITA) || defined(GEKKO) || defined(PSP) || defined(PS2) \
+ || defined(VFS_HAVE_FILE_MAPPING)
 #define VFS_HAVE_DESCRIPTOR_WRITE 1
 #endif
 #endif
+
+/* Gathered writes: where a descriptor-written stream can hand several
+ * pieces of memory to the kernel in one writev() call.  POSIX only;
+ * Windows and the consoles write the pieces one by one. */
+#ifndef VFS_HAVE_WRITEV
+#if defined(VFS_HAVE_DESCRIPTOR_WRITE) && defined(HAVE_MMAP) \
+ && (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+  || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)) \
+ && !defined(_WIN32) && !defined(VITA) && !defined(GEKKO) \
+ && !defined(PSP) && !defined(PS2)
+#define VFS_HAVE_WRITEV 1
+#endif
+#endif
+
+/* One piece of memory for a gathered write */
+struct retro_vfs_span
+{
+   const void *data;
+   size_t      len;
+};
 
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,
    VFS_SCHEME_CDROM,
    VFS_SCHEME_SAF,
-   VFS_SCHEME_SMB
+   VFS_SCHEME_SMB,
+   VFS_SCHEME_NFS
 };
 
 #if !(defined(__WINRT__) && defined(__cplusplus_winrt))
@@ -129,13 +198,32 @@ struct libretro_vfs_implementation_file
 #endif
 {
    int64_t size;
+   /* where a stdio stream stands, kept here so a write need not ask
+    * stdio to keep size; -1 when not known, and stdio is asked */
+   int64_t stdio_pos;
    uint64_t mappos;
    uint64_t mapsize;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(HAVE_MMAP)
+   /* mapped read-ahead: where the next hint is due, the last read's end */
+   uint64_t ra_next;
+   uint64_t ra_last;
+#endif
    FILE *fp;
 #ifdef _WIN32
    HANDLE fh;
    /* CreateFileMapping handle backing `mapped`; NULL when unmapped */
    HANDLE map_handle;
+   /* A stream on a handle of its own (not VFS_WIN32_NO_NATIVE): its
+    * position, the part of the file `buf` holds - read from it, or, with
+    * ndirty set, written to it and not yet to the file - and an error */
+   uint64_t npos;
+   uint64_t nbuf_at;
+   size_t   nbuf_len;
+   int      nerr;
+   int      ndirty;
+#if !defined(_XBOX) && !defined(HAVE_MMAP)
+   void *warm;   /* mapped read-ahead thread, NULL until used */
+#endif
 #endif
    char *buf;
    char* orig_path;
@@ -160,10 +248,41 @@ struct libretro_vfs_implementation_file
 #ifdef HAVE_SMBCLIENT
    intptr_t smb_fh;
    intptr_t smb_ctx;
+   intptr_t smb_slot;   /* pool slot held from open to close, 0 if private */
+   intptr_t smb_prefetch; /* struct smb_prefetch *, read-only opens with threads */
+   intptr_t smb_reopen;   /* struct smb_reopen *: how to open it again */
+#endif
+#ifdef HAVE_NFSCLIENT
+   intptr_t nfs_fh;
+   intptr_t nfs_ctx;
+   intptr_t nfs_prefetch; /* struct nfs_prefetch *, read-only opens with threads */
 #endif
 #if defined(HAVE_CDROM) && defined(__APPLE__)
    void *iokit_plugin;   /* IOCFPlugInInterface ** */
    void *iokit_mmc;      /* MMCDeviceInterface ** */
+#endif
+   /* Positional I/O (retro_vfs_file_read_at_impl, _write_at_impl), from
+    * any number of threads at once. append_end: where the next append
+    * goes, plus one; 0 until the first. at_handle (Windows): a handle of
+    * its own on the file, with a position of its own, made at the first
+    * positional call; NULL until then. */
+   retro_atomic_size_t append_end;
+   /* Set by a positional write that wrote, so the size is asked of the
+    * file next time it is wanted; cleared by the query before it asks */
+   retro_atomic_int_t  size_grown;
+#ifdef VFS_HAVE_AT_HANDLE
+   retro_atomic_ptr_t  at_handle;
+   /* at_handle is synchronous - Windows' cached-read fast path - and
+    * held by one call at a time, at_sync_busy saying so; a call that
+    * finds it held takes at_ovl, the same file opened for overlapped
+    * I/O, whose calls Windows runs side by side. Each overlapped call
+    * waits on an event of its own: one of at_ev, claimed by its bit in
+    * at_ev_busy and made at first use, or a passing one when all are in
+    * use. A native stream's own handle serves as its at_handle. */
+   retro_atomic_ptr_t  at_ovl;
+   HANDLE              at_ev[8];
+   retro_atomic_int_t  at_ev_busy;
+   retro_atomic_int_t  at_sync_busy;
 #endif
 };
 #endif

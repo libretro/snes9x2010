@@ -221,10 +221,12 @@ size_t word_wrap(
 {
    char *last_space    = NULL;
    unsigned counter    = 0;
+   unsigned space_counter = 0;
+   bool space_on_line  = false;
    unsigned lines      = 1;
    const char *src_end = src + src_len;
    char *s_start       = s;
-   size_t _len         = len;
+   size_t text_len     = 0;
 
    /* Prevent buffer overflow */
    if (len < src_len + 1)
@@ -235,54 +237,66 @@ size_t word_wrap(
    if (src_len < (size_t)line_width)
       return strlcpy(s, src, len);
 
+   /* Only whitespace changes; rewound spans already contain their text. */
+   text_len = strlcpy(s, src, len);
+
    while (*src != '\0')
    {
-      unsigned char_len = (unsigned)(utf8skip(src, 1) - src);
+      unsigned char_len = (unsigned char)*src < 0x80
+         ? 1 : (unsigned)(utf8skip(src, 1) - src);
       counter++;
 
       if (*src == ' ')
+      {
          last_space = s; /* Remember the location of the whitespace */
+         space_counter = counter;
+         space_on_line = true;
+      }
       else if (*src == '\n')
       {
          /* If newlines embedded in the input,
           * reset the index */
          lines++;
          counter   = 0;
+         space_on_line = false;
 
          /* Early return if remaining src string
           * length is less than line width */
          if (src_end - src <= line_width)
-         {
-            _len = len - (size_t)(s - s_start);
-            return (size_t)(s - s_start) + strlcpy(s, src, _len);
-         }
+            return text_len;
       }
 
-      while (char_len--)
-         *s++ = *src++;
+      s   += char_len;
+      src += char_len;
 
       if (counter >= (unsigned)line_width)
       {
+         unsigned scanned = counter;
          counter = 0;
 
          if (last_space && (max_lines == 0 || lines < max_lines))
          {
+            const char *restart = src - (s - last_space - 1);
             /* Replace nearest (previous) whitespace
              * with newline character */
             *last_space = '\n';
             lines++;
 
-            src        -= s - last_space - 1;
-            s           = last_space + 1;
+            if (space_on_line)
+               counter = scanned - space_counter;
+            else
+            {
+               /* A saved space may precede an embedded newline. */
+               src = restart;
+               s   = last_space + 1;
+            }
             last_space  = NULL;
+            space_on_line = false;
 
             /* Early return if remaining src string
              * length is less than line width */
-            if (src_end - src < line_width)
-            {
-               _len = len - (size_t)(s - s_start);
-               return (size_t)(s - s_start) + strlcpy(s, src, _len);
-            }
+            if (src_end - restart < line_width)
+               return text_len;
          }
       }
    }
@@ -337,6 +351,8 @@ size_t word_wrap_wideglyph(char *s, size_t len,
    const char *src_end               = src + src_len;
    char *s_start                     = s;
    unsigned lines                    = 1;
+   unsigned space_counter            = 0;
+   bool space_on_line                = false;
    /* 'line_width' means max numbers of characters per line,
     * but this metric is only meaningful when dealing with
     * 'regular' glyphs that have an on-screen pixel width
@@ -384,7 +400,8 @@ size_t word_wrap_wideglyph(char *s, size_t len,
    while (*src != '\0')
    {
       size_t remaining;
-      unsigned char_len   = (unsigned)(utf8skip(src, 1) - src);
+      unsigned char_len   = (unsigned char)*src < 0x80
+         ? 1 : (unsigned)(utf8skip(src, 1) - src);
       counter_normalized += 100;
 
       /* Prevent buffer overflow.  `remaining` is computed from
@@ -399,13 +416,18 @@ size_t word_wrap_wideglyph(char *s, size_t len,
          break;
 
       if (*src == ' ')
-         lastspace          = s; /* Remember the location of the whitespace */
+      {
+         lastspace     = s;
+         space_counter = counter_normalized;
+         space_on_line = true;
+      }
       else if (*src == '\n')
       {
          /* If newlines embedded in the input,
           * reset the index */
          lines++;
          counter_normalized = 0;
+         space_on_line      = false;
 
          /* Early return if remaining src string
           * length is less than line width */
@@ -425,16 +447,49 @@ size_t word_wrap_wideglyph(char *s, size_t len,
          counter_normalized += additional_counter_normalized;
       }
 
+      /* A break before this glyph need not copy and decode it twice. */
+      if (lastwideglyph == s && char_len >= 3
+            && counter_normalized >= (unsigned)line_width_normalized
+            && (max_lines == 0 || lines < max_lines)
+            && (unsigned)wideglyph_width < (unsigned)line_width_normalized
+            && char_len + 1 < remaining)
+      {
+         *s++ = '\n';
+         lines++;
+         if (src_end - src <= line_width)
+         {
+            size_t copied;
+            remaining--;
+            copied = strlcpy(s, src, remaining);
+            if (copied >= remaining)
+               copied = remaining - 1;
+            return (size_t)(s - s_start) + copied;
+         }
+         lastwideglyph       = s;
+         counter_normalized = (unsigned)wideglyph_width;
+         space_on_line      = false;
+         memcpy(s, src, char_len);
+         s   += char_len;
+         src += char_len;
+         continue;
+      }
+
       while (char_len--)
          *s++ = *src++;
 
       if (counter_normalized >= (unsigned)line_width_normalized)
       {
+         unsigned scanned = counter_normalized;
+         bool carry_space = space_on_line;
          counter_normalized = 0;
+         space_on_line      = false;
 
          if (max_lines != 0 && lines >= max_lines)
             continue;
-         else if (lastwideglyph 
+         /* Not before a glyph that starts its line: one wider than
+          * the line would be put on a line of its own for ever */
+         else if (lastwideglyph
+              && lastwideglyph != s_start && lastwideglyph[-1] != '\n'
               && (!lastspace || lastwideglyph > lastspace))
          {
             /* Insert newline character */
@@ -443,6 +498,8 @@ size_t word_wrap_wideglyph(char *s, size_t len,
             src           -= s - lastwideglyph;
             s              = lastwideglyph + 1;
             lastwideglyph  = NULL;
+            /* A space before it is on the line ended here */
+            lastspace      = NULL;
 
             /* Early return if remaining src string
              * length is less than line width */
@@ -462,6 +519,14 @@ size_t word_wrap_wideglyph(char *s, size_t len,
              * with newline character */
             *lastspace = '\n';
             lines++;
+            /* The tail after this space has already been measured. */
+            if (carry_space
+                  && src_end - (src - (s - lastspace - 1)) >= line_width)
+            {
+               counter_normalized = scanned - space_counter;
+               lastspace = NULL;
+               continue;
+            }
             src       -= s - lastspace - 1;
             s          = lastspace + 1;
             lastspace  = NULL;
@@ -483,6 +548,35 @@ size_t word_wrap_wideglyph(char *s, size_t len,
 
    *s = '\0';
    return (size_t)(s - s_start);
+}
+
+size_t word_wrap_offset(const char *src, size_t at,
+      const char *wrapped, size_t wrapped_len)
+{
+   size_t i = 0;
+   size_t d = 0;
+   while (i < at && d < wrapped_len)
+   {
+      char w = wrapped[d];
+      char c = src[i];
+      if (w == c)
+         i++;
+      else if (w == '\0' || w == '\n')
+      {
+         /* A line end the wrap made of a space or kept, or one it put
+          * before a wide glyph, which takes no byte of src */
+         if (c == ' ' || c == '\n')
+            i++;
+      }
+      else
+         break;
+      d++;
+   }
+   /* At a glyph a line end was put before: the glyph, not the end */
+   if (i == at && src[i] != ' ' && src[i] != '\n')
+      while (d < wrapped_len && (wrapped[d] == '\0' || wrapped[d] == '\n'))
+         d++;
+   return d;
 }
 
 /**
@@ -648,6 +742,49 @@ unsigned string_hex_to_unsigned(const char *str)
    }
 
    return (unsigned)strtoul(hex_str, NULL, 16);
+}
+
+static int string_hexval(char c)
+{
+   if (c >= '0' && c <= '9')
+      return c - '0';
+   if (c >= 'a' && c <= 'f')
+      return c - 'a' + 10;
+   if (c >= 'A' && c <= 'F')
+      return c - 'A' + 10;
+   return -1;
+}
+
+/* Both digits are read before anything is written, so s == src
+ * (in place) is safe. */
+int string_percent_decode(char *s, size_t len, const char *src)
+{
+   size_t _len = 0;
+   if (!s || !len || !src)
+      return -1;
+   while (*src)
+   {
+      char c = *src;
+      if (c == '%')
+      {
+         int hi = string_hexval(src[1]);
+         int lo = (hi >= 0) ? string_hexval(src[2]) : -1;
+         if (lo >= 0)
+         {
+            c    = (char)((hi << 4) | lo);
+            src += 2;
+         }
+      }
+      if (_len + 1 >= len)
+      {
+         s[_len] = '\0';
+         return -1;
+      }
+      s[_len++] = c;
+      src++;
+   }
+   s[_len] = '\0';
+   return (int)_len;
 }
 
 /**

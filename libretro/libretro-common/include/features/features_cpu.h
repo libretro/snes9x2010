@@ -44,7 +44,9 @@ RETRO_BEGIN_DECLS
  * @return The current time, in ticks.
  * @see retro_perf_callback::get_perf_counter
  */
+#ifndef RETRO_DISABLE_HOST_CLOCK
 retro_perf_tick_t cpu_features_get_perf_counter(void);
+#endif
 
 /**
  * Gets the time in microseconds since some unspecified epoch.
@@ -58,7 +60,9 @@ retro_perf_tick_t cpu_features_get_perf_counter(void);
  * @return The current time, in microseconds.
  * @see retro_perf_callback::get_time_usec
  */
+#ifndef RETRO_DISABLE_HOST_CLOCK
 retro_time_t cpu_features_get_time_usec(void);
+#endif
 
 /**
  * retro_sleep_until_us:
@@ -71,7 +75,9 @@ retro_time_t cpu_features_get_time_usec(void);
  * late, as every sleep may. Not available to the salamander launchers,
  * which do not link features_cpu.c.
  **/
+#ifndef RETRO_DISABLE_HOST_CLOCK
 void retro_sleep_until_us(retro_time_t deadline);
+#endif
 
 /**
  * Returns the available features (mostly SIMD extensions)
@@ -124,8 +130,10 @@ unsigned cpu_features_get_core_amount_physical(void);
  *
  * Entries are operating system processor identifiers, the numbering an
  * affinity mask is built from, ordered by descending core performance
- * and with an SMT sibling placed after the processor it shares a core
- * with. Where the platform publishes no topology the order is simply
+ * (the fast class first, then the larger last-level cache, then the
+ * higher clock) and with an SMT sibling placed after the processor it
+ * shares a core with. Processors outside the calling thread's affinity
+ * mask are left out. Where the platform publishes no topology the order is simply
  * ascending, which names every processor exactly once and so remains
  * usable, just unranked.
  *

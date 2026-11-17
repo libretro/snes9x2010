@@ -64,6 +64,12 @@
  *     tail's line and the consumer's publish starts invalidating it -
  *     which defeats the point for exactly the callers this primitive
  *     exists for.
+ *   - The struct carries no alignment of its own: an embedder on the
+ *     heap gets whatever malloc gives, so the cursors can start at any
+ *     offset within a line.  The pads are therefore sized so that each
+ *     cursor and its private copy sit a full line past the end of the
+ *     previous group, which keeps them on different lines wherever the
+ *     struct lands.
  *
  * Lifetime:
  *   - retro_spsc_init allocates an internal buffer; retro_spsc_free
@@ -130,21 +136,28 @@ RETRO_BEGIN_DECLS
  * subtraction would produce a giant array; guard with a max() so
  * the pad is always at least 1 byte and never underflows. */
 #define RETRO_SPSC_PAD0_BYTES \
-   ((RETRO_SPSC_CACHE_LINE > (sizeof(uint8_t*) + sizeof(size_t))) \
-      ? (RETRO_SPSC_CACHE_LINE - (sizeof(uint8_t*) + sizeof(size_t))) \
+   ((RETRO_SPSC_CACHE_LINE > (sizeof(uint8_t*) + 3 * sizeof(size_t))) \
+      ? (RETRO_SPSC_CACHE_LINE - (sizeof(uint8_t*) + 3 * sizeof(size_t))) \
       : 1)
 /* Each cursor shares its line with that side's private copy of the
- * other cursor (see cached_tail / cached_head below), so the pad is
- * a line less both. */
-#define RETRO_SPSC_PAD1_BYTES \
-   ((RETRO_SPSC_CACHE_LINE > sizeof(retro_atomic_size_t) + sizeof(size_t)) \
-      ? (RETRO_SPSC_CACHE_LINE - sizeof(retro_atomic_size_t) - sizeof(size_t)) \
-      : 1)
+ * other cursor (see cached_tail / cached_head below).  A full line of
+ * pad after the pair puts the next group a line past the pair's last
+ * byte, so the two cannot share a line at any placement of the struct;
+ * a line less the pair would leave them sharing one whenever the
+ * struct starts late enough in a line. */
+#define RETRO_SPSC_PAD1_BYTES RETRO_SPSC_CACHE_LINE
 
 typedef struct retro_spsc
 {
    uint8_t            *buffer;
-   size_t              capacity;   /* power of 2; mask = capacity - 1 */
+   size_t              capacity;   /* power of 2: the most the ring holds */
+   /* The buffer's size less one, also a power of 2: positions wrap
+    * here. Equal to capacity - 1 unless the buffer is mirrored. */
+   size_t              mask;
+   /* The buffer's size when its pages are mapped a second time right
+    * behind it, else 0: a span then runs past the end into the
+    * mirror, and no reservation is cut short at the wrap. */
+   size_t              mirror;
    /* Pad so head sits on a fresh cache line, isolating it from
     * the buffer/capacity fields that init may touch. */
    uint8_t             _pad0[RETRO_SPSC_PAD0_BYTES];
@@ -186,6 +199,22 @@ typedef struct retro_spsc
 bool retro_spsc_init(retro_spsc_t *q, size_t min_capacity);
 
 /**
+ * retro_spsc_init_mirrored:
+ * @q             : The queue.
+ * @min_capacity  : As retro_spsc_init; capacity is the same.
+ *
+ * As retro_spsc_init, but the buffer's pages are mapped twice, back
+ * to back, where the platform allows it, so write_begin and read_begin
+ * return every free or filled byte contiguously, across the wrap. The
+ * buffer is at least a page (an allocation granule on Windows); a ring
+ * smaller than that still holds only @min_capacity rounded up, so
+ * capacity, room and fill read exactly as they would from
+ * retro_spsc_init. Where mirroring is unavailable the queue is a plain
+ * one and q->mirror is 0.
+ */
+bool retro_spsc_init_mirrored(retro_spsc_t *q, size_t min_capacity);
+
+/**
  * retro_spsc_free:
  * @q : The queue.
  *
@@ -214,6 +243,43 @@ void retro_spsc_free(retro_spsc_t *q);
  * stream begins.
  */
 void retro_spsc_clear(retro_spsc_t *q);
+
+/**
+ * retro_spsc_grow:
+ * @q             : The queue.
+ * @min_capacity  : Requested capacity in bytes, rounded up as for
+ *                  retro_spsc_init.
+ *
+ * Moves the queue to a larger buffer of the same kind, mirrored or
+ * not.  The unread data and both cursors carry over unchanged, so a
+ * position the caller recorded in the ring still names the same byte.
+ * A queue already holding @min_capacity is left as it is.
+ *
+ * SAFETY: as retro_spsc_clear, both the producer and the consumer must
+ * be quiesced, and any span either holds is invalid afterwards.
+ *
+ * Returns: true on success; false on allocation failure, with the
+ * queue untouched.
+ */
+bool retro_spsc_grow(retro_spsc_t *q, size_t min_capacity);
+
+/**
+ * retro_spsc_grow_into:
+ * @q : The queue.
+ * @n : A queue from retro_spsc_init or retro_spsc_init_mirrored, empty,
+ *      at least as large as @q.
+ *
+ * retro_spsc_grow with the buffer allocated by the caller, so the move
+ * itself allocates and frees nothing: @q takes @n's buffer with its
+ * unread data and cursors, and @n is left holding @q's old buffer for
+ * the caller to retro_spsc_free.  The allocation and the free can then
+ * be on a thread other than the one that moves.
+ *
+ * SAFETY: as retro_spsc_grow.
+ *
+ * Returns: false, with neither queue touched, if @n is the smaller.
+ */
+bool retro_spsc_grow_into(retro_spsc_t *q, retro_spsc_t *n);
 
 /**
  * retro_spsc_write_avail:
@@ -256,6 +322,17 @@ size_t retro_spsc_read_avail(const retro_spsc_t *q);
  */
 size_t retro_spsc_write(retro_spsc_t *q, const void *data, size_t bytes);
 
+/* Producer-only, all-or-nothing write of the concatenation of two spans.
+ * Returns the total byte count on success, or zero if the whole record does
+ * not fit (also for an empty record). No partial record is ever published.
+ * Either source may be NULL when its length is zero. Nonempty sources must
+ * be readable and must not overlap the queue's storage. Oversized lengths,
+ * including sums that would overflow size_t, are rejected without reading
+ * either source. The initialized queue and single-producer rules of write()
+ * apply. Consumers preserve record framing by reading complete records. */
+size_t retro_spsc_write_pair(retro_spsc_t *q, const void *first,
+      size_t first_bytes, const void *second, size_t second_bytes);
+
 /* Producer-only whole-frame write; returns frames, not bytes. Free bytes
  * shorter than one frame remain unused. The byte queue capacity need not be
  * divisible by frame_bytes, and frames may wrap across its physical end.
@@ -296,6 +373,18 @@ size_t retro_spsc_read(retro_spsc_t *q, void *data, size_t bytes);
  */
 size_t retro_spsc_peek(const retro_spsc_t *q, void *data, size_t bytes);
 
+/* Producer-only reservation of exactly bytes contiguous writable bytes.
+ * Unlike write_begin(), this refreshes the consumer cursor only when its
+ * cached value does not cover the requested record. No cursor is published.
+ * Returns false and sets *ptr to NULL for zero/oversized requests, insufficient
+ * free space, or a physical wrap on a non-mirrored ring. A failed reservation
+ * writes no payload; the caller may fall back to write() for a wrapped record.
+ * On success, write at most bytes to *ptr and publish with write_end(), or
+ * abandon with write_end(q, 0). Only one reservation may be outstanding;
+ * complete it before another producer data operation. Alignment and lifetime
+ * follow write_begin(). The queue must be initialized and ptr must be valid. */
+bool retro_spsc_write_reserve(retro_spsc_t *q, void **ptr, size_t bytes);
+
 /**
  * retro_spsc_write_begin:
  * @q   : The queue.
@@ -304,7 +393,8 @@ size_t retro_spsc_peek(const retro_spsc_t *q, void *data, size_t bytes);
  *
  * Producer-side zero-copy reservation.  Returns the number of bytes
  * that can be written CONTIGUOUSLY at *@ptr - this is min(total free
- * space, distance to the physical end of the ring), so it can be
+ * space, distance to the physical end of the ring; on a mirrored ring
+ * the total free space alone), so it can be
  * smaller than retro_spsc_write_avail() when the head is near the
  * wrap point.  No cursor moves; call retro_spsc_write_end() with the
  * number of bytes actually written (which may be 0, and must not
@@ -337,6 +427,24 @@ size_t retro_spsc_write_begin(retro_spsc_t *q, void **ptr);
  */
 void retro_spsc_write_end(retro_spsc_t *q, size_t bytes);
 
+/* Consumer-only borrowed view of up to bytes readable bytes, including wrap.
+ * Returns the total available count, capped at bytes. The first span is
+ * *first_bytes long; the second is return_value - *first_bytes long. A missing
+ * span has a NULL pointer. All outputs are zero/NULL when the return is zero.
+ * Unlike read_begin(), only a cached producer cursor that does not cover the
+ * requested bytes is refreshed. No payload is copied and no cursor moves.
+ *
+ * Both byte-addressed spans stay stable until read_end(). Finish with
+ * read_end(q, consumed), consuming a prefix up to the returned total. To
+ * abandon, use read_end(q, 0). Only one nonempty view may be outstanding;
+ * finish it before another consumer data operation or queue resize/free.
+ * Do not keep or access
+ * either pointer after read_end, or assume alignment beyond the queue's byte
+ * addressing. The queue must be initialized. All three output pointers must
+ * name valid, distinct output locations outside the queue and its storage. */
+size_t retro_spsc_read_begin_pair(retro_spsc_t *q, const void **first,
+      size_t *first_bytes, const void **second, size_t bytes);
+
 /**
  * retro_spsc_read_begin:
  * @q   : The queue.
@@ -345,8 +453,9 @@ void retro_spsc_write_end(retro_spsc_t *q, size_t bytes);
  *
  * Consumer-side zero-copy drain.  Returns the number of bytes
  * readable CONTIGUOUSLY at *@ptr - min(total buffered, distance to
- * the physical end of the ring).  Wrapped data needs a second
- * begin/end round after consuming the first span.  No cursor moves;
+ * the physical end of the ring; on a mirrored ring all of it).
+ * Otherwise wrapped data needs a second begin/end round after
+ * consuming the first span.  No cursor moves;
  * call retro_spsc_read_end() with the bytes actually consumed.
  *
  * The region stays stable until read_end: the producer cannot write
@@ -361,13 +470,13 @@ size_t retro_spsc_read_begin(retro_spsc_t *q, const void **ptr);
 /**
  * retro_spsc_read_end:
  * @q     : The queue.
- * @bytes : Bytes actually consumed from the span from read_begin.
+ * @bytes : Bytes consumed from read_begin or both read_begin_pair spans.
  *
  * Frees @bytes back to the producer with a release-store on tail.
  * Passing 0 abandons the read.
  *
  * SAFETY: consumer thread only; @bytes must not exceed the span
- * returned by the matching retro_spsc_read_begin.
+ * returned by the matching read_begin or read_begin_pair.
  */
 void retro_spsc_read_end(retro_spsc_t *q, size_t bytes);
 

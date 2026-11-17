@@ -201,6 +201,12 @@ const char *path_get_archive_delim(const char *path)
                /* Check ".apk" */
                else if (c3 == 'a' && c2 == 'p' && c1 == 'k')
                   return delim;
+               /* Check ".rar" */
+               else if (c3 == 'r' && c2 == 'a' && c1 == 'r')
+                  return delim;
+               /* Check ".bz2" */
+               else if (c3 == 'b' && c2 == 'z' && delim[-1] == '2')
+                  return delim;
             }
          }
       }
@@ -292,10 +298,18 @@ bool path_is_compressed_file(const char *path)
    switch (tolower((unsigned char)ext[0]))
    {
       case '7':
-         return ext[1] == 'z' && ext[2] == '\0';
+         return tolower((unsigned char)ext[1]) == 'z' && ext[2] == '\0';
+      case 'b':
+         return tolower((unsigned char)ext[1]) == 'z'
+             && ext[2] == '2'
+             && ext[3] == '\0';
       case 'a':
          return tolower((unsigned char)ext[1]) == 'p'
              && tolower((unsigned char)ext[2]) == 'k'
+             && ext[3] == '\0';
+      case 'r':
+         return tolower((unsigned char)ext[1]) == 'a'
+             && tolower((unsigned char)ext[2]) == 'r'
              && ext[3] == '\0';
       case 'z':
          switch (tolower((unsigned char)ext[1]))
@@ -577,6 +591,7 @@ size_t fill_pathname_parent_dir(char *s,
    return path_parent_dir(s, _len);
 }
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
 /**
  * fill_dated_filename:
  * @s                  : output filename
@@ -635,6 +650,8 @@ size_t fill_str_dated_filename(char *s,
    return _len;
 }
 
+#endif /* RETRO_DISABLE_HOST_CLOCK */
+
 /**
  * path_basedir:
  * @s                  : path
@@ -680,12 +697,24 @@ size_t path_parent_dir(char *s, size_t len)
    if (len && PATH_CHAR_IS_SLASH(s[len - 1]))
    {
       char *last_slash;
+      const char *scheme = strstr(s, "://");
+      const char *q;
       bool was_absolute = path_is_absolute(s);
+
+      /* A scheme is only the path's first component: "://" in a
+       * folder name of a local path is not one. */
+      for (q = s; scheme && q < scheme; q++)
+         if (PATH_CHAR_IS_SLASH(*q))
+            scheme = NULL;
+      if (scheme == s)
+         scheme = NULL;
 
       s[len - 1]        = '\0';
       last_slash        = find_last_slash(s);
 
-      if (was_absolute && !last_slash)
+      /* The slashes of "scheme://" belong to the root. */
+      if (was_absolute && (!last_slash
+            || (scheme && last_slash <= scheme + 2)))
       {
          /* We removed the only slash from what used 
           * to be an absolute path.
@@ -821,14 +850,11 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
    const char *buf_end;
    if (resolve_symlinks)
    {
-      char *real_path;
-      strlcpy(tmp, s, sizeof(tmp));
-      real_path = realpath(tmp, NULL);
+      /* realpath() reads @s and answers in its own buffer: @s is left
+       * as it was when it fails */
+      char *real_path = realpath(s, NULL);
       if (!real_path)
-      {
-         strlcpy(s, tmp, len);
          return NULL;
-      }
       strlcpy(s, real_path, len);
       free(real_path);
       return s;
@@ -915,35 +941,43 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
  *
  * @return Length of the string copied into @s
  **/
-size_t path_relative_to(char *s,
-      const char *path, const char *base, size_t len)
+/* Splits @path and @base at the end of their common leading
+ * directories.  Returns false when no relative form exists (Windows
+ * paths on different drives); the relative form is then @path. */
+static bool path_relative_split(const char *path, const char *base,
+      const char **trimmed_path, const char **trimmed_base)
 {
    size_t i, j;
-   size_t _len;
-   const char *trimmed_path, *trimmed_base;
-
 #ifdef _WIN32
-   /* For different drives, return absolute path */
    if (
-            path
-         && base
-         && path[0] != '\0'
+            path[0] != '\0'
          && path[1] != '\0'
          && base[0] != '\0'
          && base[1] != '\0'
          && path[1] == ':'
          && base[1] == ':'
          && path[0] != base[0])
-      return strlcpy(s, path, len);
+      return false;
 #endif
-
    /* Trim common beginning - recognize both slash types */
    for (i = 0, j = 0; path[i] && base[i] && path[i] == base[i]; i++)
       if (PATH_CHAR_IS_SLASH(path[i]))
          j = i + 1;
+   *trimmed_path = path + j;
+   *trimmed_base = base + i;
+   return true;
+}
 
-   trimmed_path = path + j;
-   trimmed_base = base + i;
+size_t path_relative_to(char *s,
+      const char *path, const char *base, size_t len)
+{
+   size_t i;
+   size_t _len;
+   const char *trimmed_path, *trimmed_base;
+
+   /* For different drives, return absolute path */
+   if (!path_relative_split(path, base, &trimmed_path, &trimmed_base))
+      return strlcpy(s, path, len);
 
    /* Each segment of base turns into ".." */
    _len = 0;
@@ -1098,6 +1132,7 @@ size_t fill_pathname_join_delim(char *s, const char *dir,
 size_t fill_pathname_expand_special(char *s, const char *in_path, size_t len)
 {
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
+   char *start = s;
    if (in_path[0] == '~' || in_path[0] == ':')
    {
       char app_dir[DIR_MAX_LENGTH];
@@ -1112,8 +1147,13 @@ size_t fill_pathname_expand_special(char *s, const char *in_path, size_t len)
 
       if (*app_dir)
       {
+         /* strlcpy() reports the source's length whether or not it
+          * fit: a directory longer than @s leaves the result cut
+          * there, with nothing appended past the end. */
          size_t _len  = strlcpy(s, app_dir, len);
 
+         if (_len >= len)
+            return len ? len - 1 : 0;
          s           += _len;
          len         -= _len;
 
@@ -1121,15 +1161,21 @@ size_t fill_pathname_expand_special(char *s, const char *in_path, size_t len)
          {
             _len      = strlcpy(s, PATH_DEFAULT_SLASH(), len);
 
+            if (_len >= len)
+               return (size_t)(s - start) + (len ? len - 1 : 0);
             s        += _len;
             len      -= _len;
          }
 
-         in_path += 2;
+         in_path++;
+         if (PATH_CHAR_IS_SLASH(*in_path))
+            in_path++;
       }
    }
-#endif
+   return (size_t)(s - start) + strlcpy(s, in_path, len);
+#else
    return strlcpy(s, in_path, len);
+#endif
 }
 
 size_t fill_pathname_abbreviate_special(char *s,
@@ -1309,38 +1355,57 @@ size_t fill_pathname_abbreviated_or_relative(char *s,
       const char *in_refpath, const char *in_path, size_t len)
 {
    size_t _len;
-   char buf_a[PATH_MAX_LENGTH];
-   char buf_b[PATH_MAX_LENGTH];
+   int rel_slashes;
+   const char *trimmed_path, *trimmed_base;
+   /* Both working paths on the heap, to keep the frame within the
+    * 2 KiB thread-stack budget. */
+   char *abs_path = (char*)malloc(2 * PATH_MAX_LENGTH);
+   char *ref_path;
 
-   strlcpy(buf_a, in_path,    sizeof(buf_a));
-   strlcpy(buf_b, in_refpath, sizeof(buf_b));
+   if (!abs_path)
+   {
+      if (len)
+         *s = '\0';
+      return 0;
+   }
+   ref_path = abs_path + PATH_MAX_LENGTH;
 
-   pathname_conform_slashes_to_os(buf_a);
-   pathname_conform_slashes_to_os(buf_b);
+   /* Expand paths which start with :\ to an absolute path */
+   fill_pathname_expand_special(abs_path, in_path, PATH_MAX_LENGTH);
+   pathname_conform_slashes_to_os(abs_path);
 
-   /* Expand paths which start with :\ to an absolute path.
-    * Write into s (used as scratch for the absolute path). */
-   s[0] = '\0';
-   fill_pathname_expand_special(s, buf_a, len);
+   strlcpy(ref_path, in_refpath, PATH_MAX_LENGTH);
+   pathname_conform_slashes_to_os(ref_path);
 
-   /* Get the absolute path if it is not already */
-   if (!path_is_absolute(s))
-      fill_pathname_resolve_relative(s, buf_b, buf_a, len);
-   pathname_conform_slashes_to_os(s);
+   /* Resolve a relative path against the referencing file's directory.
+    * The join still carries its '..' segments and can be far longer
+    * than the result, so it is built at full path size in ref_path
+    * (only its directory is needed for the join) and never in @s. */
+   if (!path_is_absolute(abs_path))
+   {
+      _len = fill_pathname_basedir(ref_path, ref_path, PATH_MAX_LENGTH);
+      strlcpy(ref_path + _len, abs_path, PATH_MAX_LENGTH - _len);
+      path_resolve_realpath(ref_path, PATH_MAX_LENGTH, false);
+      strlcpy(abs_path, ref_path, PATH_MAX_LENGTH);
+      pathname_conform_slashes_to_os(abs_path);
+      strlcpy(ref_path, in_refpath, PATH_MAX_LENGTH);
+      pathname_conform_slashes_to_os(ref_path);
+   }
 
-   /* s now holds the absolute path, buf_a is free.
-    * Compute the relative path into buf_a. */
-   path_relative_to(buf_a, s, buf_b, sizeof(buf_a));
+   /* Depth of the relative form: one '..' per directory left in the
+    * base past the common prefix, plus what remains of the path */
+   if (path_relative_split(abs_path, ref_path, &trimmed_path, &trimmed_base))
+      rel_slashes = get_pathname_num_slashes(trimmed_base)
+                  + get_pathname_num_slashes(trimmed_path);
+   else
+      rel_slashes = get_pathname_num_slashes(abs_path);
 
-   /* buf_b is now also free. Save the absolute path there so we can
-    * pass non-overlapping pointers to fill_pathname_abbreviate_special. */
-   strlcpy(buf_b, s, sizeof(buf_b));
-   _len = fill_pathname_abbreviate_special(s, buf_b, len);
+   _len = fill_pathname_abbreviate_special(s, abs_path, len);
 
    /* Use the shortest path, preferring the relative path */
-   if (     get_pathname_num_slashes(buf_a)
-         <= get_pathname_num_slashes(s))
-      return strlcpy(s, buf_a, len);
+   if (rel_slashes <= get_pathname_num_slashes(s))
+      _len = path_relative_to(s, abs_path, ref_path, len);
+   free(abs_path);
    return _len;
 }
 

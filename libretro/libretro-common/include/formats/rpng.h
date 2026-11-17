@@ -107,8 +107,6 @@ size_t rpng_apng_stream_consumed(const rpng_apng_stream_t *s);
 void rpng_apng_stream_next_span(const rpng_apng_stream_t *s,
       size_t *lo, size_t *hi);
 
-rpng_t *rpng_alloc(void);
-
 void rpng_free(rpng_t *rpng);
 
 bool rpng_iterate_image(rpng_t *rpng);
@@ -118,6 +116,36 @@ int rpng_process_image(rpng_t *rpng,
       bool supports_rgba);
 
 bool rpng_start(rpng_t *rpng);
+
+/* What the image header says, as the PNG stores it: @color_type and
+ * @depth are IHDR's (0 gray, 2 RGB, 3 palette, 4 gray+alpha, 6 RGBA; 1
+ * to 16 bits), @interlace is 1 for Adam7, and @has_trns says a tRNS
+ * chunk was seen - final once rpng_iterate_image has walked the chunks
+ * (returned false), since tRNS sits between IHDR and the image data.
+ * Returns false before IHDR has been read. */
+struct rpng_info
+{
+   unsigned width;
+   unsigned height;
+   uint8_t  depth;
+   uint8_t  color_type;
+   uint8_t  interlace;
+   uint8_t  has_trns;
+};
+
+bool rpng_get_info(const rpng_t *rpng, struct rpng_info *info);
+
+/* Decode into the caller's memory instead of a buffer rpng allocates:
+ * @dst holds the image's rows @stride pixels apart (at least its
+ * width), 32 bits a pixel in the format rpng_process_image is asked
+ * for, and rpng_process_image hands back @dst as the image, which the
+ * caller keeps (it is not to be freed as an allocated one would be).
+ * Set after the chunk walk and before the first rpng_process_image;
+ * NULL goes back to allocating. Pixels between a row's end and the
+ * next row's start are not written.
+ * Returns false when it is too late, IHDR has not been read, or @stride
+ * is short of the width. */
+bool rpng_set_output(rpng_t *rpng, uint32_t *dst, size_t stride);
 
 /* Source pixel format for the encoder.  Bytes-per-pixel alone cannot
  * select the 32-bit path: ARGB32 and RGBA32 are both four bytes per
@@ -139,7 +167,11 @@ enum rpng_pixfmt
     * scaler, so the emitted pixels are identical to the historical
     * convert-then-encode path. */
    RPNG_PIXFMT_XRGB8888,
-   RPNG_PIXFMT_RGB565
+   RPNG_PIXFMT_RGB565,
+   /* 32-bit X8B8G8R8 - R,G,B,X ascending in memory, the RGBA32 byte
+    * order with its fourth byte ignored - encoded as 8-bit RGB (colour
+    * type 2), converted per row inside the encoder like XRGB8888. */
+   RPNG_PIXFMT_XBGR8888
 };
 
 struct rpng_hdr_metadata;
@@ -154,6 +186,27 @@ struct rpng_hdr_metadata;
 bool rpng_save_image_stream_fmt(const uint8_t *data,
       intfstream_t *intf_s, unsigned width, unsigned height, signed pitch,
       enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr);
+
+/* The same encode in steps, for a caller that must not hold its thread
+ * for the whole image: begin writes the header, each step encodes rows
+ * while within(userdata) returns true, asked before every row (the
+ * first row of a step runs whatever the answer; NULL means to the
+ * end), and the step that encodes the last row writes the rest of the
+ * file.  The output is byte-identical to the one-go
+ * encode.  data must stay valid until the encode is done.
+ *
+ * rpng_encode_begin returns NULL on failure; rpng_encode_step returns 0
+ * with rows left, 1 once the file is complete, -1 on an error; free the
+ * encoder with rpng_encode_free either way, done or abandoned.  The
+ * stream stays the caller's. */
+typedef struct rpng_encoder rpng_encoder_t;
+
+rpng_encoder_t *rpng_encode_begin(const uint8_t *data,
+      intfstream_t *intf_s, unsigned width, unsigned height, signed pitch,
+      enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr);
+int rpng_encode_step(rpng_encoder_t *e,
+      bool (*within)(void *userdata), void *userdata);
+void rpng_encode_free(rpng_encoder_t *e);
 
 /* Bytes-per-pixel variant of rpng_save_image_stream_fmt, kept for
  * callers that predate the format enum: 3 = BGR24, 4 = ARGB32,

@@ -32,6 +32,24 @@
 #include <compat/strl.h>
 #include <libretro.h>
 #include <features/features_cpu.h>
+#include "cpu_class.h" /* per-processor class, shared with rthreads */
+#if defined(__linux__)
+#include <sys/syscall.h>
+/* The prototype every Linux libc uses; spelled out so a strict C89
+ * build, where glibc hides it, sees the same one. */
+extern long syscall(long number, ...);
+#endif
+#if defined(__linux__) && (defined(__arm__) || defined(__aarch64__))
+#if defined(HAVE_GETAUXVAL) || \
+      (defined(__GLIBC__) && ((__GLIBC__ > 2) || \
+       (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 16))) || \
+      (defined(__ANDROID__) && defined(__ANDROID_API__) && __ANDROID_API__ >= 18)
+#define CPU_ARM_GETAUXVAL 1
+#include <errno.h>
+#include <sys/auxv.h>
+#include <asm/hwcap.h>
+#endif
+#endif
 #include <retro_atomic.h>
 #include <retro_timers.h>
 
@@ -90,7 +108,9 @@
 #include <sys/sys_time.h>
 #endif
 
-#ifdef GEKKO
+#if defined(GEKKO_NATIVE)
+#include <gekko/gekko.h>
+#elif defined(GEKKO)
 #include <ogc/lwp_watchdog.h>
 #endif
 
@@ -100,9 +120,6 @@
 
 #if defined(HAVE_LIBNX)
 #include <switch.h>
-#elif defined(SWITCH)
-#include <libtransistor/types.h>
-#include <libtransistor/svc.h>
 #endif
 
 #if defined(_3DS)
@@ -168,6 +185,7 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 
 #include <string.h>
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
 retro_perf_tick_t cpu_features_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
@@ -191,6 +209,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
       QueryPerformanceCounter(&c);
       time_ticks = (retro_perf_tick_t)c.QuadPart;
    }
+#elif defined(GEKKO_NATIVE)
+   time_ticks = gk_ticks();
 #elif defined(GEKKO)
    time_ticks = gettime();
 #elif !defined(__MACH__) && !defined(__FreeBSD__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
@@ -238,6 +258,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return sysGetSystemTime();
 #elif !defined(__PSL1GHT__) && defined(__PS3__)
    return sys_time_get_system_time();
+#elif defined(GEKKO_NATIVE)
+   return gk_ticks_to_us(gk_ticks());
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
 #elif defined(WIIU)
@@ -267,6 +289,8 @@ retro_time_t cpu_features_get_time_usec(void)
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
 }
+
+#endif /* RETRO_DISABLE_HOST_CLOCK */
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86) && _MSC_VER > 1310)
 #define CPU_X86
@@ -373,7 +397,89 @@ static unsigned char check_arm_cpu_feature(const char* feature)
 {
    char line[1024];
    unsigned char status = 0;
-   FILE *fp = fopen("/proc/cpuinfo", "r");
+   FILE *fp;
+
+#ifdef CPU_ARM_GETAUXVAL
+   unsigned long mask = 0;
+   unsigned long caps;
+   unsigned long type = AT_HWCAP;
+#if defined(__aarch64__)
+#ifdef HWCAP_ASIMD
+   if (!strcmp(feature, "asimd"))
+      mask = HWCAP_ASIMD;
+#endif
+#ifdef HWCAP_AES
+   if (!strcmp(feature, "aes"))
+      mask = HWCAP_AES;
+#endif
+#ifdef HWCAP_CRC32
+   if (!strcmp(feature, "crc32"))
+      mask = HWCAP_CRC32;
+#endif
+#ifdef HWCAP_SHA1
+   if (!strcmp(feature, "sha1"))
+      mask = HWCAP_SHA1;
+#endif
+#ifdef HWCAP_SHA2
+   if (!strcmp(feature, "sha2"))
+      mask = HWCAP_SHA2;
+#endif
+#ifdef HWCAP_SHA512
+   if (!strcmp(feature, "sha512"))
+      mask = HWCAP_SHA512;
+#endif
+#else
+#ifdef HWCAP_NEON
+   if (!strcmp(feature, "neon"))
+      mask = HWCAP_NEON;
+#endif
+#ifdef HWCAP_VFPv3
+   if (!strcmp(feature, "vfpv3"))
+      mask = HWCAP_VFPv3;
+#endif
+#ifdef HWCAP_VFPv4
+   if (!strcmp(feature, "vfpv4"))
+      mask = HWCAP_VFPv4;
+#endif
+#if defined(AT_HWCAP2) && defined(HWCAP2_AES)
+   if (!strcmp(feature, "aes"))
+   {
+      mask = HWCAP2_AES;
+      type = AT_HWCAP2;
+   }
+#endif
+#if defined(AT_HWCAP2) && defined(HWCAP2_CRC32)
+   if (!strcmp(feature, "crc32"))
+   {
+      mask = HWCAP2_CRC32;
+      type = AT_HWCAP2;
+   }
+#endif
+#if defined(AT_HWCAP2) && defined(HWCAP2_SHA1)
+   if (!strcmp(feature, "sha1"))
+   {
+      mask = HWCAP2_SHA1;
+      type = AT_HWCAP2;
+   }
+#endif
+#if defined(AT_HWCAP2) && defined(HWCAP2_SHA2)
+   if (!strcmp(feature, "sha2"))
+   {
+      mask = HWCAP2_SHA2;
+      type = AT_HWCAP2;
+   }
+#endif
+#endif
+   if (mask)
+   {
+      errno = 0;
+      caps = getauxval(type);
+      if (errno == 0)
+         return (caps & mask) != 0;
+   }
+#endif
+
+   fp = fopen("/proc/cpuinfo", "r");
 
    if (!fp)
       return 0;
@@ -577,6 +683,27 @@ static SYSTEM_LOGICAL_PROCESSOR_INFORMATION *cpu_win32_slpi(DWORD *count)
    *count = _len / (DWORD)sizeof(*buf);
    return buf;
 }
+
+/* Size in KiB of the level-3 cache whose ProcessorMask covers the
+ * processor, from the same GetLogicalProcessorInformation records
+ * (RelationCache entries carry a level, a size and the mask of
+ * processors behind them); 0 where none does. */
+static unsigned cpu_win32_llc_kib(
+      const SYSTEM_LOGICAL_PROCESSOR_INFORMATION *buf, DWORD count,
+      unsigned bit)
+{
+   DWORD i;
+   for (i = 0; i < count; i++)
+   {
+      if (buf[i].Relationship != RelationCache)
+         continue;
+      if (buf[i].Cache.Level != 3)
+         continue;
+      if (buf[i].ProcessorMask & (((ULONG_PTR)1) << bit))
+         return (unsigned)(buf[i].Cache.Size / 1024);
+   }
+   return 0;
+}
 #endif
 
 #if defined(__linux__)
@@ -587,7 +714,7 @@ static SYSTEM_LOGICAL_PROCESSOR_INFORMATION *cpu_win32_slpi(DWORD *count)
  * counts cores. */
 static unsigned linux_core_amount_physical(unsigned logical)
 {
-   char     path[64];
+   char     path[512];
    char     line[64];
    unsigned seen[128];
    unsigned n_seen = 0;
@@ -606,7 +733,7 @@ static unsigned linux_core_amount_physical(unsigned logical)
       unsigned j;
 
       snprintf(path, sizeof(path),
-            "/sys/devices/system/cpu/cpu%u/topology/thread_siblings_list", i);
+            CPU_CLASS_SYSFS "/cpu%u/topology/thread_siblings_list", i);
 
       if (!(fp = fopen(path, "r")))
          continue;
@@ -664,24 +791,64 @@ static unsigned sysfs_read_uint(const char *path, unsigned fallback)
       return fallback;
    return val;
 }
+
+/* Size of the last-level cache the processor sits behind, in KiB,
+ * from "<cpu>/cache/index3/size" (a figure with a K or M suffix); 0
+ * where the kernel publishes none. What separates the two CCDs of an
+ * X3D part, which are one class and near enough one clock. */
+static unsigned sysfs_read_llc_kib(unsigned cpu)
+{
+   char     path[512];
+   char     line[64];
+   unsigned val = 0;
+   char     unit = 0;
+   FILE    *fp;
+
+   snprintf(path, sizeof(path), CPU_CLASS_SYSFS "/cpu%u/cache/index3/size", cpu);
+   if (!(fp = fopen(path, "r")))
+      return 0;
+   line[0] = '\0';
+   if (!fgets(line, sizeof(line), fp))
+      line[0] = '\0';
+   fclose(fp);
+   if (sscanf(line, "%u%c", &val, &unit) < 1)
+      return 0;
+   if (unit == 'M' || unit == 'm')
+      return val * 1024;
+   if (unit == 'G' || unit == 'g')
+      return val * 1024 * 1024;
+   return val;
+}
 #endif
 
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || defined(__linux__)
 struct cpu_proc_rank
 {
-   unsigned freq; /* kHz, higher is a stronger core */
+   unsigned cls;  /* performance class from cpu_class.h, higher is faster */
+   unsigned llc;  /* last-level cache behind the core, KiB */
+   unsigned freq; /* kHz, higher is a stronger core within its class */
    unsigned id;   /* OS processor identifier */
    unsigned smt;  /* 0 for the first processor on its core, else 1 */
 };
 
-/* Strongest core first, a core ahead of its own SMT siblings, and the
- * identifier as the tie-break so the result does not depend on the
- * order the entries were gathered in. */
+/* Fastest class first (the P-cores, the big cluster); within a class
+ * the bigger last-level cache first, then the higher clock; a core
+ * ahead of its own SMT siblings; and the identifier as the tie-break
+ * so the result does not depend on the order the entries were
+ * gathered in. Class comes before everything so an E-core that
+ * happens to clock above a P-core sibling cannot outrank the fast
+ * silicon. Cache comes before clock for the X3D parts: the V-cache
+ * CCD boosts a few percent lower than the other and is the die an
+ * emulator wants to be on. */
 static int cpu_proc_rank_cmp(const void *a, const void *b)
 {
    const struct cpu_proc_rank *l = (const struct cpu_proc_rank *)a;
    const struct cpu_proc_rank *r = (const struct cpu_proc_rank *)b;
 
+   if (l->cls  != r->cls)
+      return (l->cls  > r->cls)  ? -1 : 1;
+   if (l->llc  != r->llc)
+      return (l->llc  > r->llc)  ? -1 : 1;
    if (l->freq != r->freq)
       return (l->freq > r->freq) ? -1 : 1;
    if (l->smt  != r->smt)
@@ -692,9 +859,21 @@ static int cpu_proc_rank_cmp(const void *a, const void *b)
 }
 #endif
 
-size_t cpu_features_get_processor_order(unsigned *s, size_t len)
+/* The order, restricted to processors whose bit is set in allowed
+ * (NULL: no restriction). Split from the public function so a test
+ * can rank a fixture topology under a synthetic affinity mask. */
+static size_t cpu_features_processor_order_masked(
+      const unsigned char *allowed, unsigned *s, size_t len)
 {
    size_t n = 0;
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || defined(__linux__)
+   unsigned char klass[CPU_CLASS_MAX_IDS];
+   size_t        n_class = cpu_class_read(klass, sizeof(klass));
+#define CPU_PROC_CLASS(id) \
+   (((size_t)(id) < n_class) ? klass[(id)] : 0)
+#define CPU_PROC_ALLOWED(id) \
+   (!allowed || ((size_t)(id) < CPU_CLASS_MAX_IDS && allowed[(id)]))
+#endif
 
    if (!s || !len)
       return 0;
@@ -733,6 +912,13 @@ size_t cpu_features_get_processor_order(unsigned *s, size_t len)
                {
                   if (!(mask & (((ULONG_PTR)1) << bit)))
                      continue;
+                  if (!CPU_PROC_ALLOWED(bit))
+                  {
+                     seen++;
+                     continue;
+                  }
+                  rank[n].cls  = CPU_PROC_CLASS(bit);
+                  rank[n].llc  = cpu_win32_llc_kib(buf, count, bit);
                   rank[n].freq = 0;
                   rank[n].id   = bit;
                   rank[n].smt  = seen ? 1 : 0;
@@ -763,18 +949,13 @@ size_t cpu_features_get_processor_order(unsigned *s, size_t len)
 #if defined(__linux__)
    {
       struct cpu_proc_rank *rank;
-      char     path[96];
+      char     path[512];
       unsigned i;
       /* Every processor is ranked before any is handed back: gathering
        * only the first @len of them would sort a set chosen by
        * identifier and hand back the weakest cores on a layout that
        * numbers the little cluster first. */
-      size_t   cap = (size_t)cpu_features_get_core_amount();
-
-      if (cap < 1)
-         cap = 1;
-      if (cap > 1024)
-         cap = 1024;
+      size_t   cap = 1024; /* every processor the kernel publishes; 16 KiB */
 
       if (!(rank = (struct cpu_proc_rank *)
                malloc(cap * sizeof(struct cpu_proc_rank))))
@@ -785,16 +966,20 @@ size_t cpu_features_get_processor_order(unsigned *s, size_t len)
          unsigned first;
 
          snprintf(path, sizeof(path),
-               "/sys/devices/system/cpu/cpu%u/topology/thread_siblings_list", i);
+               CPU_CLASS_SYSFS "/cpu%u/topology/thread_siblings_list", i);
          /* A processor with no sibling list is one the kernel is not
           * publishing, rather than one that shares no core. */
          first = sysfs_read_uint(path, (unsigned)-1);
          if (first == (unsigned)-1)
             continue;
+         if (!CPU_PROC_ALLOWED(i))
+            continue;
 
          snprintf(path, sizeof(path),
-               "/sys/devices/system/cpu/cpu%u/cpufreq/cpuinfo_max_freq", i);
+               CPU_CLASS_SYSFS "/cpu%u/cpufreq/cpuinfo_max_freq", i);
 
+         rank[n].cls  = CPU_PROC_CLASS(i);
+         rank[n].llc  = sysfs_read_llc_kib(i);
          rank[n].freq = sysfs_read_uint(path, 0);
          rank[n].id   = i;
          rank[n].smt  = (i == first) ? 0 : 1;
@@ -820,11 +1005,57 @@ size_t cpu_features_get_processor_order(unsigned *s, size_t len)
    /* No topology to rank by, so name each processor once in order. */
    {
       unsigned amount = cpu_features_get_core_amount();
-      for (n = 0; n < len && n < (size_t)amount; n++)
-         s[n] = (unsigned)n;
+      unsigned i;
+      for (i = 0; n < len && i < amount; i++)
+      {
+         if (allowed && (i >= CPU_CLASS_MAX_IDS || !allowed[i]))
+            continue;
+         s[n++] = i;
+      }
    }
-
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || defined(__linux__)
+#undef CPU_PROC_CLASS
+#undef CPU_PROC_ALLOWED
+#endif
    return n;
+}
+
+size_t cpu_features_get_processor_order(unsigned *s, size_t len)
+{
+#if defined(__linux__) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))
+   unsigned char allowed[CPU_CLASS_MAX_IDS];
+#endif
+   const unsigned char *mask = NULL;
+#if defined(__linux__)
+   {
+      /* The processors this thread may run on: a pin from a parent
+       * process, a container or the user is a boundary, not something
+       * to hand back as a target. */
+      unsigned long bits[CPU_CLASS_MAX_IDS / (8 * sizeof(unsigned long))];
+      memset(bits, 0, sizeof(bits));
+      if (syscall(__NR_sched_getaffinity, 0, sizeof(bits), bits) > 0)
+      {
+         size_t i;
+         for (i = 0; i < CPU_CLASS_MAX_IDS; i++)
+            allowed[i] = (unsigned char)((bits[i / (8 * sizeof(unsigned long))]
+                  >> (i % (8 * sizeof(unsigned long)))) & 1ul);
+         mask = allowed;
+      }
+   }
+#elif defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   {
+      DWORD_PTR proc = 0, sys = 0;
+      if (GetProcessAffinityMask(GetCurrentProcess(), &proc, &sys) && proc)
+      {
+         size_t i;
+         memset(allowed, 0, sizeof(allowed));
+         for (i = 0; i < sizeof(DWORD_PTR) * 8; i++)
+            allowed[i] = (unsigned char)((proc >> i) & 1);
+         mask = allowed;
+      }
+   }
+#endif
+   return cpu_features_processor_order_masked(mask, s, len);
 }
 
 unsigned cpu_features_get_core_amount_physical(void)
@@ -1062,8 +1293,31 @@ static uint64_t cpu_features_probe(void)
       cpu |= RETRO_SIMD_AVX2;
    _val = 0;
    _len = sizeof(_val);
-   if (sysctlbyname("hw.optional.avx512f", &_val, &_len, NULL, 0) == 0 && _val)
-      cpu |= RETRO_SIMD_AVX512;
+   /* RETRO_SIMD_AVX512 means the x86-64-v4 baseline (F, CD, BW, DQ,
+    * VL), so every one of those keys has to answer. Darwin enables ZMM
+    * state lazily on first use, which is why these sysctls and not
+    * xgetbv decide it here. */
+   {
+      static const char *avx512_keys[] = {
+         "hw.optional.avx512f",  "hw.optional.avx512cd",
+         "hw.optional.avx512bw", "hw.optional.avx512dq",
+         "hw.optional.avx512vl"
+      };
+      size_t k;
+      int have_avx512 = 1;
+      for (k = 0; k < sizeof(avx512_keys) / sizeof(avx512_keys[0]); k++)
+      {
+         _val = 0;
+         _len = sizeof(_val);
+         if (!(sysctlbyname(avx512_keys[k], &_val, &_len, NULL, 0) == 0 && _val))
+         {
+            have_avx512 = 0;
+            break;
+         }
+      }
+      if (have_avx512)
+         cpu |= RETRO_SIMD_AVX512;
+   }
    _val = 0;
    _len = sizeof(_val);
    if (sysctlbyname("hw.optional.altivec", &_val, &_len, NULL, 0) == 0 && _val)
@@ -1247,20 +1501,33 @@ static uint64_t cpu_features_probe(void)
       memset(flags7, 0, sizeof(flags7));
 #endif
 
-      if (flags7[1] & (1 << 5))
+      /* AVX2 executes on YMM registers, so like AVX it needs the OS
+       * to save that state, not just the CPUID bit. */
+      if (ymm_state && (flags7[1] & (1 << 5)))
          cpu |= RETRO_SIMD_AVX2;
 
       /* SHA-NI is one bit covering both digests. */
       if (flags7[1] & (1 << 29))
          cpu |= RETRO_SIMD_SHA1 | RETRO_SIMD_SHA256;
 
-      /* AVX-512 Foundation detection.
-       * Requires CPUID leaf 7 sub-leaf 0 EBX bit 16 (AVX-512F),
-       * and OS support for saving ZMM state:
-       * xgetbv XCR0 bits 1,2 (SSE/AVX) and 5,6,7 (opmask, ZMM_Hi256, Hi16_ZMM). */
-      if ((flags7[1] & (1 << 16))
-            && ((xgetbv_x86(0) & 0xe6) == 0xe6))
-         cpu |= RETRO_SIMD_AVX512;
+      /* AVX-512 means the x86-64-v4 baseline: leaf 7 sub-leaf 0 EBX
+       * bits 16 (F), 17 (DQ), 28 (CD), 30 (BW) and 31 (VL). Code that
+       * checks this one flag may then use any of them; that is every
+       * AVX-512 CPU except the Xeon Phi parts, which lack BW/DQ/VL.
+       *
+       * The OS must also save opmask and ZMM state (XCR0 bits 5,6,7 on
+       * top of 1,2). xgetbv is only valid once OSXSAVE is set, and
+       * ymm_state already proved that, so test it first: without it
+       * xgetbv faults on a CPU that has AVX-512 but an OS that never
+       * enabled XSAVE. */
+      {
+         const uint32_t avx512_v4 = (1u << 16) | (1u << 17)
+                                  | (1u << 28) | (1u << 30) | (1u << 31);
+         if (    ymm_state
+               && (((uint32_t)flags7[1] & avx512_v4) == avx512_v4)
+               && ((xgetbv_x86(0) & 0xe6) == 0xe6))
+            cpu |= RETRO_SIMD_AVX512;
+      }
 
       /* Leaf 7 EAX carries the highest sub-leaf the CPU implements, so
        * consult it before asking for sub-leaf 1: an out of range
@@ -1581,6 +1848,7 @@ end:
 #endif
 }
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
 /* Sleep until cpu_features_get_time_usec() reads at least @deadline.
  * It lives here, beside the clock it is measured on, and nowhere a
  * launcher compiles: the salamanders build rtime.c for localtime alone
@@ -1646,3 +1914,5 @@ void retro_sleep_until_us(retro_time_t deadline)
    }
 }
 #endif
+
+#endif /* RETRO_DISABLE_HOST_CLOCK */

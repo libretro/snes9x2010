@@ -1890,24 +1890,18 @@ static size_t rvp8_arena_carve(rvp8_dec *s, uint8_t *base,
    return cur;
 }
 
-/* Parse the frame + picture headers, size all buffers, initialize the
- * token partitions and probability tables. Returns 0 on success; on
- * failure the state needs no cleanup. */
-int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
-{
-   uint32_t ft;
-   int kf, w, h, mbw, mbh, i;
-   uint32_t p0s;
-   int base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
-   int skip_enabled, prob_skip, log2parts, num_parts;
-   int filter_type, lf_level, sharpness;
-   int lf_delta_enabled = 0;
-   int ref_lf_delta[4] = {0,0,0,0}, mode_lf_delta[4] = {0,0,0,0};
-   int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
-   rvp8_bool br;
-   rvp8_bool tbr[8]; /* up to 8 token partitions */
-   const uint8_t *p0;
+#if defined(__GNUC__) || defined(__clang__)
+#define RVP8_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER) && _MSC_VER >= 1300
+#define RVP8_NOINLINE __declspec(noinline)
+#else
+#define RVP8_NOINLINE
+#endif
 
+/* Keep inherited probability storage out of the picture-header parser frame.
+ * No allocation is needed: preserve the same state across its reset. */
+static RVP8_NOINLINE void rvp8_reset(rvp8_dec *s)
+{
    /* Preserve caller-supplied inter setup across the state reset: for an
     * inter frame the persistent decoder fills in dimensions, reference
     * planes and the inherited probability context before calling begin. */
@@ -1920,7 +1914,7 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
    int      save_reflfd[4], save_modelfd[4];
    void    *save_mbinfo;
    uint8_t *save_arena;
-   size_t   save_arena_len, arena_len, zero_len;
+   size_t   save_arena_len;
 
    /* The per-frame scratch arena of a previous decode on this state (the
     * persistent video decoder reuses one rvp8_dec across frames) is kept
@@ -1976,6 +1970,30 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
       memcpy(s->mode_lf_delta, save_modelfd, sizeof(save_modelfd));
    }
 
+}
+
+/* Parse the frame + picture headers, size all buffers, initialize the
+ * token partitions and probability tables. Returns 0 on success; on
+ * failure the state needs no cleanup. */
+int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
+{
+   uint32_t ft;
+   int kf, w, h, mbw, mbh, i;
+   uint32_t p0s;
+   int base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
+   int skip_enabled, prob_skip, log2parts, num_parts;
+   int filter_type, lf_level, sharpness;
+   int lf_delta_enabled = 0;
+   int ref_lf_delta[4] = {0,0,0,0}, mode_lf_delta[4] = {0,0,0,0};
+   int seg_enabled, seg_abs, seg_qp[4], seg_lf[4], seg_prob[3];
+   rvp8_bool br;
+   rvp8_bool tbr[8]; /* up to 8 token partitions */
+   const uint8_t *p0;
+
+   size_t arena_len, zero_len;
+
+   rvp8_reset(s);
+
    if (len < 3) return -1;
    ft = (uint32_t)data[0] | ((uint32_t)data[1]<<8) | ((uint32_t)data[2]<<16);
    kf = !(ft & 1);
@@ -1997,7 +2015,7 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
       if (data[3]!=0x9D || data[4]!=0x01 || data[5]!=0x2A) return -1;
       w = (data[6]|(data[7]<<8)) & 0x3FFF;
       h = (data[8]|(data[9]<<8)) & 0x3FFF;
-      if (!w || !h || w > 16384 || h > 16384) return -1;
+      if (!w || !h) return -1;
       p0 = data + 10;
    }
    else
@@ -2275,9 +2293,11 @@ tp_ok:
     * present and this is an inter frame, allocate it here. */
    if (s->is_inter && !s->mb_info)
       s->mb_info = calloc((size_t)mbw * mbh, sizeof(rvp8_mbinfo));
-   memset(s->yb, 127, s->ys * mbh * 16);
-   memset(s->ub, 127, s->uvs * mbh * 8);
-   memset(s->vb, 127, s->uvs * mbh * 8);
+   /* The planes are not pre-filled: every macroblock writes its whole
+    * 16x16 (8x8 chroma) area, the 127 / 129 edges intra prediction
+    * reads beyond the frame are supplied per macroblock, and motion
+    * compensation clamps to the reference - so a fill was 3 MB of
+    * writes a 1080p frame, all overwritten. */
    return 0;
 }
 
@@ -3772,167 +3792,180 @@ uint32_t *rvp8_decode(const uint8_t *data, size_t len,
 struct rvp8_video
 {
    rvp8_dec s;
-   int      w, h, mbw, mbh, ys, uvs;
-   int      have_refs;
-   /* three reference frames (last, golden, altref), each a full padded
-    * plane set matching the decoder's yb/ub/vb geometry. All nine planes
-    * are carved out of ref_arena; the pointers are views into it. */
-   uint8_t *ref_arena;
-   uint8_t *ry[3], *ru[3], *rv[3];
-   size_t   ysz, uvsz;
+   uint8_t *arena[4];
+   uint8_t *ry[4], *ru[4], *rv[4];
+   size_t arena_len[4];
+   /* The per-macroblock info inter frames build their motion vectors
+    * from, kept for the decoder's life and grown only when a key frame
+    * brings more macroblocks.  A key frame used to free it and the
+    * next inter frame calloc it again, so every key frame cost a
+    * free and an allocation mid-stream; now the first inter frame
+    * after one clears it, which is what the calloc gave it. */
+   rvp8_mbinfo *mbi;
+   size_t   mbi_cap;     /* entries */
+   unsigned refs[3];
+   int w, h, mbw, mbh, ys, uvs;
+   int have_refs;
 };
-
-static void rvp8_video_free_refs(rvp8_video *v)
-{
-   int i;
-   free(v->ref_arena);
-   v->ref_arena = NULL;
-   for (i = 0; i < 3; i++)
-      v->ry[i] = v->ru[i] = v->rv[i] = NULL;
-   v->have_refs = 0;
-}
 
 rvp8_video *rvp8_video_open(void)
 {
-   rvp8_video *v = (rvp8_video*)calloc(1, sizeof(*v));
-   return v;
+   return (rvp8_video*)calloc(1, sizeof(rvp8_video));
 }
 
 void rvp8_video_close(rvp8_video *v)
 {
+   unsigned i;
    if (!v) return;
-   rvp8_video_free_refs(v);
-   /* Free the decoder's per-frame scratch arena from the last decode. */
-   free(v->s.arena);
-   free(v->s.mb_info);
+   for (i = 0; i < 4; i++)
+      free(v->arena[i]);
+   if (v->s.mb_info != v->mbi)
+      free(v->s.mb_info);
+   free(v->mbi);
    free(v);
 }
 
-/* Allocate the reference planes once the dimensions are known: nine
- * planes out of one block, each starting on a 64-byte boundary. */
-static int rvp8_video_alloc_refs(rvp8_video *v)
-{
-   int    i;
-   size_t cur = 0;
-   size_t ysz  = RVP8_ARENA_NEXT(0, (size_t)v->ys  * v->mbh * 16);
-   size_t uvsz = RVP8_ARENA_NEXT(0, (size_t)v->uvs * v->mbh * 8);
-   v->ysz  = (size_t)v->ys  * v->mbh * 16;
-   v->uvsz = (size_t)v->uvs * v->mbh * 8;
-   if (!(v->ref_arena = (uint8_t*)malloc(3 * (ysz + 2 * uvsz))))
-      return -1;
-   for (i = 0; i < 3; i++)
-   {
-      v->ry[i] = v->ref_arena + cur; cur += ysz;
-      v->ru[i] = v->ref_arena + cur; cur += uvsz;
-      v->rv[i] = v->ref_arena + cur; cur += uvsz;
-   }
-   return 0;
-}
-
-/* Decode one frame (key or inter). On success the decoded YUV is in
- * v->s.yb/ub/vb and also promoted into the reference frames per the
- * frame's refresh flags. Returns 0 on success. */
+/* Reference slots alias completed arenas; the fourth arena receives the
+ * next picture without overwriting any reference still used to decode it. */
 int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
 {
-   int kf;
+   /* The entropy context a frame starts from, for a frame whose
+    * refresh_entropy_probs is 0: its updates hold for it alone. */
+   uint8_t sv_cprob[4][8][3][11], sv_mvc[sizeof(v->s.mvc)];
+   uint8_t sv_ym[sizeof(v->s.ymode_prob)];
+   uint8_t sv_uvm[sizeof(v->s.uvmode_prob)];
+   unsigned work, i;
+   int kf, ret;
    if (len < 3) return -1;
    kf = !((uint32_t)data[0] & 1);
+   if (!kf && !v->have_refs)
+      return -1;
+   for (work = 0; work < 4; work++)
+      if (!v->have_refs || (work != v->refs[0]
+               && work != v->refs[1] && work != v->refs[2]))
+         break;
+   if (work == 4) return -1;
 
    if (kf)
    {
-      /* Key frame: plain decode, then all references := this frame. The
-       * decoder state must reset fully (a key frame carries no inter
-       * context), so clear the inter flag before begin. Free the mbinfo
-       * array too — begin's reset would otherwise drop the pointer. */
       v->s.is_inter = 0;
-      free(v->s.mb_info);
-      v->s.mb_info = NULL;
-      if (rvp8_begin(data, len, &v->s) != 0)
-         return -1;
-      while (rvp8_rows(&v->s, v->s.mbh) > 0)
-         ;
-      rvp8_filter_rows(&v->s, 0, v->s.mbh);
-
-      /* A key frame with a new geometry retires the old reference set. */
-      if (v->have_refs && (v->mbw != v->s.mbw || v->mbh != v->s.mbh))
-         rvp8_video_free_refs(v);
-      v->w = v->s.w; v->h = v->s.h; v->mbw = v->s.mbw; v->mbh = v->s.mbh;
-      v->ys = v->s.ys; v->uvs = v->s.uvs;
-      if (!v->have_refs)
+      v->s.mb_info  = NULL;
+   }
+   else
+   {
+      v->s.is_inter = 1;
+      if (!v->s.mb_info)
       {
-         if (rvp8_video_alloc_refs(v) != 0) return -1;
-         v->have_refs = 1;
-      }
-      {
-         int i;
-         for (i = 0; i < 3; i++)
+         size_t n = (size_t)v->mbw * (size_t)v->mbh;
+         if (n > v->mbi_cap)
          {
-            memcpy(v->ry[i], v->s.yb, v->ysz);
-            memcpy(v->ru[i], v->s.ub, v->uvsz);
-            memcpy(v->rv[i], v->s.vb, v->uvsz);
+            free(v->mbi);
+            v->mbi_cap = 0;
+            if (!(v->mbi = (rvp8_mbinfo*)calloc(n, sizeof(rvp8_mbinfo))))
+               return -1;
+            v->mbi_cap = n;
          }
+         else
+            memset(v->mbi, 0, n * sizeof(rvp8_mbinfo));
+         v->s.mb_info = v->mbi;
       }
-      return 0;
+      v->s.w = v->w; v->s.h = v->h;
+      for (i = 0; i < 3; i++)
+      {
+         unsigned ref = v->refs[i];
+         v->s.ref_y[i] = v->ry[ref];
+         v->s.ref_u[i] = v->ru[ref];
+         v->s.ref_v[i] = v->rv[ref];
+         v->s.ref_ys[i] = v->ys;
+         v->s.ref_uvs[i] = v->uvs;
+      }
+      if (!v->s.mvc[0][0])
+      {
+         memcpy(v->s.mvc[0], vp8_default_mv_context[0], MVPCOUNT);
+         memcpy(v->s.mvc[1], vp8_default_mv_context[1], MVPCOUNT);
+      }
+      if (!v->s.ymode_prob[0])
+      {
+         static const uint8_t dy[4] = {112, 86, 140, 37};
+         static const uint8_t du[3] = {162, 101, 204};
+         memcpy(v->s.ymode_prob, dy, 4);
+         memcpy(v->s.uvmode_prob, du, 3);
+      }
    }
-
-   /* Inter frame: set up references + inherited context, decode, then
-    * update references per refresh/copy flags. */
-   if (!v->have_refs)
-      return -1;   /* inter before any key frame */
-
-   /* Prime the decoder struct with what begin() must preserve. */
-   v->s.is_inter = 1;
-   v->s.w = v->w; v->s.h = v->h;
-   v->s.ref_y[0] = v->ry[0]; v->s.ref_u[0] = v->ru[0]; v->s.ref_v[0] = v->rv[0];
-   v->s.ref_y[1] = v->ry[1]; v->s.ref_u[1] = v->ru[1]; v->s.ref_v[1] = v->rv[1];
-   v->s.ref_y[2] = v->ry[2]; v->s.ref_u[2] = v->ru[2]; v->s.ref_v[2] = v->rv[2];
-   v->s.ref_ys[0] = v->s.ref_ys[1] = v->s.ref_ys[2] = v->ys;
-   v->s.ref_uvs[0] = v->s.ref_uvs[1] = v->s.ref_uvs[2] = v->uvs;
-   /* cprob/mvc/ymode/uvmode already hold the inherited context from the
-    * previous frame (begin preserves them for inter). Initialise the MV
-    * and intra-mode probs on the very first inter frame from defaults. */
-   if (!v->s.mvc[0][0])
+   /* What the next frame starts from when this one's updates are its
+    * own: what this one inherits, before it reads its updates, or for
+    * a key frame the defaults (the mode and MV sets are refilled with
+    * theirs when found cleared). */
+   if (kf)
    {
-      memcpy(v->s.mvc[0], vp8_default_mv_context[0], MVPCOUNT);
-      memcpy(v->s.mvc[1], vp8_default_mv_context[1], MVPCOUNT);
+      vp8_init_default_cprob(sv_cprob);
+      memset(sv_mvc, 0, sizeof(sv_mvc));
+      memset(sv_ym, 0, sizeof(sv_ym));
+      memset(sv_uvm, 0, sizeof(sv_uvm));
    }
-   if (!v->s.ymode_prob[0])
+   else
    {
-      static const uint8_t dy[4] = {112, 86, 140, 37};
-      static const uint8_t du[3] = {162, 101, 204};
-      memcpy(v->s.ymode_prob, dy, 4);
-      memcpy(v->s.uvmode_prob, du, 3);
+      memcpy(sv_cprob, v->s.cprob, sizeof(sv_cprob));
+      memcpy(sv_mvc, v->s.mvc, sizeof(sv_mvc));
+      memcpy(sv_ym, v->s.ymode_prob, sizeof(sv_ym));
+      memcpy(sv_uvm, v->s.uvmode_prob, sizeof(sv_uvm));
    }
-
-   if (rvp8_begin(data, len, &v->s) != 0)
-      return -1;
+   v->s.arena = v->arena[work];
+   v->s.arena_len = v->arena_len[work];
+   ret = rvp8_begin(data, len, &v->s);
+   v->arena[work] = v->s.arena;
+   v->arena_len[work] = v->s.arena_len;
+   if (ret != 0)
+      return -1;   /* the abort cleared s.mb_info; v->mbi keeps it */
+   v->ry[work] = v->s.yb;
+   v->ru[work] = v->s.ub;
+   v->rv[work] = v->s.vb;
    while (rvp8_rows(&v->s, v->s.mbh) > 0)
       ;
    rvp8_filter_rows(&v->s, 0, v->s.mbh);
 
-   /* Update references. copy_golden/altref: 0=no change,1=from last,2=from
-    * the other; refresh_*: replace with the just-decoded frame. Order per
-    * libvpx: copies use the OLD last frame, then refreshes apply. */
+   /* refresh_entropy_probs 0 (error-resilient streams send it on every
+    * frame): the probability updates this frame read applied to it
+    * alone, and the next frame starts from what was saved above. */
+   if (!v->s.refresh_entropy)
    {
-      /* Reference updates in libvpx order (onyxd_if.c): copy_altref first
-       * (so a following copy_golden==2 sees the updated altref), then
-       * copy_golden, then the refreshes from the newly decoded frame.
-       * Copies read the pre-refresh buffers. */
-      if (!v->s.refresh_altref && v->s.copy_altref == 1)
-      { memcpy(v->ry[2], v->ry[0], v->ysz); memcpy(v->ru[2], v->ru[0], v->uvsz); memcpy(v->rv[2], v->rv[0], v->uvsz); }
-      else if (!v->s.refresh_altref && v->s.copy_altref == 2)
-      { memcpy(v->ry[2], v->ry[1], v->ysz); memcpy(v->ru[2], v->ru[1], v->uvsz); memcpy(v->rv[2], v->rv[1], v->uvsz); }
-      if (!v->s.refresh_golden && v->s.copy_golden == 1)
-      { memcpy(v->ry[1], v->ry[0], v->ysz); memcpy(v->ru[1], v->ru[0], v->uvsz); memcpy(v->rv[1], v->rv[0], v->uvsz); }
-      else if (!v->s.refresh_golden && v->s.copy_golden == 2)
-      { memcpy(v->ry[1], v->ry[2], v->ysz); memcpy(v->ru[1], v->ru[2], v->uvsz); memcpy(v->rv[1], v->rv[2], v->uvsz); }
-      if (v->s.refresh_golden)
-      { memcpy(v->ry[1], v->s.yb, v->ysz); memcpy(v->ru[1], v->s.ub, v->uvsz); memcpy(v->rv[1], v->s.vb, v->uvsz); }
-      if (v->s.refresh_altref)
-      { memcpy(v->ry[2], v->s.yb, v->ysz); memcpy(v->ru[2], v->s.ub, v->uvsz); memcpy(v->rv[2], v->s.vb, v->uvsz); }
-      if (v->s.refresh_last)
-      { memcpy(v->ry[0], v->s.yb, v->ysz); memcpy(v->ru[0], v->s.ub, v->uvsz); memcpy(v->rv[0], v->s.vb, v->uvsz); }
+      memcpy(v->s.cprob, sv_cprob, sizeof(sv_cprob));
+      memcpy(v->s.mvc, sv_mvc, sizeof(sv_mvc));
+      memcpy(v->s.ymode_prob, sv_ym, sizeof(sv_ym));
+      memcpy(v->s.uvmode_prob, sv_uvm, sizeof(sv_uvm));
    }
+
+   if (kf)
+   {
+      if (v->have_refs && (v->mbw != v->s.mbw || v->mbh != v->s.mbh))
+         for (i = 0; i < 4; i++)
+            if (i != work)
+            {
+               free(v->arena[i]);
+               v->arena[i] = NULL;
+               v->arena_len[i] = 0;
+               v->ry[i] = v->ru[i] = v->rv[i] = NULL;
+            }
+      v->w = v->s.w; v->h = v->s.h;
+      v->mbw = v->s.mbw; v->mbh = v->s.mbh;
+      v->ys = v->s.ys; v->uvs = v->s.uvs;
+      v->refs[0] = v->refs[1] = v->refs[2] = work;
+      v->have_refs = 1;
+      return 0;
+   }
+
+   /* Altref copies precede golden copies; refreshes follow both. */
+   if (!v->s.refresh_altref && v->s.copy_altref == 1)
+      v->refs[2] = v->refs[0];
+   else if (!v->s.refresh_altref && v->s.copy_altref == 2)
+      v->refs[2] = v->refs[1];
+   if (!v->s.refresh_golden && v->s.copy_golden == 1)
+      v->refs[1] = v->refs[0];
+   else if (!v->s.refresh_golden && v->s.copy_golden == 2)
+      v->refs[1] = v->refs[2];
+   if (v->s.refresh_golden) v->refs[1] = work;
+   if (v->s.refresh_altref) v->refs[2] = work;
+   if (v->s.refresh_last) v->refs[0] = work;
    return 0;
 }
 
